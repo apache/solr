@@ -31,6 +31,7 @@ import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
+import org.apache.lucene.queries.function.valuesource.FieldCacheSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
@@ -277,7 +278,7 @@ public class TrieField extends NumericFieldType {
               + ")");
     }
 
-    return getSingleValueSource(selectorType, field);
+    return new SortDelegatingValueSource(field, this, getSingleValueSource(selectorType, field));
   }
 
   /**
@@ -289,7 +290,7 @@ public class TrieField extends NumericFieldType {
    * @param field the field to use, guaranteed to be multivalued.
    * @see #getSingleValueSource(MultiValueSelector,SchemaField,QParser)
    */
-  protected ValueSource getSingleValueSource(SortedSetSelector.Type choice, SchemaField field) {
+  protected FieldCacheSource getSingleValueSource(SortedSetSelector.Type choice, SchemaField field) {
     throw new SolrException(
         SolrException.ErrorCode.BAD_REQUEST,
         "Can not select a single value for multivalued field: "

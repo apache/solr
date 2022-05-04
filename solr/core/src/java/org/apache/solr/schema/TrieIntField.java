@@ -23,8 +23,8 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
-import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.IntDocValues;
+import org.apache.lucene.queries.function.valuesource.FieldCacheSource;
 import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
 import org.apache.lucene.search.SortedSetSelector;
 import org.apache.lucene.util.BytesRef;
@@ -64,9 +64,9 @@ public class TrieIntField extends TrieField implements IntValueFieldType {
   }
 
   @Override
-  protected ValueSource getSingleValueSource(SortedSetSelector.Type choice, SchemaField f) {
+  protected FieldCacheSource getSingleValueSource(SortedSetSelector.Type choice, SchemaField f) {
 
-    return new SortDelegatingValueSource(f, this, new SortedSetFieldSource(f.getName(), choice) {
+    return new SortedSetFieldSource(f.getName(), choice) {
       @Override
       public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
           throws IOException {
@@ -131,6 +131,6 @@ public class TrieIntField extends TrieField implements IntValueFieldType {
           }
         };
       }
-    });
+    };
   }
 }
