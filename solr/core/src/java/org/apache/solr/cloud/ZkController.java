@@ -2628,9 +2628,16 @@ public class ZkController implements Closeable {
     SolrZkClient zkClient = zkLoader.getZkController().getZkClient();
     String configSetZkPath = zkLoader.getConfigSetZkPath();
     try {
-      zkClient.makePath(configSetZkPath, new byte[] {0}, true);
-    } catch (KeeperException.NodeExistsException ignore) {
-      // ignore if node already exists so we don't overwrite
+      // Ensure the path exists.
+      try {
+        zkClient.makePath(configSetZkPath, true);
+      } catch (KeeperException.NodeExistsException ignore) {
+        // ignore if node already exists, so we don't overwrite existing data.
+      }
+      // Ensure that version gets updated by replacing data with itself.
+      // If there is no existing data then set it to byte[] {0}.
+      // This should trigger any watchers if necessary as well.
+      zkClient.atomicUpdate(configSetZkPath, bytes -> bytes == null ? new byte[] {0} : bytes);
     } catch (Exception e) {
       if (e instanceof InterruptedException) {
         Thread.currentThread().interrupt(); // Restore the interrupted status

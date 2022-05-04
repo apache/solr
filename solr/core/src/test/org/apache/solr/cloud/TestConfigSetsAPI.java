@@ -841,7 +841,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
   @Test
   public void testNewSingleFileAfterSchemaAPIV1() throws Exception {
-    testNewSingleFileAfterSchemaAPI(true);
+    testNewSingleFileAfterSchemaAPI(false);
   }
 
   @Test
