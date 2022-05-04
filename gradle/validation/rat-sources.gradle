@@ -68,12 +68,8 @@ allprojects {
             exclude "src/**/*.csv"
 
             // TODO: SOLR-15601: Some of these should carry the license, perhaps?
-            exclude "**/README.md"
             exclude "**/*.html"
-            exclude "**/*.xml"
             exclude "**/*.json"
-            exclude "**/*.js"
-            exclude "**/*.py"
 
             // Conditionally apply module-specific patterns. We do it here instead
             // of reconfiguring each project because the provider can be made lazy
@@ -117,6 +113,16 @@ allprojects {
                     exclude "**/langdetect-profiles/*"
                     break
 
+                case ":solr:modules:ltr":
+                    // TODO: SOLR-15601: Some of these should carry the license, perhaps?
+                    exclude "**/*.py"
+                    break
+
+                case ":solr:modules:scripting":
+                    // TODO: SOLR-15601: Some of these should carry the license, perhaps?
+                    exclude "**/*.js"
+                    break
+
                 case ":solr:documentation":
                     exclude "src/markdown/*.md"
                     break
@@ -132,6 +138,7 @@ allprojects {
                     exclude "src/test-files/**/*.conf"
                     exclude "src/test-files/**/external_eff"
                     exclude "src/test-files/**/*.incl"
+                    exclude "src/test-files/**/*-snippet-*.xml"
                     break
 
                 case ":solr:server":
@@ -145,7 +152,9 @@ allprojects {
                     break
 
                 case ":solr:solr-ref-guide":
-                    exclude "src/**"
+                    include "*.yml"
+                    include "**/*.adoc"
+                    exclude "ui-src/**"
                     exclude "node_modules/**"
                     break
 
