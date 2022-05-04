@@ -152,12 +152,12 @@ public class DoublePointField extends PointField implements DoubleValueFieldType
   @Override
   public ValueSource getValueSource(SchemaField field, QParser qparser) {
     field.checkFieldCacheSource();
-    return new PointFieldValueSource(field, new DoubleFieldSource(field.getName()));
+    return new SortDelegatingValueSource(field, this, new DoubleFieldSource(field.getName()));
   }
 
   @Override
   protected ValueSource getSingleValueSource(SortedNumericSelector.Type choice, SchemaField f) {
-    return new PointFieldValueSource(f, new MultiValuedDoubleFieldSource(f.getName(), choice));
+    return new SortDelegatingValueSource(f, this, new MultiValuedDoubleFieldSource(f.getName(), choice));
   }
 
   @Override

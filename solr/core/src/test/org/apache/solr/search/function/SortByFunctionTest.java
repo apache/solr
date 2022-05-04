@@ -263,8 +263,7 @@ public class SortByFunctionTest extends SolrCloudTestCase {
 
     // test is predicated on the idea that if long -> double converstion is happening under the hood
     // then we lose precision in sorting; so lets sanity check that our JVM isn't doing something
-    // wacky
-    // in converstion that violates the principle of the test
+    // wacky in converstion that violates the principle of the test
 
     assertEquals(
         "WTF? small longs cast to double aren't equivalent?", (double) A, (double) B, 0.0D);

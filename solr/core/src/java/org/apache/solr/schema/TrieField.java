@@ -34,6 +34,7 @@ import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
+import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedSetSelector;
@@ -226,15 +227,15 @@ public class TrieField extends NumericFieldType {
     field.checkFieldCacheSource();
     switch (type) {
       case INTEGER:
-        return new IntFieldSource(field.getName());
+        return new SortDelegatingValueSource(field, this, new IntFieldSource(field.getName()));
       case FLOAT:
-        return new FloatFieldSource(field.getName());
+        return new SortDelegatingValueSource(field, this, new FloatFieldSource(field.getName()));
       case DATE:
-        return new TrieDateFieldSource(field.getName());
+        return new SortDelegatingValueSource(field, this, new TrieDateFieldSource(field.getName()));
       case LONG:
-        return new LongFieldSource(field.getName());
+        return new SortDelegatingValueSource(field, this, new LongFieldSource(field.getName()));
       case DOUBLE:
-        return new DoubleFieldSource(field.getName());
+        return new SortDelegatingValueSource(field, this, new DoubleFieldSource(field.getName()));
       default:
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + field.name);

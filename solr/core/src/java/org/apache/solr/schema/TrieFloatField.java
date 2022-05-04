@@ -67,7 +67,7 @@ public class TrieFloatField extends TrieField implements FloatValueFieldType {
   @Override
   protected ValueSource getSingleValueSource(SortedSetSelector.Type choice, SchemaField f) {
 
-    return new NumericSortedSetFieldSource(f, choice, NumberType.FLOAT) {
+    return new SortDelegatingValueSource(f, this, new SortedSetFieldSource(f.getName(), choice) {
       @Override
       public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
           throws IOException {
@@ -133,6 +133,6 @@ public class TrieFloatField extends TrieField implements FloatValueFieldType {
           }
         };
       }
-    };
+    });
   }
 }
