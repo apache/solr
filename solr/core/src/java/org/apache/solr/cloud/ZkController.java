@@ -55,6 +55,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -719,7 +720,7 @@ public class ZkController implements Closeable {
 
     customThreadPool.submit(() -> IOUtils.closeQuietly(overseer));
 
-    futures.forEach(future -> future.cancel(true));
+    eventListenerFutures.forEach(future -> future.cancel(true));
 
     try {
       customThreadPool.submit(
@@ -2704,6 +2705,9 @@ public class ZkController implements Closeable {
 
   private final Map<String, Set<Runnable>> confDirectoryListeners = new HashMap<>();
 
+  // Set of fired event listeners needed to clean up on close
+  private final Set<Future<?>> eventListenerFutures = ConcurrentHashMap.newKeySet();
+
   private class WatcherImpl implements Watcher {
     private final String zkDir;
 
@@ -2741,8 +2745,6 @@ public class ZkController implements Closeable {
     }
   }
 
-  Set<Future<?>> futures = ConcurrentHashMap.newKeySet();
-
   private boolean fireEventListeners(String zkDir) {
     if (isClosed || cc.isShutDown()) {
       return false;
@@ -2757,25 +2759,29 @@ public class ZkController implements Closeable {
       if (listeners != null && !listeners.isEmpty()) {
         final Set<Runnable> listenersCopy = new HashSet<>(listeners);
         // run these in a separate thread because this can be long running
-        final AtomicReference<Future<?>> listenerFuture = new AtomicReference<>();
-        Runnable work =
-            () -> {
+        AtomicReference<Future<?>> future = new AtomicReference<>();
+        FutureTask<Void> work = new FutureTask<>(() -> {
+          try {
+            log.debug("Running listeners for {}", zkDir);
+            for (final Runnable listener : listenersCopy) {
               try {
-                log.debug("Running listeners for {}", zkDir);
-                for (final Runnable listener : listenersCopy) {
-                  try {
-                    listener.run();
-                  } catch (RuntimeException e) {
-                    log.warn("listener throws error", e);
-                  }
-                }
-              } finally {
-                futures.remove(listenerFuture.getAndSet(null));
+                listener.run();
+              } catch (RuntimeException e) {
+                log.warn("listener throws error", e);
               }
-            };
-        Future<?> future = cc.getCoreZkRegisterExecutorService().submit(work);
-        listenerFuture.set(future);
-        futures.add(future);
+            }
+          } finally {
+            eventListenerFutures.remove(future.getAndSet(null));
+          }
+          return null;
+        });
+
+        // Set the future reference so that it can clean itself up
+        future.set(work);
+        // And store the future so it can be cancelled on close
+        eventListenerFutures.add(work);
+        // Then finally submit the future so that it gets executed
+        cc.getCoreZkRegisterExecutorService().submit(work);
       }
     }
     return true;
