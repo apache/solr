@@ -165,6 +165,7 @@ public class IntPointField extends PointField implements IntValueFieldType {
 
   @Override
   protected ValueSource getSingleValueSource(SortedNumericSelector.Type choice, SchemaField f) {
-    return new SortDelegatingValueSource(f, this, new MultiValuedIntFieldSource(f.getName(), choice));
+    return new SortDelegatingValueSource(
+        f, this, new MultiValuedIntFieldSource(f.getName(), choice));
   }
 }

@@ -158,9 +158,9 @@ public class SortSpecParsing {
                 SortField sortField = vs.getSortField(top);
                 if (vs instanceof FieldCacheSource && !(vs instanceof JoinDocFreqValueSource)) {
                   // TODO: figure out why does JoinDocFreqValueSource extend FieldCacheSource? IIUC
-                  //  it should _not_, otherwise I completely misunderstand the point of FieldCacheSource?
-                  //  Sure, JoinDocFreqValueSource uses DocValues, but so do lots of other ValueSource
-                  //  functions, etc...
+                  //  it should _not_, otherwise I completely misunderstand the point of
+                  //  FieldCacheSource? Sure, JoinDocFreqValueSource uses DocValues, but so do lots
+                  //  of other ValueSource functions, etc...
                   // The values for this field may use fieldType-specific sort value (un/)marshaling
                   sf = schema.getField(((FieldCacheSource) vs).getField());
                 }
