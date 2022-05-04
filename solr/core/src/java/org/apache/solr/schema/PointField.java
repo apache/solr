@@ -319,4 +319,5 @@ public abstract class PointField extends NumericFieldType {
   public SortField getSortField(SchemaField field, boolean top) {
     return getNumericSort(field, getNumberType(), top);
   }
+
 }

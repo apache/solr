@@ -157,8 +157,7 @@ public class DoublePointField extends PointField implements DoubleValueFieldType
 
   @Override
   protected ValueSource getSingleValueSource(SortedNumericSelector.Type choice, SchemaField f) {
-    return new SortDelegatingValueSource(
-        f, this, new MultiValuedDoubleFieldSource(f.getName(), choice));
+    return new SortDelegatingValueSource(f, this, new MultiValuedDoubleFieldSource(f.getName(), choice));
   }
 
   @Override

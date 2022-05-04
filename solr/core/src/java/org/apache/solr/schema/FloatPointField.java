@@ -157,8 +157,7 @@ public class FloatPointField extends PointField implements FloatValueFieldType {
 
   @Override
   protected ValueSource getSingleValueSource(SortedNumericSelector.Type choice, SchemaField f) {
-    return new SortDelegatingValueSource(
-        f, this, new MultiValuedFloatFieldSource(f.getName(), choice));
+    return new SortDelegatingValueSource(f, this, new MultiValuedFloatFieldSource(f.getName(), choice));
   }
 
   @Override
