@@ -370,7 +370,8 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
               // touchConfDir should only set the data to new byte[] {0}
               ZkController.touchConfDir(loader);
               assertTrue(zkClient.exists(zkpath, true));
-              assertArrayEquals(ZkController.TOUCHED_ZNODE_DATA, zkClient.getData(zkpath, null, s, true));
+              assertArrayEquals(
+                  ZkController.TOUCHED_ZNODE_DATA, zkClient.getData(zkpath, null, s, true));
               assertEquals(1, s.getVersion());
 
               // set new data to check if touchConfDir overwrites later
