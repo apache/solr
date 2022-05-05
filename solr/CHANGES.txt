@@ -53,6 +53,8 @@ Bug Fixes
 
 * SOLR-16169: IndexBasedSpellChecker with empty spellcheck.q results in NegativeArraySizeException (Kevin Risden)
 
+* SOLR-16110: Using Schema/Config API breaks the File-Upload of Config Set File (Steffen Moldenhauer, Kevin Risden)
+
 Other Changes
 ---------------------
 * SOLR-15897: Remove <jmx/> from all unit test solrconfig.xml files. (Eric Pugh)
