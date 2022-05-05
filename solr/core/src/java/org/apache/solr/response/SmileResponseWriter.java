@@ -16,25 +16,26 @@
  */
 package org.apache.solr.response;
 
+import com.fasterxml.jackson.dataformat.smile.SmileFactory;
+import com.fasterxml.jackson.dataformat.smile.SmileGenerator;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-
-import com.fasterxml.jackson.dataformat.smile.SmileFactory;
-import com.fasterxml.jackson.dataformat.smile.SmileGenerator;
 import org.apache.solr.request.SolrQueryRequest;
 
 public class SmileResponseWriter extends BinaryResponseWriter {
 
   @Override
-  public void write(OutputStream out, SolrQueryRequest request, SolrQueryResponse response) throws IOException {
+  public void write(OutputStream out, SolrQueryRequest request, SolrQueryResponse response)
+      throws IOException {
     try (SmileWriter sw = new SmileWriter(out, request, response)) {
       sw.writeResponse();
     }
   }
 
-  //smile format is an equivalent of JSON format . So we extend JSONWriter and override the relevant methods
+  // smile format is an equivalent of JSON format . So we extend JSONWriter and override the
+  // relevant methods
 
   public static class SmileWriter extends JSONWriter {
     protected final SmileGenerator gen;
@@ -51,7 +52,6 @@ public class SmileResponseWriter extends BinaryResponseWriter {
         throw new RuntimeException(e);
       }
     }
-
 
     @Override
     public void writeResponse() throws IOException {
@@ -125,7 +125,7 @@ public class SmileResponseWriter extends BinaryResponseWriter {
 
     @Override
     public void writeArraySeparator() throws IOException {
-      //do nothing
+      // do nothing
     }
 
     @Override
@@ -140,7 +140,7 @@ public class SmileResponseWriter extends BinaryResponseWriter {
 
     @Override
     public void writeMapSeparator() throws IOException {
-      //do nothing
+      // do nothing
     }
 
     @Override
@@ -156,12 +156,11 @@ public class SmileResponseWriter extends BinaryResponseWriter {
     @Override
     public void writeByteArr(String name, byte[] buf, int offset, int len) throws IOException {
       gen.writeBinary(buf, offset, len);
-
     }
 
     @Override
     public void setLevel(int level) {
-      //do nothing
+      // do nothing
     }
 
     @Override
@@ -171,12 +170,12 @@ public class SmileResponseWriter extends BinaryResponseWriter {
 
     @Override
     public void indent() throws IOException {
-      //do nothing
+      // do nothing
     }
 
     @Override
     public void indent(int lev) throws IOException {
-      //do nothing
+      // do nothing
     }
 
     @Override

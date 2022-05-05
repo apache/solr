@@ -16,7 +16,11 @@
  */
 package org.apache.solr.search;
 
-
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Random;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -25,17 +29,10 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.util.RTimer;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Random;
-
-
 public class TestSolrJ extends SolrTestCaseJ4 {
 
   public void testSolrJ() throws Exception {
-                          // docs, producers, connections, sleep_time
+    // docs, producers, connections, sleep_time
     //  main(new String[] {"1000000","4", "1", "0"});
 
     // doCommitPerf();
@@ -59,7 +56,7 @@ public class TestSolrJ extends SolrTestCaseJ4 {
     ConcurrentUpdateSolrClient concurrentClient = null;
 
     // server = concurrentClient = new ConcurrentUpdateSolrServer(addr,32,8);
-    client = concurrentClient = getConcurrentUpdateSolrClient(addr,64,nConnections);
+    client = concurrentClient = getConcurrentUpdateSolrClient(addr, 64, nConnections);
 
     client.deleteByQuery("*:*");
     client.commit();
@@ -70,27 +67,28 @@ public class TestSolrJ extends SolrTestCaseJ4 {
 
     Thread[] threads = new Thread[nProducers];
 
-    for (int threadNum = 0; threadNum<nProducers; threadNum++) {
+    for (int threadNum = 0; threadNum < nProducers; threadNum++) {
       final int base = threadNum * docsPerThread;
 
-      threads[threadNum] = new Thread("add-thread"+i) {
-        @Override
-        public void run(){
-          try {
-            indexDocs(base, docsPerThread, maxSleep);
-          } catch (Exception e) {
-            System.out.println("###############################CAUGHT EXCEPTION");
-            e.printStackTrace();
-            ex = e;
-          }
-        }
-      };
+      threads[threadNum] =
+          new Thread("add-thread" + i) {
+            @Override
+            public void run() {
+              try {
+                indexDocs(base, docsPerThread, maxSleep);
+              } catch (Exception e) {
+                System.out.println("###############################CAUGHT EXCEPTION");
+                e.printStackTrace();
+                ex = e;
+              }
+            }
+          };
       threads[threadNum].start();
     }
 
     // optional: wait for commit?
 
-    for (int threadNum = 0; threadNum<nProducers; threadNum++) {
+    for (int threadNum = 0; threadNum < nProducers; threadNum++) {
       threads[threadNum].join();
     }
 
@@ -99,7 +97,8 @@ public class TestSolrJ extends SolrTestCaseJ4 {
     }
 
     double elapsed = timer.getTime();
-    System.out.println("time="+elapsed + " throughput="+(nDocs*1000/elapsed) + " Exception="+ex);
+    System.out.println(
+        "time=" + elapsed + " throughput=" + (nDocs * 1000 / elapsed) + " Exception=" + ex);
 
     // should server threads be marked as daemon?
     // need a server.close()!!!
@@ -108,23 +107,23 @@ public class TestSolrJ extends SolrTestCaseJ4 {
   @SuppressWarnings({"unchecked"})
   public static SolrInputDocument getDocument(int docnum) {
     SolrInputDocument doc = new SolrInputDocument();
-    doc.setField(idField, docnum );
-    doc.setField("cat", Integer.toString(docnum&0x0f) );
-    doc.setField("name", "my name is " + Integer.toString(docnum&0xff) );
-    doc.setField("foo_t", "now is the time for all good men to come to the aid of their country" );
-    doc.setField("foo_i", Integer.toString(docnum&0x0f) );
-    doc.setField("foo_s", Integer.toString(docnum&0xff) );
-    doc.setField("foo_b", Boolean.toString( (docnum&0x01) == 1) );
-    doc.setField("parent_s", Integer.toString(docnum-1) );
+    doc.setField(idField, docnum);
+    doc.setField("cat", Integer.toString(docnum & 0x0f));
+    doc.setField("name", "my name is " + Integer.toString(docnum & 0xff));
+    doc.setField("foo_t", "now is the time for all good men to come to the aid of their country");
+    doc.setField("foo_i", Integer.toString(docnum & 0x0f));
+    doc.setField("foo_s", Integer.toString(docnum & 0xff));
+    doc.setField("foo_b", Boolean.toString((docnum & 0x01) == 1));
+    doc.setField("parent_s", Integer.toString(docnum - 1));
     doc.setField("price", Integer.toString(docnum >> 4));
 
-    int golden = (int)2654435761L;
+    int golden = (int) 2654435761L;
     int h = docnum * golden;
     int n = (h & 0xff) + 1;
     @SuppressWarnings({"rawtypes"})
     List lst = new ArrayList(n);
-    for (int i=0; i<n; i++) {
-      h = (h+i) * golden;
+    for (int i = 0; i < n; i++) {
+      h = (h + i) * golden;
       lst.add(h & 0xfff);
     }
 
@@ -132,12 +131,13 @@ public class TestSolrJ extends SolrTestCaseJ4 {
     return doc;
   }
 
-  public static void indexDocs(int base, int count, int maxSleep) throws IOException, SolrServerException {
+  public static void indexDocs(int base, int count, int maxSleep)
+      throws IOException, SolrServerException {
     Random r = new Random(base);
 
-    for (int i=base; i<count+base; i++) {
+    for (int i = base; i < count + base; i++) {
       if ((i & 0xfffff) == 0) {
-        System.out.print("\n% " + new Date()+ "\t" + i + "\t");
+        System.out.print("\n% " + new Date() + "\t" + i + "\t");
         System.out.flush();
       }
 
@@ -159,10 +159,8 @@ public class TestSolrJ extends SolrTestCaseJ4 {
           throw new RuntimeException(e);
         }
       }
-
     }
   }
-
 
   public void doCommitPerf() throws Exception {
 
@@ -179,7 +177,5 @@ public class TestSolrJ extends SolrTestCaseJ4 {
 
       System.out.println("TIME: " + timer.getTime());
     }
-
   }
-
 }

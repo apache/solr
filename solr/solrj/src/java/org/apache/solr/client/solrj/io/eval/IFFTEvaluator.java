@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.transform.DftNormalization;
 import org.apache.commons.math3.transform.FastFourierTransformer;
@@ -34,29 +33,34 @@ public class IFFTEvaluator extends RecursiveObjectEvaluator implements OneValueW
 
   public IFFTEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
-    if(containedEvaluators.size() < 1){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting at least one value but found %d",expression,containedEvaluators.size()));
+    if (containedEvaluators.size() < 1) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting at least one value but found %d",
+              expression,
+              containedEvaluators.size()));
     }
-
   }
 
   @Override
   public Object doWork(Object v) throws IOException {
 
-    if(v instanceof Matrix) {
+    if (v instanceof Matrix) {
 
-      Matrix matrix = (Matrix)v;
+      Matrix matrix = (Matrix) v;
       double[][] data = matrix.getData();
       double[] real = data[0];
       double[] imaginary = data[1];
       Complex[] complex = new Complex[real.length];
 
       for (int i = 0; i < real.length; ++i) {
-       complex[i] = new Complex(real[i], imaginary[i]);
+        complex[i] = new Complex(real[i], imaginary[i]);
       }
 
-      FastFourierTransformer fastFourierTransformer = new FastFourierTransformer(DftNormalization.STANDARD);
-      Complex[] result  = fastFourierTransformer.transform(complex, TransformType.INVERSE);
+      FastFourierTransformer fastFourierTransformer =
+          new FastFourierTransformer(DftNormalization.STANDARD);
+      Complex[] result = fastFourierTransformer.transform(complex, TransformType.INVERSE);
 
       List<Number> realResult = new ArrayList<>();
       for (int i = 0; i < result.length; ++i) {

@@ -15,22 +15,21 @@
  * limitations under the License.
  */
 package org.apache.solr.search.function.distance;
-import java.io.IOException;
 
+import java.io.IOException;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.valuesource.MultiValueSource;
 
 /**
- * While not strictly a distance, the Sq. Euclidean Distance is often all that is needed in many applications
- * that require a distance, thus saving a sq. rt. calculation
+ * While not strictly a distance, the Sq. Euclidean Distance is often all that is needed in many
+ * applications that require a distance, thus saving a sq. rt. calculation
  */
 public class SquaredEuclideanFunction extends VectorDistanceFunction {
   protected String name = "sqedist";
 
   public SquaredEuclideanFunction(MultiValueSource source1, MultiValueSource source2) {
-    super(-1, source1, source2);//overriding distance, so power doesn't matter here
+    super(-1, source1, source2); // overriding distance, so power doesn't matter here
   }
-
 
   @Override
   protected String name() {

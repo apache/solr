@@ -16,12 +16,12 @@
  */
 package org.apache.solr.search.function;
 
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.FunctionValues;
-import org.apache.solr.search.CollapsingQParserPlugin.CollapseScore;
-import java.util.Map;
 import java.io.IOException;
+import java.util.Map;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.queries.function.FunctionValues;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.solr.search.CollapsingQParserPlugin.CollapseScore;
 
 public class CollapseScoreFunction extends ValueSource {
 
@@ -30,7 +30,7 @@ public class CollapseScoreFunction extends ValueSource {
   }
 
   public boolean equals(Object o) {
-    if(o instanceof CollapseScoreFunction){
+    if (o instanceof CollapseScoreFunction) {
       return true;
     } else {
       return false;
@@ -41,7 +41,8 @@ public class CollapseScoreFunction extends ValueSource {
     return 1213241257;
   }
 
-  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+      throws IOException {
     return new CollapseScoreFunctionValues(context);
   }
 
@@ -49,7 +50,7 @@ public class CollapseScoreFunction extends ValueSource {
 
     private CollapseScore cscore;
 
-    public CollapseScoreFunctionValues(Map<?,?> context) {
+    public CollapseScoreFunctionValues(Map<?, ?> context) {
       this.cscore = (CollapseScore) context.get("CSCORE");
       assert null != this.cscore;
     }

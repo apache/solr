@@ -17,13 +17,13 @@
 
 package org.apache.solr.update;
 
+import static org.apache.solr.update.TestInPlaceUpdatesStandalone.addAndAssertVersion;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.apache.solr.update.TestInPlaceUpdatesStandalone.addAndAssertVersion;
-
-public class TestInPlaceUpdatesRequiredField extends SolrTestCaseJ4  {
+public class TestInPlaceUpdatesRequiredField extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -32,17 +32,20 @@ public class TestInPlaceUpdatesRequiredField extends SolrTestCaseJ4  {
 
   @Test
   public void testUpdateFromTlog() throws Exception {
-    long version1 = addAndGetVersion(sdoc("id", "1", "name", "first", "inplace_updatable_int", 1), null);
+    long version1 =
+        addAndGetVersion(sdoc("id", "1", "name", "first", "inplace_updatable_int", 1), null);
     assertU(commit("softCommit", "false"));
     assertQ(req("q", "*:*"), "//*[@numFound='1']");
 
     // do an in place update that hits off the tlog
     version1 = addAndAssertVersion(version1, "id", "1", "inplace_updatable_int", map("inc", 1));
     version1 = addAndAssertVersion(version1, "id", "1", "inplace_updatable_int", map("inc", 1));
-    version1 = addAndAssertVersion(version1, "id", "1", "inplace_updatable_int", map("inc", 1)); // new value should be 4
+    // new value should be 4
+    version1 = addAndAssertVersion(version1, "id", "1", "inplace_updatable_int", map("inc", 1));
     assertU(commit("softCommit", "false"));
-    assertQ(req("q", "id:1", "fl", "*,[docid]"),
+    assertQ(
+        req("q", "id:1", "fl", "*,[docid]"),
         "//result/doc[1]/int[@name='inplace_updatable_int'][.='4']",
-        "//result/doc[1]/long[@name='_version_'][.='"+version1+"']");
+        "//result/doc[1]/long[@name='_version_'][.='" + version1 + "']");
   }
 }

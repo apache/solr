@@ -19,7 +19,7 @@ package org.apache.solr.client.solrj.io.stream.eval;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
+import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.GreaterThanEvaluator;
@@ -27,117 +27,114 @@ import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
 
-import junit.framework.Assert;
-
 public class GreaterThanEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;
-  
+
   public GreaterThanEvaluatorTest() {
     super();
-    
-    factory = new StreamFactory()
-      .withFunctionName("gt", GreaterThanEvaluator.class);
-    values = new HashMap<String,Object>();
+
+    factory = new StreamFactory().withFunctionName("gt", GreaterThanEvaluator.class);
+    values = new HashMap<String, Object>();
   }
-    
+
   @Test
-  public void gtTwoIntegers() throws Exception{
+  public void gtTwoIntegers() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("gt(a,b)");
     Object result;
-    
+
     values.clear();
     values.put("a", 1);
     values.put("b", 1);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Boolean);
     Assert.assertEquals(false, result);
-    
+
     values.clear();
     values.put("a", 1);
     values.put("b", 1.0);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Boolean);
     Assert.assertEquals(false, result);
-    
+
     values.clear();
     values.put("a", 1.0);
     values.put("b", 1);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Boolean);
     Assert.assertEquals(false, result);
-    
+
     values.clear();
     values.put("a", 1);
     values.put("b", 2);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Boolean);
     Assert.assertEquals(false, result);
-    
+
     values.clear();
     values.put("a", -1);
     values.put("b", -1);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Boolean);
     Assert.assertEquals(false, result);
-    
+
     values.clear();
     values.put("a", 1);
     values.put("b", 2.0);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Boolean);
     Assert.assertEquals(false, result);
-    
+
     values.clear();
     values.put("a", 1.0);
     values.put("b", 2);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Boolean);
     Assert.assertEquals(false, result);
-    
+
     values.clear();
     values.put("a", 2);
     values.put("b", 1);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Boolean);
     Assert.assertEquals(true, result);
-    
+
     values.clear();
     values.put("a", 2);
     values.put("b", 1.0);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Boolean);
     Assert.assertEquals(true, result);
-    
+
     values.clear();
     values.put("a", 2.0);
     values.put("b", 1);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Boolean);
     Assert.assertEquals(true, result);
-    
+
     values.clear();
     values.put("a", 3);
     values.put("b", 2);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Boolean);
     Assert.assertEquals(true, result);
-    
+
     values.clear();
     values.put("a", -1);
     values.put("b", -2);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Boolean);
     Assert.assertEquals(true, result);
-    
+
     values.clear();
     values.put("a", 3);
     values.put("b", 2.0);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Boolean);
     Assert.assertEquals(true, result);
-    
+
     values.clear();
     values.put("a", 3.0);
     values.put("b", 2);
@@ -145,49 +142,49 @@ public class GreaterThanEvaluatorTest extends SolrTestCase {
     Assert.assertTrue(result instanceof Boolean);
     Assert.assertEquals(true, result);
   }
-  
+
   @Test
-  public void gtTwoStrings() throws Exception{
+  public void gtTwoStrings() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("gt(a,b)");
     Object result;
     String foo = "foo";
     String bar = "bar";
-    
+
     values.clear();
     values.put("a", "foo");
     values.put("b", "foo");
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Boolean);
     Assert.assertEquals(false, result);
-    
+
     values.clear();
     values.put("a", "foo");
     values.put("b", "bar");
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Boolean);
     Assert.assertEquals(true, result);
-    
+
     values.clear();
     values.put("a", "foo bar baz");
     values.put("b", "foo bar baz");
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Boolean);
     Assert.assertEquals(false, result);
-    
+
     values.clear();
     values.put("a", "foo bar baz");
     values.put("b", "foo bar jaz");
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Boolean);
     Assert.assertEquals(false, result);
-    
+
     values.clear();
     values.put("a", foo);
     values.put("b", foo);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Boolean);
     Assert.assertEquals(false, result);
-    
+
     values.clear();
     values.put("a", foo);
     values.put("b", bar);
@@ -195,55 +192,54 @@ public class GreaterThanEvaluatorTest extends SolrTestCase {
     Assert.assertTrue(result instanceof Boolean);
     Assert.assertEquals(true, result);
   }
-  
+
   @Test(expected = IOException.class)
-  public void gtTwoBooleans() throws Exception{
+  public void gtTwoBooleans() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("gt(a,b)");
 
     values.clear();
     values.put("a", true);
-    values.put("b",true);
+    values.put("b", true);
     evaluator.evaluate(new Tuple(values));
   }
 
   @Test(expected = IOException.class)
-  public void gtDifferentTypes1() throws Exception{
+  public void gtDifferentTypes1() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("gt(a,b)");
-    
+
     values.clear();
     values.put("a", true);
-    values.put("b",1);
+    values.put("b", 1);
     evaluator.evaluate(new Tuple(values));
   }
 
   @Test(expected = IOException.class)
-  public void gtDifferentTypes2() throws Exception{
+  public void gtDifferentTypes2() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("gt(a,b)");
-    
+
     values.clear();
     values.put("a", 1);
-    values.put("b",false);
-    evaluator.evaluate(new Tuple(values));
-  }
-  
-  @Test(expected = IOException.class)
-  public void gtDifferentTypes3() throws Exception{
-    StreamEvaluator evaluator = factory.constructEvaluator("gt(a,b)");
-    
-    values.clear();
-    values.put("a", "1");
-    values.put("b",1);
-    evaluator.evaluate(new Tuple(values));
-  }
-  
-  @Test(expected = IOException.class)
-  public void gtDifferentTypes4() throws Exception{
-    StreamEvaluator evaluator = factory.constructEvaluator("gt(a,b)");
-    
-    values.clear();
-    values.put("a", "true");
-    values.put("b",true);
+    values.put("b", false);
     evaluator.evaluate(new Tuple(values));
   }
 
+  @Test(expected = IOException.class)
+  public void gtDifferentTypes3() throws Exception {
+    StreamEvaluator evaluator = factory.constructEvaluator("gt(a,b)");
+
+    values.clear();
+    values.put("a", "1");
+    values.put("b", 1);
+    evaluator.evaluate(new Tuple(values));
+  }
+
+  @Test(expected = IOException.class)
+  public void gtDifferentTypes4() throws Exception {
+    StreamEvaluator evaluator = factory.constructEvaluator("gt(a,b)");
+
+    values.clear();
+    values.put("a", "true");
+    values.put("b", true);
+    evaluator.evaluate(new Tuple(values));
+  }
 }

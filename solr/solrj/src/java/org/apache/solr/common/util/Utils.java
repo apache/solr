@@ -16,6 +16,10 @@
  */
 package org.apache.solr.common.util;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Collections.singletonList;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -56,7 +60,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -87,64 +90,65 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Collections.singletonList;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-
-
 public class Utils {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @SuppressWarnings({"rawtypes"})
-  public static Map getDeepCopy(Map<?,?> map, int maxDepth) {
+  public static Map getDeepCopy(Map<?, ?> map, int maxDepth) {
     return getDeepCopy(map, maxDepth, true, false);
   }
 
   @SuppressWarnings({"rawtypes"})
-  public static Map getDeepCopy(Map<?,?> map, int maxDepth, boolean mutable) {
+  public static Map getDeepCopy(Map<?, ?> map, int maxDepth, boolean mutable) {
     return getDeepCopy(map, maxDepth, mutable, false);
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public static Map getDeepCopy(Map<?,?> map, int maxDepth, boolean mutable, boolean sorted) {
+  public static Map getDeepCopy(Map<?, ?> map, int maxDepth, boolean mutable, boolean sorted) {
     if (map == null) return null;
     if (maxDepth < 1) return map;
     Map copy;
     if (sorted) {
       copy = new TreeMap<>();
     } else {
-      copy = map instanceof LinkedHashMap ? new LinkedHashMap<>(map.size()) : new HashMap<>(map.size());
+      copy =
+          map instanceof LinkedHashMap
+              ? new LinkedHashMap<>(map.size())
+              : new HashMap<>(map.size());
     }
     for (Object o : map.entrySet()) {
-      Map.Entry<?,?> e = (Map.Entry<?,?>) o;
+      Map.Entry<?, ?> e = (Map.Entry<?, ?>) o;
       copy.put(e.getKey(), makeDeepCopy(e.getValue(), maxDepth, mutable, sorted));
     }
     return mutable ? copy : Collections.unmodifiableMap(copy);
   }
 
-  public static void forEachMapEntry(Object o, String path, @SuppressWarnings({"rawtypes"})BiConsumer fun) {
+  public static void forEachMapEntry(
+      Object o, String path, @SuppressWarnings({"rawtypes"}) BiConsumer fun) {
     Object val = Utils.getObjectByPath(o, false, path);
     forEachMapEntry(val, fun);
   }
 
-  public static void forEachMapEntry(Object o, List<String> path, @SuppressWarnings({"rawtypes"})BiConsumer fun) {
+  public static void forEachMapEntry(
+      Object o, List<String> path, @SuppressWarnings({"rawtypes"}) BiConsumer fun) {
     Object val = Utils.getObjectByPath(o, false, path);
     forEachMapEntry(val, fun);
   }
 
   @SuppressWarnings({"unchecked"})
-  public static void forEachMapEntry(Object o, @SuppressWarnings({"rawtypes"})BiConsumer fun) {
+  public static void forEachMapEntry(Object o, @SuppressWarnings({"rawtypes"}) BiConsumer fun) {
     if (o instanceof MapWriter) {
       MapWriter m = (MapWriter) o;
       try {
-        m.writeMap(new MapWriter.EntryWriter() {
-          @Override
-          public MapWriter.EntryWriter put(CharSequence k, Object v) {
-            fun.accept(k, v);
-            return this;
-          }
-        });
+        m.writeMap(
+            new MapWriter.EntryWriter() {
+              @Override
+              public MapWriter.EntryWriter put(CharSequence k, Object v) {
+                fun.accept(k, v);
+                return this;
+              }
+            });
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -179,7 +183,7 @@ public class Utils {
       return new ByteBufferInputStream(ByteBuffer.wrap(baos.getbuf(), 0, baos.size()));
     }
   }
-  
+
   public static Object fromJavabin(byte[] bytes) throws IOException {
     try (JavaBinCodec jbc = new JavaBinCodec()) {
       return jbc.unmarshal(bytes);
@@ -190,11 +194,13 @@ public class Utils {
     return getDeepCopy(c, maxDepth, mutable, false);
   }
 
-  public static Collection<?> getDeepCopy(Collection<?> c, int maxDepth, boolean mutable, boolean sorted) {
+  public static Collection<?> getDeepCopy(
+      Collection<?> c, int maxDepth, boolean mutable, boolean sorted) {
     if (c == null || maxDepth < 1) return c;
-    Collection<Object> result = c instanceof Set ?
-        (sorted ? new TreeSet<>() : new HashSet<>()) : new ArrayList<>();
-    for (Object o : c) result.add(makeDeepCopy(o, maxDepth, mutable, sorted)); // TODO should this be maxDepth - 1?
+    Collection<Object> result =
+        c instanceof Set ? (sorted ? new TreeSet<>() : new HashSet<>()) : new ArrayList<>();
+    for (Object o : c)
+      result.add(makeDeepCopy(o, maxDepth, mutable, sorted)); // TODO should this be maxDepth - 1?
     if (sorted && (result instanceof List)) {
       ((List<Object>) result).sort(null);
     }
@@ -202,14 +208,12 @@ public class Utils {
   }
 
   public static void writeJson(Object o, OutputStream os, boolean indent) throws IOException {
-    writeJson(o, new OutputStreamWriter(os, UTF_8), indent)
-        .flush();
+    writeJson(o, new OutputStreamWriter(os, UTF_8), indent).flush();
   }
 
   public static Writer writeJson(Object o, Writer writer, boolean indent) throws IOException {
     try (SolrJSONWriter jsonWriter = new SolrJSONWriter(writer)) {
-      jsonWriter.setIndent(indent)
-      .writeObj(o);
+      jsonWriter.setIndent(indent).writeObj(o);
     }
     return writer;
   }
@@ -230,17 +234,18 @@ public class Utils {
         final boolean[] first = new boolean[1];
         first[0] = true;
         int sz = mapWriter._size();
-        mapWriter._forEachEntry((k, v) -> {
-          if (first[0]) {
-            first[0] = false;
-          } else {
-            writeValueSeparator();
-          }
-          if (sz > 1) indent();
-          writeString(k.toString());
-          writeNameSeparator();
-          write(v);
-        });
+        mapWriter._forEachEntry(
+            (k, v) -> {
+              if (first[0]) {
+                first[0] = false;
+              } else {
+                writeValueSeparator();
+              }
+              if (sz > 1) indent();
+              writeString(k.toString());
+              writeNameSeparator();
+              write(v);
+            });
         endObject();
       } else if (o instanceof IteratorWriter) {
         IteratorWriter iteratorWriter = (IteratorWriter) o;
@@ -248,19 +253,20 @@ public class Utils {
         final boolean[] first = new boolean[1];
         first[0] = true;
         try {
-          iteratorWriter.writeIter(new IteratorWriter.ItemWriter() {
-            @Override
-            public IteratorWriter.ItemWriter add(Object o) throws IOException {
-              if (first[0]) {
-                first[0] = false;
-              } else {
-                writeValueSeparator();
-              }
-              indent();
-              write(o);
-              return this;
-            }
-          });
+          iteratorWriter.writeIter(
+              new IteratorWriter.ItemWriter() {
+                @Override
+                public IteratorWriter.ItemWriter add(Object o) throws IOException {
+                  if (first[0]) {
+                    first[0] = false;
+                  } else {
+                    writeValueSeparator();
+                  }
+                  indent();
+                  write(o);
+                  return this;
+                }
+              });
         } catch (IOException e) {
           throw new RuntimeException("this should never happen", e);
         }
@@ -274,13 +280,13 @@ public class Utils {
   public static byte[] toJSON(Object o) {
     if (o == null) return new byte[0];
     CharArr out = new CharArr();
-//    if (!(o instanceof List) && !(o instanceof Map)) {
-//      if (o instanceof MapWriter) {
-//        o = ((MapWriter) o).toMap(new LinkedHashMap<>());
-//      } else if (o instanceof IteratorWriter) {
-//        o = ((IteratorWriter) o).toList(new ArrayList<>());
-//      }
-//    }
+    //    if (!(o instanceof List) && !(o instanceof Map)) {
+    //      if (o instanceof MapWriter) {
+    //        o = ((MapWriter) o).toMap(new LinkedHashMap<>());
+    //      } else if (o instanceof IteratorWriter) {
+    //        o = ((IteratorWriter) o).toList(new ArrayList<>());
+    //      }
+    //    }
     new MapWriterJSONWriter(out, 2).write(o); // indentation by default
     return toUTF8(out);
   }
@@ -296,19 +302,28 @@ public class Utils {
   }
 
   public static Object fromJSON(byte[] utf8) {
+    // Need below check in both fromJSON methods since
+    // utf8.length returns a NPE without this check.
+    if (utf8 == null || utf8.length == 0) {
+      return Collections.emptyMap();
+    }
     return fromJSON(utf8, 0, utf8.length);
   }
-  
+
   public static Object fromJSON(byte[] utf8, int offset, int length) {
+    if (utf8 == null || utf8.length == 0 || length == 0) {
+      return Collections.emptyMap();
+    }
     // convert directly from bytes to chars
     // and parse directly from that instead of going through
     // intermediate strings or readers
     CharArr chars = new CharArr();
     ByteUtils.UTF8toUTF16(utf8, offset, length, chars);
     JSONParser parser = new JSONParser(chars.getArray(), chars.getStart(), chars.length());
-    parser.setFlags(parser.getFlags() |
-        JSONParser.ALLOW_MISSING_COLON_COMMA_BEFORE_OBJECT |
-        JSONParser.OPTIONAL_OUTER_BRACES);
+    parser.setFlags(
+        parser.getFlags()
+            | JSONParser.ALLOW_MISSING_COLON_COMMA_BEFORE_OBJECT
+            | JSONParser.OPTIONAL_OUTER_BRACES);
     try {
       return STANDARDOBJBUILDER.apply(parser).getValStrict();
     } catch (IOException e) {
@@ -335,7 +350,8 @@ public class Utils {
     if ((keyVals.length & 0x01) != 0) {
       throw new IllegalArgumentException("arguments should be key,value");
     }
-    Map<String, T> propMap = new LinkedHashMap<>(); // Cost of oversizing LHM is low, don't compute initialCapacity
+    Map<String, T> propMap =
+        new LinkedHashMap<>(); // Cost of oversizing LHM is low, don't compute initialCapacity
     for (int i = 0; i < keyVals.length; i += 2) {
       propMap.put(String.valueOf(keyVals[i]), keyVals[i + 1]);
     }
@@ -354,72 +370,82 @@ public class Utils {
     }
   }
 
-  public static final Function<JSONParser, ObjectBuilder> STANDARDOBJBUILDER = jsonParser -> {
-    try {
-      return new ObjectBuilder(jsonParser);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  };
-  public static final Function<JSONParser, ObjectBuilder> MAPWRITEROBJBUILDER = jsonParser -> {
-    try {
-      return new ObjectBuilder(jsonParser) {
-        @Override
-        public Object newObject() {
-          return new LinkedHashMapWriter<>();
+  public static final Function<JSONParser, ObjectBuilder> STANDARDOBJBUILDER =
+      jsonParser -> {
+        try {
+          return new ObjectBuilder(jsonParser);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
         }
       };
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  };
+  public static final Function<JSONParser, ObjectBuilder> MAPWRITEROBJBUILDER =
+      jsonParser -> {
+        try {
+          return new ObjectBuilder(jsonParser) {
+            @Override
+            public Object newObject() {
+              return new LinkedHashMapWriter<>();
+            }
+          };
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      };
 
-  public static final Function<JSONParser, ObjectBuilder> MAPOBJBUILDER = jsonParser -> {
-    try {
-      return new ObjectBuilder(jsonParser) {
-        @Override
-        public Object newObject() {
-          return new HashMap<>();
+  public static final Function<JSONParser, ObjectBuilder> MAPOBJBUILDER =
+      jsonParser -> {
+        try {
+          return new ObjectBuilder(jsonParser) {
+            @Override
+            public Object newObject() {
+              return new HashMap<>();
+            }
+          };
+        } catch (IOException e) {
+          throw new RuntimeException(e);
         }
       };
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  };
 
   /**
-   * Util function to convert {@link Object} to {@link String}
-   * Specially handles {@link Date} to string conversion
+   * Util function to convert {@link Object} to {@link String} Specially handles {@link Date} to
+   * string conversion
    */
   public static final Function<Object, String> OBJECT_TO_STRING =
-      obj -> ((obj instanceof Date) ? Objects.toString(((Date) obj).toInstant()) : Objects.toString(obj));
+      obj ->
+          ((obj instanceof Date)
+              ? Objects.toString(((Date) obj).toInstant())
+              : Objects.toString(obj));
 
-  public static Object fromJSON(InputStream is, Function<JSONParser, ObjectBuilder> objBuilderProvider) {
+  public static Object fromJSON(
+      InputStream is, Function<JSONParser, ObjectBuilder> objBuilderProvider) {
     try {
-      return objBuilderProvider.apply(getJSONParser((new InputStreamReader(is, StandardCharsets.UTF_8)))).getValStrict();
+      return objBuilderProvider
+          .apply(getJSONParser((new InputStreamReader(is, StandardCharsets.UTF_8))))
+          .getValStrict();
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parse error", e);
     }
   }
 
-  public static Object fromJSONResource(String resourceName) {
-    final URL resource = Utils.class.getClassLoader().getResource(resourceName);
+  public static Object fromJSONResource(ClassLoader loader, String resourceName) {
+    final URL resource = loader.getResource(resourceName);
     if (null == resource) {
       throw new IllegalArgumentException("invalid resource name: " + resourceName);
     }
     try (InputStream stream = resource.openStream()) {
       return fromJSON(stream);
     } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Resource error: " + e.getMessage(), e);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Resource error: " + e.getMessage(), e);
     }
   }
 
   public static JSONParser getJSONParser(Reader reader) {
     JSONParser parser = new JSONParser(reader);
-    parser.setFlags(parser.getFlags() |
-        JSONParser.ALLOW_MISSING_COLON_COMMA_BEFORE_OBJECT |
-        JSONParser.OPTIONAL_OUTER_BRACES);
+    parser.setFlags(
+        parser.getFlags()
+            | JSONParser.ALLOW_MISSING_COLON_COMMA_BEFORE_OBJECT
+            | JSONParser.OPTIONAL_OUTER_BRACES);
     return parser;
   }
 
@@ -447,7 +473,7 @@ public class Utils {
     if (!isMapLike(root)) throw new RuntimeException("must be a Map or NamedList");
     Object obj = root;
     for (int i = 0; i < hierarchy.size(); i++) {
-      int idx = -2; //-1 means append to list, -2 means not found
+      int idx = -2; // -1 means append to list, -2 means not found
       String s = hierarchy.get(i);
       if (s.endsWith("]")) {
         Matcher matcher = ARRAY_ELEMENT_INDEX.matcher(s);
@@ -499,9 +525,7 @@ public class Utils {
     }
 
     return false;
-
   }
-
 
   public static Object getObjectByPath(Object root, boolean onlyPrimitive, List<String> hierarchy) {
     if (root == null) return null;
@@ -555,29 +579,29 @@ public class Utils {
     return false;
   }
 
-
   private static Object getValueAt(IteratorWriter iteratorWriter, int idx) {
     Object[] result = new Object[1];
     try {
-      iteratorWriter.writeIter(new IteratorWriter.ItemWriter() {
-        int i = -1;
+      iteratorWriter.writeIter(
+          new IteratorWriter.ItemWriter() {
+            int i = -1;
 
-        @Override
-        public IteratorWriter.ItemWriter add(Object o) {
-          ++i;
-          if (i > idx) return this;
-          if (i == idx) result[0] = o;
-          return this;
-        }
-      });
+            @Override
+            public IteratorWriter.ItemWriter add(Object o) {
+              ++i;
+              if (i > idx) return this;
+              if (i == idx) result[0] = o;
+              return this;
+            }
+          });
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
     return result[0];
-
   }
 
-  static class MapWriterEntry<V> extends AbstractMap.SimpleEntry<CharSequence, V> implements MapWriter, Map.Entry<CharSequence, V> {
+  static class MapWriterEntry<V> extends AbstractMap.SimpleEntry<CharSequence, V>
+      implements MapWriter, Map.Entry<CharSequence, V> {
     MapWriterEntry(CharSequence key, V value) {
       super(key, value);
     }
@@ -587,7 +611,6 @@ public class Utils {
       ew.put("key", getKey());
       ew.put("value", getValue());
     }
-
   }
 
   private static boolean isMapLike(Object o) {
@@ -598,31 +621,32 @@ public class Utils {
     if (obj instanceof MapWriter) {
       Object[] result = new Object[1];
       try {
-        ((MapWriter) obj).writeMap(new MapWriter.EntryWriter() {
-          int count = -1;
+        ((MapWriter) obj)
+            .writeMap(
+                new MapWriter.EntryWriter() {
+                  int count = -1;
 
-          @Override
-          public MapWriter.EntryWriter put(CharSequence k, Object v) {
-            if (result[0] != null) return this;
-            if (idx < 0) {
-              if (k.equals(key)) result[0] = v;
-            } else {
-              if (++count == idx) result[0] = new MapWriterEntry<>(k, v);
-            }
-            return this;
-          }
-        });
+                  @Override
+                  public MapWriter.EntryWriter put(CharSequence k, Object v) {
+                    if (result[0] != null) return this;
+                    if (idx < 0) {
+                      if (k.equals(key)) result[0] = v;
+                    } else {
+                      if (++count == idx) result[0] = new MapWriterEntry<>(k, v);
+                    }
+                    return this;
+                  }
+                });
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
       return result[0];
-    } else if (obj instanceof Map) return ((Map<?,?>) obj).get(key);
+    } else if (obj instanceof Map) return ((Map<?, ?>) obj).get(key);
     else throw new RuntimeException("must be a NamedList or Map");
   }
 
   /**
-   * If the passed entity has content, make sure it is fully
-   * read and closed.
+   * If the passed entity has content, make sure it is fully read and closed.
    *
    * @param entity to consume or null
    */
@@ -650,32 +674,37 @@ public class Utils {
    */
   public static void readFully(InputStream is) throws IOException {
     is.skip(is.available());
-    while (is.read() != -1) {
-    }
+    while (is.read() != -1) {}
   }
 
   @SuppressWarnings({"unchecked"})
-  public static Map<String, Object> getJson(DistribStateManager distribStateManager, String path) throws InterruptedException, IOException, KeeperException {
+  public static Map<String, Object> getJson(DistribStateManager distribStateManager, String path)
+      throws InterruptedException, IOException, KeeperException {
     VersionedData data = null;
     try {
       data = distribStateManager.getData(path);
     } catch (KeeperException.NoNodeException | NoSuchElementException e) {
       return Collections.emptyMap();
     }
-    if (data == null || data.getData() == null || data.getData().length == 0) return Collections.emptyMap();
+    if (data == null || data.getData() == null || data.getData().length == 0)
+      return Collections.emptyMap();
     return (Map<String, Object>) Utils.fromJSON(data.getData());
   }
 
   /**
    * Assumes data in ZooKeeper is a JSON string, deserializes it and returns as a Map
    *
-   * @param zkClient        the zookeeper client
-   * @param path            the path to the znode being read
-   * @param retryOnConnLoss whether to retry the operation automatically on connection loss, see {@link org.apache.solr.common.cloud.ZkCmdExecutor#retryOperation(ZkOperation)}
-   * @return a Map if the node exists and contains valid JSON or an empty map if znode does not exist or has a null data
+   * @param zkClient the zookeeper client
+   * @param path the path to the znode being read
+   * @param retryOnConnLoss whether to retry the operation automatically on connection loss, see
+   *     {@link org.apache.solr.common.cloud.ZkCmdExecutor#retryOperation(ZkOperation)}
+   * @return a Map if the node exists and contains valid JSON or an empty map if znode does not
+   *     exist or has a null data
    */
   @SuppressWarnings({"unchecked"})
-  public static Map<String, Object> getJson(SolrZkClient zkClient, String path, boolean retryOnConnLoss) throws KeeperException, InterruptedException {
+  public static Map<String, Object> getJson(
+      SolrZkClient zkClient, String path, boolean retryOnConnLoss)
+      throws KeeperException, InterruptedException {
     try {
       byte[] bytes = zkClient.getData(path, null, null, retryOnConnLoss);
       if (bytes != null && bytes.length > 0) {
@@ -687,12 +716,12 @@ public class Utils {
     return Collections.emptyMap();
   }
 
-  public static final Pattern ARRAY_ELEMENT_INDEX = Pattern
-      .compile("(\\S*?)\\[([-]?\\d+)\\]");
+  public static final Pattern ARRAY_ELEMENT_INDEX = Pattern.compile("(\\S*?)\\[([-]?\\d+)\\]");
 
   public static SpecProvider getSpec(final String name) {
     return () -> {
-      return ValidatingJsonMap.parse(CommonParams.APISPEC_LOCATION + name + ".json", CommonParams.APISPEC_LOCATION);
+      return ValidatingJsonMap.parse(
+          CommonParams.APISPEC_LOCATION + name + ".json", CommonParams.APISPEC_LOCATION);
     };
   }
 
@@ -716,11 +745,10 @@ public class Utils {
   }
 
   /**
-   * Applies one json over other. The 'input' is applied over the sink
-   * The values in input isapplied over the values in 'sink' . If a value is 'null'
-   * that value is removed from sink
+   * Applies one json over other. The 'input' is applied over the sink The values in input isapplied
+   * over the values in 'sink' . If a value is 'null' that value is removed from sink
    *
-   * @param sink  the original json object to start with. Ensure that this Map is mutable
+   * @param sink the original json object to start with. Ensure that this Map is mutable
    * @param input the json with new values
    * @return whether there was any change made to sink or not.
    */
@@ -746,34 +774,49 @@ public class Utils {
             sink.put(e.getKey(), e.getValue());
             isModified = true;
           }
-
         }
       } else if (e.getValue() != null) {
         sink.put(e.getKey(), e.getValue());
         isModified = true;
       }
-
     }
 
     return isModified;
   }
 
-  public static String getBaseUrlForNodeName(final String nodeName, String urlScheme) {
+  /**
+   * Given a URL string with or without a scheme, return a new URL with the correct scheme applied.
+   *
+   * @param url A URL to change the scheme (http|https)
+   * @return A new URL with the correct scheme
+   */
+  public static String applyUrlScheme(final String url, final String urlScheme) {
+    Objects.requireNonNull(url, "URL must not be null!");
+    // heal an incorrect scheme if needed, otherwise return null indicating no change
+    final int at = url.indexOf("://");
+    return (at == -1) ? (urlScheme + "://" + url) : urlScheme + url.substring(at);
+  }
+
+  public static String getBaseUrlForNodeName(final String nodeName, final String urlScheme) {
     return getBaseUrlForNodeName(nodeName, urlScheme, false);
   }
-  public static String getBaseUrlForNodeName(final String nodeName, String urlScheme,  boolean isV2) {
+
+  public static String getBaseUrlForNodeName(
+      final String nodeName, final String urlScheme, boolean isV2) {
     final int colonAt = nodeName.indexOf(':');
     if (colonAt == -1) {
-      throw new IllegalArgumentException("nodeName does not contain expected ':' separator: " + nodeName);
+      throw new IllegalArgumentException(
+          "nodeName does not contain expected ':' separator: " + nodeName);
     }
 
     final int _offset = nodeName.indexOf("_", colonAt);
     if (_offset < 0) {
-      throw new IllegalArgumentException("nodeName does not contain expected '_' separator: " + nodeName);
+      throw new IllegalArgumentException(
+          "nodeName does not contain expected '_' separator: " + nodeName);
     }
     final String hostAndPort = nodeName.substring(0, _offset);
     final String path = URLDecoder.decode(nodeName.substring(1 + _offset), UTF_8);
-    return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + (isV2? "api": path)));
+    return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + (isV2 ? "api" : path)));
   }
 
   public static long time(TimeSource timeSource, TimeUnit unit) {
@@ -806,10 +849,10 @@ public class Utils {
   public interface InputStreamConsumer<T> {
 
     T accept(InputStream is) throws IOException;
-
   }
 
-  public static final InputStreamConsumer<?> JAVABINCONSUMER = is -> new JavaBinCodec().unmarshal(is);
+  public static final InputStreamConsumer<?> JAVABINCONSUMER =
+      is -> new JavaBinCodec().unmarshal(is);
   public static final InputStreamConsumer<?> JSONCONSUMER = Utils::fromJSON;
 
   public static InputStreamConsumer<ByteBuffer> newBytesConsumer(int maxSize) {
@@ -828,15 +871,15 @@ public class Utils {
         throw new RuntimeException(e);
       }
     };
-
   }
 
-
-  public static <T> T executeGET(HttpClient client, String url, InputStreamConsumer<T> consumer) throws SolrException {
+  public static <T> T executeGET(HttpClient client, String url, InputStreamConsumer<T> consumer)
+      throws SolrException {
     return executeHttpMethod(client, url, consumer, new HttpGet(url));
   }
 
-  public static <T> T executeHttpMethod(HttpClient client, String url, InputStreamConsumer<T> consumer, HttpRequestBase httpMethod) {
+  public static <T> T executeHttpMethod(
+      HttpClient client, String url, InputStreamConsumer<T> consumer, HttpRequestBase httpMethod) {
     T result = null;
     HttpResponse rsp = null;
     try {
@@ -848,7 +891,11 @@ public class Utils {
     int statusCode = rsp.getStatusLine().getStatusCode();
     if (statusCode != 200) {
       try {
-        log.error("Failed a request to: {}, status: {}, body: {}", url, rsp.getStatusLine(), EntityUtils.toString(rsp.getEntity(), StandardCharsets.UTF_8)); // nowarn
+        log.error(
+            "Failed a request to: {}, status: {}, body: {}",
+            url,
+            rsp.getStatusLine(),
+            EntityUtils.toString(rsp.getEntity(), StandardCharsets.UTF_8)); // nowarn
       } catch (IOException e) {
         log.error("could not print error", e);
       }
@@ -869,7 +916,7 @@ public class Utils {
     return result;
   }
 
-  public static void reflectWrite(MapWriter.EntryWriter ew, Object o) throws IOException{
+  public static void reflectWrite(MapWriter.EntryWriter ew, Object o) throws IOException {
     List<FieldWriter> fieldWriters = null;
     try {
       fieldWriters = getReflectData(o.getClass());
@@ -879,19 +926,20 @@ public class Utils {
     for (FieldWriter fieldWriter : fieldWriters) {
       try {
         fieldWriter.write(ew, o);
-      } catch( Throwable e) {
+      } catch (Throwable e) {
         throw new RuntimeException(e);
-        //should not happen
+        // should not happen
       }
     }
   }
 
   private static List<FieldWriter> getReflectData(Class<?> c) throws IllegalAccessException {
     boolean sameClassLoader = c.getClassLoader() == Utils.class.getClassLoader();
-    //we should not cache the class references of objects loaded from packages because they will not get garbage collected
-    //TODO fix that later
-    List<FieldWriter> reflectData = sameClassLoader ? storedReflectData.get(c): null;
-    if(reflectData == null) {
+    // we should not cache the class references of objects loaded from packages because they will
+    // not get garbage collected
+    // TODO fix that later
+    List<FieldWriter> reflectData = sameClassLoader ? storedReflectData.get(c) : null;
+    if (reflectData == null) {
       ArrayList<FieldWriter> l = new ArrayList<>();
       MethodHandles.Lookup lookup = MethodHandles.publicLookup();
       for (Field field : lookup.accessClass(c).getFields()) {
@@ -921,24 +969,22 @@ public class Utils {
               l.add((ew, inst) -> ew.putIfNotNull(fname, mh.invoke(inst)));
             }
           } catch (NoSuchFieldException e) {
-            //this is unlikely
+            // this is unlikely
             throw new RuntimeException(e);
           }
-        }}
+        }
+      }
 
-      if(sameClassLoader){
+      if (sameClassLoader) {
         storedReflectData.put(c, reflectData = Collections.unmodifiableList(new ArrayList<>(l)));
       }
     }
     return reflectData;
   }
 
-
-
   private static Map<Class<?>, List<FieldWriter>> storedReflectData = new ConcurrentHashMap<>();
 
   interface FieldWriter {
     void write(MapWriter.EntryWriter ew, Object inst) throws Throwable;
   }
-
 }

@@ -20,7 +20,6 @@ package org.apache.solr.cluster.placement.impl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
 import org.apache.solr.cluster.SolrCollection;
@@ -33,7 +32,8 @@ class ReplicaPlacementImpl implements ReplicaPlacement {
   private final Node node;
   private final Replica.ReplicaType replicaType;
 
-  ReplicaPlacementImpl(SolrCollection solrCollection, String shardName, Node node, Replica.ReplicaType replicaType) {
+  ReplicaPlacementImpl(
+      SolrCollection solrCollection, String shardName, Node node, Replica.ReplicaType replicaType) {
     this.solrCollection = solrCollection;
     this.shardName = shardName;
     this.node = node;
@@ -66,21 +66,33 @@ class ReplicaPlacementImpl implements ReplicaPlacement {
   }
 
   /**
-   * Translates a set of {@link ReplicaPlacement} returned by a plugin into a list of {@link ReplicaPosition} expected
-   * by {@link org.apache.solr.cloud.api.collections.Assign.AssignStrategy}
+   * Translates a set of {@link ReplicaPlacement} returned by a plugin into a list of {@link
+   * ReplicaPosition} expected by {@link
+   * org.apache.solr.cloud.api.collections.Assign.AssignStrategy}
    */
-  static List<ReplicaPosition> toReplicaPositions(String collection, Set<ReplicaPlacement> replicaPlacementSet) {
-    // The replica index in ReplicaPosition is not as strict a concept as it might seem. It is used in rules
-    // based placement (for sorting replicas) but its presence in ReplicaPosition is not justified (and when the code
-    // is executing here, it means rules based placement is not used).
-    // Looking at ReplicaAssigner.tryAllPermutations, it is well possible to create replicas with same index
-    // living on a given node for the same shard. This likely never happens because of the way replicas are
-    // placed on nodes (never two on the same node for same shard). Adopting the same shortcut/bad design here,
-    // but index should be removed at some point from ReplicaPosition.
+  static List<ReplicaPosition> toReplicaPositions(
+      String collection, Set<ReplicaPlacement> replicaPlacementSet) {
+    // The replica index in ReplicaPosition is not as strict a concept as it might seem. It is used
+    // in rules based placement (for sorting replicas) but its presence in ReplicaPosition is not
+    // justified (and when the code is executing here, it means rules based placement is not used).
+    // Looking at ReplicaAssigner.tryAllPermutations, it is well possible to create replicas with
+    // same index living on a given node for the same shard. This likely never happens because of
+    // the way replicas are placed on nodes (never two on the same node for same shard). Adopting
+    // the same shortcut/bad design here, but index should be removed at some point from
+    // ReplicaPosition.
     List<ReplicaPosition> replicaPositions = new ArrayList<>(replicaPlacementSet.size());
-    int index = 0; // This really an arbitrary value when adding replicas and a possible source of core name collisions
+    // This really an arbitrary value when adding replicas and a possible source of core name
+    // collisions
+    int index = 0;
     for (ReplicaPlacement placement : replicaPlacementSet) {
-      replicaPositions.add(new ReplicaPosition(collection, placement.getShardName(), index++, SimpleClusterAbstractionsImpl.ReplicaImpl.toCloudReplicaType(placement.getReplicaType()), placement.getNode().getName()));
+      replicaPositions.add(
+          new ReplicaPosition(
+              collection,
+              placement.getShardName(),
+              index++,
+              SimpleClusterAbstractionsImpl.ReplicaImpl.toCloudReplicaType(
+                  placement.getReplicaType()),
+              placement.getNode().getName()));
     }
 
     return replicaPositions;

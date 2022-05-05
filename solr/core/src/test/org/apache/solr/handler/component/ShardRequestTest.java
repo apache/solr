@@ -29,8 +29,9 @@ public class ShardRequestTest extends SolrTestCase {
 
   /**
    * Test that the constant stays constant. The constant's value is used in various places, ideally
-   * directly via ShardRequest.PURPOSE_PRIVATE but possibly also indirectly via magic '1' hard-coding.
-   * If the constant's value needs to change please carefully account for the code impacted by that.
+   * directly via ShardRequest.PURPOSE_PRIVATE but possibly also indirectly via magic '1'
+   * hard-coding. If the constant's value needs to change please carefully account for the code
+   * impacted by that.
    */
   @Test
   public void testPurposePrivateIsOne() throws Exception {

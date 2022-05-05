@@ -20,33 +20,29 @@ package org.apache.solr.util.circuitbreaker;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p>
  * Tracks current CPU usage and triggers if the specified threshold is breached.
  *
- * This circuit breaker gets the average CPU load over the last minute and uses
- * that data to take a decision. We depend on OperatingSystemMXBean which does
- * not allow a configurable interval of collection of data.
- * //TODO: Use Codahale Meter to calculate the value locally.
- * </p>
+ * <p>This circuit breaker gets the average CPU load over the last minute and uses that data to take
+ * a decision. We depend on OperatingSystemMXBean which does not allow a configurable interval of
+ * collection of data. //TODO: Use Codahale Meter to calculate the value locally.
  *
- * <p>
- * The configuration to define which mode to use and the trigger threshold are defined in
+ * <p>The configuration to define which mode to use and the trigger threshold are defined in
  * solrconfig.xml
- * </p>
  */
 public class CPUCircuitBreaker extends CircuitBreaker {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final OperatingSystemMXBean operatingSystemMXBean = ManagementFactory.getOperatingSystemMXBean();
+  private static final OperatingSystemMXBean operatingSystemMXBean =
+      ManagementFactory.getOperatingSystemMXBean();
 
   private final boolean enabled;
   private final double cpuUsageThreshold;
 
-  // Assumption -- the value of these parameters will be set correctly before invoking getDebugInfo()
+  // Assumption -- the value of these parameters will be set correctly before invoking
+  // getDebugInfo()
   private static final ThreadLocal<Double> seenCPUUsage = ThreadLocal.withInitial(() -> 0.0);
 
   private static final ThreadLocal<Double> allowedCPUUsage = ThreadLocal.withInitial(() -> 0.0);
@@ -100,9 +96,11 @@ public class CPUCircuitBreaker extends CircuitBreaker {
 
   @Override
   public String getErrorMessage() {
-    return "CPU Circuit Breaker triggered as seen CPU usage is above allowed threshold." +
-        "Seen CPU usage " + seenCPUUsage.get() + " and allocated threshold " +
-        allowedCPUUsage.get();
+    return "CPU Circuit Breaker triggered as seen CPU usage is above allowed threshold."
+        + "Seen CPU usage "
+        + seenCPUUsage.get()
+        + " and allocated threshold "
+        + allowedCPUUsage.get();
   }
 
   public double getCpuUsageThreshold() {

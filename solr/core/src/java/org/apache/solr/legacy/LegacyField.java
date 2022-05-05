@@ -23,23 +23,23 @@ import org.apache.lucene.index.IndexOptions;
 
 /**
  * Field extension with support for legacy numerics
+ *
  * @deprecated Please switch to {@link org.apache.lucene.index.PointValues} instead
  */
 @Deprecated
 public class LegacyField extends Field {
 
   /**
-   * Expert: creates a field with no initial value.
-   * Intended only for custom LegacyField subclasses.
+   * Expert: creates a field with no initial value. Intended only for custom LegacyField subclasses.
+   *
    * @param name field name
    * @param type field type
-   * @throws IllegalArgumentException if either the name or type
-   *         is null.
+   * @throws IllegalArgumentException if either the name or type is null.
    */
   public LegacyField(String name, LegacyFieldType type) {
     super(name, type);
   }
-  
+
   @Override
   public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse) {
     if (fieldType().indexOptions() == IndexOptions.NONE) {
@@ -49,7 +49,9 @@ public class LegacyField extends Field {
     final LegacyFieldType fieldType = (LegacyFieldType) fieldType();
     final LegacyNumericType numericType = fieldType.numericType();
     if (numericType != null) {
-      if (!(reuse instanceof LegacyNumericTokenStream && ((LegacyNumericTokenStream)reuse).getPrecisionStep() == fieldType.numericPrecisionStep())) {
+      if (!(reuse instanceof LegacyNumericTokenStream
+          && ((LegacyNumericTokenStream) reuse).getPrecisionStep()
+              == fieldType.numericPrecisionStep())) {
         // lazy init the TokenStream as it is heavy to instantiate
         // (attributes,...) if not needed (stored field loading)
         reuse = new LegacyNumericTokenStream(fieldType.numericPrecisionStep());
@@ -58,26 +60,26 @@ public class LegacyField extends Field {
       // initialize value in TokenStream
       final Number val = (Number) fieldsData;
       switch (numericType) {
-      case INT:
-        nts.setIntValue(val.intValue());
-        break;
-      case LONG:
-        nts.setLongValue(val.longValue());
-        break;
-      case FLOAT:
-        nts.setFloatValue(val.floatValue());
-        break;
-      case DOUBLE:
-        nts.setDoubleValue(val.doubleValue());
-        break;
-      default:
-        throw new AssertionError("Should never get here");
+        case INT:
+          nts.setIntValue(val.intValue());
+          break;
+        case LONG:
+          nts.setLongValue(val.longValue());
+          break;
+        case FLOAT:
+          nts.setFloatValue(val.floatValue());
+          break;
+        case DOUBLE:
+          nts.setDoubleValue(val.doubleValue());
+          break;
+        default:
+          throw new AssertionError("Should never get here");
       }
       return reuse;
     }
     return super.tokenStream(analyzer, reuse);
   }
-  
+
   @Override
   public void setTokenStream(TokenStream tokenStream) {
     final LegacyFieldType fieldType = (LegacyFieldType) fieldType();
@@ -86,5 +88,4 @@ public class LegacyField extends Field {
     }
     super.setTokenStream(tokenStream);
   }
-
 }

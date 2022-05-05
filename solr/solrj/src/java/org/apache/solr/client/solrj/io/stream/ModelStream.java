@@ -17,13 +17,14 @@
 
 package org.apache.solr.client.solrj.io.stream;
 
+import static org.apache.solr.common.params.CommonParams.ID;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
 import org.apache.solr.client.solrj.io.ModelCache;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -37,15 +38,13 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-import static org.apache.solr.common.params.CommonParams.ID;
-
 /**
-*  The ModelStream retrieves a stored model from a Solr Cloud collection.
-*
-*  Syntax: model(collection, id="modelID")
-* @since 6.3.0
-**/
-
+ * The ModelStream retrieves a stored model from a Solr Cloud collection.
+ *
+ * <p>Syntax: model(collection, id="modelID")
+ *
+ * @since 6.3.0
+ */
 public class ModelStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
@@ -58,34 +57,39 @@ public class ModelStream extends TupleStream implements Expressible {
   protected Tuple model;
   protected long cacheMillis;
 
-  public ModelStream(String zkHost,
-                     String collectionName,
-                     String modelID,
-                     long cacheMillis) throws IOException {
+  public ModelStream(String zkHost, String collectionName, String modelID, long cacheMillis)
+      throws IOException {
 
     init(collectionName, zkHost, modelID, cacheMillis);
   }
 
-
-  public ModelStream(StreamExpression expression, StreamFactory factory) throws IOException{
+  public ModelStream(StreamExpression expression, StreamFactory factory) throws IOException {
     // grab all parameters out
     String collectionName = factory.getValueOperand(expression, 0);
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
     StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
 
     // Collection Name
-    if(null == collectionName){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - collectionName expected as first operand",expression));
+    if (null == collectionName) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "invalid expression %s - collectionName expected as first operand",
+              expression));
     }
 
     // Named parameters - passed directly to solr as solrparams
-    if(0 == namedParams.size()){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - at least one named parameter expected. eg. 'q=*:*'",expression));
+    if (0 == namedParams.size()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "invalid expression %s - at least one named parameter expected. eg. 'q=*:*'",
+              expression));
     }
 
-    Map<String,String> params = new HashMap<String,String>();
-    for(StreamExpressionNamedParameter namedParam : namedParams){
-      if(!namedParam.getName().equals("zkHost")) {
+    Map<String, String> params = new HashMap<String, String>();
+    for (StreamExpressionNamedParameter namedParam : namedParams) {
+      if (!namedParam.getName().equals("zkHost")) {
         params.put(namedParam.getName(), namedParam.getParameter().toString().trim());
       }
     }
@@ -98,25 +102,29 @@ public class ModelStream extends TupleStream implements Expressible {
     long cacheMillis = 300000;
     String cacheMillisParam = params.get("cacheMillis");
 
-    if(cacheMillisParam != null) {
+    if (cacheMillisParam != null) {
       cacheMillis = Long.parseLong(cacheMillisParam);
     }
 
     // zkHost, optional - if not provided then will look into factory list to get
     String zkHost = null;
-    if(null == zkHostExpression) {
+    if (null == zkHostExpression) {
       zkHost = factory.getCollectionZkHost(collectionName);
-    }
-    else if(zkHostExpression.getParameter() instanceof StreamExpressionValue){
-      zkHost = ((StreamExpressionValue)zkHostExpression.getParameter()).getValue();
+    } else if (zkHostExpression.getParameter() instanceof StreamExpressionValue) {
+      zkHost = ((StreamExpressionValue) zkHostExpression.getParameter()).getValue();
     }
 
     if (zkHost == null) {
       zkHost = factory.getDefaultZkHost();
     }
 
-    if(null == zkHost){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - zkHost not found for collection '%s'",expression,collectionName));
+    if (null == zkHost) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "invalid expression %s - zkHost not found for collection '%s'",
+              expression,
+              collectionName));
     }
 
     // We've got all the required items
@@ -128,7 +136,8 @@ public class ModelStream extends TupleStream implements Expressible {
     return toExpression(factory, true);
   }
 
-  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams) throws IOException {
+  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams)
+      throws IOException {
     // function name
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
     // collection
@@ -137,15 +146,14 @@ public class ModelStream extends TupleStream implements Expressible {
     // zkHost
     expression.addParameter(new StreamExpressionNamedParameter("zkHost", zkHost));
     expression.addParameter(new StreamExpressionNamedParameter(ID, modelID));
-    expression.addParameter(new StreamExpressionNamedParameter("cacheMillis", Long.toString(cacheMillis)));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("cacheMillis", Long.toString(cacheMillis)));
 
     return expression;
   }
 
-  private void init(String collectionName,
-                    String zkHost,
-                    String modelID,
-                    long cacheMillis) throws IOException {
+  private void init(String collectionName, String zkHost, String modelID, long cacheMillis)
+      throws IOException {
     this.zkHost = zkHost;
     this.collection = collectionName;
     this.modelID = modelID;
@@ -162,16 +170,14 @@ public class ModelStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList<>();
+    List<TupleStream> l = new ArrayList<>();
     return l;
   }
 
-  public void close() throws IOException {
-
-  }
+  public void close() throws IOException {}
 
   /** Return the stream sort - ie, the order in which records are returned */
-  public StreamComparator getStreamSort(){
+  public StreamComparator getStreamSort() {
     return null;
   }
 
@@ -189,7 +195,7 @@ public class ModelStream extends TupleStream implements Expressible {
   public Tuple read() throws IOException {
     Tuple tuple = null;
 
-    if(model != null) {
+    if (model != null) {
       tuple = model;
       model = null;
     } else {

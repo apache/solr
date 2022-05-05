@@ -26,28 +26,27 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class InfoHandlerTest extends SolrTestCaseJ4 {
-  
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
   }
-  
+
   @Test
   public void testCoreAdminHandler() throws Exception {
 
     final CoreContainer cores = h.getCoreContainer();
     InfoHandler infoHandler = cores.getInfoHandler();
     SolrQueryResponse rsp = handleRequest(infoHandler, "properties");
-    
+
     assertNotNull(rsp.getValues().get("system.properties"));
 
-    
     rsp = handleRequest(infoHandler, "threads");
-    
+
     assertNotNull(rsp.getValues().get("system"));
-    
+
     rsp = handleRequest(infoHandler, "logging");
-    
+
     assertNotNull(rsp.getValues().get("watcher"));
 
     SolrException e = expectThrows(SolrException.class, () -> handleRequest(infoHandler, "info"));
@@ -97,65 +96,71 @@ public class InfoHandlerTest extends SolrTestCaseJ4 {
     private int requestCount = 0;
 
     @Override
-    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp)
-    throws IOException {
+    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
       ++requestCount;
       super.handleRequestBody(req, rsp);
     }
 
-    public int getRequestCount() { return requestCount; }
+    public int getRequestCount() {
+      return requestCount;
+    }
   }
 
   public static class CountThreadDumpHandler extends ThreadDumpHandler {
     private int requestCount = 0;
 
     @Override
-    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp)
-    throws IOException {
+    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
       ++requestCount;
       super.handleRequestBody(req, rsp);
     }
 
-    public int getRequestCount() { return requestCount; }
+    public int getRequestCount() {
+      return requestCount;
+    }
   }
 
   public static class CountLoggingHandler extends LoggingHandler {
     private int requestCount = 0;
 
-    CountLoggingHandler(CoreContainer cores) { super(cores); }
+    CountLoggingHandler(CoreContainer cores) {
+      super(cores);
+    }
 
     @Override
-    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp)
-    throws Exception {
+    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
       ++requestCount;
       super.handleRequestBody(req, rsp);
     }
 
-    public int getRequestCount() { return requestCount; }
+    public int getRequestCount() {
+      return requestCount;
+    }
   }
 
   public static class CountSystemInfoHandler extends SystemInfoHandler {
     private int requestCount = 0;
 
-    CountSystemInfoHandler(CoreContainer cores) { super(cores); }
+    CountSystemInfoHandler(CoreContainer cores) {
+      super(cores);
+    }
 
     @Override
-    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp)
-    throws Exception {
+    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
       ++requestCount;
       super.handleRequestBody(req, rsp);
     }
 
-    public int getRequestCount() { return requestCount; }
+    public int getRequestCount() {
+      return requestCount;
+    }
   }
 
-  private SolrQueryResponse handleRequest(InfoHandler infoHandler, String path)
-      throws Exception {
+  private SolrQueryResponse handleRequest(InfoHandler infoHandler, String path) throws Exception {
     SolrQueryResponse rsp = new SolrQueryResponse();
     SolrQueryRequest req = req();
     req.getContext().put("path", path);
     infoHandler.handleRequestBody(req, rsp);
     return rsp;
   }
-
 }

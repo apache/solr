@@ -25,7 +25,6 @@ import org.apache.solr.common.params.SolrParams;
 
 /**
  * Send arbitrary XML to a request handler
- * 
  *
  * @since solr 1.3
  */
@@ -35,7 +34,7 @@ public class DirectXmlRequest extends SolrRequest<UpdateResponse> implements IsU
   private SolrParams params;
 
   public DirectXmlRequest(String path, String body) {
-    super( METHOD.POST, path );
+    super(METHOD.POST, path);
     xml = body;
   }
 
@@ -59,9 +58,7 @@ public class DirectXmlRequest extends SolrRequest<UpdateResponse> implements IsU
     return SolrRequestType.UPDATE.toString();
   }
 
-
   public void setParams(SolrParams params) {
     this.params = params;
   }
-
 }

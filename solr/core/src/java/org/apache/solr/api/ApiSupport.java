@@ -19,28 +19,23 @@ package org.apache.solr.api;
 
 import java.util.Collection;
 
-/**The interface that is implemented by a request handler to support the V2 end point
- *
- */
+/** The interface that is implemented by a request handler to support the V2 end point */
 public interface ApiSupport {
 
-  /**It is possible to support multiple v2 apis by a single requesthandler
+  /**
+   * It is possible to support multiple v2 apis by a single requesthandler
    *
    * @return the list of v2 api implementations
    */
   Collection<Api> getApis();
 
-  /**Whether this should be made available at the regular legacy path
-   */
+  /** Whether this should be made available at the regular legacy path */
   default Boolean registerV1() {
     return Boolean.TRUE;
   }
 
-  /**Whether this request handler must be made available at the /v2/ path
-   */
+  /** Whether this request handler must be made available at the /v2/ path */
   default Boolean registerV2() {
     return Boolean.FALSE;
   }
-
-
 }

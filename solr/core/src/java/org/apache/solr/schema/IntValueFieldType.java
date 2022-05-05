@@ -16,9 +16,5 @@
  */
 package org.apache.solr.schema;
 
-/**
- * Marker interface for int-valued field types.
- */
-public interface IntValueFieldType extends NumericValueFieldType {
-}
-
+/** Marker interface for int-valued field types. */
+public interface IntValueFieldType extends NumericValueFieldType {}
