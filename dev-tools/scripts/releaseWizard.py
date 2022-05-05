@@ -246,7 +246,7 @@ def maybe_remove_rc_from_svn():
                  logfile="svn_rm.log",
                  tee=True,
                  vars={
-                     'dist_folder': """solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}""",
+                     'dist_folder': """solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}""",
                      'dist_url': "{{ dist_url_base }}/{{ dist_folder }}"
                  }
              )],
