@@ -75,9 +75,7 @@ import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -824,27 +822,28 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   @Test
   public void testShutdown() throws IOException {
     try (CloudSolrClient client = getCloudSolrClient(DEAD_HOST_1)) {
-      ZkClientClusterStateProvider.from(client).setZkConnectTimeout(100);
-      client.connect();
-      fail("Expected exception");
-    } catch (SolrException e) {
-      assertTrue(e.getCause() instanceof TimeoutException);
+      try (ZkClientClusterStateProvider zkClientClusterStateProvider =
+          ZkClientClusterStateProvider.from(client)) {
+        zkClientClusterStateProvider.setZkConnectTimeout(100);
+        SolrException e = assertThrows(SolrException.class, client::connect);
+        assertTrue(e.getCause() instanceof TimeoutException);
+      }
     }
   }
 
-  @Rule public ExpectedException exception = ExpectedException.none();
-
   @Test
   public void testWrongZkChrootTest() throws IOException {
-    exception.expect(SolrException.class);
-    exception.expectMessage("cluster not found/not ready");
-    exception.expectMessage("Expected node '" + ZkStateReader.ALIASES + "' does not exist");
-
     try (CloudSolrClient client =
         getCloudSolrClient(cluster.getZkServer().getZkAddress() + "/xyz/foo")) {
-      ZkClientClusterStateProvider.from(client).setZkClientTimeout(1000 * 60);
-      client.connect();
-      fail("Expected exception");
+      try (ZkClientClusterStateProvider zkClientClusterStateProvider =
+          ZkClientClusterStateProvider.from(client)) {
+        zkClientClusterStateProvider.setZkClientTimeout(1000 * 60);
+        SolrException e = assertThrows(SolrException.class, client::connect);
+        assertTrue(e.getMessage().contains("cluster not found/not ready"));
+        assertTrue(
+            e.getMessage()
+                .contains("Expected node '" + ZkStateReader.ALIASES + "' does not exist"));
+      }
     }
   }
 
