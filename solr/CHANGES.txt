@@ -77,6 +77,8 @@ Bug Fixes
 
 * SOLR-16165: Rare Deadlock in SlotAcc initialization (Justin Sweeney, noble)
 
+* SOLR-16110: Using Schema/Config API breaks the File-Upload of Config Set File (Steffen Moldenhauer, Kevin Risden)
+
 Other Changes
 ---------------------
 * SOLR-15897: Remove <jmx/> from all unit test solrconfig.xml files. (Eric Pugh)
