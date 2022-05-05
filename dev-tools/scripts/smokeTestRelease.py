@@ -27,6 +27,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import textwrap
 import traceback
 import urllib.error
@@ -38,7 +39,7 @@ from collections import namedtuple
 import scriptutil
 
 # This tool expects to find /solr off the base URL.  You
-# must have a working gpg, tar, unzip in your path.  This has been
+# must have a working gpg, tar in your path.  This has been
 # tested on Linux and on Cygwin under Windows 7.
 
 cygwin = platform.system().lower().startswith('cygwin')
@@ -93,6 +94,7 @@ def getHREFs(urlString):
     raise
 
   for subUrl, text in reHREF.findall(html):
+    #print("Got suburl %s and text %s" % (subUrl, text))
     fullURL = urllib.parse.urljoin(urlString, subUrl)
     links.append((text, fullURL))
   return links
@@ -100,7 +102,10 @@ def getHREFs(urlString):
 
 def load(urlString):
   try:
-    content = urllib.request.urlopen(urlString).read().decode('utf-8')
+    raw_request = urllib.request.Request(urlString)
+    raw_request.add_header('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0) Gecko/20100101 Firefox/78.0')
+    raw_request.add_header('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8')
+    content = urllib.request.urlopen(raw_request).read().decode('utf-8')
   except Exception as e:
     print('Retrying download of url %s after exception: %s' % (urlString, e))
     content = urllib.request.urlopen(urlString).read().decode('utf-8')
@@ -111,7 +116,7 @@ def noJavaPackageClasses(desc, file):
   with zipfile.ZipFile(file) as z2:
     for name2 in z2.namelist():
       if name2.endswith('.class') and (name2.startswith('java/') or name2.startswith('javax/')):
-        raise RuntimeError('%s contains sheisty class "%s"' %  (desc, name2))
+        raise RuntimeError('%s contains java or javax class "%s"' % (desc, name2))
 
 
 def decodeUTF8(bytes):
@@ -140,7 +145,7 @@ def checkJARMetaData(desc, jarFile, gitRevision, version):
     for verify in (
       'Specification-Vendor: The Apache Software Foundation',
       'Implementation-Vendor: The Apache Software Foundation',
-      'Specification-Title: Solr Search Engine:',
+      'Specification-Title: Apache Solr Search Server:',
       'Implementation-Title: org.apache.solr',
       'X-Compile-Source-JDK: 11',
       'X-Compile-Target-JDK: 11',
@@ -196,11 +201,13 @@ def checkAllJARs(topDir, gitRevision, version):
     if normRoot.endswith('/server/lib'):
       # Solr's example intentionally ships servlet JAR:
       continue
-    
+
     for file in files:
       if file.lower().endswith('.jar'):
-        if ((normRoot.endswith('/test-framework/lib') and file.startswith('jersey-'))
-            or (normRoot.endswith('/contrib/extraction/lib') and file.startswith('xml-apis-'))):
+        if ((normRoot.endswith('/modules/extraction/lib') and file.startswith('jakarta.activation-'))
+            or (normRoot.endswith('/modules/extraction/lib') and file.startswith('jakarta.annotation-api-'))
+            or (normRoot.endswith('/modules/extraction/lib') and file.startswith('jakarta.xml.bind-api-'))
+            or (normRoot.endswith('/modules/extraction/lib') and file.startswith('unit-api-'))):
           print('      **WARNING**: skipping check of %s/%s: it has javax.* classes' % (root, file))
           continue
         fullPath = '%s/%s' % (root, file)
@@ -215,6 +222,7 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
   artifact = None
   changesURL = None
   mavenURL = None
+  dockerURL = None
   artifactURL = None
   expectedSigs = []
   if isSigned:
@@ -224,10 +232,14 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
   artifacts = []
 
   for text, subURL in ents:
+    if text == '.gitrev':
+      continue # Allow this in the distribution build directory
     if text == 'KEYS':
       raise RuntimeError('solr: release dir should not contain a KEYS file - only toplevel /dist/solr/KEYS is used')
     elif text == 'maven/':
       mavenURL = subURL
+    elif text == 'docker/':
+      dockerURL = subURL
     elif text.startswith('changes'):
       if text not in ('changes/', 'changes-%s/' % version):
         raise RuntimeError('solr: found %s vs expected changes-%s/' % (text, version))
@@ -240,7 +252,7 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
         raise RuntimeError('solr: unknown artifact %s: expected prefix %s' % (text, expected))
       sigs = []
     elif text.startswith(artifact + '.'):
-      sigs.append(text[len(artifact)+1:])
+      sigs.append(subURL.rsplit(".")[-1:][0])
     else:
       if sigs != expectedSigs:
         raise RuntimeError('solr: artifact %s has wrong sigs: expected %s but got %s' % (artifact, expectedSigs, sigs))
@@ -255,8 +267,7 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
       raise RuntimeError('solr: artifact %s has wrong sigs: expected %s but got %s' % (artifact, expectedSigs, sigs))
 
   expected = ['solr-%s-src.tgz' % version,
-              'solr-%s.tgz' % version,
-              'solr-%s.zip' % version]
+              'solr-%s.tgz' % version]
 
   actual = [x[0] for x in artifacts]
   if expected != actual:
@@ -272,6 +283,9 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
 
   if mavenURL is None:
     raise RuntimeError('solr is missing maven')
+
+  if dockerURL is None:
+    raise RuntimeError('solr is missing docker')
 
   if changesURL is None:
     raise RuntimeError('solr is missing changes-%s' % version)
@@ -411,7 +425,7 @@ def versionToTuple(version, name):
 
 reUnixPath = re.compile(r'\b[a-zA-Z_]+=(?:"(?:\\"|[^"])*"' + '|(?:\\\\.|[^"\'\\s])*' + r"|'(?:\\'|[^'])*')" \
                         + r'|(/(?:\\.|[^"\'\s])*)' \
-                        + r'|("/(?:\\.|[^"])*")'   \
+                        + r'|("/(?:\\.|[^"])*")' \
                         + r"|('/(?:\\.|[^'])*')")
 
 
@@ -516,8 +530,6 @@ def unpackAndVerify(java, tmpDir, artifact, gitRevision, version, testArgs):
   unpackLogFile = '%s/solr-unpack-%s.log' % (tmpDir, artifact)
   if artifact.endswith('.tar.gz') or artifact.endswith('.tgz'):
     run('tar xzf %s/%s' % (tmpDir, artifact), unpackLogFile)
-  elif artifact.endswith('.zip'):
-    run('unzip %s/%s' % (tmpDir, artifact), unpackLogFile)
 
   # make sure it unpacks to proper subdir
   l = os.listdir(destDir)
@@ -581,7 +593,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
     expected_src_root_folders = ['buildSrc', 'dev-docs', 'dev-tools', 'gradle', 'help', 'solr']
     expected_src_root_files = ['build.gradle', 'gradlew', 'gradlew.bat', 'settings.gradle', 'versions.lock', 'versions.props']
     expected_src_solr_files = ['build.gradle']
-    expected_src_solr_folders = ['benchmark',  'bin',  'bin-test',  'build',  'contrib',  'core',  'docker',  'documentation',  'example',  'licenses',  'packaging',  'server',  'solr-ref-guide',  'solrj',  'test-framework',  'webapp']
+    expected_src_solr_folders = ['benchmark',  'bin', 'modules', 'core', 'docker', 'documentation', 'example', 'licenses', 'packaging', 'distribution', 'prometheus-exporter', 'server', 'solr-ref-guide', 'solrj', 'test-framework', 'webapp', '.gitignore', '.gitattributes']
     is_in_list(in_root_folder, expected_src_root_folders)
     is_in_list(in_root_folder, expected_src_root_files)
     is_in_list(in_solr_folder, expected_src_solr_folders)
@@ -589,7 +601,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
     if len(in_solr_folder) > 0:
       raise RuntimeError('solr: unexpected files/dirs in artifact %s solr/ folder: %s' % (artifact, in_solr_folder))
   else:
-    is_in_list(in_root_folder, ['bin', 'contrib', 'dist', 'docs', 'example', 'licenses', 'server'])
+    is_in_list(in_root_folder, ['bin', 'modules', 'docker', 'prometheus-exporter', 'docs', 'example', 'licenses', 'server'])
 
   if len(in_root_folder) > 0:
     raise RuntimeError('solr: unexpected files/dirs in artifact %s: %s' % (artifact, in_root_folder))
@@ -615,17 +627,23 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
 
     print("    run tests w/ Java 11 and testArgs='%s'..." % testArgs)
     java.run_java11('./gradlew --no-daemon test %s' % testArgs, '%s/test.log' % unpackPath)
-    print("    compile jars w/ Java 11")
-    java.run_java11('./gradlew --no-daemon jar -Dversion.release=%s' % version, '%s/compile.log' % unpackPath)
-    testSolrExample(unpackPath, java.java11_home, True)
+    print("    run integration tests w/ Java 11")
+    java.run_java11('./gradlew --no-daemon integrationTest -Dversion.release=%s' % version, '%s/itest.log' % unpackPath)
+    print("    build binary release w/ Java 11")
+    java.run_java11('./gradlew --no-daemon dev -Dversion.release=%s' % version, '%s/assemble.log' % unpackPath)
+    testSolrExample("%s/solr/packaging/build/dev" % unpackPath, java.java11_home)
 
     if java.run_java17:
       print("    run tests w/ Java 17 and testArgs='%s'..." % testArgs)
-      java.run_java17('./gradlew --no-daemon test %s' % testArgs, '%s/test.log' % unpackPath)
-      print("    compile jars w/ Java 17")
-      java.run_java17('./gradlew --no-daemon jar -Dversion.release=%s' % version, '%s/compile.log' % unpackPath)
+      java.run_java17('./gradlew --no-daemon clean test %s' % testArgs, '%s/test-java17.log' % unpackPath)
+      print("    run integration tests w/ Java 17")
+      java.run_java17('./gradlew --no-daemon integrationTest -Dversion.release=%s' % version, '%s/itest-java17.log' % unpackPath)
+      print("    build binary release w/ Java 17")
+      java.run_java17('./gradlew --no-daemon dev -Dversion.release=%s' % version, '%s/assemble-java17.log' % unpackPath)
+      testSolrExample("%s/solr/packaging/build/dev" % unpackPath, java.java17_home)
 
   else:
+    # Binary tarball
     checkAllJARs(os.getcwd(), gitRevision, version)
 
     print('    copying unpacked distribution for Java 11 ...')
@@ -635,7 +653,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
     shutil.copytree(unpackPath, java11UnpackPath)
     os.chdir(java11UnpackPath)
     print('    test solr example w/ Java 11...')
-    testSolrExample(java11UnpackPath, java.java11_home, False)
+    testSolrExample(java11UnpackPath, java.java11_home)
 
     if java.run_java17:
       print('    copying unpacked distribution for Java 17 ...')
@@ -645,7 +663,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
       shutil.copytree(unpackPath, java17UnpackPath)
       os.chdir(java17UnpackPath)
       print('    test solr example w/ Java 17...')
-      testSolrExample(java17UnpackPath, java.java17_home, False)
+      testSolrExample(java17UnpackPath, java.java17_home)
 
     os.chdir(unpackPath)
 
@@ -687,14 +705,11 @@ def is_port_in_use(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex(('localhost', port)) == 0
 
-def testSolrExample(unpackPath, javaPath, isSrc):
+def testSolrExample(binaryDistPath, javaPath):
   # test solr using some examples it comes with
-  logFile = '%s/solr-example.log' % unpackPath
-  if isSrc:
-    os.chdir(unpackPath+'/solr')
-    subprocess.call(['chmod','+x',unpackPath+'/solr/bin/solr', unpackPath+'/solr/bin/solr.cmd', unpackPath+'/solr/bin/solr.in.cmd'])
-  else:
-    os.chdir(unpackPath)
+  logFile = '%s/solr-example.log' % binaryDistPath
+  old_cwd = os.getcwd() # So we can back-track
+  os.chdir(binaryDistPath)
 
   print('      start Solr instance (log=%s)...' % logFile)
   env = {}
@@ -707,17 +722,17 @@ def testSolrExample(unpackPath, javaPath, isSrc):
       if not cygwin:
         subprocess.call(['bin/solr','stop','-p','8983'])
       else:
-        subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd stop -p 8983', shell=True) 
+        subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd stop -p 8983', shell=True)
   except:
-      print('      Stop failed due to: '+sys.exc_info()[0])
+     print('      Stop failed due to: '+sys.exc_info()[0])
 
-  print('      Running techproducts example on port 8983 from %s' % unpackPath)
+  print('      Running techproducts example on port 8983 from %s' % binaryDistPath)
   try:
     if not cygwin:
       runExampleStatus = subprocess.call(['bin/solr','-e','techproducts'])
     else:
-      runExampleStatus = subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd -e techproducts', shell=True) 
-      
+      runExampleStatus = subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd -e techproducts', shell=True)
+
     if runExampleStatus != 0:
       raise RuntimeError('Failed to run the techproducts example, check log for previous errors.')
 
@@ -736,21 +751,15 @@ def testSolrExample(unpackPath, javaPath, isSrc):
   finally:
     # Stop server:
     print('      stop server using: bin/solr stop -p 8983')
-    if isSrc:
-      os.chdir(unpackPath+'/solr')
-    else:
-      os.chdir(unpackPath)
-    
+    os.chdir(binaryDistPath)
+
     if not cygwin:
       subprocess.call(['bin/solr','stop','-p','8983'])
     else:
-      subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd stop -p 8983', shell=True) 
+      subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd stop -p 8983', shell=True)
 
-  if isSrc:
-    os.chdir(unpackPath+'/solr')
-  else:
-    os.chdir(unpackPath)
-    
+  os.chdir(old_cwd)
+
 
 def removeTrailingZeros(version):
   return re.sub(r'(\.0)*$', '', version)
@@ -759,7 +768,7 @@ def removeTrailingZeros(version):
 def checkMaven(baseURL, tmpDir, gitRevision, version, isSigned, keysFile):
   print('    download artifacts')
   artifacts = []
-  artifactsURL = '%s/solr/maven/org/apache/solr/' % baseURL
+  artifactsURL = '%s/maven/org/apache/solr/' % baseURL
   targetDir = '%s/maven/org/apache/solr' % tmpDir
   if not os.path.exists(targetDir):
     os.makedirs(targetDir)
@@ -810,16 +819,6 @@ def checkJavadocAndSourceArtifacts(artifacts, version):
         raise RuntimeError('missing: %s' % sourcesJar)
 
 
-def getZipFileEntries(fileName):
-  entries = []
-  with zipfile.ZipFile(fileName) as zf:
-    for zi in zf.infolist():
-      entries.append(zi.filename)
-  # Sort by name:
-  entries.sort()
-  return entries
-
-
 def checkIdenticalMavenArtifacts(distFiles, artifacts, version):
   print('    verify that Maven artifacts are same as in the binary distribution...')
   reJarWar = re.compile(r'%s\.[wj]ar$' % version)  # exclude *-javadoc.jar and *-sources.jar
@@ -830,12 +829,16 @@ def checkIdenticalMavenArtifacts(distFiles, artifacts, version):
   for artifact in artifacts:
     if reJarWar.search(artifact):
       artifactFilename = os.path.basename(artifact)
+      if artifactFilename in ['solr-test-framework-%s.jar' % version]:
+        if artifactFilename in distFilenames:
+          raise RuntimeError('      solr-test-framework should not be present in solr binary distribution' % artifact)
+        continue
       if artifactFilename not in distFilenames:
-        raise RuntimeError('Maven artifact %s is not present in solr binary distribution' % artifact)
+        raise RuntimeError('      Maven artifact %s is not present in solr binary distribution' % artifact)
       else:
         identical = filecmp.cmp(artifact, distFilenames[artifactFilename], shallow=False)
         if not identical:
-          raise RuntimeError('Maven artifact %s is not identical to %s in solr binary distribution'
+          raise RuntimeError('      Maven artifact %s is not identical to %s in solr binary distribution'
                 % (artifact, distFilenames[artifactFilename]))
 
 
@@ -1011,7 +1014,7 @@ def parse_config():
   parser = argparse.ArgumentParser(description=description, epilog=epilogue,
                                    formatter_class=argparse.RawDescriptionHelpFormatter)
   parser.add_argument('--tmp-dir', metavar='PATH',
-                      help='Temporary directory to test inside, defaults to /tmp/smoke_solr_$version_$revision')
+                      help='Temporary directory to test inside, defaults to $TMPDIR/smoke_solr_$version_$revision ')
   parser.add_argument('--not-signed', dest='is_signed', action='store_false', default=True,
                       help='Indicates the release is not signed')
   parser.add_argument('--local-keys', metavar='PATH',
@@ -1024,6 +1027,8 @@ def parse_config():
                       help='Path to Java17 home directory, to run tests with if specified')
   parser.add_argument('--download-only', action='store_true', default=False,
                       help='Only perform download and sha hash check steps')
+  parser.add_argument('--dev-mode', action='store_true', default=False,
+                      help='Enable dev mode, will not check branch compatibility')
   parser.add_argument('url', help='Url pointing to release to test')
   parser.add_argument('test_args', nargs=argparse.REMAINDER,
                       help='Arguments to pass to gradle for testing, e.g. -Dwhat=ever.')
@@ -1053,12 +1058,7 @@ def parse_config():
   if c.tmp_dir:
     c.tmp_dir = os.path.abspath(c.tmp_dir)
   else:
-    tmp = '/tmp/smoke_solr_%s_%s' % (c.version, c.revision)
-    c.tmp_dir = tmp
-    i = 1
-    while os.path.exists(c.tmp_dir):
-      c.tmp_dir = tmp + '_%d' % i
-      i += 1
+    c.tmp_dir = tempfile.mkdtemp(prefix = 'smoke_solr_%s_%s' % (c.version, c.revision))
 
   return c
 
@@ -1071,7 +1071,7 @@ def main():
 
   # Pick <major>.<minor> part of version and require script to be from same branch
   scriptVersion = re.search(r'((\d+).(\d+)).(\d+)', scriptutil.find_current_version()).group(1).strip()
-  if not c.version.startswith(scriptVersion + '.'):
+  if not c.version.startswith(scriptVersion + '.') and not c.dev_mode:
     raise RuntimeError('smokeTestRelease.py for %s.X is incompatible with a %s release.' % (scriptVersion, c.version))
 
   print('NOTE: output encoding is %s' % sys.stdout.encoding)
@@ -1082,14 +1082,13 @@ def main():
 def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys, testArgs, downloadOnly=False):
   startTime = datetime.datetime.now()
 
-  # Tests annotated @Nightly are more resource-intensive but often cover
-  # important code paths. They're disabled by default to preserve a good
-  # developer experience, but we enable them for smoke tests where we want good
-  # coverage. Still we disable @BadApple tests
-  testArgs = '-Dtests.nightly=true -Dtests.badapples=false %s' % testArgs
+  # Avoid @Nightly and @Badapple tests as they are slow and buggy
+  # Instead verify that the recent Jenkins tests pass
+  print('NOTE: Not running @Nightly or @BadApple tests. Please verify that recent Jenkins runs have passed.')
+  testArgs = '-Dtests.nightly=false -Dtests.badapples=false %s' % testArgs
 
   if FORCE_CLEAN:
-    if os.path.exists(tmpDir):
+    if os.path.exists(tmpDir) and len(os.listdir(tmpDir)) > 0:
       raise RuntimeError('temp dir %s exists; please remove first' % tmpDir)
 
   if not os.path.exists(tmpDir):
@@ -1103,9 +1102,14 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
     print('  unshortened: %s' % newBaseURL)
     baseURL = newBaseURL
 
-  for text, subURL in getDirEntries(baseURL):
-    if text.lower().find('solr') != -1:
-      solrPath = subURL
+  if baseURL.endswith('distribution/build/release'):
+    # Used when building release locally in Jenkins
+    solrPath = baseURL
+  else:
+    # An ordinary release has a 'solr' sub folder
+    for text, subURL in getDirEntries(baseURL):
+      if text.lower() == 'solr/':
+        solrPath = subURL
 
   if solrPath is None:
     raise RuntimeError('could not find solr subdir')
@@ -1129,11 +1133,10 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
   checkSigs(solrPath, version, tmpDir, isSigned, keysFile)
   if not downloadOnly:
     unpackAndVerify(java, tmpDir, 'solr-%s.tgz' % version, gitRevision, version, testArgs)
-    unpackAndVerify(java, tmpDir, 'solr-%s.zip' % version, gitRevision, version, testArgs)
     unpackAndVerify(java, tmpDir, 'solr-%s-src.tgz' % version, gitRevision, version, testArgs)
     print()
     print('Test Maven artifacts...')
-    checkMaven(baseURL, tmpDir, gitRevision, version, isSigned, keysFile)
+    checkMaven(solrPath, tmpDir, gitRevision, version, isSigned, keysFile)
   else:
     print("Solr test done (--download-only specified)")
 

@@ -21,16 +21,14 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkCredentialsProvider.ZkCredentials;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- *
- */
+/** */
 public abstract class ZkClientConnectionStrategy {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -40,8 +38,13 @@ public abstract class ZkClientConnectionStrategy {
   private List<DisconnectedListener> disconnectedListeners = new ArrayList<>();
   private List<ConnectedListener> connectedListeners = new ArrayList<>();
 
-  public abstract void connect(String zkServerAddress, int zkClientTimeout, Watcher watcher, ZkUpdate updater) throws IOException, InterruptedException, TimeoutException;
-  public abstract void reconnect(String serverAddress, int zkClientTimeout, Watcher watcher, ZkUpdate updater) throws IOException, InterruptedException, TimeoutException;
+  public abstract void connect(
+      String zkServerAddress, int zkClientTimeout, Watcher watcher, ZkUpdate updater)
+      throws IOException, InterruptedException, TimeoutException;
+
+  public abstract void reconnect(
+      String serverAddress, int zkClientTimeout, Watcher watcher, ZkUpdate updater)
+      throws IOException, InterruptedException, TimeoutException;
 
   public ZkClientConnectionStrategy() {
     zkCredentialsToAddAutomaticallyUsed = false;
@@ -75,7 +78,6 @@ public abstract class ZkClientConnectionStrategy {
     void connected();
   }
 
-
   public synchronized void addDisconnectedListener(DisconnectedListener listener) {
     disconnectedListeners.add(listener);
   }
@@ -89,12 +91,14 @@ public abstract class ZkClientConnectionStrategy {
   }
 
   public interface ZkUpdate {
-    void update(SolrZooKeeper zooKeeper) throws InterruptedException, TimeoutException, IOException;
+    void update(ZooKeeper zooKeeper) throws InterruptedException, TimeoutException, IOException;
   }
 
-  public void setZkCredentialsToAddAutomatically(ZkCredentialsProvider zkCredentialsToAddAutomatically) {
+  public void setZkCredentialsToAddAutomatically(
+      ZkCredentialsProvider zkCredentialsToAddAutomatically) {
     if (zkCredentialsToAddAutomaticallyUsed || (zkCredentialsToAddAutomatically == null))
-      throw new RuntimeException("Cannot change zkCredentialsToAddAutomatically after it has been (connect or reconnect was called) used or to null");
+      throw new RuntimeException(
+          "Cannot change zkCredentialsToAddAutomatically after it has been (connect or reconnect was called) used or to null");
     this.zkCredentialsToAddAutomatically = zkCredentialsToAddAutomatically;
   }
 
@@ -102,11 +106,14 @@ public abstract class ZkClientConnectionStrategy {
     return zkCredentialsToAddAutomatically != null;
   }
 
-  public ZkCredentialsProvider getZkCredentialsToAddAutomatically() { return zkCredentialsToAddAutomatically; }
+  public ZkCredentialsProvider getZkCredentialsToAddAutomatically() {
+    return zkCredentialsToAddAutomatically;
+  }
 
-  protected SolrZooKeeper createSolrZooKeeper(final String serverAddress, final int zkClientTimeout,
-      final Watcher watcher) throws IOException {
-    SolrZooKeeper result = new SolrZooKeeper(serverAddress, zkClientTimeout, watcher);
+  protected ZooKeeper createZooKeeper(
+      final String serverAddress, final int zkClientTimeout, final Watcher watcher)
+      throws IOException {
+    ZooKeeper result = newZooKeeperInstance(serverAddress, zkClientTimeout, watcher);
 
     zkCredentialsToAddAutomaticallyUsed = true;
     for (ZkCredentials zkCredentials : zkCredentialsToAddAutomatically.getCredentials()) {
@@ -116,4 +123,34 @@ public abstract class ZkClientConnectionStrategy {
     return result;
   }
 
+  // Override for testing
+  protected ZooKeeper newZooKeeperInstance(
+      final String serverAddress, final int zkClientTimeout, final Watcher watcher)
+      throws IOException {
+    return new ZooKeeper(serverAddress, zkClientTimeout, watcher);
+  }
+
+  /**
+   * Instantiate a new connection strategy for the given class name
+   *
+   * @param name the name of the strategy to use
+   * @return the strategy instance, or null if it could not be loaded
+   */
+  public static ZkClientConnectionStrategy forName(String name, ZkClientConnectionStrategy def) {
+    log.debug("Attempting to load zk connection strategy '{}'", name);
+    if (name == null) {
+      return def;
+    }
+
+    try {
+      // TODO should this use SolrResourceLoader?
+      return Class.forName(name)
+          .asSubclass(ZkClientConnectionStrategy.class)
+          .getConstructor()
+          .newInstance();
+    } catch (Exception e) {
+      log.warn("Exception when loading '{}' ZK connection strategy.", name, e);
+      return def;
+    }
+  }
 }

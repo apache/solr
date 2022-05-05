@@ -14,10 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * Factories for {@linkplain org.apache.solr.spelling.suggest.jaspell JaSpell} based {@link org.apache.solr.spelling.suggest.Suggester}s
+
+/**
+ * Factories for {@linkplain org.apache.solr.spelling.suggest.jaspell JaSpell} based {@link
+ * org.apache.solr.spelling.suggest.Suggester}s
  */
 package org.apache.solr.spelling.suggest.jaspell;
-
-

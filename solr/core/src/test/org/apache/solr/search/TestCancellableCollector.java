@@ -104,7 +104,7 @@ public class TestCancellableCollector extends SolrTestCase {
   }
 
   private void executeSearchTest(
-          IndexSearcher searcher, Query query, CancellableCollector cancellableCollector, int numHits)
+      IndexSearcher searcher, Query query, CancellableCollector cancellableCollector, int numHits)
       throws Exception {
     TopDocs topDocs = searcher.search(query, numHits);
 

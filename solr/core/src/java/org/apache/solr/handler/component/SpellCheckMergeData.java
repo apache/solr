@@ -21,13 +21,12 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.lucene.search.spell.SuggestWord;
 import org.apache.solr.client.solrj.response.SpellCheckResponse;
 import org.apache.solr.spelling.SpellCheckCollation;
 
 public class SpellCheckMergeData {
-  //original token -> corresponding Suggestion object (keep track of start,end)
+  // original token -> corresponding Suggestion object (keep track of start,end)
   public Map<String, SpellCheckResponse.Suggestion> origVsSuggestion = new HashMap<>();
   // original token string -> summed up frequency
   public Map<String, Integer> origVsFreq = new HashMap<>();
@@ -39,12 +38,12 @@ public class SpellCheckMergeData {
   // alternative string -> corresponding SuggestWord object
   public Map<String, SuggestWord> suggestedVsWord = new HashMap<>();
   public Map<String, SpellCheckCollation> collations = new HashMap<>();
-  //The original terms from the user's query.
+  // The original terms from the user's query.
   public Set<String> originalTerms = null;
   public int totalNumberShardResponses = 0;
-  
+
   public boolean isOriginalToQuery(String term) {
-    if(originalTerms==null) {
+    if (originalTerms == null) {
       return true;
     }
     return originalTerms.contains(term);

@@ -23,7 +23,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 
-
 class DeleteSnapshotOp implements CoreAdminHandler.CoreAdminOp {
 
   @Override
@@ -35,7 +34,8 @@ class DeleteSnapshotOp implements CoreAdminHandler.CoreAdminOp {
     CoreContainer cc = it.handler.getCoreContainer();
     SolrCore core = cc.getCore(cname);
     if (core == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unable to locate core " + cname);
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "Unable to locate core " + cname);
     }
 
     try {

@@ -16,6 +16,9 @@
  */
 package org.apache.solr.servlet;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
@@ -31,31 +34,28 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-
-
 public class ResponseHeaderTest extends SolrJettyTestBase {
-  
+
   private static File solrHomeDirectory;
-  
+
   @BeforeClass
   public static void beforeTest() throws Exception {
     solrHomeDirectory = createTempDir().toFile();
     setupJettyTestHome(solrHomeDirectory, "collection1");
     String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-    FileUtils.copyFile(new File(top, "solrconfig-headers.xml"), new File(solrHomeDirectory + "/collection1/conf", "solrconfig.xml"));
+    FileUtils.copyFile(
+        new File(top, "solrconfig-headers.xml"),
+        new File(solrHomeDirectory + "/collection1/conf", "solrconfig.xml"));
     createAndStartJetty(solrHomeDirectory.getAbsolutePath());
   }
-  
+
   @AfterClass
   public static void afterTest() throws Exception {
     if (null != solrHomeDirectory) {
       cleanUpJettyHome(solrHomeDirectory);
     }
   }
-  
+
   @Test
   public void testHttpResponse() throws SolrServerException, IOException {
     HttpSolrClient client = (HttpSolrClient) getSolrClient();
@@ -65,7 +65,7 @@ public class ResponseHeaderTest extends SolrJettyTestBase {
     HttpResponse response = httpClient.execute(httpGet);
     Header[] headers = response.getAllHeaders();
     boolean containsWarningHeader = false;
-    for (Header header:headers) {
+    for (Header header : headers) {
       if ("Warning".equals(header.getName())) {
         containsWarningHeader = true;
         assertEquals("This is a test warning", header.getValue());
@@ -74,21 +74,20 @@ public class ResponseHeaderTest extends SolrJettyTestBase {
     }
     assertTrue("Expected header not found", containsWarningHeader);
   }
-  
+
   public static class ComponentThatAddsHeader extends SearchComponent {
-    
+
     @Override
     public void prepare(ResponseBuilder rb) throws IOException {
       rb.rsp.addHttpHeader("Warning", "This is a test warning");
     }
-    
+
     @Override
     public void process(ResponseBuilder rb) throws IOException {}
-    
+
     @Override
     public String getDescription() {
       return null;
     }
   }
-  
 }

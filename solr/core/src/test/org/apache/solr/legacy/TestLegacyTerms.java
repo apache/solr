@@ -33,14 +33,14 @@ public class TestLegacyTerms extends SolrTestCase {
     assertNull(LegacyNumericUtils.getMinInt(EMPTY_TERMS));
     assertNull(LegacyNumericUtils.getMaxInt(EMPTY_TERMS));
   }
-  
+
   public void testIntFieldMinMax() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     int numDocs = atLeast(100);
     int minValue = Integer.MAX_VALUE;
     int maxValue = Integer.MIN_VALUE;
-    for(int i=0;i<numDocs;i++ ){
+    for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       int num = random().nextInt();
       minValue = Math.min(num, minValue);
@@ -48,7 +48,7 @@ public class TestLegacyTerms extends SolrTestCase {
       doc.add(new LegacyIntField("field", num, Field.Store.NO));
       w.addDocument(doc);
     }
-    
+
     IndexReader r = w.getReader();
     Terms terms = MultiTerms.getTerms(r, "field");
     assertEquals(Integer.valueOf(minValue), LegacyNumericUtils.getMinInt(terms));
@@ -63,14 +63,14 @@ public class TestLegacyTerms extends SolrTestCase {
     assertNull(LegacyNumericUtils.getMinLong(EMPTY_TERMS));
     assertNull(LegacyNumericUtils.getMaxLong(EMPTY_TERMS));
   }
-  
+
   public void testLongFieldMinMax() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     int numDocs = atLeast(100);
     long minValue = Long.MAX_VALUE;
     long maxValue = Long.MIN_VALUE;
-    for(int i=0;i<numDocs;i++ ){
+    for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       long num = random().nextLong();
       minValue = Math.min(num, minValue);
@@ -78,7 +78,7 @@ public class TestLegacyTerms extends SolrTestCase {
       doc.add(new LegacyLongField("field", num, Field.Store.NO));
       w.addDocument(doc);
     }
-    
+
     IndexReader r = w.getReader();
 
     Terms terms = MultiTerms.getTerms(r, "field");
@@ -96,7 +96,7 @@ public class TestLegacyTerms extends SolrTestCase {
     int numDocs = atLeast(100);
     float minValue = Float.POSITIVE_INFINITY;
     float maxValue = Float.NEGATIVE_INFINITY;
-    for(int i=0;i<numDocs;i++ ){
+    for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       float num = random().nextFloat();
       minValue = Math.min(num, minValue);
@@ -104,11 +104,13 @@ public class TestLegacyTerms extends SolrTestCase {
       doc.add(new LegacyFloatField("field", num, Field.Store.NO));
       w.addDocument(doc);
     }
-    
+
     IndexReader r = w.getReader();
     Terms terms = MultiTerms.getTerms(r, "field");
-    assertEquals(minValue, NumericUtils.sortableIntToFloat(LegacyNumericUtils.getMinInt(terms)), 0.0f);
-    assertEquals(maxValue, NumericUtils.sortableIntToFloat(LegacyNumericUtils.getMaxInt(terms)), 0.0f);
+    assertEquals(
+        minValue, NumericUtils.sortableIntToFloat(LegacyNumericUtils.getMinInt(terms)), 0.0f);
+    assertEquals(
+        maxValue, NumericUtils.sortableIntToFloat(LegacyNumericUtils.getMaxInt(terms)), 0.0f);
 
     r.close();
     w.close();
@@ -121,7 +123,7 @@ public class TestLegacyTerms extends SolrTestCase {
     int numDocs = atLeast(100);
     double minValue = Double.POSITIVE_INFINITY;
     double maxValue = Double.NEGATIVE_INFINITY;
-    for(int i=0;i<numDocs;i++ ){
+    for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       double num = random().nextDouble();
       minValue = Math.min(num, minValue);
@@ -129,31 +131,58 @@ public class TestLegacyTerms extends SolrTestCase {
       doc.add(new LegacyDoubleField("field", num, Field.Store.NO));
       w.addDocument(doc);
     }
-    
+
     IndexReader r = w.getReader();
 
     Terms terms = MultiTerms.getTerms(r, "field");
 
-    assertEquals(minValue, NumericUtils.sortableLongToDouble(LegacyNumericUtils.getMinLong(terms)), 0.0);
-    assertEquals(maxValue, NumericUtils.sortableLongToDouble(LegacyNumericUtils.getMaxLong(terms)), 0.0);
+    assertEquals(
+        minValue, NumericUtils.sortableLongToDouble(LegacyNumericUtils.getMinLong(terms)), 0.0);
+    assertEquals(
+        maxValue, NumericUtils.sortableLongToDouble(LegacyNumericUtils.getMaxLong(terms)), 0.0);
 
     r.close();
     w.close();
     dir.close();
   }
 
-  /**
-   * A complete empty Terms instance that has no terms in it and supports no optional statistics
-   */
-  private static Terms EMPTY_TERMS = new Terms() {
-    public TermsEnum iterator() { return TermsEnum.EMPTY; }
-    public long size() { return -1; }
-    public long getSumTotalTermFreq() { return 0; }
-    public long getSumDocFreq() { return 0; }
-    public int getDocCount() { return 0; }
-    public boolean hasFreqs() { return false; }
-    public boolean hasOffsets() { return false; }
-    public boolean hasPositions() { return false; }
-    public boolean hasPayloads() { return false; }
-  };
+  /** A complete empty Terms instance that has no terms in it and supports no optional statistics */
+  private static Terms EMPTY_TERMS =
+      new Terms() {
+        public TermsEnum iterator() {
+          return TermsEnum.EMPTY;
+        }
+
+        public long size() {
+          return -1;
+        }
+
+        public long getSumTotalTermFreq() {
+          return 0;
+        }
+
+        public long getSumDocFreq() {
+          return 0;
+        }
+
+        public int getDocCount() {
+          return 0;
+        }
+
+        public boolean hasFreqs() {
+          return false;
+        }
+
+        public boolean hasOffsets() {
+          return false;
+        }
+
+        public boolean hasPositions() {
+          return false;
+        }
+
+        public boolean hasPayloads() {
+          return false;
+        }
+      };
 }

@@ -16,26 +16,24 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.NamedList;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringWriter;
+import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
 
 /**
- * Simply puts the entire response into an entry in a NamedList.
- * This parser isn't parse response into a QueryResponse.
+ * Simply puts the entire response into an entry in a NamedList. This parser isn't parse response
+ * into a QueryResponse.
  */
 public class NoOpResponseParser extends ResponseParser {
 
   private String writerType = "xml";
 
-  public NoOpResponseParser() {
-  }
+  public NoOpResponseParser() {}
 
   public NoOpResponseParser(String writerType) {
     this.writerType = writerType;
@@ -77,6 +75,4 @@ public class NoOpResponseParser extends ResponseParser {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "parsing error", e);
     }
   }
-
 }
-

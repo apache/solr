@@ -16,12 +16,6 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.request.CoreAdminRequest;
-import org.apache.solr.cloud.MiniSolrCloudCluster;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.net.BindException;
 import java.nio.charset.Charset;
@@ -29,6 +23,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.request.CoreAdminRequest;
+import org.apache.solr.cloud.MiniSolrCloudCluster;
+import org.junit.Test;
 
 public class TestJettySolrRunner extends SolrTestCaseJ4 {
 
@@ -43,15 +42,16 @@ public class TestJettySolrRunner extends SolrTestCaseJ4 {
 
     Path configsets = TEST_PATH().resolve("configsets");
 
-    String solrxml
-        = "<solr><str name=\"configSetBaseDir\">CONFIGSETS</str><str name=\"coreRootDirectory\">COREROOT</str></solr>"
-        .replace("CONFIGSETS", configsets.toString())
-        .replace("COREROOT", coresDir.toString());
+    String solrxml =
+        "<solr><str name=\"configSetBaseDir\">CONFIGSETS</str><str name=\"coreRootDirectory\">COREROOT</str></solr>"
+            .replace("CONFIGSETS", configsets.toString())
+            .replace("COREROOT", coresDir.toString());
     Files.write(solrHome.resolve("solr.xml"), solrxml.getBytes(StandardCharsets.UTF_8));
 
     JettyConfig jettyConfig = buildJettyConfig("/solr");
 
-    JettySolrRunner runner = new JettySolrRunner(solrHome.toString(), new Properties(), jettyConfig);
+    JettySolrRunner runner =
+        new JettySolrRunner(solrHome.toString(), new Properties(), jettyConfig);
     try {
       runner.start();
 
@@ -68,15 +68,15 @@ public class TestJettySolrRunner extends SolrTestCaseJ4 {
     } finally {
       runner.stop();
     }
-
   }
-
 
   @SuppressWarnings("ThrowableNotThrown")
   @Test
   public void testLookForBindException() throws IOException {
     Path solrHome = createTempDir();
-    Files.write(solrHome.resolve("solr.xml"), MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML.getBytes(Charset.defaultCharset()));
+    Files.write(
+        solrHome.resolve("solr.xml"),
+        MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML.getBytes(Charset.defaultCharset()));
 
     JettyConfig config = JettyConfig.builder().build();
 
@@ -97,12 +97,13 @@ public class TestJettySolrRunner extends SolrTestCaseJ4 {
     result = jetty.lookForBindException(test);
     assertEquals(result, test);
 
-    test = new IOException() {
-      @Override
-      public synchronized Throwable getCause() {
-        return this;
-      }
-    };
+    test =
+        new IOException() {
+          @Override
+          public synchronized Throwable getCause() {
+            return this;
+          }
+        };
     result = jetty.lookForBindException(test);
     assertEquals(result, test);
 
@@ -113,8 +114,5 @@ public class TestJettySolrRunner extends SolrTestCaseJ4 {
     test = new IOException(new RuntimeException(be));
     result = jetty.lookForBindException(test);
     assertEquals(result, be);
-
   }
-
-
 }

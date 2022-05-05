@@ -68,9 +68,8 @@
                    initialSize="0"
                    autowarmCount="0"/>
          <fieldValueCache
-                size="0"
-                autowarmCount="0"
-                showItems="0" />
+                 size="0"
+                 autowarmCount="0"/>
   </query>
 
   <searchComponent name="delayingSearchComponent"

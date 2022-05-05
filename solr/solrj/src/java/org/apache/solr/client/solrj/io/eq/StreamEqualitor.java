@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.io.eq;
 
 import java.io.Serializable;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
@@ -25,5 +24,6 @@ import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 /** Defines a comparator we can use with TupleStreams */
 public interface StreamEqualitor extends Equalitor<Tuple>, Expressible, Serializable {
   public boolean isDerivedFrom(StreamEqualitor base);
+
   public boolean isDerivedFrom(StreamComparator base);
 }

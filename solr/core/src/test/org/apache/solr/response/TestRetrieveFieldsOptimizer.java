@@ -17,6 +17,13 @@
 
 package org.apache.solr.response;
 
+import static junit.framework.Assert.fail;
+import static org.apache.lucene.util.LuceneTestCase.random;
+import static org.apache.solr.search.SolrReturnFields.FIELD_SOURCES.ALL_FROM_DV;
+import static org.apache.solr.search.SolrReturnFields.FIELD_SOURCES.ALL_FROM_STORED;
+import static org.apache.solr.search.SolrReturnFields.FIELD_SOURCES.MIXED_SOURCES;
+
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -35,8 +42,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
@@ -62,22 +67,16 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 
-import static junit.framework.Assert.fail;
-import static org.apache.lucene.util.LuceneTestCase.random;
-import static org.apache.solr.search.SolrReturnFields.FIELD_SOURCES.ALL_FROM_STORED;
-import static org.apache.solr.search.SolrReturnFields.FIELD_SOURCES.MIXED_SOURCES;
-import static org.apache.solr.search.SolrReturnFields.FIELD_SOURCES.ALL_FROM_DV;
-
 public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
 
-  @Rule
-  public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
+  @Rule public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   @BeforeClass
   public static void initManagedSchemaCore() throws Exception {
     // This testing approach means no schema file or per-test temp solr-home!
     System.setProperty("managed.schema.mutable", "true");
-    System.setProperty("managed.schema.resourceName", "schema-one-field-no-dynamic-field-unique-key.xml");
+    System.setProperty(
+        "managed.schema.resourceName", "schema-one-field-no-dynamic-field-unique-key.xml");
     System.setProperty("enable.update.log", "false");
 
     initCore("solrconfig-managed-schema.xml", "ignoredSchemaName");
@@ -105,7 +104,7 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
   static FieldHolder fieldsHolder = new FieldHolder();
   static Map<String, Map<String, List<String>>> allFieldValuesInput = new HashMap<>();
 
-  //TODO, how to generalize?
+  // TODO, how to generalize?
 
   @SuppressWarnings({"unchecked"})
   private static void setupAllFields() throws IOException {
@@ -117,10 +116,12 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
 
     // We need our special id fields to find the docs later.
     typesHolder.addFieldType(schema, idNotStoredDv, RetrieveFieldType.TEST_TYPE.STRING);
-    fieldsToAdd.put(idNotStoredDv, map("stored", "false", "docValues", "true", "multiValued", "false"));
+    fieldsToAdd.put(
+        idNotStoredDv, map("stored", "false", "docValues", "true", "multiValued", "false"));
 
     typesHolder.addFieldType(schema, idStoredNotDv, RetrieveFieldType.TEST_TYPE.STRING);
-    fieldsToAdd.put(idStoredNotDv, map("stored", "true", "docValues", "false", "multiValued", "false"));
+    fieldsToAdd.put(
+        idStoredNotDv, map("stored", "true", "docValues", "false", "multiValued", "false"));
 
     for (RetrieveFieldType.TEST_TYPE type : RetrieveFieldType.solrClassMap.keySet()) {
       // We happen to be naming the fields and types identically.
@@ -163,21 +164,23 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
       addDocWithAllFields(idx);
     }
     assertU(commit());
-    // Now we need to massage the expected values returned based on the docValues type 'cause it's weird.
+    // Now we need to massage the expected values returned based on the docValues type 'cause it's
+    // weird.
     final RefCounted<SolrIndexSearcher> refCounted = h.getCore().getNewestSearcher(true);
     try {
-      //static Map<String, Map<String, List<String>>>
+      // static Map<String, Map<String, List<String>>>
       for (Map<String, List<String>> docFieldsEnt : allFieldValuesInput.values()) {
         for (Map.Entry<String, List<String>> oneField : docFieldsEnt.entrySet()) {
           RetrieveField field = fieldsHolder.getTestField(oneField.getKey());
-          field.expectedValsAsStrings(refCounted.get().getSlowAtomicReader().getFieldInfos().fieldInfo(field.name),
+          field.expectedValsAsStrings(
+              refCounted.get().getSlowAtomicReader().getFieldInfos().fieldInfo(field.name),
               oneField.getValue());
         }
       }
     } finally {
       refCounted.decref();
     }
-   }
+  }
 
   static void addDocWithAllFields(int idx) {
 
@@ -214,18 +217,19 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
 
     Thread threads[] = new Thread[numThreads];
     for (int idx = 0; idx < numThreads; idx++) {
-      threads[idx] = new Thread() {
-        @Override
-        public void run() {
-          try {
-            checkFetchSources(ALL_FROM_DV);
-            checkFetchSources(ALL_FROM_STORED);
-            checkFetchSources(MIXED_SOURCES);
-          } catch (Exception e) {
-            fail("Failed with exception " + e.getMessage());
-          }
-        }
-      };
+      threads[idx] =
+          new Thread() {
+            @Override
+            public void run() {
+              try {
+                checkFetchSources(ALL_FROM_DV);
+                checkFetchSources(ALL_FROM_STORED);
+                checkFetchSources(MIXED_SOURCES);
+              } catch (Exception e) {
+                fail("Failed with exception " + e.getMessage());
+              }
+            }
+          };
       threads[idx].start();
     }
     for (int idx = 0; idx < numThreads; idx++) {
@@ -235,9 +239,10 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
 
   @SuppressWarnings({"unchecked", "rawtypes"})
   private void checkFetchSources(SolrReturnFields.FIELD_SOURCES source) throws Exception {
-    String flAll = fieldsHolder.allFields.stream()
-        .map(RetrieveField::getName) // This will call testField.getName()
-        .collect(Collectors.joining(","));
+    String flAll =
+        fieldsHolder.allFields.stream()
+            .map(RetrieveField::getName) // This will call testField.getName()
+            .collect(Collectors.joining(","));
 
     List<RetrieveField> toCheck = new ArrayList<>();
     String idField = idNotStoredDv + ",";
@@ -259,11 +264,13 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
     // MultiValued fields are _always_ read from stored data.
     toCheck.removeAll(fieldsHolder.multiValuedFields);
 
-    // At this point, toCheck should be only singleValued fields. Adding in even a single multiValued field should
-    // read stuff from stored.
-    String fl = idField + toCheck.stream()
-        .map(RetrieveField::getName) // This will call testField.getName()
-        .collect(Collectors.joining(","));
+    // At this point, toCheck should be only singleValued fields. Adding in even a single
+    // multiValued field should read stuff from stored.
+    String fl =
+        idField
+            + toCheck.stream()
+                .map(RetrieveField::getName) // This will call testField.getName()
+                .collect(Collectors.joining(","));
 
     // Even a single multiValued and stored field should cause stored fields to be visited.
 
@@ -281,11 +288,15 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
 
         case 2:
           List<RetrieveField> toCheckPlusMv = new ArrayList<>(toCheck);
-          toCheckPlusMv.add(fieldsHolder.storedMvFields.get(random().nextInt(fieldsHolder.storedMvFields.size())));
+          toCheckPlusMv.add(
+              fieldsHolder.storedMvFields.get(
+                  random().nextInt(fieldsHolder.storedMvFields.size())));
 
-          String flWithMv = idField + toCheckPlusMv.stream()
-              .map(RetrieveField::getName) // This will call testField.getName()
-              .collect(Collectors.joining(","));
+          String flWithMv =
+              idField
+                  + toCheckPlusMv.stream()
+                      .map(RetrieveField::getName) // This will call testField.getName()
+                      .collect(Collectors.joining(","));
           if (source == ALL_FROM_STORED) {
             check(flWithMv, ALL_FROM_STORED);
           } else {
@@ -302,7 +313,8 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
   // 1> we got all the values from the place we expected.
   // 2> all the values we expect are actually returned.
   //
-  // NOTE: multiValued fields are _NOT_ fetched from docValues by design so we don't have to worry about set semantics
+  // NOTE: multiValued fields are _NOT_ fetched from docValues by design so we don't have to worry
+  // about set semantics
   //
   private void check(String flIn, SolrReturnFields.FIELD_SOURCES source) throws Exception {
     Set<String> setDedupe = new HashSet<>(Arrays.asList(flIn.split(",")));
@@ -313,13 +325,16 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
     SolrQueryRequest req = lrf.makeRequest("q", "*:*", CommonParams.FL, fl);
     SolrQueryResponse rsp = h.queryAndResponse("", req);
 
-    BinaryQueryResponseWriter writer = (BinaryQueryResponseWriter) core.getQueryResponseWriter("javabin");
+    BinaryQueryResponseWriter writer =
+        (BinaryQueryResponseWriter) core.getQueryResponseWriter("javabin");
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     writer.write(baos, req, rsp);
 
     // This is really the main point!
-    assertEquals("We didn't get the values from the expected places! ",
-        source, ((SolrReturnFields) rsp.returnFields).getFieldSources());
+    assertEquals(
+        "We didn't get the values from the expected places! ",
+        source,
+        ((SolrReturnFields) rsp.returnFields).getFieldSources());
 
     @SuppressWarnings({"rawtypes"})
     NamedList res;
@@ -329,10 +344,13 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
     SolrDocumentList docs = (SolrDocumentList) res.get("response");
     for (Object doc : docs) {
       SolrDocument sdoc = (SolrDocument) doc;
-      // Check that every (and only) the fields in the fl param were fetched and the values are as expected.
-      // Since each doc has the same fields, we don't need to find the special doc.
+      // Check that every (and only) the fields in the fl param were fetched and the values are as
+      // expected. Since each doc has the same fields, we don't need to find the special doc.
       String[] requestedFields = fl.split(",");
-      assertEquals("Should have exactly as many fields as requested, ", sdoc.getFieldNames().size(), requestedFields.length);
+      assertEquals(
+          "Should have exactly as many fields as requested, ",
+          sdoc.getFieldNames().size(),
+          requestedFields.length);
 
       String id = (String) sdoc.get(idNotStoredDv);
       if (id == null) {
@@ -343,12 +361,17 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
         Object[] docVals = sdoc.getFieldValues(field).toArray();
         RetrieveField testField = fieldsHolder.getTestField(field);
         List<String> expectedVals = expected.get(field);
-        assertEquals("Returned fields should have the expected number of entries", docVals.length, expectedVals.size());
+        assertEquals(
+            "Returned fields should have the expected number of entries",
+            docVals.length,
+            expectedVals.size());
         for (int idx = 0; idx < docVals.length; ++idx) {
-          assertEquals("Values should be identical and exactly in order. ", expectedVals.get(idx), testField.getValAsString(docVals[idx]));
+          assertEquals(
+              "Values should be identical and exactly in order. ",
+              expectedVals.get(idx),
+              testField.getValAsString(docVals[idx]));
         }
       }
-
     }
     req.close();
   }
@@ -382,25 +405,36 @@ class RetrieveFieldType {
   final String solrTypeClass;
 
   static enum TEST_TYPE {
-    TINT, TLONG, TFLOAT, TDOUBLE, TDATE,
-    PINT, PLONG, PFLOAT, PDOUBLE, PDATE,
-    STRING, BOOL
+    TINT,
+    TLONG,
+    TFLOAT,
+    TDOUBLE,
+    TDATE,
+    PINT,
+    PLONG,
+    PFLOAT,
+    PDOUBLE,
+    PDATE,
+    STRING,
+    BOOL
   }
 
-  static final Map<TEST_TYPE, String> solrClassMap = Collections.unmodifiableMap(Stream.of(
-      new SimpleEntry<>(TEST_TYPE.TINT, "solr.TrieIntField"),
-      new SimpleEntry<>(TEST_TYPE.TLONG, "solr.TrieLongField"),
-      new SimpleEntry<>(TEST_TYPE.TFLOAT, "solr.TrieFloatField"),
-      new SimpleEntry<>(TEST_TYPE.TDOUBLE, "solr.TrieDoubleField"),
-      new SimpleEntry<>(TEST_TYPE.TDATE, "solr.TrieDateField"),
-      new SimpleEntry<>(TEST_TYPE.PINT, "solr.IntPointField"),
-      new SimpleEntry<>(TEST_TYPE.PLONG, "solr.LongPointField"),
-      new SimpleEntry<>(TEST_TYPE.PFLOAT, "solr.FloatPointField"),
-      new SimpleEntry<>(TEST_TYPE.PDOUBLE, "solr.DoublePointField"),
-      new SimpleEntry<>(TEST_TYPE.PDATE, "solr.DatePointField"),
-      new SimpleEntry<>(TEST_TYPE.STRING, "solr.StrField"),
-      new SimpleEntry<>(TEST_TYPE.BOOL, "solr.BoolField"))
-      .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+  static final Map<TEST_TYPE, String> solrClassMap =
+      Collections.unmodifiableMap(
+          Stream.of(
+                  new SimpleEntry<>(TEST_TYPE.TINT, "solr.TrieIntField"),
+                  new SimpleEntry<>(TEST_TYPE.TLONG, "solr.TrieLongField"),
+                  new SimpleEntry<>(TEST_TYPE.TFLOAT, "solr.TrieFloatField"),
+                  new SimpleEntry<>(TEST_TYPE.TDOUBLE, "solr.TrieDoubleField"),
+                  new SimpleEntry<>(TEST_TYPE.TDATE, "solr.TrieDateField"),
+                  new SimpleEntry<>(TEST_TYPE.PINT, "solr.IntPointField"),
+                  new SimpleEntry<>(TEST_TYPE.PLONG, "solr.LongPointField"),
+                  new SimpleEntry<>(TEST_TYPE.PFLOAT, "solr.FloatPointField"),
+                  new SimpleEntry<>(TEST_TYPE.PDOUBLE, "solr.DoublePointField"),
+                  new SimpleEntry<>(TEST_TYPE.PDATE, "solr.DatePointField"),
+                  new SimpleEntry<>(TEST_TYPE.STRING, "solr.StrField"),
+                  new SimpleEntry<>(TEST_TYPE.BOOL, "solr.BoolField"))
+              .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
 
   RetrieveFieldType(IndexSchema schema, String name, TEST_TYPE type) {
     this.name = name;
@@ -484,14 +518,13 @@ class RetrieveField {
     this.type = type;
     this.schemaField = schema.newField(name, type, opts);
     this.testFieldType = TestRetrieveFieldsOptimizer.typesHolder.getTestType(type);
-
   }
 
   String getValAsString(Object val) {
 
     FieldType fieldType = schemaField.getType();
 
-    //Why do mutliValued date fields get here as Strings whereas single-valued fields are Dates?
+    // Why do mutliValued date fields get here as Strings whereas single-valued fields are Dates?
     // Why do BoolFields sometimes get here as "F" or "T"?
     if (val instanceof String) {
       if (fieldType instanceof TrieDateField || fieldType instanceof DatePointField) {
@@ -587,11 +620,11 @@ class RetrieveField {
         fail("Found no case for field " + name + " type " + type);
         break;
     }
-    // There are tricky cases with multiValued fields that are sometimes fetched from docValues that obey set
-    // semantics so be sure we include at least one duplicate in a multValued field sometimes
+    // There are tricky cases with multiValued fields that are sometimes fetched from docValues that
+    // obey set semantics so be sure we include at least one duplicate in a multValued field
+    // sometimes
     if (random().nextBoolean() && valsAsStrings.size() > 1) {
       valsAsStrings.add(valsAsStrings.get(random().nextInt(valsAsStrings.size())));
-
     }
 
     return valsAsStrings;
@@ -599,7 +632,7 @@ class RetrieveField {
 
   void expectedValsAsStrings(final FieldInfo info, List<String> valsAsStrings) {
     if (schemaField.stored() || schemaField.multiValued() == false) {
-      return ;
+      return;
     }
 
     switch (info.getDocValuesType()) {
@@ -623,7 +656,6 @@ class RetrieveField {
     switch (testFieldType.getSolrTypeClass()) {
       case "solr.TrieIntField":
       case "solr.TrieLongField":
-
         Collections.sort(valsAsStrings, Comparator.comparingInt(Integer::parseInt));
         break;
       case "solr.IntPointField":
@@ -651,4 +683,3 @@ class RetrieveField {
     }
   }
 }
-
