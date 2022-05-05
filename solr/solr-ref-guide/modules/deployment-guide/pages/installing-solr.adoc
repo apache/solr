@@ -105,7 +105,7 @@ The `README.md` in this directory describes how custom Solr Docker images can be
 Refer to the section xref:deployment-guide:solr-in-docker.adoc[] page for information on using a Solr Docker image.
 
 lib/::
-Optional folder (does not exist on install) where Solr will look for additional plugin jar files.
+Folder where Solr will look for additional plugin jar files.
 
 dist/::
 The `dist` directory contains the main Solr .jar files.
