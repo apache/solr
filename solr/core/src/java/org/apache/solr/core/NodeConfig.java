@@ -16,16 +16,6 @@
  */
 package org.apache.solr.core;
 
-import org.apache.commons.lang3.StringUtils;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.logging.LogWatcherConfig;
-import org.apache.solr.update.UpdateShardHandlerConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -40,7 +30,17 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
-
+import org.apache.commons.lang3.StringUtils;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.logging.LogWatcherConfig;
+import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.update.UpdateShardHandlerConfig;
+import org.apache.solr.util.ModuleUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class NodeConfig {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -427,7 +427,8 @@ public class NodeConfig {
     Set<String> libDirs = new LinkedHashSet<>();
     libDirs.add("lib");
 
-    // Always add $SOLR_TIP/lib to the shared resource loader, to allow loading of i.e. /opt/solr/lib/foo.jar
+    // Always add $SOLR_TIP/lib to the shared resource loader, to allow loading of i.e.
+    // /opt/solr/lib/foo.jar
     if (getSolrInstallDir() != null) {
       libDirs.add(getSolrInstallDir().resolve("lib").toAbsolutePath().normalize().toString());
     }
