@@ -696,6 +696,8 @@ public class CoreContainer {
       log.debug("Loading cores into CoreContainer [instanceDir={}]", getSolrHome());
     }
 
+    logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
+
     ClusterEventProducerFactory clusterEventProducerFactory = new ClusterEventProducerFactory(this);
     clusterEventProducer = clusterEventProducerFactory;
 
@@ -732,8 +734,6 @@ public class CoreContainer {
     solrClientCache = new SolrClientCache(updateShardHandler.getDefaultHttpClient());
 
     solrCores.load(loader);
-
-    logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
 
     StartupLoggingUtils.checkRequestLogging();
 
