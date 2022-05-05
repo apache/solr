@@ -45,6 +45,7 @@ import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.data.Stat;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -357,19 +358,33 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
             try (ZkSolrResourceLoader loader =
                 new ZkSolrResourceLoader(dir, configsetName, null, zkController)) {
               String zkpath = "/configs/" + configsetName;
+
+              // touchConfDir doesn't make the znode
+              Stat s = new Stat();
               assertFalse(zkClient.exists(zkpath, true));
+              zkClient.makePath(zkpath, true);
+              assertTrue(zkClient.exists(zkpath, true));
+              assertNull(zkClient.getData(zkpath, null, s, true));
+              assertEquals(0, s.getVersion());
+
+              // touchConfDir should only set the data to new byte[] {0}
               ZkController.touchConfDir(loader);
               assertTrue(zkClient.exists(zkpath, true));
-              assertArrayEquals(new byte[] {0}, zkClient.getData(zkpath, null, null, true));
+              assertArrayEquals(new byte[] {0}, zkClient.getData(zkpath, null, s, true));
+              assertEquals(1, s.getVersion());
 
+              // set new data to check if touchConfDir overwrites later
               byte[] data = "new data".getBytes(StandardCharsets.UTF_8);
-              zkClient.setData(zkpath, data, true);
+              s = zkClient.setData(zkpath, data, true);
+              assertEquals(2, s.getVersion());
 
-              // make sure touchConfDir doesn't overwrite existing data
+              // make sure touchConfDir doesn't overwrite existing data.
+              // touchConfDir should update version.
               assertTrue(zkClient.exists(zkpath, true));
               ZkController.touchConfDir(loader);
               assertTrue(zkClient.exists(zkpath, true));
-              assertArrayEquals(data, zkClient.getData(zkpath, null, null, true));
+              assertArrayEquals(data, zkClient.getData(zkpath, null, s, true));
+              assertEquals(3, s.getVersion());
             }
           }
         } finally {
