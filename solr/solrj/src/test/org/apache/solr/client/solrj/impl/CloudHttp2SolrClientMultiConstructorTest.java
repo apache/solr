@@ -71,7 +71,10 @@ public class CloudHttp2SolrClientMultiConstructorTest extends SolrTestCase {
     try (CloudHttp2SolrClient client =
         new CloudHttp2SolrClient.Builder(new ArrayList<>(hosts), Optional.ofNullable(clientChroot))
             .build()) {
-      assertEquals(sb.toString(), ZkClientClusterStateProvider.from(client).getZkHost());
+      try (ZkClientClusterStateProvider zkClientClusterStateProvider =
+          ZkClientClusterStateProvider.from(client)) {
+        assertEquals(sb.toString(), zkClientClusterStateProvider.getZkHost());
+      }
     }
   }
 
