@@ -1186,20 +1186,26 @@ public class ZkController implements Closeable {
             null,
             zkClient.getZkACLProvider().getACLsToAdd(nodePath),
             CreateMode.EPHEMERAL));
+    zkClient.multi(ops, true);
 
+    List<Op> roleNodesOps = new ArrayList<>();
     // Create the roles node as well
     cc.nodeRoles
         .getRoles()
         .forEach(
             (role, mode) ->
-                ops.add(
+                    roleNodesOps.add(
                     Op.create(
                         NodeRoles.getZNodeForRoleMode(role, mode) + "/" + nodeName,
                         null,
                         zkClient.getZkACLProvider().getACLsToAdd(nodePath),
                         CreateMode.EPHEMERAL)));
-
-    zkClient.multi(ops, true);
+    try {
+      zkClient.multi(roleNodesOps, true);
+    } catch (KeeperException e) {
+      log.error("Error creating role nodes ", e);
+      //Unable to create role nodes
+    }
   }
 
   public void removeEphemeralLiveNode() throws KeeperException, InterruptedException {
