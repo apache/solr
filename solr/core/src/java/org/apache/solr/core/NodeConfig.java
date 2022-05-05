@@ -427,11 +427,8 @@ public class NodeConfig {
     Set<String> libDirs = new LinkedHashSet<>();
     libDirs.add("lib");
 
-    // Always add $SOLR_TIP/lib to the shared resource loader, to allow loading of i.e.
-    // /opt/solr/lib/foo.jar
-    if (getSolrInstallDir() != null) {
-      libDirs.add(getSolrInstallDir().resolve("lib").toAbsolutePath().normalize().toString());
-    }
+    // Always add $SOLR_TIP/lib to the shared resource loader
+    libDirs.add(getSolrInstallDir().resolve("lib").toAbsolutePath().normalize().toString());
 
     if (!StringUtils.isBlank(getSharedLibDirectory())) {
       List<String> sharedLibs = Arrays.asList(getSharedLibDirectory().split("\\s*,\\s*"));
