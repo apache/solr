@@ -99,7 +99,7 @@ public abstract class CloudSolrClient extends SolrClient {
   // no of times collection state to be reloaded if stale state error is received
   private static final int MAX_STALE_RETRIES =
       Integer.parseInt(System.getProperty("cloudSolrClientMaxStaleRetries", "5"));
-  private Random rand = new Random();
+  private final Random rand = new Random();
 
   private final boolean updatesToLeaders;
   private final boolean directUpdatesToLeadersOnly;
@@ -304,7 +304,8 @@ public abstract class CloudSolrClient extends SolrClient {
   @Override
   public void close() throws IOException {
     if (this.threadPool != null && !this.threadPool.isShutdown()) {
-      this.threadPool.shutdown();
+      ExecutorUtil.shutdownAndAwaitTermination(this.threadPool);
+      this.threadPool = null;
     }
   }
 
