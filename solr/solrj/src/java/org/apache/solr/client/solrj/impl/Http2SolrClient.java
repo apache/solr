@@ -187,9 +187,9 @@ public class Http2SolrClient extends SolrClient {
   private HttpClient createHttpClient(Builder builder) {
     HttpClient httpClient;
 
-    BlockingArrayQueue<Runnable> queue = new BlockingArrayQueue<>(256, 256);
     executor = builder.executor;
     if (executor == null) {
+      BlockingArrayQueue<Runnable> queue = new BlockingArrayQueue<>(256, 256);
       this.executor =
           new ExecutorUtil.MDCAwareThreadPoolExecutor(
               32, 256, 60, TimeUnit.SECONDS, queue, new SolrNamedThreadFactory("h2sc"));
@@ -241,6 +241,7 @@ public class Http2SolrClient extends SolrClient {
     try {
       httpClient.start();
     } catch (Exception e) {
+      close(); // make sure we clean up
       throw new RuntimeException(e);
     }
 
@@ -250,16 +251,18 @@ public class Http2SolrClient extends SolrClient {
   public void close() {
     // we wait for async requests, so far devs don't want to give sugar for this
     asyncTracker.waitForComplete();
-    if (closeClient) {
-      try {
+    try {
+      if (closeClient) {
         httpClient.setStopTimeout(1000);
         httpClient.stop();
-      } catch (Exception e) {
-        throw new RuntimeException("Exception on closing client", e);
+        httpClient.destroy();
       }
-    }
-    if (shutdownExecutor) {
-      ExecutorUtil.shutdownAndAwaitTermination(executor);
+    } catch (Exception e) {
+      throw new RuntimeException("Exception on closing client", e);
+    } finally {
+      if (shutdownExecutor) {
+        ExecutorUtil.shutdownAndAwaitTermination(executor);
+      }
     }
 
     assert ObjectReleaseTracker.release(this);
