@@ -40,7 +40,7 @@ public class DefaultConnectionStrategy extends ZkClientConnectionStrategy {
       success = true;
     } finally {
       if (!success) {
-        zk.close();
+        SolrZkClient.closeAsync(zk);
       }
     }
   }
@@ -64,7 +64,7 @@ public class DefaultConnectionStrategy extends ZkClientConnectionStrategy {
     } finally {
       if (!success) {
         try {
-          zk.close();
+          SolrZkClient.closeAsync(zk);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
         }
