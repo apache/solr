@@ -53,3 +53,4 @@ runtime:
 antora:
   extensions:
     - '@antora/lunr-extension'
+      index_latest_only: true
