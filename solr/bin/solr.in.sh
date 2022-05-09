@@ -290,3 +290,4 @@
 
 # The bundled plugins in the "modules" folder can easily be enabled as a comma-separated list in SOLR_MODULES variable
 # SOLR_MODULES=extraction,ltr
+# SOLRJ_MODULES=aws-secret-provider

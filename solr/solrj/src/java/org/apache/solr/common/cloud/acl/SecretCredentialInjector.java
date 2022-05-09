@@ -17,7 +17,10 @@
 package org.apache.solr.common.cloud.acl;
 
 import java.lang.invoke.MethodHandles;
-import java.util.List;
+import java.util.*;
+
+import org.apache.solr.common.ModuleUtils;
+import org.apache.solr.common.ModulesClassLoader;
 import org.apache.solr.common.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,25 +34,23 @@ import org.slf4j.LoggerFactory;
  */
 public class SecretCredentialInjector implements ZkCredentialsInjector {
 
-  public static final String SECRET_CREDENTIAL_PROVIDER_CLASS_VM_PARAM =
-      "zkSecretCredentialsProvider";
-  public static final String SECRET_CREDENTIAL_PROVIDER_SECRET_NAME_VM_PARAM =
-      "zkSecretCredentialSecretName";
-  private static final String SECRET_CREDENTIAL_PROVIDER_SECRET_NAME_DEFAULT =
-      "zkCredentialsSecret";
-
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  public static final String SECRET_CREDENTIAL_PROVIDER_CLASS_VM_PARAM = "zkSecretCredentialsProvider";
+  public static final String SECRET_CREDENTIAL_PROVIDER_SECRET_NAME_VM_PARAM = "zkSecretCredentialSecretName";
+  private static final String SECRET_CREDENTIAL_PROVIDER_SECRET_NAME_DEFAULT = "zkCredentialsSecret";
+
+  private final ModulesClassLoader resourceLoader;
   private final String secretName;
   private volatile SecretCredentialsProvider secretCredentialProvider;
 
   public SecretCredentialInjector() {
-    String secretNameVmParam =
-        System.getProperties().getProperty(SECRET_CREDENTIAL_PROVIDER_SECRET_NAME_VM_PARAM);
-    secretName =
-        !StringUtils.isEmpty(secretNameVmParam)
-            ? secretNameVmParam
-            : SECRET_CREDENTIAL_PROVIDER_SECRET_NAME_DEFAULT;
+    String secretNameVmParam = System.getProperties().getProperty(SECRET_CREDENTIAL_PROVIDER_SECRET_NAME_VM_PARAM);
+    secretName = !StringUtils.isEmpty(secretNameVmParam)
+                      ? secretNameVmParam
+                      : SECRET_CREDENTIAL_PROVIDER_SECRET_NAME_DEFAULT;
+    resourceLoader = new ModulesClassLoader();
+    ModuleUtils.initModules(resourceLoader);
   }
 
   @Override
@@ -73,14 +74,13 @@ public class SecretCredentialInjector implements ZkCredentialsInjector {
         System.getProperty(SECRET_CREDENTIAL_PROVIDER_CLASS_VM_PARAM);
     try {
       log.info("Using SecretCredentialProvider: {}", secretZkCredentialsProviderClassName);
-      return (SecretCredentialsProvider)
-          Class.forName(secretZkCredentialsProviderClassName).getConstructor().newInstance();
+      return resourceLoader.newInstance(secretZkCredentialsProviderClassName,
+              SecretCredentialsProvider.class);
     } catch (Throwable t) {
       // Fail-fast
       throw new IllegalArgumentException(
           "Could not instantiate the SecretCredentialProvider class "
-              + "with name: "
-              + secretZkCredentialsProviderClassName,
+              + "with name: " + secretZkCredentialsProviderClassName,
           t);
     }
   }
