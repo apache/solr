@@ -671,9 +671,11 @@ groups:
     vars:
       logfile: '{{ [rc_folder, ''logs'', ''buildAndPushRelease.log''] | path_join }}'
       git_rev: '{{ current_git_rev }}' # Note, git_rev will be recorded in todo state AFTER completion of commands
+      git_rev_short: '{{ git_rev | truncate(7,true,"") }}' # Note, git_rev_short will be recorded in todo state AFTER completion of commands
       local_keys: '{% if keys_downloaded %} --local-keys "{{ [config_path, ''KEYS''] | path_join }}"{% endif %}'
     persist_vars:
-    - git_rev
+      - git_rev
+      - git_rev_short
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
       commands_text: |-
@@ -955,7 +957,7 @@ groups:
     id: stage_maven
     title: Stage the maven artifacts for publishing
     vars:
-      git_sha: '{{ build_rc.git_rev | default("<git_sha>", True) | truncate(7,true,"") }}'
+      git_sha: '{{ build_rc.git_rev_short | default("<git_sha>", True) }}'
       dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
@@ -972,7 +974,7 @@ groups:
     depends: stage_maven
     title: Publish the staged maven artifacts
     vars:
-      git_sha: '{{ build_rc.git_rev | default("<git_sha>", True) | truncate(7,true,"") }}'
+      git_sha: '{{ build_rc.git_rev_short | default("<git_sha>", True) }}'
     description: |
       Once you have transferred all maven artifacts to repository.apache.org,
       you will need to do some manual steps to actually release them to Maven Central:
