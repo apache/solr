@@ -19,6 +19,7 @@
 function LOG() {
   local STATUS=$1
   local MESSAGE=$2
+  echo ""
   echo "[$(date)] ${STATUS} ${MESSAGE}"
 }
 
@@ -28,15 +29,16 @@ Usage: dev-tools/scripts/upload-maven.sh [<options>]
  -v    The version of Solr
  -c    The commit hash for this version of Solr
  -d    Directory where the maven artifacts to upload live.
+ -u    ASF Username
 
-You must also have the environment variables "ASF_USERNAME" and "ASF_PASSWORD" set.
+If "ASF_PASSWORD" is not set, you will be prompted for your password.
 
 Example:
-  dev-tools/scripts/upload-maven.sh -v 9.0.0 -c asdf23 -d /tmp/release-candidate/maven
+  dev-tools/scripts/upload-maven.sh -v 9.0.0 -c asdf23 -d /tmp/release-candidate/maven -u houston
 EOF
 }
 
-while getopts ":hv:c:d:" opt; do
+while getopts ":hv:c:d:u:" opt; do
   case ${opt} in
     v)
       SOLR_VERSION="$OPTARG"
@@ -46,6 +48,9 @@ while getopts ":hv:c:d:" opt; do
       ;;
     d)
       MAVEN_DIRECTORY="$OPTARG"
+      ;;
+    u)
+      ASF_USERNAME="$OPTARG"
       ;;
     h)
       usage
@@ -60,33 +65,37 @@ done
 shift $((OPTIND -1))
 
 if [[ -z "$SOLR_VERSION" ]]; then
-  LOG INFO "Lacking -v option, must specify Solr version."
+  LOG ERROR "Lacking -v option, must specify Solr version."
   usage
-  exit
+  exit 1
 fi
 
 if [[ -z "$COMMIT_HASH" ]]; then
-  LOG INFO "Lacking -c option, must specify Commit Hash."
+  LOG ERROR "Lacking -c option, must specify Commit Hash."
   usage
-  exit
+  exit 1
 fi
 
 if [[ -z "$MAVEN_DIRECTORY" ]]; then
-  LOG INFO "Lacking -d option, must specify directory where maven artifacts live."
+  LOG ERROR "Lacking -d option, must specify directory where maven artifacts live."
   usage
-  exit
+  exit 1
 fi
 
 if [[ -z "$ASF_USERNAME" ]]; then
-  LOG ERROR 'The environment variable ASF_USERNAME is not set.'
+  LOG ERROR 'Lacking -u option or ASF_USERNAME envVar, must specify ASF Username to upload artifacts.'
   usage
-  exit
+  exit 1
 fi
 
 if [[ -z "$ASF_PASSWORD" ]]; then
-  LOG ERROR 'The environment variable ASF_PASSWORD is not set.'
-  usage
-  exit
+  LOG INFO 'The environment variable ASF_PASSWORD is not set.'
+  stty -echo
+  echo ""
+  echo "Please provide ${ASF_USERNAME}'s ASF Password:"
+  read ASF_PASSWORD
+  stty echo
+  printf "\n"
 fi
 
 NEXUS_ROOT=https://repository.apache.org/service/local/staging
@@ -112,12 +121,18 @@ function finalize_staging_repo() {
         "$NEXUS_ROOT/profiles/$NEXUS_PROFILE/finish")
 }
 
-echo "Creating Nexus staging repository"
+LOG "INFO" "Creating Nexus staging repository"
+printf "\n\n"
 STAGING_REPO_ID="$(create_staging_repo)"
-echo "Staging repo created with id: ${STAGING_REPO_ID}"
+if [[ -z "$STAGING_REPO_ID" ]]; then
+  LOG ERROR "Error creating staging repo, please debug using the curl output logged above."
+  exit 1
+fi
+LOG "INFO"  "Staging repo created with id: ${STAGING_REPO_ID}"
 
 printf "\n\n"
-echo "Uploading files to Nexus staging repository"
+LOG "INFO" "Uploading files to Nexus staging repository"
+printf "\n\n"
 (
   cd "${MAVEN_DIRECTORY}"
 
@@ -134,7 +149,8 @@ echo "Uploading files to Nexus staging repository"
 )
 
 printf "\n\n"
-echo "Finalizing Nexus staging repository"
+LOG "INFO" "Finalizing Nexus staging repository"
+printf "\n\n"
 finalize_staging_repo "${STAGING_REPO_ID}"
 
 printf "\n\n"
