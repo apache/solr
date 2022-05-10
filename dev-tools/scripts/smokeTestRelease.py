@@ -27,7 +27,6 @@ import re
 import shutil
 import subprocess
 import sys
-import tempfile
 import textwrap
 import traceback
 import urllib.error
@@ -1014,7 +1013,7 @@ def parse_config():
   parser = argparse.ArgumentParser(description=description, epilog=epilogue,
                                    formatter_class=argparse.RawDescriptionHelpFormatter)
   parser.add_argument('--tmp-dir', metavar='PATH',
-                      help='Temporary directory to test inside, defaults to $TMPDIR/smoke_solr_$version_$revision ')
+                      help='Temporary directory to test inside, defaults to /tmp/smoke_solr_$version_$revision')
   parser.add_argument('--not-signed', dest='is_signed', action='store_false', default=True,
                       help='Indicates the release is not signed')
   parser.add_argument('--local-keys', metavar='PATH',
@@ -1058,7 +1057,12 @@ def parse_config():
   if c.tmp_dir:
     c.tmp_dir = os.path.abspath(c.tmp_dir)
   else:
-    c.tmp_dir = tempfile.mkdtemp(prefix = 'smoke_solr_%s_%s' % (c.version, c.revision))
+    tmp = '/tmp/smoke_solr_%s_%s' % (c.version, c.revision)
+    c.tmp_dir = tmp
+    i = 1
+    while os.path.exists(c.tmp_dir):
+      c.tmp_dir = tmp + '_%d' % i
+      i += 1
 
   return c
 
@@ -1088,7 +1092,7 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
   testArgs = '-Dtests.nightly=false -Dtests.badapples=false %s' % testArgs
 
   if FORCE_CLEAN:
-    if os.path.exists(tmpDir) and len(os.listdir(tmpDir)) > 0:
+    if os.path.exists(tmpDir):
       raise RuntimeError('temp dir %s exists; please remove first' % tmpDir)
 
   if not os.path.exists(tmpDir):
