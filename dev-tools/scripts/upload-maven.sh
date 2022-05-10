@@ -93,7 +93,7 @@ if [[ -z "$ASF_PASSWORD" ]]; then
   stty -echo
   echo ""
   echo "Please provide ${ASF_USERNAME}'s ASF Password:"
-  read ASF_PASSWORD
+  read -r ASF_PASSWORD
   stty echo
   printf "\n"
 fi
@@ -105,26 +105,27 @@ NEXUS_PROFILE=4bfe5196a41e63 # Profile for Solr staging uploads
 # https://support.sonatype.com/entries/39720203-Uploading-to-a-Staging-Repository-via-REST-API
 
 function create_staging_repo() {
-  repo_request="<promoteRequest><data><description>Apache Solr $SOLR_VERSION (commit $COMMIT_HASH)</description></data></promoteRequest>"
-  out=$(curl -X POST -d "$repo_request" -u "$ASF_USERNAME:$ASF_PASSWORD" \
+  repo_request="<promoteRequest><data><description>Apache Solr ${SOLR_VERSION} (commit ${COMMIT_HASH})</description></data></promoteRequest>"
+  out="$(curl -X POST -d "${repo_request}" -u "${ASF_USERNAME}:${ASF_PASSWORD}" \
     -H "Content-Type:application/xml" -v \
-    "$NEXUS_ROOT/profiles/$NEXUS_PROFILE/start")
-  staged_repo_id=$(echo $out | sed -e "s/.*\(orgapachesolr-[0-9]\{4\}\).*/\1/")
-  echo "$staged_repo_id"
+    "${NEXUS_ROOT}/profiles/${NEXUS_PROFILE}/start")"
+  # shellcheck disable=SC2001
+  staged_repo_id="$(echo "${out}" | tr -d '\n' | tr -d '\r' | sed -e "s/.*\(orgapachesolr-[0-9]\{4\}\).*/\1/")"
+  echo "${staged_repo_id}"
 }
 
 function finalize_staging_repo() {
-  STAGING_REPO_ID=$1
-  repo_request="<promoteRequest><data><stagedRepositoryId>$STAGING_REPO_ID</stagedRepositoryId><description>Apache Solr $SOLR_VERSION (commit $COMMIT_HASH)</description></data></promoteRequest>"
-      out=$(curl -X POST -d "$repo_request" -u "$ASF_USERNAME:$ASF_PASSWORD" \
+  STAGING_REPO_ID="$1"
+  repo_request="<promoteRequest><data><stagedRepositoryId>${STAGING_REPO_ID}</stagedRepositoryId><description>Apache Solr ${SOLR_VERSION} (commit ${COMMIT_HASH})</description></data></promoteRequest>"
+      out=$(curl -X POST -d "${repo_request}" -u "${ASF_USERNAME}:${ASF_PASSWORD}" \
         -H "Content-Type:application/xml" -v \
-        "$NEXUS_ROOT/profiles/$NEXUS_PROFILE/finish")
+        "${NEXUS_ROOT}/profiles/${NEXUS_PROFILE}/finish")
 }
 
 LOG "INFO" "Creating Nexus staging repository"
 printf "\n\n"
 STAGING_REPO_ID="$(create_staging_repo)"
-if [[ -z "$STAGING_REPO_ID" ]]; then
+if [[ -z "${STAGING_REPO_ID}" ]]; then
   LOG ERROR "Error creating staging repo, please debug using the curl output logged above."
   exit 1
 fi
@@ -134,19 +135,21 @@ printf "\n\n"
 LOG "INFO" "Uploading files to Nexus staging repository"
 printf "\n\n"
 (
-  cd "${MAVEN_DIRECTORY}"
+  cd "${MAVEN_DIRECTORY}" || exit 1
 
-  NEXUS_FILE_UPLOAD_URL="$NEXUS_ROOT/deployByRepositoryId/$STAGING_REPO_ID"
-  for file in $(find . -type f); do
+  NEXUS_FILE_UPLOAD_URL="${NEXUS_ROOT}/deployByRepositoryId/${STAGING_REPO_ID}"
+  while IFS= read -r -d '' file
+  do
     if [[ $file == *"maven-metadata"* ]]; then
       continue
     fi
     # strip leading ./
-    file_short="$(echo "$file" | sed -e "s/\.\///")"
-    echo "  Uploading $file_short"
-    curl -u "$ASF_USERNAME:$ASF_PASSWORD" --upload-file "$file_short" "$NEXUS_FILE_UPLOAD_URL/$file_short"
-  done
-)
+    file_short="${file#./}"
+    echo "  Uploading ${file_short}"
+    curl -u "${ASF_USERNAME}:${ASF_PASSWORD}" --upload-file "${file_short}" "${NEXUS_FILE_UPLOAD_URL}/${file_short}"
+  done <   <(find . -type f -print0)
+) || exit 1
+pwd
 
 printf "\n\n"
 LOG "INFO" "Finalizing Nexus staging repository"
