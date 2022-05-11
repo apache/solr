@@ -125,7 +125,7 @@ changed package name to `org.apache.solr.security.jwt`, but can still be loaded 
 * Official Docker image upgraded to use JDK17 (by Eclipse Temurin) and ability to create functionally identical local image.
 
 === Other
-* Contrib modules are now just "modules". You can easily enable module(s) through environment variable `SOLR_MODULES`.
+* xref:configuration-guide:solr-modules.adoc[Contrib modules] are now just "modules". You can easily enable module(s) through environment variable `SOLR_MODULES`.
 * Features lifted out as separate modules are: HDFS, Hadoop-Auth, SQL, Scripting, and JWT-Auth.
 * The "dist" folder in the release has been removed. Please update your `<lib>` entries in your `solrconfig.xml` to use the new location.
 ** The `solr-core` and `solr-solrj` jars can be found under `server/solr-webapp/webapp/WEB-INF/lib/`.
