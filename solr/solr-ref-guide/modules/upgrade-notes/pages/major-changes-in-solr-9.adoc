@@ -89,7 +89,7 @@ to switch back if needed.
 * Atomic/partial updates to nested documents now _require_ the `\_root_` field to clearly show the document isn't a root document.  Solr 8 would fallback on the `\_route_` param but no longer.
 
 === Security
-* Certificate Authentication Plugin, enabling end-to-end use of x509 client certificates for Authentication and Authorization.
+* New xref:deployment-guide:cert-authentication-plugin.adoc[Certificate Authentication Plugin], enabling end-to-end use of x509 client certificates for Authentication and Authorization.
 * Improved security when using PKI Authentication plugin.
 * Upgrade to Zookeeper 3.7, allowing for TLS protected ZK communication.
 * All request handlers support security permissions. Users may have to adapt their `security.json`.
