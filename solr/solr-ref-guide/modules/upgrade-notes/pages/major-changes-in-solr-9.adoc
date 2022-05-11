@@ -74,7 +74,7 @@ Due to changes in Lucene 9, that isn't possible any more.
 Users/apps may be assuming the old behavior. A request can be modified via the standard `distrib=false` param to only use the local core receiving the request.
 * SQL support has been moved to the sql module. Existing Solr configurations do not need any SQL related changes, however the module needs to be installed - see the section xref:query-guide:sql-query.adoc[].
 * JSON aggregations uses corrected sample formula to compute standard deviation and variance. The computation of stdDev and variance in JSON aggregation is same as StatsComponent.
-* SOLR-11775: Facet count in Json Facet module always returns a long value for irrespective of number of shards.
+* Facet count in Json Facet module always returns a `long` value, irrespective of number of shards.
 * SOLR-12891: MacroExpander will no longer will expand URL parameters inside of the 'expr' parameter (used by streaming expressions).
 Additionally, users are advised to use the 'InjectionDefense' class when constructing streaming expressions that include user supplied data to avoid risks similar to SQL injection. The legacy behavior of expanding the 'expr' parameter can be reinstated with -DStreamingExpressionMacros=true passed to the JVM at startup
 * SOLR-9376: The response format for field values serialized as raw XML (via the `[xml]` raw value DocTransformer
