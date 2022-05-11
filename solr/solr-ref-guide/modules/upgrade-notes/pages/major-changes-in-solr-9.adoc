@@ -105,7 +105,7 @@ This may require some more disk space for logs than was the case in version 8.x.
 * Hadoop authentication support has been moved to the new `hadoop-auth` module. Existing Solr configurations do not need any Hadoop authentication related changes, however the module needs to be installed - see the section xref:deployment-guide:hadoop-authentication-plugin.adoc[].
 * xref:deployment-guide:jwt-authentication-plugin.adoc[JWTAuthPlugin] has been moved to a module. Users need to add the module `jwt-auth` to classpath. The plugin has also
 changed package name to `org.apache.solr.security.jwt`, but can still be loaded as shortform `class="solr.JWTAuthPlugin"`.
-* Dependency updates - A lot of dependency updates make Solr overall much more secure.
+* Dependency updates - A lot of dependency updates removes several security issues from dependencies, and thus make Solr more secure.
 * The allow-list defining allowed URLs for the `shards` parameter is not in the `shardHandler` configuration anymore. It is defined by the `allowUrls` top-level property of the `solr.xml` file. For more information, see xref:configuration-guide:configuring-solr-xml.adoc#allow-urls[Format of solr.allowUrls] documentation.
 * To improve security, `StatelessScriptUpdateProcessorFactory` has been renamed as `ScriptUpdateProcessorFactory` and moved to `modules/scripting` package instead of shipping as part of Solr core.
 * To improve security, `XSLTResponseWriter` has been moved to `modules/scripting` package instead of shipping as part of Solr core.
