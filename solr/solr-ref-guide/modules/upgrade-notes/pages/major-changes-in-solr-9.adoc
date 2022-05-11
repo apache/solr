@@ -148,7 +148,7 @@ changes, however the module needs to be installed - see the section xref:deploym
 * `base_url` has been removed from stored cluster state. If you're able to upgrade SolrJ to 8.8.x for all of your client applications, then you can set `-Dsolr.storeBaseUrl=false` (introduced in Solr 8.8.1) to better align the stored state in Zookeeper with future versions of Solr; as of Solr 9.x, the `base_url` will no longer be persisted in stored state.
 However, if you are not able to upgrade SolrJ to 8.8.x for all client applications, then you should set `-Dsolr.storeBaseUrl=true` so that Solr will continue to store the `base_url` in Zookeeper. For background, see: link:https://issues.apache.org/jira/browse/SOLR-12182[SOLR-12182] and link:https://issues.apache.org/jira/browse/SOLR-15145[SOLR-15145]. Support for the `solr.storeBaseUrl` system property will be removed in Solr 10.x and `base_url` will no longer be stored.
 * Analyzer components can now be looked up by their SPI names based on the field type configuration.
-* solr-extraction module has been cleaned up to produce solr-extraction-* jar instead of solr-cell-* jars.
+* The `solr-extraction` module has been cleaned up to produce `solr-extraction-*` jar instead of `solr-cell-*` jars.
 * Extra lucene libraries used in modules are no longer packaged in `lucene-libs/` under module directories in the binary release.
 Instead, these libraries will be included with all other module dependencies in `lib/`.
 
