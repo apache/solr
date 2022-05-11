@@ -1050,7 +1050,7 @@ groups:
       commands_text: In the source checkout do the following (note that this step will prompt you for your Apache LDAP credentials)
       commands:
         - !Command
-          cmd: bash dev-tools/scripts/upload-maven.sh -u {{ gpg.apache_id }}  -v {{ release_version }} -c {{ git_sha }} -d "{{ [dist_file_path, dist_folder, 'solr', 'maven'] | path_join }}"
+          cmd: bash dev-tools/scripts/upload-maven.sh -u {{ gpg.apache_id }}  -v {{ release_version }} -c {{ git_sha }} -d "{{ [dist_file_path, dist_folder, 'solr', 'maven'] | path_join | expanduser }}"
           tee: true
           logfile: publish_solr_maven.log
     post_description: The artifacts are not published yet, please proceed with the next step to actually publish!
