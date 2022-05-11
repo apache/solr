@@ -77,7 +77,7 @@ Users/apps may be assuming the old behavior. A request can be modified via the s
 * Facet count in Json Facet module always returns a `long` value, irrespective of number of shards.
 * SOLR-12891: MacroExpander will no longer will expand URL parameters inside of the 'expr' parameter (used by streaming expressions).
 Additionally, users are advised to use the 'InjectionDefense' class when constructing streaming expressions that include user supplied data to avoid risks similar to SQL injection. The legacy behavior of expanding the 'expr' parameter can be reinstated with -DStreamingExpressionMacros=true passed to the JVM at startup
-* SOLR-9376: The response format for field values serialized as raw XML (via the `[xml]` raw value DocTransformer
+* The response format for field values serialized as raw XML (via the `[xml]` raw value DocTransformer
 and `wt=xml`) has changed. Previously, values were dropped in directly as top-level child elements of each `<doc>`,
 obscuring associated field names and yielding inconsistent `<doc>` structure. As of version 9.0, raw values are
 wrapped in a `<raw name="field_name">[...]</raw>` element at the top level of each `<doc>` (or within an enclosing
