@@ -1119,7 +1119,7 @@ groups:
         cmd: "{{ gradle_cmd }} documentation -Dversion.release={{ release_version }}"
         comment: Build documentation
       - !Command
-        cmd: svn -m "Add docs, changes and javadocs for Solr {{ release_version }}"  import {{ git_checkout_folder }}/solr/build/docs  https://svn.apache.org/repos/infra/sites/solr/docs/{{ version }}
+        cmd: svn -m "Add docs, changes and javadocs for Solr {{ release_version }}"  import {{ git_checkout_folder }}/solr/documentation/build/site https://svn.apache.org/repos/infra/sites/solr/docs/{{ version }}
         logfile: add-docs-solr.log
         comment: Add docs for Solr
   - !Todo
