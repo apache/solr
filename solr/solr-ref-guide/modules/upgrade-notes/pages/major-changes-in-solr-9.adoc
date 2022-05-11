@@ -171,7 +171,6 @@ Switch back to synchronous logging if this is unacceptable, see comments in the 
 * `LegacyBM25SimilarityFactory` has been removed.
 * Legacy SolrCache implementations (LRUCache, LFUCache, FastLRUCache) have been removed. Users have to modify their existing configurations to use CaffeineCache instead.
 * `VelocityResponseWriter` is an independent project now; it is no longer a part of Solr. This encompasses all previously included /browse and wt=velocity examples
-* Legacy SolrCache implementations (LRUCache, LFUCache, FastLRUCache) have been removed.
 * Cross Data Center Replication has been removed.
 * SolrJ clients like `HttpSolrClient` and `LBHttpSolrClient` that lacked HTTP2 support have been deprecated. The old CloudSolrClient has been renamed as CloudLegacySolrClient and deprecated.
 * SimpleFSDirectoryFactory is removed in favor of NIOFSDirectoryFactory
