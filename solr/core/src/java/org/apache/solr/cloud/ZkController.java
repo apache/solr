@@ -59,6 +59,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -74,6 +75,11 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.cloud.Replica.Type;
+import org.apache.solr.common.cloud.acl.DefaultZkCredentialsInjector;
+import org.apache.solr.common.cloud.acl.SecurityAwareZkACLProvider;
+import org.apache.solr.common.cloud.acl.ZkACLProvider;
+import org.apache.solr.common.cloud.acl.ZkCredentialsInjector;
+import org.apache.solr.common.cloud.acl.ZkCredentialsProvider;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -323,22 +329,29 @@ public class ZkController implements Closeable {
     ZkClientConnectionStrategy strat =
         ZkClientConnectionStrategy.forName(connectionStrategy, new DefaultConnectionStrategy());
 
+    String zkCredentialsInjectorClass = cloudConfig.getZkCredentialsInjectorClass();
+    ZkCredentialsInjector zkCredentialsInjector =
+        !StringUtils.isEmpty(zkCredentialsInjectorClass)
+            ? cc.getResourceLoader()
+                .newInstance(zkCredentialsInjectorClass, ZkCredentialsInjector.class)
+            : new DefaultZkCredentialsInjector();
+
     String zkACLProviderClass = cloudConfig.getZkACLProviderClass();
-    ZkACLProvider zkACLProvider = null;
-    if (zkACLProviderClass != null && zkACLProviderClass.trim().length() > 0) {
-      zkACLProvider = cc.getResourceLoader().newInstance(zkACLProviderClass, ZkACLProvider.class);
-    } else {
-      zkACLProvider = new DefaultZkACLProvider();
-    }
+    ZkACLProvider zkACLProvider =
+        !StringUtils.isEmpty(zkACLProviderClass)
+            ? cc.getResourceLoader().newInstance(zkACLProviderClass, ZkACLProvider.class)
+            : new DefaultZkACLProvider();
+    zkACLProvider.setZkCredentialsInjector(zkCredentialsInjector);
 
     String zkCredentialsProviderClass = cloudConfig.getZkCredentialsProviderClass();
-    if (zkCredentialsProviderClass != null && zkCredentialsProviderClass.trim().length() > 0) {
-      strat.setZkCredentialsToAddAutomatically(
-          cc.getResourceLoader()
-              .newInstance(zkCredentialsProviderClass, ZkCredentialsProvider.class));
-    } else {
-      strat.setZkCredentialsToAddAutomatically(new DefaultZkCredentialsProvider());
-    }
+    ZkCredentialsProvider zkCredentialsProvider =
+        !StringUtils.isEmpty(zkCredentialsProviderClass)
+            ? cc.getResourceLoader()
+                .newInstance(zkCredentialsProviderClass, ZkCredentialsProvider.class)
+            : new DefaultZkCredentialsProvider();
+
+    zkCredentialsProvider.setZkCredentialsInjector(zkCredentialsInjector);
+    strat.setZkCredentialsToAddAutomatically(zkCredentialsProvider);
     addOnReconnectListener(getConfigDirListener());
 
     zkClient =

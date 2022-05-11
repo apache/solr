@@ -14,7 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cloud;
+package org.apache.solr.common.cloud.acl;
 
-public class VMParamsZkACLAndCredentialsProvidersTest
-    extends AbstractDigestZkACLAndCredentialsProvidersTestBase {}
+import java.util.List;
+import org.apache.zookeeper.data.ACL;
+
+public interface ZkACLProvider {
+
+  List<ACL> getACLsToAdd(String zNodePath);
+
+  void setZkCredentialsInjector(ZkCredentialsInjector zkCredentialsInjector);
+}

@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cloud;
 
-public class VMParamsZkACLAndCredentialsProvidersTest
-    extends AbstractDigestZkACLAndCredentialsProvidersTestBase {}
+/** Classes for managing ACLs to Zookeeper */
+package org.apache.solr.common.cloud.acl;

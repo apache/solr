@@ -14,12 +14,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.common.cloud;
+package org.apache.solr.common.cloud.acl;
 
-import java.util.List;
-import org.apache.zookeeper.data.ACL;
+import java.util.Collection;
 
-public interface ZkACLProvider {
+public interface ZkCredentialsProvider {
 
-  List<ACL> getACLsToAdd(String zNodePath);
+  class ZkCredentials {
+    String scheme;
+    byte[] auth;
+
+    public ZkCredentials(String scheme, byte[] auth) {
+      super();
+      this.scheme = scheme;
+      this.auth = auth;
+    }
+
+    public String getScheme() {
+      return scheme;
+    }
+
+    public byte[] getAuth() {
+      return auth;
+    }
+  }
+
+  Collection<ZkCredentials> getCredentials();
+
+  void setZkCredentialsInjector(ZkCredentialsInjector zkCredentialsInjector);
 }
