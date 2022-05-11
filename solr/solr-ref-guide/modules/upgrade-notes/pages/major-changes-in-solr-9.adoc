@@ -404,8 +404,8 @@ The default Prometheus Exporter configuration includes metrics like queries-per-
 
 *Solr Home*
 
-* The internal logic for identifying 'Solr Home' (`solr.solr.home`) has been refactored to make testing less error prone.
-Plugin developers using `SolrPaths.locateSolrHome()` or 'new `SolrResourceLoader`' should check deprecation warnings as existing some existing functionality will be removed in 9.0.
+* The internal logic for identifying 'Solr Home' (`solr.solr.home`) has been refactored to make testing less error-prone.
+Plugin developers using `SolrPaths.locateSolrHome()` or `new SolrResourceLoader` should check deprecation warnings as existing some existing functionality will be removed in 9.0.
 https://issues.apache.org/jira/browse/SOLR-14934[SOLR-14934] has more technical details about this change for those concerned.
 
 *base_url removed from stored state*
