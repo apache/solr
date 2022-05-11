@@ -20,8 +20,9 @@ import org.apache.lucene.search.Query;
 import org.apache.solr.search.QParser;
 
 /**
- * Custom field type that overrides the prefix query behavior to map "X*" to [X TO Integer.MAX_VALUE].
- * * This is used for testing overridden prefix query for custom fields in TestOverriddenPrefixQueryForCustomFieldType
+ * Custom field type that overrides the prefix query behavior to map "X*" to [X TO
+ * Integer.MAX_VALUE]. * This is used for testing overridden prefix query for custom fields in
+ * TestOverriddenPrefixQueryForCustomFieldType
  *
  * @see TrieIntPrefixActsAsRangeQueryFieldType
  */
@@ -30,5 +31,4 @@ public class IntPointPrefixActsAsRangeQueryFieldType extends IntPointField {
   public Query getPrefixQuery(QParser parser, SchemaField sf, String termStr) {
     return getRangeQuery(parser, sf, termStr, Integer.MAX_VALUE + "", true, false);
   }
-
 }

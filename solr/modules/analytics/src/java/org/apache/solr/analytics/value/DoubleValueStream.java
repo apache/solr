@@ -21,8 +21,8 @@ import java.util.function.DoubleConsumer;
 
 /**
  * A multi-valued analytics value that can be represented as a boolean.
- * <p>
- * The back-end production of the value can change inbetween calls to {@link #streamDoubles},
+ *
+ * <p>The back-end production of the value can change inbetween calls to {@link #streamDoubles},
  * resulting in different values on each call.
  */
 public interface DoubleValueStream extends AnalyticsValueStream {
@@ -34,22 +34,26 @@ public interface DoubleValueStream extends AnalyticsValueStream {
   void streamDoubles(DoubleConsumer cons);
 
   /**
-   * An interface that represents all of the types a {@link DoubleValueStream} should be able to cast to.
+   * An interface that represents all of the types a {@link DoubleValueStream} should be able to
+   * cast to.
    */
   public static interface CastingDoubleValueStream extends DoubleValueStream, StringValueStream {}
 
   /**
-   * An abstract base for {@link CastingDoubleValueStream} that automatically casts to all types if {@link #streamDoubles} is implemented.
+   * An abstract base for {@link CastingDoubleValueStream} that automatically casts to all types if
+   * {@link #streamDoubles} is implemented.
    */
-  public static abstract class AbstractDoubleValueStream implements CastingDoubleValueStream {
+  public abstract static class AbstractDoubleValueStream implements CastingDoubleValueStream {
     @Override
     public void streamStrings(Consumer<String> cons) {
       streamDoubles((double val) -> cons.accept(Double.toString(val)));
     }
+
     @Override
     public void streamObjects(Consumer<Object> cons) {
       streamDoubles((double val) -> cons.accept(val));
     }
+
     @Override
     public AnalyticsValueStream convertToConstant() {
       return this;

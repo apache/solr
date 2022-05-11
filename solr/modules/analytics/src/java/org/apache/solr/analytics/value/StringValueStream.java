@@ -20,8 +20,8 @@ import java.util.function.Consumer;
 
 /**
  * A multi-valued analytics value that can be represented as a String.
- * <p>
- * The back-end production of the value can change inbetween calls to {@link #streamStrings},
+ *
+ * <p>The back-end production of the value can change inbetween calls to {@link #streamStrings},
  * resulting in different values on each call.
  */
 public interface StringValueStream extends AnalyticsValueStream {
@@ -33,18 +33,21 @@ public interface StringValueStream extends AnalyticsValueStream {
   void streamStrings(Consumer<String> cons);
 
   /**
-   * An interface that represents all of the types a {@link StringValueStream} should be able to cast to.
+   * An interface that represents all of the types a {@link StringValueStream} should be able to
+   * cast to.
    */
   public static interface CastingStringValueStream extends StringValueStream {}
 
   /**
-   * An abstract base for {@link CastingStringValueStream} that automatically casts to all types if {@link #streamStrings} is implemented.
+   * An abstract base for {@link CastingStringValueStream} that automatically casts to all types if
+   * {@link #streamStrings} is implemented.
    */
-  public static abstract class AbstractStringValueStream implements CastingStringValueStream {
+  public abstract static class AbstractStringValueStream implements CastingStringValueStream {
     @Override
     public void streamObjects(Consumer<Object> cons) {
       streamStrings((String val) -> cons.accept(val));
     }
+
     @Override
     public AnalyticsValueStream convertToConstant() {
       return this;

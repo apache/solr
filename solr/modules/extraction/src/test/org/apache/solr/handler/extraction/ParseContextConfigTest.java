@@ -16,9 +16,8 @@
  */
 package org.apache.solr.handler.extraction;
 
-import javax.xml.parsers.DocumentBuilderFactory;
 import java.nio.file.Paths;
-
+import javax.xml.parsers.DocumentBuilderFactory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.tika.parser.ParseContext;
@@ -28,11 +27,10 @@ import org.w3c.dom.Element;
 
 public class ParseContextConfigTest extends SolrTestCaseJ4 {
 
-  public void  testAll() throws Exception {
+  public void testAll() throws Exception {
     Document document = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
     Element entries = document.createElement("entries");
     Element entry = document.createElement("entry");
-
 
     entry.setAttribute("class", "org.apache.tika.parser.pdf.PDFParserConfig");
     entry.setAttribute("impl", "org.apache.tika.parser.pdf.PDFParserConfig");
@@ -44,11 +42,11 @@ public class ParseContextConfigTest extends SolrTestCaseJ4 {
     entry.appendChild(property);
     entries.appendChild(entry);
 
-    ParseContext parseContext = new ParseContextConfig(new SolrResourceLoader(Paths.get(".")), entries).create();
+    ParseContext parseContext =
+        new ParseContextConfig(new SolrResourceLoader(Paths.get(".")), entries).create();
 
     PDFParserConfig pdfParserConfig = parseContext.get(PDFParserConfig.class);
 
     assertEquals(true, pdfParserConfig.getExtractInlineImages());
   }
-
 }

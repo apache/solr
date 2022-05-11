@@ -17,7 +17,6 @@
 package org.apache.solr.spelling;
 
 import java.io.IOException;
-
 import org.apache.lucene.search.spell.JaroWinklerDistance;
 import org.apache.lucene.search.spell.LevenshteinDistance;
 import org.apache.lucene.search.spell.LuceneLevenshteinDistance;
@@ -30,62 +29,69 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class ConjunctionSolrSpellCheckerTest extends SolrTestCase {
-  
-  public static final Class<?>[] AVAILABLE_DISTANCES = {LevenshteinDistance.class, LuceneLevenshteinDistance.class,
-      JaroWinklerDistance.class, NGramDistance.class};
+
+  public static final Class<?>[] AVAILABLE_DISTANCES = {
+    LevenshteinDistance.class,
+    LuceneLevenshteinDistance.class,
+    JaroWinklerDistance.class,
+    NGramDistance.class
+  };
 
   @Test
   public void test() throws Exception {
     ConjunctionSolrSpellChecker cssc = new ConjunctionSolrSpellChecker();
     @SuppressWarnings("unchecked")
-    Class<StringDistance> sameDistance = (Class<StringDistance>) AVAILABLE_DISTANCES[random().nextInt(AVAILABLE_DISTANCES.length)];
-    
+    Class<StringDistance> sameDistance =
+        (Class<StringDistance>) AVAILABLE_DISTANCES[random().nextInt(AVAILABLE_DISTANCES.length)];
+
     StringDistance sameDistance1 = sameDistance.getConstructor().newInstance();
     StringDistance sameDistance2 = sameDistance.getConstructor().newInstance();
-    
-    //NGramDistance defaults to 2, so we'll try 3 or 4 to ensure we have one that is not-equal.
+
+    // NGramDistance defaults to 2, so we'll try 3 or 4 to ensure we have one that is not-equal.
     StringDistance differentDistance = new NGramDistance(3);
-    if(sameDistance1.equals(differentDistance)) {
+    if (sameDistance1.equals(differentDistance)) {
       differentDistance = new NGramDistance(4);
-      if(sameDistance1.equals(differentDistance)) {
-        fail("Cannot set up test.  2 NGramDistances with different gram sizes should not be equal.");
+      if (sameDistance1.equals(differentDistance)) {
+        fail(
+            "Cannot set up test.  2 NGramDistances with different gram sizes should not be equal.");
       }
     }
-    Assert.assertEquals("The distance " + sameDistance + " does not properly implement equals.", sameDistance1, sameDistance2);
-    
-    
+    Assert.assertEquals(
+        "The distance " + sameDistance + " does not properly implement equals.",
+        sameDistance1,
+        sameDistance2);
+
     MockSolrSpellChecker checker1 = new MockSolrSpellChecker(sameDistance1);
     MockSolrSpellChecker checker2 = new MockSolrSpellChecker(sameDistance2);
     MockSolrSpellChecker checker3 = new MockSolrSpellChecker(differentDistance);
-    
+
     cssc.addChecker(checker1);
     cssc.addChecker(checker2);
     expectThrows(IllegalArgumentException.class, () -> cssc.addChecker(checker3));
   }
 
   static class MockSolrSpellChecker extends SolrSpellChecker {
-    
+
     final StringDistance sd;
-    
+
     MockSolrSpellChecker(StringDistance sd) {
       this.sd = sd;
     }
-    
+
     @Override
     protected StringDistance getStringDistance() {
       return sd;
     }
-    
+
     @Override
     public void reload(SolrCore core, SolrIndexSearcher searcher) throws IOException {}
-    
+
     @Override
     public void build(SolrCore core, SolrIndexSearcher searcher) throws IOException {}
-    
+
     @Override
     public SpellingResult getSuggestions(SpellingOptions options) throws IOException {
       return null;
     }
-    
   }
 }

@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
-
 import org.apache.solr.analytics.function.ExpressionCalculator;
 import org.apache.solr.analytics.function.ReductionCollectionManager;
 import org.apache.solr.analytics.function.ReductionCollectionManager.ReductionDataCollection;
@@ -31,11 +30,9 @@ import org.apache.solr.analytics.function.reduction.data.ReductionData;
 import org.apache.solr.analytics.util.AnalyticsResponseHeadings;
 import org.apache.solr.common.util.NamedList;
 
-/**
- * An abstract Facet to break up Analytics data over.
- */
+/** An abstract Facet to break up Analytics data over. */
 public abstract class AnalyticsFacet {
-  protected final Map<String,ReductionDataCollection> reductionData;
+  protected final Map<String, ReductionDataCollection> reductionData;
   protected ReductionCollectionManager collectionManager;
   protected ExpressionCalculator expressionCalculator;
 
@@ -67,8 +64,8 @@ public abstract class AnalyticsFacet {
   }
 
   /**
-   * Import the shard data from a bit-stream, exported by the {@link #exportShardData} method
-   * in the each of the collection's shards.
+   * Import the shard data from a bit-stream, exported by the {@link #exportShardData} method in the
+   * each of the collection's shards.
    *
    * @param input The bit-stream to import the data from
    * @throws IOException if an exception occurs while reading from the {@link DataInput}
@@ -98,8 +95,8 @@ public abstract class AnalyticsFacet {
   }
 
   /**
-   * Export the shard data through a bit-stream, to be imported by the {@link #importShardData} method
-   * in the originating shard.
+   * Export the shard data through a bit-stream, to be imported by the {@link #importShardData}
+   * method in the originating shard.
    *
    * @param output The bit-stream to output the data through
    * @throws IOException if an exception occurs while writing to the {@link DataOutput}
@@ -125,16 +122,18 @@ public abstract class AnalyticsFacet {
   }
 
   /**
-   * Create the old olap-style response of the facet to be returned in the overall analytics response.
+   * Create the old olap-style response of the facet to be returned in the overall analytics
+   * response.
    *
    * @return the response of the facet
    */
   public NamedList<Object> createOldResponse() {
     NamedList<Object> nl = new NamedList<>();
-    reductionData.forEach((facetVal, dataCol) -> {
-      collectionManager.setData(dataCol);
-      nl.add(facetVal, new NamedList<>(expressionCalculator.getResults()));
-    });
+    reductionData.forEach(
+        (facetVal, dataCol) -> {
+          collectionManager.setData(dataCol);
+          nl.add(facetVal, new NamedList<>(expressionCalculator.getResults()));
+        });
     return nl;
   }
 
@@ -143,15 +142,16 @@ public abstract class AnalyticsFacet {
    *
    * @return the response of the facet
    */
-  public Iterable<Map<String,Object>> createResponse() {
-    LinkedList<Map<String,Object>> list = new LinkedList<>();
-    reductionData.forEach((facetVal, dataCol) -> {
-      Map<String, Object> bucket = new HashMap<>();
-      bucket.put(AnalyticsResponseHeadings.FACET_VALUE, facetVal);
-      collectionManager.setData(dataCol);
-      expressionCalculator.addResults(bucket);
-      list.add(bucket);
-    });
+  public Iterable<Map<String, Object>> createResponse() {
+    LinkedList<Map<String, Object>> list = new LinkedList<>();
+    reductionData.forEach(
+        (facetVal, dataCol) -> {
+          Map<String, Object> bucket = new HashMap<>();
+          bucket.put(AnalyticsResponseHeadings.FACET_VALUE, facetVal);
+          collectionManager.setData(dataCol);
+          expressionCalculator.addResults(bucket);
+          list.add(bucket);
+        });
     return list;
   }
 

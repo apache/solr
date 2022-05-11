@@ -34,5 +34,4 @@ public class SearchCollector implements MetricCollector {
   public MetricSamples collect() throws Exception {
     return solrClient.search(metricsQuery);
   }
-
 }

@@ -16,6 +16,16 @@
  */
 package org.apache.solr.handler.clustering;
 
+import java.lang.invoke.MethodHandles;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
@@ -28,17 +38,6 @@ import org.carrot2.language.LanguageComponents;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.invoke.MethodHandles;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 /**
  * Search results clustering engine based on Carrot2 clustering algorithms.
  *
@@ -48,9 +47,7 @@ import java.util.stream.Collectors;
 final class Engine {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  /**
-   * All resources required for the clustering engine.
-   */
+  /** All resources required for the clustering engine. */
   private EngineContext engineContext;
 
   boolean init(String engineName, SolrCore core, EngineParameters defaultParams) {
@@ -59,24 +56,30 @@ final class Engine {
     this.engineContext = new EngineContext(defaultParams.resources(), core);
 
     {
-      ClusteringAlgorithm defaultAlgorithm = engineContext.getAlgorithm(defaultParams.algorithmName());
+      ClusteringAlgorithm defaultAlgorithm =
+          engineContext.getAlgorithm(defaultParams.algorithmName());
       LanguageComponents defaultLanguage = engineContext.getLanguage(defaultParams.language());
 
       if (defaultAlgorithm == null) {
-        log.warn("The default clustering algorithm for engine '{}' is not available: {}",
-            engineName, defaultParams.algorithmName());
+        log.warn(
+            "The default clustering algorithm for engine '{}' is not available: {}",
+            engineName,
+            defaultParams.algorithmName());
       }
 
       if (defaultLanguage == null) {
-        log.warn("The default language for engine {} is not available: {}",
-            engineName, defaultParams.language());
+        log.warn(
+            "The default language for engine {} is not available: {}",
+            engineName,
+            defaultParams.language());
       }
 
       return (defaultAlgorithm != null && defaultLanguage != null);
     }
   }
 
-  List<Cluster<InputDocument>> cluster(EngineParameters parameters, Query query, List<InputDocument> documents) {
+  List<Cluster<InputDocument>> cluster(
+      EngineParameters parameters, Query query, List<InputDocument> documents) {
     try {
       checkParameters(parameters);
 
@@ -107,7 +110,8 @@ final class Engine {
           if (warnOnce.add(lang)) {
             log.warn(
                 "Language '{}' is not supported, documents in this "
-                    + "language will not be clustered.", lang);
+                    + "language will not be clustered.",
+                lang);
           }
         } else {
           LanguageComponents langComponents = engineContext.getLanguage(lang);
@@ -115,11 +119,12 @@ final class Engine {
             if (warnOnce.add(lang)) {
               log.warn(
                   "Language '{}' is not supported by algorithm '{}', documents in this "
-                      + "language will not be clustered.", lang, parameters.algorithmName());
+                      + "language will not be clustered.",
+                  lang,
+                  parameters.algorithmName());
             }
           } else {
-            clustersByLanguage.put(
-                lang, algorithm.cluster(e.getValue().stream(), langComponents));
+            clustersByLanguage.put(lang, algorithm.cluster(e.getValue().stream(), langComponents));
           }
         }
       }
@@ -128,14 +133,16 @@ final class Engine {
       if (clustersByLanguage.size() == 1) {
         clusters = clustersByLanguage.values().iterator().next();
       } else {
-        clusters = clustersByLanguage.entrySet().stream()
-            .map(e -> {
-              Cluster<InputDocument> cluster = new Cluster<>();
-              cluster.addLabel(e.getKey());
-              e.getValue().forEach(cluster::addCluster);
-              return cluster;
-            })
-            .collect(Collectors.toList());
+        clusters =
+            clustersByLanguage.entrySet().stream()
+                .map(
+                    e -> {
+                      Cluster<InputDocument> cluster = new Cluster<>();
+                      cluster.addLabel(e.getKey());
+                      e.getValue().forEach(cluster::addCluster);
+                      return cluster;
+                    })
+                .collect(Collectors.toList());
       }
 
       return clusters;
@@ -145,19 +152,21 @@ final class Engine {
     }
   }
 
-  private void populateAlgorithmParameters(Query query, EngineParameters requestParameters, ClusteringAlgorithm algorithm) {
+  private void populateAlgorithmParameters(
+      Query query, EngineParameters requestParameters, ClusteringAlgorithm algorithm) {
     LinkedHashMap<String, String> attrs = requestParameters.otherParameters();
     // Set the optional query hint. We extract just the terms
     if (!attrs.containsKey("queryHint")) {
       Set<String> termSet = new LinkedHashSet<>();
-      query.visit(new QueryVisitor() {
-        @Override
-        public void consumeTerms(Query query, Term... terms) {
-          for (Term t : terms) {
-            termSet.add(t.text());
-          }
-        }
-      });
+      query.visit(
+          new QueryVisitor() {
+            @Override
+            public void consumeTerms(Query query, Term... terms) {
+              for (Term t : terms) {
+                termSet.add(t.text());
+              }
+            }
+          });
       attrs.put("queryHint", String.join(" ", termSet));
     }
     algorithm.accept(new FlatKeysAttrVisitor(attrs));
@@ -166,30 +175,36 @@ final class Engine {
   private void checkParameters(EngineParameters parameters) {
     ClusteringAlgorithm algorithm = engineContext.getAlgorithm(parameters.algorithmName());
     if (algorithm == null) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, String.format(Locale.ROOT,
-          "Algorithm '%s' not found.",
-          parameters.algorithmName()));
+      throw new SolrException(
+          ErrorCode.BAD_REQUEST,
+          String.format(Locale.ROOT, "Algorithm '%s' not found.", parameters.algorithmName()));
     }
 
     String defaultLanguage = parameters.language();
     LanguageComponents languageComponents = engineContext.getLanguage(defaultLanguage);
     if (languageComponents == null) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, String.format(Locale.ROOT,
-          "Language '%s' is not supported.",
-          defaultLanguage));
+      throw new SolrException(
+          ErrorCode.BAD_REQUEST,
+          String.format(Locale.ROOT, "Language '%s' is not supported.", defaultLanguage));
     }
 
     if (!algorithm.supports(languageComponents)) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, String.format(Locale.ROOT,
-          "Language '%s' is not supported by algorithm '%s'.",
-          defaultLanguage,
-          parameters.algorithmName()));
+      throw new SolrException(
+          ErrorCode.BAD_REQUEST,
+          String.format(
+              Locale.ROOT,
+              "Language '%s' is not supported by algorithm '%s'.",
+              defaultLanguage,
+              parameters.algorithmName()));
     }
 
     if (parameters.fields().isEmpty()) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, String.format(Locale.ROOT,
-          "At least one field name specifying content for clustering is required in parameter '%s'.",
-          EngineParameters.PARAM_FIELDS));
+      throw new SolrException(
+          ErrorCode.BAD_REQUEST,
+          String.format(
+              Locale.ROOT,
+              "At least one field name specifying content for clustering is required in parameter '%s'.",
+              EngineParameters.PARAM_FIELDS));
     }
   }
 }

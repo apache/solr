@@ -16,9 +16,7 @@
  */
 package org.apache.solr.analytics.legacy.facet;
 
-
 import java.util.ArrayList;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -35,59 +33,73 @@ public class LegacyQueryFacetTest extends LegacyAbstractAnalyticsFacetTest {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-analytics.xml","schema-analytics.xml");
+    initCore("solrconfig-analytics.xml", "schema-analytics.xml");
   }
 
   @SuppressWarnings("unchecked")
   @Test
   public void queryTest() throws Exception {
     h.update("<delete><query>*:*</query></delete>");
-    //INT
+    // INT
     ArrayList<ArrayList<Integer>> int1TestStart = new ArrayList<>();
     int1TestStart.add(new ArrayList<Integer>());
     ArrayList<ArrayList<Integer>> int2TestStart = new ArrayList<>();
     int2TestStart.add(new ArrayList<Integer>());
 
-    //LONG
+    // LONG
     ArrayList<ArrayList<Long>> longTestStart = new ArrayList<>();
     longTestStart.add(new ArrayList<Long>());
     longTestStart.add(new ArrayList<Long>());
 
-    //FLOAT
+    // FLOAT
     ArrayList<ArrayList<Float>> floatTestStart = new ArrayList<>();
     floatTestStart.add(new ArrayList<Float>());
     floatTestStart.add(new ArrayList<Float>());
     floatTestStart.add(new ArrayList<Float>());
 
     for (int j = 0; j < NUM_LOOPS; ++j) {
-      int i = j%INT;
-      long l = j%LONG;
-      float f = j%FLOAT;
-      double d = j%DOUBLE;
-      int dt = j%DATE;
-      int s = j%STRING;
-      assertU(adoc("id", "1000" + j, "int_id", "" + i, "long_ld", "" + l, "float_fd", "" + f,
-          "double_dd", "" + d,  "date_dtd", (1800+dt) + "-12-31T23:59:59.999Z", "string_sd", "abc" + Integer.toString(s).charAt(0)));
+      int i = j % INT;
+      long l = j % LONG;
+      float f = j % FLOAT;
+      double d = j % DOUBLE;
+      int dt = j % DATE;
+      int s = j % STRING;
+      assertU(
+          adoc(
+              "id",
+              "1000" + j,
+              "int_id",
+              "" + i,
+              "long_ld",
+              "" + l,
+              "float_fd",
+              "" + f,
+              "double_dd",
+              "" + d,
+              "date_dtd",
+              (1800 + dt) + "-12-31T23:59:59.999Z",
+              "string_sd",
+              "abc" + Integer.toString(s).charAt(0)));
 
-      if (f<=50) {
+      if (f <= 50) {
         int1TestStart.get(0).add(i);
       }
-      if (f<=30) {
+      if (f <= 30) {
         int2TestStart.get(0).add(i);
       }
-      if (Integer.toString(s).charAt(0)=='1') {
+      if (Integer.toString(s).charAt(0) == '1') {
         longTestStart.get(0).add(l);
       }
-      if (Integer.toString(s).charAt(0)=='2') {
+      if (Integer.toString(s).charAt(0) == '2') {
         longTestStart.get(1).add(l);
       }
-      if (l>=30) {
+      if (l >= 30) {
         floatTestStart.get(0).add(f);
       }
-      if (d<=50) {
+      if (d <= 50) {
         floatTestStart.get(1).add(f);
       }
-      if (l>=20) {
+      if (l >= 20) {
         floatTestStart.get(2).add(f);
       }
 
@@ -98,27 +110,26 @@ public class LegacyQueryFacetTest extends LegacyAbstractAnalyticsFacetTest {
 
     assertU(commit());
 
-    //Query ascending tests
+    // Query ascending tests
     setResponse(h.query(request(fileToStringArr(LegacyQueryFacetTest.class, fileName))));
 
-    //Int One
+    // Int One
     ArrayList<Double> int1 = getDoubleList("ir", "queryFacets", "float1", "double", "sum");
     ArrayList<Double> int1Test = calculateNumberStat(int1TestStart, "sum");
     assertEquals(getRawResponse(), int1, int1Test);
-    //Int Two
+    // Int Two
     ArrayList<Integer> int2 = getIntegerList("ir", "queryFacets", "float2", "int", "percentile_8");
-    ArrayList<Integer> int2Test = (ArrayList<Integer>)calculateStat(int2TestStart, "perc_8");
+    ArrayList<Integer> int2Test = (ArrayList<Integer>) calculateStat(int2TestStart, "perc_8");
     assertEquals(getRawResponse(), int2, int2Test);
 
-    //Long
+    // Long
     ArrayList<Double> long1 = getDoubleList("lr", "queryFacets", "string", "double", "median");
     ArrayList<Double> long1Test = calculateNumberStat(longTestStart, "median");
-    assertEquals(getRawResponse(),long1,long1Test);
+    assertEquals(getRawResponse(), long1, long1Test);
 
-    //Float
+    // Float
     ArrayList<Double> float1 = getDoubleList("fr", "queryFacets", "lad", "double", "mean");
     ArrayList<Double> float1Test = calculateNumberStat(floatTestStart, "mean");
     assertEquals(getRawResponse(), float1, float1Test);
   }
-
 }

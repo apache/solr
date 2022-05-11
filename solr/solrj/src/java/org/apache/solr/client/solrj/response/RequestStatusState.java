@@ -20,7 +20,7 @@ import java.util.Locale;
 
 /**
  * Represents the state of an asynchronous request.
- * 
+ *
  * @see org.apache.solr.client.solrj.request.CollectionAdminRequest.RequestStatus
  */
 public enum RequestStatusState {
@@ -47,16 +47,16 @@ public enum RequestStatusState {
   }
 
   /**
-   * Returns the string representation of this state, for using as a key. For backward compatibility, it returns the
-   * lowercase form of the state's name.
+   * Returns the string representation of this state, for using as a key. For backward
+   * compatibility, it returns the lowercase form of the state's name.
    */
   public String getKey() {
     return key;
   }
 
   /**
-   * Resolves a key that was returned from {@link #getKey()} to a {@link RequestStatusState}. For backwards
-   * compatibility, it resolves the key "notfound" to {@link #NOT_FOUND}.
+   * Resolves a key that was returned from {@link #getKey()} to a {@link RequestStatusState}. For
+   * backwards compatibility, it resolves the key "notfound" to {@link #NOT_FOUND}.
    */
   public static RequestStatusState fromKey(String key) {
     try {
@@ -69,5 +69,4 @@ public enum RequestStatusState {
       }
     }
   }
-
 }

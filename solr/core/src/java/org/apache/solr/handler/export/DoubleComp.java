@@ -22,7 +22,6 @@ interface DoubleComp {
 
   double resetValue();
 
-
   static class DoubleAsc implements DoubleComp {
     public double resetValue() {
       return Double.MAX_VALUE;

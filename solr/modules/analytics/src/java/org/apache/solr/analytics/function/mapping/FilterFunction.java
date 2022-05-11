@@ -20,114 +20,119 @@ import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 import java.util.function.IntConsumer;
 import java.util.function.LongConsumer;
-
 import org.apache.solr.analytics.ExpressionFactory.CreatorFunction;
 import org.apache.solr.analytics.util.function.BooleanConsumer;
 import org.apache.solr.analytics.util.function.FloatConsumer;
 import org.apache.solr.analytics.value.AnalyticsValue;
-import org.apache.solr.analytics.value.AnalyticsValueStream;
-import org.apache.solr.analytics.value.BooleanValue;
-import org.apache.solr.analytics.value.BooleanValueStream;
-import org.apache.solr.analytics.value.DateValue;
-import org.apache.solr.analytics.value.DateValueStream;
-import org.apache.solr.analytics.value.DoubleValue;
-import org.apache.solr.analytics.value.DoubleValueStream;
-import org.apache.solr.analytics.value.FloatValue;
-import org.apache.solr.analytics.value.FloatValueStream;
-import org.apache.solr.analytics.value.IntValue;
-import org.apache.solr.analytics.value.IntValueStream;
-import org.apache.solr.analytics.value.LongValue;
-import org.apache.solr.analytics.value.LongValueStream;
-import org.apache.solr.analytics.value.StringValue;
-import org.apache.solr.analytics.value.StringValueStream;
 import org.apache.solr.analytics.value.AnalyticsValue.AbstractAnalyticsValue;
+import org.apache.solr.analytics.value.AnalyticsValueStream;
 import org.apache.solr.analytics.value.AnalyticsValueStream.AbstractAnalyticsValueStream;
+import org.apache.solr.analytics.value.BooleanValue;
 import org.apache.solr.analytics.value.BooleanValue.AbstractBooleanValue;
+import org.apache.solr.analytics.value.BooleanValueStream;
 import org.apache.solr.analytics.value.BooleanValueStream.AbstractBooleanValueStream;
+import org.apache.solr.analytics.value.DateValue;
 import org.apache.solr.analytics.value.DateValue.AbstractDateValue;
+import org.apache.solr.analytics.value.DateValueStream;
 import org.apache.solr.analytics.value.DateValueStream.AbstractDateValueStream;
+import org.apache.solr.analytics.value.DoubleValue;
 import org.apache.solr.analytics.value.DoubleValue.AbstractDoubleValue;
+import org.apache.solr.analytics.value.DoubleValueStream;
 import org.apache.solr.analytics.value.DoubleValueStream.AbstractDoubleValueStream;
+import org.apache.solr.analytics.value.FloatValue;
 import org.apache.solr.analytics.value.FloatValue.AbstractFloatValue;
+import org.apache.solr.analytics.value.FloatValueStream;
 import org.apache.solr.analytics.value.FloatValueStream.AbstractFloatValueStream;
+import org.apache.solr.analytics.value.IntValue;
 import org.apache.solr.analytics.value.IntValue.AbstractIntValue;
+import org.apache.solr.analytics.value.IntValueStream;
 import org.apache.solr.analytics.value.IntValueStream.AbstractIntValueStream;
+import org.apache.solr.analytics.value.LongValue;
 import org.apache.solr.analytics.value.LongValue.AbstractLongValue;
+import org.apache.solr.analytics.value.LongValueStream;
 import org.apache.solr.analytics.value.LongValueStream.AbstractLongValueStream;
+import org.apache.solr.analytics.value.StringValue;
 import org.apache.solr.analytics.value.StringValue.AbstractStringValue;
+import org.apache.solr.analytics.value.StringValueStream;
 import org.apache.solr.analytics.value.StringValueStream.AbstractStringValueStream;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 
 /**
- * A mapping function to filter a Value or ValueStream. For each document, the value exists if the second parameter
- * is true and it doesn't exist otherwise.
- * <p>
- * The first parameter can be any type of analytics expression. (Required)
- * <br>
+ * A mapping function to filter a Value or ValueStream. For each document, the value exists if the
+ * second parameter is true and it doesn't exist otherwise.
+ *
+ * <p>The first parameter can be any type of analytics expression. (Required) <br>
  * The second parameter must be a {@link BooleanValue}. (Required)
  */
 public class FilterFunction {
   public static final String name = "filter";
 
-  public static final CreatorFunction creatorFunction = (params -> {
-    if (params.length != 2) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires 2 paramaters, " + params.length + " found.");
-    }
-    if (!(params[1] instanceof BooleanValue)) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires the second paramater to be single-valued and boolean.");
-    }
+  public static final CreatorFunction creatorFunction =
+      (params -> {
+        if (params.length != 2) {
+          throw new SolrException(
+              ErrorCode.BAD_REQUEST,
+              "The " + name + " function requires 2 paramaters, " + params.length + " found.");
+        }
+        if (!(params[1] instanceof BooleanValue)) {
+          throw new SolrException(
+              ErrorCode.BAD_REQUEST,
+              "The "
+                  + name
+                  + " function requires the second paramater to be single-valued and boolean.");
+        }
 
-    AnalyticsValueStream baseExpr = params[0];
-    BooleanValue filterExpr = (BooleanValue)params[1];
+        AnalyticsValueStream baseExpr = params[0];
+        BooleanValue filterExpr = (BooleanValue) params[1];
 
-    if (baseExpr instanceof DateValue) {
-      return new DateFilterFunction((DateValue)baseExpr,filterExpr);
-    }
-    if (baseExpr instanceof DateValueStream) {
-      return new DateStreamFilterFunction((DateValueStream)baseExpr,filterExpr);
-    }
-    if (baseExpr instanceof BooleanValue) {
-      return new BooleanFilterFunction((BooleanValue)baseExpr,filterExpr);
-    }
-    if (baseExpr instanceof BooleanValueStream) {
-      return new BooleanStreamFilterFunction((BooleanValueStream)baseExpr,filterExpr);
-    }
-    if (baseExpr instanceof IntValue) {
-      return new IntFilterFunction((IntValue)baseExpr,filterExpr);
-    }
-    if (baseExpr instanceof IntValueStream) {
-      return new IntStreamFilterFunction((IntValueStream)baseExpr,filterExpr);
-    }
-    if (baseExpr instanceof LongValue) {
-      return new LongFilterFunction((LongValue)baseExpr,filterExpr);
-    }
-    if (baseExpr instanceof LongValueStream) {
-      return new LongStreamFilterFunction((LongValueStream)baseExpr,filterExpr);
-    }
-    if (baseExpr instanceof FloatValue) {
-      return new FloatFilterFunction((FloatValue)baseExpr,filterExpr);
-    }
-    if (baseExpr instanceof FloatValueStream) {
-      return new FloatStreamFilterFunction((FloatValueStream)baseExpr,filterExpr);
-    }
-    if (baseExpr instanceof DoubleValue) {
-      return new DoubleFilterFunction((DoubleValue)baseExpr,filterExpr);
-    }
-    if (baseExpr instanceof DoubleValueStream) {
-      return new DoubleStreamFilterFunction((DoubleValueStream)baseExpr,filterExpr);
-    }
-    if (baseExpr instanceof StringValue) {
-      return new StringFilterFunction((StringValue)baseExpr,filterExpr);
-    }
-    if (baseExpr instanceof StringValueStream) {
-      return new StringStreamFilterFunction((StringValueStream)baseExpr,filterExpr);
-    }
-    if (baseExpr instanceof AnalyticsValue) {
-      return new ValueFilterFunction((AnalyticsValue)baseExpr,filterExpr);
-    }
-    return new StreamFilterFunction(baseExpr,filterExpr);
-  });
+        if (baseExpr instanceof DateValue) {
+          return new DateFilterFunction((DateValue) baseExpr, filterExpr);
+        }
+        if (baseExpr instanceof DateValueStream) {
+          return new DateStreamFilterFunction((DateValueStream) baseExpr, filterExpr);
+        }
+        if (baseExpr instanceof BooleanValue) {
+          return new BooleanFilterFunction((BooleanValue) baseExpr, filterExpr);
+        }
+        if (baseExpr instanceof BooleanValueStream) {
+          return new BooleanStreamFilterFunction((BooleanValueStream) baseExpr, filterExpr);
+        }
+        if (baseExpr instanceof IntValue) {
+          return new IntFilterFunction((IntValue) baseExpr, filterExpr);
+        }
+        if (baseExpr instanceof IntValueStream) {
+          return new IntStreamFilterFunction((IntValueStream) baseExpr, filterExpr);
+        }
+        if (baseExpr instanceof LongValue) {
+          return new LongFilterFunction((LongValue) baseExpr, filterExpr);
+        }
+        if (baseExpr instanceof LongValueStream) {
+          return new LongStreamFilterFunction((LongValueStream) baseExpr, filterExpr);
+        }
+        if (baseExpr instanceof FloatValue) {
+          return new FloatFilterFunction((FloatValue) baseExpr, filterExpr);
+        }
+        if (baseExpr instanceof FloatValueStream) {
+          return new FloatStreamFilterFunction((FloatValueStream) baseExpr, filterExpr);
+        }
+        if (baseExpr instanceof DoubleValue) {
+          return new DoubleFilterFunction((DoubleValue) baseExpr, filterExpr);
+        }
+        if (baseExpr instanceof DoubleValueStream) {
+          return new DoubleStreamFilterFunction((DoubleValueStream) baseExpr, filterExpr);
+        }
+        if (baseExpr instanceof StringValue) {
+          return new StringFilterFunction((StringValue) baseExpr, filterExpr);
+        }
+        if (baseExpr instanceof StringValueStream) {
+          return new StringStreamFilterFunction((StringValueStream) baseExpr, filterExpr);
+        }
+        if (baseExpr instanceof AnalyticsValue) {
+          return new ValueFilterFunction((AnalyticsValue) baseExpr, filterExpr);
+        }
+        return new StreamFilterFunction(baseExpr, filterExpr);
+      });
 
   static class StreamFilterFunction extends AbstractAnalyticsValueStream {
     private final AnalyticsValueStream baseExpr;
@@ -136,11 +141,12 @@ public class FilterFunction {
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public StreamFilterFunction(AnalyticsValueStream baseExpr, BooleanValue filterExpr) throws SolrException {
+    public StreamFilterFunction(AnalyticsValueStream baseExpr, BooleanValue filterExpr)
+        throws SolrException {
       this.baseExpr = baseExpr;
       this.filterExpr = filterExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,filterExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,filterExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, baseExpr, filterExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr, baseExpr, filterExpr);
     }
 
     @Override
@@ -154,10 +160,12 @@ public class FilterFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -171,11 +179,12 @@ public class FilterFunction {
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public ValueFilterFunction(AnalyticsValue baseExpr, BooleanValue filterExpr) throws SolrException {
+    public ValueFilterFunction(AnalyticsValue baseExpr, BooleanValue filterExpr)
+        throws SolrException {
       this.baseExpr = baseExpr;
       this.filterExpr = filterExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,filterExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,filterExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, baseExpr, filterExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr, baseExpr, filterExpr);
     }
 
     boolean exists = false;
@@ -186,6 +195,7 @@ public class FilterFunction {
       exists = baseExpr.exists() && filterExpr.getBoolean() && filterExpr.exists();
       return value;
     }
+
     @Override
     public boolean exists() {
       return exists;
@@ -195,10 +205,12 @@ public class FilterFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -212,11 +224,12 @@ public class FilterFunction {
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public BooleanStreamFilterFunction(BooleanValueStream baseExpr, BooleanValue filterExpr) throws SolrException {
+    public BooleanStreamFilterFunction(BooleanValueStream baseExpr, BooleanValue filterExpr)
+        throws SolrException {
       this.baseExpr = baseExpr;
       this.filterExpr = filterExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,filterExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,filterExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, baseExpr, filterExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr, baseExpr, filterExpr);
     }
 
     @Override
@@ -230,10 +243,12 @@ public class FilterFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -247,11 +262,12 @@ public class FilterFunction {
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public BooleanFilterFunction(BooleanValue baseExpr, BooleanValue filterExpr) throws SolrException {
+    public BooleanFilterFunction(BooleanValue baseExpr, BooleanValue filterExpr)
+        throws SolrException {
       this.baseExpr = baseExpr;
       this.filterExpr = filterExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,filterExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,filterExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, baseExpr, filterExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr, baseExpr, filterExpr);
     }
 
     boolean exists = false;
@@ -262,6 +278,7 @@ public class FilterFunction {
       exists = baseExpr.exists() && filterExpr.getBoolean() && filterExpr.exists();
       return value;
     }
+
     @Override
     public boolean exists() {
       return exists;
@@ -271,10 +288,12 @@ public class FilterFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -288,11 +307,12 @@ public class FilterFunction {
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public IntStreamFilterFunction(IntValueStream baseExpr, BooleanValue filterExpr) throws SolrException {
+    public IntStreamFilterFunction(IntValueStream baseExpr, BooleanValue filterExpr)
+        throws SolrException {
       this.baseExpr = baseExpr;
       this.filterExpr = filterExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,filterExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,filterExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, baseExpr, filterExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr, baseExpr, filterExpr);
     }
 
     @Override
@@ -306,10 +326,12 @@ public class FilterFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -326,8 +348,8 @@ public class FilterFunction {
     public IntFilterFunction(IntValue baseExpr, BooleanValue filterExpr) throws SolrException {
       this.baseExpr = baseExpr;
       this.filterExpr = filterExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,filterExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,filterExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, baseExpr, filterExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr, baseExpr, filterExpr);
     }
 
     boolean exists = false;
@@ -338,6 +360,7 @@ public class FilterFunction {
       exists = baseExpr.exists() && filterExpr.getBoolean() && filterExpr.exists();
       return value;
     }
+
     @Override
     public boolean exists() {
       return exists;
@@ -347,10 +370,12 @@ public class FilterFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -364,11 +389,12 @@ public class FilterFunction {
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public LongStreamFilterFunction(LongValueStream baseExpr, BooleanValue filterExpr) throws SolrException {
+    public LongStreamFilterFunction(LongValueStream baseExpr, BooleanValue filterExpr)
+        throws SolrException {
       this.baseExpr = baseExpr;
       this.filterExpr = filterExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,filterExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,filterExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, baseExpr, filterExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr, baseExpr, filterExpr);
     }
 
     @Override
@@ -382,10 +408,12 @@ public class FilterFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -402,8 +430,8 @@ public class FilterFunction {
     public LongFilterFunction(LongValue baseExpr, BooleanValue filterExpr) throws SolrException {
       this.baseExpr = baseExpr;
       this.filterExpr = filterExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,filterExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,filterExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, baseExpr, filterExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr, baseExpr, filterExpr);
     }
 
     boolean exists = false;
@@ -414,6 +442,7 @@ public class FilterFunction {
       exists = baseExpr.exists() && filterExpr.getBoolean() && filterExpr.exists();
       return value;
     }
+
     @Override
     public boolean exists() {
       return exists;
@@ -423,10 +452,12 @@ public class FilterFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -440,11 +471,12 @@ public class FilterFunction {
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public FloatStreamFilterFunction(FloatValueStream baseExpr, BooleanValue filterExpr) throws SolrException {
+    public FloatStreamFilterFunction(FloatValueStream baseExpr, BooleanValue filterExpr)
+        throws SolrException {
       this.baseExpr = baseExpr;
       this.filterExpr = filterExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,filterExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,filterExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, baseExpr, filterExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr, baseExpr, filterExpr);
     }
 
     @Override
@@ -458,10 +490,12 @@ public class FilterFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -478,8 +512,8 @@ public class FilterFunction {
     public FloatFilterFunction(FloatValue baseExpr, BooleanValue filterExpr) throws SolrException {
       this.baseExpr = baseExpr;
       this.filterExpr = filterExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,filterExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,filterExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, baseExpr, filterExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr, baseExpr, filterExpr);
     }
 
     boolean exists = false;
@@ -490,6 +524,7 @@ public class FilterFunction {
       exists = baseExpr.exists() && filterExpr.getBoolean() && filterExpr.exists();
       return value;
     }
+
     @Override
     public boolean exists() {
       return exists;
@@ -499,10 +534,12 @@ public class FilterFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -516,11 +553,12 @@ public class FilterFunction {
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public DoubleStreamFilterFunction(DoubleValueStream baseExpr, BooleanValue filterExpr) throws SolrException {
+    public DoubleStreamFilterFunction(DoubleValueStream baseExpr, BooleanValue filterExpr)
+        throws SolrException {
       this.baseExpr = baseExpr;
       this.filterExpr = filterExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,filterExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,filterExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, baseExpr, filterExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr, baseExpr, filterExpr);
     }
 
     @Override
@@ -534,10 +572,12 @@ public class FilterFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -551,11 +591,12 @@ public class FilterFunction {
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public DoubleFilterFunction(DoubleValue baseExpr, BooleanValue filterExpr) throws SolrException {
+    public DoubleFilterFunction(DoubleValue baseExpr, BooleanValue filterExpr)
+        throws SolrException {
       this.baseExpr = baseExpr;
       this.filterExpr = filterExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,filterExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,filterExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, baseExpr, filterExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr, baseExpr, filterExpr);
     }
 
     boolean exists = false;
@@ -566,6 +607,7 @@ public class FilterFunction {
       exists = baseExpr.exists() && filterExpr.getBoolean() && filterExpr.exists();
       return value;
     }
+
     @Override
     public boolean exists() {
       return exists;
@@ -575,10 +617,12 @@ public class FilterFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -592,11 +636,12 @@ public class FilterFunction {
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public DateStreamFilterFunction(DateValueStream baseExpr, BooleanValue filterExpr) throws SolrException {
+    public DateStreamFilterFunction(DateValueStream baseExpr, BooleanValue filterExpr)
+        throws SolrException {
       this.baseExpr = baseExpr;
       this.filterExpr = filterExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,filterExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,filterExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, baseExpr, filterExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr, baseExpr, filterExpr);
     }
 
     @Override
@@ -610,10 +655,12 @@ public class FilterFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -630,8 +677,8 @@ public class FilterFunction {
     public DateFilterFunction(DateValue baseExpr, BooleanValue filterExpr) throws SolrException {
       this.baseExpr = baseExpr;
       this.filterExpr = filterExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,filterExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,filterExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, baseExpr, filterExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr, baseExpr, filterExpr);
     }
 
     boolean exists = false;
@@ -642,6 +689,7 @@ public class FilterFunction {
       exists = baseExpr.exists() && filterExpr.getBoolean() && filterExpr.exists();
       return value;
     }
+
     @Override
     public boolean exists() {
       return exists;
@@ -651,10 +699,12 @@ public class FilterFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -668,11 +718,12 @@ public class FilterFunction {
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public StringStreamFilterFunction(StringValueStream baseExpr, BooleanValue filterExpr) throws SolrException {
+    public StringStreamFilterFunction(StringValueStream baseExpr, BooleanValue filterExpr)
+        throws SolrException {
       this.baseExpr = baseExpr;
       this.filterExpr = filterExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,filterExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,filterExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, baseExpr, filterExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr, baseExpr, filterExpr);
     }
 
     @Override
@@ -686,10 +737,12 @@ public class FilterFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -703,11 +756,12 @@ public class FilterFunction {
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public StringFilterFunction(StringValue baseExpr, BooleanValue filterExpr) throws SolrException {
+    public StringFilterFunction(StringValue baseExpr, BooleanValue filterExpr)
+        throws SolrException {
       this.baseExpr = baseExpr;
       this.filterExpr = filterExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,filterExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,filterExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, baseExpr, filterExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr, baseExpr, filterExpr);
     }
 
     boolean exists = false;
@@ -718,6 +772,7 @@ public class FilterFunction {
       exists = baseExpr.exists() && filterExpr.getBoolean() && filterExpr.exists();
       return value;
     }
+
     @Override
     public boolean exists() {
       return exists;
@@ -727,14 +782,15 @@ public class FilterFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
     }
   }
 }
-

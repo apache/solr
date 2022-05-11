@@ -16,6 +16,7 @@
  */
 package org.apache.solr.common.cloud;
 
+import java.lang.invoke.MethodHandles;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
 import org.apache.zookeeper.CreateMode;
@@ -24,9 +25,6 @@ import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.invoke.MethodHandles;
-
-
 public class ZkCmdExecutor {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -34,37 +32,32 @@ public class ZkCmdExecutor {
   private int retryCount;
   private double timeouts;
   private IsClosed isClosed;
-  
+
   public ZkCmdExecutor(int timeoutms) {
     this(timeoutms, null);
   }
-  
+
   /**
-   * TODO: At this point, this should probably take a SolrZkClient in
-   * its constructor.
-   * 
-   * @param timeoutms
-   *          the client timeout for the ZooKeeper clients that will be used
-   *          with this class.
+   * TODO: At this point, this should probably take a SolrZkClient in its constructor.
+   *
+   * @param timeoutms the client timeout for the ZooKeeper clients that will be used with this
+   *     class.
    */
   public ZkCmdExecutor(int timeoutms, IsClosed isClosed) {
     timeouts = timeoutms / 1000.0;
-    this.retryCount = Math.round(0.5f * ((float)Math.sqrt(8.0f * timeouts + 1.0f) - 1.0f)) + 1;
+    this.retryCount = Math.round(0.5f * ((float) Math.sqrt(8.0f * timeouts + 1.0f) - 1.0f)) + 1;
     this.isClosed = isClosed;
   }
-  
+
   public long getRetryDelay() {
     return retryDelay;
   }
-  
+
   public void setRetryDelay(long retryDelay) {
     this.retryDelay = retryDelay;
   }
-  
 
-  /**
-   * Perform the given operation, retrying if the connection fails
-   */
+  /** Perform the given operation, retrying if the connection fails */
   public <T> T retryOperation(ZkOperation<T> operation)
       throws KeeperException, InterruptedException {
     KeeperException exception = null;
@@ -85,7 +78,7 @@ public class ZkCmdExecutor {
           Thread.currentThread().interrupt();
           throw new InterruptedException();
         }
-        if (i != retryCount -1) {
+        if (i != retryCount - 1) {
           retryDelay(i);
         }
       } finally {
@@ -96,46 +89,59 @@ public class ZkCmdExecutor {
     }
     throw exception;
   }
-  
+
   private boolean isClosed() {
     return isClosed != null && isClosed.isClosed();
   }
 
   /**
    * Create a persistent znode with no data if it does not already exist
+   *
    * @see #ensureExists(String, byte[], CreateMode, SolrZkClient, int)
    */
-  public void ensureExists(String path, final SolrZkClient zkClient) throws KeeperException, InterruptedException {
+  public void ensureExists(String path, final SolrZkClient zkClient)
+      throws KeeperException, InterruptedException {
     ensureExists(path, null, CreateMode.PERSISTENT, zkClient, 0);
   }
 
   /**
    * Create a persistent znode with the given data if it does not already exist
+   *
    * @see #ensureExists(String, byte[], CreateMode, SolrZkClient, int)
    */
-  public void ensureExists(String path, final byte[] data, final SolrZkClient zkClient) throws KeeperException, InterruptedException {
+  public void ensureExists(String path, final byte[] data, final SolrZkClient zkClient)
+      throws KeeperException, InterruptedException {
     ensureExists(path, data, CreateMode.PERSISTENT, zkClient, 0);
   }
 
   /**
    * Create a znode with the given mode and data if it does not already exist
+   *
    * @see #ensureExists(String, byte[], CreateMode, SolrZkClient, int)
    */
-  public void ensureExists(String path, final byte[] data, CreateMode createMode, final SolrZkClient zkClient) throws KeeperException, InterruptedException {
+  public void ensureExists(
+      String path, final byte[] data, CreateMode createMode, final SolrZkClient zkClient)
+      throws KeeperException, InterruptedException {
     ensureExists(path, data, createMode, zkClient, 0);
   }
 
   /**
    * Create a node if it does not exist
+   *
    * @param path the path at which to create the znode
    * @param data the optional data to set on the znode
    * @param createMode the mode with which to create the znode
    * @param zkClient the client to use to check and create
    * @param skipPathParts how many path elements to skip
    */
-  public void ensureExists(final String path, final byte[] data,
-      CreateMode createMode, final SolrZkClient zkClient, int skipPathParts) throws KeeperException, InterruptedException {
-    
+  public void ensureExists(
+      final String path,
+      final byte[] data,
+      CreateMode createMode,
+      final SolrZkClient zkClient,
+      int skipPathParts)
+      throws KeeperException, InterruptedException {
+
     if (zkClient.exists(path, true)) {
       return;
     }
@@ -145,15 +151,13 @@ public class ZkCmdExecutor {
       // it's okay if another beats us creating the node
     }
   }
-  
+
   /**
    * Performs a retry delay if this is not the first attempt
-   * 
-   * @param attemptCount
-   *          the number of the attempts performed so far
+   *
+   * @param attemptCount the number of the attempts performed so far
    */
   protected void retryDelay(int attemptCount) throws InterruptedException {
     Thread.sleep((attemptCount + 1) * retryDelay);
   }
-
 }

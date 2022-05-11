@@ -18,7 +18,6 @@
 package org.apache.solr.handler.component;
 
 import java.util.ArrayList;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -34,8 +33,8 @@ public class ResponseBuilderTest extends SolrTestCaseJ4 {
     initCore("solrconfig.xml", "schema.xml");
   }
 
-  //This test is being added to verify responseBuilder.isDistributed() exists and is visible.
-  public void testIsDistrib(){
+  // This test is being added to verify responseBuilder.isDistributed() exists and is visible.
+  public void testIsDistrib() {
     ResponseBuilder responseBuilder = new ResponseBuilder(req, rsp, new ArrayList<>(0));
     assertFalse(responseBuilder.isDistributed());
   }

@@ -18,7 +18,6 @@
 package org.apache.solr.prometheus;
 
 import java.util.Map;
-
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -35,17 +34,18 @@ public class PrometheusExporterTestBase extends SolrCloudTestCase {
   public static final int NUM_NODES = NUM_SHARDS * NUM_REPLICAS;
   public static final int TIMEOUT = 60;
 
-  public static final Map<String, Double> FACET_VALUES = Map.of(
-      "electronics", 14.0,
-      "currency", 4.0,
-      "memory", 3.0,
-      "and", 2.0,
-      "card", 2.0,
-      "connector", 2.0,
-      "drive", 2.0,
-      "graphics", 2.0,
-      "hard", 2.0,
-      "search", 2.0);
+  public static final Map<String, Double> FACET_VALUES =
+      Map.of(
+          "electronics", 14.0,
+          "currency", 4.0,
+          "memory", 3.0,
+          "and", 2.0,
+          "card", 2.0,
+          "connector", 2.0,
+          "drive", 2.0,
+          "graphics", 2.0,
+          "hard", 2.0,
+          "search", 2.0);
 
   @Override
   public void setUp() throws Exception {
@@ -60,19 +60,14 @@ public class PrometheusExporterTestBase extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     System.setProperty("metricsEnabled", "true");
-    configureCluster(NUM_NODES)
-        .addConfig(CONF_NAME, getFile(CONF_DIR).toPath())
-        .configure();
+    configureCluster(NUM_NODES).addConfig(CONF_NAME, getFile(CONF_DIR).toPath()).configure();
 
-    CollectionAdminRequest
-        .createCollection(COLLECTION, CONF_NAME, NUM_SHARDS, NUM_REPLICAS)
+    CollectionAdminRequest.createCollection(COLLECTION, CONF_NAME, NUM_SHARDS, NUM_REPLICAS)
         .process(cluster.getSolrClient());
 
-    AbstractDistribZkTestBase
-        .waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(), true, true, TIMEOUT);
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+        COLLECTION, cluster.getZkStateReader(), true, true, TIMEOUT);
 
     Helpers.indexAllDocs(cluster.getSolrClient());
   }
-
-
 }

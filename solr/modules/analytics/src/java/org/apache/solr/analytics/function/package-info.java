@@ -15,9 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Functions to use for analytics expressions.
- */
+/** Functions to use for analytics expressions. */
 package org.apache.solr.analytics.function;
-
-

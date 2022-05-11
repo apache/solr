@@ -17,11 +17,9 @@
 
 package org.apache.solr.client.solrj.impl;
 
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
-
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -49,13 +47,11 @@ import org.apache.solr.common.util.TimeSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Class that implements {@link SolrCloudManager} using a SolrClient
- */
+/** Class that implements {@link SolrCloudManager} using a SolrClient */
 public class SolrClientCloudManager implements SolrCloudManager {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  protected final CloudSolrClient solrClient;
+  protected final CloudLegacySolrClient solrClient;
   private final ZkDistribStateManager stateManager;
   private final DistributedQueueFactory queueFactory;
   private final ZkStateReader zkStateReader;
@@ -64,15 +60,18 @@ public class SolrClientCloudManager implements SolrCloudManager {
   private final boolean closeObjectCache;
   private volatile boolean isClosed;
 
-  public SolrClientCloudManager(DistributedQueueFactory queueFactory, CloudSolrClient solrClient) {
+  public SolrClientCloudManager(
+      DistributedQueueFactory queueFactory, CloudLegacySolrClient solrClient) {
     this(queueFactory, solrClient, null);
   }
 
-  public SolrClientCloudManager(DistributedQueueFactory queueFactory, CloudSolrClient solrClient,
-                                ObjectCache objectCache) {
+  public SolrClientCloudManager(
+      DistributedQueueFactory queueFactory,
+      CloudLegacySolrClient solrClient,
+      ObjectCache objectCache) {
     this.queueFactory = queueFactory;
     this.solrClient = solrClient;
-    this.zkStateReader = solrClient.getZkStateReader();
+    this.zkStateReader = ZkStateReader.from(solrClient);
     this.zkClient = zkStateReader.getZkClient();
     this.stateManager = new ZkDistribStateManager(zkClient);
     this.isClosed = false;
@@ -135,7 +134,14 @@ public class SolrClientCloudManager implements SolrCloudManager {
   private static final byte[] EMPTY = new byte[0];
 
   @Override
-  public byte[] httpRequest(String url, SolrRequest.METHOD method, Map<String, String> headers, String payload, int timeout, boolean followRedirects) throws IOException {
+  public byte[] httpRequest(
+      String url,
+      SolrRequest.METHOD method,
+      Map<String, String> headers,
+      String payload,
+      int timeout,
+      boolean followRedirects)
+      throws IOException {
     HttpClient client = solrClient.getHttpClient();
     final HttpRequestBase req;
     HttpEntity entity = null;
@@ -149,13 +155,13 @@ public class SolrClientCloudManager implements SolrCloudManager {
       case POST:
         req = new HttpPost(url);
         if (entity != null) {
-          ((HttpPost)req).setEntity(entity);
+          ((HttpPost) req).setEntity(entity);
         }
         break;
       case PUT:
         req = new HttpPut(url);
         if (entity != null) {
-          ((HttpPut)req).setEntity(entity);
+          ((HttpPut) req).setEntity(entity);
         }
         break;
       case DELETE:
@@ -178,7 +184,8 @@ public class SolrClientCloudManager implements SolrCloudManager {
     HttpResponse rsp = client.execute(req, httpClientRequestContext);
     int statusCode = rsp.getStatusLine().getStatusCode();
     if (statusCode != 200) {
-      throw new IOException("Error sending request to " + url + ", HTTP response: " + rsp.toString());
+      throw new IOException(
+          "Error sending request to " + url + ", HTTP response: " + rsp.toString());
     }
     HttpEntity responseEntity = rsp.getEntity();
     if (responseEntity != null && responseEntity.getContent() != null) {
@@ -187,6 +194,7 @@ public class SolrClientCloudManager implements SolrCloudManager {
       return EMPTY;
     }
   }
+
   public SolrZkClient getZkClient() {
     return zkClient;
   }
@@ -195,5 +203,4 @@ public class SolrClientCloudManager implements SolrCloudManager {
   public DistributedQueueFactory getDistributedQueueFactory() {
     return queueFactory;
   }
-
 }

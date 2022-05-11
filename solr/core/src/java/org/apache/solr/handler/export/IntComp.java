@@ -22,7 +22,6 @@ public interface IntComp {
 
   int resetValue();
 
-
   static class IntAsc implements IntComp {
 
     public int resetValue() {

@@ -1,0 +1,93 @@
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+.Deployment Guide
+
+* xref:solr-control-script-reference.adoc[]
+
+* Installation & Deployment
+** xref:system-requirements.adoc[]
+** xref:installing-solr.adoc[]
+** xref:taking-solr-to-production.adoc[]
+** xref:jvm-settings.adoc[]
+** xref:upgrading-a-solr-cluster.adoc[]
+*** xref:indexupgrader-tool.adoc[]
+** xref:backup-restore.adoc[]
+** xref:solr-in-docker.adoc[]
+*** xref:docker-faq.adoc[]
+*** xref:docker-networking.adoc[]
+** xref:solr-on-hdfs.adoc[]
+
+* Scaling Solr
+** xref:cluster-types.adoc[]
+** User-Managed Clusters
+*** xref:user-managed-index-replication.adoc[]
+*** xref:user-managed-distributed-search.adoc[]
+** SolrCloud Clusters
+*** xref:solrcloud-shards-indexing.adoc[]
+*** xref:solrcloud-recoveries-and-write-tolerance.adoc[]
+*** xref:solrcloud-distributed-requests.adoc[]
+*** xref:node-roles.adoc[]
+*** xref:aliases.adoc[]
+*** Collections API
+**** xref:cluster-node-management.adoc[]
+**** xref:collection-management.adoc[]
+**** xref:shard-management.adoc[]
+**** xref:replica-management.adoc[]
+**** xref:alias-management.adoc[]
+*** ZooKeeper Configuration
+**** xref:zookeeper-ensemble.adoc[]
+**** xref:zookeeper-file-management.adoc[]
+**** xref:zookeeper-utilities.adoc[]
+**** xref:solrcloud-with-legacy-configuration-files.adoc[]
+*** Admin UI
+**** xref:collections-core-admin.adoc[]
+**** xref:cloud-screens.adoc[]
+
+* Monitoring Solr
+** xref:configuring-logging.adoc[]
+** xref:ping.adoc[]
+** xref:metrics-reporting.adoc[]
+** xref:performance-statistics-reference.adoc[]
+** xref:plugins-stats-screen.adoc[]
+** xref:mbean-request-handler.adoc[]
+** xref:monitoring-with-prometheus-and-grafana.adoc[]
+** xref:jmx-with-solr.adoc[]
+** xref:thread-dump.adoc[]
+** xref:distributed-tracing.adoc[]
+** xref:circuit-breakers.adoc[]
+** xref:rate-limiters.adoc[]
+** xref:task-management.adoc[]
+
+* xref:securing-solr.adoc[]
+** xref:authentication-and-authorization-plugins.adoc[]
+*** xref:basic-authentication-plugin.adoc[]
+*** xref:kerberos-authentication-plugin.adoc[]
+*** xref:jwt-authentication-plugin.adoc[]
+*** xref:cert-authentication-plugin.adoc[]
+*** xref:hadoop-authentication-plugin.adoc[]
+*** xref:rule-based-authorization-plugin.adoc[]
+** xref:audit-logging.adoc[]
+** xref:enabling-ssl.adoc[]
+** xref:zookeeper-access-control.adoc[]
+** xref:security-ui.adoc[]
+
+* xref:client-apis.adoc[]
+** xref:solrj.adoc[]
+** xref:javascript.adoc[]
+** xref:python.adoc[]
+** xref:ruby.adoc[]

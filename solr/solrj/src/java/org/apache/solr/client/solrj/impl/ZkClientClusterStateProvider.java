@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -34,32 +33,37 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Retrieves cluster state from Zookeeper
- */
+/** Retrieves cluster state from Zookeeper */
 public class ZkClientClusterStateProvider implements ClusterStateProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-
   volatile ZkStateReader zkStateReader;
   private boolean closeZkStateReader = true;
-  String zkHost;
-  int zkConnectTimeout = 15000;
-  int zkClientTimeout = 45000;
-
+  private final String zkHost;
+  private int zkConnectTimeout = 15000;
+  private int zkClientTimeout = 45000;
 
   private volatile boolean isClosed = false;
 
+  /** Extracts this from the client, or throws an exception if of the wrong type. */
+  public static ZkClientClusterStateProvider from(CloudSolrClient client) {
+    if (client.getClusterStateProvider() instanceof ZkClientClusterStateProvider) {
+      return (ZkClientClusterStateProvider) client.getClusterStateProvider();
+    }
+    throw new IllegalArgumentException("This client does not use ZK");
+  }
+
   public ZkClientClusterStateProvider(ZkStateReader zkStateReader) {
     this.zkStateReader = zkStateReader;
-    this.closeZkStateReader =  false;
+    this.closeZkStateReader = false;
+    this.zkHost = null;
   }
 
   public ZkClientClusterStateProvider(Collection<String> zkHosts, String chroot) {
-    zkHost = buildZkHostString(zkHosts,chroot);
+    zkHost = buildZkHostString(zkHosts, chroot);
   }
 
-  public ZkClientClusterStateProvider(String zkHost){
+  public ZkClientClusterStateProvider(String zkHost) {
     this.zkHost = zkHost;
   }
 
@@ -72,7 +76,7 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
       return null;
     }
   }
-  
+
   @Override
   public Set<String> getLiveNodes() {
     ClusterState clusterState = getZkStateReader().getClusterState();
@@ -82,7 +86,6 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
       return Collections.emptySet();
     }
   }
-
 
   @Override
   public List<String> resolveAlias(String alias) {
@@ -110,13 +113,13 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
   public <T> T getClusterProperty(String propertyName, T def) {
     Map<String, Object> props = getZkStateReader().getClusterProperties();
     if (props.containsKey(propertyName)) {
-      return (T)props.get(propertyName);
+      return (T) props.get(propertyName);
     }
     return def;
   }
 
   @Override
-  public ClusterState getClusterState() throws IOException {
+  public ClusterState getClusterState() {
     return getZkStateReader().getClusterState();
   }
 
@@ -128,15 +131,18 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
   @Override
   public String getPolicyNameByCollection(String coll) {
     ClusterState.CollectionRef state = getState(coll);
-    return state == null || state.get() == null ? null : (String) state.get().getProperties().get("policy");
+    return state == null || state.get() == null
+        ? null
+        : (String) state.get().getProperties().get("policy");
   }
 
   @Override
   public void connect() {
-    // Esentially a No-Op, but force a check that we're not closed and the ZkStateReader is available...
+    // Esentially a No-Op, but force a check that we're not closed and the ZkStateReader is
+    // available...
     final ZkStateReader ignored = getZkStateReader();
   }
-  
+
   public ZkStateReader getZkStateReader() {
     if (isClosed) { // quick check...
       throw new AlreadyClosedException();
@@ -170,14 +176,14 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
     }
     return zkStateReader;
   }
-  
+
   @Override
   public void close() throws IOException {
     synchronized (this) {
       if (false == isClosed && zkStateReader != null) {
         isClosed = true;
-        
-        // force zkStateReader to null first so that any parallel calls drop into the synch block 
+
+        // force zkStateReader to null first so that any parallel calls drop into the synch block
         // getZkStateReader() as soon as possible.
         final ZkStateReader zkToClose = zkStateReader;
         zkStateReader = null;
@@ -188,10 +194,10 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
     }
   }
 
-
   static String buildZkHostString(Collection<String> zkHosts, String chroot) {
     if (zkHosts == null || zkHosts.isEmpty()) {
-      throw new IllegalArgumentException("Cannot create CloudSearchClient without valid ZooKeeper host; none specified!");
+      throw new IllegalArgumentException(
+          "Cannot create CloudSearchClient without valid ZooKeeper host; none specified!");
     }
 
     StringBuilder zkBuilder = new StringBuilder();
@@ -208,8 +214,7 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
       if (chroot.startsWith("/")) {
         zkBuilder.append(chroot);
       } else {
-        throw new IllegalArgumentException(
-            "The chroot must start with a forward slash.");
+        throw new IllegalArgumentException("The chroot must start with a forward slash.");
       }
     }
 
@@ -220,6 +225,11 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
   }
 
   @Override
+  public String getQuorumHosts() {
+    return getZkStateReader().getZkClient().getZkServerAddress();
+  }
+
+  @Override
   public String toString() {
     return zkHost;
   }
@@ -227,5 +237,30 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
   @Override
   public boolean isClosed() {
     return isClosed;
+  }
+
+  /**
+   * @return the zkHost value used to connect to zookeeper.
+   */
+  public String getZkHost() {
+    return zkHost;
+  }
+
+  public int getZkConnectTimeout() {
+    return zkConnectTimeout;
+  }
+
+  /** Set the connect timeout to the zookeeper ensemble in ms */
+  public void setZkConnectTimeout(int zkConnectTimeout) {
+    this.zkConnectTimeout = zkConnectTimeout;
+  }
+
+  public int getZkClientTimeout() {
+    return zkClientTimeout;
+  }
+
+  /** Set the timeout to the zookeeper ensemble in ms */
+  public void setZkClientTimeout(int zkClientTimeout) {
+    this.zkClientTimeout = zkClientTimeout;
   }
 }

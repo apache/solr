@@ -18,13 +18,12 @@ package org.apache.solr.analytics.value;
 
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
-
 import org.apache.solr.analytics.util.function.FloatConsumer;
 
 /**
  * A multi-valued analytics value that can be represented as a float.
- * <p>
- * The back-end production of the value can change inbetween calls to {@link #streamFloats},
+ *
+ * <p>The back-end production of the value can change inbetween calls to {@link #streamFloats},
  * resulting in different values on each call.
  */
 public interface FloatValueStream extends AnalyticsValueStream {
@@ -36,26 +35,32 @@ public interface FloatValueStream extends AnalyticsValueStream {
   void streamFloats(FloatConsumer cons);
 
   /**
-   * An interface that represents all of the types a {@link FloatValueStream} should be able to cast to.
+   * An interface that represents all of the types a {@link FloatValueStream} should be able to cast
+   * to.
    */
-  public static interface CastingFloatValueStream extends FloatValueStream, DoubleValueStream, StringValueStream { }
+  public static interface CastingFloatValueStream
+      extends FloatValueStream, DoubleValueStream, StringValueStream {}
 
   /**
-   * An abstract base for {@link CastingFloatValueStream} that automatically casts to all types if {@link #streamFloats} is implemented.
+   * An abstract base for {@link CastingFloatValueStream} that automatically casts to all types if
+   * {@link #streamFloats} is implemented.
    */
-  public static abstract class AbstractFloatValueStream implements CastingFloatValueStream {
+  public abstract static class AbstractFloatValueStream implements CastingFloatValueStream {
     @Override
     public void streamDoubles(DoubleConsumer cons) {
       streamFloats((float val) -> cons.accept(val));
     }
+
     @Override
     public void streamStrings(Consumer<String> cons) {
       streamFloats((float val) -> cons.accept(Float.toString(val)));
     }
+
     @Override
     public void streamObjects(Consumer<Object> cons) {
       streamFloats((float val) -> cons.accept(val));
     }
+
     @Override
     public AnalyticsValueStream convertToConstant() {
       return this;

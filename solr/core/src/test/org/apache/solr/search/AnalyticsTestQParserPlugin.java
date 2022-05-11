@@ -16,45 +16,42 @@
  */
 package org.apache.solr.search;
 
-import org.apache.lucene.search.Query;
+import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.Future;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 import org.apache.solr.client.solrj.request.QueryRequest;
-
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.IterativeMergeStrategy;
+import org.apache.solr.handler.component.MergeStrategy;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardRequest;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.handler.component.MergeStrategy;
 import org.apache.solr.handler.component.ShardResponse;
-
-import java.util.List;
-import java.util.concurrent.Future;
-import java.io.IOException;
+import org.apache.solr.request.SolrQueryRequest;
 
 public class AnalyticsTestQParserPlugin extends QParserPlugin {
 
-
-  public QParser createParser(String query, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  public QParser createParser(
+      String query, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new TestAnalyticsQueryParser(query, localParams, params, req);
   }
 
   static class TestAnalyticsQueryParser extends QParser {
 
-    public TestAnalyticsQueryParser(String query, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+    public TestAnalyticsQueryParser(
+        String query, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
       super(query, localParams, params, req);
     }
 
     public Query parse() throws SyntaxError {
       int base = localParams.getInt("base", 0);
       boolean iterate = localParams.getBool("iterate", false);
-      if(iterate)
-        return new TestAnalyticsQuery(base, new TestIterative());
-      else
-        return new TestAnalyticsQuery(base, new TestAnalyticsMergeStrategy());
+      if (iterate) return new TestAnalyticsQuery(base, new TestIterative());
+      else return new TestAnalyticsQuery(base, new TestAnalyticsMergeStrategy());
     }
   }
 
@@ -92,9 +89,9 @@ public class AnalyticsTestQParserPlugin extends QParserPlugin {
       @SuppressWarnings({"rawtypes"})
       NamedList analytics = new NamedList();
       rb.rsp.add("analytics", analytics);
-      analytics.add("mycount", count+base);
-      if(this.delegate instanceof DelegatingCollector) {
-        ((DelegatingCollector)this.delegate).finish();
+      analytics.add("mycount", count + base);
+      if (this.delegate instanceof DelegatingCollector) {
+        ((DelegatingCollector) this.delegate).finish();
       }
     }
   }
@@ -113,8 +110,7 @@ public class AnalyticsTestQParserPlugin extends QParserPlugin {
       return 100;
     }
 
-    public void  handleMergeFields(ResponseBuilder rb, SolrIndexSearcher searcher) {
-    }
+    public void handleMergeFields(ResponseBuilder rb, SolrIndexSearcher searcher) {}
 
     @SuppressWarnings({"unchecked"})
     public void merge(ResponseBuilder rb, ShardRequest shardRequest) {
@@ -122,12 +118,12 @@ public class AnalyticsTestQParserPlugin extends QParserPlugin {
       @SuppressWarnings({"rawtypes"})
       NamedList merged = new NamedList();
 
-      for(ShardResponse shardResponse : shardRequest.responses) {
+      for (ShardResponse shardResponse : shardRequest.responses) {
         @SuppressWarnings({"rawtypes"})
         NamedList response = shardResponse.getSolrResponse().getResponse();
         @SuppressWarnings({"rawtypes"})
-        NamedList analytics = (NamedList)response.get("analytics");
-        Integer c = (Integer)analytics.get("mycount");
+        NamedList analytics = (NamedList) response.get("analytics");
+        Integer c = (Integer) analytics.get("mycount");
         count += c.intValue();
       }
 
@@ -136,28 +132,27 @@ public class AnalyticsTestQParserPlugin extends QParserPlugin {
     }
   }
 
-  static class TestIterative extends IterativeMergeStrategy  {
+  static class TestIterative extends IterativeMergeStrategy {
 
     @SuppressWarnings({"unchecked"})
     public void process(ResponseBuilder rb, ShardRequest sreq) throws Exception {
       int count = 0;
-      for(ShardResponse shardResponse : sreq.responses) {
+      for (ShardResponse shardResponse : sreq.responses) {
         @SuppressWarnings({"rawtypes"})
         NamedList response = shardResponse.getSolrResponse().getResponse();
         @SuppressWarnings({"rawtypes"})
-        NamedList analytics = (NamedList)response.get("analytics");
-        Integer c = (Integer)analytics.get("mycount");
+        NamedList analytics = (NamedList) response.get("analytics");
+        Integer c = (Integer) analytics.get("mycount");
         count += c.intValue();
       }
 
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.add("distrib", "false");
-      params.add("fq","{!count base="+count+"}");
-      params.add("q","*:*");
-
+      params.add("fq", "{!count base=" + count + "}");
+      params.add("q", "*:*");
 
       /*
-      *  Call back to all the shards in the response and process the result.
+       *  Call back to all the shards in the response and process the result.
        */
 
       QueryRequest request = new QueryRequest(params);
@@ -165,11 +160,11 @@ public class AnalyticsTestQParserPlugin extends QParserPlugin {
 
       int nextCount = 0;
 
-      for(Future<CallBack> future : futures) {
+      for (Future<CallBack> future : futures) {
         QueryResponse response = future.get().getResponse();
         @SuppressWarnings({"rawtypes"})
-        NamedList analytics = (NamedList)response.getResponse().get("analytics");
-        Integer c = (Integer)analytics.get("mycount");
+        NamedList analytics = (NamedList) response.getResponse().get("analytics");
+        Integer c = (Integer) analytics.get("mycount");
         nextCount += c.intValue();
       }
 

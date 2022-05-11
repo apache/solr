@@ -22,7 +22,9 @@ description = 'Jaeger tracer configurator for tracing Solr using OpenTracing wit
 dependencies {
   implementation project(':solr:core')
 
-  implementation ("io.jaegertracing:jaeger-thrift", {
+  implementation 'io.opentracing:opentracing-api'
+  implementation 'io.jaegertracing:jaeger-core'
+  runtimeOnly ("io.jaegertracing:jaeger-thrift", {
     exclude group: "com.squareup.okhttp3", module: "okhttp"
     exclude group: "com.google.code.gson", module: "gson" // for "RemoteControlledSampler", optional
     exclude group: "javax.annotation", module: "javax.annotation-api"
@@ -31,4 +33,7 @@ dependencies {
   })
 
   testImplementation project(':solr:test-framework')
+  testImplementation project(':solr:solrj')
+  testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
+  testImplementation 'junit:junit'
 }
