@@ -168,7 +168,7 @@ Switch back to synchronous logging if this is unacceptable, see comments in the 
 * The Data Import Handler (DIH) is an independent project now; it is no longer a part of Solr.
 * No more support for `clusterstate.json` and `MIGRATESTATE` API has been removed. If your collections use clusterstate.json, please refer to the Upgrade Notes.
 * Auto-scaling framework has been removed. Please refer to xref:configuration-guide:replica-placement-plugins.adoc[Replica Placement Plugins] for alternate options.
-* LegacyBM25SimilarityFactory has been removed.
+* `LegacyBM25SimilarityFactory` has been removed.
 * Legacy SolrCache implementations (LRUCache, LFUCache, FastLRUCache) have been removed. Users have to modify their existing configurations to use CaffeineCache instead.
 * `VelocityResponseWriter` is an independent project now; it is no longer a part of Solr. This encompasses all previously included /browse and wt=velocity examples
 * Legacy SolrCache implementations (LRUCache, LFUCache, FastLRUCache) have been removed.
