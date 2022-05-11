@@ -83,7 +83,7 @@ obscuring associated field names and yielding inconsistent `<doc>` structure. As
 wrapped in a `<raw name="field_name">[...]</raw>` element at the top level of each `<doc>` (or within an enclosing
 `<arr name="field_name"><raw>[...]</raw></arr>` element for multi-valued fields). Existing clients that parse field
 values serialized in this way will need to be updated accordingly.
-* SOLR-12901: Highlighting: hl.method=unified is the new default.  Use hl.method=original
+* Highlighting: `hl.method=unified` is the new default.  Use `hl.method=original`
 to switch back if needed.
 * solr.xml `maxBooleanClauses` is now enforced recursively. Users who upgrade from prior versions of Solr may find that some requests involving complex internal query structures (Example: long query strings using `edismax` with many `qf` and `pf` fields that include query time synonym expansion) which worked in the past now hit this limit and fail. Users in this situation are advised to consider the complexity of their queries/configuration, and increase the value of xref:configuration-guide:configuring-solr-xml#global-maxbooleanclauses[`maxBooleanClauses`] if warranted.
 * Atomic/partial updates to nested documents now _require_ the `\_root_` field to clearly show the document isn't a root document.  Solr 8 would fallback on the `\_route_` param but no longer.
