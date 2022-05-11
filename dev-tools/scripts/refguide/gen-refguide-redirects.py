@@ -91,14 +91,22 @@ def main():
             regex_new[subpath].append(name.split(".html")[0])
         elif frm in name_map:
             new_name = name_map[frm]
-            if new_name in new:
-                result[frm] = new[new_name]
-            elif new_name.startswith("/guide/"):
+            new_name_without_anchor = new_name
+            anchor = ""
+            anchor_index = new_name.find("#")
+            if anchor_index > 0:
+                new_name_without_anchor = new_name[:anchor_index]
+                anchor = new_name[anchor_index:]
+            if new_name_without_anchor.startswith("https://"):
+                result[frm] = new_name
+            elif new_name_without_anchor in new:
+                result[frm] = new[new_name_without_anchor] + anchor
+            elif new_name_without_anchor.startswith("/guide/"):
                 result[frm] = new_name[7:]
-            elif new_name == "_8_11":
+            elif new_name_without_anchor == "_8_11":
                 old_guide.append(frm.split(".html")[0])
             else:
-                failed[frm] = "Mapped value %s not in new guide" % new_name
+                failed[frm] = "Mapped value %s not in new guide" % new_name_without_anchor
         elif frm in old_pages:
             failed[frm] = "Not yet mapped (in src/old-pages)"
         else:
@@ -110,7 +118,10 @@ def main():
             print("RedirectMatch 301 ^/guide/(%s)\.html /guide/solr/latest/%s/$1.html" % ("|".join(regex_new[key]), key))
         print("# Page renames in 9.0")
         for key in result:
-            print("RewriteRule ^/guide/%s /guide/solr/latest/%s [R=301,NE,L]" % (key, result[key]))
+            if result[key].startswith("https://"):
+                print("RewriteRule ^/guide/%s %s [R=301,NE,L]" % (key, result[key]))
+            else:
+                print("RewriteRule ^/guide/%s /guide/solr/latest/%s [R=301,NE,L]" % (key, result[key]))
         print("# Removed pages redirected to latest 8.x guide")
         print("RedirectMatch 301 ^/guide/(%s)\.html /guide/8_11/$1.html" % "|".join(old_guide))
         print("# Paths we could not map")

@@ -87,7 +87,6 @@ how-solrcloud-works.adoc
 how-to-contribute.adoc
 implicit-requesthandlers.adoc
 index-replication.adoc
-index.adoc
 indexconfig-in-solrconfig.adoc
 indexing-and-basic-data-operations.adoc
 indexing-nested-documents.adoc

@@ -6,7 +6,7 @@ command-line-utilities.html;zookeeper-utilities.html
 datadir-and-directoryfactory-in-solrconfig.html;index-location-format.html
 defining-core-properties.html;core-discovery.html
 defining-fields.html;fields.html
-deployment-and-operations.html;deployment-guide.html
+copying-fields.html;copy-fields.html
 detecting-languages-during-indexing.html;language-detection.html
 distributed-requests.html;solrcloud-distributed-requests.html
 distributed-search-with-index-sharding.html;user-managed-distributed-search.html
@@ -16,7 +16,7 @@ format-of-solr-xml.html;configuring-solr-xml.html
 getting-started-with-solrcloud.html;tutorial-solrcloud.html
 index-replication.html;user-managed-index-replication.html
 indexconfig-in-solrconfig.html;index-segments-merging.html
-indexing-and-basic-data-operations.html;indexing-data-operations.html
+indexing-and-basic-data-operations.html;indexing-with-update-handlers.html
 initparams-in-solrconfig.html;initparams.html
 introduction-to-solr-indexing.html;solr-indexing.html
 local-parameters-in-queries.html;local-params.html
@@ -33,7 +33,7 @@ requesthandlers-and-searchcomponents-in-solrconfig.html;requesthandlers-searchco
 running-solr-on-hdfs.html;solr-on-hdfs.html
 running-your-analyzer.html;analysis-screen.html
 schema-factory-definition-in-solrconfig.html;schema-factory.html
-searching.html;query-guide.html
+searching.html;query-syntax-and-parsers.html
 setting-up-an-external-zookeeper-ensemble.html;zookeeper-ensemble.html
 shards-and-indexing-data-in-solrcloud.html;solrcloud-shards-indexing.html
 solr-configuration-files.html;configuration-files.html
@@ -79,8 +79,7 @@ collection-specific-tools.adoc;solr-admin-ui.adoc
 combining-distribution-and-replication.adoc;user-managed-distributed-search.adoc
 files-screen.adoc;configuration-files.adoc
 core-specific-tools.adoc;solr-admin-ui.adoc
-# TODO: This mapping does not exist. Use deployment-guide/cluster-types.html ?
-how-solrcloud-works.adoc;solrcloud.adoc
+how-solrcloud-works.adoc;cluster-types.html#solrcloud-mode
 introduction-to-client-apis.adoc;client-apis.adoc
 java-properties.adoc;jvm-settings.adoc
 logging.adoc;configuring-logging.adoc
@@ -90,6 +89,22 @@ overview-of-the-solr-admin-ui.adoc;solr-admin-ui.adoc
 replication-screen.adoc;user-managed-index-replication.adoc
 segments-info.adoc;index-segments-merging.adoc
 solr-cores-and-solr-xml.adoc;core-discovery.adoc
+solrcloud-query-routing-and-read-tolerance.adoc;solrcloud-distributed-requests.html
+parameter-reference.adoc;configuring-solr-xml.html
+getting-started.adoc;introduction.adoc
+configuration-apis.adoc;config-api.html
+documents-fields-and-schema-design.adoc;fields.html
+further-assistance.adoc;https://solr.apache.org/community.html
+legacy-scaling-and-distribution.adoc;cluster-types.html#user-managed-mode
+introduction-to-scaling-and-distribution.adoc;cluster-types.html#user-managed-mode
+monitoring-solr.adoc;configuring-logging.html
+solr-field-types.adoc;field-type-definitions-and-properties.html
+solrcloud-configuration-and-parameters.adoc;solrcloud-shards-indexing.html
+solrcloud-resilience.adoc;solrcloud-recoveries-and-write-tolerance.html
+the-well-configured-solr-instance.adoc;configuration-files.html
+solrcloud.adoc;cluster-types.html#solrcloud-mode
+how-to-contribute.adoc;https://solr.apache.org/community.html#how-to-contribute
+deployment-and-operations.adoc;installing-solr.html
 
 # A bit uncertain of these
 parallel-sql-interface.html;sql-query.html
@@ -120,3 +135,6 @@ colocating-collections.html;_8_11
 metrics-history.html;_8_11
 migrate-to-policy-rule.html;_8_11
 rule-based-replica-placement.html;_8_11
+putting-the-pieces-together.html;_8_11
+blockjoin-faceting.html;_8_11
+errata.html;_8_11
