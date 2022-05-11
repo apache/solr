@@ -92,7 +92,7 @@ to switch back if needed.
 * Certificate Authentication Plugin, enabling end-to-end use of x509 client certificates for Authentication and Authorization.
 * Improved security when using PKI Authentication plugin.
 * Upgrade to Zookeeper 3.7, allowing for TLS protected ZK communication.
-* All request handlers support security permissions for access.
+* All request handlers support security permissions. Users may have to adapt their `security.json`.
 * Ability to disable admin UI through a system property.
 * The property blockUnknown in the BasicAuthPlugin and the JWTAuthPlugin now defaults to true instead of false. This change is backward incompatible. If you need the pre-9.0 default behavior, you need to explicitly set `blockUnknown:false` in `security.json`.
 * Solr now runs with the Java security manager enabled by default. Hadoop users may need to disable this.
