@@ -112,7 +112,7 @@ changed package name to `org.apache.solr.security.jwt`, but can still be loaded 
 
 === Stability and Scalability
 * xref:deployment-guide:rate-limiters.adoc[Rate limiting] provides a way to throttle update and search requests based on usage metrics.
-* Task management interface allows declaring tasks as cancellable and trackable.
+* A new xref:deployment-guide:task-management.adoc[Task management] interface allows declaring tasks as cancellable and trackable.
 * Ability to specify node roles in Solr. This release supports 'Overseer' and 'Data' roles out of the box.
 * New API for pluggable replica assignment implementations that replaces the auto-scaling framework.
 * Support for distributed processing of cluster state updates and collection API calls, without relying on the Overseer.
