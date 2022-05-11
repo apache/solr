@@ -123,10 +123,17 @@ def main():
             else:
                 print("RewriteRule ^/guide/%s /guide/solr/latest/%s [R=301,NE,L]" % (key, result[key]))
         print("# Removed pages redirected to latest 8.x guide")
-        print("RedirectMatch 301 ^/guide/(%s)\.html /guide/8_11/$1.html" % "|".join(old_guide))
+        old_version_pages_regex = "(%s)\.html" % "|".join(old_guide)
+        print("RedirectMatch 301 ^/guide/%s /guide/8_11/$1.html" % old_version_pages_regex)
         print("# Paths we could not map")
         for key in failed:
             print("# %s: %s" % (key, failed[key]))
+
+        print("# Do not index old reference guide pages on search engines, except for pages that don't exist in 9+")
+        print("""
+<If "%%{PATH_INFO} =~ ^/guide/(6|7|8)_" && ! "%%{PATH_INFO} =~ ^/guide/8_11/%s$">
+    Header set X-Robots-Tag "noindex,nofollow,noarchive"
+</LocationMatch>""" % old_version_pages_regex)
     else:
         out("Regex mappings:")
         pprint(regex_new)
