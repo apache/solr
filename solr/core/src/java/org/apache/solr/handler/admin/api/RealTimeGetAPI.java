@@ -32,7 +32,7 @@ import org.apache.solr.security.PermissionNameProvider;
  */
 public class RealTimeGetAPI {
 
-  private RealTimeGetHandler rtgHandler;
+  private final RealTimeGetHandler rtgHandler;
 
   public RealTimeGetAPI(RealTimeGetHandler rtgHandler) {
     this.rtgHandler = rtgHandler;
