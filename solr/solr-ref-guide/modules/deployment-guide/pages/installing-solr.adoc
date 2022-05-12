@@ -18,8 +18,10 @@
 // under the License.
 
 Installation of Solr on Unix-compatible or Windows servers generally requires simply extracting (or, unzipping) the download package.
-
 Please be sure to review the xref:system-requirements.adoc[] before starting Solr.
+
+Solr can also be xref:solr-in-docker.adoc[installed and deployed in Docker].
+The official image uses the binary release directly, so the xref:#directory-layout[directory layout] will be identical to what is described below.
 
 == Available Solr Packages
 
