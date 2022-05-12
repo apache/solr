@@ -1993,7 +1993,7 @@ def prepare_announce_solr(todo): # pylint: disable=unused-argument
 
 def check_artifacts_available(todo): # pylint: disable=unused-argument
   try:
-    cdnUrl = expand_jinja("https://dlcdn.apache.org/solr/{{ release_version }}/solr-{{ release_version }}-src.tgz.asc")
+    cdnUrl = expand_jinja("https://dlcdn.apache.org/solr/solr/{{ release_version }}/solr-{{ release_version }}-src.tgz.asc")
     load(cdnUrl)
     print("Found %s" % cdnUrl)
   except Exception as e:

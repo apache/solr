@@ -119,6 +119,11 @@ public class SolrTestCase extends LuceneTestCase {
           ExternalPaths.DEFAULT_CONFIGSET);
     }
 
+    // set solr.install.dir needed by some test configs outside of the test sandbox (!)
+    if (ExternalPaths.SOURCE_HOME != null) {
+      System.setProperty("solr.install.dir", ExternalPaths.SOURCE_HOME);
+    }
+
     if (!TEST_NIGHTLY) {
       System.setProperty("zookeeper.nio.numSelectorThreads", "2");
       System.setProperty("zookeeper.nio.numWorkerThreads", "3");
