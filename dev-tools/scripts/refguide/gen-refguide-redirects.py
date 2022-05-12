@@ -119,9 +119,9 @@ def main():
         print("# Page renames in 9.0")
         for key in result:
             if result[key].startswith("https://"):
-                print("RewriteRule ^/guide/%s %s [R=301,NE,L]" % (key, result[key]))
+                print("RewriteRule ^guide/%s %s [R=301,NE,L]" % (key, result[key]))
             else:
-                print("RewriteRule ^/guide/%s /guide/solr/latest/%s [R=301,NE,L]" % (key, result[key]))
+                print("RewriteRule ^guide/%s /guide/solr/latest/%s [R=301,NE,L]" % (key, result[key]))
         print("# Removed pages redirected to latest 8.x guide")
         old_version_pages_regex = "(%s)\.html" % "|".join(old_guide)
         print("RedirectMatch 301 ^/guide/%s /guide/8_11/$1.html" % old_version_pages_regex)
