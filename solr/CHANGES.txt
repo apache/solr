@@ -33,6 +33,8 @@ New Features
 * SOLR-16111: Add hl.queryFieldPattern support, an advanced alternative to the hl.requireFieldMatch boolean flag.
   (Christine Poerschke, David Smiley)
 
+* SOLR-15921: Load jars in <solr-install-dir>/lib/ by default (janhoy)
+
 Improvements
 ---------------------
 * SOLR-15986: CommitUpdateCommand and SplitIndexCommand can write user commit metadata. (Bruno Roustant)
