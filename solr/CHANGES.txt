@@ -69,6 +69,8 @@ Other Changes
 
 * SOLR-16114: SolrZooKeeper has been removed in favor of using ZooKeeper directly. (Mike Drob)
 
+* SOLR-16154: Event listeners submit through core container executor service instead of separate thread (Mike Drob, Kevin Risden)
+
 Build
 ---------------------
 * SOLR-16053: Upgrade scriptDepVersions (Kevin Risden)
@@ -765,8 +767,6 @@ Bug Fixes
 * SOLR-16143: SolrConfig ResourceProvider can miss updates from ZooKeeper (Mike Drob)
 
 * SOLR-16164: ConfigSet API returns error if untrusted user creates from _default configset (Eric Pugh, Kevin Risden)
-
-* SOLR-16154: Event listeners submit through core container executor service instead of separate thread (Mike Drob, Kevin Risden)
 
 ==================  8.11.2 ==================
 
