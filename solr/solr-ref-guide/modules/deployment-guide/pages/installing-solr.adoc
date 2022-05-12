@@ -104,6 +104,12 @@ This directory also contains the scripts needed when using Solr inside the Docke
 The `README.md` in this directory describes how custom Solr Docker images can be built using this binary distribution.
 Refer to the section xref:deployment-guide:solr-in-docker.adoc[] page for information on using a Solr Docker image.
 
+lib/::
+Folder where Solr will look for additional plugin jar files.
+
+dist/::
+The `dist` directory contains the main Solr .jar files.
+
 docs/::
 The `docs` directory includes a link to online Javadocs for Solr.
 
