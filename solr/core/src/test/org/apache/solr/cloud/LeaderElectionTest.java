@@ -101,7 +101,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
 
     @Override
     void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStartMs)
-        throws KeeperException, InterruptedException, IOException {
+        throws KeeperException, InterruptedException {
       super.runLeaderProcess(weAreReplacement, pauseBeforeStartMs);
       if (runLeaderDelay > 0) {
         log.info("Sleeping for {}ms to simulate leadership takeover delay", runLeaderDelay);
