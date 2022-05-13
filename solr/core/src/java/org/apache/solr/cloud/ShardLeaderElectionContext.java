@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.EnumSet;
 import java.util.concurrent.Future;
@@ -98,7 +97,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
    */
   @Override
   void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStart)
-      throws KeeperException, InterruptedException, IOException {
+      throws KeeperException, InterruptedException {
     String coreName = leaderProps.getStr(ZkStateReader.CORE_NAME_PROP);
     ActionThrottle lt;
     try (SolrCore core = cc.getCore(coreName)) {
@@ -533,8 +532,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     return false;
   }
 
-  private void rejoinLeaderElection(SolrCore core)
-      throws InterruptedException, KeeperException, IOException {
+  private void rejoinLeaderElection(SolrCore core) throws InterruptedException, KeeperException {
     // remove our ephemeral and re join the election
     if (cc.isShutDown()) {
       log.debug("Not rejoining election because CoreContainer is closed");
