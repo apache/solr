@@ -16,19 +16,21 @@
  */
 package org.apache.solr.handler.component;
 
-import static org.apache.solr.common.params.CommonParams.QUERY_UUID;
-
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
-import org.apache.solr.api.ApiBag;
+import org.apache.solr.handler.admin.api.CancelTaskAPI;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.apache.solr.common.params.CommonParams.QUERY_UUID;
 
 /** Handles requests for query cancellation for cancellable queries */
 public class QueryCancellationHandler extends TaskManagementHandler {
@@ -93,7 +95,7 @@ public class QueryCancellationHandler extends TaskManagementHandler {
 
   @Override
   public Collection<Api> getApis() {
-    return ApiBag.wrapRequestHandlers(this, "core.tasks.cancel");
+    return AnnotatedApi.getApis(new CancelTaskAPI(this));
   }
 
   private List<SearchComponent> getComponentsList() {

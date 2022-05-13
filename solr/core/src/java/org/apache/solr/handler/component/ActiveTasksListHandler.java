@@ -16,19 +16,21 @@
  */
 package org.apache.solr.handler.component;
 
-import static org.apache.solr.common.params.CommonParams.TASK_CHECK_UUID;
-
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
-import org.apache.solr.api.ApiBag;
+import org.apache.solr.handler.admin.api.ListActiveTasksAPI;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.apache.solr.common.params.CommonParams.TASK_CHECK_UUID;
 
 /** Handles request for listing all active cancellable tasks */
 public class ActiveTasksListHandler extends TaskManagementHandler {
@@ -89,7 +91,7 @@ public class ActiveTasksListHandler extends TaskManagementHandler {
 
   @Override
   public Collection<Api> getApis() {
-    return ApiBag.wrapRequestHandlers(this, "core.tasks.list");
+    return AnnotatedApi.getApis(new ListActiveTasksAPI(this));
   }
 
   private List<SearchComponent> getComponentsList() {
