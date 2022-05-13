@@ -12,18 +12,18 @@
       ;(copy = document.createElement('button')).className = 'copy-button'
       copy.setAttribute('title', 'Copy Link')
       ;(permaLinkText = document.createElement('span')).className = 'button-label'
-      permaLinkText.appendChild(document.createTextNode('Permanent Link'))
+      permaLinkText.appendChild(document.createTextNode('Link Page'))
       copy.appendChild(permaLinkText)
       if (config.svgAs === 'svg') {
         var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
         svg.setAttribute('class', 'copy-icon')
         var use = document.createElementNS('http://www.w3.org/2000/svg', 'use')
-        use.setAttribute('href', window.uiRootPath + '/img/octicons-16.svg#icon-clippy')
+        use.setAttribute('href', window.uiRootPath + '/img/link-24.svg#icon-clippy')
         svg.appendChild(use)
         copy.appendChild(svg)
       } else {
         var img = document.createElement('img')
-        img.src = window.uiRootPath + '/img/octicons-16.svg#view-clippy'
+        img.src = window.uiRootPath + '/img/link-24.svg#view-clippy'
         img.alt = 'copy icon'
         img.className = 'copy-icon'
         copy.appendChild(img)

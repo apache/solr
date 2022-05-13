@@ -14,7 +14,11 @@
   background-color: inherit;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(0, 0, 0, 0);
+}
+
+.perma-link-copy .copy-button:hover {
+  border-color: rgba(0, 0, 0, 0.3);
 }
 
 .perma-link-copy .perma-link {
@@ -35,6 +39,7 @@
   cursor: auto;
   opacity: 0;
   transition: opacity 1s ease 0.75s;
+  pointer-events: none;
 }
 
 .perma-link-copy .copy-button .copy-toast::after {
@@ -60,7 +65,7 @@
 }
 
 .perma-link-copy .copy-button .copy-icon {
-  height: 70%;
-  margin: 0 0.2rem;
+  height: 60%;
+  margin: 0 0.2rem 0 0;
   opacity: 0.6;
 }
