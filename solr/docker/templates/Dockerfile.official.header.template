@@ -52,11 +52,11 @@ RUN set -ex; \
   if [ -n "$SOLR_KEYS" ]; then \
     # Install all Solr GPG Keys to start
     wget -nv "https://downloads.apache.org/solr/KEYS" -O- | \
-      gpg --import --key-origin 'url,https://downloads.apache.org/solr/KEYS'; \
+      gpg --batch --import --key-origin 'url,https://downloads.apache.org/solr/KEYS'; \
     # Save just the release key
-    release_keys="$(gpg --export -a ${SOLR_KEYS})"; \
+    release_keys="$(gpg --batch --export -a ${SOLR_KEYS})"; \
     rm -rf "$GNUPGHOME"/*; \
-    echo "${release_keys}" | gpg --import; \
+    echo "${release_keys}" | gpg --batch --import; \
   fi; \
   MAX_REDIRECTS=3; \
   if [ -n "$SOLR_DOWNLOAD_URL" ]; then \
