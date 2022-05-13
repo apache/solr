@@ -14,14 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.common.cloud.acl;
+package org.apache.solr.common.cloud;
 
 import java.util.List;
+
+import org.apache.solr.common.cloud.acl.ZkCredentialsInjector;
 import org.apache.zookeeper.data.ACL;
 
 public interface ZkACLProvider {
 
   List<ACL> getACLsToAdd(String zNodePath);
 
-  void setZkCredentialsInjector(ZkCredentialsInjector zkCredentialsInjector);
+  default void setZkCredentialsInjector(ZkCredentialsInjector zkCredentialsInjector) {
+    // no-op
+  }
 }

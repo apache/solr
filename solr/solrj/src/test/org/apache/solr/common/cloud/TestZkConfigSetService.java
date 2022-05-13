@@ -32,8 +32,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkTestServer;
-import org.apache.solr.common.cloud.acl.ZkACLProvider;
-import org.apache.solr.common.cloud.acl.ZkCredentialsProvider;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.LogLevel;

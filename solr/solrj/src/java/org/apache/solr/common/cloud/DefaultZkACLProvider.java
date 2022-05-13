@@ -17,29 +17,12 @@
 package org.apache.solr.common.cloud;
 
 import java.util.List;
-import org.apache.solr.common.cloud.acl.DefaultZkCredentialsInjector;
-import org.apache.solr.common.cloud.acl.ZkACLProvider;
-import org.apache.solr.common.cloud.acl.ZkCredentialsInjector;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 
 public class DefaultZkACLProvider implements ZkACLProvider {
 
   private List<ACL> globalACLsToAdd;
-  protected ZkCredentialsInjector zkCredentialsInjector;
-
-  public DefaultZkACLProvider() {
-    this(new DefaultZkCredentialsInjector());
-  }
-
-  public DefaultZkACLProvider(ZkCredentialsInjector zkCredentialsInjector) {
-    this.zkCredentialsInjector = zkCredentialsInjector;
-  }
-
-  @Override
-  public void setZkCredentialsInjector(ZkCredentialsInjector zkCredentialsInjector) {
-    this.zkCredentialsInjector = zkCredentialsInjector;
-  }
 
   @Override
   public List<ACL> getACLsToAdd(String zNodePath) {

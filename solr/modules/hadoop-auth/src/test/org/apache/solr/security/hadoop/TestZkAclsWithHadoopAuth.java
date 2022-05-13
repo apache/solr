@@ -31,7 +31,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider;
 import org.apache.solr.common.cloud.VMParamsSingleSetCredentialsDigestZkCredentialsProvider;
-import org.apache.solr.common.cloud.acl.SecurityAwareZkACLProvider;
+import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.ACL;

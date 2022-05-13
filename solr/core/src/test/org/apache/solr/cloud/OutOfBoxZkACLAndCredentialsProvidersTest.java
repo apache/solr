@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.acl.SecurityAwareZkACLProvider;
+import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;

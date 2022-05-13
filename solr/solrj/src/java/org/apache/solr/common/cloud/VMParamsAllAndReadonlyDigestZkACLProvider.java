@@ -18,8 +18,6 @@ package org.apache.solr.common.cloud;
 
 import java.util.List;
 import org.apache.solr.common.cloud.acl.*;
-import org.apache.solr.common.cloud.acl.SecurityAwareZkACLProvider;
-import org.apache.solr.common.cloud.acl.ZkACLProvider;
 import org.apache.zookeeper.data.ACL;
 
 /**

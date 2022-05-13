@@ -42,7 +42,7 @@ import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.acl.SecurityAwareZkACLProvider;
+import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.security.AuthenticationPlugin;

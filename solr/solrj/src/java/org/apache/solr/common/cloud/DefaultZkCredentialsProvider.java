@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.solr.common.cloud.acl.DefaultZkCredentialsInjector;
 import org.apache.solr.common.cloud.acl.ZkCredentialsInjector;
-import org.apache.solr.common.cloud.acl.ZkCredentialsProvider;
 
 public class DefaultZkCredentialsProvider implements ZkCredentialsProvider {
 
