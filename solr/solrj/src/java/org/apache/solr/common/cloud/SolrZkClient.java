@@ -274,7 +274,8 @@ public class SolrZkClient implements Closeable {
             t);
       }
     }
-    log.warn("Using default ZkACLProvider. DefaultZkACLProvider is not a secure, it creates 'OPEN_ACL_UNSAFE' ACLs to Zookeeper");
+    log.warn(
+        "Using default ZkACLProvider. DefaultZkACLProvider is not a secure, it creates 'OPEN_ACL_UNSAFE' ACLs to Zookeeper");
     return new DefaultZkACLProvider();
   }
 

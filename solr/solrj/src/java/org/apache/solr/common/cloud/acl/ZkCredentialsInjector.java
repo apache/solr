@@ -19,16 +19,15 @@ package org.apache.solr.common.cloud.acl;
 import java.util.List;
 
 /**
- * A class that retrieves Zookeeper credentials from an external source to be injected
- * into {@link DigestZkCredentialsProvider} and {@link DigestZkACLProvider}. The "external source" here can
- * be System Props, a file, a Secret Manager, or any other local or remote source.
+ * A class that retrieves Zookeeper credentials from an external source to be injected into {@link
+ * DigestZkCredentialsProvider} and {@link DigestZkACLProvider}. The "external source" here can be
+ * System Props, a file, a Secret Manager, or any other local or remote source.
  */
 public interface ZkCredentialsInjector {
 
   /**
-   *
-   * @return List of {@link ZkCredential}s representing Zookeeper credentials including
-   * the username, the password and the permissions (ALL or READ)
+   * @return List of {@link ZkCredential}s representing Zookeeper credentials including the
+   *     username, the password and the permissions (ALL or READ)
    */
   List<ZkCredential> getZkCredentials();
 
