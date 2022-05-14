@@ -416,7 +416,7 @@ public class HttpSolrCall {
     }
     List<String> result = null;
     LinkedHashSet<String> uniqueList = null;
-    Aliases aliases = getAliases();
+    Aliases aliases = cores.getAliases();
     List<String> inputCollections = StrUtils.splitSmart(collectionStr, ",", true);
     if (inputCollections.size() > 1) {
       uniqueList = new LinkedHashSet<>();
