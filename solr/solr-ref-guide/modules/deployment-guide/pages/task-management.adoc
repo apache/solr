@@ -16,13 +16,20 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr allows users to control their running tasks by monitoring them, specifying tasks as cancellation enabled and allowing
-cancellation of the same.
+Solr offers a task management framework, that allows users to monitor (and even cancel) certain types of long-running tasks.
+Queries are the only type of "task" currently supported, but additional types may be added in the future.
 
-This is achieved using the task management interface.
-Currently, this is supported for queries.
+== Registering Tasks for Task Management
 
-== Types of Operations
+Task-tracking and management is an opt-in feature: tracking must be explicitly enabled on each individual task.
+For queries (the only type of "task" currently supported), this is done by specifying the `canCancel` boolean flag as a query-parameter.
+A value of `true` enables task-management; `false` (the default) leaves it disabled.
+
+Solr will assign each task a UUID for tracking purposes.
+Users may override this if desired with an arbitrary string of their choice using the `queryUUID` query-parameter.
+(Users are responsible for ensuring that any `queryUUID` values they provide are unique and don't conflict with other running tasks.)
+
+== Task Management Operations
 Task management interface supports the following types of operations:
 
 . List all currently running cancellable tasks.
