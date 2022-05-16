@@ -28,6 +28,7 @@ A value of `true` enables task-management; `false` (the default) leaves it disab
 Solr will assign each task a UUID for tracking purposes.
 Users may override this if desired with an arbitrary string of their choice using the `queryUUID` query-parameter.
 (Users are responsible for ensuring that any `queryUUID` values they provide are unique and don't conflict with other running tasks.)
+This UUID, whether generated or provided by the user, can then be used to track or cancel the task.
 
 == Task Management Operations
 Task management interface supports the following types of operations:
@@ -59,7 +60,7 @@ curl -X GET "http://localhost:8983/solr/collectionName/tasks/list"
 
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/v2/collections/collName/tasks/list"
+curl -X GET "http://localhost:8983/v2/collections/collectionName/tasks/list"
 ----
 ====
 --
@@ -98,7 +99,7 @@ curl -X GET "http://localhost:8983/solr/collectionName/tasks/cancel?queryUUID=5"
 
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/v2/collections/collName/tasks/cancel?queryUUID=5"
+curl -X GET "http://localhost:8983/v2/collections/collectionName/tasks/cancel?queryUUID=5"
 ----
 ====
 --
@@ -147,7 +148,7 @@ curl -X GET "http://localhost:8983/solr/collectionName/tasks/list?taskUUID=5"
 
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/v2/collections/collName/tasks/list?taskUUID=5"
+curl -X GET "http://localhost:8983/v2/collections/collectionName/tasks/list?taskUUID=5"
 ----
 ====
 --
