@@ -2434,12 +2434,60 @@ public class TestSQLHandler extends SolrCloudTestCase {
   @Test
   public void testLike() throws Exception {
     new UpdateRequest()
-        .add("id", "1", "a_s", "hello-1", "b_s", "foo")
-        .add("id", "2", "a_s", "world-2", "b_s", "foo")
-        .add("id", "3", "a_s", "hello-3", "b_s", "foo")
-        .add("id", "4", "a_s", "world-4", "b_s", "foo")
-        .add("id", "5", "a_s", "hello-5", "b_s", "foo")
-        .add("id", "6", "a_s", "world-6", "b_s", "bar")
+        .add(
+            "id",
+            "1",
+            "a_s",
+            "hello-1",
+            "b_s",
+            "foo",
+            "c_t",
+            "the quick brown fox jumped over the lazy dog")
+        .add(
+            "id",
+            "2",
+            "a_s",
+            "world-2",
+            "b_s",
+            "foo",
+            "c_t",
+            "the sly black dog jumped over the sleeping pig")
+        .add(
+            "id",
+            "3",
+            "a_s",
+            "hello-3",
+            "b_s",
+            "foo",
+            "c_t",
+            "the quick brown fox jumped over the lazy dog")
+        .add(
+            "id",
+            "4",
+            "a_s",
+            "world-4",
+            "b_s",
+            "foo",
+            "c_t",
+            "the sly black dog jumped over the sleepy pig")
+        .add(
+            "id",
+            "5",
+            "a_s",
+            "hello-5",
+            "b_s",
+            "foo",
+            "c_t",
+            "the quick brown fox jumped over the lazy dog")
+        .add(
+            "id",
+            "6",
+            "a_s",
+            "world-6",
+            "b_s",
+            "bar",
+            "c_t",
+            "the sly black dog jumped over the sleepin piglet")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE 'h_llo-%'", 3);
@@ -2463,6 +2511,14 @@ public class TestSQLHandler extends SolrCloudTestCase {
     expectResults("SELECT b_s FROM $ALIAS WHERE b_s LIKE '(fo%)'", 5);
 
     expectResults("SELECT b_s FROM $ALIAS WHERE b_s LIKE '(ba*)'", 1);
+
+    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'fox'", 3);
+    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'sleep% pig%'", 3);
+    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'sleep% pigle%'", 1);
+    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'sleep% piglet'", 1);
+
+    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'jump%'", 6);
+    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE '%ump%'", 6);
   }
 
   @Test

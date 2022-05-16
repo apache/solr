@@ -349,18 +349,23 @@ class SolrFilter extends Filter implements SolrRel {
       Pair<String, RexLiteral> pair = getFieldValuePair(like);
       String terms = pair.getValue().toString().trim();
       terms = terms.replace("'", "").replace('%', '*').replace('_', '?');
-      boolean wrappedQuotes = false;
+
+      boolean hasMultipleTerms = false;
       if (!terms.startsWith("(") && !terms.startsWith("[") && !terms.startsWith("{")) {
-        // restore the * and ? after escaping
-        terms =
-            "\""
-                + ClientUtils.escapeQueryChars(terms).replace("\\*", "*").replace("\\?", "?")
-                + "\"";
-        wrappedQuotes = true;
+        terms = phraseWithWildcard(terms);
+        if (terms.indexOf(' ') != -1) {
+          hasMultipleTerms = true;
+        }
       }
 
-      String query = pair.getKey() + ":" + terms;
-      return wrappedQuotes ? "{!complexphrase}" + query : query;
+      // if terms contains multiple words, then we need to employ the complexphrase parser
+      // but that expects the terms wrapped in double-quotes, not parens
+      if (hasMultipleTerms) {
+        String quoteTerms = "\"" + terms.substring(1, terms.length() - 1) + "\"";
+        return "{!complexphrase}" + pair.getKey() + ":" + quoteTerms;
+      }
+
+      return pair.getKey() + ":" + terms;
     }
 
     protected String translateComparison(RexNode node) {
@@ -414,18 +419,26 @@ class SolrFilter extends Filter implements SolrRel {
 
       String terms = toSolrLiteral(key, value).trim();
 
-      boolean wrappedQuotes = false;
       if (!terms.startsWith("(") && !terms.startsWith("[") && !terms.startsWith("{")) {
-        terms = "\"" + ClientUtils.escapeQueryChars(terms) + "\"";
-        wrappedQuotes = true;
+        if (terms.contains("*") || terms.contains("?")) {
+          terms = phraseWithWildcard(terms);
+        } else {
+          terms = "\"" + ClientUtils.escapeQueryChars(terms) + "\"";
+        }
       }
 
-      String clause = key + ":" + terms;
-      if (terms.contains("*") && wrappedQuotes) {
-        clause = "{!complexphrase}" + clause;
-      }
+      return key + ":" + terms;
+    }
 
-      return clause;
+    // Wrap filter criteria containing wildcard with parens and unescape the wildcards after
+    // escaping protected query chars
+    private String phraseWithWildcard(String terms) {
+      return "("
+          + ClientUtils.escapeQueryChars(terms)
+              .replace("\\*", "*")
+              .replace("\\?", "?")
+              .replace("\\ ", " ")
+          + ")";
     }
 
     // translate to a literal string value for Solr queries, such as translating a
