@@ -37,8 +37,6 @@ Task management interface supports the following types of operations:
 . Cancel a specific task.
 . Query the status of a specific task.
 
-
-
 == Listing All Active Cancellable Tasks
 To list all the active cancellable tasks currently running, please use the following syntax:
 
