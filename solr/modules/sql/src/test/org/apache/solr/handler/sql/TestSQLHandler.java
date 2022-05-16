@@ -2519,6 +2519,9 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'jump%'", 6);
     expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE '%ump%'", 6);
+
+    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE '(\"dog pig\"~5)'", 2);
+    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'jumped over'", 6);
   }
 
   @Test

@@ -360,7 +360,7 @@ class SolrFilter extends Filter implements SolrRel {
 
       // if terms contains multiple words, then we need to employ the complexphrase parser
       // but that expects the terms wrapped in double-quotes, not parens
-      if (hasMultipleTerms) {
+      if (hasMultipleTerms && (terms.contains("*") || terms.contains("?"))) {
         String quoteTerms = "\"" + terms.substring(1, terms.length() - 1) + "\"";
         return "{!complexphrase}" + pair.getKey() + ":" + quoteTerms;
       }
