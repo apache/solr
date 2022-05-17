@@ -10,9 +10,9 @@
     ;(toolbox = document.createElement('div')).className = 'perma-link'
     if (window.navigator.clipboard) {
       ;(copy = document.createElement('button')).className = 'copy-button'
-      copy.setAttribute('title', 'Copy Link')
+      copy.setAttribute('title', 'Copy Link for Version')
       ;(permaLinkText = document.createElement('span')).className = 'button-label'
-      permaLinkText.appendChild(document.createTextNode('Link Page'))
+      permaLinkText.appendChild(document.createTextNode('Permalink'))
       copy.appendChild(permaLinkText)
       if (config.svgAs === 'svg') {
         var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
