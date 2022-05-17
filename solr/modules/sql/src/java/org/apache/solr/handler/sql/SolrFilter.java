@@ -346,9 +346,12 @@ class SolrFilter extends Filter implements SolrRel {
     }
 
     protected String translateLike(RexNode like) {
-      Pair<String, RexLiteral> pair = getFieldValuePair(like);
+      Pair<Pair<String, RexLiteral>, Character> pairWithEscapeCharacter = getFieldValuePairWithEscapeCharacter(like);
+      Pair<String, RexLiteral> pair = pairWithEscapeCharacter.getKey();
+      Character escapeChar = pairWithEscapeCharacter.getValue();
+
       String terms = pair.getValue().toString().trim();
-      terms = terms.replace("'", "").replace('%', '*').replace('_', '?');
+      terms = translateLikeTermToSolrSyntax(terms, escapeChar);
 
       if (!terms.startsWith("(") && !terms.startsWith("[") && !terms.startsWith("{")) {
         terms = escapeWithWildcard(terms);
@@ -363,6 +366,30 @@ class SolrFilter extends Filter implements SolrRel {
       } // else treat as an embedded Solr query and pass-through
 
       return pair.getKey() + ":" + terms;
+    }
+
+    private String translateLikeTermToSolrSyntax(String term, Character escapeChar) {
+      boolean isEscaped = false;
+      StringBuilder sb = new StringBuilder();
+      for (int i=0; i<term.length()-1; i++) {
+        char c = term.charAt(i);
+        // Only replace special characters if they are not escaped
+        if (escapeChar != null && c == escapeChar) {
+          isEscaped = true;
+        }
+        if (c == '%' && !isEscaped) {
+          sb.append('*');
+        } else if (c == '_' && !isEscaped) {
+          sb.append('?');
+        } else if (c == '\'' && isEscaped) {
+          sb.append('\'');
+          isEscaped = false;
+        } else if ((escapeChar ==null || escapeChar != c) && c != '\'') {
+          sb.append(c);
+          isEscaped = false;
+        }
+      }
+      return sb.toString();
     }
 
     protected String translateComparison(RexNode node) {
@@ -492,6 +519,26 @@ class SolrFilter extends Filter implements SolrRel {
         timestamp += "Z";
       }
       return timestamp;
+    }
+
+    protected Pair<Pair<String, RexLiteral>, Character> getFieldValuePairWithEscapeCharacter(RexNode node) {
+      if (!(node instanceof RexCall)) {
+        throw new AssertionError("expected RexCall for predicate but found: " + node);
+      }
+      RexCall call = (RexCall) node;
+      if (call.getOperands().size() == 2) {
+        return Pair.of(getFieldValuePair(node), null);
+      } else {
+        RexNode escapeNode = call.getOperands().get(2);
+        Character escapeChar = null;
+        if (escapeNode.getKind() == SqlKind.LITERAL) {
+          RexLiteral literal = (RexLiteral) escapeNode;
+          if (literal.getTypeName() == SqlTypeName.CHAR) {
+            escapeChar = literal.getValueAs(Character.class);
+          }
+        }
+        return Pair.of(translateBinary2(call.getOperands().get(0), call.getOperands().get(1)), escapeChar);
+      }
     }
 
     protected Pair<String, RexLiteral> getFieldValuePair(RexNode node) {

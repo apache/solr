@@ -2488,9 +2488,19 @@ public class TestSQLHandler extends SolrCloudTestCase {
             "bar",
             "c_t",
             "the sly black dog jumped over the sleepin piglet")
-        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+        .add(
+            "id",
+            "7",
+            "a_s",
+            "world%_7",
+            "b_s",
+            "zaz",
+            "c_t",
+            "the lazy dog jumped over the quick brown fox")
+            .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE 'h_llo-%'", 3);
+    expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE 'world\\%\\__' ESCAPE '\\'", 1);
 
     // not technically valid SQL but we support it for legacy purposes, see: SOLR-15463
     expectResults("SELECT a_s FROM $ALIAS WHERE a_s='world-*'", 3);
@@ -2502,7 +2512,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     expectResults("SELECT b_s FROM $ALIAS WHERE b_s LIKE 'foo'", 5);
 
     // NOT LIKE
-    expectResults("SELECT b_s FROM $ALIAS WHERE b_s NOT LIKE 'f%'", 1);
+    expectResults("SELECT b_s FROM $ALIAS WHERE b_s NOT LIKE 'f%'", 2);
 
     // leading wildcard
     expectResults("SELECT b_s FROM $ALIAS WHERE b_s LIKE '%oo'", 5);
@@ -2512,19 +2522,19 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     expectResults("SELECT b_s FROM $ALIAS WHERE b_s LIKE '(ba*)'", 1);
 
-    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'fox'", 3);
+    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'fox'", 4);
     expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'sleep% pig%'", 3);
     expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'sleep% pigle%'", 1);
     expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'sleep% piglet'", 1);
 
-    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'jump%'", 6);
-    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE '%ump%'", 6);
+    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'jump%'", 7);
+    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE '%ump%'", 7);
 
     expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE '(\"dog pig\"~5)'", 2);
-    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'jumped over'", 6);
-    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'quick brown fox'", 3);
+    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'jumped over'", 7);
+    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'quick brown fox'", 4);
     expectResults("SELECT b_s FROM $ALIAS WHERE b_s LIKE 'foo*'", 5);
-    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE '*og'", 6);
+    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE '*og'", 7);
   }
 
   @Test
