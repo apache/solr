@@ -1,0 +1,71 @@
+/* Solr New File */
+
+.perma-link-copy {
+  height: 75%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-right: 0.7rem;
+}
+
+.perma-link-copy .copy-button {
+  height: 100%;
+  display: flex;
+  background-color: inherit;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(0, 0, 0, 0);
+}
+
+.perma-link-copy .copy-button:hover {
+  border-color: rgba(0, 0, 0, 0.3);
+}
+
+.perma-link-copy .perma-link {
+  height: 100%;
+}
+
+.perma-link-copy .copy-button .copy-toast {
+  flex: none;
+  position: absolute;
+  top: 75%;
+  display: inline-flex;
+  justify-content: center;
+  margin-top: 1em;
+  background-color: var(--doc-font-color);
+  border-radius: 0.25em;
+  padding: 0.5em;
+  color: var(--color-white);
+  cursor: auto;
+  opacity: 0;
+  transition: opacity 1s ease 0.75s;
+  pointer-events: none;
+}
+
+.perma-link-copy .copy-button .copy-toast::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 1em;
+  height: 1em;
+  border: 0.55em solid transparent;
+  border-left-color: var(--doc-font-color);
+  transform: rotate(-90deg) translateX(50%) translateY(50%);
+  transform-origin: left;
+}
+
+.perma-link-copy .copy-button.clicked .copy-toast {
+  opacity: 1;
+  transition: none;
+}
+
+.perma-link-copy .copy-button .button-label {
+  margin: 0 0.3rem;
+  opacity: 0.6;
+}
+
+.perma-link-copy .copy-button .copy-icon {
+  height: 60%;
+  margin: 0 0.2rem 0 0;
+  opacity: 0.6;
+}
