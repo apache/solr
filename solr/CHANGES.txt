@@ -812,6 +812,9 @@ Bug Fixes
 
 * SOLR-16022: Enforce special character requirements on passwords with length less than 15 (Timothy Potter)
 
+* SOLR-16199: Improve query syntax construction for SQL LIKE clause with phrases and wildcards
+  (Kiran Chitturi, Aroop Ganguly, Amrit Sarkar via Timothy Potter)
+
 ==================  8.11.1 ==================
 
 Bug Fixes
