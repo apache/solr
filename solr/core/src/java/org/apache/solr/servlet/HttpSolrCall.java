@@ -221,12 +221,6 @@ public class HttpSolrCall {
     return queryParams;
   }
 
-  protected Aliases getAliases() {
-    return cores.isZooKeeperAware()
-        ? cores.getZkController().getZkStateReader().getAliases()
-        : Aliases.EMPTY;
-  }
-
   /** The collection(s) referenced in this request. Populated in {@link #init()}. Not null. */
   public List<String> getCollectionsList() {
     return collectionsList != null ? collectionsList : Collections.emptyList();

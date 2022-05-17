@@ -2314,7 +2314,7 @@ public class CoreContainer {
       return getZkController().getZkStateReader().getAliases();
     } else {
       // fail fast because it's programmer error, but give slightly more info than NPE.
-      throw new RuntimeException(
+      throw new IllegalStateException(
           "Aliases don't exist in a non-cloud context, check isZookeeperAware() before calling this method.");
     }
   }
