@@ -350,20 +350,17 @@ class SolrFilter extends Filter implements SolrRel {
       String terms = pair.getValue().toString().trim();
       terms = terms.replace("'", "").replace('%', '*').replace('_', '?');
 
-      boolean hasMultipleTerms = false;
       if (!terms.startsWith("(") && !terms.startsWith("[") && !terms.startsWith("{")) {
-        terms = phraseWithWildcard(terms);
-        if (terms.indexOf(' ') != -1) {
-          hasMultipleTerms = true;
-        }
-      }
+        terms = escapeWithWildcard(terms);
 
-      // if terms contains multiple words, then we need to employ the complexphrase parser
-      // but that expects the terms wrapped in double-quotes, not parens
-      if (hasMultipleTerms && (terms.contains("*") || terms.contains("?"))) {
-        String quoteTerms = "\"" + terms.substring(1, terms.length() - 1) + "\"";
-        return "{!complexphrase}" + pair.getKey() + ":" + quoteTerms;
-      }
+        // if terms contains multiple words and one or more wildcard chars, then we need to employ the complexphrase parser
+        // but that expects the terms wrapped in double-quotes, not parens
+        boolean hasMultipleTerms = terms.split("\\s+").length > 1;
+        if (hasMultipleTerms && (terms.contains("*") || terms.contains("?"))) {
+          String quotedTerms = "\"" + terms.substring(1, terms.length() - 1) + "\"";
+          return "{!complexphrase}" + pair.getKey() + ":" + quotedTerms;
+        }
+      } // else treat as an embedded Solr query and pass-through
 
       return pair.getKey() + ":" + terms;
     }
@@ -421,7 +418,7 @@ class SolrFilter extends Filter implements SolrRel {
 
       if (!terms.startsWith("(") && !terms.startsWith("[") && !terms.startsWith("{")) {
         if (terms.contains("*") || terms.contains("?")) {
-          terms = phraseWithWildcard(terms);
+          terms = escapeWithWildcard(terms);
         } else {
           terms = "\"" + ClientUtils.escapeQueryChars(terms) + "\"";
         }
@@ -432,13 +429,17 @@ class SolrFilter extends Filter implements SolrRel {
 
     // Wrap filter criteria containing wildcard with parens and unescape the wildcards after
     // escaping protected query chars
-    private String phraseWithWildcard(String terms) {
-      return "("
-          + ClientUtils.escapeQueryChars(terms)
+    private String escapeWithWildcard(String terms) {
+      String escaped =
+          ClientUtils.escapeQueryChars(terms)
               .replace("\\*", "*")
               .replace("\\?", "?")
-              .replace("\\ ", " ")
-          + ")";
+              .replace("\\ ", " ");
+      // if multiple terms, then wrap with parens
+      if (escaped.split("\\s+").length > 1) {
+        escaped = "(" + escaped + ")";
+      }
+      return escaped;
     }
 
     // translate to a literal string value for Solr queries, such as translating a
