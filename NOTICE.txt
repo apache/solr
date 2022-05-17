@@ -55,6 +55,10 @@ Copyright (c) 2013 Randy McLaughlin, MIT-license, https://github.com/randymized/
 This product includes fugue icons created by Yusuke Kamiyamane
 Copyright (C) 2013-2014 Yusuke Kamiyamane, https://github.com/yusukekamiyamane/fugue-icons
 
+This product includes octicons: https://github.com/primer/octicons
+License: MIT
+Copyright (c) 2022 GitHub Inc.
+
 Jackcess: http://jackcess.sourceforge.net/
 Copyright (C) 2011-2014 James Ahlborn
 
