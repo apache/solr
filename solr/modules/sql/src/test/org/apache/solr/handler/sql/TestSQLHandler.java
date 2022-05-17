@@ -2497,7 +2497,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
             "zaz",
             "c_t",
             "the lazy dog jumped over the quick brown fox")
-            .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE 'h_llo-%'", 3);
     expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE 'world\\%\\__' ESCAPE '\\'", 1);

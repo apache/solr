@@ -346,7 +346,8 @@ class SolrFilter extends Filter implements SolrRel {
     }
 
     protected String translateLike(RexNode like) {
-      Pair<Pair<String, RexLiteral>, Character> pairWithEscapeCharacter = getFieldValuePairWithEscapeCharacter(like);
+      Pair<Pair<String, RexLiteral>, Character> pairWithEscapeCharacter =
+          getFieldValuePairWithEscapeCharacter(like);
       Pair<String, RexLiteral> pair = pairWithEscapeCharacter.getKey();
       Character escapeChar = pairWithEscapeCharacter.getValue();
 
@@ -356,7 +357,8 @@ class SolrFilter extends Filter implements SolrRel {
       if (!terms.startsWith("(") && !terms.startsWith("[") && !terms.startsWith("{")) {
         terms = escapeWithWildcard(terms);
 
-        // if terms contains multiple words and one or more wildcard chars, then we need to employ the complexphrase parser
+        // if terms contains multiple words and one or more wildcard chars, then we need to employ
+        // the complexphrase parser
         // but that expects the terms wrapped in double-quotes, not parens
         boolean hasMultipleTerms = terms.split("\\s+").length > 1;
         if (hasMultipleTerms && (terms.contains("*") || terms.contains("?"))) {
@@ -371,7 +373,7 @@ class SolrFilter extends Filter implements SolrRel {
     private String translateLikeTermToSolrSyntax(String term, Character escapeChar) {
       boolean isEscaped = false;
       StringBuilder sb = new StringBuilder();
-      for (int i=0; i<term.length()-1; i++) {
+      for (int i = 0; i < term.length() - 1; i++) {
         char c = term.charAt(i);
         // Only replace special characters if they are not escaped
         if (escapeChar != null && c == escapeChar) {
@@ -384,7 +386,7 @@ class SolrFilter extends Filter implements SolrRel {
         } else if (c == '\'' && isEscaped) {
           sb.append('\'');
           isEscaped = false;
-        } else if ((escapeChar ==null || escapeChar != c) && c != '\'') {
+        } else if ((escapeChar == null || escapeChar != c) && c != '\'') {
           sb.append(c);
           isEscaped = false;
         }
@@ -521,7 +523,8 @@ class SolrFilter extends Filter implements SolrRel {
       return timestamp;
     }
 
-    protected Pair<Pair<String, RexLiteral>, Character> getFieldValuePairWithEscapeCharacter(RexNode node) {
+    protected Pair<Pair<String, RexLiteral>, Character> getFieldValuePairWithEscapeCharacter(
+        RexNode node) {
       if (!(node instanceof RexCall)) {
         throw new AssertionError("expected RexCall for predicate but found: " + node);
       }
@@ -537,7 +540,8 @@ class SolrFilter extends Filter implements SolrRel {
             escapeChar = literal.getValueAs(Character.class);
           }
         }
-        return Pair.of(translateBinary2(call.getOperands().get(0), call.getOperands().get(1)), escapeChar);
+        return Pair.of(
+            translateBinary2(call.getOperands().get(0), call.getOperands().get(1)), escapeChar);
       }
     }
 
