@@ -2483,7 +2483,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
             "id",
             "6",
             "a_s",
-            "world-6",
+            "w_orld-6",
             "b_s",
             "bar",
             "c_t",
@@ -2500,10 +2500,11 @@ public class TestSQLHandler extends SolrCloudTestCase {
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE 'h_llo-%'", 3);
+    expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE 'w\\_o_ld%' ESCAPE '\\'", 1);
     expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE 'world\\%\\__' ESCAPE '\\'", 1);
 
     // not technically valid SQL but we support it for legacy purposes, see: SOLR-15463
-    expectResults("SELECT a_s FROM $ALIAS WHERE a_s='world-*'", 3);
+    expectResults("SELECT a_s FROM $ALIAS WHERE a_s='world-*'", 2);
 
     // no results
     expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE '%MATCHNONE%'", 0);

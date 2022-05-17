@@ -373,7 +373,7 @@ class SolrFilter extends Filter implements SolrRel {
     private String translateLikeTermToSolrSyntax(String term, Character escapeChar) {
       boolean isEscaped = false;
       StringBuilder sb = new StringBuilder();
-      for (int i = 0; i < term.length() - 1; i++) {
+      for (int i = 0; i < term.length(); i++) {
         char c = term.charAt(i);
         // Only replace special characters if they are not escaped
         if (escapeChar != null && c == escapeChar) {
