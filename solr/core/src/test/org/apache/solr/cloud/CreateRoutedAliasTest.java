@@ -233,8 +233,8 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
 
     // Note that this is convenient for the test because it implies a different collection name, but
     // doing this is an advanced operation, typically preceded by manual collection creations and
-    // manual tweaking of the collection list. This is here merely to test that we don't blow away the
-    // existing (possibly tweaked) list. DO NOT use this as an example of normal operations.
+    // manual tweaking of the collection list. This is here merely to test that we don't blow away
+    // the existing (possibly tweaked) list. DO NOT use this as an example of normal operations.
     Instant earlierStart = start.minus(Duration.ofMinutes(3));
     createTRAv1(aliasName, earlierStart);
     assertCollectionExists(initialCollectionName);
