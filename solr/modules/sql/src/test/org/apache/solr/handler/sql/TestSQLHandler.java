@@ -26,6 +26,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
+
+import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -2497,9 +2499,25 @@ public class TestSQLHandler extends SolrCloudTestCase {
             "zaz",
             "c_t",
             "the lazy dog jumped over the quick brown fox")
-        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+        .add(
+            "id",
+            "8",
+            "a_s",
+            "world'\\9",
+            "b_s",
+            "zaz",
+            "c_t",
+            "the lazy dog ducked over the quick brown fox")
+            .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE 'h_llo-%'", 3);
+
+    Throwable exception =
+            expectThrows(
+              IOException.class, () -> expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE 'world\\'%' ESCAPE '\\'", 1));
+    assertTrue(exception.getMessage().contains("parse failed: Lexical error"));
+    expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE 'world''%'", 1);
+    expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE 'world''\\\\%' ESCAPE '\\'", 1);
     expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE 'w\\_o_ld%' ESCAPE '\\'", 1);
     expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE 'world\\%\\__' ESCAPE '\\'", 1);
 
@@ -2513,7 +2531,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     expectResults("SELECT b_s FROM $ALIAS WHERE b_s LIKE 'foo'", 5);
 
     // NOT LIKE
-    expectResults("SELECT b_s FROM $ALIAS WHERE b_s NOT LIKE 'f%'", 2);
+    expectResults("SELECT b_s FROM $ALIAS WHERE b_s NOT LIKE 'f%'", 3);
 
     // leading wildcard
     expectResults("SELECT b_s FROM $ALIAS WHERE b_s LIKE '%oo'", 5);
@@ -2523,8 +2541,10 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     expectResults("SELECT b_s FROM $ALIAS WHERE b_s LIKE '(ba*)'", 1);
 
-    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'fox'", 4);
+    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'fox'", 5);
     expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'sleep% pig%'", 3);
+    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'sleep% pigle%'", 1);
+    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'sleep% piglet'", 1);
     expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'sleep% pigle%'", 1);
     expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'sleep% piglet'", 1);
 
@@ -2532,10 +2552,10 @@ public class TestSQLHandler extends SolrCloudTestCase {
     expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE '%ump%'", 7);
 
     expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE '(\"dog pig\"~5)'", 2);
-    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'jumped over'", 7);
-    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'quick brown fox'", 4);
+    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'jumped over'", 8);
+    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'quick brown fox'", 5);
     expectResults("SELECT b_s FROM $ALIAS WHERE b_s LIKE 'foo*'", 5);
-    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE '*og'", 7);
+    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE '*og'", 8);
   }
 
   @Test
