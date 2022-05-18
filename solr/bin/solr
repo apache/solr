@@ -62,7 +62,7 @@ if [ "${THIS_OS:0:6}" == "CYGWIN" ]; then
   exit 1
 fi
 # Alpine Linux BusyBox comes with a stripped down ps, make sure we have a fully featured one
-if ! ps -p $$ &> /dev/null ; then
+if [ $$ -ne $(ps -o pid='' -p $$ || echo 0) ] ; then
   echo -e "This script relies on a version of ps that supports the -p flag.\n\nPlease install a POSIX compliant version and try again."
   exit 1
 fi
