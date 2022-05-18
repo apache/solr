@@ -694,7 +694,7 @@ Bug Fixes
 
 * SOLR-16022: Enforce special character requirements on passwords with length less than 15 (Timothy Potter)
 
-* SOLR-16143: SolrConfig ResourceProvider can miss updates from ZooKeeper (Mike Drob)
+* SOLR-16143: SolrConfig can miss updates from ZooKeeper when deleting and recreating file items (Mike Drob)
 
 * SOLR-16164: ConfigSet API returns error if untrusted user creates from _default configset (Eric Pugh, Kevin Risden)
 
