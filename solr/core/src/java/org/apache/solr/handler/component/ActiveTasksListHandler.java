@@ -22,8 +22,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
-import org.apache.solr.api.ApiBag;
+import org.apache.solr.handler.admin.api.ListActiveTasksAPI;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -89,7 +90,7 @@ public class ActiveTasksListHandler extends TaskManagementHandler {
 
   @Override
   public Collection<Api> getApis() {
-    return ApiBag.wrapRequestHandlers(this, "core.tasks.list");
+    return AnnotatedApi.getApis(new ListActiveTasksAPI(this));
   }
 
   private List<SearchComponent> getComponentsList() {
