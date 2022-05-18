@@ -1133,21 +1133,23 @@ def configure_pgp(gpg_todo):
     if keyid_linenum:
         keyid_line = lines[keyid_linenum]
         assert keyid_line.startswith('LDAP PGP key: ')
-        gpg_id = keyid_line[14:].replace(" ", "")[-8:]
+        gpg_fingerprint = keyid_line[14:].replace(" ", "")
+        gpg_id = gpg_fingerprint[-8:]
         print("Found gpg key id %s on file at Apache (%s)" % (gpg_id, key_url))
     else:
         print(textwrap.dedent("""\
             Could not find your GPG key from Apache servers.
             Please make sure you have registered your key ID in
             id.apache.org, see links for more info."""))
-        gpg_id = str(input("Enter your key ID manually, 8 last characters (ENTER=skip): "))
-        if gpg_id.strip() == '':
+        gpg_fingerprint = str(input("Enter your key fingerprint manually, all 40 characters (ENTER=skip): "))
+        if gpg_fingerprint.strip() == '':
             return False
-        elif len(gpg_id) != 8:
-            print("gpg id must be the last 8 characters of your key id")
-        gpg_id = gpg_id.upper()
+        elif len(gpg_fingerprint) != 40:
+            print("gpg fingerprint must be 40 characters long, do not just input the last 8")
+        gpg_fingerprint = gpg_fingerprint.upper()
+        gpg_id = gpg_fingerprint[-8:]
     try:
-        res = run("gpg --list-secret-keys %s" % gpg_id)
+        res = run("gpg --list-secret-keys %s" % gpg_fingerprint)
         print("Found key %s on your private gpg keychain" % gpg_id)
         # Check rsa and key length >= 4096
         match = re.search(r'^sec +((rsa|dsa)(\d{4})) ', res)
@@ -1185,7 +1187,7 @@ def configure_pgp(gpg_todo):
             need to fix this, then try again"""))
         return False
     try:
-        lines = run("gpg --check-signatures %s" % gpg_id).splitlines()
+        lines = run("gpg --check-signatures %s" % gpg_fingerprint).splitlines()
         sigs = 0
         apache_sigs = 0
         for line in lines:
@@ -1227,6 +1229,7 @@ def configure_pgp(gpg_todo):
 
     gpg_state['apache_id'] = id
     gpg_state['gpg_key'] = gpg_id
+    gpg_state['gpg_fingerprint'] = gpg_fingerprint
 
     print(textwrap.dedent("""\
             You can choose between signing the release with the gpg program or with

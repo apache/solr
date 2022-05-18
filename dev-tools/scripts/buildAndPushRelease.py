@@ -241,7 +241,7 @@ def read_version(path): # pylint: disable=unused-argument
 def parse_config():
   epilogue = textwrap.dedent('''
     Example usage for a Release Manager:
-    python3 -u dev-tools/scripts/buildAndPushRelease.py --push-local /tmp/releases/6.0.1 --sign 6E68DA61 --rc-num 1
+    python3 -u dev-tools/scripts/buildAndPushRelease.py --push-local /tmp/releases/6.0.1 --sign 3782CBB60147010B330523DD26FBCC7836BF353A --rc-num 1
   ''')
   description = 'Utility to build, push, and test a release.'
   parser = argparse.ArgumentParser(description=description, epilog=epilogue,
@@ -252,8 +252,8 @@ def parse_config():
                       help='Uses local KEYS file to validate presence of RM\'s gpg key')
   parser.add_argument('--push-local', metavar='PATH',
                       help='Push the release to the local path')
-  parser.add_argument('--sign', metavar='KEYID',
-                      help='Sign the release with the given gpg key')
+  parser.add_argument('--sign', metavar='FINGERPRINT',
+                      help='Sign the release with the given gpg key. This must be the full GPG fingerprint, not just the last 8 characters.')
   parser.add_argument('--sign-method-gradle', dest='sign_method_gradle', default=False, action='store_true',
                       help='Use Gradle built-in GPG signing instead of gpg command for signing artifacts. '
                       ' This may require --gpg-secring argument if your keychain cannot be resolved automatically.')
