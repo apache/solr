@@ -17,37 +17,36 @@
 
 package org.apache.solr.handler;
 
+import java.util.Collection;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.handler.admin.api.UpdateAPI;
 
-import java.util.Collection;
-
 /**
  * An extension of {@link UpdateRequestHandler} used solely to register the v2 /update APIs
  *
- * At core-load time, Solr looks at each 'plugin' in ImplicitPlugins.json, fetches the v2 {@link Api} implementations
- * associated with each RequestHandler, and registers them in an {@link org.apache.solr.api.ApiBag}.  Since
- * UpdateRequestHandler is mentioned multiple times in ImplicitPlugins.json (once for each update API: /update,
- * /update/json, etc.), this would cause the v2 APIs to be registered in duplicate.  To avoid this, Solr has this
- * RequestHandler, whose only purpose is to register the v2 APIs that conceptually should be associated with
+ * <p>At core-load time, Solr looks at each 'plugin' in ImplicitPlugins.json, fetches the v2 {@link
+ * Api} implementations associated with each RequestHandler, and registers them in an {@link
+ * org.apache.solr.api.ApiBag}. Since UpdateRequestHandler is mentioned multiple times in
+ * ImplicitPlugins.json (once for each update API: /update, /update/json, etc.), this would cause
+ * the v2 APIs to be registered in duplicate. To avoid this, Solr has this RequestHandler, whose
+ * only purpose is to register the v2 APIs that conceptually should be associated with
  * UpdateRequestHandler.
  */
 public class V2UpdateRequestHandler extends UpdateRequestHandler {
 
-    @Override
-    public Collection<Api> getApis() {
-        return AnnotatedApi.getApis(new UpdateAPI(this));
-    }
+  @Override
+  public Collection<Api> getApis() {
+    return AnnotatedApi.getApis(new UpdateAPI(this));
+  }
 
-    @Override
-    public Boolean registerV1() {
-        return Boolean.FALSE;
-    }
+  @Override
+  public Boolean registerV1() {
+    return Boolean.FALSE;
+  }
 
-    @Override
-    public Boolean registerV2() {
-        return Boolean.TRUE;
-    }
+  @Override
+  public Boolean registerV2() {
+    return Boolean.TRUE;
+  }
 }
-

@@ -17,13 +17,19 @@
 
 package org.apache.solr.handler;
 
+import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
+import static org.apache.solr.common.params.CommonParams.PATH;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+
 import com.google.common.collect.Maps;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.common.util.ContentStreamBase;
-import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.api.UpdateAPI;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -34,106 +40,91 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
-import static org.apache.solr.common.params.CommonParams.PATH;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-
-/**
- * Unit tests for the v2 -> v1 mapping logic in {@link UpdateAPI}
- */
+/** Unit tests for the v2 -> v1 mapping logic in {@link UpdateAPI} */
 public class V2UpdateAPIMappingTest {
-    private ApiBag apiBag;
-    private ArgumentCaptor<SolrQueryRequest> queryRequestCaptor;
-    private UpdateRequestHandler mockUpdateHandler;
-    private ConfigSetsHandler mockConfigSetHandler;
+  private ApiBag apiBag;
+  private ArgumentCaptor<SolrQueryRequest> queryRequestCaptor;
+  private UpdateRequestHandler mockUpdateHandler;
+  private ConfigSetsHandler mockConfigSetHandler;
 
-    @BeforeClass
-    public static void ensureWorkingMockito() {
-        assumeWorkingMockito();
+  @BeforeClass
+  public static void ensureWorkingMockito() {
+    assumeWorkingMockito();
+  }
+
+  @Before
+  public void setupApiBag() throws Exception {
+    mockUpdateHandler = mock(UpdateRequestHandler.class);
+    mockConfigSetHandler = mock(ConfigSetsHandler.class);
+    queryRequestCaptor = ArgumentCaptor.forClass(SolrQueryRequest.class);
+
+    apiBag = new ApiBag(false);
+    final UpdateAPI updateAPI = new UpdateAPI(mockUpdateHandler);
+
+    apiBag.registerObject(updateAPI);
+  }
+
+  @Test
+  public void testUpdateApiRewriting() {
+
+    // Assume JSON in path if no specific format specified
+    {
+      final SolrQueryRequest req = runUpdateApi("/update");
+      assertEquals("/update/json/docs", req.getContext().get(PATH));
     }
 
-
-    @Before
-    public void setupApiBag() throws Exception {
-        mockUpdateHandler = mock(UpdateRequestHandler.class);
-        mockConfigSetHandler = mock(ConfigSetsHandler.class);
-        queryRequestCaptor = ArgumentCaptor.forClass(SolrQueryRequest.class);
-
-        apiBag = new ApiBag(false);
-        final UpdateAPI updateAPI = new UpdateAPI(mockUpdateHandler);
-
-        apiBag.registerObject(updateAPI);
+    // Rewrite v2 /update/json to v1's /update/json/docs
+    {
+      final SolrQueryRequest req = runUpdateApi("/update/json");
+      assertEquals("/update/json/docs", req.getContext().get(PATH));
     }
 
-    @Test
-    public void testUpdateApiRewriting() {
-
-        // Assume JSON in path if no specific format specified
-        {
-            final SolrQueryRequest req = runUpdateApi("/update");
-            assertEquals("/update/json/docs", req.getContext().get(PATH));
-        }
-
-        // Rewrite v2 /update/json to v1's /update/json/docs
-        {
-            final SolrQueryRequest req = runUpdateApi("/update/json");
-            assertEquals("/update/json/docs", req.getContext().get(PATH));
-        }
-
-        // Rewrite v2 /update/json/commands to v1's /update/json
-        {
-            final SolrQueryRequest req = runUpdateApi("/update/json/commands");
-            assertEquals("/update/json", req.getContext().get(PATH));
-        }
-
-        // No rewriting for /update/xml, /update/csv, or /update/bin
-        {
-            final SolrQueryRequest req = runUpdateApi("/update/xml");
-            assertEquals("/update/xml", req.getContext().get(PATH));
-        }
-        {
-            final SolrQueryRequest req = runUpdateApi("/update/csv");
-            assertEquals("/update/csv", req.getContext().get(PATH));
-        }
-        {
-            final SolrQueryRequest req = runUpdateApi("/update/bin");
-            assertEquals("/update/bin", req.getContext().get(PATH));
-        }
+    // Rewrite v2 /update/json/commands to v1's /update/json
+    {
+      final SolrQueryRequest req = runUpdateApi("/update/json/commands");
+      assertEquals("/update/json", req.getContext().get(PATH));
     }
 
-    private SolrQueryRequest runUpdateApi(String path) {
-        final HashMap<String, String> parts = new HashMap<>();
-        final Api api = apiBag.lookup(path, "POST", parts);
-        final SolrQueryResponse rsp = new SolrQueryResponse();
-        final LocalSolrQueryRequest req =
-                new LocalSolrQueryRequest(null, Maps.newHashMap()) {
-                    @Override
-                    public List<CommandOperation> getCommands(boolean validateInput) {
-                        return Collections.emptyList();
-                    }
-
-                    @Override
-                    public Map<String, String> getPathTemplateValues() {
-                        return parts;
-                    }
-
-                    @Override
-                    public String getHttpMethod() {
-                        return "POST";
-                    }
-                };
-        req.getContext().put(PATH, path);
-
-        api.call(req, rsp);
-
-        return req;
+    // No rewriting for /update/xml, /update/csv, or /update/bin
+    {
+      final SolrQueryRequest req = runUpdateApi("/update/xml");
+      assertEquals("/update/xml", req.getContext().get(PATH));
     }
+    {
+      final SolrQueryRequest req = runUpdateApi("/update/csv");
+      assertEquals("/update/csv", req.getContext().get(PATH));
+    }
+    {
+      final SolrQueryRequest req = runUpdateApi("/update/bin");
+      assertEquals("/update/bin", req.getContext().get(PATH));
+    }
+  }
+
+  private SolrQueryRequest runUpdateApi(String path) {
+    final HashMap<String, String> parts = new HashMap<>();
+    final Api api = apiBag.lookup(path, "POST", parts);
+    final SolrQueryResponse rsp = new SolrQueryResponse();
+    final LocalSolrQueryRequest req =
+        new LocalSolrQueryRequest(null, Maps.newHashMap()) {
+          @Override
+          public List<CommandOperation> getCommands(boolean validateInput) {
+            return Collections.emptyList();
+          }
+
+          @Override
+          public Map<String, String> getPathTemplateValues() {
+            return parts;
+          }
+
+          @Override
+          public String getHttpMethod() {
+            return "POST";
+          }
+        };
+    req.getContext().put(PATH, path);
+
+    api.call(req, rsp);
+
+    return req;
+  }
 }
