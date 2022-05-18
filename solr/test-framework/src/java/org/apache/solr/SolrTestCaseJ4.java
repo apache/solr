@@ -149,7 +149,6 @@ import org.apache.solr.update.processor.DistributedZkUpdateProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.util.BaseTestHarness;
 import org.apache.solr.util.ErrorLogMuter;
-import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.RandomizeSSL;
 import org.apache.solr.util.RandomizeSSL.SSLRandomizer;
@@ -284,10 +283,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
             new SolrNamedThreadFactory("testExecutor"),
             true);
 
-    // set solr.install.dir needed by some test configs outside of the test sandbox (!)
-    if (ExternalPaths.SOURCE_HOME != null) {
-      System.setProperty("solr.install.dir", ExternalPaths.SOURCE_HOME);
-    }
     // not strictly needed by this class at this point in the control lifecycle, but for
     // backcompat create it now in case any third party tests expect initCoreDataDir to be
     // non-null after calling setupTestCases()

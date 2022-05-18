@@ -33,6 +33,8 @@ New Features
 * SOLR-16111: Add hl.queryFieldPattern support, an advanced alternative to the hl.requireFieldMatch boolean flag.
   (Christine Poerschke, David Smiley)
 
+* SOLR-15921: Load jars in <solr-install-dir>/lib/ by default (janhoy)
+
 Improvements
 ---------------------
 * SOLR-15986: CommitUpdateCommand and SplitIndexCommand can write user commit metadata. (Bruno Roustant)
@@ -92,6 +94,8 @@ Other Changes
 * SOLR-15886: Remove deprecated showItems configuration value from solrconfig.xml files (Andy Lester via Eric Pugh)
 
 * SOLR-16114: SolrZooKeeper has been removed in favor of using ZooKeeper directly. (Mike Drob)
+
+* SOLR-16154: Event listeners submit through core container executor service instead of separate thread (Mike Drob, Kevin Risden)
 
 Build
 ---------------------
@@ -713,6 +717,9 @@ Other Changes
 
 * SOLR-16101: Add empty constructor for SolrInputDocument (Anshum Gupta)
 
+* SOLR-15780: The v2 API is now treated as "experimental".  It may change in backwards-incompatible ways in subsequent releases
+  as it expands to cover additional functionality and prepares to supplant the v1 API. (Jason Gerlowski)
+
 Bug Fixes
 ---------------------
 * SOLR-15849: Fix the connection reset problem caused by the incorrect use of 4LW with \n when monitoring zooKeeper status
@@ -786,8 +793,6 @@ Bug Fixes
 * SOLR-16143: SolrConfig ResourceProvider can miss updates from ZooKeeper (Mike Drob)
 
 * SOLR-16164: ConfigSet API returns error if untrusted user creates from _default configset (Eric Pugh, Kevin Risden)
-
-* SOLR-16154: Event listeners submit through core container executor service instead of separate thread (Mike Drob, Kevin Risden)
 
 ==================  8.11.2 ==================
 

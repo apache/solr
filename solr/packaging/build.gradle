@@ -85,6 +85,10 @@ distributions {
         include "README.md"
       })
 
+      from ('static/lib', {
+        into 'lib'
+      })
+
       from(configurations.modules, {
         into "modules"
       })

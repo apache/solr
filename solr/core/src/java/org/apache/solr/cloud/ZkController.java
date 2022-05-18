@@ -800,7 +800,7 @@ public class ZkController implements Closeable {
         try {
           log.warn("Leader {} met tragic exception, give up its leadership", key);
           elector.retryElection(context, false);
-        } catch (KeeperException | InterruptedException | IOException e) {
+        } catch (KeeperException | InterruptedException e) {
           SolrZkClient.checkInterrupted(e);
           log.error("Met exception on give up leadership for {}", key, e);
         }
