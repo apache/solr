@@ -40,7 +40,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
-/** Unit tests for the v2 -> v1 mapping logic in {@link UpdateAPI} */
+/** Unit tests for the v2 to v1 mapping logic in {@link UpdateAPI} */
 public class V2UpdateAPIMappingTest {
   private ApiBag apiBag;
   private ArgumentCaptor<SolrQueryRequest> queryRequestCaptor;
