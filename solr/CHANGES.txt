@@ -16,6 +16,8 @@ Bug Fixes
 
 * SOLR-16399: ExportWriter fails with max values for fields (Kevin Risden)
 
+* SOLR-16190: Http2SolrClient should make sure to shutdown the executor (Kevin Risden)
+
 ==================  9.0.0 ==================
 
 New Features
