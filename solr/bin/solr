@@ -687,7 +687,7 @@ function spinner() {
   local pid=$1
   local delay=0.5
   local spinstr='|/-\'
-  while [ "$(ps aux | awk '{print $2}' | grep -w $pid)" ]; do
+  while ps -o pid='' -p $pid &> /dev/null ; do
       local temp=${spinstr#?}
       printf " [%c]  " "$spinstr"
       local spinstr=$temp${spinstr%"$temp"}
