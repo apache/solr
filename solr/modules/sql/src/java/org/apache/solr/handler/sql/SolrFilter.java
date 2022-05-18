@@ -529,9 +529,7 @@ class SolrFilter extends Filter implements SolrRel {
         throw new AssertionError("expected RexCall for predicate but found: " + node);
       }
       RexCall call = (RexCall) node;
-      if (call.getOperands().size() == 2) {
-        return Pair.of(getFieldValuePair(node), null);
-      } else {
+      if (call.getOperands().size() == 3) {
         RexNode escapeNode = call.getOperands().get(2);
         Character escapeChar = null;
         if (escapeNode.getKind() == SqlKind.LITERAL) {
@@ -542,6 +540,8 @@ class SolrFilter extends Filter implements SolrRel {
         }
         return Pair.of(
             translateBinary2(call.getOperands().get(0), call.getOperands().get(1)), escapeChar);
+      } else {
+        return Pair.of(getFieldValuePair(node), null);
       }
     }
 
