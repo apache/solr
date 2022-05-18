@@ -126,7 +126,7 @@ changed package name to `org.apache.solr.security.jwt`, but can still be loaded 
 
 === Logging and Metrics
 * Metrics handler only depends on SolrJ instead of core and has its own `log4j2.xml` and no longer shares Solr’s logging config.
-* Only `SearchHandler` and subclasses have "local" metrics now. It's now tracked with a new `internal=true` tag, which can be filtered in e.g. Prometheus.
+* Only `SearchHandler` and subclasses have "local" metrics now. It's now tracked as if it's another handler with a "[shard]" suffix, e.g. "/select[shard]".
 There are no longer ".distrib." named metrics; all metrics are assumed to be such except "[shard]". The default Prometheus exporter config splits that component to a new label named "internal".  The sample Grafana dashboard now filters to include or exclude this.
 * The default port of "Prometheus exporter" has changed from 9983 to 8989, so you may need to adjust your configuration after upgrade.
 * Logging is now asynchronous by default. There's a small window where log messages may be lost in the event of some hard crash.
