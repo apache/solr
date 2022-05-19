@@ -43,28 +43,28 @@ public class UpdateAPI {
   @EndPoint(method = POST, path = "/update", permission = UPDATE_PERM)
   public void update(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     req.getContext().put(PATH, "/update/json/docs");
-    updateRequestHandler.handleRequestBody(req, rsp);
+    updateRequestHandler.handleRequest(req, rsp);
   }
 
   @EndPoint(method = POST, path = "/update/xml", permission = UPDATE_PERM)
   public void updateXml(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    updateRequestHandler.handleRequestBody(req, rsp);
+    updateRequestHandler.handleRequest(req, rsp);
   }
 
   @EndPoint(method = POST, path = "/update/csv", permission = UPDATE_PERM)
   public void updateCsv(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    updateRequestHandler.handleRequestBody(req, rsp);
+    updateRequestHandler.handleRequest(req, rsp);
   }
 
   @EndPoint(method = POST, path = "/update/json", permission = UPDATE_PERM)
   public void updateJson(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     req.getContext().put(PATH, "/update/json/docs");
-    updateRequestHandler.handleRequestBody(req, rsp);
+    updateRequestHandler.handleRequest(req, rsp);
   }
 
   @EndPoint(method = POST, path = "/update/bin", permission = UPDATE_PERM)
   public void updateJavabin(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    updateRequestHandler.handleRequestBody(req, rsp);
+    updateRequestHandler.handleRequest(req, rsp);
   }
 
   // TODO Is this API really needed/wanted?  It's not documented anywhere and seemingly only
