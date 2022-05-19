@@ -99,6 +99,8 @@ Other Changes
 
 * SOLR-16190: Http2SolrClient should make sure to shutdown the executor (Kevin Risden)
 
+* SOLR-16191: Validate that installed ps utility supports -p flag, so that we do not inadvertantly stop the wrong process. (Mike Drob, Michael Gibney)
+
 Build
 ---------------------
 * SOLR-16053: Upgrade scriptDepVersions (Kevin Risden)
