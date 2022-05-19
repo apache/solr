@@ -79,12 +79,6 @@ public class V2UpdateAPIMappingTest {
       assertEquals("/update/json/docs", req.getContext().get(PATH));
     }
 
-    // Rewrite v2 /update/json/commands to v1's /update/json
-    {
-      final SolrQueryRequest req = runUpdateApi("/update/json/commands");
-      assertEquals("/update/json", req.getContext().get(PATH));
-    }
-
     // No rewriting for /update/xml, /update/csv, or /update/bin
     {
       final SolrQueryRequest req = runUpdateApi("/update/xml");

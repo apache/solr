@@ -30,8 +30,7 @@ import org.apache.solr.response.SolrQueryResponse;
  * All v2 APIs that share a prefix of /update
  *
  * <p>Most of these v2 APIs are implemented as pure "pass-throughs" to the v1 code paths, but there
- * are a few exceptions: /update and /update/json are both rewritten to /update/json/docs, and
- * /update/json/commands has its path changed to /update/json.
+ * are a few exceptions: /update and /update/json are both rewritten to /update/json/docs.
  */
 public class UpdateAPI {
   private final UpdateRequestHandler updateRequestHandler;
@@ -65,13 +64,5 @@ public class UpdateAPI {
   @EndPoint(method = POST, path = "/update/bin", permission = UPDATE_PERM)
   public void updateJavabin(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     updateRequestHandler.handleRequest(req, rsp);
-  }
-
-  // TODO Is this API really needed/wanted?  It's not documented anywhere and seemingly only
-  // duplicates an existing API
-  @EndPoint(method = POST, path = "/update/json/commands", permission = UPDATE_PERM)
-  public void updateCommands(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    req.getContext().put(PATH, "/update/json");
-    updateRequestHandler.handleRequestBody(req, rsp);
   }
 }
