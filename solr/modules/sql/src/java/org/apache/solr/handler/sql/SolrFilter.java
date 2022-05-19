@@ -373,7 +373,8 @@ class SolrFilter extends Filter implements SolrRel {
     private String translateLikeTermToSolrSyntax(String term, Character escapeChar) {
       boolean isEscaped = false;
       StringBuilder sb = new StringBuilder();
-      // Special character % and _ are escaped with escape character and single quote is escaped with another single quote
+      // Special character % and _ are escaped with escape character and single quote is escaped
+      // with another single quote
       // If single quote is escaped with escape character, calcite parser fails
       for (int i = 0; i < term.length(); i++) {
         char c = term.charAt(i);
@@ -384,13 +385,12 @@ class SolrFilter extends Filter implements SolrRel {
         } else if (c == '_' && !isEscaped) {
           sb.append("?");
         } else if (c == '\'') {
-          if (i > 0 && term.charAt(i-1) == '\'') {
+          if (i > 0 && term.charAt(i - 1) == '\'') {
             sb.append(c);
           }
         } else {
           sb.append(c);
-          if (isEscaped)
-            isEscaped = false;
+          if (isEscaped) isEscaped = false;
         }
       }
       return sb.toString();

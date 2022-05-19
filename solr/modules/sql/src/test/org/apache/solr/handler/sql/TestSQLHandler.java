@@ -26,8 +26,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
-
-import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -2508,13 +2506,15 @@ public class TestSQLHandler extends SolrCloudTestCase {
             "zaz",
             "c_t",
             "the lazy dog ducked over the quick brown fox")
-            .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE 'h_llo-%'", 3);
 
     Throwable exception =
-            expectThrows(
-              IOException.class, () -> expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE 'world\\'%' ESCAPE '\\'", 1));
+        expectThrows(
+            IOException.class,
+            () ->
+                expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE 'world\\'%' ESCAPE '\\'", 1));
     assertTrue(exception.getMessage().contains("parse failed: Lexical error"));
     expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE 'world''%'", 1);
     expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE 'world''\\\\%' ESCAPE '\\'", 1);
