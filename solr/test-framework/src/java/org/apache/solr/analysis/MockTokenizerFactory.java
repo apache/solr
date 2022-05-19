@@ -18,7 +18,7 @@ package org.apache.solr.analysis;
 
 import java.util.Arrays;
 import java.util.Map;
-import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.tests.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;

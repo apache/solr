@@ -34,7 +34,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.core.AbstractBadConfigTestBase;
 import org.junit.After;

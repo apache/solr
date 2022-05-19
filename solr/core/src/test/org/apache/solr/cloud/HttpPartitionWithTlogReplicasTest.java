@@ -18,7 +18,7 @@
 package org.apache.solr.cloud;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 
 @LuceneTestCase.Slow

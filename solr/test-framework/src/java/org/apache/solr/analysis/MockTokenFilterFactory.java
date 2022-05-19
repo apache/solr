@@ -18,7 +18,7 @@ package org.apache.solr.analysis;
 
 import java.util.Arrays;
 import java.util.Map;
-import org.apache.lucene.analysis.MockTokenFilter;
+import org.apache.lucene.tests.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;

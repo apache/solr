@@ -17,7 +17,7 @@
 package org.apache.solr.common;
 
 import java.util.EnumSet;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.ToleratedUpdateError.CmdType;
 import org.apache.solr.common.util.SimpleOrderedMap;

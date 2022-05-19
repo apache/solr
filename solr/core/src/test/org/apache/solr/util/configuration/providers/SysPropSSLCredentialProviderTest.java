@@ -22,7 +22,7 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
 import java.util.Map;
-import org.apache.lucene.util.TestRuleRestoreSystemProperties;
+import org.apache.lucene.tests.util.TestRuleRestoreSystemProperties;
 import org.apache.solr.util.configuration.SSLConfigurations;
 import org.apache.solr.util.configuration.SSLCredentialProvider;
 import org.junit.Rule;

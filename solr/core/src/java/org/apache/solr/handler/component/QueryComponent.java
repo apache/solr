@@ -500,7 +500,7 @@ public class QueryComponent extends SearchComponent {
           // :TODO: would be simpler to always serialize every position of SortField[]
           if (type == SortField.Type.SCORE || type == SortField.Type.DOC) continue;
 
-          FieldComparator<?> comparator = sortField.getComparator(1, 0);
+          FieldComparator<?> comparator = sortField.getComparator(1, true);
           LeafFieldComparator leafComparator = null;
           Object[] vals = new Object[nDocs];
 

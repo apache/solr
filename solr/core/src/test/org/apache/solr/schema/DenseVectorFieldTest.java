@@ -125,7 +125,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       DenseVectorField type1 = (DenseVectorField) vector.getType();
       MatcherAssert.assertThat(type1.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
       MatcherAssert.assertThat(type1.getDimension(), is(4));
-      MatcherAssert.assertThat(type1.getCodecFormat(), is("Lucene90HnswVectorsFormat"));
+      MatcherAssert.assertThat(type1.getCodecFormat(), is("Lucene91HnswVectorsFormat"));
       MatcherAssert.assertThat(type1.getHnswMaxConn(), is(10));
       MatcherAssert.assertThat(type1.getHnswBeamWidth(), is(40));
 
@@ -135,7 +135,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       DenseVectorField type2 = (DenseVectorField) vector2.getType();
       MatcherAssert.assertThat(type2.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
       MatcherAssert.assertThat(type2.getDimension(), is(4));
-      MatcherAssert.assertThat(type2.getCodecFormat(), is("Lucene90HnswVectorsFormat"));
+      MatcherAssert.assertThat(type2.getCodecFormat(), is("Lucene91HnswVectorsFormat"));
       MatcherAssert.assertThat(type2.getHnswMaxConn(), is(6));
       MatcherAssert.assertThat(type2.getHnswBeamWidth(), is(60));
 

@@ -21,8 +21,8 @@
 <schema name="schema-densevector-codec-hyperparamer" version="1.0">
   <fieldType name="string" class="solr.StrField" multiValued="true"/>
   <fieldType name="knn_vector_default" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine"/>
-  <fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" codecFormat="Lucene90HnswVectorsFormat" hnswMaxConnections="10" hnswBeamWidth="40"/>
-  <fieldType name="knn_vector2" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" codecFormat="Lucene90HnswVectorsFormat" hnswMaxConnections="6" hnswBeamWidth="60"/>
+  <fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" codecFormat="Lucene91HnswVectorsFormat" hnswMaxConnections="10" hnswBeamWidth="40"/>
+  <fieldType name="knn_vector2" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" codecFormat="Lucene91HnswVectorsFormat" hnswMaxConnections="6" hnswBeamWidth="60"/>
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="vector_default" type="knn_vector_default" indexed="true" stored="true" />
