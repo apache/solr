@@ -5,9 +5,11 @@ Most people will find the solr-upgrade-notes.adoc file more approachable.
 https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-notes/pages/solr-upgrade-notes.adoc
 
 ==================  9.0.1 ==================
+
 Bug Fixes
 ---------------------
-(No changes)
+
+* SOLR-16191: Validate that installed ps utility supports -p flag, so that we do not inadvertantly stop the wrong process. (Mike Drob, Michael Gibney)
 
 ==================  9.0.0 ==================
 
