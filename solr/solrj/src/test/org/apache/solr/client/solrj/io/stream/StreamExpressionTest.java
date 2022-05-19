@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.zip.GZIPOutputStream;
-
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;

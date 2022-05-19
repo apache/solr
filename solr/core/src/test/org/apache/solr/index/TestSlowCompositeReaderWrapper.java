@@ -32,10 +32,10 @@ import org.apache.lucene.index.MultiDocValues.MultiSortedDocValues;
 import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
 import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.NoMergePolicy;
-import org.apache.lucene.tests.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.tests.index.RandomIndexWriter;
 import org.apache.lucene.tests.util.TestUtil;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCase;
 
 public class TestSlowCompositeReaderWrapper extends SolrTestCase {

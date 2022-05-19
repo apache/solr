@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;

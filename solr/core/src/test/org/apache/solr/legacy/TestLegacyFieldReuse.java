@@ -17,16 +17,15 @@
 package org.apache.solr.legacy;
 
 import java.io.IOException;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.tests.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.tests.analysis.CannedTokenStream;
 import org.apache.lucene.tests.analysis.Token;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.document.Field;
 import org.apache.solr.legacy.LegacyNumericTokenStream.LegacyNumericTermAttribute;
 
 /** test tokenstream reuse by DefaultIndexingChain */
 public class TestLegacyFieldReuse extends BaseTokenStreamTestCase {
-
 
   public void testNumericReuse() throws IOException {
     LegacyIntField legacyIntField = new LegacyIntField("foo", 5, Field.Store.NO);

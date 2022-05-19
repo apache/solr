@@ -16,8 +16,8 @@
  */
 package org.apache.solr.util;
 
-import org.apache.lucene.tests.index.ForceMergePolicy;
 import org.apache.lucene.index.MergePolicy;
+import org.apache.lucene.tests.index.ForceMergePolicy;
 import org.apache.lucene.tests.util.LuceneTestCase;
 
 /**

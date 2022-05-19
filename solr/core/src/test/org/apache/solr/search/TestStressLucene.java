@@ -27,17 +27,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import org.apache.lucene.tests.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.tests.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.tests.analysis.MockAnalyzer;
+import org.apache.lucene.tests.index.RandomIndexWriter;
 import org.junit.Test;
 
 public class TestStressLucene extends TestRTGBase {
