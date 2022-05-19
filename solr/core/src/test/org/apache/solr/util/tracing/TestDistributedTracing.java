@@ -152,8 +152,10 @@ public class TestDistributedTracing extends SolrCloudTestCase {
         .build()
         .process(cloudClient);
     finishedSpans = getAndClearSpans();
-    // TODO See SOLR-16205.  A quirk in the way that span operationNames are generated causes core-level v2 endpoints
-    //  implemented using AnnotatedApi to produce spans lacking the full url (ie. /c/{collection}/update/json).  This test
+    // TODO See SOLR-16205.  A quirk in the way that span operationNames are generated causes
+    // core-level v2 endpoints
+    //  implemented using AnnotatedApi to produce spans lacking the full url (ie.
+    // /c/{collection}/update/json).  This test
     //  will need updated to assert against the "full url" when SOLR-16205 is fixed.
     assertEquals("post:/update/json", finishedSpans.get(0).operationName());
     assertDbInstanceColl(finishedSpans.get(0));
