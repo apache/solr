@@ -626,8 +626,8 @@ public class ZkController implements Closeable {
     }
   }
 
-  public NodesSysPropsCacher getNodePropsProvider() {
-    return nodesSysPropsCacher;
+  public NodesSysPropsCacher getSysPropsCacher() {
+    return sysPropsCacher;
   }
 
   private void closeOutstandingElections(final Supplier<List<CoreDescriptor>> registerOnReconnect) {
