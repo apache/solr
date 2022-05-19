@@ -25,7 +25,7 @@ import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.junit.Test;
 
-public class TestNodePropsProvider extends SolrCloudTestCase {
+public class TestNodesSysPropsCacher extends SolrCloudTestCase {
 
   @Test
   public void testSysProps() throws Exception {
@@ -37,7 +37,7 @@ public class TestNodePropsProvider extends SolrCloudTestCase {
             .configure();
 
     System.clearProperty("metricsEnabled");
-    NodePropsProvider nodePropsProvider =
+    NodesSysPropsCacher nodesSysPropsCacher =
         cluster
             .getRandomJetty(random())
             .getCoreContainer()
@@ -47,10 +47,10 @@ public class TestNodePropsProvider extends SolrCloudTestCase {
     try {
       for (JettySolrRunner j : cluster.getJettySolrRunners()) {
         List<String> tags = Arrays.asList("file.encoding", "java.vm.version");
-        Map<String, Object> props = nodePropsProvider.getSystemProperties(j.getNodeName(), tags);
+        Map<String, Object> props = nodesSysPropsCacher.getSysProps(j.getNodeName(), tags);
         for (String tag : tags) assertNotNull(props.get(tag));
         tags = Arrays.asList("file.encoding", "java.vm.version", "os.arch");
-        props = nodePropsProvider.getSystemProperties(j.getNodeName(), tags);
+        props = nodesSysPropsCacher.getSysProps(j.getNodeName(), tags);
         for (String tag : tags) assertNotNull(props.get(tag));
       }
     } finally {

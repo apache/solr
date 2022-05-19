@@ -31,13 +31,13 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
 
 /** Fetch lazily and cache a node's system properties */
-public class NodePropsProvider implements AutoCloseable {
+public class NodesSysPropsCacher implements AutoCloseable {
   private volatile boolean isClosed = false;
   private final Map<String, Map<String, Object>> nodeVsTagsCache = new ConcurrentHashMap<>();
   private ZkStateReader zkStateReader;
   private final CloudLegacySolrClient solrClient;
 
-  public NodePropsProvider(CloudLegacySolrClient solrClient, ZkStateReader zkStateReader) {
+  public NodesSysPropsCacher(CloudLegacySolrClient solrClient, ZkStateReader zkStateReader) {
     this.zkStateReader = zkStateReader;
     this.solrClient = solrClient;
     zkStateReader.registerLiveNodesListener(
@@ -52,7 +52,7 @@ public class NodePropsProvider implements AutoCloseable {
         });
   }
 
-  public Map<String, Object> getSystemProperties(String nodeName, Collection<String> tags) {
+  public Map<String, Object> getSysProps(String nodeName, Collection<String> tags) {
     Map<String, Object> cached =
         nodeVsTagsCache.computeIfAbsent(nodeName, s -> new LinkedHashMap<>());
     Map<String, Object> result = new LinkedHashMap<>();

@@ -23,7 +23,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.common.StringUtils;
-import org.apache.solr.common.cloud.NodePropsProvider;
+import org.apache.solr.common.cloud.NodesSysPropsCacher;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
@@ -40,7 +40,7 @@ import org.apache.solr.common.params.SolrParams;
  */
 public class NodePreferenceRulesComparator implements Comparator<Object> {
 
-  private final NodePropsProvider sysPropsCache;
+  private final NodesSysPropsCacher sysPropsCache;
   private final String nodeName;
   private final List<PreferenceRule> sortRules;
   private final List<PreferenceRule> preferenceRules;
@@ -60,10 +60,10 @@ public class NodePreferenceRulesComparator implements Comparator<Object> {
       final SolrParams requestParams,
       final String nodeName,
       final String localHostAddress,
-      final NodePropsProvider nodePropsProvider,
+      final NodesSysPropsCacher sysPropsCache,
       final ReplicaListTransformerFactory defaultRltFactory,
       final ReplicaListTransformerFactory stableRltFactory) {
-    this.sysPropsCache = nodePropsProvider;
+    this.sysPropsCache = sysPropsCache;
     this.preferenceRules = preferenceRules;
     this.nodeName = nodeName;
     this.localHostAddress = localHostAddress;
@@ -175,8 +175,8 @@ public class NodePreferenceRulesComparator implements Comparator<Object> {
 
     Collection<String> tags = Collections.singletonList(metricTag);
     String otherNodeName = ((Replica) o).getNodeName();
-    Map<String, Object> currentNodeMetric = sysPropsCache.getSystemProperties(nodeName, tags);
-    Map<String, Object> otherNodeMetric = sysPropsCache.getSystemProperties(otherNodeName, tags);
+    Map<String, Object> currentNodeMetric = sysPropsCache.getSysProps(nodeName, tags);
+    Map<String, Object> otherNodeMetric = sysPropsCache.getSysProps(otherNodeName, tags);
     return currentNodeMetric.equals(otherNodeMetric);
   }
 
