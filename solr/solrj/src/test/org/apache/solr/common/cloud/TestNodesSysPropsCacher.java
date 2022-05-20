@@ -42,7 +42,7 @@ public class TestNodesSysPropsCacher extends SolrCloudTestCase {
             .getRandomJetty(random())
             .getCoreContainer()
             .getZkController()
-            .getNodePropsProvider();
+            .getSysPropsCacher();
 
     try {
       for (JettySolrRunner j : cluster.getJettySolrRunners()) {

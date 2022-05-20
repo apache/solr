@@ -85,7 +85,7 @@ public class NodesSysPropsCacher implements AutoCloseable {
       sb.append("&key=").append(metricsKey);
     }
 
-    GenericSolrRequest req = new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", p);
+//    GenericSolrRequest req = new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", p);
 
     Map<String, Object> result = new LinkedHashMap<>();
     NavigableObject response =

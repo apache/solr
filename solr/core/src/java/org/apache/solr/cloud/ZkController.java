@@ -501,6 +501,7 @@ public class ZkController implements Closeable {
     }
     this.overseerCollectionQueue = overseer.getCollectionQueue(zkClient);
     this.overseerConfigSetQueue = overseer.getConfigSetQueue(zkClient);
+    getSolrCloudManager();
     this.nodesSysPropsCacher = new NodesSysPropsCacher(cloudSolrClient, zkStateReader);
 
     assert ObjectReleaseTracker.track(this);
@@ -627,7 +628,7 @@ public class ZkController implements Closeable {
   }
 
   public NodesSysPropsCacher getSysPropsCacher() {
-    return sysPropsCacher;
+    return nodesSysPropsCacher;
   }
 
   private void closeOutstandingElections(final Supplier<List<CoreDescriptor>> registerOnReconnect) {
