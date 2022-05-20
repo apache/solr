@@ -22,15 +22,13 @@ import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.FieldComparator;
-import org.apache.lucene.search.LeafFieldComparator;
+import org.apache.lucene.queries.function.valuesource.FieldCacheSource;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortField.Type;
 import org.apache.lucene.search.join.BitSetProducer;
 import org.apache.lucene.search.join.QueryBitSetProducer;
 import org.apache.lucene.search.join.ToParentBlockJoinSortField;
-import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.FunctionQParser;
@@ -44,42 +42,14 @@ public class ChildFieldValueSourceParser extends ValueSourceParser {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final class BlockJoinSortFieldValueSource extends ValueSource {
-    private static final class BytesToStringComparator extends FieldComparator<String> {
-      private final FieldComparator<BytesRef> byteRefs;
-
-      private BytesToStringComparator(FieldComparator<BytesRef> byteRefs) {
-        this.byteRefs = byteRefs;
-      }
-
-      @Override
-      public int compare(int slot1, int slot2) {
-        return byteRefs.compare(slot1, slot2);
-      }
-
-      @Override
-      public void setTopValue(String value) {
-        byteRefs.setTopValue(new BytesRef(value));
-      }
-
-      @Override
-      public String value(int slot) {
-        final BytesRef value = byteRefs.value(slot);
-        return value != null ? value.utf8ToString() : null;
-      }
-
-      @Override
-      public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
-        return byteRefs.getLeafComparator(context);
-      }
-    }
-
+  private static final class BlockJoinSortFieldValueSource extends FieldCacheSource {
     private final BitSetProducer childFilter;
     private final BitSetProducer parentFilter;
     private final SchemaField childField;
 
     private BlockJoinSortFieldValueSource(
         BitSetProducer childFilter, BitSetProducer parentFilter, SchemaField childField) {
+      super(childField.getName());
       this.childFilter = childFilter;
       this.parentFilter = parentFilter;
       this.childField = childField;
@@ -128,16 +98,7 @@ public class ChildFieldValueSourceParser extends ValueSourceParser {
     public SortField getSortField(boolean reverse) {
       final Type type = childField.getSortField(reverse).getType();
       return new ToParentBlockJoinSortField(
-          childField.getName(), type, reverse, parentFilter, childFilter) {
-        @SuppressWarnings("unchecked")
-        @Override
-        public FieldComparator<?> getComparator(int numHits, int sortPos) {
-          final FieldComparator<?> comparator = super.getComparator(numHits, sortPos);
-          return type == Type.STRING
-              ? new BytesToStringComparator((FieldComparator<BytesRef>) comparator)
-              : comparator;
-        }
-      };
+          childField.getName(), type, reverse, parentFilter, childFilter);
     }
 
     @Override

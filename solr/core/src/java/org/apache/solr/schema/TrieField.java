@@ -31,6 +31,7 @@ import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
+import org.apache.lucene.queries.function.valuesource.FieldCacheSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
@@ -226,15 +227,15 @@ public class TrieField extends NumericFieldType {
     field.checkFieldCacheSource();
     switch (type) {
       case INTEGER:
-        return new IntFieldSource(field.getName());
+        return new SortDelegatingValueSource(field, this, new IntFieldSource(field.getName()));
       case FLOAT:
-        return new FloatFieldSource(field.getName());
+        return new SortDelegatingValueSource(field, this, new FloatFieldSource(field.getName()));
       case DATE:
-        return new TrieDateFieldSource(field.getName());
+        return new SortDelegatingValueSource(field, this, new TrieDateFieldSource(field.getName()));
       case LONG:
-        return new LongFieldSource(field.getName());
+        return new SortDelegatingValueSource(field, this, new LongFieldSource(field.getName()));
       case DOUBLE:
-        return new DoubleFieldSource(field.getName());
+        return new SortDelegatingValueSource(field, this, new DoubleFieldSource(field.getName()));
       default:
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + field.name);
@@ -276,7 +277,7 @@ public class TrieField extends NumericFieldType {
               + ")");
     }
 
-    return getSingleValueSource(selectorType, field);
+    return new SortDelegatingValueSource(field, this, getSingleValueSource(selectorType, field));
   }
 
   /**
@@ -288,7 +289,8 @@ public class TrieField extends NumericFieldType {
    * @param field the field to use, guaranteed to be multivalued.
    * @see #getSingleValueSource(MultiValueSelector,SchemaField,QParser)
    */
-  protected ValueSource getSingleValueSource(SortedSetSelector.Type choice, SchemaField field) {
+  protected FieldCacheSource getSingleValueSource(
+      SortedSetSelector.Type choice, SchemaField field) {
     throw new SolrException(
         SolrException.ErrorCode.BAD_REQUEST,
         "Can not select a single value for multivalued field: "

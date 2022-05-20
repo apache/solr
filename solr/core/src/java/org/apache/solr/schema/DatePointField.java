@@ -197,12 +197,13 @@ public class DatePointField extends PointField implements DateValueFieldType {
   @Override
   public ValueSource getValueSource(SchemaField field, QParser parser) {
     field.checkFieldCacheSource();
-    return new DatePointFieldSource(field.getName());
+    return new SortDelegatingValueSource(field, this, new DatePointFieldSource(field.getName()));
   }
 
   @Override
   protected ValueSource getSingleValueSource(SortedNumericSelector.Type choice, SchemaField field) {
-    return new MultiValuedLongFieldSource(field.getName(), choice);
+    return new SortDelegatingValueSource(
+        field, this, new MultiValuedLongFieldSource(field.getName(), choice));
   }
 
   @Override

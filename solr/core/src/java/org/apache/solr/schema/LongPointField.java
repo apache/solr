@@ -146,13 +146,14 @@ public class LongPointField extends PointField implements LongValueFieldType {
   @Override
   public ValueSource getValueSource(SchemaField field, QParser qparser) {
     field.checkFieldCacheSource();
-    return new LongFieldSource(field.getName());
+    return new SortDelegatingValueSource(field, this, new LongFieldSource(field.getName()));
   }
 
   @Override
   protected ValueSource getSingleValueSource(
       org.apache.lucene.search.SortedNumericSelector.Type choice, SchemaField field) {
-    return new MultiValuedLongFieldSource(field.getName(), choice);
+    return new SortDelegatingValueSource(
+        field, this, new MultiValuedLongFieldSource(field.getName(), choice));
   }
 
   @Override
