@@ -131,7 +131,6 @@ public class ZkController implements Closeable {
   private final DistributedMap overseerCompletedMap;
   private final DistributedMap overseerFailureMap;
   private final DistributedMap asyncIdsMap;
-  private final NodesSysPropsCacher nodesSysPropsCacher;
 
   public static final String COLLECTION_PARAM_PREFIX = "collection.";
   public static final String CONFIGNAME_PROP = "configName";
@@ -192,6 +191,7 @@ public class ZkController implements Closeable {
   private String baseURL; // example: http://127.0.0.1:54065/solr
 
   private final CloudConfig cloudConfig;
+  private final NodesSysPropsCacher sysPropsCacher;
 
   private final DistributedClusterStateUpdater distributedClusterStateUpdater;
 
@@ -502,7 +502,7 @@ public class ZkController implements Closeable {
     this.overseerCollectionQueue = overseer.getCollectionQueue(zkClient);
     this.overseerConfigSetQueue = overseer.getConfigSetQueue(zkClient);
     getSolrCloudManager();
-    this.nodesSysPropsCacher = new NodesSysPropsCacher(cloudSolrClient, zkStateReader);
+    this.sysPropsCacher = new NodesSysPropsCacher(cloudSolrClient, zkStateReader);
 
     assert ObjectReleaseTracker.track(this);
   }
@@ -628,7 +628,7 @@ public class ZkController implements Closeable {
   }
 
   public NodesSysPropsCacher getSysPropsCacher() {
-    return nodesSysPropsCacher;
+    return sysPropsCacher;
   }
 
   private void closeOutstandingElections(final Supplier<List<CoreDescriptor>> registerOnReconnect) {
@@ -728,7 +728,7 @@ public class ZkController implements Closeable {
 
     } finally {
 
-      nodesSysPropsCacher.close();
+      sysPropsCacher.close();
       customThreadPool.submit(() -> IOUtils.closeQuietly(cloudSolrClient));
       customThreadPool.submit(() -> IOUtils.closeQuietly(cloudManager));
 
