@@ -224,17 +224,17 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
 
     String data = header.substring(0, sigStart);
     byte[] sig = Base64.getDecoder().decode(header.substring(sigStart + 1));
-    PKIHeaderData rv = validateSignature(data, sig, key);
+    PKIHeaderData rv = validateSignature(data, sig, key, false);
     if (rv == null) {
       log.warn("Failed to verify signature, trying after refreshing the key ");
       key = getRemotePublicKey(nodeName);
-      rv = validateSignature(data, sig, key);
+      rv = validateSignature(data, sig, key, true);
     }
 
     return rv;
   }
 
-  private PKIHeaderData validateSignature(String data, byte[] sig, PublicKey key) {
+  private PKIHeaderData validateSignature(String data, byte[] sig, PublicKey key, boolean isRetry) {
     try {
       if (CryptoKeys.verifySha256(data.getBytes(UTF_8), sig, key)) {
         int timestampStart = data.lastIndexOf(' ');
@@ -253,7 +253,11 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
         return null;
       }
     } catch (InvalidKeyException | SignatureException e) {
-      log.error("Signature validation failed, likely key error");
+      if (isRetry) {
+        log.error("Signature validation on retry failed, likely key error");
+      } else {
+        log.info("Signature validation failed first attempt, likely key error");
+      }
       return null;
     }
   }
@@ -266,23 +270,27 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
       log.debug("public key obtained {} ", key);
     }
 
-    PKIHeaderData header = parseCipher(cipherBase64, key);
+    PKIHeaderData header = parseCipher(cipherBase64, key, false);
     if (header == null) {
       log.warn("Failed to decrypt header, trying after refreshing the key ");
       key = getRemotePublicKey(nodeName);
-      return parseCipher(cipherBase64, key);
+      return parseCipher(cipherBase64, key, true);
     } else {
       return header;
     }
   }
 
   @VisibleForTesting
-  static PKIHeaderData parseCipher(String cipher, PublicKey key) {
+  static PKIHeaderData parseCipher(String cipher, PublicKey key, boolean isRetry) {
     byte[] bytes;
     try {
       bytes = CryptoKeys.decryptRSA(Base64.getDecoder().decode(cipher), key);
     } catch (Exception e) {
-      log.error("Decryption failed , key must be wrong", e);
+      if (isRetry) {
+        log.error("Decryption failed on retry, key must be wrong", e);
+      } else {
+        log.info("Decryption failed on first attempt, will retry", e);
+      }
       return null;
     }
     String s = new String(bytes, UTF_8).trim();
