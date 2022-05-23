@@ -8,3 +8,5 @@ ignoreFiles = '''
 **/*.min.js
 solr/webapp/web/libs/*.js
 '''
+build = "./gradlew clean assemble -x test -x buildLocalAntoraSite"
+
