@@ -22,32 +22,16 @@ import static org.apache.solr.common.params.CommonAdminParams.SPLIT_KEY;
 import static org.apache.solr.common.params.CommonParams.ACTION;
 import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.apache.solr.common.params.CoreAdminParams.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
-import com.google.common.collect.Maps;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.api.Api;
-import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
-import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.handler.admin.CoreAdminHandler;
-import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-import org.junit.Before;
-import org.junit.BeforeClass;
+import org.apache.solr.handler.admin.V2ApiMappingTest;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 
 /**
  * Unit tests for the V2 APIs found in {@link org.apache.solr.handler.admin.api} that use the
@@ -58,36 +42,35 @@ import org.mockito.ArgumentCaptor;
  * provided. This is done to exercise conversion of all parameters, even if particular combinations
  * are never expected in the same request.
  */
-public class V2CoreAPIMappingTest extends SolrTestCaseJ4 {
-  private ApiBag apiBag;
+public class V2CoreAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
 
-  private ArgumentCaptor<SolrQueryRequest> queryRequestCaptor;
+  private static final String NO_BODY = null;
 
-  private CoreAdminHandler mockCoreHandler;
-
-  @BeforeClass
-  public static void ensureWorkingMockito() {
-    assumeWorkingMockito();
+  @Override
+  public CoreAdminHandler createUnderlyingRequestHandler() {
+    return mock(CoreAdminHandler.class);
   }
 
-  @Before
-  public void setupApiBag() throws Exception {
-    mockCoreHandler = mock(CoreAdminHandler.class);
-    queryRequestCaptor = ArgumentCaptor.forClass(SolrQueryRequest.class);
+  @Override
+  public boolean isCoreSpecific() {
+    return false;
+  }
 
-    apiBag = new ApiBag(false);
-    apiBag.registerObject(new ReloadCoreAPI(mockCoreHandler));
-    apiBag.registerObject(new SwapCoresAPI(mockCoreHandler));
-    apiBag.registerObject(new RenameCoreAPI(mockCoreHandler));
-    apiBag.registerObject(new UnloadCoreAPI(mockCoreHandler));
-    apiBag.registerObject(new MergeIndexesAPI(mockCoreHandler));
-    apiBag.registerObject(new SplitCoreAPI(mockCoreHandler));
-    apiBag.registerObject(new RequestCoreRecoveryAPI(mockCoreHandler));
-    apiBag.registerObject(new PrepareCoreRecoveryAPI(mockCoreHandler));
-    apiBag.registerObject(new RequestApplyCoreUpdatesAPI(mockCoreHandler));
-    apiBag.registerObject(new RequestSyncShardAPI(mockCoreHandler));
-    apiBag.registerObject(new RequestBufferUpdatesAPI(mockCoreHandler));
-    apiBag.registerObject(new RequestCoreCommandStatusAPI(mockCoreHandler));
+  @Override
+  public void populateApiBag() {
+    final CoreAdminHandler handler = getRequestHandler();
+    apiBag.registerObject(new ReloadCoreAPI(handler));
+    apiBag.registerObject(new SwapCoresAPI(handler));
+    apiBag.registerObject(new RenameCoreAPI(handler));
+    apiBag.registerObject(new UnloadCoreAPI(handler));
+    apiBag.registerObject(new MergeIndexesAPI(handler));
+    apiBag.registerObject(new SplitCoreAPI(handler));
+    apiBag.registerObject(new RequestCoreRecoveryAPI(handler));
+    apiBag.registerObject(new PrepareCoreRecoveryAPI(handler));
+    apiBag.registerObject(new RequestApplyCoreUpdatesAPI(handler));
+    apiBag.registerObject(new RequestSyncShardAPI(handler));
+    apiBag.registerObject(new RequestBufferUpdatesAPI(handler));
+    apiBag.registerObject(new RequestCoreCommandStatusAPI(handler));
   }
 
   @Test
@@ -261,39 +244,9 @@ public class V2CoreAPIMappingTest extends SolrTestCaseJ4 {
   @Test
   public void testRequestCommandStatusAllParams() throws Exception {
     final SolrParams v1Params =
-        captureConvertedV1Params("/cores/coreName/command-status/someId", "GET", null);
+        captureConvertedV1Params("/cores/coreName/command-status/someId", "GET", NO_BODY);
 
     assertEquals("requeststatus", v1Params.get(ACTION));
     assertEquals("someId", v1Params.get(REQUESTID));
-  }
-
-  private SolrParams captureConvertedV1Params(String path, String method, String v2RequestBody)
-      throws Exception {
-    final HashMap<String, String> parts = new HashMap<>();
-    final Api api = apiBag.lookup(path, method, parts);
-    final SolrQueryResponse rsp = new SolrQueryResponse();
-    final LocalSolrQueryRequest req =
-        new LocalSolrQueryRequest(null, Maps.newHashMap()) {
-          @Override
-          public List<CommandOperation> getCommands(boolean validateInput) {
-            if (v2RequestBody == null) return Collections.emptyList();
-            return ApiBag.getCommandOperations(
-                new ContentStreamBase.StringStream(v2RequestBody), api.getCommandSchema(), true);
-          }
-
-          @Override
-          public Map<String, String> getPathTemplateValues() {
-            return parts;
-          }
-
-          @Override
-          public String getHttpMethod() {
-            return method;
-          }
-        };
-
-    api.call(req, rsp);
-    verify(mockCoreHandler).handleRequestBody(queryRequestCaptor.capture(), any());
-    return queryRequestCaptor.getValue().getParams();
   }
 }
