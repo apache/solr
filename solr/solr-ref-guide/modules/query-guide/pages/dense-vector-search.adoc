@@ -126,6 +126,8 @@ Accepted values: `Lucene91HnswVectorsFormat`.
 
 Please note that the `codecFormat` accepted values may change in future releases.
 
+[NOTE]
+Lucene91HnswVectorsFormat is not back-compatible with Lucene90HnswVectorsFormat which is no longer supported. Reindex is necessary when upgrading from Solr 9.0
 
 
 [NOTE]
