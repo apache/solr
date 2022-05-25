@@ -148,7 +148,6 @@ task buildLocalAntoraPlaybookYaml(type: Copy) {
         'source_url'         : project.rootDir,
         'source_branches'    : "HEAD",
         'start_path'         : project.rootDir.relativePath(file(project.ext.siteStagingDir)),
-        'supplemental_files' : "${project.ext.nodeProjectDir}/node_modules/@antora/lunr-extension/supplemental_ui",
         'site_dir'           : "./" + file(project.ext.siteStagingDir).relativePath(file(project.ext.siteDir)),
     ]
 
@@ -180,7 +179,6 @@ task buildOfficialAntoraPlaybookYaml(type: Copy) {
         'source_url'         : "https://github.com/apache/solr.git",
         'source_branches'    : branches,
         'start_path'         : 'solr/solr-ref-guide',
-        'supplemental_files' : "${project.ext.nodeProjectDir}/node_modules/@antora/lunr-extension/supplemental_ui",
         'site_dir'           : "./" + file(project.ext.playbooksDir).relativePath(file(project.ext.siteDir)),
     ]
 
