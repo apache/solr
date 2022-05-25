@@ -3375,12 +3375,18 @@ public class TestSQLHandler extends SolrCloudTestCase {
     expectResults(
         "select id, stringxmv from $ALIAS WHERE array_contains_any(pdoublexmv, (1.5, 2.5))", 3);
     expectResults("select id, stringxmv from $ALIAS WHERE array_contains_any(longs, (1, 3))", 3);
-    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('\"a\"', '\"e\"'))", 0);
-    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('\"a\"'))", 0);
-    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('\"f\"'))", 1);
-    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('g\"h'))", 1);
     expectResults(
-            "select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a', 'e', '\"f\"'))", 3);
+        "select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('\"a\"', '\"e\"'))",
+        0);
+    expectResults(
+        "select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('\"a\"'))", 0);
+    expectResults(
+        "select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('\"f\"'))", 1);
+    expectResults(
+        "select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('g\"h'))", 1);
+    expectResults(
+        "select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a', 'e', '\"f\"'))",
+        3);
 
     expectResults("select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a'))", 2);
     expectResults(
