@@ -139,6 +139,16 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       MatcherAssert.assertThat(type2.getHnswMaxConn(), is(6));
       MatcherAssert.assertThat(type2.getHnswBeamWidth(), is(60));
 
+      SchemaField vector3 = schema.getField("vector3");
+      assertNotNull(vector3);
+
+      DenseVectorField type3 = (DenseVectorField) vector3.getType();
+      MatcherAssert.assertThat(type3.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
+      MatcherAssert.assertThat(type3.getDimension(), is(5));
+      MatcherAssert.assertThat(type3.getCodecFormat(), is("Lucene90HnswVectorsFormat"));
+      MatcherAssert.assertThat(type3.getHnswMaxConn(), is(8));
+      MatcherAssert.assertThat(type3.getHnswBeamWidth(), is(46));
+
       SchemaField vectorDefault = schema.getField("vector_default");
       assertNotNull(vectorDefault);
 

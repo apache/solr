@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+
+import org.apache.lucene.backward_codecs.lucene90.Lucene90HnswVectorsFormat;
 import org.apache.lucene.codecs.lucene91.Lucene91HnswVectorsFormat;
 import org.apache.lucene.document.KnnVectorField;
 import org.apache.lucene.index.IndexableField;
@@ -42,8 +44,8 @@ import org.apache.solr.uninverting.UninvertingReader;
  * {@link org.apache.lucene.search.KnnVectorQuery} for more details. It supports a fixed cardinality
  * dimension for the vector and a fixed similarity function. The default similarity is
  * EUCLIDEAN_HNSW (L2). The default index codec format is specified in the Lucene Codec constructor.
- * For Lucene 9.0 e.g. See {@link org.apache.lucene.codecs.lucene91.Lucene91Codec} Currently only
- * {@link org.apache.lucene.codecs.lucene91.Lucene91HnswVectorsFormat} is supported for advanced
+ * For Lucene 9.0 e.g. See {@link org.apache.lucene.codecs.lucene91.Lucene91Codec} Currently {@link org.apache.lucene.backward_codecs.lucene90.Lucene90HnswVectorsFormat} and
+ * {@link org.apache.lucene.codecs.lucene91.Lucene91HnswVectorsFormat} are supported for advanced
  * hyper-parameter customisation. See {@link org.apache.lucene.util.hnsw.HnswGraph} for more details
  * about the implementation. <br>
  * Only {@code Indexed} and {@code Stored} attributes are supported.
@@ -63,13 +65,13 @@ public class DenseVectorField extends FloatPointField {
 
   private String codecFormat;
   /**
-   * This parameter is coupled with the {@link Lucene91HnswVectorsFormat} format implementation.
+   * This parameter is coupled with the {@link Lucene90HnswVectorsFormat} and {@link Lucene91HnswVectorsFormat} format implementations.
    * Controls how many of the nearest neighbor candidates are connected to the new node. Defaults to
    * {@link Lucene91HnswVectorsFormat#DEFAULT_MAX_CONN}. See {@link HnswGraph} for more details.
    */
   private int hnswMaxConn;
   /**
-   * This parameter is coupled with the {@link Lucene91HnswVectorsFormat} format implementation. The
+   * This parameter is coupled with the {@link Lucene90HnswVectorsFormat} and {@link Lucene91HnswVectorsFormat} format implementations. The
    * number of candidate neighbors to track while searching the graph for each newly inserted node.
    * Defaults to to {@link Lucene91HnswVectorsFormat#DEFAULT_BEAM_WIDTH}. See {@link HnswGraph} for
    * details.

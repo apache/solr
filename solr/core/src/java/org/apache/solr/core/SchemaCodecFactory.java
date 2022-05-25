@@ -19,6 +19,8 @@ package org.apache.solr.core;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Locale;
+
+import org.apache.lucene.backward_codecs.lucene90.Lucene90HnswVectorsFormat;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.KnnVectorsFormat;
@@ -129,6 +131,10 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
                   int maxConn = vectorType.getHnswMaxConn();
                   int beamWidth = vectorType.getHnswBeamWidth();
                   return new Lucene91HnswVectorsFormat(maxConn, beamWidth);
+                } else if (knnVectorFormatName.equals(Lucene90HnswVectorsFormat.class.getSimpleName())) {
+                  int maxConn = vectorType.getHnswMaxConn();
+                  int beamWidth = vectorType.getHnswBeamWidth();
+                  return new Lucene90HnswVectorsFormat(maxConn, beamWidth);
                 } else {
                   return KnnVectorsFormat.forName(knnVectorFormatName);
                 }
