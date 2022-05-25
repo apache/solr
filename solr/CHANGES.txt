@@ -99,6 +99,10 @@ Other Changes
 
 * SOLR-16190: Http2SolrClient should make sure to shutdown the executor (Kevin Risden)
 
+* SOLR-16191: Validate that installed ps utility supports -p flag, so that we do not inadvertantly stop the wrong process. (Mike Drob, Michael Gibney)
+
+* SOLR-16209: Rolling restart will no longer trigger as much PKI Plugin error logging. (Mike Drob, Tomás Fernández Löbbe)
+
 Build
 ---------------------
 * SOLR-16053: Upgrade scriptDepVersions (Kevin Risden)
@@ -813,6 +817,9 @@ Bug Fixes
   but look like nonsense to Calcite, such as AND'd filters on the same multi-valued field (Timothy Potter, Kiran Chitturi)
 
 * SOLR-16022: Enforce special character requirements on passwords with length less than 15 (Timothy Potter)
+
+* SOLR-16199: Improve query syntax construction for SQL LIKE clause with phrases and wildcards
+  (Kiran Chitturi, Aroop Ganguly, Amrit Sarkar via Timothy Potter)
 
 ==================  8.11.1 ==================
 
