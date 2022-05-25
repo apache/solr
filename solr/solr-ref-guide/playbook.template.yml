@@ -38,7 +38,6 @@ ui:
   bundle:
     url: 'https://nightlies.apache.org/solr/solr-reference-guide-ui-bundle/ui-bundle.zip'
     snapshot: true
-  supplemental_files: '${supplemental_files}'
 output:
   clean: true
   dir: '${site_dir}'
