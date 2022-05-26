@@ -169,7 +169,7 @@ class SolrFilter extends Filter implements SolrRel {
       if (valuesNode instanceof RexLiteral) {
         String literal = toSolrLiteral(fieldName, (RexLiteral) valuesNode);
         if (!StringUtils.isEmpty(literal)) {
-          return fieldName + ":\"" + literal + "\"";
+          return fieldName + ":\"" + ClientUtils.escapeQueryChars(literal.trim()) + "\"";
         } else {
           return null;
         }
@@ -179,7 +179,7 @@ class SolrFilter extends Filter implements SolrRel {
             valuesRexCall.getOperands().stream()
                 .map(op -> toSolrLiteral(fieldName, (RexLiteral) op))
                 .filter(value -> !StringUtils.isEmpty(value))
-                .map(value -> "\"" + value.trim() + "\"")
+                .map(value -> "\"" + ClientUtils.escapeQueryChars(value.trim()) + "\"")
                 .collect(Collectors.joining(" " + booleanOperator + " "));
         return fieldName + ":(" + valuesString + ")";
       }
