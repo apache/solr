@@ -43,7 +43,7 @@ import org.apache.solr.uninverting.UninvertingReader;
  * {@link org.apache.lucene.search.KnnVectorQuery} for more details. It supports a fixed cardinality
  * dimension for the vector and a fixed similarity function. The default similarity is
  * EUCLIDEAN_HNSW (L2). The default index codec format is specified in the Lucene Codec constructor.
- * For Lucene 9.0 e.g. See {@link org.apache.lucene.codecs.lucene91.Lucene91Codec} Currently {@link
+ * For Lucene 9.1 e.g. See {@link org.apache.lucene.codecs.lucene91.Lucene91Codec} Currently {@link
  * org.apache.lucene.backward_codecs.lucene90.Lucene90HnswVectorsFormat} and {@link
  * org.apache.lucene.codecs.lucene91.Lucene91HnswVectorsFormat} are supported for advanced
  * hyper-parameter customisation. See {@link org.apache.lucene.util.hnsw.HnswGraph} for more details
