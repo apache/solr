@@ -129,13 +129,14 @@ class SegmentTerminateEarlyTestState {
             .get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY));
   }
 
-  void queryTimestampDescendingSegmentTerminateEarlyYes(CloudSolrClient cloudSolrClient)
-      throws Exception {
+  void queryTimestampDescendingSegmentTerminateEarlyYes(
+      CloudSolrClient cloudSolrClient, boolean appendKeyDescendingToSort) throws Exception {
     TestSegmentSorting.assertFalse(maxTimestampDocKeys.isEmpty());
     TestSegmentSorting.assertTrue("numDocs=" + numDocs + " is not even", (numDocs % 2) == 0);
     final Long oddFieldValue = (long) (maxTimestampDocKeys.iterator().next().intValue() % 2);
     final SolrQuery query = new SolrQuery(ODD_FIELD + ":" + oddFieldValue);
     query.setSort(TIMESTAMP_FIELD, SolrQuery.ORDER.desc);
+    if (appendKeyDescendingToSort) query.addSort(KEY_FIELD, SolrQuery.ORDER.desc);
     query.setFields(KEY_FIELD, ODD_FIELD, TIMESTAMP_FIELD);
     final int rowsWanted = 1;
     query.setRows(rowsWanted);
@@ -198,13 +199,14 @@ class SegmentTerminateEarlyTestState {
     }
   }
 
-  void queryTimestampDescendingSegmentTerminateEarlyNo(CloudSolrClient cloudSolrClient)
-      throws Exception {
+  void queryTimestampDescendingSegmentTerminateEarlyNo(
+      CloudSolrClient cloudSolrClient, boolean appendKeyDescendingToSort) throws Exception {
     TestSegmentSorting.assertFalse(maxTimestampDocKeys.isEmpty());
     TestSegmentSorting.assertTrue("numDocs=" + numDocs + " is not even", (numDocs % 2) == 0);
     final Long oddFieldValue = (long) (maxTimestampDocKeys.iterator().next().intValue() % 2);
     final SolrQuery query = new SolrQuery(ODD_FIELD + ":" + oddFieldValue);
     query.setSort(TIMESTAMP_FIELD, SolrQuery.ORDER.desc);
+    if (appendKeyDescendingToSort) query.addSort(KEY_FIELD, SolrQuery.ORDER.desc);
     query.setFields(KEY_FIELD, ODD_FIELD, TIMESTAMP_FIELD);
     query.setRows(1);
     final Boolean shardsInfoWanted = (rand.nextBoolean() ? null : rand.nextBoolean());
@@ -263,13 +265,14 @@ class SegmentTerminateEarlyTestState {
     }
   }
 
-  void queryTimestampDescendingSegmentTerminateEarlyYesGrouped(CloudSolrClient cloudSolrClient)
-      throws Exception {
+  void queryTimestampDescendingSegmentTerminateEarlyYesGrouped(
+      CloudSolrClient cloudSolrClient, boolean appendKeyDescendingToSort) throws Exception {
     TestSegmentSorting.assertFalse(maxTimestampDocKeys.isEmpty());
     TestSegmentSorting.assertTrue("numDocs=" + numDocs + " is not even", (numDocs % 2) == 0);
     final Long oddFieldValue = (long) (maxTimestampDocKeys.iterator().next().intValue() % 2);
     final SolrQuery query = new SolrQuery(ODD_FIELD + ":" + oddFieldValue);
     query.setSort(TIMESTAMP_FIELD, SolrQuery.ORDER.desc);
+    if (appendKeyDescendingToSort) query.addSort(KEY_FIELD, SolrQuery.ORDER.desc);
     query.setFields(KEY_FIELD, ODD_FIELD, TIMESTAMP_FIELD);
     query.setRows(1);
     query.set(CommonParams.SEGMENT_TERMINATE_EARLY, true);
@@ -307,14 +310,15 @@ class SegmentTerminateEarlyTestState {
                 .get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY)));
   }
 
-  void queryTimestampAscendingSegmentTerminateEarlyYes(CloudSolrClient cloudSolrClient)
-      throws Exception {
+  void queryTimestampAscendingSegmentTerminateEarlyYes(
+      CloudSolrClient cloudSolrClient, boolean appendKeyDescendingToSort) throws Exception {
     TestSegmentSorting.assertFalse(minTimestampDocKeys.isEmpty());
     TestSegmentSorting.assertTrue("numDocs=" + numDocs + " is not even", (numDocs % 2) == 0);
     final Long oddFieldValue = (long) (minTimestampDocKeys.iterator().next().intValue() % 2);
     final SolrQuery query = new SolrQuery(ODD_FIELD + ":" + oddFieldValue);
     // a sort order that is _not_ compatible with the merge sort order
     query.setSort(TIMESTAMP_FIELD, SolrQuery.ORDER.asc);
+    if (appendKeyDescendingToSort) query.addSort(KEY_FIELD, SolrQuery.ORDER.desc);
     query.setFields(KEY_FIELD, ODD_FIELD, TIMESTAMP_FIELD);
     query.setRows(1);
     query.set(CommonParams.SEGMENT_TERMINATE_EARLY, true);
