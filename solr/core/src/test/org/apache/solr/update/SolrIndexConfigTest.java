@@ -176,7 +176,8 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     h.getCore().setLatestSchema(indexSchema);
     IndexWriterConfig iwc = solrIndexConfig.toIndexWriterConfig(h.getCore());
 
-    final Sort expected = new Sort(new SortField(expectedFieldName, expectedFieldType, expectedFieldSortDescending));
+    final Sort expected =
+        new Sort(new SortField(expectedFieldName, expectedFieldType, expectedFieldSortDescending));
     assertEquals("indexSort", expected, iwc.getIndexSort());
   }
 
