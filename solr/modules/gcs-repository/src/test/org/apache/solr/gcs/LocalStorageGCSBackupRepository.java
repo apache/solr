@@ -17,7 +17,7 @@
 
 package org.apache.solr.gcs;
 
-import static org.apache.lucene.util.LuceneTestCase.assumeFalse;
+import static org.apache.lucene.tests.util.LuceneTestCase.assumeFalse;
 
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.Storage;

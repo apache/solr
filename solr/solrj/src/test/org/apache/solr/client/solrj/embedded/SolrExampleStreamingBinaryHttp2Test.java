@@ -19,7 +19,7 @@ package org.apache.solr.client.solrj.embedded;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;

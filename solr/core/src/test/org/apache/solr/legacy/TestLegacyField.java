@@ -17,9 +17,9 @@
 package org.apache.solr.legacy;
 
 import java.io.StringReader;
-import org.apache.lucene.analysis.CannedTokenStream;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.tests.analysis.CannedTokenStream;
+import org.apache.lucene.tests.analysis.Token;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCase;
 

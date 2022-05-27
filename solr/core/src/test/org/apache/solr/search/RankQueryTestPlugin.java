@@ -420,7 +420,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
             }
 
             if (comparator == null) {
-              comparator = sortField.getComparator(1, 0);
+              comparator = sortField.getComparator(1, true);
               leafComparator = comparator.getLeafComparator(currentLeaf);
             }
 
