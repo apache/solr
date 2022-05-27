@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search.neural;
 
-import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -28,10 +27,14 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.DenseVectorField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.ExtendedQuery;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.SyntaxError;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class KnnQParser extends QParser {
 
@@ -80,35 +83,47 @@ public class KnnQParser extends QParser {
     float[] parsedVectorToSearch = parseVector(vectorToSearch, denseVectorType.getDimension());
 
     return denseVectorType.getKnnVectorQuery(
-        schemaField.getName(), parsedVectorToSearch, topK, getFilterQuery());
+        schemaField.getName(), parsedVectorToSearch, topK, buildPreFilter());
   }
 
-  private Query getFilterQuery() throws SolrException {
-    if (!isFilter()) {
+  private Query buildPreFilter() throws SolrException {
+    boolean isSubQuery = recurseCount != 0;
+    if (!isFilter() && !isSubQuery) {
       String[] filterQueries = req.getParams().getParams(CommonParams.FQ);
       if (filterQueries != null && filterQueries.length != 0) {
-        List<Query> filters;
+        List<Query> preFilters;
 
         try {
-          filters = QueryUtils.parseFilterQueries(req, true);
+          preFilters = acceptPreFiltersOnly(QueryUtils.parseFilterQueries(req, true));
         } catch (SyntaxError e) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }
-
-        if (filters.size() == 1) {
-          return filters.get(0);
+        
+        if (preFilters.size() == 0) {
+          return null;
+        } else if (preFilters.size() == 1) {
+          return preFilters.get(0);
+        } else {
+          BooleanQuery.Builder builder = new BooleanQuery.Builder();
+          for (Query query : preFilters) {
+            builder.add(query, BooleanClause.Occur.FILTER);
+          }
+          return builder.build();
         }
-
-        BooleanQuery.Builder builder = new BooleanQuery.Builder();
-        for (Query query : filters) {
-          builder.add(query, BooleanClause.Occur.FILTER);
-        }
-
-        return builder.build();
       }
     }
-
     return null;
+  }
+
+  private List<Query> acceptPreFiltersOnly(List<Query> filters) {
+    return filters.stream().filter(q -> {
+      if (q instanceof ExtendedQuery) {
+        ExtendedQuery eq = (ExtendedQuery) q;
+        return eq.getCost() == 0;
+      } else {
+        return true;
+      }
+    }).collect(Collectors.toList());
   }
 
   /**
