@@ -105,7 +105,7 @@ Other Changes
 
 Build
 ---------------------
-* SOLR-16204: Change Lucene dependency to Lucene 9.1.0 (Elia Porciani)
+* SOLR-16204: Change Lucene dependency to Lucene 9.1.0 (Elia Porciani via Alessandro Benedetti)
 
 * SOLR-16053: Upgrade scriptDepVersions (Kevin Risden)
 
