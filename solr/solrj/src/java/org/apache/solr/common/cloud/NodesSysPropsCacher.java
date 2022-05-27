@@ -17,17 +17,16 @@
 
 package org.apache.solr.common.cloud;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
+import java.net.URLEncoder;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.NavigableObject;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
 
 /** Fetch lazily and cache a node's system properties */
@@ -75,17 +74,14 @@ public class NodesSysPropsCacher implements AutoCloseable {
   }
 
   private Map<String, Object> fetchProps(String nodeName, Collection<String> tags) {
-    SolrParams p = new ModifiableSolrParams();
     StringBuilder sb = new StringBuilder(zkStateReader.getBaseUrlForNodeName(nodeName));
     sb.append("/admin/metrics?omitHeader=true&wt=javabin");
     LinkedHashMap<String, String> keys = new LinkedHashMap<>();
     for (String tag : tags) {
       String metricsKey = "solr.jvm:system.properties:" + tag;
       keys.put(tag, metricsKey);
-      sb.append("&key=").append(metricsKey);
+      sb.append("&key=").append(URLEncoder.encode(metricsKey, UTF_8));
     }
-
-//    GenericSolrRequest req = new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", p);
 
     Map<String, Object> result = new LinkedHashMap<>();
     NavigableObject response =

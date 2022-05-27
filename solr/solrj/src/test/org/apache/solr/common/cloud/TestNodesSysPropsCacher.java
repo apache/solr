@@ -38,11 +38,7 @@ public class TestNodesSysPropsCacher extends SolrCloudTestCase {
 
     System.clearProperty("metricsEnabled");
     NodesSysPropsCacher nodesSysPropsCacher =
-        cluster
-            .getRandomJetty(random())
-            .getCoreContainer()
-            .getZkController()
-            .getSysPropsCacher();
+        cluster.getRandomJetty(random()).getCoreContainer().getZkController().getSysPropsCacher();
 
     try {
       for (JettySolrRunner j : cluster.getJettySolrRunners()) {
