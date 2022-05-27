@@ -893,7 +893,7 @@ public class HttpSolrCall {
             handler != null
                 ? MarkerFactory.getMarker(handler.getClass().getName())
                 : MarkerFactory.getMarker(HttpSolrCall.class.getName()),
-            solrResp.getToLogAsString("[admin]"));
+            solrResp.getToLogAsString("admin"));
       }
     }
     QueryResponseWriter respWriter =

@@ -1597,12 +1597,12 @@ public class QueryComponent extends SearchComponent {
     if (grouping.mainResult != null) {
       ResultContext ctx = new BasicResultContext(rb, grouping.mainResult);
       rsp.addResponse(ctx);
-      rsp.getToLog().add("hits", grouping.mainResult.matches());
+      rsp.addToLog("hits", grouping.mainResult.matches());
     } else if (!grouping
         .getCommands()
         .isEmpty()) { // Can never be empty since grouping.execute() checks for this.
       rsp.add("grouped", result.groupedResults);
-      rsp.getToLog().add("hits", grouping.getCommands().get(0).getMatches());
+      rsp.addToLog("hits", grouping.getCommands().get(0).getMatches());
     }
   }
 
@@ -1623,12 +1623,11 @@ public class QueryComponent extends SearchComponent {
 
     ResultContext ctx = new BasicResultContext(rb);
     rsp.addResponse(ctx);
-    rsp.getToLog()
-        .add(
-            "hits",
-            rb.getResults() == null || rb.getResults().docList == null
-                ? 0
-                : rb.getResults().docList.matches());
+    rsp.addToLog(
+        "hits",
+        rb.getResults() == null || rb.getResults().docList == null
+            ? 0
+            : rb.getResults().docList.matches());
 
     if (!rb.req.getParams().getBool(ShardParams.IS_SHARD, false)) {
       if (null != rb.getNextCursorMark()) {

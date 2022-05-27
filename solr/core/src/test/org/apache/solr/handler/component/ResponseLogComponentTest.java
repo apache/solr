@@ -16,8 +16,8 @@
  */
 package org.apache.solr.handler.component;
 
+import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
@@ -54,7 +54,7 @@ public class ResponseLogComponentTest extends SolrTestCaseJ4 {
               "responseLog",
               "true");
       SolrQueryResponse qr = h.queryAndResponse(handler, req);
-      NamedList<Object> entries = qr.getToLog();
+      Map<String, Object> entries = qr.getToLog();
       String responseLog = (String) entries.get("responseLog");
       assertNotNull(responseLog);
       assertTrue(responseLog.matches("\\w+,\\w+"));
@@ -83,7 +83,7 @@ public class ResponseLogComponentTest extends SolrTestCaseJ4 {
               "responseLog",
               "true");
       SolrQueryResponse qr = h.queryAndResponse(handler, req);
-      NamedList<Object> entries = qr.getToLog();
+      Map<String, Object> entries = qr.getToLog();
       String responseLog = (String) entries.get("responseLog");
       assertNotNull(responseLog);
       assertTrue(responseLog.matches("\\w+:\\d+\\.\\d+,\\w+:\\d+\\.\\d+"));
@@ -112,7 +112,7 @@ public class ResponseLogComponentTest extends SolrTestCaseJ4 {
               "responseLog",
               "false");
       SolrQueryResponse qr = h.queryAndResponse(handler, req);
-      NamedList<Object> entries = qr.getToLog();
+      Map<String, Object> entries = qr.getToLog();
       String responseLog = (String) entries.get("responseLog");
       assertNull(responseLog);
     } finally {

@@ -90,35 +90,30 @@ public class TestSolrQueryResponse extends SolrTestCase {
   public void testToLog() throws Exception {
     final SolrQueryResponse response = new SolrQueryResponse();
     assertEquals("toLog initially not empty", 0, response.getToLog().size());
-    assertEquals("logid_only", response.getToLogAsString("logid_only"));
+    assertEquals("{\"prefix\":\"prefix_only\"}", response.getToLogAsString("prefix_only"));
     // initially empty, then add something
     response.addToLog("key1", "value1");
-    {
-      final Iterator<Map.Entry<String, Object>> it = response.getToLog().iterator();
-      assertTrue(it.hasNext());
-      final Map.Entry<String, Object> entry1 = it.next();
-      assertEquals("key1", entry1.getKey());
-      assertEquals("value1", entry1.getValue());
-      assertFalse(it.hasNext());
-    }
-    assertEquals("key1=value1", response.getToLogAsString(""));
-    assertEquals("abc123 key1=value1", response.getToLogAsString("abc123"));
+
+    Map<String, Object> toLog = response.getToLog();
+    assertFalse(toLog.isEmpty());
+    assertTrue(toLog.containsKey("key1"));
+    assertEquals("value1", toLog.get("key1"));
+    assertTrue(toLog.size() == 1);
+
+    assertEquals("{\"key1\":\"value1\"}", response.getToLogAsString(""));
+    assertEquals(
+        "{\"prefix\":\"abc123\",\"key1\":\"value1\"}", response.getToLogAsString("abc123"));
+
     // and then add something else
     response.addToLog("key2", "value2");
-    {
-      final Iterator<Map.Entry<String, Object>> it = response.getToLog().iterator();
-      assertTrue(it.hasNext());
-      final Map.Entry<String, Object> entry1 = it.next();
-      assertEquals("key1", entry1.getKey());
-      assertEquals("value1", entry1.getValue());
-      assertTrue(it.hasNext());
-      final Map.Entry<String, Object> entry2 = it.next();
-      assertEquals("key2", entry2.getKey());
-      assertEquals("value2", entry2.getValue());
-      assertFalse(it.hasNext());
-    }
-    assertEquals("key1=value1 key2=value2", response.getToLogAsString(""));
-    assertEquals("xyz789 key1=value1 key2=value2", response.getToLogAsString("xyz789"));
+    toLog = response.getToLog();
+    assertTrue(toLog.containsKey("key2"));
+    assertEquals("value2", toLog.get("key2"));
+
+    assertEquals("{\"key1\":\"value1\",\"key2\":\"value2\"}", response.getToLogAsString(""));
+    assertEquals(
+        "{\"prefix\":\"xyz789\",\"key1\":\"value1\",\"key2\":\"value2\"}",
+        response.getToLogAsString("xyz789"));
   }
 
   @Test

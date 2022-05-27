@@ -2886,18 +2886,15 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     final NamedList<Object> responseHeader = new SimpleOrderedMap<>();
     rsp.addResponseHeader(responseHeader);
 
-    // toLog is a local ref to the same NamedList used by the response
-    NamedList<Object> toLog = rsp.getToLog();
-
     // for back compat, we set these now just in case other code
     // are expecting them during handleRequest
-    toLog.add("webapp", req.getContext().get("webapp"));
-    toLog.add(PATH, req.getContext().get(PATH));
+    rsp.addToLog("webapp", req.getContext().get("webapp"));
+    rsp.addToLog(PATH, req.getContext().get(PATH));
 
     final SolrParams params = req.getParams();
     final String lpList = params.get(CommonParams.LOG_PARAMS_LIST);
     if (lpList == null) {
-      toLog.add("params", "{" + req.getParamString() + "}");
+      rsp.addToLog("params", req.getParamString());
     } else if (lpList.length() > 0) {
 
       // Filter params by those in LOG_PARAMS_LIST so that we can then call toString
@@ -2922,7 +2919,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
             } // assume in lpSet
           };
 
-      toLog.add("params", "{" + filteredParams + "}");
+      rsp.addToLog("params", filteredParams);
     }
   }
 
@@ -2942,8 +2939,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     responseHeader.add("QTime", qtime);
 
     if (rsp.getToLog().size() > 0) {
-      rsp.getToLog().add("status", status);
-      rsp.getToLog().add("QTime", qtime);
+      rsp.addToLog("status", status);
+      rsp.addToLog("QTime", qtime);
     }
 
     SolrParams params = req.getParams();

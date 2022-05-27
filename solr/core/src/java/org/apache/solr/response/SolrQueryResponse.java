@@ -19,6 +19,7 @@ package org.apache.solr.response;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import javax.servlet.http.HttpServletResponse;
@@ -26,6 +27,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrReturnFields;
+import org.noggit.JSONUtil;
 
 /**
  * <code>SolrQueryResponse</code> is used by a query handler to return the response to a query
@@ -77,7 +79,7 @@ public class SolrQueryResponse {
   protected NamedList<Object> values = new SimpleOrderedMap<>();
 
   /** Container for storing information that should be logged by Solr before returning. */
-  protected NamedList<Object> toLog = new SimpleOrderedMap<>();
+  protected final Map<String, Object> toLog = new LinkedHashMap<>();
 
   protected ReturnFields returnFields;
 
@@ -199,7 +201,7 @@ public class SolrQueryResponse {
    * @param val value of the thing to log
    */
   public void addToLog(String name, Object val) {
-    toLog.add(name, val);
+    toLog.put(name, val);
   }
 
   /**
@@ -207,7 +209,7 @@ public class SolrQueryResponse {
    *
    * @return things to log
    */
-  public NamedList<Object> getToLog() {
+  public Map<String, Object> getToLog() {
     return toLog;
   }
 
@@ -217,17 +219,15 @@ public class SolrQueryResponse {
 
   /** Returns a string of the form "prefix name1=value1 name2=value2 ..." */
   public String getToLogAsString(String prefix) {
-    StringBuilder sb = new StringBuilder(prefix);
-    for (int i = 0; i < toLog.size(); i++) {
-      if (sb.length() > 0) {
-        sb.append(' ');
-      }
-      String name = toLog.getName(i);
-      Object val = toLog.getVal(i);
-      if (name != null) {
-        sb.append(name).append('=');
-      }
-      sb.append(val);
+    StringBuilder sb = new StringBuilder();
+    if (prefix != null && !prefix.isEmpty()) {
+      // TODO: remove "prefix"
+      Map<String, Object> keyValPairs = new LinkedHashMap<>();
+      keyValPairs.put("prefix", prefix);
+      keyValPairs.putAll(toLog);
+      sb.append(JSONUtil.toJSON(keyValPairs, -1));
+    } else {
+      sb.append(JSONUtil.toJSON(toLog, -1));
     }
     return sb.toString();
   }
