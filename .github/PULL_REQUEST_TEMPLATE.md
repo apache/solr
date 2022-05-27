@@ -7,7 +7,7 @@ Before creating a pull request, please file an issue in the ASF Jira system for 
 
 * https://issues.apache.org/jira/projects/SOLR
 
-For something minor (i.e. that wouldn't even be worth putting in release notes), you can skip JIRA. 
+For something minor (i.e. that wouldn't be worth putting in release notes), you can skip JIRA. 
 To create a Jira issue, you will need to create an account there first.
 
 The title of the PR should reference the Jira issue number in the form:
