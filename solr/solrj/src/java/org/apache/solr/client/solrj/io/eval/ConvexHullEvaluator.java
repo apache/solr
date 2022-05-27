@@ -17,9 +17,8 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.ArrayList;
-
+import java.util.List;
 import org.apache.commons.math3.geometry.euclidean.twod.Vector2D;
 import org.apache.commons.math3.geometry.euclidean.twod.hull.ConvexHull2D;
 import org.apache.commons.math3.geometry.euclidean.twod.hull.MonotoneChain;
@@ -29,15 +28,16 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 public class ConvexHullEvaluator extends RecursiveObjectEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
 
-  public ConvexHullEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public ConvexHullEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
   }
 
   @Override
-  public Object doWork(Object... objects) throws IOException{
+  public Object doWork(Object... objects) throws IOException {
 
-    if(objects[0] instanceof Matrix) {
-      return getConvexHull((Matrix)objects[0]);
+    if (objects[0] instanceof Matrix) {
+      return getConvexHull((Matrix) objects[0]);
     } else {
       throw new IOException("The convexHull function operates on a matrix of 2D vectors");
     }
@@ -46,8 +46,8 @@ public class ConvexHullEvaluator extends RecursiveObjectEvaluator implements Man
   public static ConvexHull2D getConvexHull(Matrix matrix) throws IOException {
     double[][] data = matrix.getData();
     List<Vector2D> points = new ArrayList<>(data.length);
-    if(data[0].length == 2) {
-      for(double[] row : data) {
+    if (data[0].length == 2) {
+      for (double[] row : data) {
         points.add(new Vector2D(row[0], row[1]));
       }
 
@@ -58,5 +58,4 @@ public class ConvexHullEvaluator extends RecursiveObjectEvaluator implements Man
       throw new IOException("The convexHull function operates on a matrix of 2D vectors");
     }
   }
-
 }

@@ -17,11 +17,11 @@
 -->
 
 <!--
-   This is an example of a simple "solr.xml" file for configuring one or 
-   more Solr Cores, as well as allowing Cores to be added, removed, and 
+   This is an example of a simple "solr.xml" file for configuring one or
+   more Solr Cores, as well as allowing Cores to be added, removed, and
    reloaded via HTTP requests.
 
-   More information about options available in this configuration file, 
+   More information about options available in this configuration file,
    and Solr Core administration can be found online:
    https://solr.apache.org/guide/format-of-solr-xml.html
 -->
@@ -30,6 +30,7 @@
 
   <int name="maxBooleanClauses">${solr.max.booleanClauses:1024}</int>
   <str name="sharedLib">${solr.sharedLib:}</str>
+  <str name="modules">${solr.modules:}</str>
   <str name="allowPaths">${solr.allowPaths:}</str>
   <str name="allowUrls">${solr.allowUrls:}</str>
 
@@ -57,6 +58,8 @@
     <int name="connTimeout">${connTimeout:60000}</int>
   </shardHandlerFactory>
 
-  <metrics enabled="${metricsEnabled:true}"/>
+  <metrics enabled="${metricsEnabled:true}">
+    <!--reporter name="jmx_metrics" group="core" class="org.apache.solr.metrics.reporters.SolrJmxReporter"/-->
+  </metrics>
 
 </solr>

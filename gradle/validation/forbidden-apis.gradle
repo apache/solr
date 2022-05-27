@@ -130,6 +130,11 @@ allprojects { prj ->
       forbiddenApisMain.exclude("**/jmh_generated/**")
     }
 
+    // Disable checks on code copied from Hadoop
+    if (prj.path == ":solr:modules:hdfs") {
+      forbiddenApisTest.exclude("**/org/apache/hadoop/**")
+    }
+
     // We rely on resolved configurations to compute the relevant set of rule
     // files for forbiddenApis. Since we don't want to resolve these configurations until
     // the task is executed, we can't really use them as task inputs properly. This is a

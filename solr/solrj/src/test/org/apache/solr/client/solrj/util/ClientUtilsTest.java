@@ -19,18 +19,15 @@ package org.apache.solr.client.solrj.util;
 import org.apache.solr.SolrTestCase;
 
 /**
- * 
- *
  * @since solr 1.3
  */
 public class ClientUtilsTest extends SolrTestCase {
-  
-  public void testEscapeQuery() 
-  { 
-    assertEquals( "nochange", ClientUtils.escapeQueryChars( "nochange" ) );
-    assertEquals( "12345", ClientUtils.escapeQueryChars( "12345" ) );
-    assertEquals( "with\\ space", ClientUtils.escapeQueryChars( "with space" ) );
-    assertEquals( "h\\:ello\\!", ClientUtils.escapeQueryChars( "h:ello!" ) );
-    assertEquals( "h\\~\\!", ClientUtils.escapeQueryChars( "h~!" ) );
+
+  public void testEscapeQuery() {
+    assertEquals("nochange", ClientUtils.escapeQueryChars("nochange"));
+    assertEquals("12345", ClientUtils.escapeQueryChars("12345"));
+    assertEquals("with\\ space", ClientUtils.escapeQueryChars("with space"));
+    assertEquals("h\\:ello\\!", ClientUtils.escapeQueryChars("h:ello!"));
+    assertEquals("h\\~\\!", ClientUtils.escapeQueryChars("h~!"));
   }
 }

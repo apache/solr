@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Locale;
-
 import org.apache.commons.math3.analysis.UnivariateFunction;
 import org.apache.commons.math3.analysis.integration.RombergIntegrator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
@@ -28,19 +27,24 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 public class IntegrateEvaluator extends RecursiveObjectEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
 
-  public IntegrateEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public IntegrateEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
   }
 
   @Override
   public Object doWork(Object... values) throws IOException {
 
-    if(values.length > 3) {
+    if (values.length > 3) {
       throw new IOException("The integrate function requires at most 3 parameters");
     }
 
     if (!(values[0] instanceof VectorFunction)) {
-      throw new IOException(String.format(Locale.ROOT, "Invalid expression %s - found type %s for the first value, expecting a FunctionVector", toExpression(constructingFactory), values[0].getClass().getSimpleName()));
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - found type %s for the first value, expecting a FunctionVector",
+              toExpression(constructingFactory),
+              values[0].getClass().getSimpleName()));
     }
 
     VectorFunction vectorFunction = (VectorFunction) values[0];
@@ -50,8 +54,7 @@ public class IntegrateEvaluator extends RecursiveObjectEvaluator implements Many
 
     UnivariateFunction func = (UnivariateFunction) vectorFunction.getFunction();
 
-    if(values.length == 3) {
-
+    if (values.length == 3) {
 
       Number min = null;
       Number max = null;
@@ -73,16 +76,15 @@ public class IntegrateEvaluator extends RecursiveObjectEvaluator implements Many
     } else {
       RombergIntegrator integrator = new RombergIntegrator();
 
-      double[] x = (double[])vectorFunction.getFromContext("x");
-      double[] y = (double[])vectorFunction.getFromContext("y");
+      double[] x = (double[]) vectorFunction.getFromContext("x");
+      double[] y = (double[]) vectorFunction.getFromContext("y");
       ArrayList<Number> out = new ArrayList<>();
       out.add(0);
-      for(int i=1; i<x.length; i++) {
+      for (int i = 1; i < x.length; i++) {
         out.add(integrator.integrate(5000, func, x[0], x[i]));
       }
 
       return out;
-
     }
   }
 }

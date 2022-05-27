@@ -17,10 +17,9 @@
 package org.apache.solr.util;
 
 import java.io.PrintStream;
-
 import org.apache.solr.common.util.SuppressForbidden;
 
-@SuppressForbidden( reason = "For use in command line tools only")
+@SuppressForbidden(reason = "For use in command line tools only")
 public interface CLIO {
   static void out(String s) {
     System.out.println(s);

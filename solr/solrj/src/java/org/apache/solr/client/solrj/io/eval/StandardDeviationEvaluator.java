@@ -16,43 +16,54 @@
  */
 package org.apache.solr.client.solrj.io.eval;
 
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-
-import org.apache.commons.math3.stat.StatUtils;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
+import org.apache.commons.math3.stat.StatUtils;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
+import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class StandardDeviationEvaluator extends RecursiveObjectEvaluator implements OneValueWorker {
-    protected static final long serialVersionUID = 1L;
+  protected static final long serialVersionUID = 1L;
 
-    public StandardDeviationEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
-        super(expression, factory);
+  public StandardDeviationEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
+    super(expression, factory);
 
-        if(1 != containedEvaluators.size()){
-            throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting exactly 1 value but found %d",expression,containedEvaluators.size()));
-        }
+    if (1 != containedEvaluators.size()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting exactly 1 value but found %d",
+              expression,
+              containedEvaluators.size()));
     }
+  }
 
-    @Override
-    public Object doWork(Object value) throws IOException{
-        if(null == value){
-            throw new IOException(String.format(Locale.ROOT, "Unable to find %s(...) because the value is null", constructingFactory.getFunctionName(getClass())));
-        }
-        else if(value instanceof List){
-            @SuppressWarnings({"unchecked"})
-            List<Number> c = (List<Number>) value;
-            double[] data = new double[c.size()];
-            for(int i=0; i< c.size(); i++) {
-                data[i] = c.get(i).doubleValue();
-            }
+  @Override
+  public Object doWork(Object value) throws IOException {
+    if (null == value) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Unable to find %s(...) because the value is null",
+              constructingFactory.getFunctionName(getClass())));
+    } else if (value instanceof List) {
+      @SuppressWarnings({"unchecked"})
+      List<Number> c = (List<Number>) value;
+      double[] data = new double[c.size()];
+      for (int i = 0; i < c.size(); i++) {
+        data[i] = c.get(i).doubleValue();
+      }
 
-            return Math.sqrt(StatUtils.variance(data));
-        }
-        else{
-            throw new IOException(String.format(Locale.ROOT, "Unable to find %s(...) because the value is not a collection, instead a %s was found", constructingFactory.getFunctionName(getClass()), value.getClass().getSimpleName()));
-        }
+      return Math.sqrt(StatUtils.variance(data));
+    } else {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Unable to find %s(...) because the value is not a collection, instead a %s was found",
+              constructingFactory.getFunctionName(getClass()),
+              value.getClass().getSimpleName()));
     }
+  }
 }

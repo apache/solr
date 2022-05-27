@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 public class DefaultZkCredentialsProvider implements ZkCredentialsProvider {
-  
+
   private Collection<ZkCredentials> zkCredentials;
 
   @Override
@@ -32,9 +32,8 @@ public class DefaultZkCredentialsProvider implements ZkCredentialsProvider {
     }
     return zkCredentials;
   }
-  
+
   protected Collection<ZkCredentials> createCredentials() {
     return new ArrayList<ZkCredentials>();
   }
-  
 }

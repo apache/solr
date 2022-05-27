@@ -17,36 +17,43 @@
 
 package org.apache.solr.client.solrj.request.json;
 
+import static org.hamcrest.core.StringContains.containsString;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
 
-import static org.hamcrest.core.StringContains.containsString;
-
-/**
- * Unit tests for {@link RangeFacetMap}
- */
+/** Unit tests for {@link RangeFacetMap} */
 public class RangeFacetMapTest extends SolrTestCaseJ4 {
   @Test
   public void testRejectsInvalidFieldName() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
-      new RangeFacetMap(null, 1, 2, 3);
-    });
+    final Throwable thrown =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new RangeFacetMap(null, 1, 2, 3);
+            });
     assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test
   public void testRejectsInvalidStartEndBounds() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
-      new RangeFacetMap("ANY_FIELD_NAME", 1, -1, 3);
-    });
+    final Throwable thrown =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new RangeFacetMap("ANY_FIELD_NAME", 1, -1, 3);
+            });
     assertThat(thrown.getMessage(), containsString("'end' must be greater than parameter 'start'"));
   }
 
   @Test
   public void testRejectsInvalidGap() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
-      new RangeFacetMap("ANY_FIELD_NAME", 1, 2, -1);
-    });
+    final Throwable thrown =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new RangeFacetMap("ANY_FIELD_NAME", 1, 2, -1);
+            });
     assertThat(thrown.getMessage(), containsString("must be a positive integer"));
   }
 
@@ -61,24 +68,26 @@ public class RangeFacetMapTest extends SolrTestCaseJ4 {
 
   @Test
   public void testStoresHardEndWithCorrectKey() {
-    final RangeFacetMap rangeFacet = new RangeFacetMap("ANY_FIELD_NAME", 1, 2, 3)
-        .setHardEnd(true);
+    final RangeFacetMap rangeFacet = new RangeFacetMap("ANY_FIELD_NAME", 1, 2, 3).setHardEnd(true);
     assertEquals(true, rangeFacet.get("hardend"));
   }
 
   @Test
   public void testRejectsInvalidOtherBuckets() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
-      new RangeFacetMap("ANY_FIELD_NAME", 1, 2, 3)
-          .setOtherBuckets(null);
-    });
+    final Throwable thrown =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new RangeFacetMap("ANY_FIELD_NAME", 1, 2, 3).setOtherBuckets(null);
+            });
     assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test
   public void testStoresOtherBucketsValueWithCorrectKey() {
-    final RangeFacetMap rangeFacet = new RangeFacetMap("ANY_FIELD_NAME", 1, 2, 3)
-        .setOtherBuckets(RangeFacetMap.OtherBuckets.BETWEEN);
+    final RangeFacetMap rangeFacet =
+        new RangeFacetMap("ANY_FIELD_NAME", 1, 2, 3)
+            .setOtherBuckets(RangeFacetMap.OtherBuckets.BETWEEN);
     assertEquals("between", rangeFacet.get("other"));
   }
 }

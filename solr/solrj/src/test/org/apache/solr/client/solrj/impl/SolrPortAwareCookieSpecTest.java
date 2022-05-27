@@ -75,7 +75,7 @@ public class SolrPortAwareCookieSpecTest {
     h.validate(cookie, origin);
 
     cookie.setDomain("otherhost");
-    SolrTestCaseJ4.expectThrows(MalformedCookieException.class, () ->  h.validate(cookie, origin));
+    SolrTestCaseJ4.expectThrows(MalformedCookieException.class, () -> h.validate(cookie, origin));
   }
 
   @Test
@@ -88,10 +88,10 @@ public class SolrPortAwareCookieSpecTest {
     h.validate(cookie, origin);
 
     cookie.setDomain(".otherdomain.com");
-    SolrTestCaseJ4.expectThrows(MalformedCookieException.class, () ->  h.validate(cookie, origin));
+    SolrTestCaseJ4.expectThrows(MalformedCookieException.class, () -> h.validate(cookie, origin));
 
     cookie.setDomain("www.otherdomain.com");
-    SolrTestCaseJ4.expectThrows(MalformedCookieException.class, () ->  h.validate(cookie, origin));
+    SolrTestCaseJ4.expectThrows(MalformedCookieException.class, () -> h.validate(cookie, origin));
   }
 
   @Test
@@ -104,7 +104,7 @@ public class SolrPortAwareCookieSpecTest {
     h.validate(cookie, origin);
 
     cookie.setDomain(".com");
-    SolrTestCaseJ4.expectThrows(MalformedCookieException.class, () ->  h.validate(cookie, origin));
+    SolrTestCaseJ4.expectThrows(MalformedCookieException.class, () -> h.validate(cookie, origin));
   }
 
   @Test
@@ -117,7 +117,7 @@ public class SolrPortAwareCookieSpecTest {
     h.validate(cookie, origin);
 
     cookie.setDomain(".b.c");
-    SolrTestCaseJ4.expectThrows(MalformedCookieException.class, () ->  h.validate(cookie, origin));
+    SolrTestCaseJ4.expectThrows(MalformedCookieException.class, () -> h.validate(cookie, origin));
   }
 
   @Test
@@ -147,8 +147,8 @@ public class SolrPortAwareCookieSpecTest {
   public void testDomainInvalidInput() throws Exception {
     final CookieAttributeHandler h = new SolrPortAwareCookieSpecFactory.PortAwareDomainHandler();
     SolrTestCaseJ4.expectThrows(IllegalArgumentException.class, () -> h.match(null, null));
-    SolrTestCaseJ4.expectThrows(IllegalArgumentException.class,
+    SolrTestCaseJ4.expectThrows(
+        IllegalArgumentException.class,
         () -> h.match(new BasicClientCookie("name", "value"), null));
   }
-
 }

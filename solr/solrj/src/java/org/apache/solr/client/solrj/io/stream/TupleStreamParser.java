@@ -17,11 +17,10 @@
 
 package org.apache.solr.client.solrj.io.stream;
 
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Map;
 
 public interface TupleStreamParser extends Closeable {
-  Map<String,Object> next() throws IOException;
+  Map<String, Object> next() throws IOException;
 }

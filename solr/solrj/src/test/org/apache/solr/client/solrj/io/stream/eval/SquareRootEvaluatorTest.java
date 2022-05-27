@@ -19,7 +19,7 @@ package org.apache.solr.client.solrj.io.stream.eval;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
+import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.SquareRootEvaluator;
@@ -27,39 +27,35 @@ import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
 
-import junit.framework.Assert;
-
 public class SquareRootEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;
-  
+
   public SquareRootEvaluatorTest() {
     super();
-    
-    factory = new StreamFactory()
-      .withFunctionName("sqrt", SquareRootEvaluator.class);
-    values = new HashMap<String,Object>();
+
+    factory = new StreamFactory().withFunctionName("sqrt", SquareRootEvaluator.class);
+    values = new HashMap<String, Object>();
   }
-  
-  private void test(Double value) throws IOException{
+
+  private void test(Double value) throws IOException {
     StreamEvaluator evaluator = factory.constructEvaluator("sqrt(a)");
-    
+
     values.clear();
     values.put("a", value);
     Object result = evaluator.evaluate(new Tuple(values));
-    
-    if(null == value){
+
+    if (null == value) {
       Assert.assertNull(result);
-    }
-    else{
+    } else {
       Assert.assertTrue(result instanceof Double);
       Assert.assertEquals(Math.sqrt(value), result);
     }
   }
-    
+
   @Test
-  public void oneField() throws Exception{
+  public void oneField() throws Exception {
     test(90D);
     test(45D);
     test(12.4D);
@@ -67,26 +63,26 @@ public class SquareRootEvaluatorTest extends SolrTestCase {
   }
 
   @Test(expected = IOException.class)
-  public void noField() throws Exception{
+  public void noField() throws Exception {
     factory.constructEvaluator("sqrt()");
   }
-  
+
   @Test(expected = IOException.class)
-  public void twoFields() throws Exception{
+  public void twoFields() throws Exception {
     factory.constructEvaluator("sqrt(a,b)");
   }
 
-  @Test//(expected = NumberFormatException.class)
-  public void noValue() throws Exception{
+  @Test // (expected = NumberFormatException.class)
+  public void noValue() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("sqrt(a)");
-    
+
     values.clear();
     Object result = evaluator.evaluate(new Tuple(values));
     assertNull(result);
   }
 
-  @Test//(expected = NumberFormatException.class)
-  public void nullValue() throws Exception{
+  @Test // (expected = NumberFormatException.class)
+  public void nullValue() throws Exception {
     test(null);
   }
 }

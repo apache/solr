@@ -28,16 +28,22 @@ import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
 import com.fasterxml.jackson.databind.util.BeanUtil;
 import org.apache.solr.common.annotation.JsonProperty;
 
-/**this class provides a mapping between Solr's {@link JsonProperty} annotation to a corresponding annotation
- * in jackson
- see SOLR-13841 for more details
- * <blockquote><pre>
- ObjectMapper mapper = new ObjectMapper();
- mapper.setAnnotationIntrospector(new SolrJacksonAnnotationInspector());
- * </pre></blockquote>
- **/
+/**
+ * this class provides a mapping between Solr's {@link JsonProperty} annotation to a corresponding
+ * annotation in jackson see SOLR-13841 for more details
+ *
+ * <blockquote>
+ *
+ * <pre>
+ * ObjectMapper mapper = new ObjectMapper();
+ * mapper.setAnnotationIntrospector(new SolrJacksonAnnotationInspector());
+ * </pre>
+ *
+ * </blockquote>
+ */
 public class SolrJacksonAnnotationInspector extends AnnotationIntrospector {
-  public static final SolrJacksonAnnotationInspector INSTANCE = new SolrJacksonAnnotationInspector();
+  public static final SolrJacksonAnnotationInspector INSTANCE =
+      new SolrJacksonAnnotationInspector();
 
   @Override
   public Version version() {
@@ -55,15 +61,14 @@ public class SolrJacksonAnnotationInspector extends AnnotationIntrospector {
       } else {
         return new PropertyName(prop.value());
       }
-
     }
     if (a instanceof AnnotatedField) {
       AnnotatedField af = (AnnotatedField) a;
       JsonProperty prop = af.getAnnotation(JsonProperty.class);
       if (prop == null) return null;
-      return prop.value().isEmpty() ?
-          new PropertyName(af.getName()) :
-          new PropertyName(prop.value());
+      return prop.value().isEmpty()
+          ? new PropertyName(af.getName())
+          : new PropertyName(prop.value());
     }
     return null;
   }
@@ -87,7 +92,7 @@ public class SolrJacksonAnnotationInspector extends AnnotationIntrospector {
     return findNameForSerialization(a);
   }
 
-  public static ObjectMapper createObjectMapper(){
+  public static ObjectMapper createObjectMapper() {
     ObjectMapper mapper = new ObjectMapper();
     mapper.setAnnotationIntrospector(INSTANCE);
     return mapper;

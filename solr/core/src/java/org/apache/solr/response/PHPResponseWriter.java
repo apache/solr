@@ -19,12 +19,11 @@ package org.apache.solr.response;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.List;
-
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 
 public class PHPResponseWriter implements QueryResponseWriter {
-  static String CONTENT_TYPE_PHP_UTF8="text/x-php;charset=UTF-8";
+  static String CONTENT_TYPE_PHP_UTF8 = "text/x-php;charset=UTF-8";
 
   private String contentType = CONTENT_TYPE_PHP_UTF8;
 
@@ -56,10 +55,10 @@ class PHPWriter extends JSONWriter {
   public PHPWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
     super(writer, req, rsp);
   }
-  
+
   @Override
   public void writeNamedList(String name, NamedList<?> val) throws IOException {
-    writeNamedListAsMapMangled(name,val);
+    writeNamedListAsMapMangled(name, val);
   }
 
   @Override
@@ -78,8 +77,8 @@ class PHPWriter extends JSONWriter {
   }
 
   @Override
-  public void writeArray(String name, List<?> l) throws IOException {
-    writeArray(name,l.iterator());
+  public void writeArray(String name, List<?> l, boolean raw) throws IOException {
+    writeArray(name, l.iterator(), raw);
   }
 
   @Override
@@ -103,11 +102,14 @@ class PHPWriter extends JSONWriter {
   public void writeStr(String name, String val, boolean needsEscaping) throws IOException {
     if (needsEscaping) {
       writer.write('\'');
-      for (int i=0; i<val.length(); i++) {
+      for (int i = 0; i < val.length(); i++) {
         char ch = val.charAt(i);
         switch (ch) {
           case '\'':
-          case '\\': writer.write('\\'); writer.write(ch); break;
+          case '\\':
+            writer.write('\\');
+            writer.write(ch);
+            break;
           default:
             writer.write(ch);
         }

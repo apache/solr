@@ -1,0 +1,75 @@
+= Configuring solrconfig.xml
+:page-children: index-location-format, \
+    index-segments-merging, \
+    schema-factory, \
+    commits-transaction-logs, \
+    caches-warming, \
+    requesthandlers-searchcomponents, \
+    implicit-requesthandlers, \
+    realtime-get, \
+    initparams, \
+    requestdispatcher, \
+    update-request-processors, \
+    script-update-processor, \
+    codec-factory
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The `solrconfig.xml` file is the configuration file with the most parameters affecting Solr itself.
+
+While configuring Solr, you'll work with `solrconfig.xml` often, either directly or via the xref:config-api.adoc[] to create "configuration overlays" (`configoverlay.json`) to override the values in `solrconfig.xml`.
+
+In `solrconfig.xml`, you configure important features such as:
+
+* request handlers, which process the requests to Solr, such as requests to add documents to the index or requests to return results for a query
+
+* listeners, processes that "listen" for particular query-related events; listeners can be used to trigger the execution of special code, such as invoking some common queries to warm-up caches
+
+* the Request Dispatcher for managing HTTP communications
+
+* the Admin Web interface
+
+* parameters related to replication and duplication when not running in SolrCloud mode
+
+The `solrconfig.xml` file is located in the `conf/` directory for each collection.
+Several well-commented example files can be found in the `server/solr/configsets/` directories demonstrating best practices for many different types of installations.
+
+Some `solrconfig.xml` aspects are documented in other sections.
+See xref:libs.adoc#lib-directives-in-solrconfig[lib directives in SolrConfig], which can be used for both Plugins and Resources.
+
+****
+// This tags the below list so it can be used in the parent page section list
+// tag::solrconfig-sections[]
+[cols="1,1",frame=none,grid=none,stripes=none]
+|===
+| xref:index-location-format.adoc[]: Where and how Solr's indexes are stored.
+| xref:index-segments-merging.adoc[]: Lucene index writers, including segment management, merges, and locks.
+| xref:schema-factory.adoc[]: Schema file formats.
+| xref:commits-transaction-logs.adoc[]: Update requests and commit settings.
+| xref:caches-warming.adoc[]: Caches, query warming, and query listeners.
+| xref:requesthandlers-searchcomponents.adoc[]: Request processors and handlers for search features.
+| xref:implicit-requesthandlers.adoc[]: Request end-points automatically provided by Solr.
+| xref:realtime-get.adoc[]: Get the latest version of a document without opening a searcher.
+| xref:initparams.adoc[]: Default parameters for request handlers.
+| xref:requestdispatcher.adoc[]: Advanced request parsing and HTTP cache headers.
+| xref:update-request-processors.adoc[]: Plugins for update requests.
+| xref:script-update-processor.adoc[]: Java scripting engines during document updates.
+| xref:codec-factory.adoc[]: Lucene codecs when writing data to disk.
+|
+|===
+//end::solrconfig-sections[]
+****

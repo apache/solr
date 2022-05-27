@@ -22,23 +22,27 @@ import java.net.ConnectException;
 import java.net.SocketException;
 import java.util.HashSet;
 import java.util.Set;
-
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.client.solrj.util.AsyncListener;
+import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 
 public class MockingHttp2SolrClient extends Http2SolrClient {
 
-  public enum Exp {CONNECT_EXCEPTION, SOCKET_EXCEPTION, BAD_REQUEST};
+  public enum Exp {
+    CONNECT_EXCEPTION,
+    SOCKET_EXCEPTION,
+    BAD_REQUEST
+  };
 
   private volatile Exp exp = null;
   private boolean oneExpPerReq;
+
   @SuppressWarnings({"rawtypes"})
   private Set<SolrRequest> reqGotException;
 
@@ -68,7 +72,6 @@ public class MockingHttp2SolrClient extends Http2SolrClient {
     }
   }
 
-
   public void setExp(Exp exp) {
     this.exp = exp;
   }
@@ -88,21 +91,18 @@ public class MockingHttp2SolrClient extends Http2SolrClient {
   }
 
   @Override
-  public NamedList<Object> request(@SuppressWarnings({"rawtypes"})SolrRequest request,
-                                   String collection)
+  public NamedList<Object> request(
+      @SuppressWarnings({"rawtypes"}) SolrRequest request, String collection)
       throws SolrServerException, IOException {
     if (request instanceof UpdateRequest) {
       UpdateRequest ur = (UpdateRequest) request;
-      if (!ur.getDeleteQuery().isEmpty())
-        return super.request(request, collection);
+      if (!ur.getDeleteQuery().isEmpty()) return super.request(request, collection);
     }
 
     if (exp != null) {
       if (oneExpPerReq) {
-        if (reqGotException.contains(request))
-          return super.request(request, collection);
-        else
-          reqGotException.add(request);
+        if (reqGotException.contains(request)) return super.request(request, collection);
+        else reqGotException.add(request);
       }
 
       Exception e = exception();
@@ -123,8 +123,8 @@ public class MockingHttp2SolrClient extends Http2SolrClient {
   }
 
   @Override
-  public Cancellable asyncRequest(SolrRequest<?> request,
-                                  String collection, AsyncListener<NamedList<Object>> asyncListener) {
+  public Cancellable asyncRequest(
+      SolrRequest<?> request, String collection, AsyncListener<NamedList<Object>> asyncListener) {
     if (request instanceof UpdateRequest) {
       UpdateRequest ur = (UpdateRequest) request;
       // won't throw exception if request is DBQ
@@ -137,9 +137,7 @@ public class MockingHttp2SolrClient extends Http2SolrClient {
       if (oneExpPerReq) {
         if (reqGotException.contains(request)) {
           return super.asyncRequest(request, collection, asyncListener);
-        }
-        else
-          reqGotException.add(request);
+        } else reqGotException.add(request);
       }
 
       Exception e = exception();

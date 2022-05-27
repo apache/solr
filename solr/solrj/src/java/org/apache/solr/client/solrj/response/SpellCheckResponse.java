@@ -15,16 +15,15 @@
  * limitations under the License.
  */
 package org.apache.solr.client.solrj.response;
-import org.apache.solr.common.util.NamedList;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * Encapsulates responses from SpellCheckComponent
- *
  *
  * @since solr 1.3
  */
@@ -48,12 +47,12 @@ public class SpellCheckResponse {
       suggestionMap.put(n, s);
       suggestions.add(s);
     }
-    
+
     Boolean correctlySpelled = (Boolean) spellInfo.get("correctlySpelled");
     if (correctlySpelled != null) {
       this.correctlySpelled = correctlySpelled;
     }
-    
+
     @SuppressWarnings("unchecked")
     NamedList<Object> coll = (NamedList<Object>) spellInfo.get("collations");
     if (coll != null) {
@@ -62,17 +61,15 @@ public class SpellCheckResponse {
       collations = new ArrayList<>(collationInfo.size());
       for (Object o : collationInfo) {
         if (o instanceof String) {
-          collations.add(new Collation()
-              .setCollationQueryString((String) o));
+          collations.add(new Collation().setCollationQueryString((String) o));
         } else if (o instanceof NamedList) {
           @SuppressWarnings("unchecked")
           NamedList<Object> expandedCollation = (NamedList<Object>) o;
-          String collationQuery
-            = (String) expandedCollation.get("collationQuery");
+          String collationQuery = (String) expandedCollation.get("collationQuery");
           long hits = ((Number) expandedCollation.get("hits")).longValue();
           @SuppressWarnings("unchecked")
-          NamedList<String> misspellingsAndCorrections
-            = (NamedList<String>) expandedCollation.get("misspellingsAndCorrections");
+          NamedList<String> misspellingsAndCorrections =
+              (NamedList<String>) expandedCollation.get("misspellingsAndCorrections");
 
           Collation collation = new Collation();
           collation.setCollationQueryString(collationQuery);
@@ -81,13 +78,11 @@ public class SpellCheckResponse {
           for (int ii = 0; ii < misspellingsAndCorrections.size(); ii++) {
             String misspelling = misspellingsAndCorrections.getName(ii);
             String correction = misspellingsAndCorrections.getVal(ii);
-            collation.addMisspellingsAndCorrection(new Correction(
-                misspelling, correction));
+            collation.addMisspellingsAndCorrection(new Correction(misspelling, correction));
           }
           collations.add(collation);
         } else {
-          throw new AssertionError(
-              "Should get Lists of Strings or List of NamedLists here.");
+          throw new AssertionError("Should get Lists of Strings or List of NamedLists here.");
         }
       }
     }
@@ -111,25 +106,26 @@ public class SpellCheckResponse {
 
   public String getFirstSuggestion(String token) {
     Suggestion s = suggestionMap.get(token);
-    if (s==null || s.getAlternatives().isEmpty()) return null;
+    if (s == null || s.getAlternatives().isEmpty()) return null;
     return s.getAlternatives().get(0);
   }
 
   /**
-   * <p>
-   *  Return the first collated query string.  For convenience and backwards-compatibility.  Use getCollatedResults() for full data.
-   * </p>
+   * Return the first collated query string. For convenience and backwards-compatibility. Use
+   * getCollatedResults() for full data.
+   *
    * @return first collated query string
    */
   public String getCollatedResult() {
-    return collations==null || collations.size()==0 ? null : collations.get(0).collationQueryString;
+    return collations == null || collations.size() == 0
+        ? null
+        : collations.get(0).collationQueryString;
   }
-  
+
   /**
-   * <p>
-   *  Return all collations.  
-   *  Will include # of hits and misspelling-to-correction details if "spellcheck.collateExtendedResults was true.
-   * </p>
+   * Return all collations. Will include # of hits and misspelling-to-correction details if
+   * "spellcheck.collateExtendedResults was true.
+   *
    * @return all collations
    */
   public List<Collation> getCollatedResults() {
@@ -159,15 +155,15 @@ public class SpellCheckResponse {
         } else if ("origFreq".equals(n)) {
           originalFrequency = (Integer) suggestion.getVal(i);
         } else if ("suggestion".equals(n)) {
-          List<?> list = (List<?>)suggestion.getVal(i);
+          List<?> list = (List<?>) suggestion.getVal(i);
           if (list.size() > 0 && list.get(0) instanceof NamedList) {
             // extended results detected
             @SuppressWarnings("unchecked")
-            List<NamedList<?>> extended = (List<NamedList<?>>)list;
+            List<NamedList<?>> extended = (List<NamedList<?>>) list;
             alternativeFrequencies = new ArrayList<>();
             for (NamedList<?> nl : extended) {
-              alternatives.add((String)nl.get("word"));
-              alternativeFrequencies.add((Integer)nl.get("freq"));
+              alternatives.add((String) nl.get("word"));
+              alternativeFrequencies.add((Integer) nl.get("freq"));
             }
           } else {
             @SuppressWarnings("unchecked")
@@ -203,11 +199,13 @@ public class SpellCheckResponse {
       return alternatives;
     }
 
-    /** The frequencies of the alternatives in the corpus, or null if this information was not returned */
+    /**
+     * The frequencies of the alternatives in the corpus, or null if this information was not
+     * returned
+     */
     public List<Integer> getAlternativeFrequencies() {
       return alternativeFrequencies;
     }
-
   }
 
   public static class Collation {
@@ -240,7 +238,6 @@ public class SpellCheckResponse {
       this.misspellingsAndCorrections.add(correction);
       return this;
     }
-
   }
 
   public static class Correction {

@@ -20,10 +20,9 @@ package org.apache.solr.util;
 import java.util.function.Consumer;
 
 /**
- * Represents an operation that accepts a single {@code float}-valued argument and
- * returns no result.  This is the primitive type specialization of
- * {@link Consumer} for {@code float}.  Unlike most other functional interfaces,
- * {@code IntConsumer} is expected to operate via side-effects.
+ * Represents an operation that accepts a single {@code float}-valued argument and returns no
+ * result. This is the primitive type specialization of {@link Consumer} for {@code float}. Unlike
+ * most other functional interfaces, {@code IntConsumer} is expected to operate via side-effects.
  *
  * @see Consumer
  */

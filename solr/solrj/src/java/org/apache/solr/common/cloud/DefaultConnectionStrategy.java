@@ -19,22 +19,21 @@ package org.apache.solr.common.cloud;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeoutException;
-
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * TODO: improve backoff retry impl
- */
+/** TODO: improve backoff retry impl */
 public class DefaultConnectionStrategy extends ZkClientConnectionStrategy {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   @Override
-  public void connect(String serverAddress, int timeout, Watcher watcher, ZkUpdate updater) throws IOException, InterruptedException, TimeoutException {
-    SolrZooKeeper zk = createSolrZooKeeper(serverAddress, timeout, watcher);
+  public void connect(String serverAddress, int timeout, Watcher watcher, ZkUpdate updater)
+      throws IOException, InterruptedException, TimeoutException {
+    ZooKeeper zk = createZooKeeper(serverAddress, timeout, watcher);
     boolean success = false;
     try {
       updater.update(zk);
@@ -47,14 +46,17 @@ public class DefaultConnectionStrategy extends ZkClientConnectionStrategy {
   }
 
   @Override
-  public void reconnect(final String serverAddress, final int zkClientTimeout,
-      final Watcher watcher, final ZkUpdate updater) throws IOException, InterruptedException, TimeoutException {
+  public void reconnect(
+      final String serverAddress,
+      final int zkClientTimeout,
+      final Watcher watcher,
+      final ZkUpdate updater)
+      throws IOException, InterruptedException, TimeoutException {
     log.warn("Connection expired - starting a new one...");
-    SolrZooKeeper zk = createSolrZooKeeper(serverAddress, zkClientTimeout, watcher);
+    ZooKeeper zk = createZooKeeper(serverAddress, zkClientTimeout, watcher);
     boolean success = false;
     try {
-      updater
-          .update(zk);
+      updater.update(zk);
       success = true;
       log.info("Reconnected to ZooKeeper");
     } catch (AlreadyClosedException e) {
@@ -68,7 +70,5 @@ public class DefaultConnectionStrategy extends ZkClientConnectionStrategy {
         }
       }
     }
-    
   }
-
 }
