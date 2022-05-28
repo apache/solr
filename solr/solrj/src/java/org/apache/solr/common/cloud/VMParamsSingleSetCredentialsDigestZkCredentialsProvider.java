@@ -17,9 +17,6 @@
 package org.apache.solr.common.cloud;
 
 import java.util.Collection;
-import org.apache.solr.common.cloud.acl.DigestZkCredentialsProvider;
-import org.apache.solr.common.cloud.acl.VMParamsZkCredentialsInjector;
-import org.apache.solr.common.cloud.acl.ZkCredentialsInjector;
 
 /**
  * Deprecated in favor of a combination of {@link DigestZkCredentialsProvider} and {@link
@@ -39,6 +36,7 @@ public class VMParamsSingleSetCredentialsDigestZkCredentialsProvider
       VMParamsZkCredentialsInjector.DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME;
 
   private ZkCredentialsInjector zkCredentialsInjector;
+  private DigestZkCredentialsProvider digestZkCredentialsProvider;
 
   public VMParamsSingleSetCredentialsDigestZkCredentialsProvider() {
     this(DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME, DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME);
@@ -47,13 +45,14 @@ public class VMParamsSingleSetCredentialsDigestZkCredentialsProvider
   public VMParamsSingleSetCredentialsDigestZkCredentialsProvider(
       ZkCredentialsInjector zkCredentialsInjector) {
     this.zkCredentialsInjector = zkCredentialsInjector;
+    this.digestZkCredentialsProvider = new DigestZkCredentialsProvider(zkCredentialsInjector);
   }
 
   public VMParamsSingleSetCredentialsDigestZkCredentialsProvider(
       String zkDigestUsernameVMParamName, String zkDigestPasswordVMParamName) {
-    zkCredentialsInjector =
+    this(
         new VMParamsZkCredentialsInjector(
-            zkDigestUsernameVMParamName, zkDigestPasswordVMParamName, null, null);
+            zkDigestUsernameVMParamName, zkDigestPasswordVMParamName, null, null));
   }
 
   @Override
@@ -62,6 +61,7 @@ public class VMParamsSingleSetCredentialsDigestZkCredentialsProvider
         zkCredentialsInjector != null && !zkCredentialsInjector.getZkCredentials().isEmpty()
             ? zkCredentialsInjector
             : new VMParamsZkCredentialsInjector();
+    this.digestZkCredentialsProvider = new DigestZkCredentialsProvider(this.zkCredentialsInjector);
   }
 
   /*
@@ -71,11 +71,6 @@ public class VMParamsSingleSetCredentialsDigestZkCredentialsProvider
    */
   @Override
   protected Collection<ZkCredentials> createCredentials() {
-    return new DigestZkCredentialsProvider(zkCredentialsInjector) {
-      @Override
-      protected Collection<ZkCredentials> createCredentials() {
-        return super.createCredentials();
-      }
-    }.createCredentials();
+    return digestZkCredentialsProvider.createCredentials();
   }
 }

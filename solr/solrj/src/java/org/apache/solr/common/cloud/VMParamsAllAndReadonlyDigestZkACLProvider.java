@@ -17,7 +17,6 @@
 package org.apache.solr.common.cloud;
 
 import java.util.List;
-import org.apache.solr.common.cloud.acl.*;
 import org.apache.zookeeper.data.ACL;
 
 /**
@@ -53,6 +52,7 @@ public class VMParamsAllAndReadonlyDigestZkACLProvider extends SecurityAwareZkAC
       VMParamsZkCredentialsInjector.DEFAULT_DIGEST_FILE_VM_PARAM_NAME;
 
   private ZkCredentialsInjector zkCredentialsInjector;
+  private DigestZkACLProvider digestZkACLProvider;
 
   public VMParamsAllAndReadonlyDigestZkACLProvider() {
     this(new VMParamsZkCredentialsInjector());
@@ -60,6 +60,7 @@ public class VMParamsAllAndReadonlyDigestZkACLProvider extends SecurityAwareZkAC
 
   public VMParamsAllAndReadonlyDigestZkACLProvider(ZkCredentialsInjector zkCredentialsInjector) {
     this.zkCredentialsInjector = zkCredentialsInjector;
+    this.digestZkACLProvider = new DigestZkACLProvider(zkCredentialsInjector);
   }
 
   public VMParamsAllAndReadonlyDigestZkACLProvider(
@@ -67,38 +68,12 @@ public class VMParamsAllAndReadonlyDigestZkACLProvider extends SecurityAwareZkAC
       String zkDigestAllPasswordVMParamName,
       String zkDigestReadonlyUsernameVMParamName,
       String zkDigestReadonlyPasswordVMParamName) {
-    zkCredentialsInjector =
+    this(
         new VMParamsZkCredentialsInjector(
             zkDigestAllUsernameVMParamName,
             zkDigestAllPasswordVMParamName,
             zkDigestReadonlyUsernameVMParamName,
-            zkDigestReadonlyPasswordVMParamName);
-  }
-
-  /*
-  This is a temporary workaround to access createNonSecurityACLsToAdd & createSecurityACLsToAdd which are protected
-  and in a different package. "temporary" because VMParamsAllAndReadonlyDigestZkACLProvider class would be deprecated. Moving
-  the class to acl package would break existing configurations.
-   */
-
-  @Override
-  protected List<ACL> createNonSecurityACLsToAdd() {
-    return new DigestZkACLProvider(zkCredentialsInjector) {
-      @Override
-      protected List<ACL> createNonSecurityACLsToAdd() {
-        return super.createNonSecurityACLsToAdd();
-      }
-    }.createNonSecurityACLsToAdd();
-  }
-
-  @Override
-  protected List<ACL> createSecurityACLsToAdd() {
-    return new DigestZkACLProvider(zkCredentialsInjector) {
-      @Override
-      protected List<ACL> createSecurityACLsToAdd() {
-        return super.createSecurityACLsToAdd();
-      }
-    }.createSecurityACLsToAdd();
+            zkDigestReadonlyPasswordVMParamName));
   }
 
   @Override
@@ -107,5 +82,16 @@ public class VMParamsAllAndReadonlyDigestZkACLProvider extends SecurityAwareZkAC
         zkCredentialsInjector != null && !zkCredentialsInjector.getZkCredentials().isEmpty()
             ? zkCredentialsInjector
             : new VMParamsZkCredentialsInjector();
+    this.digestZkACLProvider = new DigestZkACLProvider(this.zkCredentialsInjector);
+  }
+
+  @Override
+  protected List<ACL> createNonSecurityACLsToAdd() {
+    return digestZkACLProvider.createNonSecurityACLsToAdd();
+  }
+
+  @Override
+  protected List<ACL> createSecurityACLsToAdd() {
+    return digestZkACLProvider.createSecurityACLsToAdd();
   }
 }

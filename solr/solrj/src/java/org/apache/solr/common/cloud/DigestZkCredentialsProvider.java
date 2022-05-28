@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.common.cloud.acl;
+package org.apache.solr.common.cloud;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.solr.common.StringUtils;
-import org.apache.solr.common.cloud.DefaultZkCredentialsProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

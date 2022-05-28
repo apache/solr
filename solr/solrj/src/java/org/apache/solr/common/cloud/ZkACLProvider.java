@@ -17,7 +17,6 @@
 package org.apache.solr.common.cloud;
 
 import java.util.List;
-import org.apache.solr.common.cloud.acl.ZkCredentialsInjector;
 import org.apache.zookeeper.data.ACL;
 
 public interface ZkACLProvider {

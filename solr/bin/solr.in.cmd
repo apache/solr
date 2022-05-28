@@ -175,9 +175,9 @@ REM set SOLR_AUTH_TYPE=basic
 REM set SOLR_AUTHENTICATION_OPTS=-Dbasicauth=solr:SolrRocks
 
 REM Settings for ZK ACL
-REM set SOLR_ZK_CREDS_AND_ACLS=-DzkACLProvider=org.apache.solr.common.cloud.acl.DigestZkACLProvider ^
-REM  -DzkCredentialsProvider=org.apache.solr.common.cloud.acl.DigestZkCredentialsProvider ^
-REM  -DzkCredentialsInjector=org.apache.solr.common.cloud.acl.VMParamsZkCredentialsInjector ^
+REM set SOLR_ZK_CREDS_AND_ACLS=-DzkACLProvider=org.apache.solr.common.cloud.DigestZkACLProvider ^
+REM  -DzkCredentialsProvider=org.apache.solr.common.cloud.DigestZkCredentialsProvider ^
+REM  -DzkCredentialsInjector=org.apache.solr.common.cloud.VMParamsZkCredentialsInjector ^
 REM  -DzkDigestUsername=admin-user -DzkDigestPassword=CHANGEME-ADMIN-PASSWORD ^
 REM  -DzkDigestReadonlyUsername=readonly-user -DzkDigestReadonlyPassword=CHANGEME-READONLY-PASSWORD
 REM set SOLR_OPTS=%SOLR_OPTS% %SOLR_ZK_CREDS_AND_ACLS%
@@ -188,7 +188,7 @@ REM   -DzkDigestCredentialsFile=/path/to/zkDigestCredentialsFile.properties
 REM ...
 
 REM Use a custom injector to inject ZK credentials into DigestZkACLProvider
-REM -DzkCredentialsInjector expects a class implementing org.apache.solr.common.cloud.acl.ZkCredentialsInjector
+REM -DzkCredentialsInjector expects a class implementing org.apache.solr.common.cloud.ZkCredentialsInjector
 REM  ...
 REM  -DzkCredentialsInjector=fully.qualified.class.CustomInjectorClassName
 REM ...
@@ -237,4 +237,3 @@ REM set SOLR_OPTS=%SOLR_OPTS% -Dlog4j2.formatMsgNoLookups=true
 
 REM The bundled plugins in the "modules" folder can easily be enabled as a comma-separated list in SOLR_MODULES variable
 REM set SOLR_MODULES=extraction,ltr
-REM set SOLRJ_MODULES=aws-secret-provider

@@ -34,8 +34,6 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
-import org.apache.solr.common.cloud.acl.DefaultZkCredentialsInjector;
-import org.apache.solr.common.cloud.acl.ZkCredentialsInjector;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -275,7 +273,7 @@ public class SolrZkClient implements Closeable {
       }
     }
     log.warn(
-        "Using default ZkACLProvider. DefaultZkACLProvider is not a secure, it creates 'OPEN_ACL_UNSAFE' ACLs to Zookeeper");
+        "Using default ZkACLProvider. DefaultZkACLProvider is not secure, it creates 'OPEN_ACL_UNSAFE' ACLs to Zookeeper nodes");
     return new DefaultZkACLProvider();
   }
 

@@ -75,11 +75,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.cloud.Replica.Type;
-import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
-import org.apache.solr.common.cloud.ZkACLProvider;
-import org.apache.solr.common.cloud.ZkCredentialsProvider;
-import org.apache.solr.common.cloud.acl.DefaultZkCredentialsInjector;
-import org.apache.solr.common.cloud.acl.ZkCredentialsInjector;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -332,24 +327,24 @@ public class ZkController implements Closeable {
 
     String zkCredentialsInjectorClass = cloudConfig.getZkCredentialsInjectorClass();
     ZkCredentialsInjector zkCredentialsInjector =
-        !StringUtils.isEmpty(zkCredentialsInjectorClass)
-            ? cc.getResourceLoader()
-                .newInstance(zkCredentialsInjectorClass, ZkCredentialsInjector.class)
-            : new DefaultZkCredentialsInjector();
+        StringUtils.isEmpty(zkCredentialsInjectorClass)
+            ? new DefaultZkCredentialsInjector()
+            : cc.getResourceLoader()
+                .newInstance(zkCredentialsInjectorClass, ZkCredentialsInjector.class);
 
     String zkACLProviderClass = cloudConfig.getZkACLProviderClass();
     ZkACLProvider zkACLProvider =
-        !StringUtils.isEmpty(zkACLProviderClass)
-            ? cc.getResourceLoader().newInstance(zkACLProviderClass, ZkACLProvider.class)
-            : new DefaultZkACLProvider();
+        StringUtils.isEmpty(zkACLProviderClass)
+            ? new DefaultZkACLProvider()
+            : cc.getResourceLoader().newInstance(zkACLProviderClass, ZkACLProvider.class);
     zkACLProvider.setZkCredentialsInjector(zkCredentialsInjector);
 
     String zkCredentialsProviderClass = cloudConfig.getZkCredentialsProviderClass();
     ZkCredentialsProvider zkCredentialsProvider =
-        !StringUtils.isEmpty(zkCredentialsProviderClass)
-            ? cc.getResourceLoader()
-                .newInstance(zkCredentialsProviderClass, ZkCredentialsProvider.class)
-            : new DefaultZkCredentialsProvider();
+        StringUtils.isEmpty(zkCredentialsProviderClass)
+            ? new DefaultZkCredentialsProvider()
+            : cc.getResourceLoader()
+                .newInstance(zkCredentialsProviderClass, ZkCredentialsProvider.class);
 
     zkCredentialsProvider.setZkCredentialsInjector(zkCredentialsInjector);
     strat.setZkCredentialsToAddAutomatically(zkCredentialsProvider);

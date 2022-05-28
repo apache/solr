@@ -18,8 +18,6 @@ package org.apache.solr.common.cloud;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import org.apache.solr.common.cloud.acl.DefaultZkCredentialsInjector;
-import org.apache.solr.common.cloud.acl.ZkCredentialsInjector;
 
 public class DefaultZkCredentialsProvider implements ZkCredentialsProvider {
 

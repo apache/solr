@@ -16,11 +16,11 @@
  */
 package org.apache.solr.cloud;
 
-import static org.apache.solr.common.cloud.acl.VMParamsZkCredentialsInjector.DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME;
-import static org.apache.solr.common.cloud.acl.VMParamsZkCredentialsInjector.DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME;
-import static org.apache.solr.common.cloud.acl.VMParamsZkCredentialsInjector.DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME;
-import static org.apache.solr.common.cloud.acl.VMParamsZkCredentialsInjector.DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME;
-import static org.apache.solr.common.cloud.acl.ZkCredentialsInjector.ZkCredential.Perms;
+import static org.apache.solr.common.cloud.VMParamsZkCredentialsInjector.DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME;
+import static org.apache.solr.common.cloud.VMParamsZkCredentialsInjector.DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME;
+import static org.apache.solr.common.cloud.VMParamsZkCredentialsInjector.DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME;
+import static org.apache.solr.common.cloud.VMParamsZkCredentialsInjector.DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME;
+import static org.apache.solr.common.cloud.ZkCredentialsInjector.ZkCredential.Perms;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
@@ -28,14 +28,14 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.cloud.DigestZkACLProvider;
+import org.apache.solr.common.cloud.DigestZkCredentialsProvider;
 import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.VMParamsZkCredentialsInjector;
 import org.apache.solr.common.cloud.ZkACLProvider;
+import org.apache.solr.common.cloud.ZkCredentialsInjector;
 import org.apache.solr.common.cloud.ZkCredentialsProvider;
-import org.apache.solr.common.cloud.acl.DigestZkACLProvider;
-import org.apache.solr.common.cloud.acl.DigestZkCredentialsProvider;
-import org.apache.solr.common.cloud.acl.VMParamsZkCredentialsInjector;
-import org.apache.solr.common.cloud.acl.ZkCredentialsInjector;
 import org.apache.zookeeper.CreateMode;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

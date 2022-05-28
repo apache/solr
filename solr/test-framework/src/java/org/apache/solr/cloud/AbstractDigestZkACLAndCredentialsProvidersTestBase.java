@@ -16,7 +16,7 @@
  */
 package org.apache.solr.cloud;
 
-import static org.apache.solr.common.cloud.acl.VMParamsZkCredentialsInjector.*;
+import static org.apache.solr.common.cloud.VMParamsZkCredentialsInjector.*;
 import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
 
 import java.io.FileWriter;
@@ -27,9 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.*;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.acl.*;
+import org.apache.solr.common.cloud.*;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException.NoAuthException;
 import org.junit.AfterClass;

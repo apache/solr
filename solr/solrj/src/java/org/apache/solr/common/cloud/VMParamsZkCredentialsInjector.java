@@ -14,9 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.common.cloud.acl;
+package org.apache.solr.common.cloud;
 
-import static org.apache.solr.common.cloud.acl.ZkCredentialsInjector.ZkCredential.Perms;
+import static org.apache.solr.common.cloud.ZkCredentialsInjector.ZkCredential.Perms;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
  * DigestZkCredentialsProvider} &amp; {@link DigestZkACLProvider} Usage:
  *
  * <pre>
- *   -DzkCredentialsInjector=org.apache.solr.common.cloud.acl.VMParamsZkCredentialsInjector \
+ *   -DzkCredentialsInjector=org.apache.solr.common.cloud.VMParamsZkCredentialsInjector \
  *   -DzkDigestUsername=admin-user -DzkDigestPassword=CHANGEME-ADMIN-PASSWORD \
  *   -DzkDigestReadonlyUsername=readonly-user -DzkDigestReadonlyPassword=CHANGEME-READONLY-PASSWORD
  * </pre>
@@ -44,7 +44,7 @@ import org.slf4j.LoggerFactory;
  * Or from a Java property file:
  *
  * <pre>
- *   -DzkCredentialsInjector=org.apache.solr.common.cloud.acl.VMParamsZkCredentialsInjector \
+ *   -DzkCredentialsInjector=org.apache.solr.common.cloud.VMParamsZkCredentialsInjector \
  *   -DzkDigestCredentialsFile=SOLR_HOME_DIR/server/etc/zookeepercredentials.properties
  * </pre>
  *

@@ -50,6 +50,8 @@ Improvements
 
 * SOLR-16225: Upgrade dependencies (Carrot2, HPPC) (Dawid Weiss)
 
+* SOLR-16192: Add ZK credentials injectors support (Lamine Idjeraoui with review by Anshum Gupta, Jason Gerlowski, Mike Drob and Houston Putman)
+
 Optimizations
 ---------------------
 * SOLR-16120: Optimise hl.fl expansion. (Christine Poerschke, David Smiley, Mike Drob)

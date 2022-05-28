@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.common.cloud.acl;
+package org.apache.solr.common.cloud;
 
 import static org.apache.zookeeper.server.auth.DigestAuthenticationProvider.generateDigest;
 
@@ -23,8 +23,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.common.StringUtils;
-import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
-import org.apache.solr.common.cloud.acl.ZkCredentialsInjector.ZkCredential;
+import org.apache.solr.common.cloud.ZkCredentialsInjector.ZkCredential;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Id;
