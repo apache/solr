@@ -70,7 +70,6 @@ public class TestJettySolrRunner extends SolrTestCaseJ4 {
     }
   }
 
-  @SuppressWarnings("ThrowableNotThrown")
   @Test
   public void testLookForBindException() throws IOException {
     Path solrHome = createTempDir();
