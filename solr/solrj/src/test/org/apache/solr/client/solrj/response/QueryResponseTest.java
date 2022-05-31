@@ -27,7 +27,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import junit.framework.Assert;
-import org.apache.lucene.util.TestRuleLimitSysouts.Limit;
+import org.apache.lucene.tests.util.TestRuleLimitSysouts.Limit;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.SolrDocumentList;

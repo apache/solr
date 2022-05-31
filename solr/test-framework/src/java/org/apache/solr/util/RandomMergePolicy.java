@@ -19,7 +19,7 @@ package org.apache.solr.util;
 import java.lang.invoke.MethodHandles;
 import org.apache.lucene.index.FilterMergePolicy;
 import org.apache.lucene.index.MergePolicy;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

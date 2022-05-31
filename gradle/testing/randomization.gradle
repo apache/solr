@@ -191,7 +191,7 @@ allprojects {
         // to each project's build/ configuration but it seems compact enough to keep it here for now.
         if (Boolean.parseBoolean(testOptionsResolved["tests.useSecurityManager"])) {
           systemProperty 'common-solr.dir', commonSolrDir
-          systemProperty 'java.security.manager', "org.apache.lucene.util.TestSecurityManager"
+          systemProperty 'java.security.manager', "org.apache.lucene.tests.util.TestSecurityManager"
           systemProperty 'java.security.policy', file("${resources}/policies/solr-tests.policy")
 
           def gradleUserHome = project.gradle.getGradleUserHomeDir()

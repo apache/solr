@@ -103,8 +103,12 @@ Other Changes
 
 * SOLR-16209: Rolling restart will no longer trigger as much PKI Plugin error logging. (Mike Drob, Tomás Fernández Löbbe)
 
+* SOLR-16213: Upgrade Jackson to 2.13.3 (janhoy)
+
 Build
 ---------------------
+* SOLR-16204: Change Lucene dependency to Lucene 9.1.0 (Elia Porciani via Alessandro Benedetti)
+
 * SOLR-16053: Upgrade scriptDepVersions (Kevin Risden)
 
 * SOLR-16050: Upgrade to errorprone 2.11.0 (Kevin Risden)
