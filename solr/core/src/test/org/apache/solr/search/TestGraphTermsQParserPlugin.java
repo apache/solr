@@ -44,7 +44,7 @@ public class TestGraphTermsQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testQueries() throws Exception {
+  public void testQueries() {
 
     String group = "group_s";
 

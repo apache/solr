@@ -146,7 +146,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testBadScoreParam() throws Exception {
+  public void testBadScoreParam() {
     String fieldName = "bbox";
     assertQEx(
         "expect friendly error message",

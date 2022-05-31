@@ -40,7 +40,7 @@ public class TestMissingGroups extends SolrTestCaseJ4 {
     assertU(optimize());
   }
 
-  public void testGroupsOnMissingValues() throws Exception {
+  public void testGroupsOnMissingValues() {
 
     final int numDocs = atLeast(500);
 

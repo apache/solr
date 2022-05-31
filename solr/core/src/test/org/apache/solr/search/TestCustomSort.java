@@ -28,7 +28,7 @@ public class TestCustomSort extends SolrTestCaseJ4 {
     initCore("solrconfig.xml", "schema-custom-field.xml");
   }
 
-  public void testSortableBinary() throws Exception {
+  public void testSortableBinary() {
     clearIndex();
     assertU(
         adoc(

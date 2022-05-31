@@ -61,7 +61,7 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
   }
 
   @After
-  private void afterClass() throws Exception {
+  private void afterClass() {
     deleteCore();
     System.clearProperty("managed.schema.mutable");
     System.clearProperty("enable.update.log");
@@ -135,7 +135,7 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
         "//result/doc/float[@name='score'][.='" + DISTANCE_MILES + "']");
   }
 
-  public void testJunkValuesForDistanceUnits() throws Exception {
+  public void testJunkValuesForDistanceUnits() {
     Exception ex = expectThrows(Exception.class, () -> setupRPTField("rose", "true"));
     assertTrue(ex.getMessage().startsWith("Must specify distanceUnits as one of"));
   }

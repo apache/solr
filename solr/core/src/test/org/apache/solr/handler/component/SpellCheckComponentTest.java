@@ -291,7 +291,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testInvalidDictionary() throws Exception {
+  public void testInvalidDictionary() {
     assertQEx(
         "Invalid specified dictionary should throw exception",
         "Specified dictionaries do not exist: INVALID",
@@ -481,7 +481,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRelativeIndexDirLocation() throws Exception {
+  public void testRelativeIndexDirLocation() {
     SolrCore core = h.getCore();
     File indexDir = new File(core.getDataDir() + File.separator + "spellchecker1");
     assertTrue(indexDir.exists());

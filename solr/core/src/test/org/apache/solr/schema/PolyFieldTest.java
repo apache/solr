@@ -36,7 +36,7 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSchemaBasics() throws Exception {
+  public void testSchemaBasics() {
     IndexSchema schema = h.getCore().getLatestSchema();
 
     SchemaField home = schema.getField("home");
@@ -69,7 +69,7 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testPointFieldType() throws Exception {
+  public void testPointFieldType() {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getLatestSchema();
     SchemaField home = schema.getField("home");
@@ -127,7 +127,7 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSearching() throws Exception {
+  public void testSearching() {
     for (int i = 0; i < 50; i++) {
       assertU(
           adoc("id", "" + i, "home", i + "," + (i * 100), "homed", (i * 1000) + "," + (i * 10000)));
@@ -162,7 +162,7 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSearchDetails() throws Exception {
+  public void testSearchDetails() {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getLatestSchema();
     double[] xy = new double[] {35.0, -79.34};

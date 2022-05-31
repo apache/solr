@@ -58,7 +58,7 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void cleanupWriters() throws Exception {
+  public static void cleanupWriters() {
     writerXmlBase = null;
     writerJsonBase = null;
     writerBinBase = null;

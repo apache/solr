@@ -47,7 +47,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testReRankQParserPluginConstants() throws Exception {
+  public void testReRankQParserPluginConstants() {
     assertEquals(ReRankQParserPlugin.NAME, "rerank");
 
     assertEquals(ReRankQParserPlugin.RERANK_QUERY, "reRankQuery");
@@ -60,7 +60,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testReRankQueries() throws Exception {
+  public void testReRankQueries() {
 
     assertU(delQ("*:*"));
     assertU(commit());
@@ -726,7 +726,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testOverRank() throws Exception {
+  public void testOverRank() {
 
     assertU(delQ("*:*"));
     assertU(commit());
@@ -854,8 +854,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRerankQueryParsingShouldFailWithoutMandatoryReRankQueryParameter()
-      throws Exception {
+  public void testRerankQueryParsingShouldFailWithoutMandatoryReRankQueryParameter() {
     assertU(delQ("*:*"));
     assertU(commit());
 
@@ -900,7 +899,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testReRankQueriesWithDefType() throws Exception {
+  public void testReRankQueriesWithDefType() {
 
     assertU(delQ("*:*"));
     assertU(commit());
@@ -947,7 +946,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testMinExactCount() throws Exception {
+  public void testMinExactCount() {
 
     assertU(delQ("*:*"));
     assertU(commit());

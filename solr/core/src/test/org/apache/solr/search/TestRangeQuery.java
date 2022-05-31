@@ -107,7 +107,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRangeQueries() throws Exception {
+  public void testRangeQueries() {
     // ensure that we aren't losing precision on any fields in addition to testing other non-numeric
     // fields that aren't tested in testRandomRangeQueries()
 

@@ -188,7 +188,7 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     System.clearProperty("tests.COMPRESSION_MODE");
   }
 
-  public void testBadCompressionMode() throws Exception {
+  public void testBadCompressionMode() {
     SolrException thrown =
         expectThrows(
             SolrException.class,

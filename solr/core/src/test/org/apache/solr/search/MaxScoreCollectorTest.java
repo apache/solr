@@ -80,7 +80,7 @@ public class MaxScoreCollectorTest extends SolrTestCase {
     }
 
     @Override
-    public void setMinCompetitiveScore(float minScore) throws IOException {
+    public void setMinCompetitiveScore(float minScore) {
       this.minCompetitiveScore = minScore;
     }
   }

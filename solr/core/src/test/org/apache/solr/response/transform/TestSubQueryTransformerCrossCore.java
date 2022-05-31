@@ -169,7 +169,7 @@ public class TestSubQueryTransformerCrossCore extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSameCoreSingleField() throws Exception {
+  public void testSameCoreSingleField() {
     assertQ(
         "subq1.fl is limited to single field",
         req(
@@ -182,7 +182,7 @@ public class TestSubQueryTransformerCrossCore extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testAbsentCore() throws Exception {
+  public void testAbsentCore() {
     assertQEx(
         "from index not exist",
         req(
@@ -194,7 +194,7 @@ public class TestSubQueryTransformerCrossCore extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testCrossCoreSubQueryTransformer() throws Exception {
+  public void testCrossCoreSubQueryTransformer() {
 
     assertQ(
         "make sure request is parsed in this core",

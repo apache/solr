@@ -249,7 +249,7 @@ public class TestJoin extends SolrTestCaseJ4 {
    * Exercises behavior specific to method=topLevel join queries
    */
   @Test
-  public void testTopLevelDVJoin() throws Exception {
+  public void testTopLevelDVJoin() {
     indexEmployeeDocs();
     ModifiableSolrParams p = params("sort", "id asc");
 

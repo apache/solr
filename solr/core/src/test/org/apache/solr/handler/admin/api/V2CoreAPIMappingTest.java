@@ -71,7 +71,7 @@ public class V2CoreAPIMappingTest extends SolrTestCaseJ4 {
   }
 
   @Before
-  public void setupApiBag() throws Exception {
+  public void setupApiBag() {
     mockCoreHandler = mock(CoreAdminHandler.class);
     queryRequestCaptor = ArgumentCaptor.forClass(SolrQueryRequest.class);
 

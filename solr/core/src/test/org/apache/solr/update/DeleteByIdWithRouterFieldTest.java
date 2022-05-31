@@ -285,7 +285,7 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
    * Test that {@link UpdateRequest#getRoutesToCollection} correctly populates routes for all
    * deletes
    */
-  public void testGlassBoxUpdateRequestRoutesToShards() throws Exception {
+  public void testGlassBoxUpdateRequestRoutesToShards() {
 
     final DocCollection docCol = cluster.getSolrClient().getClusterState().getCollection(COLL);
     // we don't need "real" urls for all replicas, just something we can use as lookup keys for

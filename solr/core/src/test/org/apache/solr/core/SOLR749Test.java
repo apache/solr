@@ -36,7 +36,7 @@ public class SOLR749Test extends SolrTestCaseJ4 {
     initCore("solrconfig-SOLR-749.xml", "schema.xml");
   }
 
-  public void testConstruction() throws Exception {
+  public void testConstruction() {
     SolrCore core = h.getCore();
     assertTrue("core is null and it shouldn't be", core != null);
     QParserPlugin parserPlugin = core.getQueryPlugin(QParserPlugin.DEFAULT_QTYPE);
@@ -52,7 +52,7 @@ public class SOLR749Test extends SolrTestCaseJ4 {
         vsp instanceof DummyValueSourceParser);
   }
 
-  public void testHowManyDocsHaveBoostFunctionComputed() throws Exception {
+  public void testHowManyDocsHaveBoostFunctionComputed() {
     for (int i = 0; i < 100; i++) {
       assertU(adoc("id", "" + i));
     }

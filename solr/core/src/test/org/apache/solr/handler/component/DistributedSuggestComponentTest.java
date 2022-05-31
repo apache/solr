@@ -52,7 +52,7 @@ public class DistributedSuggestComponentTest extends BaseDistributedSearchTestCa
   }
 
   @Override
-  public void validateControlData(QueryResponse control) throws Exception {
+  public void validateControlData(QueryResponse control) {
     NamedList<Object> nl = control.getResponse();
     @SuppressWarnings("unchecked")
     NamedList<SimpleOrderedMap<NamedList<Object>>> sc =

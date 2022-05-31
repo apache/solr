@@ -118,15 +118,14 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
     assertU(commit());
   }
 
-  public void testBasics() throws Exception {
+  public void testBasics() {
     testBasics("val_tis_dv", "val_tls_dv", "val_tfs_dv", "val_tds_dv");
     testBasics("val_tis_ni_dv", "val_tls_ni_dv", "val_tfs_ni_dv", "val_tds_ni_dv");
     testBasics("val_is_p", "val_ls_p", "val_fs_p", "val_ds_p");
     testBasics("val_is_ni_p", "val_ls_ni_p", "val_fs_ni_p", "val_ds_ni_p");
   }
 
-  private void testBasics(String intField, String longField, String floatField, String doubleField)
-      throws Exception {
+  private void testBasics(String intField, String longField, String floatField, String doubleField) {
     assertTrue(
         "Unexpected int field",
         h.getCore().getLatestSchema().getField(intField).getType() instanceof IntValueFieldType);

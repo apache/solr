@@ -83,7 +83,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
   }
 
   @AfterClass
-  public static void teardownClass() throws Exception {
+  public static void teardownClass() {
     System.clearProperty("test.build.data");
     System.clearProperty("test.cache.data");
     System.clearProperty("solr.allowPaths");

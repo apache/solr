@@ -32,7 +32,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
 
 @Slow
@@ -240,7 +239,7 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
   }
 
   private void verifyLeaderAssignment(CloudSolrClient client, String collectionName)
-      throws InterruptedException, KeeperException {
+      throws InterruptedException {
     String lastFailMsg = "";
     // Keep trying while Overseer writes the ZK state for up to 30 seconds.
     for (int idx = 0; idx < 300; ++idx) {

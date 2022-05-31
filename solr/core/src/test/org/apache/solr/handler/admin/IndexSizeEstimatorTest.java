@@ -81,7 +81,7 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
   }
 
   @AfterClass
-  public static void releaseClient() throws Exception {
+  public static void releaseClient() {
     solrClient = null;
   }
 

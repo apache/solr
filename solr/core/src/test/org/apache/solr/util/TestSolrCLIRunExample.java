@@ -70,7 +70,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void cleanupDirectoryFactory() throws IOException {
+  public static void cleanupDirectoryFactory() {
     System.clearProperty("solr.directoryFactory");
   }
 

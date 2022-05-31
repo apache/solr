@@ -16,9 +16,7 @@
  */
 package org.apache.solr.search.facet;
 
-import java.io.IOException;
 import org.apache.solr.SolrTestCaseHS;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.BeforeClass;
@@ -38,7 +36,7 @@ public class TestJsonFacetsWithNestedObjects extends SolrTestCaseHS {
   }
 
   private static void indexDocs(final Client client)
-      throws IOException, SolrServerException, Exception {
+      throws Exception {
     client.deleteByQuery("*:*", null);
 
     SolrInputDocument book1 =

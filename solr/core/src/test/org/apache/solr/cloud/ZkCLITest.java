@@ -103,7 +103,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testCmdConstants() throws Exception {
+  public void testCmdConstants() {
     assertEquals("upconfig", ZkCLI.UPCONFIG);
     assertEquals("x", ZkCLI.EXCLUDE_REGEX_SHORT);
     assertEquals("excluderegex", ZkCLI.EXCLUDE_REGEX);
@@ -189,7 +189,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testPutFileNotExists() throws Exception {
+  public void testPutFileNotExists() {
     // test put file
     String[] args =
         new String[] {

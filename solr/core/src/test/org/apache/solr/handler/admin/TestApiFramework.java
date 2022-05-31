@@ -27,7 +27,6 @@ import static org.apache.solr.common.params.CommonParams.CORES_HANDLER_PATH;
 import static org.apache.solr.common.util.ValidatingJsonMap.NOT_NULL;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.HashMap;
@@ -175,7 +174,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
             "availableSubPaths /collections/hello/shards/{shard}/{replica}", NOT_NULL));
   }
 
-  public void testPayload() throws IOException {
+  public void testPayload() {
     String json = "{package:pkg1, version: '0.1', files  :[a.jar, b.jar]}";
     Utils.fromJSONString(json);
 
@@ -325,7 +324,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
             return Collections.singletonList(
                 new ContentStreamBase() {
                   @Override
-                  public InputStream getStream() throws IOException {
+                  public InputStream getStream() {
                     return payload;
                   }
                 });

@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.lucene.util.LuceneTestCase;
@@ -25,7 +24,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -58,8 +56,7 @@ public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testConcurrentCreateRoutedAliasMinimal()
-      throws IOException, KeeperException.NoNodeException {
+  public void testConcurrentCreateRoutedAliasMinimal() {
     // this is the test where be blow out a bunch of create commands all out at once. other tests
     // are more functionality based, and just use a single thread.
 

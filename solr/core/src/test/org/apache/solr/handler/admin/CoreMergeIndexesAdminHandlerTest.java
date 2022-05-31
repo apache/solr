@@ -35,7 +35,8 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 
-public class CoreMergeIndexesAdminHandlerTest extends SolrTestCaseJ4 {
+public class
+CoreMergeIndexesAdminHandlerTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {

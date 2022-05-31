@@ -134,7 +134,7 @@ public class DeleteShardTest extends SolrCloudTestCase {
 
   @Test
   public void testDirectoryCleanupAfterDeleteShard()
-      throws InterruptedException, IOException, SolrServerException {
+      throws IOException, SolrServerException {
 
     final String collection = "deleteshard_test";
     CollectionAdminRequest.createCollectionWithImplicitRouter(collection, "conf", "a,b,c", 1)
