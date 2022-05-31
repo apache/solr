@@ -121,14 +121,12 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
   // 1> the property is only set once in all the replicas in a slice.
   // 2> the property is balanced evenly across all the nodes hosting collection
   public static void verifyUniqueAcrossCollection(
-      CloudSolrClient client, String collectionName, String property)
-      throws InterruptedException {
+      CloudSolrClient client, String collectionName, String property) throws InterruptedException {
     verifyUnique(client, collectionName, property, true);
   }
 
   public static void verifyUniquePropertyWithinCollection(
-      CloudSolrClient client, String collectionName, String property)
-      throws InterruptedException {
+      CloudSolrClient client, String collectionName, String property) throws InterruptedException {
     verifyUnique(client, collectionName, property, false);
   }
 

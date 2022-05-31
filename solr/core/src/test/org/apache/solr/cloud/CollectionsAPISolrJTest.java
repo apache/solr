@@ -1230,8 +1230,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testAddAndDeleteReplicaProp()
-      throws IOException, SolrServerException {
+  public void testAddAndDeleteReplicaProp() throws IOException, SolrServerException {
 
     final String collection = "replicaProperties";
     CollectionAdminRequest.createCollection(collection, "conf", 2, 2)
@@ -1264,8 +1263,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testBalanceShardUnique()
-      throws IOException, SolrServerException {
+  public void testBalanceShardUnique() throws IOException, SolrServerException {
 
     final String collection = "balancedProperties";
     CollectionAdminRequest.createCollection(collection, "conf", 2, 2)

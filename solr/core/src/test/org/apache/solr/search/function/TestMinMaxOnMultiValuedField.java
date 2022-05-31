@@ -125,7 +125,8 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
     testBasics("val_is_ni_p", "val_ls_ni_p", "val_fs_ni_p", "val_ds_ni_p");
   }
 
-  private void testBasics(String intField, String longField, String floatField, String doubleField) {
+  private void testBasics(
+      String intField, String longField, String floatField, String doubleField) {
     assertTrue(
         "Unexpected int field",
         h.getCore().getLatestSchema().getField(intField).getType() instanceof IntValueFieldType);

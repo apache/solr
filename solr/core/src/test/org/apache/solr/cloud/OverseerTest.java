@@ -1836,8 +1836,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
   }
 
   private SolrZkClient electNewOverseer(String address)
-      throws InterruptedException, KeeperException,
-          NoSuchFieldException, SecurityException,
+      throws InterruptedException, KeeperException, NoSuchFieldException, SecurityException,
           IllegalAccessException {
     SolrZkClient zkClient = new SolrZkClient(address, TIMEOUT);
     zkClients.add(zkClient);

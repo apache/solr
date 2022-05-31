@@ -35,8 +35,7 @@ public class TestJsonFacetsWithNestedObjects extends SolrTestCaseHS {
     indexDocs(client);
   }
 
-  private static void indexDocs(final Client client)
-      throws Exception {
+  private static void indexDocs(final Client client) throws Exception {
     client.deleteByQuery("*:*", null);
 
     SolrInputDocument book1 =

@@ -481,7 +481,8 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
   }
 
   @SuppressWarnings({"unchecked"})
-  private String transformFacetFields(String expected, Consumer<Map.Entry<Object, Object>> consumer) {
+  private String transformFacetFields(
+      String expected, Consumer<Map.Entry<Object, Object>> consumer) {
     Object json = Utils.fromJSONString(expected);
     @SuppressWarnings({"rawtypes"})
     Map facet_fields = getFacetFieldMap(json);
