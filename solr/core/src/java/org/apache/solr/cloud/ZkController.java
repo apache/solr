@@ -91,6 +91,7 @@ import org.apache.solr.core.NodeRoles;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrCoreInitializationException;
 import org.apache.solr.handler.component.HttpShardHandler;
+import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.UpdateLog;
@@ -501,9 +502,8 @@ public class ZkController implements Closeable {
     }
     this.overseerCollectionQueue = overseer.getCollectionQueue(zkClient);
     this.overseerConfigSetQueue = overseer.getConfigSetQueue(zkClient);
-    getSolrCloudManager();
-    this.sysPropsCacher = new NodesSysPropsCacher(cloudSolrClient, zkStateReader);
-
+    this.sysPropsCacher = new NodesSysPropsCacher(((HttpShardHandlerFactory)getCoreContainer()
+            .getShardHandlerFactory()).getClient() , zkStateReader);
     assert ObjectReleaseTracker.track(this);
   }
 

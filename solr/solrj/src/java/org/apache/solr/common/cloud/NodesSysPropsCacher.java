@@ -17,26 +17,28 @@
 
 package org.apache.solr.common.cloud;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
-import java.net.URLEncoder;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
+
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.NavigableObject;
-import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 
 /** Fetch lazily and cache a node's system properties */
 public class NodesSysPropsCacher implements AutoCloseable {
   private volatile boolean isClosed = false;
   private final Map<String, Map<String, Object>> nodeVsTagsCache = new ConcurrentHashMap<>();
   private ZkStateReader zkStateReader;
-  private final CloudLegacySolrClient solrClient;
+  private final SolrClient solrClient;
 
-  public NodesSysPropsCacher(CloudLegacySolrClient solrClient, ZkStateReader zkStateReader) {
+  public NodesSysPropsCacher(SolrClient solrClient, ZkStateReader zkStateReader) {
     this.zkStateReader = zkStateReader;
     this.solrClient = solrClient;
     zkStateReader.registerLiveNodesListener(
@@ -76,20 +78,26 @@ public class NodesSysPropsCacher implements AutoCloseable {
   private Map<String, Object> fetchProps(String nodeName, Collection<String> tags) {
     StringBuilder sb = new StringBuilder(zkStateReader.getBaseUrlForNodeName(nodeName));
     sb.append("/admin/metrics?omitHeader=true&wt=javabin");
+    ModifiableSolrParams msp = new ModifiableSolrParams();
+    msp.add(CommonParams.OMIT_HEADER,"true");
     LinkedHashMap<String, String> keys = new LinkedHashMap<>();
     for (String tag : tags) {
       String metricsKey = "solr.jvm:system.properties:" + tag;
       keys.put(tag, metricsKey);
-      sb.append("&key=").append(URLEncoder.encode(metricsKey, UTF_8));
+      msp.add("key", metricsKey );
     }
 
-    Map<String, Object> result = new LinkedHashMap<>();
-    NavigableObject response =
-        (NavigableObject)
-            Utils.executeGET(solrClient.getHttpClient(), sb.toString(), Utils.JAVABINCONSUMER);
-    NavigableObject metrics = (NavigableObject) response._get("metrics", Collections.emptyMap());
-    keys.forEach((tag, key) -> result.put(tag, metrics._get(key, null)));
-    return result;
+    GenericSolrRequest req = new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", msp);
+    req.setBasePath(zkStateReader.getBaseUrlForNodeName(nodeName));
+    try {
+      LinkedHashMap<String, Object> result = new LinkedHashMap<>();
+      NavigableObject response  = solrClient.request(req);
+      NavigableObject metrics = (NavigableObject) response._get("metrics", MapWriter.EMPTY);
+      keys.forEach((tag, key) -> result.put(tag, metrics._get(key, null)));
+      return result;
+    } catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,e);
+    }
   }
 
   @Override
