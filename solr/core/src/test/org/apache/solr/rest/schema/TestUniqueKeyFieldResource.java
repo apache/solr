@@ -22,7 +22,7 @@ import org.junit.Test;
 public class TestUniqueKeyFieldResource extends SolrRestletTestBase {
 
   @Test
-  public void testGetUniqueKey() throws Exception {
+  public void testGetUniqueKey() {
     assertQ(
         "/schema/uniquekey?indent=on&wt=xml",
         "count(/response/str[@name='uniqueKey']) = 1",

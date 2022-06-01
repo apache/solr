@@ -53,7 +53,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testDefaultConfigSetBasePathResolution() throws IOException {
+  public void testDefaultConfigSetBasePathResolution() {
     Path solrHome = Paths.get("/path/to/solr/home");
 
     NodeConfig config =

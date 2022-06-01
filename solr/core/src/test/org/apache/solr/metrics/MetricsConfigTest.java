@@ -44,12 +44,12 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
   private static File solrHome = null;
 
   @BeforeClass
-  public static void setupLoader() throws Exception {
+  public static void setupLoader() {
     solrHome = createTempDir().toFile();
   }
 
   @AfterClass
-  public static void cleanupLoader() throws Exception {
+  public static void cleanupLoader() {
     solrHome = null;
   }
 
@@ -69,7 +69,7 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testCustomReservoir() throws Exception {
+  public void testCustomReservoir() {
     System.setProperty("timer.reservoir", UniformReservoir.class.getName());
     System.setProperty("histogram.size", "2048");
     System.setProperty("histogram.window", "600");
@@ -88,7 +88,7 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testCustomSupplier() throws Exception {
+  public void testCustomSupplier() {
     System.setProperty("counter.class", MockCounterSupplier.class.getName());
     System.setProperty("meter.class", MockMeterSupplier.class.getName());
     System.setProperty("timer.class", MockTimerSupplier.class.getName());
@@ -118,7 +118,7 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testDisabledMetrics() throws Exception {
+  public void testDisabledMetrics() {
     System.setProperty("metricsEnabled", "false");
     NodeConfig cfg = loadNodeConfig("solr-metricsconfig.xml");
     SolrMetricManager mgr =
@@ -130,7 +130,7 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testMissingValuesConfig() throws Exception {
+  public void testMissingValuesConfig() {
     NodeConfig cfg = loadNodeConfig("solr-metricsconfig1.xml");
     SolrMetricManager mgr =
         new SolrMetricManager(cfg.getSolrResourceLoader(), cfg.getMetricsConfig());
@@ -143,7 +143,7 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
     assertEquals("missing", map.get("value"));
   }
 
-  private NodeConfig loadNodeConfig(String config) throws Exception {
+  private NodeConfig loadNodeConfig(String config) {
     InputStream is = MetricsConfigTest.class.getResourceAsStream("/solr/" + config);
     return SolrXmlConfig.fromInputStream(TEST_PATH(), is, new Properties()); // TODO pass in props
   }

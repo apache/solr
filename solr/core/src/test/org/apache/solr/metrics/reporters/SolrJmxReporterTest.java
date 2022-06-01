@@ -157,7 +157,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testReportMetrics() throws Exception {
+  public void testReportMetrics() {
     Random random = random();
 
     Map<String, Counter> registered = new HashMap<>();

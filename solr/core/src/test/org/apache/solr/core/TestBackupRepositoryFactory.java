@@ -46,13 +46,13 @@ public class TestBackupRepositoryFactory extends SolrTestCaseJ4 {
   private static SolrResourceLoader loader = null;
 
   @BeforeClass
-  public static void setupLoader() throws Exception {
+  public static void setupLoader() {
     solrHome = createTempDir().toFile();
     loader = new SolrResourceLoader(solrHome.toPath());
   }
 
   @AfterClass
-  public static void cleanupLoader() throws Exception {
+  public static void cleanupLoader() {
     solrHome = null;
     loader = null;
   }

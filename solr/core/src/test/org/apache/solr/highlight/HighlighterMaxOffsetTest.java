@@ -30,11 +30,11 @@ public class HighlighterMaxOffsetTest extends SolrTestCaseJ4 {
   }
 
   @After
-  public void purgeDocs() throws Exception {
+  public void purgeDocs() {
     clearIndex();
   }
 
-  public void testIndexedMultiValuedButSingleValuePassed() throws Exception {
+  public void testIndexedMultiValuedButSingleValuePassed() {
 
     assertU(adoc("indexed_multiValued", SHORT_TEXT, "id", "DOC1"));
 
@@ -43,7 +43,7 @@ public class HighlighterMaxOffsetTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testIndexedMultiValued() throws Exception {
+  public void testIndexedMultiValued() {
 
     assertU(
         adoc(
@@ -56,7 +56,7 @@ public class HighlighterMaxOffsetTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testIndexedSingleValued() throws Exception {
+  public void testIndexedSingleValued() {
 
     assertU(adoc("indexed_singleValued", SHORT_TEXT, "id", "DOC1"));
 
@@ -65,7 +65,7 @@ public class HighlighterMaxOffsetTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testNonIndexedSingleValued() throws Exception {
+  public void testNonIndexedSingleValued() {
 
     assertU(adoc("non_indexed_singleValued", SHORT_TEXT, "id", "DOC1"));
 
@@ -74,7 +74,7 @@ public class HighlighterMaxOffsetTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testNonIndexedMultiValued() throws Exception {
+  public void testNonIndexedMultiValued() {
 
     assertU(
         adoc(
@@ -87,7 +87,7 @@ public class HighlighterMaxOffsetTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testText_general_rev() throws Exception {
+  public void testText_general_rev() {
 
     assertU(
         adoc(
@@ -99,7 +99,7 @@ public class HighlighterMaxOffsetTest extends SolrTestCaseJ4 {
     assertHighlighting("content");
   }
 
-  private static void assertHighlighting(String field) throws Exception {
+  private static void assertHighlighting(String field) {
     assertQ(
         req(
             "q", "id:DOC1",

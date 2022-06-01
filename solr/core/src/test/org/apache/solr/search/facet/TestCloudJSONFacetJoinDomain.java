@@ -201,7 +201,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   }
 
   /** Sanity check that malformed requests produce errors */
-  public void testMalformedGivesError() throws Exception {
+  public void testMalformedGivesError() {
 
     ignoreException(".*'join' domain change.*");
 
@@ -288,7 +288,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
     }
   }
 
-  public void testSanityCheckDomainMethods() throws Exception {
+  public void testSanityCheckDomainMethods() {
     {
       final JoinDomain empty = new JoinDomain(null, null, null);
       assertEquals(null, empty.toJSONFacetParamValue());

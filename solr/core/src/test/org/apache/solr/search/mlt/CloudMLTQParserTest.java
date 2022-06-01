@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search.mlt;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -336,7 +335,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
     assertArrayEquals(expectedIds, actualIds);
   }
 
-  public void testInvalidSourceDocument() throws IOException {
+  public void testInvalidSourceDocument() {
     SolrException e =
         expectThrows(
             SolrException.class,

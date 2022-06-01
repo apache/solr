@@ -57,7 +57,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     assertU(commit());
   }
 
-  public void testMultiSort() throws Exception {
+  public void testMultiSort() {
     assertU(adoc("id", "1", "group_s", "group1", "test_i", "5", "test_l", "10"));
     assertU(commit());
     assertU(adoc("id", "2", "group_s", "group1", "test_i", "5", "test_l", "1000"));
@@ -218,7 +218,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testStringCollapse() throws Exception {
+  public void testStringCollapse() {
     for (final String hint : new String[] {"", " hint=" + CollapsingQParserPlugin.HINT_TOP_FC}) {
       testCollapseQueries("group_s", hint, false);
       testCollapseQueries("group_s_dv", hint, false);
@@ -226,7 +226,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testNumericCollapse() throws Exception {
+  public void testNumericCollapse() {
     final String hint = "";
     testCollapseQueries("group_i", hint, true);
     testCollapseQueries("group_ti_dv", hint, true);
@@ -235,7 +235,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testFieldValueCollapseWithNegativeMinMax() throws Exception {
+  public void testFieldValueCollapseWithNegativeMinMax() {
     String[] doc = {
       "id", "1", "group_i", "-1000", "test_i", "5", "test_l", "-10", "test_f", "2000.32"
     };
@@ -281,7 +281,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test // https://issues.apache.org/jira/browse/SOLR-9494
-  public void testNeedsScoreBugFixed() throws Exception {
+  public void testNeedsScoreBugFixed() {
     String[] doc = {"id", "1", "group_s", "xyz", "text_ws", "hello xxx world"};
     assertU(adoc(doc));
     assertU(commit());
@@ -440,7 +440,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
         req(params, "indent", "on"), "*[count(//doc)=1]", "//result/doc[1]/str[@name='id'][.='2']");
   }
 
-  private void testCollapseQueries(String group, String hint, boolean numeric) throws Exception {
+  private void testCollapseQueries(String group, String hint, boolean numeric) {
 
     String[] doc = {
       "id", "1", "term_s", "YYYY", group, "1", "test_i", "5", "test_l", "10", "test_f", "2000"
@@ -994,7 +994,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testMissingFieldParam() throws Exception {
+  public void testMissingFieldParam() {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("q", "*:*");
     params.add("fq", "{!collapse}");
@@ -1005,7 +1005,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testEmptyCollection() throws Exception {
+  public void testEmptyCollection() {
     // group_s is docValues=false and group_dv_s is docValues=true
     String group = (random().nextBoolean() ? "group_s" : "group_s_dv");
 
@@ -1041,7 +1041,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     }
   }
 
-  public void testNoDocsHaveGroupField() throws Exception {
+  public void testNoDocsHaveGroupField() {
     // as unlikely as this test seems, it's important for the possibility that a segment exists w/o
     // any live docs that have DocValues for the group field -- ie: every doc in segment is in null
     // group.
@@ -1257,7 +1257,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testMinExactCountDisabledByCollapse() throws Exception {
+  public void testMinExactCountDisabledByCollapse() {
     int numDocs = 10;
     String collapseFieldInt = "field_ti_dv";
     String collapseFieldFloat = "field_tf_dv";
@@ -1296,7 +1296,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     }
   }
 
-  public void testNullGroupNumericVsStringCollapse() throws Exception {
+  public void testNullGroupNumericVsStringCollapse() {
     // NOTE: group_i and group_s will contain identical content so these need to be "numbers"...
     // The specific numbers shouldn't matter (and we explicitly test '0' to confirm legacy
     // bug/behavior of treating 0 as null is no longer a problem) ...

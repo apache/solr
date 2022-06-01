@@ -158,12 +158,12 @@ public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTes
     }
 
     @Override
-    public void copyFileFrom(Directory sourceDir, String fileName, URI dest) throws IOException {
+    public void copyFileFrom(Directory sourceDir, String fileName, URI dest) {
       throw new UnsupportedOperationException(poisioned);
     }
 
     @Override
-    public void copyFileTo(URI sourceDir, String fileName, Directory dest) throws IOException {
+    public void copyFileTo(URI sourceDir, String fileName, Directory dest) {
       throw new UnsupportedOperationException(poisioned);
     }
 
@@ -173,7 +173,7 @@ public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTes
     }
 
     @Override
-    public OutputStream createOutput(URI path) throws IOException {
+    public OutputStream createOutput(URI path) {
       throw new UnsupportedOperationException(poisioned);
     }
   }

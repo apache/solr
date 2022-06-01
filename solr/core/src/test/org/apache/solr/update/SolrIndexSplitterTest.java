@@ -19,7 +19,6 @@ package org.apache.solr.update;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import java.io.File;
-import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -489,8 +488,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
     }
   }
 
-  private List<DocRouter.Range> getRanges(String id1, String id2)
-      throws UnsupportedEncodingException {
+  private List<DocRouter.Range> getRanges(String id1, String id2) {
     // find minHash/maxHash hash ranges
     byte[] bytes = id1.getBytes(StandardCharsets.UTF_8);
     int minHash = Hash.murmurhash3_x86_32(bytes, 0, bytes.length, 0);

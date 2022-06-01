@@ -47,7 +47,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.xml.parsers.ParserConfigurationException;
 import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
@@ -107,7 +106,6 @@ import org.mockito.plugins.MemberAccessor;
 import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xml.sax.SAXException;
 
 @Slow
 @SolrTestCaseJ4.SuppressSSL
@@ -756,7 +754,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
   // wait until collections are available
   private void waitForCollections(ZkStateReader stateReader, String... collections)
-      throws InterruptedException, KeeperException, TimeoutException {
+      throws InterruptedException, TimeoutException {
     int maxIterations = 100;
     while (0 < maxIterations--) {
 
@@ -856,7 +854,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
   private void verifyShardLeader(
       ZkStateReader reader, String collection, String shard, String expectedCore)
-      throws InterruptedException, KeeperException, TimeoutException {
+      throws InterruptedException, TimeoutException {
 
     reader.waitForState(
         collection,
@@ -1831,15 +1829,14 @@ public class OverseerTest extends SolrTestCaseJ4 {
     }
   }
 
-  private void close(SolrZkClient client) throws InterruptedException {
+  private void close(SolrZkClient client) {
     if (client != null) {
       client.close();
     }
   }
 
   private SolrZkClient electNewOverseer(String address)
-      throws InterruptedException, TimeoutException, IOException, KeeperException,
-          ParserConfigurationException, SAXException, NoSuchFieldException, SecurityException,
+      throws InterruptedException, KeeperException, NoSuchFieldException, SecurityException,
           IllegalAccessException {
     SolrZkClient zkClient = new SolrZkClient(address, TIMEOUT);
     zkClients.add(zkClient);

@@ -212,7 +212,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testFindUnhealthyCores() throws Exception {
+  public void testFindUnhealthyCores() {
     // Simulate two nodes, with two collections:
     //  node1: collection1 -> shard1: [ replica1 (active), replica3 (down) ]
     //         collection2 -> shard1: [ replica2 (recovering) ]

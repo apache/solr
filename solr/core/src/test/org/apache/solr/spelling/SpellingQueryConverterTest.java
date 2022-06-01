@@ -42,7 +42,7 @@ public class SpellingQueryConverterTest extends SolrTestCase {
   }
 
   @Test
-  public void testNumeric() throws Exception {
+  public void testNumeric() {
     SpellingQueryConverter converter = new SpellingQueryConverter();
     converter.init(new NamedList<>());
     converter.setAnalyzer(new WhitespaceAnalyzer());

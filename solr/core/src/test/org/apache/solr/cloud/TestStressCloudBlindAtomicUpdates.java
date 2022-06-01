@@ -160,7 +160,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
   }
 
   @AfterClass
-  private static void afterClass() throws Exception {
+  private static void afterClass() {
     TestInjection.reset();
     if (null != EXEC_SERVICE) {
       ExecutorUtil.shutdownAndAwaitTermination(EXEC_SERVICE);

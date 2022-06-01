@@ -110,13 +110,13 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     ObjectBuilder ob =
         new ObjectBuilder(parser) {
           @Override
-          public Object newObject() throws IOException {
+          public Object newObject() {
             return new SimpleOrderedMap<>();
           }
 
           @Override
           @SuppressWarnings("unchecked")
-          public void addKeyVal(Object map, Object key, Object val) throws IOException {
+          public void addKeyVal(Object map, Object key, Object val) {
             ((SimpleOrderedMap<Object>) map).add(key.toString(), val);
           }
         };

@@ -194,7 +194,7 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
     }
   }
 
-  public void testNumTerms() throws Exception {
+  public void testNumTerms() {
     final String f = "name";
     for (String n : new String[] {"2", "3", "100", "99999"}) {
       assertQ(

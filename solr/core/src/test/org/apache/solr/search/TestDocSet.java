@@ -322,7 +322,7 @@ public class TestDocSet extends SolrTestCase {
       }
 
       @Override
-      public Terms terms(String field) throws IOException {
+      public Terms terms(String field) {
         return null;
       }
 
@@ -368,8 +368,7 @@ public class TestDocSet extends SolrTestCase {
 
       @Override
       public TopDocs searchNearestVectors(
-          String field, float[] target, int k, Bits acceptDocs, int visitedLimit)
-          throws IOException {
+          String field, float[] target, int k, Bits acceptDoc, int visitedLimits) {
         return null;
       }
 
@@ -380,7 +379,7 @@ public class TestDocSet extends SolrTestCase {
       public void document(int doc, StoredFieldVisitor visitor) {}
 
       @Override
-      public void checkIntegrity() throws IOException {}
+      public void checkIntegrity() {}
 
       @Override
       public LeafMetaData getMetaData() {
@@ -445,8 +444,7 @@ public class TestDocSet extends SolrTestCase {
   }
 
   private static void populateDocs(
-      NoThrowDocIdSetIterator[] disis, int[] docs, ToIntFunction<NoThrowDocIdSetIterator> toDocId)
-      throws IOException {
+      NoThrowDocIdSetIterator[] disis, int[] docs, ToIntFunction<NoThrowDocIdSetIterator> toDocId) {
     for (int i = 0; i < docs.length; i++) {
       docs[i] = toDocId.applyAsInt(disis[i]);
     }

@@ -28,7 +28,7 @@ import org.apache.solr.SolrTestCase;
 
 public class TestLegacyNumericUtils extends SolrTestCase {
 
-  public void testLongConversionAndOrdering() throws Exception {
+  public void testLongConversionAndOrdering() {
     // generate a series of encoded longs, each numerical one bigger than the one before
     BytesRefBuilder last = new BytesRefBuilder();
     BytesRefBuilder act = new BytesRefBuilder();
@@ -51,7 +51,7 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     }
   }
 
-  public void testIntConversionAndOrdering() throws Exception {
+  public void testIntConversionAndOrdering() {
     // generate a series of encoded ints, each numerical one bigger than the one before
     BytesRefBuilder act = new BytesRefBuilder();
     BytesRefBuilder last = new BytesRefBuilder();
@@ -74,7 +74,7 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     }
   }
 
-  public void testLongSpecialValues() throws Exception {
+  public void testLongSpecialValues() {
     long[] vals =
         new long[] {
           Long.MIN_VALUE,
@@ -494,14 +494,14 @@ public class TestLegacyNumericUtils extends SolrTestCase {
         Arrays.asList(0, 4));
   }
 
-  public void testRandomSplit() throws Exception {
+  public void testRandomSplit() {
     long num = (long) atLeast(10);
     for (long i = 0; i < num; i++) {
       executeOneRandomSplit(random());
     }
   }
 
-  private void executeOneRandomSplit(final Random random) throws Exception {
+  private void executeOneRandomSplit(final Random random) {
     long lower = randomLong(random);
     long len = random.nextInt(16384 * 1024); // not too large bitsets, else OOME!
     while (lower + len < lower) { // overflow
@@ -538,7 +538,7 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     return val;
   }
 
-  public void testSplitLongRange() throws Exception {
+  public void testSplitLongRange() {
     // a hard-coded "standard" range
     assertLongRangeSplit(
         -5000L,
@@ -655,7 +655,7 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     }
   }
 
-  public void testSplitIntRange() throws Exception {
+  public void testSplitIntRange() {
     // a hard-coded "standard" range
     assertIntRangeSplit(
         -5000,

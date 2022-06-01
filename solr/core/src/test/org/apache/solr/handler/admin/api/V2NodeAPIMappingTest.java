@@ -70,7 +70,7 @@ public class V2NodeAPIMappingTest {
   }
 
   @Before
-  public void setupApiBag() throws Exception {
+  public void setupApiBag() {
     mockCoresHandler = mock(CoreAdminHandler.class);
     infoHandler = mock(InfoHandler.class);
     mockSystemInfoHandler = mock(SystemInfoHandler.class);

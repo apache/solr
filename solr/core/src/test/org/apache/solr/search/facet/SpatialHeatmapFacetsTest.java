@@ -34,7 +34,7 @@ public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
   private static final String FIELD = "srpt_quad";
 
   @BeforeClass
-  public static void beforeSuperClass() throws Exception {
+  public static void beforeSuperClass() {
     schemaString = "schema-spatial.xml";
     configString = "solrconfig-basic.xml";
 

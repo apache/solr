@@ -22,7 +22,7 @@ import org.junit.Test;
 public class TestFieldTypeCollectionResource extends SolrRestletTestBase {
 
   @Test
-  public void testGetAllFieldTypes() throws Exception {
+  public void testGetAllFieldTypes() {
     assertQ(
         "/schema/fieldtypes?indent=on&wt=xml",
         "(/response/arr[@name='fieldTypes']/lst/str[@name='name'])[1] = 'HTMLstandardtok'",

@@ -173,7 +173,7 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
         "//result/doc[4]/str[@name='id'][.=4]");
   }
 
-  public void testSimpleSearchAndFacets() throws Exception {
+  public void testSimpleSearchAndFacets() {
     assertU(adoc("id", "1", "whitespace_stxt", "how now brown cow ?"));
     assertU(adoc("id", "2", "whitespace_stxt", "how now brown cow ?"));
     assertU(adoc("id", "3", "whitespace_stxt", "holy cow !"));
@@ -278,7 +278,7 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
     }
   }
 
-  public void testWhiteboxCreateFields() throws Exception {
+  public void testWhiteboxCreateFields() {
     List<IndexableField> values = null;
 
     // common case...
@@ -315,7 +315,7 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
     return sf.getType().createFields(sf, "dummy value");
   }
 
-  public void testMaxCharsSort() throws Exception {
+  public void testMaxCharsSort() {
     assertU(adoc("id", "1", "whitespace_stxt", "aaa bbb ccc ddd"));
     assertU(adoc("id", "2", "whitespace_stxt", "aaa bbb xxx yyy"));
     assertU(adoc("id", "3", "whitespace_stxt", "aaa bbb ccc xxx"));
@@ -420,7 +420,7 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
   }
 
   /** test how various permutations of useDocValuesAsStored and maxCharsForDocValues interact */
-  public void testUseDocValuesAsStored() throws Exception {
+  public void testUseDocValuesAsStored() {
     ignoreException("when useDocValuesAsStored=true \\(length=");
 
     // first things first...
