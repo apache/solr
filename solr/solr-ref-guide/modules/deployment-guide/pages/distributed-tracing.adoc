@@ -16,15 +16,21 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr includes a general tracing framework based on OpenTracing that can be used to trace lifecycle of a request for performance monitoring.
+Solr includes a general tracing framework based on OpenTracing that can be used to trace the lifecycle of a request for performance monitoring.
 
-Tracing data can be configured to send to arbitrary backend like Jaeger, Zipkin, Datadog, etc.
+Tracing data can be configured to send to arbitrary backends like Jaeger, Zipkin, Datadog, etc.
 At the moment, only Jaeger is supported out of the box.
 
 A sampled distributed tracing query request on Jaeger looks like this:
 
 .Tracing of a Solr query
 image::distributed-tracing/query-request-tracing.png[]
+
+== Module
+
+This is provided via a xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
+
+The module name is `jaegertracer-configurator`.
 
 == Configuring Tracer
 
@@ -51,7 +57,7 @@ https://docs.datadoghq.com/tracing/setup/java/[datadog-java-agent] uses Javaagen
 The `modules/jagertracer-configurator` provides a default implementation for setting up Jaeger Tracer.
 
 Add the solr-jaegertracer JAR file and the other JARs provided with this module to your Solr installation, ideally to each node.
-GSON is a dependency that is only used by Jaeger's "remote" sampler,
+https://github.com/google/gson[GSON] is a dependency that is only used by Jaeger's "remote" sampler,
 which is the default.  Solr doesn't distribute it, so you'll need to add GSON yourself or configure a different sampler.
 
 Then Jaeger tracer is configured in `solr.xml` like this:

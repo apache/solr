@@ -111,8 +111,9 @@ This may require some more disk space for logs than was the case in version 8.x.
 changed package name to `org.apache.solr.security.jwt`, but can still be loaded as shortform `class="solr.JWTAuthPlugin"`.
 * Dependency updates - A lot of dependency updates removes several security issues from dependencies, and thus make Solr more secure.
 * The allow-list defining allowed URLs for the `shards` parameter is not in the `shardHandler` configuration anymore. It is defined by the `allowUrls` top-level property of the `solr.xml` file. For more information, see xref:configuration-guide:configuring-solr-xml.adoc#allow-urls[Format of solr.allowUrls] documentation.
-* To improve security, `StatelessScriptUpdateProcessorFactory` has been renamed as `ScriptUpdateProcessorFactory` and moved to `modules/scripting` package instead of shipping as part of Solr core.
-* To improve security, `XSLTResponseWriter` has been moved to `modules/scripting` package instead of shipping as part of Solr core.
+* To improve security, `StatelessScriptUpdateProcessorFactory` has been renamed as `ScriptUpdateProcessorFactory` and moved to `scripting` module instead of shipping as part of Solr core.  Users need to add the module `scripting` to classpath.
+* To improve security, `XSLTResponseWriter` has been moved to `scripting` module instead of shipping as part of Solr core.  Users need to add the module `scripting` to classpath.
+
 
 === Stability and Scalability
 * xref:deployment-guide:rate-limiters.adoc[Rate limiting] provides a way to throttle update and search requests based on usage metrics.
@@ -137,7 +138,7 @@ There are no longer ".distrib." named metrics; all metrics are assumed to be suc
 Switch back to synchronous logging if this is unacceptable, see comments in the log4j2 configuration files (log4j2.xml by default).
 * Log4J configuration & Solr MDC values - link:http://www.slf4j.org/apidocs/org/slf4j/MDC.html[MDC] values that Solr sets for use by Logging calls (such as the collection name, shard name, replica name, etc...) have been modified to now be "bare" values, without the special single character prefixes that were included in past version. The default `log4j2.xml` configuration file for Solr has been modified to prepend these same prefixes to MDC values when included in Log messages as part of the `<PatternLayout/>`. Users who have custom logging configurations that wish to ensure Solr 9.x logs are consistently formatted after upgrading will need to make similar changes to their logging configuration files.  See  link:https://issues.apache.org/jira/browse/SOLR-15630[SOLR-15630] for more details.
 * xref:deployment-guide:configuring-logging.adoc#request-logging[Jetty Request log] is now enabled by default, i.e. logging every request.
-* The prometheus-exporter is no longer packaged as a Solr module. It can be found under `solr/prometheus-exporter/`.
+* The prometheus-exporter is no longer packaged as a Solr Module. It can be found under `solr/prometheus-exporter/`.
 * Solr modules (formerly known as contribs) can now easily be enabled by an environment variable (e.g. in `solr.in.sh` or `solr.in.cmd`) or as a system property (e.g. in `SOLR_OPTS`). Example: `SOLR_MODULES=extraction,ltr`.
 
 === Deprecations and Removals
@@ -162,7 +163,7 @@ Other relevant placement strategies should be used instead, such as autoscaling 
 * Features lifted out as separate modules are: HDFS, Hadoop-Auth, SQL, Scripting, and JWT-Auth.
 * The "dist" folder in the release has been removed. Please update your `<lib>` entries in your `solrconfig.xml` to use the new location.
 ** The `solr-core` and `solr-solrj` jars can be found under `server/solr-webapp/webapp/WEB-INF/lib/`.
-** The Solr module jars and their dependencies can be found in `modules/<module-name>/lib`, packaged individually for each module.
+** The Solr Module jars and their dependencies can be found in `modules/<module-name>/lib`, packaged individually for each module.
 ** The `solrj-deps` (SolrJ Dependencies) are no longer separated out from the other Server jars.
 ** Please refer to the SolrJ Maven artifact to see the exact dependencies you need to include from `server/solr-webapp/webapp/WEB-INF/lib/` and `server/lib/ext/` if you are loading in SolrJ manually.
 If you plan on using SolrJ as a JDBC driver, please refer to the xref:query-guide:sql-query.adoc#generic-clients[JDBC documentation]
