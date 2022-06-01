@@ -16,19 +16,25 @@
  */
 package org.apache.solr.handler.admin;
 
-import static org.apache.solr.common.params.CommonParams.ACTION;
-import static org.mockito.Mockito.mock;
-
-import java.util.Locale;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.api.collections.CategoryRoutedAlias;
 import org.apache.solr.cloud.api.collections.RoutedAlias;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.*;
+import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.params.CommonAdminParams;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.backup.BackupManager;
 import org.apache.solr.handler.CollectionsAPI;
 import org.junit.Test;
+
+import java.util.Locale;
+
+import static org.apache.solr.common.params.CommonParams.ACTION;
 
 /**
  * Unit tests for the API mappings found in {@link org.apache.solr.handler.CollectionsAPI}.
@@ -55,7 +61,7 @@ public class V2CollectionsAPIMappingTest extends V2ApiMappingTest<CollectionsHan
 
   @Override
   public CollectionsHandler createUnderlyingRequestHandler() {
-    return mock(CollectionsHandler.class);
+    return createMock(CollectionsHandler.class);
   }
 
   @Override

@@ -21,18 +21,6 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ONLY_IF_DOWN;
-import static org.apache.solr.common.cloud.ZkStateReader.*;
-import static org.apache.solr.common.params.CollectionAdminParams.*;
-import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
-import static org.apache.solr.common.params.CollectionParams.NAME;
-import static org.apache.solr.common.params.CommonAdminParams.*;
-import static org.apache.solr.common.params.CommonParams.ACTION;
-import static org.apache.solr.common.params.CommonParams.TIMING;
-import static org.apache.solr.common.params.CoreAdminParams.*;
-import static org.mockito.Mockito.mock;
-
-import java.util.Locale;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -41,6 +29,34 @@ import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.V2ApiMappingTest;
 import org.apache.solr.handler.api.ApiRegistrar;
 import org.junit.Test;
+
+import java.util.Locale;
+
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ONLY_IF_DOWN;
+import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
+import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
+import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
+import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
+import static org.apache.solr.common.params.CollectionParams.NAME;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonAdminParams.NUM_SUB_SHARDS;
+import static org.apache.solr.common.params.CommonAdminParams.SPLIT_BY_PREFIX;
+import static org.apache.solr.common.params.CommonAdminParams.SPLIT_FUZZ;
+import static org.apache.solr.common.params.CommonAdminParams.SPLIT_KEY;
+import static org.apache.solr.common.params.CommonAdminParams.SPLIT_METHOD;
+import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
+import static org.apache.solr.common.params.CommonParams.ACTION;
+import static org.apache.solr.common.params.CommonParams.TIMING;
+import static org.apache.solr.common.params.CoreAdminParams.DELETE_DATA_DIR;
+import static org.apache.solr.common.params.CoreAdminParams.DELETE_INDEX;
+import static org.apache.solr.common.params.CoreAdminParams.DELETE_INSTANCE_DIR;
+import static org.apache.solr.common.params.CoreAdminParams.REPLICA;
+import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 
 /**
  * Unit tests for the V2 APIs that use the /c/{collection}/shards or /c/{collection}/shards/{shard}
@@ -60,7 +76,7 @@ public class V2ShardsAPIMappingTest extends V2ApiMappingTest<CollectionsHandler>
 
   @Override
   public CollectionsHandler createUnderlyingRequestHandler() {
-    return mock(CollectionsHandler.class);
+    return createMock(CollectionsHandler.class);
   }
 
   @Override

@@ -17,8 +17,6 @@
 
 package org.apache.solr.handler.admin;
 
-import static org.mockito.Mockito.mock;
-
 import org.apache.solr.handler.SolrConfigHandler;
 import org.apache.solr.handler.admin.api.GetConfigAPI;
 import org.junit.Test;
@@ -28,7 +26,7 @@ public class V2ConfigAPIMappingTest extends V2ApiMappingTest<SolrConfigHandler> 
 
   @Override
   public SolrConfigHandler createUnderlyingRequestHandler() {
-    return mock(SolrConfigHandler.class);
+    return createMock(SolrConfigHandler.class);
   }
 
   @Override

@@ -16,16 +16,15 @@
  */
 package org.apache.solr.handler.admin;
 
-import static org.apache.solr.common.params.CommonParams.ACTION;
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.mockito.Mockito.mock;
-
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.handler.CollectionBackupsAPI;
 import org.junit.Test;
+
+import static org.apache.solr.common.params.CommonParams.ACTION;
+import static org.apache.solr.common.params.CommonParams.NAME;
 
 public class V2CollectionBackupsAPIMappingTest extends V2ApiMappingTest<CollectionsHandler> {
   @Override
@@ -36,7 +35,7 @@ public class V2CollectionBackupsAPIMappingTest extends V2ApiMappingTest<Collecti
 
   @Override
   public CollectionsHandler createUnderlyingRequestHandler() {
-    return mock(CollectionsHandler.class);
+    return createMock(CollectionsHandler.class);
   }
 
   @Override

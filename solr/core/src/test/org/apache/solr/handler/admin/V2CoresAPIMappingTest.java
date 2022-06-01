@@ -17,21 +17,37 @@
 
 package org.apache.solr.handler.admin;
 
-import static org.apache.solr.common.params.CollectionAdminParams.NUM_SHARDS;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.apache.solr.common.params.CommonParams.ACTION;
-import static org.apache.solr.common.params.CoreAdminParams.*;
-import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.CREATE;
-import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.STATUS;
-import static org.mockito.Mockito.mock;
-
-import java.util.Locale;
-import java.util.Map;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.handler.admin.api.AllCoresStatusAPI;
 import org.apache.solr.handler.admin.api.CreateCoreAPI;
 import org.apache.solr.handler.admin.api.SingleCoreStatusAPI;
 import org.junit.Test;
+
+import java.util.Locale;
+import java.util.Map;
+
+import static org.apache.solr.common.params.CollectionAdminParams.NUM_SHARDS;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonParams.ACTION;
+import static org.apache.solr.common.params.CoreAdminParams.COLLECTION;
+import static org.apache.solr.common.params.CoreAdminParams.CONFIG;
+import static org.apache.solr.common.params.CoreAdminParams.CONFIGSET;
+import static org.apache.solr.common.params.CoreAdminParams.CORE;
+import static org.apache.solr.common.params.CoreAdminParams.CORE_NODE_NAME;
+import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.CREATE;
+import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.STATUS;
+import static org.apache.solr.common.params.CoreAdminParams.DATA_DIR;
+import static org.apache.solr.common.params.CoreAdminParams.INDEX_INFO;
+import static org.apache.solr.common.params.CoreAdminParams.INSTANCE_DIR;
+import static org.apache.solr.common.params.CoreAdminParams.LOAD_ON_STARTUP;
+import static org.apache.solr.common.params.CoreAdminParams.NAME;
+import static org.apache.solr.common.params.CoreAdminParams.NEW_COLLECTION;
+import static org.apache.solr.common.params.CoreAdminParams.REPLICA_TYPE;
+import static org.apache.solr.common.params.CoreAdminParams.ROLES;
+import static org.apache.solr.common.params.CoreAdminParams.SCHEMA;
+import static org.apache.solr.common.params.CoreAdminParams.SHARD;
+import static org.apache.solr.common.params.CoreAdminParams.TRANSIENT;
+import static org.apache.solr.common.params.CoreAdminParams.ULOG_DIR;
 
 /**
  * Unit tests for the /cores APIs.
@@ -53,7 +69,7 @@ public class V2CoresAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
 
   @Override
   public CoreAdminHandler createUnderlyingRequestHandler() {
-    return mock(CoreAdminHandler.class);
+    return createMock(CoreAdminHandler.class);
   }
 
   @Override

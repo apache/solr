@@ -17,21 +17,30 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.apache.solr.common.params.CommonAdminParams.SPLIT_KEY;
-import static org.apache.solr.common.params.CommonParams.ACTION;
-import static org.apache.solr.common.params.CommonParams.PATH;
-import static org.apache.solr.common.params.CoreAdminParams.*;
-import static org.mockito.Mockito.mock;
-
-import java.util.Arrays;
-import java.util.List;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.admin.V2ApiMappingTest;
 import org.junit.Test;
+
+import java.util.Arrays;
+import java.util.List;
+
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonAdminParams.SPLIT_KEY;
+import static org.apache.solr.common.params.CommonParams.ACTION;
+import static org.apache.solr.common.params.CommonParams.PATH;
+import static org.apache.solr.common.params.CoreAdminParams.CORE;
+import static org.apache.solr.common.params.CoreAdminParams.CORE_NODE_NAME;
+import static org.apache.solr.common.params.CoreAdminParams.DELETE_DATA_DIR;
+import static org.apache.solr.common.params.CoreAdminParams.DELETE_INDEX;
+import static org.apache.solr.common.params.CoreAdminParams.DELETE_INSTANCE_DIR;
+import static org.apache.solr.common.params.CoreAdminParams.NAME;
+import static org.apache.solr.common.params.CoreAdminParams.OTHER;
+import static org.apache.solr.common.params.CoreAdminParams.RANGES;
+import static org.apache.solr.common.params.CoreAdminParams.REQUESTID;
+import static org.apache.solr.common.params.CoreAdminParams.TARGET_CORE;
 
 /**
  * Unit tests for the V2 APIs found in {@link org.apache.solr.handler.admin.api} that use the
@@ -48,7 +57,7 @@ public class V2CoreAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
 
   @Override
   public CoreAdminHandler createUnderlyingRequestHandler() {
-    return mock(CoreAdminHandler.class);
+    return createMock(CoreAdminHandler.class);
   }
 
   @Override
