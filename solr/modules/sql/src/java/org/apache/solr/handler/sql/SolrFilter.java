@@ -362,8 +362,8 @@ class SolrFilter extends Filter implements SolrRel {
         // but that expects the terms wrapped in double-quotes, not parens
         boolean hasMultipleTerms = terms.split("\\s+").length > 1;
         if (hasMultipleTerms && (terms.contains("*") || terms.contains("?"))) {
-          String quotedTerms = "\"" + terms.substring(1, terms.length() - 1) + "\"";
-          return "{!complexphrase}" + pair.getKey() + ":" + quotedTerms;
+          String quotedTerms = "\\\"" + terms.substring(1, terms.length() - 1) + "\\\"";
+          return String.format("{!complexphrase v=\"%s\"}", pair.getKey() + ":" + quotedTerms);
         }
       } // else treat as an embedded Solr query and pass-through
 
