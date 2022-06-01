@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -79,24 +78,24 @@ public class NodesSysPropsCacher implements AutoCloseable {
     StringBuilder sb = new StringBuilder(zkStateReader.getBaseUrlForNodeName(nodeName));
     sb.append("/admin/metrics?omitHeader=true&wt=javabin");
     ModifiableSolrParams msp = new ModifiableSolrParams();
-    msp.add(CommonParams.OMIT_HEADER,"true");
+    msp.add(CommonParams.OMIT_HEADER, "true");
     LinkedHashMap<String, String> keys = new LinkedHashMap<>();
     for (String tag : tags) {
       String metricsKey = "solr.jvm:system.properties:" + tag;
       keys.put(tag, metricsKey);
-      msp.add("key", metricsKey );
+      msp.add("key", metricsKey);
     }
 
     GenericSolrRequest req = new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", msp);
     req.setBasePath(zkStateReader.getBaseUrlForNodeName(nodeName));
     try {
       LinkedHashMap<String, Object> result = new LinkedHashMap<>();
-      NavigableObject response  = solrClient.request(req);
+      NavigableObject response = solrClient.request(req);
       NavigableObject metrics = (NavigableObject) response._get("metrics", MapWriter.EMPTY);
       keys.forEach((tag, key) -> result.put(tag, metrics._get(key, null)));
       return result;
     } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
 

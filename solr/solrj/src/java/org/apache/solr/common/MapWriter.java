@@ -153,5 +153,6 @@ public interface MapWriter extends MapSerializable, NavigableObject {
       return (k, v) -> putNoEx(k, v);
     }
   }
+
   MapWriter EMPTY = new MapWriterMap(Collections.emptyMap());
 }
