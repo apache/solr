@@ -83,6 +83,8 @@ Bug Fixes
 
 * SOLR-16110: Using Schema/Config API breaks the File-Upload of Config Set File (Steffen Moldenhauer, Kevin Risden)
 
+* SOLR-16142: Fix Admin UI's spatial parameter generation. (Arsal Jalib, Christine Poerschke)
+
 Other Changes
 ---------------------
 * SOLR-15897: Remove <jmx/> from all unit test solrconfig.xml files. (Eric Pugh)
