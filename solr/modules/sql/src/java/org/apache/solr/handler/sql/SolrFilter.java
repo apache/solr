@@ -363,7 +363,8 @@ class SolrFilter extends Filter implements SolrRel {
         boolean hasMultipleTerms = terms.split("\\s+").length > 1;
         if (hasMultipleTerms && (terms.contains("*") || terms.contains("?"))) {
           String quotedTerms = "\\\"" + terms.substring(1, terms.length() - 1) + "\\\"";
-          return String.format("{!complexphrase v=\"%s\"}", pair.getKey() + ":" + quotedTerms);
+          String query = pair.getKey() + ":" + quotedTerms;
+          return String.format("{!complexphrase v=\"%s\"}", query);
         }
       } // else treat as an embedded Solr query and pass-through
 
