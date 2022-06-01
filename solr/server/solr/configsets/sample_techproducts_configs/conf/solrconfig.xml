@@ -69,8 +69,10 @@
        If a 'dir' option (with or without a regex) is used and nothing
        is found that matches, a warning will be logged.
 
-       The examples below can be used to load some solr modules along
-       with their external dependencies.
+       The examples below can be used to load some Solr Modules along
+       with their external dependencies as an alternative to using a
+       startup parameter to define the modules to load.  For more info
+       see https://solr.apache.org/guide/solr/latest/configuration-guide/solr-modules.html.
     -->
   <lib dir="${solr.install.dir:../../../..}/modules/extraction/lib" regex=".*\.jar" />
 
