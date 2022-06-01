@@ -805,6 +805,9 @@ Bug Fixes
 
 * SOLR-16215: Escape query characters in Solr SQL Array UDF functions (Kiran Chitturi via Timothy Potter)
 
+* SOLR-16227: Solr SQL query parsing fails on multiple LIKE clauses and multiple terms
+  (Kiran Chitturi via David Smiley)
+
 ==================  8.11.1 ==================
 
 Bug Fixes
