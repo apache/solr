@@ -17,15 +17,6 @@
 
 package org.apache.solr.handler.admin;
 
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.handler.admin.api.AllCoresStatusAPI;
-import org.apache.solr.handler.admin.api.CreateCoreAPI;
-import org.apache.solr.handler.admin.api.SingleCoreStatusAPI;
-import org.junit.Test;
-
-import java.util.Locale;
-import java.util.Map;
-
 import static org.apache.solr.common.params.CollectionAdminParams.NUM_SHARDS;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.ACTION;
@@ -48,6 +39,14 @@ import static org.apache.solr.common.params.CoreAdminParams.SCHEMA;
 import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 import static org.apache.solr.common.params.CoreAdminParams.TRANSIENT;
 import static org.apache.solr.common.params.CoreAdminParams.ULOG_DIR;
+
+import java.util.Locale;
+import java.util.Map;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.handler.admin.api.AllCoresStatusAPI;
+import org.apache.solr.handler.admin.api.CreateCoreAPI;
+import org.apache.solr.handler.admin.api.SingleCoreStatusAPI;
+import org.junit.Test;
 
 /**
  * Unit tests for the /cores APIs.

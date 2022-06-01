@@ -17,7 +17,15 @@
 
 package org.apache.solr.handler.admin;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
 import com.google.common.collect.Maps;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
@@ -32,15 +40,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 /**
  * A base class that facilitates testing V2 to v1 API mappings by mocking out the underlying request
@@ -212,6 +211,6 @@ public abstract class V2ApiMappingTest<T extends RequestHandlerBase> extends Sol
   }
 
   protected T createMock(Class<T> clazz) {
-      return mock(clazz);
+    return mock(clazz);
   }
 }
