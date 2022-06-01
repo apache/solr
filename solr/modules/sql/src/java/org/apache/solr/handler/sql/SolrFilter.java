@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -364,7 +365,7 @@ class SolrFilter extends Filter implements SolrRel {
         if (hasMultipleTerms && (terms.contains("*") || terms.contains("?"))) {
           String quotedTerms = "\\\"" + terms.substring(1, terms.length() - 1) + "\\\"";
           String query = pair.getKey() + ":" + quotedTerms;
-          return String.format("{!complexphrase v=\"%s\"}", query);
+          return String.format(Locale.ROOT, "{!complexphrase v=\"%s\"}", query);
         }
       } // else treat as an embedded Solr query and pass-through
 
