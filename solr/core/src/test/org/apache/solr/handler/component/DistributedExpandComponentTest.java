@@ -533,7 +533,7 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
   }
 
   private void assertCountAndOrder(
-      final int count, final SolrDocumentList results, final String... docs) throws Exception {
+      final int count, final SolrDocumentList results, final String... docs) {
     assertEquals(results.toString(), count, results.size());
 
     for (int i = 0; i < docs.length; i++) {

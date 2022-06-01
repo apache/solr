@@ -295,7 +295,7 @@ public class DateMathParserTest extends SolrTestCaseJ4 {
     assertMath("2001-11-03T23:00:00.000", p, "+4MONTH/DAY");
   }
 
-  public void testParseMathExceptions() throws Exception {
+  public void testParseMathExceptions() {
 
     DateMathParser p = new DateMathParser(UTC);
     setNow(p, "1234-07-04T12:08:56.235");
@@ -365,7 +365,7 @@ public class DateMathParserTest extends SolrTestCaseJ4 {
   }
 
   /** Using dates in the canonical format, verify that parsing+formatting is an identify function */
-  public void testRoundTrip() throws Exception {
+  public void testRoundTrip() {
     // NOTE: the 2nd arg is what the round trip result looks like (may be null if same as input)
 
     assertParseFormatEquals(
@@ -412,7 +412,7 @@ public class DateMathParserTest extends SolrTestCaseJ4 {
     assertParseFormatEquals("-12021-12-01T02:02:02Z", null);
   }
 
-  public void testParseLenient() throws Exception {
+  public void testParseLenient() {
     // dates that only parse thanks to lenient mode of DateTimeFormatter
     assertParseFormatEquals(
         "10995-12-31T23:59:59.990Z", "+10995-12-31T23:59:59.990Z"); // missing '+' 5 digit year

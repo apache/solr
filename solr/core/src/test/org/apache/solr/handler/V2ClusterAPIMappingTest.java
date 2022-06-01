@@ -61,7 +61,7 @@ public class V2ClusterAPIMappingTest {
   }
 
   @Before
-  public void setupApiBag() throws Exception {
+  public void setupApiBag() {
     mockCollectionsHandler = mock(CollectionsHandler.class);
     mockConfigSetHandler = mock(ConfigSetsHandler.class);
     queryRequestCaptor = ArgumentCaptor.forClass(SolrQueryRequest.class);

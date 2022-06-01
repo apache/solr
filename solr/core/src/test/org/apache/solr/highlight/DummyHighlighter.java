@@ -16,7 +16,6 @@
  */
 package org.apache.solr.highlight;
 
-import java.io.IOException;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -27,7 +26,7 @@ public class DummyHighlighter extends SolrHighlighter {
 
   @Override
   public NamedList<Object> doHighlighting(
-      DocList docs, Query query, SolrQueryRequest req, String[] defaultFields) throws IOException {
+      DocList docs, Query query, SolrQueryRequest req, String[] defaultFields) {
     NamedList<Object> fragments = new SimpleOrderedMap<>();
     fragments.add("dummy", "thing1");
     return fragments;

@@ -17,7 +17,6 @@
 
 package org.apache.solr.servlet;
 
-import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.HashSet;
@@ -100,7 +99,7 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
     }
 
     @Override
-    public ServletOutputStream getOutputStream() throws IOException {
+    public ServletOutputStream getOutputStream() {
       return new ServletOutputStream() {
         @Override
         public boolean isReady() {
@@ -111,7 +110,7 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
         public void setWriteListener(WriteListener writeListener) {}
 
         @Override
-        public void write(int b) throws IOException {}
+        public void write(int b) {}
       };
     }
 
@@ -150,7 +149,7 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
     }
 
     @Override
-    public ServletInputStream getInputStream() throws IOException {
+    public ServletInputStream getInputStream() {
       return new ServletInputStream() {
         @Override
         public boolean isFinished() {
@@ -166,7 +165,7 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
         public void setReadListener(ReadListener readListener) {}
 
         @Override
-        public int read() throws IOException {
+        public int read() {
           return 0;
         }
       };

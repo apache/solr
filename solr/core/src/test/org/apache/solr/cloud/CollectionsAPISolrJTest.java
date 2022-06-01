@@ -69,7 +69,6 @@ import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.TimeOut;
-import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -1231,8 +1230,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testAddAndDeleteReplicaProp()
-      throws InterruptedException, IOException, SolrServerException {
+  public void testAddAndDeleteReplicaProp() throws IOException, SolrServerException {
 
     final String collection = "replicaProperties";
     CollectionAdminRequest.createCollection(collection, "conf", 2, 2)
@@ -1265,8 +1263,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testBalanceShardUnique()
-      throws IOException, SolrServerException, KeeperException, InterruptedException {
+  public void testBalanceShardUnique() throws IOException, SolrServerException {
 
     final String collection = "balancedProperties";
     CollectionAdminRequest.createCollection(collection, "conf", 2, 2)

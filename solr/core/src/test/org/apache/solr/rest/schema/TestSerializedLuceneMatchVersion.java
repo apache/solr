@@ -39,7 +39,7 @@ public class TestSerializedLuceneMatchVersion extends RestTestBase {
   }
 
   @Test
-  public void testExplicitLuceneMatchVersions() throws Exception {
+  public void testExplicitLuceneMatchVersions() {
     assertQ(
         "/schema/fieldtypes/explicitLuceneMatchVersions?indent=on&wt=xml&showDefaults=true",
         "count(/response/lst[@name='fieldType']) = 1",
@@ -52,7 +52,7 @@ public class TestSerializedLuceneMatchVersion extends RestTestBase {
   }
 
   @Test
-  public void testNoLuceneMatchVersions() throws Exception {
+  public void testNoLuceneMatchVersions() {
     assertQ(
         "/schema/fieldtypes/noLuceneMatchVersions?indent=on&wt=xml&showDefaults=true",
         "count(/response/lst[@name='fieldType']) = 1",

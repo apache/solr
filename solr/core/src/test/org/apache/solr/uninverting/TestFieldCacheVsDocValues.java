@@ -379,7 +379,7 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
     abstract long next();
   }
 
-  private void assertEquals(Bits expected, Bits actual) throws Exception {
+  private void assertEquals(Bits expected, Bits actual) {
     assertEquals(expected.length(), actual.length());
     for (int i = 0; i < expected.length(); i++) {
       assertEquals(expected.get(i), actual.get(i));

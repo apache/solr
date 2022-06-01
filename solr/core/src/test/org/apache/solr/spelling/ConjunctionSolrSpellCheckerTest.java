@@ -90,7 +90,7 @@ public class ConjunctionSolrSpellCheckerTest extends SolrTestCase {
     public void build(SolrCore core, SolrIndexSearcher searcher) throws IOException {}
 
     @Override
-    public SpellingResult getSuggestions(SpellingOptions options) throws IOException {
+    public SpellingResult getSuggestions(SpellingOptions options) {
       return null;
     }
   }

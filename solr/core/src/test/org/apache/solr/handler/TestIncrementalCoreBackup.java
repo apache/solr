@@ -46,7 +46,7 @@ public class TestIncrementalCoreBackup extends SolrTestCaseJ4 {
   }
 
   @After // unique core per test
-  public void coreDestroy() throws Exception {
+  public void coreDestroy() {
     deleteCore();
   }
 

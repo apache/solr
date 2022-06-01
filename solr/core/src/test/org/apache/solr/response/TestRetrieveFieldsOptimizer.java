@@ -26,7 +26,6 @@ import static org.apache.solr.search.SolrReturnFields.FIELD_SOURCES.MIXED_SOURCE
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.time.Instant;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
@@ -107,7 +106,7 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
   // TODO, how to generalize?
 
   @SuppressWarnings({"unchecked"})
-  private static void setupAllFields() throws IOException {
+  private static void setupAllFields() {
 
     IndexSchema schema = h.getCore().getLatestSchema();
 

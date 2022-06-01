@@ -63,8 +63,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
   }
 
   private void testException(
-      ResponseParser responseParser, int expectedCode, String path, String payload)
-      throws IOException, SolrServerException {
+      ResponseParser responseParser, int expectedCode, String path, String payload) {
     V2Request v2Request =
         new V2Request.Builder(path)
             .withMethod(SolrRequest.METHOD.POST)

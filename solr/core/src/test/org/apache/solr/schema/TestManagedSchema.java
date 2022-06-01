@@ -77,7 +77,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
   }
 
   @After
-  private void afterClass() throws Exception {
+  private void afterClass() {
     deleteCore();
     System.clearProperty("managed.schema.mutable");
     System.clearProperty("enable.update.log");

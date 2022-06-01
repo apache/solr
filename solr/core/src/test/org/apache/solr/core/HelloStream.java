@@ -36,7 +36,7 @@ public class HelloStream extends TupleStream implements Expressible {
 
   public HelloStream() {}
 
-  public HelloStream(StreamExpression expression, StreamFactory factory) throws IOException {}
+  public HelloStream(StreamExpression expression, StreamFactory factory) {}
 
   @Override
   public void setStreamContext(StreamContext context) {}
@@ -74,7 +74,7 @@ public class HelloStream extends TupleStream implements Expressible {
   }
 
   @Override
-  public Explanation toExplanation(StreamFactory factory) throws IOException {
+  public Explanation toExplanation(StreamFactory factory) {
     return new StreamExplanation(getStreamNodeId().toString())
         .withFunctionName("hello")
         .withImplementingClass(this.getClass().getName())

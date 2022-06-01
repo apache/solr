@@ -900,8 +900,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     assertNotNull(doc.get("title_s"));
   }
 
-  private UpdateRequest simulatedUpdateRequest(Long prevVersion, Object... fields)
-      throws SolrServerException, IOException {
+  private UpdateRequest simulatedUpdateRequest(Long prevVersion, Object... fields) {
     SolrInputDocument doc = sdoc(fields);
 
     // get baseUrl of the leader
@@ -918,8 +917,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     return ur;
   }
 
-  private UpdateRequest simulatedDBQ(String query, long version)
-      throws SolrServerException, IOException {
+  private UpdateRequest simulatedDBQ(String query, long version) {
     String baseUrl = getBaseUrl();
 
     UpdateRequest ur = new UpdateRequest();

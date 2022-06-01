@@ -57,7 +57,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testEnumSchema() throws Exception {
+  public void testEnumSchema() {
     assumeFalse(
         "Skipping testing of EnumFieldType without docValues, which is unsupported.",
         System.getProperty("solr.tests.EnumFieldType").equals("solr.EnumFieldType")
@@ -72,7 +72,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testEnumRangeSearch() throws Exception {
+  public void testEnumRangeSearch() {
     assumeFalse(
         "Skipping testing of EnumFieldType without docValues, which is unsupported.",
         System.getProperty("solr.tests.EnumFieldType").equals("solr.EnumFieldType")
@@ -229,7 +229,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testBogusEnumSearch() throws Exception {
+  public void testBogusEnumSearch() {
     assumeFalse(
         "Skipping testing of EnumFieldType without docValues, which is unsupported.",
         System.getProperty("solr.tests.EnumFieldType").equals("solr.EnumFieldType")
@@ -258,7 +258,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testMultivaluedBogusEnumSearch() throws Exception {
+  public void testMultivaluedBogusEnumSearch() {
     assumeFalse(
         "Skipping testing of EnumFieldType without docValues, which is unsupported.",
         System.getProperty("solr.tests.EnumFieldType").equals("solr.EnumFieldType")
@@ -287,7 +287,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testBogusEnumIndexing() throws Exception {
+  public void testBogusEnumIndexing() {
     assumeFalse(
         "Skipping testing of EnumFieldType without docValues, which is unsupported.",
         System.getProperty("solr.tests.EnumFieldType").equals("solr.EnumFieldType")
@@ -305,7 +305,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testMultivaluedBogusEnumIndexing() throws Exception {
+  public void testMultivaluedBogusEnumIndexing() {
     assumeFalse(
         "Skipping testing of EnumFieldType without docValues, which is unsupported.",
         System.getProperty("solr.tests.EnumFieldType").equals("solr.EnumFieldType")
@@ -323,7 +323,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testKnownIntegerEnumIndexing() throws Exception {
+  public void testKnownIntegerEnumIndexing() {
     assumeFalse(
         "Skipping testing of EnumFieldType without docValues, which is unsupported.",
         System.getProperty("solr.tests.EnumFieldType").equals("solr.EnumFieldType")
@@ -343,7 +343,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testMultivaluedKnownIntegerEnumIndexing() throws Exception {
+  public void testMultivaluedKnownIntegerEnumIndexing() {
     assumeFalse(
         "Skipping testing of EnumFieldType without docValues, which is unsupported.",
         System.getProperty("solr.tests.EnumFieldType").equals("solr.EnumFieldType")
@@ -367,7 +367,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testEnumSort() throws Exception {
+  public void testEnumSort() {
     assumeFalse(
         "Skipping testing of EnumFieldType without docValues, which is unsupported.",
         System.getProperty("solr.tests.EnumFieldType").equals("solr.EnumFieldType")
@@ -439,7 +439,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testMultivaluedEnumSort() throws Exception {
+  public void testMultivaluedEnumSort() {
     assumeFalse(
         "Skipping testing of EnumFieldType without docValues, which is unsupported.",
         System.getProperty("solr.tests.EnumFieldType").equals("solr.EnumFieldType")
@@ -526,7 +526,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSetQuery() throws Exception {
+  public void testSetQuery() {
     assumeFalse(
         "Skipping testing of EnumFieldType without docValues, which is unsupported.",
         System.getProperty("solr.tests.EnumFieldType").equals("solr.EnumFieldType")
@@ -605,7 +605,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testMultivaluedSetQuery() throws Exception {
+  public void testMultivaluedSetQuery() {
     assumeFalse(
         "Skipping testing of EnumFieldType without docValues, which is unsupported.",
         System.getProperty("solr.tests.EnumFieldType").equals("solr.EnumFieldType")

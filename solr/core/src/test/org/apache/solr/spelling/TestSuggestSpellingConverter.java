@@ -16,7 +16,6 @@
  */
 package org.apache.solr.spelling;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.regex.Pattern;
 import org.apache.lucene.analysis.Analyzer;
@@ -66,7 +65,7 @@ public class TestSuggestSpellingConverter extends BaseTokenStreamTestCase {
     assertConvertsTo("Foo (field:bar) text_hi:हिन्दी    ", new String[] {"foo bar हिन्दी"});
   }
 
-  public void assertConvertsTo(String text, String expected[]) throws IOException {
+  public void assertConvertsTo(String text, String expected[]) {
     Collection<Token> tokens = converter.convert(text);
     assertEquals(tokens.size(), expected.length);
     int i = 0;

@@ -84,7 +84,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
   }
 
   @AfterClass
-  public static void cleanUpAfterClass() throws Exception {
+  public static void cleanUpAfterClass() {
     solrClient = null;
   }
 

@@ -462,8 +462,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
-        throws IOException {
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
       throw new UnsupportedOperationException(
           "This class is only intended to be used as a PostFilter");
     }

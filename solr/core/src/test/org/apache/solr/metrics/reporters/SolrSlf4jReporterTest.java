@@ -104,7 +104,7 @@ public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
     }
   }
 
-  private static void ensureLoggingConfiguredAppropriately() throws Exception {
+  private static void ensureLoggingConfiguredAppropriately() {
     if (!log.isInfoEnabled()) {
       fail("Test requires that log-level is at-least INFO, but INFO is disabled");
     }

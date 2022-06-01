@@ -442,7 +442,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   /**
    * @see #runThreeTestAdminCommands
    */
-  private static void assertThreeTestAdminEvents(final List<AuditEvent> events) throws Exception {
+  private static void assertThreeTestAdminEvents(final List<AuditEvent> events) {
     assertEquals(3, events.size()); // sanity check
 
     assertAuditEvent(

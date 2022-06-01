@@ -508,8 +508,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     attemptCollectionDelete(cloudClient, testCollectionName);
   }
 
-  protected List<Replica> getActiveOrRecoveringReplicas(String testCollectionName, String shardId)
-      throws Exception {
+  protected List<Replica> getActiveOrRecoveringReplicas(String testCollectionName, String shardId) {
     Map<String, Replica> activeReplicas = new HashMap<>();
     ZkStateReader zkr = ZkStateReader.from(cloudClient);
     ClusterState cs = zkr.getClusterState();

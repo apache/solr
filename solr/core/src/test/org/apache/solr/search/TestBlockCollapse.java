@@ -163,7 +163,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
     }
   }
 
-  public void testEmptyIndex() throws Exception {
+  public void testEmptyIndex() {
     // some simple sanity checks that collapse queries against empty indexes don't match any docs
     // (or throw any errors)
 
@@ -234,7 +234,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
   /**
    * @see #testEmptyIndex
    */
-  private void doTestEmptyIndex() throws Exception {
+  private void doTestEmptyIndex() {
     for (String opt :
         Arrays.asList( // no block collapse logic used (sanity checks)
             "field=block_s1",
@@ -603,7 +603,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
     } // sort
   }
 
-  public void testNullPolicyExpand() throws Exception {
+  public void testNullPolicyExpand() {
 
     { // convert our docs + some docs w/o collapse fields, along with some commits, to update
       // commands in a shuffled order and process all of them...
@@ -951,7 +951,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
    * field values then our other collapse fields. (and the other tests should adequeately prove that
    * the block hueristics for _root_ collapsing work)
    */
-  public void testBlockCollapseWithExpandComponent() throws Exception {
+  public void testBlockCollapseWithExpandComponent() {
 
     { // convert our docs + some docs w/o collapse fields, along with some commits, to update
       // commands in a shuffled order and process all of them...

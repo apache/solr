@@ -100,7 +100,7 @@ public class ActionThrottleTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testAZeroNanoTimeReturnInWait() throws Exception {
+  public void testAZeroNanoTimeReturnInWait() {
 
     ActionThrottle at =
         new ActionThrottle(
@@ -117,7 +117,7 @@ public class ActionThrottleTest extends SolrTestCaseJ4 {
     assertTrue(elaspsedTime + "ms", elaspsedTime >= 995);
   }
 
-  public void testCreateNewThrottleWithLastValue() throws Exception {
+  public void testCreateNewThrottleWithLastValue() {
     ActionThrottle throttle =
         new ActionThrottle(
             "xyz", 1000, new TestNanoTimeSource(Arrays.asList(new Long[] {10L, 20L})));

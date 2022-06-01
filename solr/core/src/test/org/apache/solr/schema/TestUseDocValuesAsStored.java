@@ -120,7 +120,7 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
   }
 
   @After
-  private void afterTest() throws Exception {
+  private void afterTest() {
     clearIndex();
     deleteCore();
     System.clearProperty("managed.schema.mutable");
@@ -170,7 +170,7 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
   }
 
   @Test
-  public void testDuplicateMultiValued() throws Exception {
+  public void testDuplicateMultiValued() {
     doTest("strTF", dvStringFieldName(3, true, false), "str", "X", "X", "Y");
     doTest("strTT", dvStringFieldName(3, true, true), "str", "X", "X", "Y");
     doTest("strFF", dvStringFieldName(3, false, false), "str", "X", "X", "Y");

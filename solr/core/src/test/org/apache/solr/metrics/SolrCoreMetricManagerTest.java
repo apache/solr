@@ -172,7 +172,7 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testNonCloudRegistryName() throws Exception {
+  public void testNonCloudRegistryName() {
     String registryName = h.getCore().getCoreMetricManager().getRegistryName();
     String leaderRegistryName = h.getCore().getCoreMetricManager().getLeaderRegistryName();
     assertNotNull(registryName);

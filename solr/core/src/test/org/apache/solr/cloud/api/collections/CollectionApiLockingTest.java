@@ -55,7 +55,7 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
     }
   }
 
-  private void monothreadedTests(CollectionApiLockFactory apiLockingHelper) throws Exception {
+  private void monothreadedTests(CollectionApiLockFactory apiLockingHelper) {
     // Lock at collection level (which prevents locking + acquiring on any other level of the
     // hierarchy)
     DistributedMultiLock collLock =

@@ -96,7 +96,7 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testParseFieldBoosts() throws Exception {
+  public void testParseFieldBoosts() {
 
     Map<String, Float> e1 = new HashMap<>();
     e1.put("fieldOne", 2.3f);

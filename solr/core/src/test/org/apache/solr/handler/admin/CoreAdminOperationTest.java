@@ -55,7 +55,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testStatusUnexpectedFailuresResultIn500SolrException() throws Exception {
+  public void testStatusUnexpectedFailuresResultIn500SolrException() {
     final Throwable cause = new NullPointerException();
     whenUnexpectedErrorOccursDuringCoreAdminOp(cause);
 
@@ -65,7 +65,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testUnloadUnexpectedFailuresResultIn500SolrException() throws Exception {
+  public void testUnloadUnexpectedFailuresResultIn500SolrException() {
     final Throwable cause = new NullPointerException();
     whenUnexpectedErrorOccursDuringCoreAdminOp(cause);
 
@@ -75,7 +75,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testUnloadMissingCoreNameResultsIn400SolrException() throws Exception {
+  public void testUnloadMissingCoreNameResultsIn400SolrException() {
     whenCoreAdminOpHasParams(Maps.newHashMap());
 
     Exception ex =

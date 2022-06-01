@@ -113,7 +113,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
   }
 
   @SuppressWarnings({"unchecked"})
-  public void testAwareCompatibility() throws Exception {
+  public void testAwareCompatibility() {
 
     final Class<?> clazz1 = ResourceLoaderAware.class;
     // Check ResourceLoaderAware valid objects

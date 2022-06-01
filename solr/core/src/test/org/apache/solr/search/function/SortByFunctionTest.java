@@ -133,7 +133,7 @@ public class SortByFunctionTest extends SolrTestCaseJ4 {
         "//result/doc[4]/str[@name='id'][.='3']");
   }
 
-  public void testSortJoinDocFreq() throws Exception {
+  public void testSortJoinDocFreq() {
     assertU(
         adoc(
             "id",
@@ -191,7 +191,7 @@ public class SortByFunctionTest extends SolrTestCaseJ4 {
    *
    * @see #getFieldFunctionClausesToTest
    */
-  public void testFieldSortSpecifiedAsFunction() throws Exception {
+  public void testFieldSortSpecifiedAsFunction() {
     final long A = Long.MIN_VALUE;
     final long B = A + 1L;
     final long C = B + 1L;

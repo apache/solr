@@ -50,7 +50,7 @@ public class DataDrivenBlockJoinTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testAddNestedDocuments() throws Exception {
+  public void testAddNestedDocuments() {
     assertU(
         "<add>"
             + "  <doc>"

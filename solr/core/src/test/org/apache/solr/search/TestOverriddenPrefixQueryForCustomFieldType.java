@@ -85,7 +85,7 @@ public class TestOverriddenPrefixQueryForCustomFieldType extends SolrTestCaseJ4 
   }
 
   @Test
-  public void testPrefixQueries() throws Exception {
+  public void testPrefixQueries() {
     createIndex(100);
     assertQ(req("fl", "id", "q", "*:*"), "//*[@numFound='100']");
 

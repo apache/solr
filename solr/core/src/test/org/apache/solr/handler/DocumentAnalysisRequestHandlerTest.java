@@ -123,7 +123,7 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
     }
 
     @Override
-    public InputStream getStream() throws IOException {
+    public InputStream getStream() {
       return new ByteArrayInputStream(bytes);
     }
 
@@ -207,7 +207,7 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
    */
   @Test
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public void testHandleAnalysisRequest() throws Exception {
+  public void testHandleAnalysisRequest() {
 
     SolrInputDocument document = new SolrInputDocument();
     document.addField("id", 1);

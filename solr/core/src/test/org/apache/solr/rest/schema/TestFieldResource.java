@@ -21,7 +21,7 @@ import org.junit.Test;
 
 public class TestFieldResource extends SolrRestletTestBase {
   @Test
-  public void testGetField() throws Exception {
+  public void testGetField() {
     assertQ(
         "/schema/fields/test_postv?indent=on&wt=xml&showDefaults=true",
         "count(/response/lst[@name='field']) = 1",
@@ -48,7 +48,7 @@ public class TestFieldResource extends SolrRestletTestBase {
   }
 
   @Test
-  public void testGetNotFoundField() throws Exception {
+  public void testGetNotFoundField() {
     assertQ(
         "/schema/fields/not_in_there?indent=on&wt=xml",
         "count(/response/lst[@name='field']) = 0",
@@ -80,7 +80,7 @@ public class TestFieldResource extends SolrRestletTestBase {
   }
 
   @Test
-  public void testGetFieldIncludeDynamic() throws Exception {
+  public void testGetFieldIncludeDynamic() {
     assertQ(
         "/schema/fields/some_crazy_name_i?indent=on&wt=xml&includeDynamic=true",
         "/response/lst[@name='field']/str[@name='name'] = 'some_crazy_name_i'",
@@ -88,7 +88,7 @@ public class TestFieldResource extends SolrRestletTestBase {
   }
 
   @Test
-  public void testGetFieldDontShowDefaults() throws Exception {
+  public void testGetFieldDontShowDefaults() {
     String[] tests = {
       "count(/response/lst[@name='field']) = 1",
       "count(/response/lst[@name='field']/*) = 6",
