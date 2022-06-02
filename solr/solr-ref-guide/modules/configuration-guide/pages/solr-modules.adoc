@@ -43,8 +43,9 @@ bin/solr start -e techproducts -Dsolr.modules=scripting
 ----
 
 NOTE: If you only wish to enable a module for a single collection, you may add `<lib>` tags to `solrconfig.xml`
-as explained in xref:configuration-guide:libs.adoc[Lib Directories].   This technically isn't considered enabling
-a module, as you are instead just loading all the jars in the module's `lib/` folder, thus enabling all that module' plugins.
+as explained in xref:configuration-guide:libs.adoc[Lib Directories].
+Collection-level plugins will work if the module is enabled either per collection (`<lib>`) or for the whole Solr node.
+Cluster-level plugins will not work when using the `<lib>` option, they must be enabled for the entire Solr node, as described above.
 
 Some modules may have been made available as packages for the xref:configuration-guide:package-manager.adoc[Package Manager],
 check by listing available packages.
