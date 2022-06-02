@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.admin;
 
+import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.handler.SolrConfigHandler;
 import org.apache.solr.handler.admin.api.GetConfigAPI;
 import org.junit.Test;
@@ -42,7 +43,7 @@ public class V2ConfigAPIMappingTest extends V2ApiMappingTest<SolrConfigHandler> 
   // GET /v2/c/collectionName/config is a pure pass-through to the underlying request handler
   @Test
   public void testGetAllConfig() throws Exception {
-    assertMappingExistsForGET("/config");
+    assertAnnotatedApiExistsForGET("/config");
   }
 
   // GET /v2/collectionName/config/<component> is a pure pass-through to the underlying request
@@ -50,11 +51,27 @@ public class V2ConfigAPIMappingTest extends V2ApiMappingTest<SolrConfigHandler> 
   // the API lookup works for a handful of the valid config "components".
   @Test
   public void testGetSingleComponentConfig() throws Exception {
-    assertMappingExistsForGET("/config/overlay");
-    assertMappingExistsForGET("/config/query");
-    assertMappingExistsForGET("/config/jmx");
-    assertMappingExistsForGET("/config/requestDispatcher");
-    assertMappingExistsForGET("/config/znodeVersion");
-    assertMappingExistsForGET("/config/luceneMatchVersion");
+    assertAnnotatedApiExistsForGET("/config/overlay");
+    assertAnnotatedApiExistsForGET("/config/query");
+    assertAnnotatedApiExistsForGET("/config/jmx");
+    assertAnnotatedApiExistsForGET("/config/requestDispatcher");
+    assertAnnotatedApiExistsForGET("/config/znodeVersion");
+    assertAnnotatedApiExistsForGET("/config/luceneMatchVersion");
+  }
+
+  @Test
+  public void testGetParamsetsConfig() throws Exception {
+    assertAnnotatedApiExistsForGET("/config/params");
+    final AnnotatedApi getParamSetsApi = getAnnotatedApiForGET("/config/params");
+    // Ensure that the /config/params path redirects to the /config/params specific endpoint (and not the generic "/config/{component}")
+    final String[] getParamSetsApiPaths = getParamSetsApi.getEndPoint().path();
+    assertEquals(1, getParamSetsApiPaths.length);
+    assertEquals("/config/params", getParamSetsApiPaths[0]);
+
+    assertAnnotatedApiExistsForGET("/config/params/someParamSet");
+    final AnnotatedApi getSingleParamSetApi = getAnnotatedApiForGET("/config/params/someParamSet");
+    final String[] getSingleParamsetApiPaths = getSingleParamSetApi.getEndPoint().path();
+    assertEquals(1, getSingleParamsetApiPaths.length);
+    assertEquals("/config/params/{paramset}", getSingleParamsetApiPaths[0]);
   }
 }
