@@ -32,6 +32,7 @@ public class V2CollectionBackupsAPIMappingTest extends V2ApiMappingTest<Collecti
     final CollectionBackupsAPI collBackupsAPI = new CollectionBackupsAPI(getRequestHandler());
     apiBag.registerObject(collBackupsAPI);
   }
+
   @Override
   public CollectionsHandler createUnderlyingRequestHandler() {
     return createMock(CollectionsHandler.class);

@@ -63,7 +63,8 @@ public class V2ConfigAPIMappingTest extends V2ApiMappingTest<SolrConfigHandler> 
   public void testGetParamsetsConfig() throws Exception {
     assertAnnotatedApiExistsForGET("/config/params");
     final AnnotatedApi getParamSetsApi = getAnnotatedApiForGET("/config/params");
-    // Ensure that the /config/params path redirects to the /config/params specific endpoint (and not the generic "/config/{component}")
+    // Ensure that the /config/params path redirects to the /config/params specific endpoint (and
+    // not the generic "/config/{component}")
     final String[] getParamSetsApiPaths = getParamSetsApi.getEndPoint().path();
     assertEquals(1, getParamSetsApiPaths.length);
     assertEquals("/config/params", getParamSetsApiPaths[0]);

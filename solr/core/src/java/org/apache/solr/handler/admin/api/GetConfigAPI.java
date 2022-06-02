@@ -17,13 +17,13 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
+import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
+
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.handler.SolrConfigHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
-import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
 
 /**
  * V2 APIs for retrieving some or all configuration relevant to a particular collection (or core).
@@ -46,20 +46,18 @@ public class GetConfigAPI {
     configHandler.handleRequest(req, rsp);
   }
 
-
   @EndPoint(
-          path = {"/config/params"},
-          method = GET,
-          permission = CONFIG_READ_PERM)
+      path = {"/config/params"},
+      method = GET,
+      permission = CONFIG_READ_PERM)
   public void getAllParamSets(SolrQueryRequest req, SolrQueryResponse rsp) {
     configHandler.handleRequest(req, rsp);
   }
 
-
   @EndPoint(
-          path = {"/config/params/{paramset}"},
-          method = GET,
-          permission = CONFIG_READ_PERM)
+      path = {"/config/params/{paramset}"},
+      method = GET,
+      permission = CONFIG_READ_PERM)
   public void getSingleParamSet(SolrQueryRequest req, SolrQueryResponse rsp) {
     configHandler.handleRequest(req, rsp);
   }
