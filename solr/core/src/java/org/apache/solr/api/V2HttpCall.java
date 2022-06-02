@@ -88,7 +88,7 @@ public class V2HttpCall extends HttpSolrCall {
             new Api(null) {
               @Override
               public void call(SolrQueryRequest req, SolrQueryResponse rsp) {
-                rsp.add("documentation", "https://solr.apache.org/guide/v2-api.html");
+                rsp.add("documentation", "https://solr.apache.org/guide/solr/latest/configuration-guide/v2-api.html");
                 rsp.add("description", "V2 API root path");
               }
             };

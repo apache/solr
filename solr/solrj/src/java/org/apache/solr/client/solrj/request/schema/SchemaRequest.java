@@ -357,7 +357,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
      * Creates a new instance of the request.
      *
      * @param fieldAttributes field type attributes that can be used to enrich the field definition.
-     * @see <a href="https://solr.apache.org/guide/defining-fields.html">Defining Solr fields</a>
+     * @see <a href="https://solr.apache.org/guide/solr/latest/indexing-guide/fields.html">Defining Solr fields</a>
      */
     public AddField(Map<String, Object> fieldAttributes) {
       this(fieldAttributes, null);
@@ -380,7 +380,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
    * this command will not partially modify a field's definition. If the field does not exist in the
    * schema the method call {@link #process(SolrClient, String)} will fail.
    *
-   * @see <a href="https://solr.apache.org/guide/defining-fields.html">Defining Solr fields</a>
+   * @see <a href="https://solr.apache.org/guide/solr/latest/indexing-guide/fields.html">Defining Solr fields</a>
    */
   public static class ReplaceField extends SingleUpdate {
     /**
@@ -436,7 +436,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
   /**
    * Adds a new dynamic field rule to the schema of the specified collection.
    *
-   * @see <a href="https://solr.apache.org/guide/defining-fields.html">Defining Solr fields</a>
+   * @see <a href="https://solr.apache.org/guide/solr/latest/indexing-guide/fields.html">Defining Solr fields</a>
    * @see <a href="https://solr.apache.org/guide/dynamic-fields.html">Solr dynamic fields</a>
    */
   public static class AddDynamicField extends SingleUpdate {
@@ -473,7 +473,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
      *
      * @param dynamicFieldAttributes field type attributes that can be used to enrich the field
      *     definition.
-     * @see <a href="https://solr.apache.org/guide/defining-fields.html">Defining Solr fields</a>
+     * @see <a href="https://solr.apache.org/guide/solr/latest/indexing-guide/fields.html">Defining Solr fields</a>
      * @see <a href="https://solr.apache.org/guide/dynamic-fields.html">Solr dynamic fields</a>
      */
     public ReplaceDynamicField(Map<String, Object> dynamicFieldAttributes) {

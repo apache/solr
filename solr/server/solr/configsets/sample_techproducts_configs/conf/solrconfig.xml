@@ -1250,7 +1250,7 @@ via parameters.  The below configuration supports hl.method=original and fastVec
        making this example suitable for detecting languages form full-text
        rich documents injected via ExtractingRequestHandler.
 
-       See more about langId at https://solr.apache.org/guide/language-detection.html
+       See more about langId at https://solr.apache.org/guide/solr/latest/indexing-guide/language-detection.html
     -->
     <!--
      <updateRequestProcessorChain name="langid">

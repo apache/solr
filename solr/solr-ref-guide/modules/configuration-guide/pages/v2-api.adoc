@@ -118,7 +118,7 @@ Example of introspect for a POST API: `\http://localhost:8983/api/c/gettingstart
       "url":{"paths":["/collections/{collection}",
           "/c/{collection}"]},
       "commands":{"modify":{
-          "documentation":"https://solr.apache.org/guide/collections-api.html#modifycollection",
+          "documentation":"https://solr.apache.org/guide/solr/latest/deployment-guide/collection-management.html#modifycollection",
           "description":"Modifies specific attributes of a collection. Multiple attributes can be changed at one time.",
           "type":"object",
           "properties":{

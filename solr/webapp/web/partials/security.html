@@ -26,7 +26,7 @@ limitations under the License.
   <div ng-show="!isSecurityAdminEnabled">
     <p class="warning-msg"><img src="img/ico/shield--exclamation.png"/>&nbsp;WARNING: Security is not enabled for this server!</p>
     <div ng-show="isCloudMode">
-      <p class="clearfix">Use the <b>bin/solr auth</b> command-line tool to enable security and then reload this panel. For more information, see: <a target="_blank" href="https://solr.apache.org/guide/authentication-and-authorization-plugins.html#using-security-json-with-solr" class="ref-guide-link">Using security.json with Solr</a></p>
+      <p class="clearfix">Use the <b>bin/solr auth</b> command-line tool to enable security and then reload this panel. For more information, see: <a target="_blank" href="https://solr.apache.org/guide/solr/latest/deployment-guide/authentication-and-authorization-plugins.html#using-security-json-with-solr" class="ref-guide-link">Using security.json with Solr</a></p>
       <p class="clearfix"><br/>Example usage of <b>bin/solr auth</b> to enable basic authentication:</p>
       <pre>
 
@@ -36,7 +36,7 @@ limitations under the License.
       </pre>
     </div>
     <div ng-show="!isCloudMode">
-      <p class="clearfix">Create a <b>security.json</b> config file in your Solr home directory and then restart Solr (on all nodes). For more information, see: <a target="_blank" href="https://solr.apache.org/guide/authentication-and-authorization-plugins.html#using-security-json-with-solr" class="ref-guide-link">Using security.json with Solr</a></p>
+      <p class="clearfix">Create a <b>security.json</b> config file in your Solr home directory and then restart Solr (on all nodes). For more information, see: <a target="_blank" href="https://solr.apache.org/guide/solr/latest/deployment-guide/authentication-and-authorization-plugins.html#using-security-json-with-solr" class="ref-guide-link">Using security.json with Solr</a></p>
     </div>
   </div>
 
@@ -75,7 +75,7 @@ limitations under the License.
               <div id="forwardCredsHelp" class="help" ng-show="helpId === 'forwardCredsHelp'">
                 <div class="help-top">
                   <p>If checked, Solr forwards user credentials when making distributed requests to other nodes in the cluster. If un-checked (the default), Solr will use the internal PKI authentication mechanism for distributed requests. For more information, see:
-                  <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/authentication-and-authorization-plugins.html#pkiauthenticationplugin">PKIAuthenticationPlugin</a></div></p>
+                  <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/solr/latest/deployment-guide/authentication-and-authorization-plugins.html#pkiauthenticationplugin">PKIAuthenticationPlugin</a></div></p>
                 </div>
               </div>
             </span>
