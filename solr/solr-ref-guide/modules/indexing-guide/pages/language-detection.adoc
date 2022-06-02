@@ -33,9 +33,7 @@ For more information about language analysis in Solr, see xref:language-analysis
 
 == Module
 
-This is provided via a xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
-
-The module name is `langid`.
+This is provided via the `langid` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
 
 == Configuring Language Detection
 

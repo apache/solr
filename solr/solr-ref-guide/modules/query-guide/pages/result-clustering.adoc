@@ -38,9 +38,7 @@ Clustering is also similar to xref:result-grouping.adoc[] in that it can help to
 
 == Module
 
-This is provided via a xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
-
-The module name is `clustering`.
+This is provided via the `clustering` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
 
 == Configuration Quick Starter
 

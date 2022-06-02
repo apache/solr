@@ -405,9 +405,7 @@ An example configuration using this property can be found below.
 
 Stores and retrieves backup files from HDFS directories.
 
-This is provided via a xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
-
-The module name is `hdfs`.
+This is provided via the `hdfs` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
 
 HdfsBackupRepository accepts the following configuration options:
 
@@ -467,9 +465,7 @@ An example configuration using these properties can be found below:
 
 Stores and retrieves backup files in a Google Cloud Storage ("GCS") bucket.
 
-This is provided via a xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
-
-The module name is `gcs-repository`.
+This is provided via the `gcs-repository` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
 
 GCSBackupRepository accepts the following options for overall configuration:
 
@@ -669,9 +665,7 @@ An example configuration using the overall and GCS-client properties can be seen
 
 Stores and retrieves backup files in an Amazon S3 bucket.
 
-This is provided via a xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
-
-The module name is `s3-repository`.
+This is provided via the `s3-repository` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
 
 This plugin uses the https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/credentials.html[default AWS credentials provider chain], so ensure that your credentials are set appropriately (e.g., via env var, or in `~/.aws/credentials`, etc.).
 

@@ -111,8 +111,8 @@ This may require some more disk space for logs than was the case in version 8.x.
 changed package name to `org.apache.solr.security.jwt`, but can still be loaded as shortform `class="solr.JWTAuthPlugin"`.
 * Dependency updates - A lot of dependency updates removes several security issues from dependencies, and thus make Solr more secure.
 * The allow-list defining allowed URLs for the `shards` parameter is not in the `shardHandler` configuration anymore. It is defined by the `allowUrls` top-level property of the `solr.xml` file. For more information, see xref:configuration-guide:configuring-solr-xml.adoc#allow-urls[Format of solr.allowUrls] documentation.
-* To improve security, `StatelessScriptUpdateProcessorFactory` has been renamed as `ScriptUpdateProcessorFactory` and moved to `scripting` module instead of shipping as part of Solr core.  Users need to add the module `scripting` to classpath.
-* To improve security, `XSLTResponseWriter` has been moved to `scripting` module instead of shipping as part of Solr core.  Users need to add the module `scripting` to classpath.
+* To improve security, `StatelessScriptUpdateProcessorFactory` has been renamed as `ScriptUpdateProcessorFactory` and moved to the xref:configuration-guide:script-update-processor.adoc#module[`scripting` Module] instead of shipping as part of Solr core. This module needs to be enabled explicitly.
+* To improve security, `XSLTResponseWriter` has been moved to the xref:configuration-guide:script-update-processor.adoc#module[`scripting` Module] instead of shipping as part of Solr core. This module needs to be enabled explicitly.
 
 
 === Stability and Scalability

@@ -28,9 +28,7 @@ image::distributed-tracing/query-request-tracing.png[]
 
 == Module
 
-This is provided via a xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
-
-The module name is `jaegertracer-configurator`.
+This is provided via the `jaegertracer-configurator` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
 
 == Configuring Tracer
 

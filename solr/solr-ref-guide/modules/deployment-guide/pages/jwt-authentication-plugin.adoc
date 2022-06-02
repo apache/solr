@@ -23,9 +23,7 @@ The typical use case is to integrate Solr with an https://en.wikipedia.org/wiki/
 
 == Module
 
-This is provided via a xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
-
-The module name is `jwt-auth`.
+This is provided via the `jwt-auth` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
 
 == Enable JWT Authentication
 

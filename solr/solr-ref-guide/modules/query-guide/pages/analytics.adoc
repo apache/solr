@@ -25,9 +25,7 @@ The standard facets are supported within the analytics component with additions 
 
 == Module
 
-This is provided via a xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
-
-The module name is `analytics`.
+This is provided via the `analytics` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
 
 == Analytics Configuration
 

@@ -31,9 +31,7 @@ However, you are introducing some potential security vulnerabilities.
 
 == Module
 
-This is provided via a xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
-
-The module name is `scripting`.
+This is provided via the `scripting` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
 
 
 == Enababling the ScriptingUpdateProcessor and Scripting Engines

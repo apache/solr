@@ -29,7 +29,7 @@ If there is overlap or inter-dependencies between libraries, then pay attention 
 There are several special places you can place Solr plugin `.jar` files:
 
 * `<solr_home>/lib/`: The `.jar` files placed here are available to all Solr cores running on the node, and to node level plugins referenced in `solr.xml` -- so basically everything.
-This directory is not present by default so you willl need to create it.
+This directory is not present by default so you will need to create it.
 See xref:deployment-guide:taking-solr-to-production.adoc[].
 
 * `<core_instance>/lib/`: In a user-managed cluster or a single-node installation, you may want to add plugins just for a specific Solr core.
