@@ -147,6 +147,8 @@ Bug Fixes
 
 * SOLR-7883: MoreLikeThisHandler to support facets (Mikhail Khludnev)
 
+* SOLR-16232: Fix EnvVar usage in bin/solr (Houston Putman)
+
 Other Changes
 ---------------------
 * SOLR-16351: Upgrade Carrot2 to 4.4.3, upgrade randomizedtesting to 2.8.0. (Dawid Weiss)
