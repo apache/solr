@@ -147,7 +147,7 @@ public abstract class BaseSolrResource {
       getSolrResponse().add("error", info);
       String message = (String) info.get("msg");
       if (null != message && !message.trim().isEmpty()) {
-        getSolrResponse().addToLog("msg", "{" + message.trim() + "}");
+        getSolrResponse().addToLog("msg", message.trim());
       }
     }
   }

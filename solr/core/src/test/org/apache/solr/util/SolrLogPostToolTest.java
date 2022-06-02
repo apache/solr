@@ -47,7 +47,7 @@ public class SolrLogPostToolTest extends SolrTestCaseJ4 {
   public void testQueryRecord() throws Exception {
     String record =
         sometimesSolr9Format(
-            "2019-12-09 15:05:11.931 INFO  (qtp2103763750-21) [c:logs4 s:shard1 r:core_node2 x:logs4_shard1_replica_n1] o.a.s.c.S.Request [logs4_shard1_replica_n1]  webapp=/solr path=/select params={q=*:*&_=1575835181759&shards.purpose=36&isShard=true&wt=javabin&distrib=false} hits=234868 status=0 QTime=8\n");
+            "2019-12-09 15:05:11.931 INFO  (qtp2103763750-21) [c:logs4 s:shard1 r:core_node2 x:logs4_shard1_replica_n1] o.a.s.c.S.Request [logs4_shard1_replica_n1]  {\"webapp\":\"/solr\",\"path\":\"/select\",\"params\":\"q=*:*&_=1575835181759&shards.purpose=36&isShard=true&wt=javabin&distrib=false\",\"hits\":\"234868\",\"status\":\"0\",\"QTime\":\"8\"}\n");
     List<SolrInputDocument> docs = readDocs(record);
     assertEquals(docs.size(), 1);
     SolrInputDocument doc = docs.get(0);

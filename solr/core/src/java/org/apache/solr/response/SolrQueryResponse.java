@@ -217,19 +217,17 @@ public class SolrQueryResponse {
     return getToLogAsString("");
   }
 
-  /** Returns a string of the form "prefix name1=value1 name2=value2 ..." */
+  /** Returns a string of the form "{"prefix":"value","name1":"value1","name2":"value2" ...}" */
   public String getToLogAsString(String prefix) {
-    StringBuilder sb = new StringBuilder();
     if (prefix != null && !prefix.isEmpty()) {
       // TODO: remove "prefix"
       Map<String, Object> keyValPairs = new LinkedHashMap<>();
       keyValPairs.put("prefix", prefix);
       keyValPairs.putAll(toLog);
-      sb.append(JSONUtil.toJSON(keyValPairs, -1));
+      return JSONUtil.toJSON(keyValPairs, -1);
     } else {
-      sb.append(JSONUtil.toJSON(toLog, -1));
+      return JSONUtil.toJSON(toLog, -1);
     }
-    return sb.toString();
   }
 
   /**

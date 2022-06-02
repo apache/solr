@@ -95,10 +95,8 @@ public class TestSolrQueryResponse extends SolrTestCase {
     response.addToLog("key1", "value1");
 
     Map<String, Object> toLog = response.getToLog();
-    assertFalse(toLog.isEmpty());
-    assertTrue(toLog.containsKey("key1"));
-    assertEquals("value1", toLog.get("key1"));
     assertTrue(toLog.size() == 1);
+    assertEquals(Map.of("key1","value1"), toLog);
 
     assertEquals("{\"key1\":\"value1\"}", response.getToLogAsString(""));
     assertEquals(
@@ -107,8 +105,7 @@ public class TestSolrQueryResponse extends SolrTestCase {
     // and then add something else
     response.addToLog("key2", "value2");
     toLog = response.getToLog();
-    assertTrue(toLog.containsKey("key2"));
-    assertEquals("value2", toLog.get("key2"));
+    assertEquals(Map.of("key1","value1","key2","value2"), toLog);
 
     assertEquals("{\"key1\":\"value1\",\"key2\":\"value2\"}", response.getToLogAsString(""));
     assertEquals(

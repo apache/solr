@@ -38,6 +38,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.ShardRequest;
 
 /** A command line tool for indexing Solr logs in the out-of-the-box log format. */
@@ -183,16 +184,16 @@ public class SolrLogPostTool {
           lineDoc.setField("type_s", "other"); // Overridden by known types below
 
           if (line.contains("Registered new searcher")) {
-            parseNewSearch(lineDoc, line);
-          } else if (line.contains("path=/update")) {
-            parseUpdate(lineDoc, line);
+            lineDoc.setField("type_s", "newSearcher");
+            setMDCFields(lineDoc, line);
           } else if (line.contains(" ERROR ")) {
             this.cause = null;
             parseError(lineDoc, line, readTrace());
-          } else if (line.contains("QTime=")) {
-            parseQueryRecord(lineDoc, line);
+            setMDCFields(lineDoc, line);
+          } else {
+            parseRecord(lineDoc, line);
+            setMDCFields(lineDoc, line);
           }
-
           return lineDoc;
         } else {
           return null;
@@ -266,8 +267,7 @@ public class SolrLogPostTool {
       doc.setField(fieldName, fieldValue);
     }
 
-    private void parseError(SolrInputDocument lineRecord, String line, String trace)
-        throws IOException {
+    private void parseError(SolrInputDocument lineRecord, String line, String trace) throws IOException {
       lineRecord.setField("type_s", "error");
 
       // Don't include traces that have only the %html header.
@@ -279,47 +279,72 @@ public class SolrLogPostTool {
         lineRecord.setField("root_cause_t", cause.replace("Caused by:", "").trim());
       }
 
-      lineRecord.setField("collection_s", parseCollection(line));
-      lineRecord.setField("core_s", parseCore(line));
-      lineRecord.setField("shard_s", parseShard(line));
-      lineRecord.setField("replica_s", parseReplica(line));
     }
 
-    private void parseQueryRecord(SolrInputDocument lineRecord, String line) {
-      lineRecord.setField("qtime_i", parseQTime(line));
-      lineRecord.setField("status_s", parseStatus(line));
-
-      String path = parsePath(line);
-      lineRecord.setField("path_s", path);
-
-      if (line.contains("hits=")) {
-        lineRecord.setField("hits_l", parseHits(line));
+    private Map<String, Object> extractJSONFormattedMessage(String line) {
+      if (line.contains("o.a.s.c.S.Request") ||
+              (line.contains("o.a.s.s.HttpSolrCall") && line.contains("\"prefix\""))) {
+        int startPos = 0; // '{' starts at
+        while (startPos < line.length() && line.charAt(startPos) != '{') {
+          startPos++;
+        }
+        int endPos = startPos + 1; // '}' ends at
+        while (endPos < line.length() && line.charAt(endPos) != '}') {
+          endPos++;
+        }
+        String json = line.substring(startPos, endPos + 1);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> fromJSON = (Map<String, Object>) Utils.fromJSONString(json);
+        return fromJSON;
       }
-
-      String params = parseParams(line);
-      lineRecord.setField("params_t", params);
-      addParams(lineRecord, params);
-
-      lineRecord.setField("collection_s", parseCollection(line));
-      lineRecord.setField("core_s", parseCore(line));
-      lineRecord.setField("node_s", parseNode(line));
-      lineRecord.setField("shard_s", parseShard(line));
-      lineRecord.setField("replica_s", parseReplica(line));
-
-      if (path != null && path.contains("/admin")) {
-        lineRecord.setField("type_s", "admin");
-      } else if (path != null && params.contains("/replication")) {
-        lineRecord.setField("type_s", "replication");
-      } else if (path != null && path.contains("/get")) {
-        lineRecord.setField("type_s", "get");
-      } else {
-        lineRecord.setField("type_s", "query");
-      }
+      return null;
     }
 
-    private void parseNewSearch(SolrInputDocument lineRecord, String line) {
+    private void parseRecord(SolrInputDocument lineRecord, String line) {
+      Map<String, Object> keyValuePairs = extractJSONFormattedMessage(line);
+      if (keyValuePairs != null) {
+        // query request record
+        if (keyValuePairs.containsKey("QTime")) {
+          lineRecord.setField("qtime_i", keyValuePairs.get("QTime"));
+          lineRecord.setField("status_s", keyValuePairs.get("status"));
+          lineRecord.setField("path_s", keyValuePairs.get("path"));
+          if (keyValuePairs.containsKey("hits")) {
+            lineRecord.setField("hits_l", keyValuePairs.get("hits"));
+          }
+          lineRecord.setField("params_t", keyValuePairs.get("params"));
+          addParams(lineRecord, keyValuePairs.get("params").toString());
+
+          lineRecord.setField("node_s", keyValuePairs.get("node_name"));
+
+          if (keyValuePairs.containsKey("prefix") && keyValuePairs.get("prefix").equals("admin")) {
+            lineRecord.setField("type_s", "admin");
+          } else if (keyValuePairs.get("params").toString().contains("/replication")) {
+            lineRecord.setField("type_s", "replication");
+          } else if (keyValuePairs.get("path").equals("/get")) {
+            lineRecord.setField("type_s", "get");
+          } else {
+            lineRecord.setField("type_s", "query");
+          }
+        }
+
+        // update request record
+        if (keyValuePairs.get("path").equals("/update")) {
+          if (keyValuePairs.containsKey("deleteByQuery")) {
+            lineRecord.setField("type_s", "deleteByQuery");
+          } else if (keyValuePairs.containsKey("delete")) {
+            lineRecord.setField("type_s", "delete");
+          } else if (keyValuePairs.containsKey("commit") && (Boolean) keyValuePairs.get("commit")) {
+            lineRecord.setField("type_s", "commit");
+          } else {
+            lineRecord.setField("type_s", "update");
+          }
+        }
+        }
+      }
+
+    private void setMDCFields(SolrInputDocument lineRecord, String line) {
+      // x:value format
       lineRecord.setField("core_s", parseCore(line));
-      lineRecord.setField("type_s", "newSearcher");
       lineRecord.setField("collection_s", parseCollection(line));
       lineRecord.setField("shard_s", parseShard(line));
       lineRecord.setField("replica_s", parseReplica(line));
@@ -333,23 +358,6 @@ public class SolrLogPostTool {
       } else {
         return null;
       }
-    }
-
-    private void parseUpdate(SolrInputDocument lineRecord, String line) {
-      if (line.contains("deleteByQuery=")) {
-        lineRecord.setField("type_s", "deleteByQuery");
-      } else if (line.contains("delete=")) {
-        lineRecord.setField("type_s", "delete");
-      } else if (line.contains("commit=true")) {
-        lineRecord.setField("type_s", "commit");
-      } else {
-        lineRecord.setField("type_s", "update");
-      }
-
-      lineRecord.setField("collection_s", parseCollection(line));
-      lineRecord.setField("core_s", parseCore(line));
-      lineRecord.setField("shard_s", parseShard(line));
-      lineRecord.setField("replica_s", parseReplica(line));
     }
 
     private String parseCore(String line) {
@@ -382,67 +390,6 @@ public class SolrLogPostTool {
       }
     }
 
-    private String parsePath(String line) {
-      char[] ca = {' '};
-      String parts[] = line.split(" path=");
-      if (parts.length == 2) {
-        return readUntil(parts[1], ca);
-      } else {
-        return null;
-      }
-    }
-
-    private String parseQTime(String line) {
-      char[] ca = {'\n', '\r'};
-      String parts[] = line.split(" QTime=");
-      if (parts.length == 2) {
-        return readUntil(parts[1], ca);
-      } else {
-        return null;
-      }
-    }
-
-    private String parseNode(String line) {
-      char[] ca = {' ', ']', '}', ','};
-      String parts[] = line.split("node_name=n:");
-      if (parts.length >= 2) {
-        return readUntil(parts[1], ca);
-      } else {
-        return null;
-      }
-    }
-
-    private String parseStatus(String line) {
-      char[] ca = {' ', '\n', '\r'};
-      String parts[] = line.split(" status=");
-      if (parts.length == 2) {
-        return readUntil(parts[1], ca);
-      } else {
-        return null;
-      }
-    }
-
-    private String parseHits(String line) {
-      char[] ca = {' '};
-      String parts[] = line.split(" hits=");
-      if (parts.length == 2) {
-        return readUntil(parts[1], ca);
-      } else {
-        return null;
-      }
-    }
-
-    private String parseParams(String line) {
-      char[] ca = {' '};
-      String parts[] = line.split(" params=");
-      if (parts.length == 2) {
-        String p = readUntil(parts[1].substring(1), ca);
-        return p.substring(0, p.length() - 1);
-      } else {
-        return null;
-      }
-    }
-
     private String readUntil(String s, char[] chars) {
       StringBuilder builder = new StringBuilder();
       for (int i = 0; i < s.length(); i++) {
@@ -456,11 +403,6 @@ public class SolrLogPostTool {
       }
 
       return builder.toString();
-    }
-
-    private void addOrReplaceFieldValue(
-        SolrInputDocument doc, String fieldName, String fieldValue) {
-      doc.setField(fieldName, fieldValue);
     }
 
     private void addParams(SolrInputDocument doc, String params) {
