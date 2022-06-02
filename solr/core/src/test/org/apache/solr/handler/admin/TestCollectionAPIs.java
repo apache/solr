@@ -284,8 +284,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
       final SolrRequest.METHOD method,
       final String payload,
       final CoreContainer cc,
-      String expectedOutputMapJson)
-      throws Exception {
+      String expectedOutputMapJson) {
     Pair<SolrQueryRequest, SolrQueryResponse> ctx = makeCall(apiBag, path, method, payload, cc);
     ZkNodeProps output = (ZkNodeProps) ctx.second().getValues().get(ZkNodeProps.class.getName());
     @SuppressWarnings("unchecked")
@@ -300,8 +299,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
       final SolrRequest.METHOD method,
       final String payload,
       final CoreContainer cc,
-      String expectedErrorMsg)
-      throws Exception {
+      String expectedErrorMsg) {
     RuntimeException e =
         expectThrows(RuntimeException.class, () -> makeCall(apiBag, path, method, payload, cc));
     assertTrue(
@@ -317,8 +315,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
       String path,
       final SolrRequest.METHOD method,
       final String payload,
-      final CoreContainer cc)
-      throws Exception {
+      final CoreContainer cc) {
     SolrParams queryParams = new MultiMapSolrParams(Collections.emptyMap());
     if (path.indexOf('?') > 0) {
       String queryStr = path.substring(path.indexOf('?') + 1);

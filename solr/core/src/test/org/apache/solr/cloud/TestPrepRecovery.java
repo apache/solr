@@ -47,7 +47,7 @@ public class TestPrepRecovery extends SolrCloudTestCase {
   }
 
   @AfterClass
-  public static void tearCluster() throws Exception {
+  public static void tearCluster() {
     System.clearProperty("leaderConflictResolveWait");
   }
 

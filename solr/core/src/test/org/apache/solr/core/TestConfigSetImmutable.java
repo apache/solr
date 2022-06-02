@@ -110,7 +110,7 @@ public class TestConfigSetImmutable extends RestTestBase {
   }
 
   @Test
-  public void testAddSchemaFieldsImmutable() throws Exception {
+  public void testAddSchemaFieldsImmutable() {
     final String error = "error";
 
     // check writing an existing field is okay

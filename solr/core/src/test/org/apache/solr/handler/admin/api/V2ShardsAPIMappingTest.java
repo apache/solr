@@ -21,6 +21,17 @@
 
 package org.apache.solr.handler.admin.api;
 
+import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.handler.admin.CollectionsHandler;
+import org.apache.solr.handler.admin.V2ApiMappingTest;
+import org.apache.solr.handler.api.ApiRegistrar;
+import org.junit.Test;
+
+import java.util.Locale;
+
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ONLY_IF_DOWN;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
@@ -46,16 +57,7 @@ import static org.apache.solr.common.params.CoreAdminParams.DELETE_INDEX;
 import static org.apache.solr.common.params.CoreAdminParams.DELETE_INSTANCE_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.REPLICA;
 import static org.apache.solr.common.params.CoreAdminParams.SHARD;
-
-import java.util.Locale;
-import org.apache.solr.common.params.CollectionParams;
-import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.handler.admin.CollectionsHandler;
-import org.apache.solr.handler.admin.V2ApiMappingTest;
-import org.apache.solr.handler.api.ApiRegistrar;
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Unit tests for the V2 APIs that use the /c/{collection}/shards or /c/{collection}/shards/{shard}

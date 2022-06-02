@@ -24,7 +24,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.apache.lucene.geo.GeoTestUtil;
+import org.apache.lucene.tests.geo.GeoTestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -146,7 +146,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testBadScoreParam() throws Exception {
+  public void testBadScoreParam() {
     String fieldName = "bbox";
     assertQEx(
         "expect friendly error message",

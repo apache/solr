@@ -87,6 +87,7 @@ dependencies {
   runtimeOnly "org.apache.lucene:lucene-analysis-phonetic"
   runtimeOnly "org.apache.lucene:lucene-backward-codecs"
   implementation "org.apache.lucene:lucene-codecs"
+  implementation "org.apache.lucene:lucene-backward-codecs"
   implementation "org.apache.lucene:lucene-classification"
   implementation "org.apache.lucene:lucene-expressions"
   implementation "org.apache.lucene:lucene-grouping"
@@ -97,6 +98,7 @@ dependencies {
   implementation "org.apache.lucene:lucene-sandbox"
   implementation "org.apache.lucene:lucene-spatial-extras"
   implementation "org.apache.lucene:lucene-suggest"
+
 
   // Collections & lang utilities
   implementation 'com.google.guava:guava'

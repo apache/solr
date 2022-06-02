@@ -90,7 +90,7 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
         QParser.getParser("strdist(\"a value\",literal('a value'),edit)", NAME, req).getQuery());
   }
 
-  public void testGetQParser() throws Exception {
+  public void testGetQParser() {
     // invalid defType
     SolrException exception =
         expectThrows(SolrException.class, () -> h.query(req("q", "ad", "defType", "bleh")));

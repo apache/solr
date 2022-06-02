@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.DocCollection;
@@ -37,7 +37,7 @@ import org.apache.solr.handler.admin.ConfigSetsHandler;
 
 public class TestHashPartitioner extends SolrTestCaseJ4 {
 
-  public void testMapHashes() throws Exception {
+  public void testMapHashes() {
     DocRouter hp = DocRouter.DEFAULT;
     List<Range> ranges;
 
@@ -117,14 +117,14 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
     return Hash.murmurhash3_x86_32(id, 0, id.length(), 0);
   }
 
-  public void testHashCodes() throws Exception {
+  public void testHashCodes() {
     DocRouter router = DocRouter.getDocRouter(PlainIdRouter.NAME);
     assertTrue(router instanceof PlainIdRouter);
     DocCollection coll = createCollection(4, router);
     doNormalIdHashing(coll);
   }
 
-  public void doNormalIdHashing(DocCollection coll) throws Exception {
+  public void doNormalIdHashing(DocCollection coll) {
     assertEquals(4, coll.getSlices().size());
 
     doId(coll, "b", "shard1");
@@ -160,7 +160,7 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
     assertEquals(expectedSet, obtainedSet);
   }
 
-  public void testCompositeHashCodes() throws Exception {
+  public void testCompositeHashCodes() {
     DocRouter router = DocRouter.getDocRouter(CompositeIdRouter.NAME);
     assertTrue(router instanceof CompositeIdRouter);
     router = DocRouter.DEFAULT;

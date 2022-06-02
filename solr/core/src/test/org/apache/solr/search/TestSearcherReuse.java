@@ -69,7 +69,7 @@ public class TestSearcherReuse extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  private static void afterClass() throws Exception {
+  private static void afterClass() {
     solrHome = null;
   }
 

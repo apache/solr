@@ -19,7 +19,7 @@ package org.apache.solr.spelling;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
-import org.apache.lucene.util.LuceneTestCase.SuppressTempFileChecks;
+import org.apache.lucene.tests.util.LuceneTestCase.SuppressTempFileChecks;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
@@ -99,7 +99,7 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testOnlyMorePopularWithExtendedResults() throws Exception {
+  public void testOnlyMorePopularWithExtendedResults() {
     assertQ(
         req(
             "q",

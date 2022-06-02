@@ -60,7 +60,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void cleanupMetrics() throws Exception {
+  public static void cleanupMetrics() {
     if (null != h) {
       h.getCoreContainer().getMetricManager().registry("solr.jvm").remove("solrtest_foo");
       h.getCoreContainer().getMetricManager().registry("solr.jetty").remove("solrtest_foo");
@@ -809,7 +809,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
       this.rh.close();
     }
 
-    void reset(DumpRequestHandler rh) throws Exception {
+    void reset(DumpRequestHandler rh) {
       this.rh = rh;
       if (metricsInfo != null) this.rh.initializeMetrics(metricsInfo, "/dumphandler");
     }

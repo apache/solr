@@ -16,19 +16,18 @@
  */
 package org.apache.solr.spelling;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.regex.Pattern;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.LowerCaseFilter;
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.miscellaneous.TrimFilter;
 import org.apache.lucene.analysis.pattern.PatternReplaceFilter;
+import org.apache.lucene.tests.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.tests.analysis.MockAnalyzer;
+import org.apache.lucene.tests.analysis.MockTokenizer;
 
 public class TestSuggestSpellingConverter extends BaseTokenStreamTestCase {
   SuggestQueryConverter converter = new SuggestQueryConverter();
@@ -66,7 +65,7 @@ public class TestSuggestSpellingConverter extends BaseTokenStreamTestCase {
     assertConvertsTo("Foo (field:bar) text_hi:हिन्दी    ", new String[] {"foo bar हिन्दी"});
   }
 
-  public void assertConvertsTo(String text, String expected[]) throws IOException {
+  public void assertConvertsTo(String text, String expected[]) {
     Collection<Token> tokens = converter.convert(text);
     assertEquals(tokens.size(), expected.length);
     int i = 0;

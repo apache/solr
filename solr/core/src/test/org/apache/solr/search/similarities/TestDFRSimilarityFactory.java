@@ -56,7 +56,7 @@ public class TestDFRSimilarityFactory extends BaseSimilarityTestCase {
   }
 
   /** LUCENE-3566 */
-  public void testParameterC() throws Exception {
+  public void testParameterC() {
     Similarity sim = getSimilarity("text_paramc");
     assertEquals(DFRSimilarity.class, sim.getClass());
     DFRSimilarity dfr = (DFRSimilarity) sim;

@@ -86,7 +86,7 @@ public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testScalability() throws Exception {
+  public void testScalability() {
     Map<Token, LinkedHashMap<String, Integer>> lotsaSuggestions = new LinkedHashMap<>();
     lotsaSuggestions.put(TOKEN_AYE, AYE);
     lotsaSuggestions.put(TOKEN_BEE, BEE);
@@ -130,7 +130,7 @@ public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSpellPossibilityIterator() throws Exception {
+  public void testSpellPossibilityIterator() {
     Map<Token, LinkedHashMap<String, Integer>> suggestions = new LinkedHashMap<>();
     suggestions.put(TOKEN_AYE, AYE);
     suggestions.put(TOKEN_BEE, BEE);
@@ -182,7 +182,7 @@ public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testOverlappingTokens() throws Exception {
+  public void testOverlappingTokens() {
     Map<Token, LinkedHashMap<String, Integer>> overlappingSuggestions = new LinkedHashMap<>();
     overlappingSuggestions.put(TOKEN_AYE, AYE);
     overlappingSuggestions.put(TOKEN_BEE, BEE);

@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.client.solrj.SolrClient;
@@ -110,13 +110,13 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     ObjectBuilder ob =
         new ObjectBuilder(parser) {
           @Override
-          public Object newObject() throws IOException {
+          public Object newObject() {
             return new SimpleOrderedMap<>();
           }
 
           @Override
           @SuppressWarnings("unchecked")
-          public void addKeyVal(Object map, Object key, Object val) throws IOException {
+          public void addKeyVal(Object map, Object key, Object val) {
             ((SimpleOrderedMap<Object>) map).add(key.toString(), val);
           }
         };

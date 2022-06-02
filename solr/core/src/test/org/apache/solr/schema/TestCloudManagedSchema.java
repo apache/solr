@@ -16,10 +16,8 @@
  */
 package org.apache.solr.schema;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
@@ -89,7 +87,7 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
   }
 
   private String getFileContentFromZooKeeper(SolrZkClient zkClient, String fileName)
-      throws IOException, SolrServerException, KeeperException, InterruptedException {
+      throws KeeperException, InterruptedException {
 
     return (new String(zkClient.getData(fileName, null, null, true), StandardCharsets.UTF_8));
   }

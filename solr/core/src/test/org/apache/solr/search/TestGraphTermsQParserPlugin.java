@@ -17,7 +17,7 @@
 
 package org.apache.solr.search;
 
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.tests.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Before;
@@ -44,7 +44,7 @@ public class TestGraphTermsQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testQueries() throws Exception {
+  public void testQueries() {
 
     String group = "group_s";
 

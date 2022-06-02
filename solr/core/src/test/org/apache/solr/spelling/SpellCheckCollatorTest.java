@@ -19,9 +19,9 @@ package org.apache.solr.spelling;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util.LuceneTestCase.SuppressTempFileChecks;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase.SuppressTempFileChecks;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CursorMarkParams;
@@ -137,7 +137,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
 
   @Test
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public void testCollationWithRangeQuery() throws Exception {
+  public void testCollationWithRangeQuery() {
     SolrCore core = h.getCore();
     SearchComponent speller = core.getSearchComponent("spellcheck");
     assertTrue("speller is null and it shouldn't be", speller != null);
@@ -170,7 +170,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
 
   @Test
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public void testCollationWithHypens() throws Exception {
+  public void testCollationWithHypens() {
     SolrCore core = h.getCore();
     SearchComponent speller = core.getSearchComponent("spellcheck");
     assertTrue("speller is null and it shouldn't be", speller != null);
@@ -220,7 +220,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     }
   }
 
-  public void testCollateWithOverride() throws Exception {
+  public void testCollateWithOverride() {
     assertQ(
         req(
             SpellCheckComponent.COMPONENT_NAME,
@@ -277,7 +277,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
 
   @Test
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public void testCollateWithFilter() throws Exception {
+  public void testCollateWithFilter() {
     SolrCore core = h.getCore();
     SearchComponent speller = core.getSearchComponent("spellcheck");
     assertTrue("speller is null and it shouldn't be", speller != null);
@@ -313,7 +313,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
 
   @Test
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public void testCollateWithMultipleRequestHandlers() throws Exception {
+  public void testCollateWithMultipleRequestHandlers() {
     SolrCore core = h.getCore();
     SearchComponent speller = core.getSearchComponent("spellcheck");
     assertTrue("speller is null and it shouldn't be", speller != null);
@@ -360,7 +360,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
 
   @Test
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public void testExtendedCollate() throws Exception {
+  public void testExtendedCollate() {
     SolrCore core = h.getCore();
     SearchComponent speller = core.getSearchComponent("spellcheck");
     assertTrue("speller is null and it shouldn't be", speller != null);
@@ -470,7 +470,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
 
   @Test
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public void testCollateWithGrouping() throws Exception {
+  public void testCollateWithGrouping() {
     SolrCore core = h.getCore();
     SearchComponent speller = core.getSearchComponent("spellcheck");
     assertTrue("speller is null and it shouldn't be", speller != null);
@@ -704,7 +704,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
 
   @Test
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public void testZeroTries() throws Exception {
+  public void testZeroTries() {
     SolrCore core = h.getCore();
     SearchComponent speller = core.getSearchComponent("spellcheck");
     assertTrue("speller is null and it shouldn't be", speller != null);
@@ -732,7 +732,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
 
   @Test
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public void testWithCursorMark() throws Exception {
+  public void testWithCursorMark() {
     SolrCore core = h.getCore();
     SearchComponent speller = core.getSearchComponent("spellcheck");
     assertTrue("speller is null and it shouldn't be", speller != null);

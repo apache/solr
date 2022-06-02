@@ -114,7 +114,7 @@ public class DocValuesMultiTest extends SolrTestCaseJ4 {
    * fields that are not inverted (indexed "forward" only)
    */
   @Test
-  public void testStringDocValuesMatch() throws Exception {
+  public void testStringDocValuesMatch() {
     assertU(adoc("id", "1", "stringdv", "b"));
     assertU(adoc("id", "2", "stringdv", "a"));
     assertU(adoc("id", "3", "stringdv", "c"));
@@ -163,7 +163,7 @@ public class DocValuesMultiTest extends SolrTestCaseJ4 {
    * fields that are not inverted (indexed "forward" only)
    */
   @Test
-  public void testBoolDocValuesMatch() throws Exception {
+  public void testBoolDocValuesMatch() {
     assertU(adoc("id", "1", "booldv", "true"));
     assertU(adoc("id", "2", "booldv", "false"));
     assertU(adoc("id", "3", "booldv", "true"));
@@ -201,7 +201,7 @@ public class DocValuesMultiTest extends SolrTestCaseJ4 {
    * fields that are not inverted (indexed "forward" only)
    */
   @Test
-  public void testFloatDocValuesMatch() throws Exception {
+  public void testFloatDocValuesMatch() {
     assertU(adoc("id", "1", "floatdv", "2"));
     assertU(adoc("id", "2", "floatdv", "-5"));
     assertU(adoc("id", "3", "floatdv", "3.0", "floatdv", "-1.3", "floatdv", "2.2"));
@@ -242,7 +242,7 @@ public class DocValuesMultiTest extends SolrTestCaseJ4 {
    * fields that are not inverted (indexed "forward" only)
    */
   @Test
-  public void testDoubleDocValuesMatch() throws Exception {
+  public void testDoubleDocValuesMatch() {
     assertU(adoc("id", "1", "doubledv", "2"));
     assertU(adoc("id", "2", "doubledv", "-5"));
     assertU(adoc("id", "3", "doubledv", "3.0", "doubledv", "-1.3", "doubledv", "2.2"));

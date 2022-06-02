@@ -53,7 +53,7 @@ public class V2UpdateAPIMappingTest {
   }
 
   @Before
-  public void setupApiBag() throws Exception {
+  public void setupApiBag() {
     mockUpdateHandler = mock(UpdateRequestHandler.class);
     mockConfigSetHandler = mock(ConfigSetsHandler.class);
     queryRequestCaptor = ArgumentCaptor.forClass(SolrQueryRequest.class);

@@ -17,7 +17,6 @@
 package org.apache.solr.handler.loader;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -74,7 +73,7 @@ public class JavabinLoaderTest extends SolrTestCaseJ4 {
     BufferingRequestProcessor mockUpdateProcessor =
         new BufferingRequestProcessor(null) {
           @Override
-          public void processAdd(AddUpdateCommand cmd) throws IOException {
+          public void processAdd(AddUpdateCommand cmd) {
             addCommands.add((AddUpdateCommand) cmd.clone());
           }
         };

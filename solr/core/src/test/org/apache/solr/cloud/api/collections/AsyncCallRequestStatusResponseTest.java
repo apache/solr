@@ -42,7 +42,7 @@ public class AsyncCallRequestStatusResponseTest extends SolrCloudTestCase {
 
   @SuppressWarnings("deprecation")
   @AfterClass
-  public static void restoreFlag() throws Exception {
+  public static void restoreFlag() {
     ShardRequestTracker.INCLUDE_TOP_LEVEL_RESPONSE = oldResponseEntries;
   }
 

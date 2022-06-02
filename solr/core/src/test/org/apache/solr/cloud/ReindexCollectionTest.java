@@ -68,7 +68,7 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
   private DistribStateManager stateManager;
 
   @Before
-  public void doBefore() throws Exception {
+  public void doBefore() {
     ZkController zkController = cluster.getJettySolrRunner(0).getCoreContainer().getZkController();
     cloudManager = zkController.getSolrCloudManager();
     stateManager = cloudManager.getDistribStateManager();

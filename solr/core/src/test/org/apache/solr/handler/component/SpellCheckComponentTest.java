@@ -18,8 +18,8 @@ package org.apache.solr.handler.component;
 
 import java.io.File;
 import java.util.*;
-import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util.LuceneTestCase.SuppressTempFileChecks;
+import org.apache.lucene.tests.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase.SuppressTempFileChecks;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -291,7 +291,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testInvalidDictionary() throws Exception {
+  public void testInvalidDictionary() {
     assertQEx(
         "Invalid specified dictionary should throw exception",
         "Specified dictionaries do not exist: INVALID",
@@ -481,7 +481,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRelativeIndexDirLocation() throws Exception {
+  public void testRelativeIndexDirLocation() {
     SolrCore core = h.getCore();
     File indexDir = new File(core.getDataDir() + File.separator + "spellchecker1");
     assertTrue(indexDir.exists());

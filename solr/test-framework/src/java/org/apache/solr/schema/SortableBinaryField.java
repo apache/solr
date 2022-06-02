@@ -73,7 +73,7 @@ public class SortableBinaryField extends BinaryField {
             public FieldComparator.TermOrdValComparator newComparator(
                 final String fieldname,
                 final int numHits,
-                final int sortPos,
+                final boolean enableSkipping,
                 final boolean reversed) {
               return new FieldComparator.TermOrdValComparator(numHits, fieldname);
             }

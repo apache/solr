@@ -32,13 +32,13 @@ public class AlternateDirectoryTest extends SolrTestCaseJ4 {
     initCore("solrconfig-altdirectory.xml", "schema.xml");
   }
 
-  public void testAltDirectoryUsed() throws Exception {
+  public void testAltDirectoryUsed() {
     assertQ(req("q", "*:*", "qt", "/select"));
     assertTrue(TestFSDirectoryFactory.openCalled);
     assertTrue(TestIndexReaderFactory.newReaderCalled);
   }
 
-  public void testAltReaderUsed() throws Exception {
+  public void testAltReaderUsed() {
     IndexReaderFactory readerFactory = h.getCore().getIndexReaderFactory();
     assertNotNull("Factory is null", readerFactory);
     assertEquals(

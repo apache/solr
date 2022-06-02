@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.CursorPagingTest;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
@@ -81,7 +81,7 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void cleanupStatics() throws Exception {
+  public static void cleanupStatics() {
     deleteCore();
     SOLR = null;
     ALL_SORT_FIELD_NAMES = ALL_COLLAPSE_FIELD_NAMES = null;
@@ -135,7 +135,7 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
     }
   }
 
-  public void testRandomCollpaseWithSort() throws Exception {
+  public void testRandomCollpaseWithSort() {
 
     final int numMainQueriesPerCollapseField = atLeast(5);
 

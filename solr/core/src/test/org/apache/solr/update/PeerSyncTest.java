@@ -440,7 +440,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     assertEquals(docsAdded.size(), qacResponse.getResults().getNumFound());
   }
 
-  private static void handleVersionsWithRangesTests() throws Exception {
+  private static void handleVersionsWithRangesTests() {
     testHandleVersionsWithRangesNoOther();
     testHandleVersionsWithRangesSameOne();
     testHandleVersionsWithRangesMissingOneOfTwo(false /* highestMissing */);
@@ -451,7 +451,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     testHandleVersionsWithRangesMissingTwoRanges();
   }
 
-  private static void testHandleVersionsWithRangesNoOther() throws Exception {
+  private static void testHandleVersionsWithRangesNoOther() {
     // no other, solitary us
     for (boolean completeList : new boolean[] {false, true}) {
       List<Long> otherVersions = Collections.emptyList();
@@ -467,7 +467,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     }
   }
 
-  private static void testHandleVersionsWithRangesSameOne() throws Exception {
+  private static void testHandleVersionsWithRangesSameOne() {
     for (boolean completeList : new boolean[] {false, true}) {
       List<Long> otherVersions = Collections.singletonList(42L);
       List<Long> ourUpdates = Collections.singletonList(42L);
@@ -482,8 +482,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     }
   }
 
-  private static void testHandleVersionsWithRangesMissingOneOfTwo(boolean highestMissing)
-      throws Exception {
+  private static void testHandleVersionsWithRangesMissingOneOfTwo(boolean highestMissing) {
     for (boolean completeList : new boolean[] {false, true}) {
       LinkedList<Long> otherVersions = new LinkedList<>(List.of(44L, 22L));
       LinkedList<Long> ourUpdates = new LinkedList<>(otherVersions);
@@ -518,7 +517,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     }
   }
 
-  private static void testHandleVersionsWithRangesMissingMiddleOfThree() throws Exception {
+  private static void testHandleVersionsWithRangesMissingMiddleOfThree() {
     for (boolean completeList : new boolean[] {false, true}) {
       List<Long> otherVersions = List.of(55L, 33L, 11L);
       LinkedList<Long> ourUpdates = new LinkedList<>(otherVersions);
@@ -555,8 +554,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     }
   }
 
-  private static void testHandleVersionsWithRangesMissingOneRange(boolean duplicateMiddle)
-      throws Exception {
+  private static void testHandleVersionsWithRangesMissingOneRange(boolean duplicateMiddle) {
     for (boolean completeList : new boolean[] {false, true}) {
       List<Long> otherVersions =
           duplicateMiddle
@@ -627,7 +625,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     }
   }
 
-  private static void testHandleVersionsWithRangesMissingTwoRanges() throws Exception {
+  private static void testHandleVersionsWithRangesMissingTwoRanges() {
     for (boolean completeList : new boolean[] {false, true}) {
       LinkedList<Long> otherVersions =
           new LinkedList<>(List.of(9L, 8L, 7L, 6L, 5L, 4L, 3L, 2L, 1L));

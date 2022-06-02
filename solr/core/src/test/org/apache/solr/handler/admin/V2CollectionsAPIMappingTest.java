@@ -16,9 +16,6 @@
  */
 package org.apache.solr.handler.admin;
 
-import static org.apache.solr.common.params.CommonParams.ACTION;
-
-import java.util.Locale;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.api.collections.CategoryRoutedAlias;
 import org.apache.solr.cloud.api.collections.RoutedAlias;
@@ -34,6 +31,11 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.backup.BackupManager;
 import org.apache.solr.handler.CollectionsAPI;
 import org.junit.Test;
+
+import java.util.Locale;
+
+import static org.apache.solr.common.params.CommonParams.ACTION;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Unit tests for the API mappings found in {@link org.apache.solr.handler.CollectionsAPI}.

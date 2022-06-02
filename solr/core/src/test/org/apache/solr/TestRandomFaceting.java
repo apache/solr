@@ -16,7 +16,6 @@
  */
 package org.apache.solr;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,8 +29,8 @@ import java.util.Random;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
-import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Utils;
@@ -466,7 +465,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
     "facet_heatmaps":{}}}
    * */
   @SuppressWarnings({"rawtypes", "unchecked"})
-  private String capFacetCountsTo1(String expected) throws IOException {
+  private String capFacetCountsTo1(String expected) {
     return transformFacetFields(
         expected,
         e -> {
@@ -482,8 +481,8 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
   }
 
   @SuppressWarnings({"unchecked"})
-  private String transformFacetFields(String expected, Consumer<Map.Entry<Object, Object>> consumer)
-      throws IOException {
+  private String transformFacetFields(
+      String expected, Consumer<Map.Entry<Object, Object>> consumer) {
     Object json = Utils.fromJSONString(expected);
     @SuppressWarnings({"rawtypes"})
     Map facet_fields = getFacetFieldMap(json);

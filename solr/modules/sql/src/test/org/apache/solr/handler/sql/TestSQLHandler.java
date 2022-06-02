@@ -27,8 +27,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.ExceptionStream;
@@ -3342,7 +3342,9 @@ public class TestSQLHandler extends SolrCloudTestCase {
             "stringxmv",
             "e",
             "stringxmv",
-            "f",
+            "\"f\"",
+            "stringxmv",
+            "g\"h",
             "stringxmv",
             "a",
             "pdoublexmv",
@@ -3373,6 +3375,19 @@ public class TestSQLHandler extends SolrCloudTestCase {
     expectResults(
         "select id, stringxmv from $ALIAS WHERE array_contains_any(pdoublexmv, (1.5, 2.5))", 3);
     expectResults("select id, stringxmv from $ALIAS WHERE array_contains_any(longs, (1, 3))", 3);
+    expectResults(
+        "select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('\"a\"', '\"e\"'))",
+        0);
+    expectResults(
+        "select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('\"a\"'))", 0);
+    expectResults(
+        "select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('\"f\"'))", 1);
+    expectResults(
+        "select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('g\"h'))", 1);
+    expectResults(
+        "select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a', 'e', '\"f\"'))",
+        3);
+
     expectResults("select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a'))", 2);
     expectResults(
         "select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a', 'b', 'c'))", 3);
@@ -3380,7 +3395,5 @@ public class TestSQLHandler extends SolrCloudTestCase {
         "select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a', 'c'))", 3);
     expectResults(
         "select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a', 'e'))", 3);
-    expectResults(
-        "select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a', 'e', 'f'))", 3);
   }
 }

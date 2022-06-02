@@ -32,7 +32,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
@@ -508,8 +508,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     attemptCollectionDelete(cloudClient, testCollectionName);
   }
 
-  protected List<Replica> getActiveOrRecoveringReplicas(String testCollectionName, String shardId)
-      throws Exception {
+  protected List<Replica> getActiveOrRecoveringReplicas(String testCollectionName, String shardId) {
     Map<String, Replica> activeReplicas = new HashMap<>();
     ZkStateReader zkr = ZkStateReader.from(cloudClient);
     ClusterState cs = zkr.getClusterState();

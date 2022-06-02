@@ -17,6 +17,16 @@
 
 package org.apache.solr.handler.admin.api;
 
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.handler.admin.V2ApiMappingTest;
+import org.junit.Test;
+
+import java.util.Arrays;
+import java.util.List;
+
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.SPLIT_KEY;
 import static org.apache.solr.common.params.CommonParams.ACTION;
@@ -31,15 +41,7 @@ import static org.apache.solr.common.params.CoreAdminParams.OTHER;
 import static org.apache.solr.common.params.CoreAdminParams.RANGES;
 import static org.apache.solr.common.params.CoreAdminParams.REQUESTID;
 import static org.apache.solr.common.params.CoreAdminParams.TARGET_CORE;
-
-import java.util.Arrays;
-import java.util.List;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.params.UpdateParams;
-import org.apache.solr.handler.admin.CoreAdminHandler;
-import org.apache.solr.handler.admin.V2ApiMappingTest;
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Unit tests for the V2 APIs found in {@link org.apache.solr.handler.admin.api} that use the

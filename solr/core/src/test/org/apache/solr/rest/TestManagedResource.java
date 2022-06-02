@@ -198,7 +198,7 @@ public class TestManagedResource extends SolrTestCaseJ4 {
    */
   @SuppressWarnings("unchecked")
   @Test
-  public void testLoadingAndStoringOfManagedData() throws Exception {
+  public void testLoadingAndStoringOfManagedData() {
     String resourceId = "/config/test/foo";
     String storedResourceId = "_config_test_foo.json";
 

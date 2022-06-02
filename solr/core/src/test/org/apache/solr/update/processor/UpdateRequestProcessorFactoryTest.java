@@ -54,7 +54,7 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
     assertTrue(l.get(0) instanceof TemplateUpdateProcessorFactory);
   }
 
-  public void testConfiguration() throws Exception {
+  public void testConfiguration() {
     SolrCore core = h.getCore();
 
     // make sure it loaded the factories
@@ -85,7 +85,7 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
     assertEquals("{name={n8=88, n9=99}}", link.args.toString());
   }
 
-  public void testUpdateDistribChainSkipping() throws Exception {
+  public void testUpdateDistribChainSkipping() {
 
     // a key part of this test is verifying that LogUpdateProcessor is found in all chains because
     // it is a @RunAlways processor -- but in order for that to work, we have to sanity check that

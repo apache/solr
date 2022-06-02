@@ -36,7 +36,7 @@ public class TestSolrQueryResponse extends SolrTestCase {
   }
 
   @Test
-  public void testResponseHeaderPartialResults() throws Exception {
+  public void testResponseHeaderPartialResults() {
     assertEquals(
         "SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY value changed",
         "partialResults",
@@ -44,7 +44,7 @@ public class TestSolrQueryResponse extends SolrTestCase {
   }
 
   @Test
-  public void testResponseHeaderSegmentTerminatedEarly() throws Exception {
+  public void testResponseHeaderSegmentTerminatedEarly() {
     assertEquals(
         "SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY value changed",
         "segmentTerminatedEarly",
@@ -52,7 +52,7 @@ public class TestSolrQueryResponse extends SolrTestCase {
   }
 
   @Test
-  public void testValues() throws Exception {
+  public void testValues() {
     final SolrQueryResponse response = new SolrQueryResponse();
     assertEquals("values initially not empty", 0, response.getValues().size());
     // initially empty, then add something
@@ -87,7 +87,7 @@ public class TestSolrQueryResponse extends SolrTestCase {
   }
 
   @Test
-  public void testToLog() throws Exception {
+  public void testToLog() {
     final SolrQueryResponse response = new SolrQueryResponse();
     assertEquals("toLog initially not empty", 0, response.getToLog().size());
     assertEquals("logid_only", response.getToLogAsString("logid_only"));
@@ -122,7 +122,7 @@ public class TestSolrQueryResponse extends SolrTestCase {
   }
 
   @Test
-  public void testReturnFields() throws Exception {
+  public void testReturnFields() {
     final SolrQueryResponse response = new SolrQueryResponse();
     final ReturnFields defaultReturnFields = new SolrReturnFields();
     assertEquals(
@@ -277,7 +277,7 @@ public class TestSolrQueryResponse extends SolrTestCase {
   }
 
   @Test
-  public void testResponseHeader() throws Exception {
+  public void testResponseHeader() {
     final SolrQueryResponse response = new SolrQueryResponse();
     assertEquals("responseHeader initially present", null, response.getResponseHeader());
     final NamedList<Object> newValue = new SimpleOrderedMap<>();
@@ -290,7 +290,7 @@ public class TestSolrQueryResponse extends SolrTestCase {
   }
 
   @Test
-  public void testHttpCaching() throws Exception {
+  public void testHttpCaching() {
     final SolrQueryResponse response = new SolrQueryResponse();
     assertEquals("httpCaching initial value", true, response.isHttpCaching());
     final boolean newValue = random().nextBoolean();
@@ -299,7 +299,7 @@ public class TestSolrQueryResponse extends SolrTestCase {
   }
 
   @Test
-  public void testConvertToHEADStyleResponse() throws Exception {
+  public void testConvertToHEADStyleResponse() {
     final SolrQueryResponse response = new SolrQueryResponse();
     final NamedList<Object> newValue = new SimpleOrderedMap<>();
     newValue.add("responseHeaderKey1", "value1");
