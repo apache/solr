@@ -692,7 +692,7 @@ On the other hand, it can reduce precision because language-specific character d
 
 == OpenNLP Integration
 
-The `lucene/analysis/opennlp` package provides OpenNLP integration via several analysis components: a tokenizer, a part-of-speech tagging filter, a phrase chunking filter, and a lemmatization filter.
+The Lucene module `lucene/analysis/opennlp` provides OpenNLP integration via several analysis components: a tokenizer, a part-of-speech tagging filter, a phrase chunking filter, and a lemmatization filter.
 In addition to these analysis components, Solr also provides an update request processor to extract named entities.
 See also xref:configuration-guide:update-request-processors.adoc#update-processor-factories-that-can-be-loaded-as-plugins[Update Processor Factories That Can Be Loaded as Plugins].
 
