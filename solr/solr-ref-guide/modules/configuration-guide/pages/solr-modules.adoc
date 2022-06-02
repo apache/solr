@@ -42,8 +42,9 @@ You can also specify the modules to include when using the Solr CLI to start Sol
 bin/solr start -e techproducts -Dsolr.modules=scripting
 ----
 
-If you only wish to enable a module for a single collection, you may add `<lib>` tags to `solrconfig.xml`
-as explained in xref:configuration-guide:libs.adoc[Lib Directories].
+NOTE: If you only wish to enable a module for a single collection, you may add `<lib>` tags to `solrconfig.xml`
+as explained in xref:configuration-guide:libs.adoc[Lib Directories].   This technically isn't considered enabling
+a module, as you are instead just loading all the jars in the module's `lib/` folder, thus enabling all that module' plugins.
 
 Some modules may have been made available as packages for the xref:configuration-guide:package-manager.adoc[Package Manager],
 check by listing available packages.
