@@ -136,6 +136,14 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     List<String> roles = Arrays.asList("group-one", "other-group", "group-three");
     claims.setStringListClaim(
         "roles", roles); // multi-valued claims work too and will end up as a JSON array
+
+    // Keycloak Style resource_access roles
+    HashMap<String, Object> solrMap = new HashMap<>();
+    solrMap.put("roles", Arrays.asList("user", "admin"));
+    HashMap<String, Object> resourceAccess = new HashMap<>();
+    resourceAccess.put("solr", solrMap);
+    claims.setClaim("resource_access", resourceAccess);
+
     return claims;
   }
 
@@ -377,6 +385,22 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     assertTrue(roles.contains("group-one"));
     assertTrue(roles.contains("other-group"));
     assertTrue(roles.contains("group-three"));
+  }
+
+  @Test
+  public void nestedRoles() {
+    testConfig.put("rolesClaim", "resource_access.solr.roles");
+    plugin.init(testConfig);
+    JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
+    assertTrue(resp.getErrorMessage(), resp.isAuthenticated());
+
+    // When 'rolesClaim' is defined in config, then roles from that claim are used instead of claims
+    Principal principal = resp.getPrincipal();
+    assertTrue(principal instanceof VerifiedUserRoles);
+    Set<String> roles = ((VerifiedUserRoles) principal).getVerifiedRoles();
+    assertEquals(5, roles.size());
+    assertTrue(roles.contains("user"));
+    assertTrue(roles.contains("admin"));
   }
 
   @Test

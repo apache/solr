@@ -595,7 +595,20 @@ public class JWTAuthPlugin extends AuthenticationPlugin
             } else {
               // Pull roles from separate claim, either as whitespace separated list or as JSON
               // array
-              Object rolesObj = jwtClaims.getClaimValue(rolesClaim);
+              Object rolesObj = null;
+              if (rolesClaim.contains(".")) {
+                // support map resolution of nested values
+                String[] nestedKeys = rolesClaim.split("\\.");
+                Map<?, ?> entry = (Map) jwtClaims.getClaimValue(nestedKeys[0]);
+                for (int i = 1; i < nestedKeys.length - 1; i++) {
+                  String key = nestedKeys[i];
+                  entry = (Map) entry.get(key);
+                }
+                rolesObj = entry.get(nestedKeys[nestedKeys.length - 1]);
+              } else {
+                rolesObj = jwtClaims.getClaimValue(rolesClaim);
+              }
+
               if (rolesObj != null) {
                 if (rolesObj instanceof String) {
                   finalRoles.addAll(Arrays.asList(((String) rolesObj).split("\\s+")));
