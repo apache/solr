@@ -26,7 +26,7 @@ It is possible to access the same handler using more than one name, which can be
 
 A single unified update request handler supports XML, CSV, JSON, and javabin update requests, delegating to the appropriate `ContentStreamLoader` based on the `Content-Type` of the xref:content-streams.adoc[ContentStream].
 
-If you need to preprocess documents after they are loaded but before they are indexed (or even checked against the schema),
+If you need to pre-process documents after they are loaded but before they are indexed (or even checked against the schema),
 Solr has document preprocessing plugins for Update Request Handlers, called xref:configuration-guide:update-request-processors.adoc[], which allow for default and custom configuration chains.
 
 == UpdateRequestHandler Configuration
