@@ -32,8 +32,8 @@ The easiest way to enable a module is to list the modules you intend to use eith
 system property `solr.modules` or in the environment variable `SOLR_MODULES` (e.g. in `solr.in.sh`
 or `solr.in.cmd`). You can also add a `<str name="modules">` tag to your
 xref:configuration-guide:configuring-solr-xml.adoc[solr.xml]. The expected value is a comma separated list
-of module names, e.g. `SOLR_MODULES=extracting,ltr`. This will add
-them to the shared class loader, making them available to every collection in Solr.
+of module names, e.g. `SOLR_MODULES=extracting,ltr`. This will make the functionality of configured Modules
+available to every collection in Solr.
 
 You can also specify the modules to include when using the Solr CLI to start Solr:
 
