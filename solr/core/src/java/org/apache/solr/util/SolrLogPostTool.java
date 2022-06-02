@@ -267,7 +267,8 @@ public class SolrLogPostTool {
       doc.setField(fieldName, fieldValue);
     }
 
-    private void parseError(SolrInputDocument lineRecord, String line, String trace) throws IOException {
+    private void parseError(SolrInputDocument lineRecord, String line, String trace)
+        throws IOException {
       lineRecord.setField("type_s", "error");
 
       // Don't include traces that have only the %html header.
@@ -278,12 +279,11 @@ public class SolrLogPostTool {
       if (this.cause != null) {
         lineRecord.setField("root_cause_t", cause.replace("Caused by:", "").trim());
       }
-
     }
 
     private Map<String, Object> extractJSONFormattedMessage(String line) {
-      if (line.contains("o.a.s.c.S.Request") ||
-              (line.contains("o.a.s.s.HttpSolrCall") && line.contains("\"prefix\""))) {
+      if (line.contains("o.a.s.c.S.Request")
+          || (line.contains("o.a.s.s.HttpSolrCall") && line.contains("\"prefix\""))) {
         int startPos = 0; // '{' starts at
         while (startPos < line.length() && line.charAt(startPos) != '{') {
           startPos++;
@@ -339,8 +339,8 @@ public class SolrLogPostTool {
             lineRecord.setField("type_s", "update");
           }
         }
-        }
       }
+    }
 
     private void setMDCFields(SolrInputDocument lineRecord, String line) {
       // x:value format
