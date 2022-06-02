@@ -398,7 +398,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     Principal principal = resp.getPrincipal();
     assertTrue(principal instanceof VerifiedUserRoles);
     Set<String> roles = ((VerifiedUserRoles) principal).getVerifiedRoles();
-    assertEquals(5, roles.size());
+    assertEquals(2, roles.size());
     assertTrue(roles.contains("user"));
     assertTrue(roles.contains("admin"));
   }
