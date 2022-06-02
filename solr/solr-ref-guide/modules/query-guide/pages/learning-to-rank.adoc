@@ -113,7 +113,7 @@ In the form of JSON files your trained model or models (e.g., different models f
 
 == Quick Start with LTR
 
-The `"techproducts"` example included with Solr is pre-configured with the `ltr` module and plugins required for learning-to-rank, but they are disabled by default.
+The `"techproducts"` example included with Solr is pre-configured to load the plugins required for learning-to-rank from the `ltr` module, but they are disabled by default.
 
 To enable the plugins, please specify the `solr.ltr.enabled` JVM System Property when running the example:
 
