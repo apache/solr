@@ -52,14 +52,16 @@ public interface RawRequest<T> {
     RawRequest<T> withCollection(String collection);
 
     /**
-     * Make a request to a specific shard and replica type
+     * Make a request to a specific shard and replica type. Ensure that the collection
+     * name is supplied as well
      * @param shardName shard name
      * @param replicaType type of replica
      */
     RawRequest<T> withShard(String shardName, Replica.Type replicaType);
 
     /**
-     * If the shard name is not known , use a shard routing key (such as id)
+     * If the shard name is not known , use a shard routing key (such as id). Ensure that the collection
+     * name is supplied as well
      * @param routingKey The key from which the hash can be derived for hash based router
      * @param replicaType The type of the replica
      */
@@ -73,7 +75,8 @@ public interface RawRequest<T> {
     RawRequest<T> withReplica(String replicaName);
 
     /**
-     * The path to which the request needs to be made eg:  /update , /admin/metrics etc
+     * The path to which the request needs to be made eg:  /update , /admin/metrics etc.
+     * The actual path depends on whether a collection is specified or not
      * @param path The path
      */
     RawRequest<T> withPath(String path);
