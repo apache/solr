@@ -28,6 +28,30 @@ import org.apache.solr.common.cloud.Replica;
  * A plain interface that captures all inputs for a Solr request. As the name suggests, it lets
  * users interact with Solr using raw bytes and params instead of concrete objects.
  *
+ * * <pre> {@code
+ * public class C {
+ *     //fields go here
+ * }
+ *
+ *  CloudHttp2SolrClient client = null;
+ *  C c = client.<C>createRequest()
+ *                  .withNode("nodeName")
+ *                  .withPath("/admin/metrics")
+ *                  .withParser(in -> {
+ *                    try {
+ *                      return new ObjectMapper().createParser(in).readValueAs(C.class);
+ *                    } catch (IOException e) {
+ *                      throw new RuntimeException(e);
+ *                    }
+ *                  })
+ *                  .withParams(new NamedList<>()
+ *                          .append(CommonParams.OMIT_HEADER, CommonParams.TRUE)
+ *                          .append("key", "solr.jvm:system.properties:java.version"))
+ *                          .append("wt", "json"))
+ *             .GET();
+ *
+ *  }</pre>
+ *
  * @param <T> The concrete return type object
  */
 public interface RawRequest<T> {
