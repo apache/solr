@@ -23,18 +23,16 @@ The Analytics Component allows users to calculate complex statistical aggregatio
 The component enables interacting with data in a variety of ways, both through a diverse set of analytics functions as well as powerful faceting functionality.
 The standard facets are supported within the analytics component with additions that leverage its analytical capabilities.
 
-== Analytics Configuration
+== Module
 
-The Analytics component is in a module, therefore it will need to be enabled in the `solrconfig.xml` for each collection where you would like to use it.
+This is provided via the `analytics` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
+
+== Analytics Configuration
 
 Since the Analytics framework is a _search component_, it must be declared as such and added to the search handler.
 
 For distributed analytics requests over cloud collections, the component uses the `AnalyticsHandler` strictly for inter-shard communication.
 The Analytics Handler should not be used by users to submit analytics requests.
-
-To use the Analytics Component, the first step is to install this module's plugins into Solr -- see the xref:configuration-guide:solr-plugins.adoc#installing-plugins[Installing Plugins] section on how to do this.
-Note: Method with `<lib/>` directive doesn't work.
-Instead, copy `${solr.install.dir}/modules/analytics/lib/solr-analytics-{solr-full-version}.jar` to `${solr.install.dir}/server/solr-webapp/webapp/WEB-INF/lib/`, as described in the xref:configuration-guide:libs.adoc[lib directories documentation].
 
 Next you need to register the request handler and search component.
 Add the following lines to `solrconfig.xml`, near the defintions for other request handlers:

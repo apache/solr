@@ -183,9 +183,9 @@ Note that specifying `sharedLib` will not remove `$SOLR_HOME/lib` from Solr's cl
 |Optional |Default: none
 |===
 +
-Takes a list of bundled xref:solr-modules.adoc[solr modules] to add to Solr's class path
+Takes a list of bundled xref:solr-modules.adoc[] to enable
 on startup. This way of adding modules will add them to the shared class loader, making them
-available for every collection in Solr, unlike `<lib>` tag in `solrconfig.xml` which is only
+available to every collection in Solr, unlike `<lib>` tag in `solrconfig.xml` which is only
 for that one collection. Example value: `extracting,ltr`. See the
 xref:solr-modules.adoc[Solr Modules] chapter for more details.
 
