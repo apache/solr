@@ -52,6 +52,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.SolrClient;
@@ -83,6 +84,7 @@ import org.apache.solr.core.RequestParams;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.handler.admin.api.GetConfigAPI;
 import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -317,6 +319,7 @@ public class SolrConfigHandler extends RequestHandlerBase
       boolean showParams = req.getParams().getBool("expandParams", false);
       Map<String, Object> map = this.req.getCore().getSolrConfig().toMap(new LinkedHashMap<>());
       if (componentType != null && !SolrRequestHandler.TYPE.equals(componentType)) return map;
+
       @SuppressWarnings({"unchecked"})
       Map<String, Object> reqHandlers =
           (Map<String, Object>)
@@ -1035,12 +1038,12 @@ public class SolrConfigHandler extends RequestHandlerBase
 
   @Override
   public Collection<Api> getApis() {
-    return ApiBag.wrapRequestHandlers(
-        this,
-        "core.config",
-        "core.config.Commands",
-        "core.config.Params",
-        "core.config.Params.Commands");
+    final List<Api> apis =
+        new ArrayList<>(
+            ApiBag.wrapRequestHandlers(
+                this, "core.config.Commands", "core.config.Params.Commands"));
+    apis.addAll(AnnotatedApi.getApis(new GetConfigAPI(this)));
+    return apis;
   }
 
   @Override
