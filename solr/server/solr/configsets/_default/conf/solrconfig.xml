@@ -69,7 +69,7 @@
        If a 'dir' option (with or without a regex) is used and nothing
        is found that matches, a warning will be logged.
 
-       The example below can be used to load a solr module along
+       The example below can be used to load a Solr Module along
        with their external dependencies.
     -->
     <!-- <lib dir="${solr.install.dir:../../../..}/modules/ltr/lib" regex=".*\.jar" /> -->
