@@ -167,7 +167,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
         rsp.getValues().asMap(2),
         Map.of(
             "/availableSubPaths", NOT_NULL,
-            "availableSubPaths /collections/hello/config/jmx", NOT_NULL,
+            "availableSubPaths /collections/hello/config/{component}", NOT_NULL,
             "availableSubPaths /collections/hello/schema", NOT_NULL,
             "availableSubPaths /collections/hello/shards", NOT_NULL,
             "availableSubPaths /collections/hello/shards/{shard}", NOT_NULL,
