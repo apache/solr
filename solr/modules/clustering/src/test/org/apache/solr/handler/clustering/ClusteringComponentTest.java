@@ -31,6 +31,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.response.ClusteringResponse;
 import org.apache.solr.common.SolrDocument;
@@ -86,6 +87,7 @@ public class ClusteringComponentTest extends SolrTestCaseJ4 {
     compareToExpected(clusters("lingo", QUERY_TESTSET_SAMPLE_DOCUMENTS));
   }
 
+  @LuceneTestCase.AwaitsFix(bugUrl = "https://github.com/carrot2/carrot2/issues/149")
   @Test
   public void testStcAlgorithm() throws Exception {
     compareToExpected(clusters("stc", QUERY_TESTSET_SAMPLE_DOCUMENTS));
