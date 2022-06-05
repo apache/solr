@@ -50,6 +50,21 @@ import org.apache.solr.common.cloud.Replica;
  *                          .append("wt", "json"))
  *             .GET();
  *
+ *  client.<C>createRequest()
+ *             .withCollection("coll-name")
+ *             .withReplica(r ->
+ *                     r.shardKey("id1234")
+ *                     .onlyLeader())
+ *             .withPath("/update/json")
+ *             .withParser(in -> deserializeJackson(in, C.class))
+ *             .withPayload(os -> {
+ *               serializeJackson(os, new D());
+ *             })
+ *             .withParams(new NamedList<>()
+ *                     .append(CommonParams.OMIT_HEADER, CommonParams.TRUE))
+ *             .POST();
+ *
+ *
  *  }</pre>
  *
  * @param <T> The concrete return type object
@@ -66,38 +81,13 @@ public interface RawRequest<T> {
    */
   RawRequest<T> withNode(String node);
 
+  RawRequest<T> withReplica(Consumer<ReplicaLocator> replicaLocator);
   /**
    * Make a request to a specific collection
    *
    * @param collection collection name
    */
   RawRequest<T> withCollection(String collection);
-
-  /**
-   * Make a request to a specific shard and replica type. Ensure that the collection name is
-   * supplied as well
-   *
-   * @param shardName shard name
-   * @param replicaType type of replica
-   */
-  RawRequest<T> withShard(String shardName, Replica.Type replicaType);
-
-  /**
-   * If the shard name is not known , use a shard routing key (such as id). Ensure that the
-   * collection name is supplied as well
-   *
-   * @param routingKey The key from which the hash can be derived for hash based router
-   * @param replicaType The type of the replica
-   */
-  RawRequest<T> withShardRoute(String routingKey, Replica.Type replicaType);
-
-  /**
-   * Make a direct request to a specific replica of a collection. Ensure that the collection name is
-   * supplied as well
-   *
-   * @param replicaName Name of he replica
-   */
-  RawRequest<T> withReplica(String replicaName);
 
   /**
    * The path to which the request needs to be made eg: /update , /admin/metrics etc. The actual
@@ -152,4 +142,17 @@ public interface RawRequest<T> {
    *     set.
    */
   T PUT();
+
+  interface ReplicaLocator {
+    public ReplicaLocator replicaName(String replicaName);
+
+    public ReplicaLocator shardName(String shardName);
+
+    public ReplicaLocator onlyLeader() ;
+
+    public ReplicaLocator onlyFollower();
+    public ReplicaLocator shardKey(String key) ;
+
+    ReplicaLocator replicaType(Replica.Type type) ;
+  }
 }
