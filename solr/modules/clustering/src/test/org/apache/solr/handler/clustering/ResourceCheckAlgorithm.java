@@ -28,9 +28,8 @@ import org.carrot2.attrs.AttrString;
 import org.carrot2.clustering.Cluster;
 import org.carrot2.clustering.ClusteringAlgorithm;
 import org.carrot2.clustering.Document;
-import org.carrot2.language.LabelFilter;
 import org.carrot2.language.LanguageComponents;
-import org.carrot2.language.StopwordFilter;
+import org.carrot2.language.LexicalData;
 
 /**
  * Creates synthetic clusters with diagnostics of {@link LanguageComponents} passed to the
@@ -43,7 +42,7 @@ class ResourceCheckAlgorithm extends AttrComposite implements ClusteringAlgorith
 
   @Override
   public Set<Class<?>> requiredLanguageComponents() {
-    return Set.of(StopwordFilter.class, LabelFilter.class);
+    return Set.of(LexicalData.class);
   }
 
   @Override
@@ -58,8 +57,7 @@ class ResourceCheckAlgorithm extends AttrComposite implements ClusteringAlgorith
     cluster = new Cluster<>();
     clusters.add(cluster);
 
-    StopwordFilter stopwordFilter = languageComponents.get(StopwordFilter.class);
-    LabelFilter labelFilter = languageComponents.get(LabelFilter.class);
+    LexicalData lexicalData = languageComponents.get(LexicalData.class);
     cluster.addLabel(
         Arrays.stream(text.get().trim().split("[\\s]+"))
             .map(
@@ -68,8 +66,8 @@ class ResourceCheckAlgorithm extends AttrComposite implements ClusteringAlgorith
                         Locale.ROOT,
                         "%s[%s, %s]",
                         term,
-                        stopwordFilter.test(term) ? "-" : "ignoredWord",
-                        labelFilter.test(term) ? "-" : "ignoredLabel"))
+                        lexicalData.ignoreWord(term) ? "ignoredWord" : "-",
+                        lexicalData.ignoreLabel(term) ? "ignoredLabel" : "-"))
             .collect(Collectors.joining(" ")));
 
     return clusters;

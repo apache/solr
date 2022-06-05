@@ -48,8 +48,6 @@ Improvements
 
 * SOLR-16181: Initialize the LogWatcher earlier in CoreContainer#load() (janhoy)
 
-* SOLR-16225: Upgrade dependencies (Carrot2, HPPC) (Dawid Weiss)
-
 Optimizations
 ---------------------
 * SOLR-16120: Optimise hl.fl expansion. (Christine Poerschke, David Smiley, Mike Drob)
