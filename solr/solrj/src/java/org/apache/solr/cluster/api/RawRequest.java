@@ -37,10 +37,10 @@ import org.apache.solr.common.cloud.Replica;
  *  }
  *
  * void serializeJackson(OutputStream os, Object o) {
- *    // code to serialize an object using jackson
+ *    // code to serialize an object using jackson (or you may use your favorite library)
  *   }
- *    <T> T deserializeJackson(InputStream in, Class<T> c) {
- *       //code to deserialize an object from jackson
+ * <T> T deserializeJackson(InputStream in, Class<T> c) {
+ *       //code to deserialize an object from jackson (or you may use your favorite library)
  *   }
  *  CloudHttp2SolrClient client = null;
  *  C c = client.<C>createRequest()
@@ -150,8 +150,9 @@ public interface RawRequest<T> {
   }
 
   interface ReplicaLocator {
-    /**We know the exact replica of the collection to which the request needs to be sent
-     * @param replicaName
+    /**
+     * We know the exact replica of the collection to which the request needs to be sent
+     * @param replicaName the name of the replica
      */
     ReplicaLocator replicaName(String replicaName);
 
