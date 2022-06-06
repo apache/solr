@@ -28,7 +28,9 @@ import org.apache.solr.common.cloud.Replica;
  * A plain interface that captures all inputs for a Solr request. As the name suggests, it lets
  * users interact with Solr using raw bytes and params instead of concrete objects.
  *
- * * <pre> {@code
+ * <p>*
+ *
+ * <pre>{@code
  * public class C {
  *     //fields go here
  * }
@@ -65,7 +67,8 @@ import org.apache.solr.common.cloud.Replica;
  *             .POST();
  *
  *
- *  }</pre>
+ *
+ * }</pre>
  *
  * @param <T> The concrete return type object
  */
@@ -152,36 +155,35 @@ public interface RawRequest<T> {
   interface ReplicaLocator {
     /**
      * We know the exact replica of the collection to which the request needs to be sent
+     *
      * @param replicaName the name of the replica
      */
     ReplicaLocator replicaName(String replicaName);
 
     /**
      * We do not know the name of the shard. Let the system hash the key and find out the shard
+     *
      * @param key the routing key. usually the id of the doc
      */
-    ReplicaLocator shardKey(String key) ;
+    ReplicaLocator shardKey(String key);
     /**
      * The shard to which the replica is to be sent
+     *
      * @param shardName name of the shard
      */
     ReplicaLocator shardName(String shardName);
 
-    /**
-     * Always chose the leader
-     */
-    ReplicaLocator onlyLeader() ;
+    /** Always chose the leader */
+    ReplicaLocator onlyLeader();
 
-    /**
-     * Send to a replica that is not a leader
-     */
+    /** Send to a replica that is not a leader */
     ReplicaLocator onlyFollower();
-
 
     /**
      * Send this request to a specific replica type
-     * @param type
+     *
+     * @param type replica type
      */
-    ReplicaLocator replicaType(Replica.Type type) ;
+    ReplicaLocator replicaType(Replica.Type type);
   }
 }
