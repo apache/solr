@@ -44,7 +44,7 @@ import org.apache.solr.response.SolrQueryResponse;
  * 'update-valuesourceparser', 'delete-valuesourceparser', 'add-transformer', 'update-transformer',
  * 'delete-transformer', 'add-updateprocessor', 'update-updateprocessor', 'delete-updateprocessor',
  * 'add-queryconverter', 'update-queryconverter', 'delete-queryconverter', 'add-listener',
- * 'update'listener', and 'delete-listener'.
+ * 'update-listener', and 'delete-listener'.
  */
 public class ModifyConfigComponentAPI {
   private final SolrConfigHandler configHandler;
