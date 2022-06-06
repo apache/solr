@@ -32,22 +32,25 @@ import org.apache.solr.common.cloud.Replica;
  * public class C {
  *     //fields go here
  * }
+ *  public class D {
+ *       // class for payload
+ *  }
  *
+ * void serializeJackson(OutputStream os, Object o) {
+ *    // code to serialize an object using jackson
+ *   }
+ *    <T> T deserializeJackson(InputStream in, Class<T> c) {
+ *       //code to deserialize an object from jackson
+ *   }
  *  CloudHttp2SolrClient client = null;
  *  C c = client.<C>createRequest()
  *                  .withNode("nodeName")
  *                  .withPath("/admin/metrics")
- *                  .withParser(in -> {
- *                    try {
- *                      return new ObjectMapper().createParser(in).readValueAs(C.class);
- *                    } catch (IOException e) {
- *                      throw new RuntimeException(e);
- *                    }
- *                  })
- *                  .withParams(new NamedList<>()
- *                          .append(CommonParams.OMIT_HEADER, CommonParams.TRUE)
- *                          .append("key", "solr.jvm:system.properties:java.version"))
- *                          .append("wt", "json"))
+ *                  .withParser(in -> deserializeJackson(in, C.class))
+ *                  .withParams(p -> p.
+ *                          .add(CommonParams.OMIT_HEADER, CommonParams.TRUE)
+ *                          .add("key", "solr.jvm:system.properties:java.version"))
+ *                          .add("wt", "json"))
  *             .GET();
  *
  *  client.<C>createRequest()
@@ -57,11 +60,8 @@ import org.apache.solr.common.cloud.Replica;
  *                     .onlyLeader())
  *             .withPath("/update/json")
  *             .withParser(in -> deserializeJackson(in, C.class))
- *             .withPayload(os -> {
- *               serializeJackson(os, new D());
- *             })
- *             .withParams(new NamedList<>()
- *                     .append(CommonParams.OMIT_HEADER, CommonParams.TRUE))
+ *             .withPayload(os -> serializeJackson(os, new D());)
+ *             .withParams(p-> p.add(CommonParams.OMIT_HEADER, CommonParams.TRUE))
  *             .POST();
  *
  *
@@ -98,7 +98,7 @@ public interface RawRequest<T> {
   RawRequest<T> withPath(String path);
 
   /** The request parameters */
-  RawRequest<T> withParams(MapWriter params);
+  RawRequest<T> withParams(Consumer<Params> params);
 
   /** If there is a payload, write it directly to the server */
   RawRequest<T> withPayload(Consumer<OutputStream> os);
@@ -143,16 +143,44 @@ public interface RawRequest<T> {
    */
   T PUT();
 
+  interface Params {
+    Params add(String key, String val);
+
+    Params add(MapWriter mw);
+  }
+
   interface ReplicaLocator {
-    public ReplicaLocator replicaName(String replicaName);
+    /**We know the exact replica of the collection to which the request needs to be sent
+     * @param replicaName
+     */
+    ReplicaLocator replicaName(String replicaName);
 
-    public ReplicaLocator shardName(String shardName);
+    /**
+     * We do not know the name of the shard. Let the system hash the key and find out the shard
+     * @param key the routing key. usually the id of the doc
+     */
+    ReplicaLocator shardKey(String key) ;
+    /**
+     * The shard to which the replica is to be sent
+     * @param shardName name of the shard
+     */
+    ReplicaLocator shardName(String shardName);
 
-    public ReplicaLocator onlyLeader() ;
+    /**
+     * Always chose the leader
+     */
+    ReplicaLocator onlyLeader() ;
 
-    public ReplicaLocator onlyFollower();
-    public ReplicaLocator shardKey(String key) ;
+    /**
+     * Send to a replica that is not a leader
+     */
+    ReplicaLocator onlyFollower();
 
+
+    /**
+     * Send this request to a specific replica type
+     * @param type
+     */
     ReplicaLocator replicaType(Replica.Type type) ;
   }
 }
