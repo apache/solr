@@ -19,6 +19,7 @@ package org.apache.solr.cluster.api;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Iterator;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.solr.common.MapWriter;
@@ -48,7 +49,7 @@ import org.apache.solr.common.cloud.Replica;
  *  C c = client.<C>createRequest()
  *                  .withNode("nodeName")
  *                  .withPath("/admin/metrics")
- *                  .withParser(in -> deserializeJackson(in, C.class))
+ *                  .withParser(in -> deserializeJackson(in.body(), C.class))
  *                  .withParams(p -> p.
  *                          .add(CommonParams.OMIT_HEADER, CommonParams.TRUE)
  *                          .add("key", "solr.jvm:system.properties:java.version"))
@@ -61,8 +62,8 @@ import org.apache.solr.common.cloud.Replica;
  *                     r.shardKey("id1234")
  *                     .onlyLeader())
  *             .withPath("/update/json")
- *             .withParser(in -> deserializeJackson(in, C.class))
- *             .withPayload(os -> serializeJackson(os, new D());)
+ *             .withParser(in -> deserializeJackson(in.body(), C.class))
+ *             .withPayload(os -> serializeJackson(os.body(), new D());)
  *             .withParams(p-> p.add(CommonParams.OMIT_HEADER, CommonParams.TRUE))
  *             .POST();
  *
@@ -104,7 +105,7 @@ public interface RawRequest<T> {
   RawRequest<T> withParams(Consumer<Params> params);
 
   /** If there is a payload, write it directly to the server */
-  RawRequest<T> withPayload(Consumer<OutputStream> os);
+  RawRequest<T> withPayload(Consumer<Payload> os);
 
   /**
    * Parse and deserialize a concrete object . If this is not supplied, the response is just eaten
@@ -112,7 +113,7 @@ public interface RawRequest<T> {
    *
    * @param parser This impl should consume an input stream and return an object
    */
-  RawRequest<T> withParser(Function<InputStream, T> parser);
+  RawRequest<T> withParser(Function<Response, T> parser);
 
   /**
    * do an HTTP GET operation
@@ -150,6 +151,43 @@ public interface RawRequest<T> {
     Params add(String key, String val);
 
     Params add(MapWriter mw);
+  }
+  interface Payload {
+    /**
+     * Get the current request
+     */
+    RawRequest getRequest();
+
+    /**
+     * Add a header to the request. Ensure that the header is set before the first byte is written to the body
+     */
+    void addHeader(String name, String val);
+
+    /**
+     * Direct access to the stream that is written to the server
+     */
+    OutputStream body();
+  }
+  interface Response {
+    /**
+     * HTTP status code
+     */
+    int status();
+
+    /**
+     * Header names
+     */
+    Iterator<String> headerNames();
+
+    /**
+     * Get a header value
+     */
+    String getHeader(String s);
+
+    /**
+     * The actual input stream sent by the server
+     */
+    InputStream body();
   }
 
   interface ReplicaLocator {
