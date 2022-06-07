@@ -16,19 +16,8 @@
  */
 package org.apache.solr.handler.admin;
 
-import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
-
 import com.google.common.collect.ImmutableList;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.ApiBag.ReqHandlerToApi;
@@ -41,6 +30,8 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.RequestHandlerUtils;
+import org.apache.solr.handler.admin.api.GetAuthenticationConfigAPI;
+import org.apache.solr.handler.admin.api.GetAuthorizationConfigAPI;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthenticationPlugin;
@@ -50,6 +41,19 @@ import org.apache.solr.security.ConfigEditablePlugin;
 import org.apache.solr.security.PermissionNameProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 public abstract class SecurityConfHandler extends RequestHandlerBase
     implements PermissionNameProvider {
@@ -281,8 +285,8 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
               Utils.getSpec("cluster.security.authentication.Commands");
           final SpecProvider authzCommands =
               Utils.getSpec("cluster.security.authorization.Commands");
-          apis.add(new ReqHandlerToApi(this, Utils.getSpec("cluster.security.authentication")));
-          apis.add(new ReqHandlerToApi(this, Utils.getSpec("cluster.security.authorization")));
+          apis.addAll(AnnotatedApi.getApis(new GetAuthenticationConfigAPI(this)));
+          apis.addAll(AnnotatedApi.getApis(new GetAuthorizationConfigAPI(this)));
           SpecProvider authcSpecProvider =
               () -> {
                 AuthenticationPlugin authcPlugin = cores.getAuthenticationPlugin();
