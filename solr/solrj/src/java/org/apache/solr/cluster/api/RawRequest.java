@@ -49,7 +49,7 @@ import org.apache.solr.common.cloud.Replica;
  *  C c = client.<C>createRequest()
  *                  .withNode("nodeName")
  *                  .withPath("/admin/metrics")
- *                  .withParser(in -> deserializeJackson(in.body(), C.class))
+ *                  .withParser(in -> deserializeJackson(in.stream(), C.class))
  *                  .withParams(p -> p.
  *                          .add(CommonParams.OMIT_HEADER, CommonParams.TRUE)
  *                          .add("key", "solr.jvm:system.properties:java.version"))
@@ -62,8 +62,8 @@ import org.apache.solr.common.cloud.Replica;
  *                     r.shardKey("id1234")
  *                     .onlyLeader())
  *             .withPath("/update/json")
- *             .withParser(in -> deserializeJackson(in.body(), C.class))
- *             .withPayload(os -> serializeJackson(os.body(), new D());)
+ *             .withParser(in -> deserializeJackson(in.stream(), C.class))
+ *             .withPayload(os -> serializeJackson(os.stream(), new D());)
  *             .withParams(p-> p.add(CommonParams.OMIT_HEADER, CommonParams.TRUE))
  *             .POST();
  *
@@ -166,7 +166,7 @@ public interface RawRequest<T> {
     /**
      * Direct access to the stream that is written to the server
      */
-    OutputStream body();
+    OutputStream stream();
   }
   interface Response {
     /**
@@ -180,14 +180,14 @@ public interface RawRequest<T> {
     Iterator<String> headerNames();
 
     /**
-     * Get a header value
+     * Get a header value.
      */
     String getHeader(String s);
 
     /**
      * The actual input stream sent by the server
      */
-    InputStream body();
+    InputStream stream();
   }
 
   interface ReplicaLocator {
