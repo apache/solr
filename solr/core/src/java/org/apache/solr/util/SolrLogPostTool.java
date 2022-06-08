@@ -185,14 +185,14 @@ public class SolrLogPostTool {
 
           if (line.contains("Registered new searcher")) {
             lineDoc.setField("type_s", "newSearcher");
-            setMDCFields(lineDoc, line);
+            setMdcFields(lineDoc, line);
           } else if (line.contains(" ERROR ")) {
             this.cause = null;
             parseError(lineDoc, line, readTrace());
-            setMDCFields(lineDoc, line);
+            setMdcFields(lineDoc, line);
           } else {
             parseRecord(lineDoc, line);
-            setMDCFields(lineDoc, line);
+            setMdcFields(lineDoc, line);
           }
           return lineDoc;
         } else {
@@ -281,17 +281,10 @@ public class SolrLogPostTool {
       }
     }
 
-    private Map<String, Object> extractJSONFormattedMessage(String line) {
-      if (line.contains("o.a.s.c.S.Request")
-          || (line.contains("o.a.s.s.HttpSolrCall") && line.contains("\"prefix\""))) {
-        int startPos = 0; // '{' starts at
-        while (startPos < line.length() && line.charAt(startPos) != '{') {
-          startPos++;
-        }
-        int endPos = startPos + 1; // '}' ends at
-        while (endPos < line.length() && line.charAt(endPos) != '}') {
-          endPos++;
-        }
+    private Map<String, Object> extractJsonFormattedMessage(String line) {
+      int startPos = line.indexOf('{'); // '{' starts at
+      int endPos = line.lastIndexOf('}'); // '}' ends at
+      if (startPos != -1 && endPos != -1) {
         String json = line.substring(startPos, endPos + 1);
         @SuppressWarnings("unchecked")
         Map<String, Object> fromJSON = (Map<String, Object>) Utils.fromJSONString(json);
@@ -301,7 +294,7 @@ public class SolrLogPostTool {
     }
 
     private void parseRecord(SolrInputDocument lineRecord, String line) {
-      Map<String, Object> keyValuePairs = extractJSONFormattedMessage(line);
+      Map<String, Object> keyValuePairs = extractJsonFormattedMessage(line);
       if (keyValuePairs != null) {
         // query request record
         if (keyValuePairs.containsKey("QTime")) {
@@ -329,20 +322,25 @@ public class SolrLogPostTool {
 
         // update request record
         if (keyValuePairs.get("path").equals("/update")) {
-          if (keyValuePairs.containsKey("deleteByQuery")) {
-            lineRecord.setField("type_s", "deleteByQuery");
-          } else if (keyValuePairs.containsKey("delete")) {
-            lineRecord.setField("type_s", "delete");
-          } else if (keyValuePairs.containsKey("commit") && (Boolean) keyValuePairs.get("commit")) {
-            lineRecord.setField("type_s", "commit");
-          } else {
-            lineRecord.setField("type_s", "update");
-          }
+          parseUpdate(lineRecord, line, keyValuePairs);
         }
       }
     }
 
-    private void setMDCFields(SolrInputDocument lineRecord, String line) {
+    private void parseUpdate(SolrInputDocument lineRecord, String line, Map<String, Object> keyValuePairs) {
+      if (keyValuePairs.containsKey("deleteByQuery")) {
+        lineRecord.setField("type_s", "deleteByQuery");
+      } else if (keyValuePairs.containsKey("delete")) {
+        lineRecord.setField("type_s", "delete");
+      } else if (keyValuePairs.containsKey("commit") && (Boolean) keyValuePairs.get("commit")) {
+        lineRecord.setField("type_s", "commit");
+      } else {
+        lineRecord.setField("type_s", "update");
+      }
+      setMdcFields(lineRecord, line);
+    }
+
+    private void setMdcFields(SolrInputDocument lineRecord, String line) {
       // x:value format
       lineRecord.setField("core_s", parseCore(line));
       lineRecord.setField("collection_s", parseCollection(line));
