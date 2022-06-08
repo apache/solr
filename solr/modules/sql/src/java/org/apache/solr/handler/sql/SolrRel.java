@@ -19,6 +19,10 @@ package org.apache.solr.handler.sql;
 import static org.apache.solr.handler.sql.SolrAggregate.solrAggMetricId;
 
 import java.util.*;
+
+import org.apache.calcite.adapter.enumerable.EnumerableRel;
+import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
+import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
@@ -36,6 +40,14 @@ interface SolrRel extends RelNode {
    * Solr query.
    */
   class Implementor {
+
+    public Implementor(EnumerableRelImplementor _enumerableRelImplementor, EnumerableRel.Prefer _pref) {
+      enumerableRelImplementor = _enumerableRelImplementor;
+      pref = _pref;
+    }
+
+    final EnumerableRel.Prefer pref;
+    final EnumerableRelImplementor enumerableRelImplementor;
     final Map<String, String> fieldMappings = new HashMap<>();
     final Map<String, String> reverseAggMappings = new HashMap<>();
     String query = null;
@@ -43,12 +55,21 @@ interface SolrRel extends RelNode {
     boolean negativeQuery;
     String limitValue = null;
     String offsetValue = null;
+    String exp;
     final List<Pair<String, String>> orders = new ArrayList<>();
     final List<String> buckets = new ArrayList<>();
     final List<Pair<String, String>> metricPairs = new ArrayList<>();
 
     RelOptTable table;
     SolrTable solrTable;
+
+    JavaTypeFactory getTypeFactory() {
+      return enumerableRelImplementor.getTypeFactory();
+    }
+
+    EnumerableRel.Prefer getPref() {
+      return pref;
+    }
 
     void addFieldMapping(String key, String val, boolean overwrite) {
       if (key != null) {

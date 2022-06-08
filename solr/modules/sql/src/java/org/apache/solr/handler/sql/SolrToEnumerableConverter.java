@@ -54,7 +54,7 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
   public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
     // Generates a call to "query" with the appropriate fields
     final BlockBuilder list = new BlockBuilder();
-    final SolrRel.Implementor solrImplementor = new SolrRel.Implementor();
+    final SolrRel.Implementor solrImplementor = new SolrRel.Implementor(implementor, pref);
     solrImplementor.visitChild(0, getInput());
     final RelDataType rowType = getRowType();
     final PhysType physType =

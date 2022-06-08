@@ -20,13 +20,21 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.Lists;
 import org.apache.calcite.adapter.enumerable.EnumerableRules;
+import org.apache.calcite.adapter.enumerable.JavaRowFormat;
+import org.apache.calcite.adapter.enumerable.PhysType;
+import org.apache.calcite.adapter.enumerable.PhysTypeImpl;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Pair;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
@@ -75,6 +83,7 @@ class SolrTableScan extends TableScan implements SolrRel {
     assert getConvention() == SolrRel.CONVENTION;
   }
 
+
   @Override
   public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
     final float f = projectRowType == null ? 1f : (float) projectRowType.getFieldCount() / 100f;
@@ -112,9 +121,72 @@ class SolrTableScan extends TableScan implements SolrRel {
     String zk = properties.getProperty("zk");
     String collection = solrTable.getCollection();
     boolean mapReduce = "map_reduce".equals(properties.getProperty("aggregationMode"));
-    implementor.solrTable = solrTable;
-    implementor.table = table;
-    //Port logic for creating streaming expression from SolrTable below
+    final PhysType physType =
+        PhysTypeImpl.of(implementor.getTypeFactory(), rowType, implementor.getPref().prefer(JavaRowFormat.ARRAY));
+    final List<Map.Entry<String, Class<?>>> fields = zip(generateFields(SolrRules.solrFieldNames(rowType), implementor.fieldMappings), physType);
+    final String query = implementor.query;
+    final List<Pair<String, String>> orders = implementor.orders;
+    final List<String> buckets = implementor.buckets;
+    final List<Pair<String, String>> metricPairs = implementor.metricPairs;
+    final String limit = implementor.limitValue;
+    final boolean negativeQuery = implementor.negativeQuery;
+    final String havingPredicate = implementor.havingPredicate;
+    final String offset = implementor.offsetValue;
+    implementor.exp = getScanExpression();
+  }
+
+  private String getScanExpression() {
+    return null;
+  }
+
+  private List<Map.Entry<String, Class<?>>> zip(List<String> fields, PhysType physType) {
+    List<Map.Entry<String, Class<?>>> zipped = new ArrayList<>();
+    for(int i=0; i<fields.size(); i++) {
+      Map.Entry entry = new AbstractMap.SimpleEntry<String, Class<?>>("a", physType.fieldClass(i));
+      zipped.add(entry);
+    }
+
+    return zipped;
+  }
+
+  private List<String> generateFields(List<String> queryFields, Map<String, String> fieldMappings) {
+
+    if (fieldMappings.isEmpty()) {
+      return queryFields;
+    } else {
+      List<String> fields = new ArrayList<>();
+      for (String field : queryFields) {
+        fields.add(getField(fieldMappings, field));
+      }
+      return fields;
+    }
+  }
+
+  private String getField(Map<String, String> fieldMappings, String field) {
+    String retField = field;
+    while (fieldMappings.containsKey(field)) {
+      field = fieldMappings.getOrDefault(field, retField);
+      if (retField.equals(field)) {
+        break;
+      } else {
+        retField = field;
+      }
+    }
+    return retField;
+  }
+
+
+  private static <T> MethodCallExpression constantArrayList(List<T> values, Class<?> clazz) {
+    return Expressions.call(
+        BuiltInMethod.ARRAYS_AS_LIST.method, Expressions.newArrayInit(clazz, constantList(values)));
+  }
+
+  /**
+   * E.g. {@code constantList("x", "y")} returns "{ConstantExpression("x"),
+   * ConstantExpression("y")}".
+   */
+  private static <T> List<Expression> constantList(List<T> values) {
+    return Lists.transform(values, Expressions::constant);
   }
 
   private TupleStream handleStats(
@@ -376,7 +448,7 @@ class SolrTableScan extends TableScan implements SolrRel {
 
     return "asc";
   }
-  
+
   private static String bucketSort(Bucket[] buckets, String dir) {
     StringBuilder buf = new StringBuilder();
     boolean comma = false;
