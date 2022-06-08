@@ -17,27 +17,9 @@
 
 package org.apache.solr.api;
 
-import static org.apache.solr.client.solrj.SolrRequest.SUPPORTED_METHODS;
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.util.StrUtils.formatString;
-import static org.apache.solr.common.util.ValidatingJsonMap.ENUM_OF;
-import static org.apache.solr.common.util.ValidatingJsonMap.NOT_NULL;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
@@ -57,6 +39,25 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
+import static org.apache.solr.client.solrj.SolrRequest.SUPPORTED_METHODS;
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.util.StrUtils.formatString;
+import static org.apache.solr.common.util.ValidatingJsonMap.ENUM_OF;
+import static org.apache.solr.common.util.ValidatingJsonMap.NOT_NULL;
 
 public class ApiBag {
   private final boolean isCoreSpecific;
@@ -155,10 +156,21 @@ public class ApiBag {
 
     public void combineWith(AnnotatedApi api) {
       // Merge in new 'command' entries
-      getCommands().putAll(api.getCommands());
+      boolean newCommandsAdded = false;
+      for (Map.Entry<String, AnnotatedApi.Cmd> entry : api.getCommands().entrySet()) {
+        // Skip registering command if it's identical to an already registered command.
+        if (getCommands().containsKey(entry.getKey()) && getCommands().get(entry.getKey()).equals(entry.getValue())) {
+          continue;
+        }
+
+        newCommandsAdded = true;
+        getCommands().put(entry.getKey(), entry.getValue());
+      }
 
       // Reference to Api must be saved to to merge uncached values (i.e. 'spec') lazily
-      combinedApis.add(api);
+      if (newCommandsAdded) {
+        combinedApis.add(api);
+      }
     }
 
     @Override

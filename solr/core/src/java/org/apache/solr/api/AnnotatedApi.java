@@ -20,6 +20,8 @@ package org.apache.solr.api;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
@@ -334,6 +336,33 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
         log.error("Error executing command : ", e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
+    }
+
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .append(command)
+              .append(method)
+              .append(obj)
+              .append(paramsCount)
+              .append(parameterClass)
+              .append(isWrappedInPayloadObj)
+              .toHashCode();
+    }
+
+    public boolean equals(Object rhs) {
+      if (null == rhs) return false;
+      if (this == rhs) return true;
+      if (getClass() != rhs.getClass()) return false;
+
+      final Cmd rhsCast = (Cmd) rhs;
+      return new EqualsBuilder()
+              .append(command, rhsCast.command)
+              .append(method, rhsCast.method)
+              .append(obj, rhsCast.obj)
+              .append(paramsCount, rhsCast.paramsCount)
+              .append(parameterClass, rhsCast.parameterClass)
+              .append(isWrappedInPayloadObj, rhsCast.isWrappedInPayloadObj)
+              .isEquals();
     }
 
     private void checkForErrorInPayload(CommandOperation cmd) {
