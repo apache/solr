@@ -170,7 +170,7 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
 
     List<Prefix> prefixes = findPrefixes(20, 0, 0x00ffffff);
     List<Prefix> uniquePrefixes = removeDups(prefixes);
-    // make it an even sized list so we can split it exactly in two
+    // make it an even sized list, so we can split it exactly in two
     if (uniquePrefixes.size() % 2 == 1) {
       uniquePrefixes.remove(uniquePrefixes.size() - 1);
     }
@@ -196,7 +196,7 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
         activeClusterShape(3, 5));
 
     // OK, now let's check that the correct split point was chosen
-    // We can use the router to find the shards for the middle prefixes and they should be
+    // We can use the router to find the shards for the middle prefixes, and they should be
     // different.
 
     DocCollection collection = client.getClusterState().getCollection(COLLECTION_NAME);
@@ -218,7 +218,7 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
     assertTrue(slice1 != slice2);
 
     //
-    // now lets add enough documents to the first prefix to get it split out on its own
+    // now let's add enough documents to the first prefix to get it split out on its own
     //
     for (int i = 0; i < uniquePrefixes.size(); i++) {
       client.add(getDoc(uniquePrefixes.get(0).key, "doc" + (i + 100)));
