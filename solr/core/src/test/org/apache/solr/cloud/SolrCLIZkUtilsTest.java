@@ -1005,16 +1005,14 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
           }
 
           @Override
-          public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-              throws IOException {
+          public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
             assertTrue("Path should start at proper place!", file.startsWith(fileRoot));
             checkPathOnZk(file);
             return FileVisitResult.CONTINUE;
           }
 
           @Override
-          public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
-              throws IOException {
+          public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
 
             checkPathOnZk(dir);
             return FileVisitResult.CONTINUE;

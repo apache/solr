@@ -111,11 +111,15 @@ In the form of JSON files your trained model or models (e.g., different models f
 |(custom) |(custom class extending {solr-javadocs}/modules/ltr/org/apache/solr/ltr/model/LTRScoringModel.html[LTRScoringModel]) |(not applicable)
 |===
 
+== Module
+
+This is provided via the `ltr` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
+
 == Quick Start with LTR
 
-The `"techproducts"` example included with Solr is pre-configured with the plugins required for learning-to-rank, but they are disabled by default.
+The `"techproducts"` example included with Solr is pre-configured to load the plugins required for learning-to-rank from the `ltr` xref:configuration-guide:solr-modules.adoc[Solr Module], but they are disabled by default.
 
-To enable the plugins, please specify the `solr.ltr.enabled` JVM System Property when running the example:
+To enable the plugins, please specify the `solr.ltr.enabled` JVM System Property when running the `techproducts` example:
 
 [source,bash]
 ----

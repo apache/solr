@@ -16,7 +16,7 @@
  */
 package org.apache.solr;
 
-import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.junit.Test;
 

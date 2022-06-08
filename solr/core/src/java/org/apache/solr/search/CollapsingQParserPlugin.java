@@ -3533,7 +3533,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       for (int clause = 0; clause < numClauses; clause++) {
         SortField sf = sorts[clause];
         // we only need one slot for every comparator
-        fieldComparators[clause] = sf.getComparator(1, clause);
+        fieldComparators[clause] = sf.getComparator(1, clause == 0);
         reverseMul[clause] = sf.getReverse() ? -1 : 1;
       }
       groupHeadValues = new Object[initNumGroups][];

@@ -32,7 +32,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -247,7 +247,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
    * Sanity check that our method of varying the <code>method</code> param works and can be verified
    * by inspecting the debug output of basic requests.
    */
-  public void testWhiteboxSanityMethodProcessorDebug() throws Exception {
+  public void testWhiteboxSanityMethodProcessorDebug() {
     // NOTE: json.facet debugging output can be wonky, particularly when dealing with cloud
     // so for these queries we keep it simple:
     // - only one "top" facet per request
@@ -292,7 +292,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
    * </code> in conjunction with the <code>method</code> params works and can be verified by
    * inspecting the debug output of basic requests.
    */
-  public void testWhiteboxSanitySweepDebug() throws Exception {
+  public void testWhiteboxSanitySweepDebug() {
     // NOTE: json.facet debugging output can be wonky, particularly when dealing with cloud
     // so for these queries we keep it simple:
     // - only one "top" facet per request
@@ -544,7 +544,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
    * pure random monstrosity. (ie: if something obvious gets broken, this test may fail faster and
    * in a more obvious way then testRandom)
    */
-  public void testBespoke() throws Exception {
+  public void testBespoke() {
     { // two trivial single level facets
       Map<String, TermFacet> facets = new LinkedHashMap<>();
       facets.put("str", new TermFacet(multiStrField(9), UNIQUE_FIELD_VALS, 0, null, null));
@@ -611,7 +611,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     }
   }
 
-  public void testBespokeAllBuckets() throws Exception {
+  public void testBespokeAllBuckets() {
     { // single level facet w/sorting on skg and allBuckets
       Map<String, TermFacet> facets = new LinkedHashMap<>();
       facets.put(
@@ -622,7 +622,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     }
   }
 
-  public void testBespokePrefix() throws Exception {
+  public void testBespokePrefix() {
     { // trivial single level facet w/ prefix
       Map<String, TermFacet> facets = new LinkedHashMap<>();
       facets.put(
@@ -644,7 +644,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
    * params/options. This is more complex then {@link #testBespoke} but should still be easier to
    * trace/debug then a pure random monstrosity.
    */
-  public void testBespokeStructures() throws Exception {
+  public void testBespokeStructures() {
     // we don't need to test every field, just make sure we test enough fields to hit every suffix..
     final int maxFacetFieldNum =
         Collections.max(
@@ -774,8 +774,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
       final Map<String, TermFacet> facets,
       final String query,
       final String foreQ,
-      final String backQ)
-      throws SolrServerException, IOException {
+      final String backQ) {
     final SolrParams basicParams =
         params(
             "rows",

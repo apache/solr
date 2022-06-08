@@ -28,7 +28,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -67,7 +67,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testReadWriteNoCache() throws InterruptedException, IOException {
+  public void testReadWriteNoCache() throws IOException {
     CollectionProperties collectionProps = new CollectionProperties(zkClient());
 
     collectionProps.setCollectionProperty(collectionName, "property1", "value1");
@@ -147,7 +147,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
     checkValue("property1", "value1");
   }
 
-  private void checkValue(String propertyName, String expectedValue) throws InterruptedException {
+  private void checkValue(String propertyName, String expectedValue) {
     final Object value =
         cluster.getZkStateReader().getCollectionProperties(collectionName).get(propertyName);
     assertEquals("Unexpected value for collection property: " + propertyName, expectedValue, value);

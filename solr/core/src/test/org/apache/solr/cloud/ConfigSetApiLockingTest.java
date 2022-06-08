@@ -52,7 +52,7 @@ public class ConfigSetApiLockingTest extends SolrTestCaseJ4 {
     }
   }
 
-  private void monothreadedTests(ConfigSetApiLockFactory apiLockingHelper) throws Exception {
+  private void monothreadedTests(ConfigSetApiLockFactory apiLockingHelper) {
     // Config set lock without a base config set
     DistributedMultiLock cs1Lock = apiLockingHelper.createConfigSetApiLock(CONFIG_SET_NAME_1, null);
     assertTrue("cs1Lock should have been acquired", cs1Lock.isAcquired());

@@ -207,7 +207,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void checkResultFormat() throws Exception {
+  public void checkResultFormat() {
     // Check input and output format is the same
     String IN = "89.9,-130"; // lat,lon
     String OUT = IN; // IDENTICAL!
@@ -572,7 +572,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testBadScoreParam() throws Exception {
+  public void testBadScoreParam() {
     assertQEx(
         "expect friendly error message",
         "none",
@@ -581,7 +581,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSpatialConfig() throws Exception {
+  public void testSpatialConfig() {
     try (SolrCore core = h.getCoreInc()) {
       IndexSchema schema = core.getLatestSchema();
 

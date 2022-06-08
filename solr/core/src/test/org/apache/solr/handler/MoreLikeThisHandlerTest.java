@@ -38,7 +38,7 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testInterface() throws Exception {
+  public void testInterface() {
     SolrCore core = h.getCore();
 
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -237,7 +237,7 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testMultifieldSimilarity() throws Exception {
+  public void testMultifieldSimilarity() {
     SolrCore core = h.getCore();
     ModifiableSolrParams params = new ModifiableSolrParams();
 

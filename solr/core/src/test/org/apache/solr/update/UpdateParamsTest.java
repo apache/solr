@@ -34,7 +34,7 @@ public class UpdateParamsTest extends SolrTestCaseJ4 {
   }
 
   /** Tests that only update.chain and not update.processor works (SOLR-2105) */
-  public void testUpdateProcessorParamDeprecationRemoved() throws Exception {
+  public void testUpdateProcessorParamDeprecationRemoved() {
     SolrCore core = h.getCore();
 
     UpdateRequestHandler handler = new UpdateRequestHandler();

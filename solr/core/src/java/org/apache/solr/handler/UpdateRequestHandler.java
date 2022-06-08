@@ -19,9 +19,7 @@ package org.apache.solr.handler;
 import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.apache.solr.security.PermissionNameProvider.Name.UPDATE_PERM;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;

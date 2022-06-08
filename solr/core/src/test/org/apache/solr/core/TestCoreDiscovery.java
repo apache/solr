@@ -35,10 +35,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.RetryUtil;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -327,10 +329,12 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       cc.load();
       // Just check that the proper number of cores are loaded since making the test depend on order
       // would be fragile
-      assertEquals(
+      RetryUtil.retryUntil(
           "There should only be 3 cores loaded, coreLOS and two coreT? cores",
-          3,
-          cc.getLoadedCoreNames().size());
+          5,
+          200,
+          TimeUnit.MILLISECONDS,
+          () -> 3 == cc.getLoadedCoreNames().size());
 
       SolrCore c1 = cc.getCore("coreT1");
       assertNotNull("Core T1 should NOT BE NULL", c1);

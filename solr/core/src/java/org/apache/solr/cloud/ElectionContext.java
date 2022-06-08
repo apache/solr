@@ -17,7 +17,6 @@
 package org.apache.solr.cloud;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -66,7 +65,7 @@ public abstract class ElectionContext implements Closeable {
   }
 
   abstract void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStartMs)
-      throws KeeperException, InterruptedException, IOException;
+      throws KeeperException, InterruptedException;
 
   public void checkIfIamLeaderFired() {}
 

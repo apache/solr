@@ -19,7 +19,7 @@ package org.apache.solr.handler;
 import static org.apache.solr.handler.ReplicationTestHelper.*;
 
 import java.io.IOException;
-import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;

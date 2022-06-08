@@ -33,6 +33,8 @@ New Features
 * SOLR-16111: Add hl.queryFieldPattern support, an advanced alternative to the hl.requireFieldMatch boolean flag.
   (Christine Poerschke, David Smiley)
 
+* SOLR-15921: Load jars in <solr-install-dir>/lib/ by default (janhoy)
+
 Improvements
 ---------------------
 * SOLR-15986: CommitUpdateCommand and SplitIndexCommand can write user commit metadata. (Bruno Roustant)
@@ -46,12 +48,16 @@ Improvements
 
 * SOLR-16181: Initialize the LogWatcher earlier in CoreContainer#load() (janhoy)
 
+* SOLR-16225: Upgrade dependencies (Carrot2, HPPC) (Dawid Weiss)
+
 Optimizations
 ---------------------
 * SOLR-16120: Optimise hl.fl expansion. (Christine Poerschke, David Smiley, Mike Drob)
 
 * SOLR-14765: Optimize DocList creation for sort-irrelevant cases. This issue also reworks the building and caching of liveDocs
   in SolrIndexSearcher, and refines/clarifies the effect of `useFilterForSortedQuery` (Michael Gibney, Mike Drob, David Smiley)
+
+* SOLR-16146: Avoid loading all collections during node startup (noble)
 
 Bug Fixes
 ---------------------
@@ -93,8 +99,20 @@ Other Changes
 
 * SOLR-16114: SolrZooKeeper has been removed in favor of using ZooKeeper directly. (Mike Drob)
 
+* SOLR-16154: Event listeners submit through core container executor service instead of separate thread (Mike Drob, Kevin Risden)
+
+* SOLR-16190: Http2SolrClient should make sure to shutdown the executor (Kevin Risden)
+
+* SOLR-16191: Validate that installed ps utility supports -p flag, so that we do not inadvertantly stop the wrong process. (Mike Drob, Michael Gibney)
+
+* SOLR-16209: Rolling restart will no longer trigger as much PKI Plugin error logging. (Mike Drob, Tomás Fernández Löbbe)
+
+* SOLR-16213: Upgrade Jackson to 2.13.3 (janhoy)
+
 Build
 ---------------------
+* SOLR-16204: Change Lucene dependency to Lucene 9.1.0 (Elia Porciani via Alessandro Benedetti)
+
 * SOLR-16053: Upgrade scriptDepVersions (Kevin Risden)
 
 * SOLR-16050: Upgrade to errorprone 2.11.0 (Kevin Risden)
@@ -786,11 +804,9 @@ Bug Fixes
 
 * SOLR-16022: Enforce special character requirements on passwords with length less than 15 (Timothy Potter)
 
-* SOLR-16143: SolrConfig ResourceProvider can miss updates from ZooKeeper (Mike Drob)
+* SOLR-16143: SolrConfig can miss updates from ZooKeeper when deleting and recreating file items (Mike Drob)
 
 * SOLR-16164: ConfigSet API returns error if untrusted user creates from _default configset (Eric Pugh, Kevin Risden)
-
-* SOLR-16154: Event listeners submit through core container executor service instead of separate thread (Mike Drob, Kevin Risden)
 
 ==================  8.11.2 ==================
 
@@ -809,6 +825,14 @@ Bug Fixes
   but look like nonsense to Calcite, such as AND'd filters on the same multi-valued field (Timothy Potter, Kiran Chitturi)
 
 * SOLR-16022: Enforce special character requirements on passwords with length less than 15 (Timothy Potter)
+
+* SOLR-16199: Improve query syntax construction for SQL LIKE clause with phrases and wildcards
+  (Kiran Chitturi, Aroop Ganguly, Amrit Sarkar via Timothy Potter)
+
+* SOLR-16215: Escape query characters in Solr SQL Array UDF functions (Kiran Chitturi via Timothy Potter)
+
+* SOLR-16227: Solr SQL query parsing fails on multiple LIKE clauses and multiple terms
+  (Kiran Chitturi via David Smiley)
 
 ==================  8.11.1 ==================
 

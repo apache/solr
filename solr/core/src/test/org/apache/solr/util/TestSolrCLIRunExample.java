@@ -36,7 +36,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteResultHandler;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
@@ -70,7 +70,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void cleanupDirectoryFactory() throws IOException {
+  public static void cleanupDirectoryFactory() {
     System.clearProperty("solr.directoryFactory");
   }
 

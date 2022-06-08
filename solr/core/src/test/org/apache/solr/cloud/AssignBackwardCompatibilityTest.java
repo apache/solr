@@ -110,7 +110,7 @@ public class AssignBackwardCompatibilityTest extends SolrCloudTestCase {
     }
   }
 
-  private int getCounter() throws KeeperException, InterruptedException {
+  private int getCounter() throws InterruptedException {
     try {
       byte[] data =
           cluster

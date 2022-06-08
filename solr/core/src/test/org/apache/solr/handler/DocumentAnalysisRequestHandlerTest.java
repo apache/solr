@@ -23,7 +23,7 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
-import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.tests.analysis.MockTokenizer;
 import org.apache.solr.client.solrj.request.DocumentAnalysisRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -123,7 +123,7 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
     }
 
     @Override
-    public InputStream getStream() throws IOException {
+    public InputStream getStream() {
       return new ByteArrayInputStream(bytes);
     }
 
@@ -207,7 +207,7 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
    */
   @Test
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public void testHandleAnalysisRequest() throws Exception {
+  public void testHandleAnalysisRequest() {
 
     SolrInputDocument document = new SolrInputDocument();
     document.addField("id", 1);

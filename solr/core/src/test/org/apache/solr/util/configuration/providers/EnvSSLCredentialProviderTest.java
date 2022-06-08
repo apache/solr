@@ -30,7 +30,7 @@ import org.junit.Test;
 public class EnvSSLCredentialProviderTest {
 
   @Test
-  public void testGetCredentials() throws Exception {
+  public void testGetCredentials() {
     int cnt = 0;
     Map<String, String> envvars =
         ImmutableMap.of(
@@ -49,7 +49,7 @@ public class EnvSSLCredentialProviderTest {
   }
 
   @Test
-  public void testGetCredentialsWithEnvVars() throws Exception {
+  public void testGetCredentialsWithEnvVars() {
     EnvSSLCredentialProvider sut = new EnvSSLCredentialProvider();
     // assuming not to fail
     sut.getCredential(SSLCredentialProvider.CredentialType.SSL_KEY_STORE_PASSWORD);

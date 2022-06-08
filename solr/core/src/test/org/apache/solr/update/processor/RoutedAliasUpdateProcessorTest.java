@@ -60,7 +60,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.UpdateCommand;
 import org.junit.Ignore;
 
-@org.apache.lucene.util.LuceneTestCase.AwaitsFix(
+@org.apache.lucene.tests.util.LuceneTestCase.AwaitsFix(
     bugUrl = "https://issues.apache.org/jira/browse/SOLR-13696")
 @Ignore // don't try too run abstract base class
 public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {

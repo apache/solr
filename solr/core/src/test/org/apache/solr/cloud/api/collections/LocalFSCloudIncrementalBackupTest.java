@@ -17,7 +17,7 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.junit.BeforeClass;
 
 // Backups do checksum validation against a footer value not present in 'SimpleText'

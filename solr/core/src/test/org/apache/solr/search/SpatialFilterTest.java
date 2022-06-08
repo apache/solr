@@ -46,7 +46,7 @@ public class SpatialFilterTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testPoints() throws Exception {
+  public void testPoints() {
     String fieldName = "home";
     setupDocs(fieldName);
     // Try some edge cases
@@ -60,7 +60,7 @@ public class SpatialFilterTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testLatLonType() throws Exception {
+  public void testLatLonType() {
     String fieldName = "store";
     setupDocs(fieldName);
     // Try some edge cases

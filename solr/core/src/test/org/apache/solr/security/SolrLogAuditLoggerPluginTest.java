@@ -20,7 +20,6 @@ package org.apache.solr.security;
 import static org.apache.solr.security.AuditLoggerPluginTest.EVENT_ANONYMOUS;
 import static org.apache.solr.security.AuditLoggerPluginTest.EVENT_AUTHENTICATED;
 
-import java.io.IOException;
 import java.util.HashMap;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -42,7 +41,7 @@ public class SolrLogAuditLoggerPluginTest extends SolrTestCaseJ4 {
   }
 
   @Test(expected = SolrException.class)
-  public void badConfig() throws IOException {
+  public void badConfig() {
     config.put("invalid", "parameter");
     plugin.init(config);
   }

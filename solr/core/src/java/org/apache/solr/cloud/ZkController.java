@@ -97,6 +97,7 @@ import org.apache.solr.core.NodeRoles;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrCoreInitializationException;
 import org.apache.solr.handler.component.HttpShardHandler;
+import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.UpdateLog;
@@ -517,8 +518,8 @@ public class ZkController implements Closeable {
     this.overseerConfigSetQueue = overseer.getConfigSetQueue(zkClient);
     this.sysPropsCacher =
         new NodesSysPropsCacher(
-            getSolrCloudManager().getNodeStateProvider(), getNodeName(), zkStateReader);
-
+            ((HttpShardHandlerFactory) getCoreContainer().getShardHandlerFactory()).getClient(),
+            zkStateReader);
     assert ObjectReleaseTracker.track(this);
   }
 
@@ -813,7 +814,7 @@ public class ZkController implements Closeable {
         try {
           log.warn("Leader {} met tragic exception, give up its leadership", key);
           elector.retryElection(context, false);
-        } catch (KeeperException | InterruptedException | IOException e) {
+        } catch (KeeperException | InterruptedException e) {
           SolrZkClient.checkInterrupted(e);
           log.error("Met exception on give up leadership for {}", key, e);
         }

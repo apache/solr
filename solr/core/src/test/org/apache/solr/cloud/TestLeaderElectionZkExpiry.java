@@ -21,7 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
-import org.apache.lucene.util.LuceneTestCase.BadApple;
+import org.apache.lucene.tests.util.LuceneTestCase.BadApple;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.core.CloudConfig;

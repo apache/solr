@@ -65,7 +65,7 @@ public class PathHierarchyTokenizerFactoryTest extends SolrTestCaseJ4 {
     assertU(commit());
   }
 
-  public void testDescendents() throws Exception {
+  public void testDescendents() {
 
     assertQ(
         req("{!field f=cat_path}Books/NonFic"),

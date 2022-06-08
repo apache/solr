@@ -22,7 +22,7 @@ import java.net.URI;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -158,12 +158,12 @@ public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTes
     }
 
     @Override
-    public void copyFileFrom(Directory sourceDir, String fileName, URI dest) throws IOException {
+    public void copyFileFrom(Directory sourceDir, String fileName, URI dest) {
       throw new UnsupportedOperationException(poisioned);
     }
 
     @Override
-    public void copyFileTo(URI sourceDir, String fileName, Directory dest) throws IOException {
+    public void copyFileTo(URI sourceDir, String fileName, Directory dest) {
       throw new UnsupportedOperationException(poisioned);
     }
 
@@ -173,7 +173,7 @@ public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTes
     }
 
     @Override
-    public OutputStream createOutput(URI path) throws IOException {
+    public OutputStream createOutput(URI path) {
       throw new UnsupportedOperationException(poisioned);
     }
   }

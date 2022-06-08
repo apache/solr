@@ -18,12 +18,10 @@ package org.apache.solr.handler.component;
 
 import static org.hamcrest.CoreMatchers.is;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Random;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
@@ -143,7 +141,7 @@ public class DistributedFacetExistsSmallTest extends BaseDistributedSearchTestCa
     query(params);
   }
 
-  private void checkInvalidMincount() throws SolrServerException, IOException {
+  private void checkInvalidMincount() {
     final ModifiableSolrParams params = buildParams();
     if (random().nextBoolean()) {
       params.remove("facet.exists");
