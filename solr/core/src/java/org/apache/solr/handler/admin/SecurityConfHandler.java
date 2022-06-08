@@ -299,7 +299,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
                     : defaultAuthcApi.getSpec();
               };
 
-          // TODO Can we remove this extra ReqHandlerToApi wrapping - nothing but the schema from the POST authc/authz is getting used.  
+          // TODO Can we remove this extra ReqHandlerToApi wrapping - nothing but the schema from the POST authc/authz is getting used.
           apis.add(
               new ReqHandlerToApi(this, authcSpecProvider) {
                 @Override
