@@ -18,8 +18,8 @@ package org.apache.solr.security;
 
 import com.google.common.collect.ImmutableSet;
 import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.api.Api;
 import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.handler.admin.api.ModifyBasicAuthConfigAPI;
 import org.slf4j.Logger;
@@ -176,8 +176,10 @@ public class Sha256AuthenticationProvider
 
   @Override
   public ValidatingJsonMap getSpec() {
-    return AnnotatedApi.getApis(new ModifyBasicAuthConfigAPI()).get(0).getSpec();
-    return Utils.getSpec("cluster.security.BasicAuth.Commands").getSpec();
+    log.info("JEGERLOW: Fetching spec from Sha256AuthenticationProvider");
+    final List<Api> apis = AnnotatedApi.getApis(new ModifyBasicAuthConfigAPI());
+    log.warn("JEGERLOW: Sha256 APIs (only returning last one): {}", apis);
+    return apis.get(0).getSpec();
   }
 
   static final Set<String> supported_ops = ImmutableSet.of("set-user", "delete-user");

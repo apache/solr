@@ -284,19 +284,26 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
         if (apis == null) {
           Collection<Api> apis = new ArrayList<>();
           // GET Apis are the same regardless of which plugins are registered
+          log.info("JEGERLOW Registering GET /cluster/security/authentication");
           apis.addAll(AnnotatedApi.getApis(new GetAuthenticationConfigAPI(this)));
           apis.addAll(AnnotatedApi.getApis(new GetAuthorizationConfigAPI(this)));
 
           // POST Apis depend on the specific plugin registered (with a fallback used if SpecProvider-compatible plugins aren't in use).
           final Api defaultAuthcApi = AnnotatedApi.getApis(new DefaultUpdateAuthenticationConfigAPI(this)).get(0);
+          log.info("JEGERLOW I've just created the defaultAuthc API: {}", defaultAuthcApi);
           final Api defaultAuthzApi = AnnotatedApi.getApis(new DefaultUpdateAuthorizationConfigAPI(this)).get(0);
 
           SpecProvider authcSpecProvider =
               () -> {
+                log.info("JEGERLOW fetching authcSpec");
                 AuthenticationPlugin authcPlugin = cores.getAuthenticationPlugin();
-                return authcPlugin != null && authcPlugin instanceof SpecProvider
-                    ? ((SpecProvider) authcPlugin).getSpec()
-                    : defaultAuthcApi.getSpec();
+                if (authcPlugin != null && authcPlugin instanceof SpecProvider) {
+                  log.info("JEGERLOW Using authcSpec from plugin {}", ((SpecProvider) authcPlugin).getSpec());
+                  return ((SpecProvider) authcPlugin).getSpec();
+                } else {
+                  log.info("JEGERLOW: Using default authcSpec {}", defaultAuthcApi.getSpec());
+                  return defaultAuthcApi.getSpec();
+                }
               };
 
           // TODO Can we remove this extra ReqHandlerToApi wrapping - nothing but the schema from the POST authc/authz is getting used.
@@ -337,6 +344,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
         }
       }
     }
+    log.info("JEGERLOW Returnign from SEcurityConfHandler.getApis with list: {}", apis);
     return this.apis;
   }
 

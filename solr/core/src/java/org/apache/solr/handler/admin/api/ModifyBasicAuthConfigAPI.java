@@ -20,7 +20,9 @@ package org.apache.solr.handler.admin.api;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.AddReplicaPayload;
+
+import java.util.List;
+import java.util.Map;
 
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.security.PermissionNameProvider.Name.SECURITY_EDIT_PERM;
@@ -32,13 +34,13 @@ import static org.apache.solr.security.PermissionNameProvider.Name.SECURITY_EDIT
 public class ModifyBasicAuthConfigAPI {
 
     @Command(name = "set-user")
-    public void addReplica(PayloadObj<AddReplicaPayload> addReplicaAPIPayloadObj) {
+    public void addReplica(PayloadObj<Map<String,String>> addReplicaAPIPayloadObj) {
         // Method stub used only to produce v2 API spec; implementation/body empty.
         throw new IllegalStateException();
     }
 
     @Command(name = "delete-user")
-    public void deleteUser(PayloadObj<AddReplicaPayload> addReplicaPayload) {
+    public void deleteUser(PayloadObj<List<String>> usersToDelete) {
         // Method stub used only to produce v2 API spec; implementation/body empty.
         throw new IllegalStateException();
     }

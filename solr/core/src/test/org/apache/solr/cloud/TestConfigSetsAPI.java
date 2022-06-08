@@ -16,12 +16,70 @@
  */
 package org.apache.solr.cloud;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.core.ConfigSetProperties.DEFAULT_FILENAME;
-import static org.junit.matchers.JUnitMatchers.containsString;
-
 import com.google.common.collect.ImmutableMap;
+import org.apache.commons.io.FileUtils;
+import org.apache.http.HttpEntity;
+import org.apache.http.auth.BasicUserPrincipal;
+import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.message.BasicHeader;
+import org.apache.http.util.EntityUtils;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
+import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Create;
+import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Delete;
+import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Upload;
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.schema.SchemaRequest;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
+import org.apache.solr.client.solrj.response.schema.SchemaResponse;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.apache.solr.common.params.ConfigSetParams;
+import org.apache.solr.common.params.ConfigSetParams.ConfigSetAction;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.util.ValidatingJsonMap;
+import org.apache.solr.core.ConfigSetProperties;
+import org.apache.solr.core.ConfigSetService;
+import org.apache.solr.core.TestSolrConfigHandler;
+import org.apache.solr.handler.admin.api.ModifyBasicAuthConfigAPI;
+import org.apache.solr.security.AuthorizationContext;
+import org.apache.solr.security.AuthorizationPlugin;
+import org.apache.solr.security.AuthorizationResponse;
+import org.apache.solr.security.BasicAuthPlugin;
+import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.util.ExternalPaths;
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Assume;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.noggit.JSONParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.script.ScriptEngineManager;
+import javax.servlet.FilterChain;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
+import javax.servlet.http.HttpServletResponse;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -52,66 +110,11 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-import javax.script.ScriptEngineManager;
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
-import javax.servlet.http.HttpServletResponse;
-import org.apache.commons.io.FileUtils;
-import org.apache.http.HttpEntity;
-import org.apache.http.auth.BasicUserPrincipal;
-import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.http.entity.ByteArrayEntity;
-import org.apache.http.message.BasicHeader;
-import org.apache.http.util.EntityUtils;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
-import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Create;
-import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Delete;
-import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Upload;
-import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.request.schema.SchemaRequest;
-import org.apache.solr.client.solrj.response.CollectionAdminResponse;
-import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
-import org.apache.solr.client.solrj.response.schema.SchemaResponse;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.params.CollectionParams.CollectionAction;
-import org.apache.solr.common.params.ConfigSetParams;
-import org.apache.solr.common.params.ConfigSetParams.ConfigSetAction;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.Utils;
-import org.apache.solr.common.util.ValidatingJsonMap;
-import org.apache.solr.core.ConfigSetProperties;
-import org.apache.solr.core.ConfigSetService;
-import org.apache.solr.core.TestSolrConfigHandler;
-import org.apache.solr.security.AuthorizationContext;
-import org.apache.solr.security.AuthorizationPlugin;
-import org.apache.solr.security.AuthorizationResponse;
-import org.apache.solr.security.BasicAuthPlugin;
-import org.apache.solr.servlet.SolrDispatchFilter;
-import org.apache.solr.util.ExternalPaths;
-import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.data.Stat;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.noggit.JSONParser;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.core.ConfigSetProperties.DEFAULT_FILENAME;
+import static org.junit.matchers.JUnitMatchers.containsString;
 
 /** Simple ConfigSets API tests on user errors and simple success cases. */
 public class TestConfigSetsAPI extends SolrCloudTestCase {
@@ -1881,7 +1884,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
         @Override
         public ValidatingJsonMap getSpec() {
-          return Utils.getSpec("cluster.security.BasicAuth.Commands").getSpec();
+          return AnnotatedApi.getApis(new ModifyBasicAuthConfigAPI()).get(0).getSpec();
         }
 
         @Override
