@@ -207,11 +207,7 @@ public abstract class V2ApiMappingTest<T extends RequestHandlerBase> extends Sol
   protected void assertAnnotatedApiExistsFor(String method, String path) {
     final AnnotatedApi api = getAnnotatedApiFor(method, path);
     assertTrue(
-        "Expected to find API mapping for method ["
-            + method
-            + "] on path ["
-            + path
-            + "], but none found!",
+        "Expected to find API mapping for [" + method + " " + path + "] but none found!",
         api != null);
   }
 
