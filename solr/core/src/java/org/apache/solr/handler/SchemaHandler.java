@@ -46,6 +46,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.admin.api.SchemaBulkModifyAPI;
 import org.apache.solr.handler.admin.api.SchemaGetDynamicFieldAPI;
 import org.apache.solr.handler.admin.api.SchemaGetFieldAPI;
 import org.apache.solr.handler.admin.api.SchemaGetFieldTypeAPI;
@@ -312,24 +313,24 @@ public class SchemaHandler extends RequestHandlerBase
 
   @Override
   public Collection<Api> getApis() {
-    final List<Api> immList = ApiBag.wrapRequestHandlers(this, "core.SchemaEdit");
-    final List<Api> mutList = new ArrayList<>();
-    mutList.addAll(immList);
-    mutList.addAll(AnnotatedApi.getApis(new SchemaNameAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaInfoAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaUniqueKeyAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaVersionAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaSimilarityAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaZkVersionAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaListAllFieldsAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaGetFieldAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaListAllCopyFieldsAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaListAllDynamicFieldsAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaGetDynamicFieldAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaListAllFieldTypesAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaGetFieldTypeAPI(this)));
 
-    return mutList;
+    final List<Api> apis = new ArrayList<>();
+    apis.addAll(AnnotatedApi.getApis(new SchemaNameAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new SchemaInfoAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new SchemaUniqueKeyAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new SchemaVersionAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new SchemaSimilarityAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new SchemaZkVersionAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new SchemaListAllFieldsAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new SchemaGetFieldAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new SchemaListAllCopyFieldsAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new SchemaListAllDynamicFieldsAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new SchemaGetDynamicFieldAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new SchemaListAllFieldTypesAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new SchemaGetFieldTypeAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new SchemaBulkModifyAPI(this)));
+
+    return apis;
   }
 
   @Override
