@@ -47,7 +47,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
@@ -1836,7 +1836,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
   }
 
   private SolrZkClient electNewOverseer(String address)
-      throws InterruptedException, KeeperException, NoSuchFieldException, SecurityException,
+      throws InterruptedException, IOException, KeeperException, NoSuchFieldException, SecurityException,
           IllegalAccessException {
     SolrZkClient zkClient = new SolrZkClient(address, TIMEOUT);
     zkClients.add(zkClient);

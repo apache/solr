@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.List;
@@ -255,7 +256,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
    * @return SolrZkClient
    */
   private SolrZkClient electNewOverseer(String address)
-      throws KeeperException, InterruptedException {
+      throws KeeperException, InterruptedException, IOException {
     SolrZkClient zkClient = new SolrZkClient(address, TIMEOUT);
     ZkStateReader reader = new ZkStateReader(zkClient);
     LeaderElector overseerElector = new LeaderElector(zkClient);

@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
 
 import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -172,7 +173,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
       }
     }
 
-    private void setupOnConnect() throws InterruptedException, KeeperException {
+    private void setupOnConnect() throws InterruptedException, KeeperException, IOException {
       assertNotNull(es);
       TestLeaderElectionContext context =
           new TestLeaderElectionContext(
