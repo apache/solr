@@ -32,6 +32,7 @@ import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME;
 import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME_IN_OVERLAY;
 import static org.apache.solr.schema.FieldType.CLASS_NAME;
 
+import com.google.common.collect.Lists;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -85,6 +86,8 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.admin.api.GetConfigAPI;
+import org.apache.solr.handler.admin.api.ModifyConfigComponentAPI;
+import org.apache.solr.handler.admin.api.ModifyParamSetAPI;
 import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -1038,11 +1041,10 @@ public class SolrConfigHandler extends RequestHandlerBase
 
   @Override
   public Collection<Api> getApis() {
-    final List<Api> apis =
-        new ArrayList<>(
-            ApiBag.wrapRequestHandlers(
-                this, "core.config.Commands", "core.config.Params.Commands"));
+    final List<Api> apis = Lists.newArrayList();
     apis.addAll(AnnotatedApi.getApis(new GetConfigAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new ModifyConfigComponentAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new ModifyParamSetAPI(this)));
     return apis;
   }
 
