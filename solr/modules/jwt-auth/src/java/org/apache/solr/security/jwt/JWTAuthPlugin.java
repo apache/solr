@@ -16,6 +16,42 @@
  */
 package org.apache.solr.security.jwt;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.http.HttpHeaders;
+import org.apache.http.HttpRequest;
+import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.http.protocol.HttpContext;
+import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.api.Api;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SpecProvider;
+import org.apache.solr.common.StringUtils;
+import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.util.ValidatingJsonMap;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.handler.admin.api.ModifyJWTAuthPluginConfigAPI;
+import org.apache.solr.security.AuthenticationPlugin;
+import org.apache.solr.security.ConfigEditablePlugin;
+import org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode;
+import org.apache.solr.util.CryptoKeys;
+import org.eclipse.jetty.client.api.Request;
+import org.jose4j.jwa.AlgorithmConstraints;
+import org.jose4j.jwk.HttpsJwks;
+import org.jose4j.jwt.JwtClaims;
+import org.jose4j.jwt.MalformedClaimException;
+import org.jose4j.jwt.consumer.InvalidJwtException;
+import org.jose4j.jwt.consumer.InvalidJwtSignatureException;
+import org.jose4j.jwt.consumer.JwtConsumer;
+import org.jose4j.jwt.consumer.JwtConsumerBuilder;
+import org.jose4j.lang.JoseException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.servlet.FilterChain;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -41,38 +77,6 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import org.apache.commons.io.IOUtils;
-import org.apache.http.HttpHeaders;
-import org.apache.http.HttpRequest;
-import org.apache.http.client.protocol.HttpClientContext;
-import org.apache.http.protocol.HttpContext;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SpecProvider;
-import org.apache.solr.common.StringUtils;
-import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.common.util.Utils;
-import org.apache.solr.common.util.ValidatingJsonMap;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.security.AuthenticationPlugin;
-import org.apache.solr.security.ConfigEditablePlugin;
-import org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode;
-import org.apache.solr.util.CryptoKeys;
-import org.eclipse.jetty.client.api.Request;
-import org.jose4j.jwa.AlgorithmConstraints;
-import org.jose4j.jwk.HttpsJwks;
-import org.jose4j.jwt.JwtClaims;
-import org.jose4j.jwt.MalformedClaimException;
-import org.jose4j.jwt.consumer.InvalidJwtException;
-import org.jose4j.jwt.consumer.InvalidJwtSignatureException;
-import org.jose4j.jwt.consumer.JwtConsumer;
-import org.jose4j.jwt.consumer.JwtConsumerBuilder;
-import org.jose4j.lang.JoseException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Authenticaion plugin that finds logged in user by validating the signature of a JWT token */
 public class JWTAuthPlugin extends AuthenticationPlugin
@@ -705,7 +709,8 @@ public class JWTAuthPlugin extends AuthenticationPlugin
 
   @Override
   public ValidatingJsonMap getSpec() {
-    return Utils.getSpec("cluster.security.JwtAuth.Commands").getSpec();
+    final List<Api> apis = AnnotatedApi.getApis(new ModifyJWTAuthPluginConfigAPI());
+    return apis.get(0).getSpec();
   }
 
   /**

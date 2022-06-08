@@ -21,29 +21,20 @@ import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 
-import java.util.List;
-import java.util.Map;
-
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.security.PermissionNameProvider.Name.SECURITY_EDIT_PERM;
 
 /**
- * V2 API to modify configuration for Solr's {@link org.apache.solr.security.BasicAuthPlugin}
+ * V2 API for modifying configuration for Solr's JWTAuthPlugin.
  */
 @EndPoint(
         path = {"/cluster/security/authentication"},
         method = POST,
         permission = SECURITY_EDIT_PERM)
-public class ModifyBasicAuthConfigAPI {
+public class ModifyJWTAuthPluginConfigAPI {
 
-    @Command(name = "set-user")
-    public void createUsers(PayloadObj<Map<String,String>> usersToCreatePayload) {
-        // Method stub used only to produce v2 API spec; implementation/body empty.
-        throw new IllegalStateException();
-    }
-
-    @Command(name = "delete-user")
-    public void deleteUsers(PayloadObj<List<String>> usersToDeletePayload) {
+    @Command(name = "set-property")
+    public void setProperties(PayloadObj<JWTConfigurationPayload> propertyPayload) {
         // Method stub used only to produce v2 API spec; implementation/body empty.
         throw new IllegalStateException();
     }
