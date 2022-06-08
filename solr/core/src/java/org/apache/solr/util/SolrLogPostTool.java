@@ -327,7 +327,8 @@ public class SolrLogPostTool {
       }
     }
 
-    private void parseUpdate(SolrInputDocument lineRecord, String line, Map<String, Object> keyValuePairs) {
+    private void parseUpdate(
+        SolrInputDocument lineRecord, String line, Map<String, Object> keyValuePairs) {
       if (keyValuePairs.containsKey("deleteByQuery")) {
         lineRecord.setField("type_s", "deleteByQuery");
       } else if (keyValuePairs.containsKey("delete")) {
