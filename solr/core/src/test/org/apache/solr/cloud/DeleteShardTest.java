@@ -73,7 +73,7 @@ public class DeleteShardTest extends SolrCloudTestCase {
 
     setSliceState(collection, "shard1", Slice.State.INACTIVE);
 
-    // Can delete an INATIVE shard
+    // Can delete an INACTIVE shard
     CollectionAdminRequest.deleteShard(collection, "shard1").process(cluster.getSolrClient());
     waitForState(
         "Expected 'shard1' to be removed",

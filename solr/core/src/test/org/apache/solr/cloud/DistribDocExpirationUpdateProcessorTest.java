@@ -209,20 +209,20 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
           req.process(cluster.getSolrClient(), COLLECTION).getResults().getNumFound());
     }
 
-    // now that we've confrmed the basics work, let's check some fine grain stuff...
+    // now that we've confirmed the basics work, let's check some fine grain stuff...
 
-    // first off, sanity check that this special docId doesn't some how already exist
+    // first off, sanity check that this special docId doesn't somehow already exist
     waitForNoResults(0, params("q", "id:special99", "rows", "0", "_trace", "sanity_check99"));
 
     {
       // force a hard commit on all shards (the prior auto-expire would have only done a soft
-      // commit) so we can ensure our indexVersion won't change uncessisarily on the un-affected
+      // commit) so we can ensure our indexVersion won't change unnecessarily on the un-affected
       // shard when we add & (hard) commit our special doc...
       final UpdateRequest req = setAuthIfNeeded(new UpdateRequest());
       req.commit(cluster.getSolrClient(), COLLECTION);
     }
 
-    // record important data for each replica core so we can check later that it only changes for
+    // record important data for each replica core, so we can check later that it only changes for
     // the replicas of a single shard after we add/expire a single special doc
     log.info("Fetching ReplicaData BEFORE special doc addition/expiration");
     final Map<String, ReplicaData> initReplicaData = getTestDataForAllReplicas();
@@ -237,8 +237,8 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
     waitForNoResults(
         180, params("q", "id:special99", "rows", "0", "_trace", "did_special_doc_expire_yet"));
 
-    // now check all of the replicas to verify a few things:
-    // - only the replicas of one shard changed -- no unneccessary churn on other shards
+    // now check all the replicas to verify a few things:
+    // - only the replicas of one shard changed -- no unnecessary churn on other shards
     // - every replica of each single shard should have the same number of docs
     // - the total number of docs should match numDocsThatNeverExpire
     log.info("Fetching ReplicaData AFTER special doc addition/expiration");
