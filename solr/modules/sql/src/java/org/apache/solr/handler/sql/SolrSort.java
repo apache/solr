@@ -62,7 +62,6 @@ class SolrSort extends Sort implements SolrRel {
   }
 
   public void implement(Implementor implementor) {
-    implementor.visitChild(0, getInput());
 
     List<RelFieldCollation> sortCollations = collation.getFieldCollations();
     if (!sortCollations.isEmpty()) {
@@ -85,5 +84,7 @@ class SolrSort extends Sort implements SolrRel {
     if (offset != null && offset instanceof RexLiteral) {
       implementor.setOffset(((RexLiteral) offset).getValue2().toString());
     }
+
+    implementor.visitChild(0, getInput());
   }
 }

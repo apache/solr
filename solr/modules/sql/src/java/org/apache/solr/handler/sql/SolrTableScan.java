@@ -17,6 +17,8 @@
 package org.apache.solr.handler.sql;
 
 import java.util.List;
+import java.util.Properties;
+
 import org.apache.calcite.adapter.enumerable.EnumerableRules;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.RelNode;
@@ -86,7 +88,12 @@ class SolrTableScan extends TableScan implements SolrRel {
   }
 
   public void implement(Implementor implementor) {
+    Properties properties = solrTable.getSchema().properties;
+    String zk = properties.getProperty("zk");
+    String collection = solrTable.getCollection();
+    boolean mapReduce = "map_reduce".equals(properties.getProperty("aggregationMode"));
     implementor.solrTable = solrTable;
     implementor.table = table;
+    //Port logic for creating streaming expression from SolrTable below
   }
 }

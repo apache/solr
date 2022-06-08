@@ -73,6 +73,14 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     this.collection = collection;
   }
 
+  public SolrSchema getSchema() {
+    return this.schema;
+  }
+
+  public String getCollection() {
+    return this.collection;
+  }
+
   public String toString() {
     return "SolrTable {" + collection + "}";
   }
