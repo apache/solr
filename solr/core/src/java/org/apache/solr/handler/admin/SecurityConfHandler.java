@@ -30,6 +30,8 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.RequestHandlerUtils;
+import org.apache.solr.handler.admin.api.DefaultUpdateAuthenticationConfigAPI;
+import org.apache.solr.handler.admin.api.DefaultUpdateAuthorizationConfigAPI;
 import org.apache.solr.handler.admin.api.GetAuthenticationConfigAPI;
 import org.apache.solr.handler.admin.api.GetAuthorizationConfigAPI;
 import org.apache.solr.request.SolrQueryRequest;
@@ -281,20 +283,23 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
       synchronized (this) {
         if (apis == null) {
           Collection<Api> apis = new ArrayList<>();
-          final SpecProvider authcCommands =
-              Utils.getSpec("cluster.security.authentication.Commands");
-          final SpecProvider authzCommands =
-              Utils.getSpec("cluster.security.authorization.Commands");
+          // GET Apis are the same regardless of which plugins are registered
           apis.addAll(AnnotatedApi.getApis(new GetAuthenticationConfigAPI(this)));
           apis.addAll(AnnotatedApi.getApis(new GetAuthorizationConfigAPI(this)));
+
+          // POST Apis depend on the specific plugin registered (with a fallback used if SpecProvider-compatible plugins aren't in use).
+          final Api defaultAuthcApi = AnnotatedApi.getApis(new DefaultUpdateAuthenticationConfigAPI(this)).get(0);
+          final Api defaultAuthzApi = AnnotatedApi.getApis(new DefaultUpdateAuthorizationConfigAPI(this)).get(0);
+
           SpecProvider authcSpecProvider =
               () -> {
                 AuthenticationPlugin authcPlugin = cores.getAuthenticationPlugin();
                 return authcPlugin != null && authcPlugin instanceof SpecProvider
                     ? ((SpecProvider) authcPlugin).getSpec()
-                    : authcCommands.getSpec();
+                    : defaultAuthcApi.getSpec();
               };
 
+          // TODO Can we remove this extra ReqHandlerToApi wrapping - nothing but the schema from the POST authc/authz is getting used.  
           apis.add(
               new ReqHandlerToApi(this, authcSpecProvider) {
                 @Override
@@ -313,7 +318,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
                 AuthorizationPlugin authzPlugin = cores.getAuthorizationPlugin();
                 return authzPlugin != null && authzPlugin instanceof SpecProvider
                     ? ((SpecProvider) authzPlugin).getSpec()
-                    : authzCommands.getSpec();
+                    : defaultAuthzApi.getSpec();
               };
           apis.add(
               new ApiBag.ReqHandlerToApi(this, authzSpecProvider) {
