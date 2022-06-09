@@ -41,10 +41,10 @@ version = {
 
   // On a release explicitly set release version in one go:
   //  -Dversion.release=x.y.z
-  
+
   // Jenkins can just set just a suffix, overriding SNAPSHOT, e.g. using build id:
   //  -Dversion.suffix=jenkins123
-  
+
   String versionSuffix = propertyOrDefault('version.suffix', 'SNAPSHOT')
   return propertyOrDefault('version.release', "${baseVersion}-${versionSuffix}")
 }()
@@ -89,8 +89,8 @@ ext {
     logger.info("External tool '${name}' resolved to: ${resolved}")
     return resolved
   }
-  
-  luceneBaseVersionProvider = project.provider { 
+
+  luceneBaseVersionProvider = project.provider {
     def luceneVersion = getVersion('org.apache.lucene:lucene-core')
     def m = (luceneVersion =~ /^\d+\.\d+\.\d+\b/)
     if (!m) {
@@ -207,5 +207,5 @@ apply from: file('gradle/ant-compat/solr.post-jar.gradle')
 
 apply from: file('gradle/node.gradle')
 
-sourceCompatibility = JavaVersion.VERSION_16
-targetCompatibility = JavaVersion.VERSION_16
+sourceCompatibility = JavaVersion.VERSION_17
+targetCompatibility = JavaVersion.VERSION_17
