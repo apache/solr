@@ -57,6 +57,7 @@ import static org.apache.solr.common.params.CommonParams.SORT;
 
 /** Relational expression representing a scan of a Solr collection. */
 class SolrTableScan extends TableScan implements SolrRel {
+  private static final String DEFAULT_QUERY = "*:*";
   private final SolrTable solrTable;
   private final RelDataType projectRowType;
 
@@ -120,7 +121,6 @@ class SolrTableScan extends TableScan implements SolrRel {
     Properties properties = solrTable.getSchema().properties;
     String zk = properties.getProperty("zk");
     String collection = solrTable.getCollection();
-    boolean mapReduce = "map_reduce".equals(properties.getProperty("aggregationMode"));
     final PhysType physType =
         PhysTypeImpl.of(implementor.getTypeFactory(), rowType, implementor.getPref().prefer(JavaRowFormat.ARRAY));
     final List<Map.Entry<String, Class<?>>> fields = zip(generateFields(SolrRules.solrFieldNames(rowType), implementor.fieldMappings), physType);
@@ -132,11 +132,79 @@ class SolrTableScan extends TableScan implements SolrRel {
     final boolean negativeQuery = implementor.negativeQuery;
     final String havingPredicate = implementor.havingPredicate;
     final String offset = implementor.offsetValue;
-    implementor.exp = getScanExpression();
+    implementor.exp = getScanExpression(properties, collection, fields, query, orders, buckets, metricPairs, limit, negativeQuery, havingPredicate, offset);
   }
 
-  private String getScanExpression() {
-    return null;
+  private String getScanExpression(final Properties properties,
+                                   final String collection,
+                                   final List<Map.Entry<String, Class<?>>> fields,
+                                   final String query,
+                                   final List<Pair<String, String>> orders,
+                                   final List<String> buckets,
+                                   final List<Pair<String, String>> metricPairs,
+                                   final String limit,
+                                   final boolean negative,
+                                   final String havingPredicate,
+                                   final String offset)  {
+
+    boolean mapReduce = "map_reduce".equals(properties.getProperty("aggregationMode"));
+
+    String q = null;
+
+    if (query == null) {
+      q = DEFAULT_QUERY;
+    } else {
+      if (negative) {
+        q = DEFAULT_QUERY + " AND " + query;
+      } else {
+        q = query;
+      }
+    }
+
+    TupleStream tupleStream;
+    String zk = properties.getProperty("zk");
+
+    try {
+      if (metricPairs.isEmpty() && buckets.isEmpty()) {
+        tupleStream = handleSelect(zk, collection, q, fields, orders, limit, offset);
+      } else {
+        if (buckets.isEmpty()) {
+          tupleStream = handleStats(zk, collection, q, metricPairs, fields);
+        } else {
+          if (mapReduce) {
+            tupleStream =
+                handleGroupByMapReduce(
+                    zk,
+                    collection,
+                    properties,
+                    fields,
+                    q,
+                    orders,
+                    buckets,
+                    metricPairs,
+                    limit,
+                    havingPredicate);
+          } else {
+            tupleStream =
+                handleGroupByFacet(
+                    zk,
+                    collection,
+                    fields,
+                    q,
+                    orders,
+                    buckets,
+                    metricPairs,
+                    limit,
+                    havingPredicate);
+          }
+        }
+      }
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+
+
+    return "";
   }
 
   private List<Map.Entry<String, Class<?>>> zip(List<String> fields, PhysType physType) {
@@ -173,12 +241,6 @@ class SolrTableScan extends TableScan implements SolrRel {
       }
     }
     return retField;
-  }
-
-
-  private static <T> MethodCallExpression constantArrayList(List<T> values, Class<?> clazz) {
-    return Expressions.call(
-        BuiltInMethod.ARRAYS_AS_LIST.method, Expressions.newArrayInit(clazz, constantList(values)));
   }
 
   /**
