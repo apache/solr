@@ -207,5 +207,5 @@ apply from: file('gradle/ant-compat/solr.post-jar.gradle')
 
 apply from: file('gradle/node.gradle')
 
-sourceCompatibility = JavaVersion.VERSION_17
-targetCompatibility = JavaVersion.VERSION_17
+sourceCompatibility = JavaVersion.VERSION_16
+targetCompatibility = JavaVersion.VERSION_16

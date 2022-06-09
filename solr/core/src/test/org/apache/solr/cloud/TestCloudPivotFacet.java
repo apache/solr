@@ -71,7 +71,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  // because floating point addition can depende on the order of operations, we ignore
+  // because floating point addition can depend on the order of operations, we ignore
   // any stats that can be lossy -- the purpose of testing stats here is just to sanity check
   // that the basic hooks between pivot faceting and stats.field work, and these let us do that
   private static final String USE_STATS = "count=true missing=true min=true max=true";
@@ -100,7 +100,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
   @BeforeClass
   public static void initUseFieldRandomizedFactor() {
     useFieldRandomizedFactor = TestUtil.nextInt(random(), 2, 30);
-    log.info("init'ing useFieldRandomizedFactor = {}", useFieldRandomizedFactor);
+    log.info("initializing useFieldRandomizedFactor = {}", useFieldRandomizedFactor);
   }
 
   @Test
@@ -222,7 +222,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
           pivotP.add(FACET_OVERREQUEST_COUNT, "" + TestUtil.nextInt(random(), 0, 5));
         }
         if (random().nextBoolean()) {
-          // sometimes give a ratio less then 1, code should be smart enough to deal
+          // sometimes give a ratio less than 1, code should be smart enough to deal
           float ratio = 0.5F + random().nextFloat();
           // sometimes go negative
           if (random().nextBoolean()) {
@@ -360,9 +360,9 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
       if (actualStats == null) {
         // handle case for not found stats (using stats query)
         //
-        // these has to be a special case check due to the legacy behavior of "top level"
+        // This has to be a special case check due to the legacy behavior of "top level"
         // StatsComponent results being "null" (and not even included in the
-        // getFieldStatsInfo() Map due to specila SolrJ logic)
+        // getFieldStatsInfo() Map due to special SolrJ logic)
 
         log.info("Requested stats missing in verification query, pivot stats: {}", pivotStats);
         assertEquals("Special Count", 0L, pivotStats.getCount().longValue());
@@ -405,7 +405,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
   }
 
   /**
-   * Verify that the PivotFields we're lookin at doesn't violate any of the expected behaviors based
+   * Verify that the PivotFields we're looking at doesn't violate any of the expected behaviors based
    * on the <code>TRACE_*</code> params found in the base params
    */
   private void assertTraceOk(

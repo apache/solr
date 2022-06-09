@@ -133,7 +133,7 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
           QueryResponse statsResponse =
               queryWithBasicAuth(
                   pullReplicaClient, new SolrQuery("qt", "/admin/plugins", "stats", "true"));
-          // adds is a gauge, which is null for PULL replicas
+          // adds metric is a gauge, which is null for PULL replicas
           assertNull(
               "Replicas shouldn't process the add document request: " + statsResponse,
               getUpdateHandlerMetric(statsResponse, "UPDATE.updateHandler.adds"));

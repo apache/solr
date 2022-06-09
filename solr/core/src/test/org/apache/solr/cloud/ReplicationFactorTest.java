@@ -63,9 +63,9 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
   }
 
   /**
-   * Overrides the parent implementation so that we can configure a socket proxy to sit infront of
+   * Overrides the parent implementation so that we can configure a socket proxy to sit in front of
    * each Jetty server, which gives us the ability to simulate network partitions without having to
-   * fuss with IPTables (which is not very cross platform friendly).
+   * fuss with IPTables (which is not very cross-platform friendly).
    */
   @Override
   public JettySolrRunner createJetty(
@@ -136,7 +136,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     sendNonDirectUpdateRequestReplicaWithRetry(leader, up, 2, testCollectionName);
     sendNonDirectUpdateRequestReplicaWithRetry(replicas.get(0), up, 2, testCollectionName);
 
-    // Insure nothing is tricky about a delete where only one shard needs to delete anything.
+    // Insure nothing is tricky about a delete operation where only one shard needs to delete anything.
     sendNonDirectDeletesRequestReplicaWithRetry(
         leader, getSomeIds(1), 2, getSomeIds(1), 2, testCollectionName);
     sendNonDirectDeletesRequestReplicaWithRetry(
@@ -185,7 +185,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     Thread.sleep(2000);
   }
 
-  // When doing a delete by id, it's tricky, very tricky. If any document we're deleting by ID goes
+  // When doing a delete by id operation, it's tricky, very tricky. If any document we're deleting by ID goes
   // to shardWithOne, then the replication factor we return will be 1.
   private int calcByIdRf(Set<Integer> byIDs, String testCollectionName, String shardWithOne) {
     ZkController zkController = jettys.get(0).getCoreContainer().getZkController();
@@ -204,7 +204,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
   // Get the delete tests to use disjoint documents although
   int idFloor = random().nextInt(100) + 1000;
 
-  // Randomize documents so we exercise requests landing on replicas that have (or don't) particular
+  // Randomize documents, so we exercise requests landing on replicas that have (or don't) particular
   // documents. Yeah, this will go on forever if you ask for more than 100, but it suffices.
   private Set<Integer> getSomeIds(int count) {
     Set<Integer> ids = new HashSet<>();
@@ -330,7 +330,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     }
     log.info("Indexing batch of documents (30-45)");
     int batchRf = sendDocsWithRetry(batch, minRf, 5, 1);
-    assertRf(2, "batch should have succeded, only one replica should be down", batchRf);
+    assertRf(2, "batch should have succeeded, only one replica should be down", batchRf);
 
     log.info("Closing second proxy port");
     getProxyForReplica(replicas.get(1)).close();
@@ -382,7 +382,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     // SOLR-13599 sanity check if problem is related to "re-closing" a port on the proxy
     log.info("Indexing docId=5");
     rf = sendDoc(5);
-    assertRf(2, "doc should have succeded, only one replica should be down", rf);
+    assertRf(2, "doc should have succeeded, only one replica should be down", rf);
 
     // now send a batch (again)
     batch = new ArrayList<SolrInputDocument>(10);
@@ -394,7 +394,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     }
     log.info("Indexing batch of documents (15-29)");
     batchRf = sendDocsWithRetry(batch, minRf, 5, 1);
-    assertRf(2, "batch should have succeded, only one replica should be down", batchRf);
+    assertRf(2, "batch should have succeeded, only one replica should be down", batchRf);
 
     doDBQWithRetry(2, 5, "deletes should have propagated to only 1 replica", 15);
     doDBIdWithRetry(2, 5, "deletes should have propagated to only 1 replica", 15);

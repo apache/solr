@@ -35,7 +35,7 @@ class SegmentTerminateEarlyTestState {
 
   static final String KEY_FIELD = "id";
 
-  // for historic reasons, this is refered to as a "timestamp" field, but in actuallity is just an
+  // for historic reasons, this is referred to as a "timestamp" field, but in actuality is just an
   // int value representing a number of "minutes" between 0-60.
   // aka: I decided not to rename a million things while refactoring this test
   public static final String TIMESTAMP_FIELD = "timestamp_i_dvo";

@@ -90,7 +90,7 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
             .setBasicAuthCredentials(USERNAME, PASSWORD);
 
     // Without the SOLR-13793 fix, this causes requests to "down collection" to pile up (until the
-    // nodes run out of serviceable threads and they crash, even for other collections hosted on the
+    // nodes run out of serviceable threads, and they crash, even for other collections hosted on the
     // nodes).
     SolrException error =
         expectThrows(

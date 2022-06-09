@@ -261,7 +261,7 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
     cluster.waitForJettyToStop(j);
 
     try {
-      // even replica2 joined election at the end of the queue, but it is the one with highest term
+      // even replica2 joined election at the end of the queue, but it is the one with the highest term
       waitForState(
           "Timeout waiting for new leader",
           collectionName,

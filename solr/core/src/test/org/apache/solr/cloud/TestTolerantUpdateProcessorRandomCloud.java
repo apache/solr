@@ -160,13 +160,13 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
       final int numCmds = TestUtil.nextInt(random(), 1, 20);
       final List<ExpectedErr> expectedErrors = new ArrayList<ExpectedErr>(numCmds);
       int expectedErrorsCount = 0;
-      // it's ambigious/confusing which order mixed DELQ + ADD  (or ADD and DELI for the same ID)
+      // it's ambiguous/confusing which order mixed DELQ + ADD  (or ADD and DELI for the same ID)
       // in the same request wll be processed by various clients, so we keep things simple
-      // and ensure that no single doc Id is affected by more then one command in the same request
+      // and ensure that no single doc id is affected by more than one command in the same request
       final BitSet docsAffectedThisRequest = new BitSet(maxDocId + 1);
       for (int cmdIter = 0; cmdIter < numCmds; cmdIter++) {
         if ((maxDocId / 2) < docsAffectedThisRequest.cardinality()) {
-          // we're already mucking with more then half the docs in the index
+          // we're already mucking with more than half the docs in the index
           break;
         }
 
@@ -220,12 +220,12 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
             final String q;
             if (causeError) {
               // even though our DBQ is gibberish that's going to fail, record a docId as affected
-              // so that we don't generate the same random DBQ and get redundent errors
-              // (problematic because of how DUP forwarded DBQs have to have their errors deduped by
+              // so that we don't generate the same random DBQ and get redundant errors
+              // (problematic because of how DUP forwarded DBQs have to have their errors deduced by
               // TUP)
               final int id_i = randomUnsetBit(random(), docsAffectedThisRequest, maxDocId);
               docsAffectedThisRequest.set(id_i);
-              q = "foo_i:[" + id_i + " TO ....giberish";
+              q = "foo_i:[" + id_i + " TO ....gibberish";
               expectedErrors.add(delQErr(q));
             } else {
               // ensure our DBQ is only over a range of docs not already affected
@@ -363,7 +363,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
       final int hi = bits.nextClearBit(candidate);
       if (lo < 0 && max < hi) {
         fail(
-            "how the hell did we not short circut out? card="
+            "how the hell did we not short circuit out? card="
                 + bits.cardinality()
                 + "/size="
                 + bits.size());
