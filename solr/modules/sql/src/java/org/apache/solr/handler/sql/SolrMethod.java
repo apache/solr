@@ -27,12 +27,6 @@ enum SolrMethod {
       "query",
       List.class,
       String.class,
-      List.class,
-      List.class,
-      List.class,
-      String.class,
-      String.class,
-      String.class,
       String.class);
 
   public final Method method;

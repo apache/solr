@@ -82,22 +82,9 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
                 Pair.class));
     final Expression query =
         list.append("query", Expressions.constant(solrImplementor.query, String.class));
-    final Expression orders =
-        list.append("orders", constantArrayList(solrImplementor.orders, Pair.class));
-    final Expression buckets =
-        list.append("buckets", constantArrayList(solrImplementor.buckets, String.class));
-    final Expression metricPairs =
-        list.append("metricPairs", constantArrayList(solrImplementor.metricPairs, Pair.class));
-    final Expression limit = list.append("limit", Expressions.constant(solrImplementor.limitValue));
-    final Expression negativeQuery =
-        list.append(
-            "negativeQuery",
-            Expressions.constant(Boolean.toString(solrImplementor.negativeQuery), String.class));
-    final Expression havingPredicate =
-        list.append(
-            "havingTest", Expressions.constant(solrImplementor.havingPredicate, String.class));
-    final Expression offset =
-        list.append("offset", Expressions.constant(solrImplementor.offsetValue));
+    final Expression physicalPlan =
+        list.append("physicalPlan", Expressions.constant(solrImplementor.physicalPlan, String.class));
+
     Expression enumerable =
         list.append(
             "enumerable",
@@ -106,13 +93,7 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
                 SolrMethod.SOLR_QUERYABLE_QUERY.method,
                 fields,
                 query,
-                orders,
-                buckets,
-                metricPairs,
-                limit,
-                negativeQuery,
-                havingPredicate,
-                offset));
+                physicalPlan));
     Hook.QUERY_PLAN.run(query);
     list.add(Expressions.return_(null, enumerable));
     return implementor.result(physType, list.toBlock());

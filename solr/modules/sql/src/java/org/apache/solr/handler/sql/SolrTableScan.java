@@ -59,8 +59,7 @@ import static org.apache.solr.common.params.CommonParams.SORT;
 /** Relational expression representing a scan of a Solr collection. */
 class SolrTableScan extends TableScan implements SolrRel {
   private static final String DEFAULT_QUERY = "*:*";
-  private SolrDefaultStreamFactory streamFactory = new SolrDefaultStreamFactory();
-
+  public static final SolrDefaultStreamFactory streamFactory = new SolrDefaultStreamFactory();
   private final SolrTable solrTable;
   private final RelDataType projectRowType;
 
