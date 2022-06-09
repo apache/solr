@@ -16,10 +16,9 @@
  */
 package org.apache.solr.common.util;
 
-import org.apache.solr.SolrTestCaseJ4;
-
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.SolrTestCaseJ4;
 
 public class JsonValidatorTest extends SolrTestCaseJ4 {
 

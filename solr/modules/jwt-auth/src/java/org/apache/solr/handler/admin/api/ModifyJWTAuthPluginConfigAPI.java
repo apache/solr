@@ -17,25 +17,23 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
+import static org.apache.solr.security.PermissionNameProvider.Name.SECURITY_EDIT_PERM;
+
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.security.PermissionNameProvider.Name.SECURITY_EDIT_PERM;
-
-/**
- * V2 API for modifying configuration for Solr's JWTAuthPlugin.
- */
+/** V2 API for modifying configuration for Solr's JWTAuthPlugin. */
 @EndPoint(
-        path = {"/cluster/security/authentication"},
-        method = POST,
-        permission = SECURITY_EDIT_PERM)
+    path = {"/cluster/security/authentication"},
+    method = POST,
+    permission = SECURITY_EDIT_PERM)
 public class ModifyJWTAuthPluginConfigAPI {
 
-    @Command(name = "set-property")
-    public void setProperties(PayloadObj<JWTConfigurationPayload> propertyPayload) {
-        // Method stub used only to produce v2 API spec; implementation/body empty.
-        throw new IllegalStateException();
-    }
+  @Command(name = "set-property")
+  public void setProperties(PayloadObj<JWTConfigurationPayload> propertyPayload) {
+    // Method stub used only to produce v2 API spec; implementation/body empty.
+    throw new IllegalStateException();
+  }
 }

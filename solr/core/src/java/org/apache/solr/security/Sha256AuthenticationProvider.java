@@ -16,15 +16,9 @@
  */
 package org.apache.solr.security;
 
-import com.google.common.collect.ImmutableSet;
-import org.apache.solr.api.AnnotatedApi;
-import org.apache.solr.api.Api;
-import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.common.util.ValidatingJsonMap;
-import org.apache.solr.handler.admin.api.ModifyBasicAuthConfigAPI;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.apache.solr.handler.admin.SecurityConfHandler.getMapValue;
 
+import com.google.common.collect.ImmutableSet;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -37,8 +31,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-
-import static org.apache.solr.handler.admin.SecurityConfHandler.getMapValue;
+import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.api.Api;
+import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.ValidatingJsonMap;
+import org.apache.solr.handler.admin.api.ModifyBasicAuthConfigAPI;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Sha256AuthenticationProvider
     implements ConfigEditablePlugin, BasicAuthPlugin.AuthenticationProvider {

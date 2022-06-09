@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Payload implementations for APIs associated with the jwt-auth optional module
- */
+/** Payload implementations for APIs associated with the jwt-auth optional module */
 package org.apache.solr.handler.admin.api;

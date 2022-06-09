@@ -17,35 +17,27 @@
 
 package org.apache.solr.client.solrj.request.beans;
 
+import java.util.List;
+import java.util.Map;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 
-import java.util.List;
-import java.util.Map;
-
 public class SetRuleBasedAuthPermissionPayload implements ReflectMapWriter {
-    @JsonProperty
-    public String name;
+  @JsonProperty public String name;
 
-    // TODO Do we support enum's: only acceptable values here are GET, POST, DELETE, and PUT
-    @JsonProperty
-    public String method;
+  // TODO Do we support enum's: only acceptable values here are GET, POST, DELETE, and PUT
+  @JsonProperty public String method;
 
-    @JsonProperty
-    public List<String> collection;
+  @JsonProperty public List<String> collection;
 
-    @JsonProperty
-    public List<String> path;
+  @JsonProperty public List<String> path;
 
-    @JsonProperty
-    public Integer index;
+  @JsonProperty public Integer index;
 
-    @JsonProperty
-    public Integer before;
+  @JsonProperty public Integer before;
 
-    @JsonProperty
-    public Map<String, Object> params;
+  @JsonProperty public Map<String, Object> params;
 
-    @JsonProperty(required = true)
-    public List<String> role;
+  @JsonProperty(required = true)
+  public List<String> role;
 }

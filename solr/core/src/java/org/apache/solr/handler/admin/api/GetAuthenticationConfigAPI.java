@@ -17,32 +17,34 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
+import static org.apache.solr.security.PermissionNameProvider.Name.SECURITY_READ_PERM;
+
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.handler.admin.SecurityConfHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
-import static org.apache.solr.security.PermissionNameProvider.Name.SECURITY_READ_PERM;
-
 /**
  * V2 API for fetching the authentication section from Solr's security.json configuration.
  *
- * <p>This API (GET /v2/cluster/security/authentication) is analogous to the v1 `GET /solr/admin/authentication` API.
+ * <p>This API (GET /v2/cluster/security/authentication) is analogous to the v1 `GET
+ * /solr/admin/authentication` API.
  */
 public class GetAuthenticationConfigAPI {
 
-    private final SecurityConfHandler securityConfHandler;
+  private final SecurityConfHandler securityConfHandler;
 
-    public GetAuthenticationConfigAPI(SecurityConfHandler securityConfHandler) {
-        this.securityConfHandler = securityConfHandler;
-    }
+  public GetAuthenticationConfigAPI(SecurityConfHandler securityConfHandler) {
+    this.securityConfHandler = securityConfHandler;
+  }
 
-    @EndPoint(
-            path = {"/cluster/security/authentication"},
-            method = GET,
-            permission = SECURITY_READ_PERM)
-    public void fetchAuthenticationConfig(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-        securityConfHandler.handleRequestBody(req, rsp);
-    }
+  @EndPoint(
+      path = {"/cluster/security/authentication"},
+      method = GET,
+      permission = SECURITY_READ_PERM)
+  public void fetchAuthenticationConfig(SolrQueryRequest req, SolrQueryResponse rsp)
+      throws Exception {
+    securityConfHandler.handleRequestBody(req, rsp);
+  }
 }

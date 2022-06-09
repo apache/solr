@@ -17,32 +17,34 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
+import static org.apache.solr.security.PermissionNameProvider.Name.SECURITY_EDIT_PERM;
+
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.handler.admin.SecurityConfHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.security.PermissionNameProvider.Name.SECURITY_EDIT_PERM;
-
 /**
  * V2 API for updating the authentication section of Solr's security.json configuration.
  *
- * <p>Only registered when no authentication plugin is currently registered.  This API (POST
- * /v2/cluster/security/authentication) is analogous to the v1 `POST /solr/admin/authentication` API.
+ * <p>Only registered when no authentication plugin is currently registered. This API (POST
+ * /v2/cluster/security/authentication) is analogous to the v1 `POST /solr/admin/authentication`
+ * API.
  */
 public class DefaultUpdateAuthenticationConfigAPI {
-    private final SecurityConfHandler securityConfHandler;
+  private final SecurityConfHandler securityConfHandler;
 
-    public DefaultUpdateAuthenticationConfigAPI(SecurityConfHandler securityConfHandler) {
-        this.securityConfHandler = securityConfHandler;
-    }
+  public DefaultUpdateAuthenticationConfigAPI(SecurityConfHandler securityConfHandler) {
+    this.securityConfHandler = securityConfHandler;
+  }
 
-    @EndPoint(
-            path = {"/cluster/security/authentication"},
-            method = POST,
-            permission = SECURITY_EDIT_PERM)
-    public void updateAuthenticationConfig(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-        securityConfHandler.handleRequestBody(req, rsp);
-    }
+  @EndPoint(
+      path = {"/cluster/security/authentication"},
+      method = POST,
+      permission = SECURITY_EDIT_PERM)
+  public void updateAuthenticationConfig(SolrQueryRequest req, SolrQueryResponse rsp)
+      throws Exception {
+    securityConfHandler.handleRequestBody(req, rsp);
+  }
 }

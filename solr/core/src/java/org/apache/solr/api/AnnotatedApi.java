@@ -20,6 +20,20 @@ package org.apache.solr.api;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.Closeable;
+import java.io.IOException;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -38,21 +52,6 @@ import org.apache.solr.util.SolrJacksonAnnotationInspector;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.Closeable;
-import java.io.IOException;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * This class implements an Api just from an annotated java class The class must have an annotation
@@ -340,13 +339,13 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
 
     public int hashCode() {
       return new HashCodeBuilder()
-              .append(command)
-              .append(method)
-              .append(obj)
-              .append(paramsCount)
-              .append(parameterClass)
-              .append(isWrappedInPayloadObj)
-              .toHashCode();
+          .append(command)
+          .append(method)
+          .append(obj)
+          .append(paramsCount)
+          .append(parameterClass)
+          .append(isWrappedInPayloadObj)
+          .toHashCode();
     }
 
     public boolean equals(Object rhs) {
@@ -356,13 +355,13 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
 
       final Cmd rhsCast = (Cmd) rhs;
       return new EqualsBuilder()
-              .append(command, rhsCast.command)
-              .append(method, rhsCast.method)
-              .append(obj, rhsCast.obj)
-              .append(paramsCount, rhsCast.paramsCount)
-              .append(parameterClass, rhsCast.parameterClass)
-              .append(isWrappedInPayloadObj, rhsCast.isWrappedInPayloadObj)
-              .isEquals();
+          .append(command, rhsCast.command)
+          .append(method, rhsCast.method)
+          .append(obj, rhsCast.obj)
+          .append(paramsCount, rhsCast.paramsCount)
+          .append(parameterClass, rhsCast.parameterClass)
+          .append(isWrappedInPayloadObj, rhsCast.isWrappedInPayloadObj)
+          .isEquals();
     }
 
     private void checkForErrorInPayload(CommandOperation cmd) {

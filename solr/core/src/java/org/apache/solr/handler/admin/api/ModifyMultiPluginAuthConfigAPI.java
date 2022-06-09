@@ -17,44 +17,43 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
+import static org.apache.solr.security.PermissionNameProvider.Name.SECURITY_EDIT_PERM;
+
+import java.util.List;
+import java.util.Map;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.security.MultiAuthPlugin;
 
-import java.util.List;
-import java.util.Map;
-
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.security.PermissionNameProvider.Name.SECURITY_EDIT_PERM;
-
-/**
- * V2 API to modify configuration options for the {@link MultiAuthPlugin}.
- */
+/** V2 API to modify configuration options for the {@link MultiAuthPlugin}. */
 @EndPoint(
-        path = {"/cluster/security/authentication"},
-        method = POST,
-        permission = SECURITY_EDIT_PERM)
+    path = {"/cluster/security/authentication"},
+    method = POST,
+    permission = SECURITY_EDIT_PERM)
 public class ModifyMultiPluginAuthConfigAPI {
 
-    @Command(name = "set-user")
-    public void createUsers(PayloadObj<Map<String,String>> usersToCreatePayload) {
-        // Method stub used only to produce v2 API spec; implementation/body empty.
-        throw new IllegalStateException();
-    }
+  @Command(name = "set-user")
+  public void createUsers(PayloadObj<Map<String, String>> usersToCreatePayload) {
+    // Method stub used only to produce v2 API spec; implementation/body empty.
+    throw new IllegalStateException();
+  }
 
-    @Command(name = "delete-user")
-    public void deleteUsers(PayloadObj<List<String>> usersToDeletePayload) {
-        // Method stub used only to produce v2 API spec; implementation/body empty.
-        throw new IllegalStateException();
-    }
+  @Command(name = "delete-user")
+  public void deleteUsers(PayloadObj<List<String>> usersToDeletePayload) {
+    // Method stub used only to produce v2 API spec; implementation/body empty.
+    throw new IllegalStateException();
+  }
 
-    // TODO This is a good candidate to create an actual Payload class instead of relying on the generic Map, if someone
-    //  understands what syntax this API actually takes.  The apispec this code was mirrored from is vague, and the
-    //  ref-guide has no examples afaict.
-    @Command(name = "set-property")
-    public void setProperties(PayloadObj<Map<String,Object>> propertyPayload) {
-        // Method stub used only to produce v2 API spec; implementation/body empty.
-        throw new IllegalStateException();
-    }
+  // TODO This is a good candidate to create an actual Payload class instead of relying on the
+  // generic Map, if someone
+  //  understands what syntax this API actually takes.  The apispec this code was mirrored from is
+  // vague, and the
+  //  ref-guide has no examples afaict.
+  @Command(name = "set-property")
+  public void setProperties(PayloadObj<Map<String, Object>> propertyPayload) {
+    // Method stub used only to produce v2 API spec; implementation/body empty.
+    throw new IllegalStateException();
+  }
 }

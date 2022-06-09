@@ -14,7 +14,5 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * API endpoint and associated files for the JWT Authentication Plugin
- */
+/** API endpoint and associated files for the JWT Authentication Plugin */
 package org.apache.solr.handler.admin.api;
