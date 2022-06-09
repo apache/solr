@@ -87,6 +87,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
       final String physicalPlan) {
 
     try {
+      System.out.println("Streaming Expression:"+physicalPlan);
       TupleStream tupleStream = SolrTableScan.streamFactory.constructStream(physicalPlan);
       StreamContext streamContext = new StreamContext();
       streamContext.setSolrClientCache(schema.getSolrClientCache());

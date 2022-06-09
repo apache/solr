@@ -60,6 +60,9 @@ import static org.apache.solr.common.params.CommonParams.SORT;
 class SolrTableScan extends TableScan implements SolrRel {
   private static final String DEFAULT_QUERY = "*:*";
   public static final SolrDefaultStreamFactory streamFactory = new SolrDefaultStreamFactory();
+  static {
+    streamFactory.withFunctionName("limit", LimitStream.class);
+  }
   private final SolrTable solrTable;
   private final RelDataType projectRowType;
 
@@ -120,6 +123,8 @@ class SolrTableScan extends TableScan implements SolrRel {
   }
 
   public void implement(Implementor implementor) {
+    implementor.solrTable = solrTable;
+    implementor.table = table;
     Properties properties = solrTable.getSchema().properties;
     String zk = properties.getProperty("zk");
     String collection = solrTable.getCollection();
@@ -211,7 +216,7 @@ class SolrTableScan extends TableScan implements SolrRel {
   private List<Map.Entry<String, Class<?>>> zip(List<String> fields, PhysType physType) {
     List<Map.Entry<String, Class<?>>> zipped = new ArrayList<>();
     for(int i=0; i<fields.size(); i++) {
-      Map.Entry entry = new AbstractMap.SimpleEntry<String, Class<?>>("a", physType.fieldClass(i));
+      Map.Entry<String, Class<?>> entry = new AbstractMap.SimpleEntry<String, Class<?>>(fields.get(i), physType.fieldClass(i));
       zipped.add(entry);
     }
 

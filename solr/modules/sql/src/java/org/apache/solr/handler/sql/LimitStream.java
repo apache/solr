@@ -18,21 +18,67 @@ package org.apache.solr.handler.sql;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
-import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.client.solrj.io.stream.expr.*;
+import org.apache.solr.common.params.ModifiableSolrParams;
 
-class LimitStream extends TupleStream {
+import static org.apache.solr.common.params.CommonParams.ID;
+
+public class LimitStream extends TupleStream implements Expressible {
 
   private final TupleStream stream;
   private final int limit;
   private final int offset;
   private int count;
+
+  public LimitStream(StreamExpression expression, StreamFactory factory) throws IOException {
+
+    List<StreamExpression> streamExpressions =
+        factory.getExpressionOperandsRepresentingTypes(
+            expression, Expressible.class, TupleStream.class);
+    this.stream = factory.constructStream(streamExpressions.get(0));
+
+    StreamExpressionNamedParameter limitExpression = factory.getNamedOperand(expression, "limit");
+
+    if(limitExpression == null) {
+      throw new IOException("Invalid expression limit parameter expected");
+    }
+
+    this.limit = Integer.parseInt(((StreamExpressionValue) limitExpression.getParameter()).getValue());
+
+    StreamExpressionNamedParameter offsetExpression = factory.getNamedOperand(expression, "offset");
+    if(offsetExpression == null) {
+      this.offset = 0;
+    } else {
+      this.offset = Integer.parseInt(((StreamExpressionValue) offsetExpression.getParameter()).getValue());
+    }
+  }
+
+  public StreamExpression toExpression(StreamFactory factory)
+      throws IOException {
+    // function name
+    StreamExpression expression = new StreamExpression("limit");
+
+    if (stream instanceof Expressible) {
+      expression.addParameter(((Expressible) stream).toExpression(factory));
+    } else {
+      throw new IOException(
+          "This UniqueStream contains a non-expressible TupleStream - it cannot be converted to an expression");
+    }
+
+    expression.addParameter(new StreamExpressionNamedParameter("limit", Integer.toString(this.limit)));
+    expression.addParameter(new StreamExpressionNamedParameter("offset", Integer.toString(this.offset)));
+    return expression;
+  }
+
+
 
   LimitStream(TupleStream stream, int limit) {
     this(stream, limit, 0);
