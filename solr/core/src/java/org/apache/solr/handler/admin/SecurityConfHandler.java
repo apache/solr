@@ -16,19 +16,7 @@
  */
 package org.apache.solr.handler.admin;
 
-import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
-
 import com.google.common.collect.ImmutableList;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
@@ -55,6 +43,19 @@ import org.apache.solr.security.ConfigEditablePlugin;
 import org.apache.solr.security.PermissionNameProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 public abstract class SecurityConfHandler extends RequestHandlerBase
     implements PermissionNameProvider {
@@ -283,31 +284,22 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
         if (apis == null) {
           Collection<Api> apis = new ArrayList<>();
           // GET Apis are the same regardless of which plugins are registered
-          log.info("JEGERLOW Registering GET /cluster/security/authentication");
           apis.addAll(AnnotatedApi.getApis(new GetAuthenticationConfigAPI(this)));
           apis.addAll(AnnotatedApi.getApis(new GetAuthorizationConfigAPI(this)));
 
-          // POST Apis depend on the specific plugin registered (with a fallback used if
-          // SpecProvider-compatible plugins aren't in use).
+          // POST Apis come from the specific authc/z plugin registered (with a fallback used if
+          // the plugin isn't a SpecProvider).
           final Api defaultAuthcApi =
               AnnotatedApi.getApis(new DefaultUpdateAuthenticationConfigAPI(this)).get(0);
-          log.info("JEGERLOW I've just created the defaultAuthc API: {}", defaultAuthcApi);
           final Api defaultAuthzApi =
               AnnotatedApi.getApis(new DefaultUpdateAuthorizationConfigAPI(this)).get(0);
 
           SpecProvider authcSpecProvider =
               () -> {
-                log.info("JEGERLOW fetching authcSpec");
                 AuthenticationPlugin authcPlugin = cores.getAuthenticationPlugin();
-                if (authcPlugin != null && authcPlugin instanceof SpecProvider) {
-                  log.info(
-                      "JEGERLOW Using authcSpec from plugin {}",
-                      ((SpecProvider) authcPlugin).getSpec());
-                  return ((SpecProvider) authcPlugin).getSpec();
-                } else {
-                  log.info("JEGERLOW: Using default authcSpec {}", defaultAuthcApi.getSpec());
-                  return defaultAuthcApi.getSpec();
-                }
+                return authcPlugin != null && authcPlugin instanceof SpecProvider
+                        ? ((SpecProvider) authcPlugin).getSpec()
+                        : defaultAuthcApi.getSpec();
               };
 
           // TODO Can we remove this extra ReqHandlerToApi wrapping - nothing but the schema from
@@ -349,7 +341,6 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
         }
       }
     }
-    log.info("JEGERLOW Returnign from SEcurityConfHandler.getApis with list: {}", apis);
     return this.apis;
   }
 
