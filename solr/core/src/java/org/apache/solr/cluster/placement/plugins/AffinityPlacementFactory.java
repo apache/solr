@@ -350,7 +350,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
           if (cluster.getCollection(primaryName) != null) {
             // still exists
             throw new PlacementModificationException(
-                "colocated collection "
+                "collocated collection "
                     + primaryName
                     + " of "
                     + deleteCollectionRequest.getCollection().getName()
@@ -358,7 +358,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
           }
         } catch (IOException e) {
           throw new PlacementModificationException(
-              "failed to retrieve colocated collection information", e);
+              "failed to retrieve collocated collection information", e);
         }
       }
     }
@@ -407,7 +407,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         }
       } catch (IOException ioe) {
         throw new PlacementModificationException(
-            "failed to retrieve colocated collection information", ioe);
+            "failed to retrieve collocated collection information", ioe);
       }
       PlacementModificationException exception = null;
       for (Replica replica : deleteReplicasRequest.getReplicas()) {
