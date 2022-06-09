@@ -54,9 +54,10 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
   public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
     // Generates a call to "query" with the appropriate fields
     final BlockBuilder list = new BlockBuilder();
-    final SolrRel.Implementor solrImplementor = new SolrRel.Implementor(implementor, pref);
-    solrImplementor.visitChild(0, getInput());
     final RelDataType rowType = getRowType();
+    final SolrRel.Implementor solrImplementor = new SolrRel.Implementor(implementor, pref, rowType);
+    solrImplementor.visitChild(0, getInput());
+    System.out.println("Fields:"+rowType.getFieldNames());
     final PhysType physType =
         PhysTypeImpl.of(implementor.getTypeFactory(), rowType, pref.prefer(JavaRowFormat.ARRAY));
     final Expression table =
@@ -66,8 +67,7 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
             "fields",
             constantArrayList(
                 Pair.zip(
-                    generateFields(
-                        SolrRules.solrFieldNames(rowType), solrImplementor.fieldMappings),
+                    generateFields(SolrRules.solrFieldNames(rowType), solrImplementor.fieldMappings),
                     new AbstractList<Class<?>>() {
                       @Override
                       public Class<?> get(int index) {

@@ -26,6 +26,7 @@ import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.Pair;
 
 /** Relational expression that uses Solr calling convention. */
@@ -41,11 +42,13 @@ interface SolrRel extends RelNode {
    */
   class Implementor {
 
-    public Implementor(EnumerableRelImplementor _enumerableRelImplementor, EnumerableRel.Prefer _pref) {
+    public Implementor(EnumerableRelImplementor _enumerableRelImplementor, EnumerableRel.Prefer _pref, RelDataType _rowType) {
       enumerableRelImplementor = _enumerableRelImplementor;
       pref = _pref;
+      rowType = _rowType;
     }
 
+    final RelDataType rowType;
     final EnumerableRel.Prefer pref;
     final EnumerableRelImplementor enumerableRelImplementor;
     final Map<String, String> fieldMappings = new HashMap<>();
@@ -69,6 +72,10 @@ interface SolrRel extends RelNode {
 
     EnumerableRel.Prefer getPref() {
       return pref;
+    }
+
+    RelDataType getRowType() {
+      return rowType;
     }
 
     void addFieldMapping(String key, String val, boolean overwrite) {

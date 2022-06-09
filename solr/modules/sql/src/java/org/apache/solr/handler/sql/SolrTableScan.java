@@ -129,8 +129,8 @@ class SolrTableScan extends TableScan implements SolrRel {
     String zk = properties.getProperty("zk");
     String collection = solrTable.getCollection();
     final PhysType physType =
-        PhysTypeImpl.of(implementor.getTypeFactory(), rowType, implementor.getPref().prefer(JavaRowFormat.ARRAY));
-    final List<Map.Entry<String, Class<?>>> fields = zip(generateFields(SolrRules.solrFieldNames(rowType), implementor.fieldMappings), physType);
+        PhysTypeImpl.of(implementor.getTypeFactory(), implementor.rowType, implementor.getPref().prefer(JavaRowFormat.ARRAY));
+    final List<Map.Entry<String, Class<?>>> fields = zip(generateFields(SolrRules.solrFieldNames(implementor.rowType), implementor.fieldMappings), physType);
     final String query = implementor.query;
     final List<Pair<String, String>> orders = implementor.orders;
     final List<String> buckets = implementor.buckets;

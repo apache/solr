@@ -61,6 +61,7 @@ class SolrProject extends Project implements SolrRel {
     for (Pair<RexNode, String> pair : getNamedProjects()) {
       final String name = pair.right;
       final String expr = pair.left.accept(translator);
+      System.out.println("Field:"+name+","+expr);
       implementor.addFieldMapping(name, expr, false);
     }
 
