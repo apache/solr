@@ -21,6 +21,7 @@ import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.request.beans.SetRuleBasedAuthPermissionPayload;
+import org.apache.solr.client.solrj.request.beans.UpdateRuleBasedAuthPermissionPayload;
 
 import java.util.Map;
 
@@ -43,7 +44,7 @@ public class ModifyRuleBasedAuthConfigAPI {
     }
 
     @Command(name = "update-permission")
-    public void updatePermission(PayloadObj<Map<String,String>> permissionPayloadObj) {
+    public void updatePermission(PayloadObj<UpdateRuleBasedAuthPermissionPayload> permissionPayloadObj) {
         // Method stub used only to produce v2 API spec; implementation/body empty.
         throw new IllegalStateException();
     }
