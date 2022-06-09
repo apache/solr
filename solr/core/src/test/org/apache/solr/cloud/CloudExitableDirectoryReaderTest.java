@@ -63,9 +63,9 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
   /**
    * Client used for all test requests.
    *
-   * <p>LBSolrClient (and by extension CloudSolrClient) has its own enforcement of timeAllowed in
-   * an attempt to prevent "retrying" failed requests far longer then the client requested. Because
-   * of this client side logic, we do not want to use any LBSolrClient (derivative) in this test, in
+   * <p>LBSolrClient (and by extension CloudSolrClient) has its own enforcement of timeAllowed in an
+   * attempt to prevent "retrying" failed requests far longer then the client requested. Because of
+   * this client side logic, we do not want to use any LBSolrClient (derivative) in this test, in
    * order to ensure that on a "slow" machine, the client doesn't pre-emptively abort any of our
    * requests that use very low 'timeAllowed' values.
    *

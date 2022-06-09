@@ -136,7 +136,8 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     sendNonDirectUpdateRequestReplicaWithRetry(leader, up, 2, testCollectionName);
     sendNonDirectUpdateRequestReplicaWithRetry(replicas.get(0), up, 2, testCollectionName);
 
-    // Insure nothing is tricky about a delete operation where only one shard needs to delete anything.
+    // Insure nothing is tricky about a delete operation where only one shard needs to delete
+    // anything.
     sendNonDirectDeletesRequestReplicaWithRetry(
         leader, getSomeIds(1), 2, getSomeIds(1), 2, testCollectionName);
     sendNonDirectDeletesRequestReplicaWithRetry(
@@ -185,7 +186,8 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     Thread.sleep(2000);
   }
 
-  // When doing a delete by id operation, it's tricky, very tricky. If any document we're deleting by ID goes
+  // When doing a delete by id operation, it's tricky, very tricky. If any document we're deleting
+  // by ID goes
   // to shardWithOne, then the replication factor we return will be 1.
   private int calcByIdRf(Set<Integer> byIDs, String testCollectionName, String shardWithOne) {
     ZkController zkController = jettys.get(0).getCoreContainer().getZkController();
@@ -204,7 +206,8 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
   // Get the delete tests to use disjoint documents although
   int idFloor = random().nextInt(100) + 1000;
 
-  // Randomize documents, so we exercise requests landing on replicas that have (or don't) particular
+  // Randomize documents, so we exercise requests landing on replicas that have (or don't)
+  // particular
   // documents. Yeah, this will go on forever if you ask for more than 100, but it suffices.
   private Set<Integer> getSomeIds(int count) {
     Set<Integer> ids = new HashSet<>();

@@ -423,7 +423,8 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
 
                   QueryResponse response = clients.get(clientId).query(params);
                   if (response.getResults().size() == 0) {
-                    // there's no info we can get back with from a delete operation, so not much we can check
+                    // there's no info we can get back with from a delete operation, so not much we
+                    // can check
                     // without further synchronization
                   } else if (response.getResults().size() == 1) {
                     final SolrDocument actual = response.getResults().get(0);
@@ -472,10 +473,12 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
                     // expected.longFieldVal <= doc.longVal
                     //
                     // it's tempting to think that this would be possible if we changed our model to
-                    // preserve the "old" values when running a delete operation, but that's still no guarantee
+                    // preserve the "old" values when running a delete operation, but that's still
+                    // no guarantee
                     // because of how opportunistic concurrency works with negative versions:  When
                     // adding a doc, we can assert that it must not exist with version<0, but we
-                    // can't assert that the *reason* it doesn't exist was because running a delete operation with
+                    // can't assert that the *reason* it doesn't exist was because running a delete
+                    // operation with
                     // the specific version of "-42". So a writer thread might (1) prep to add a doc
                     // for the first time with "intValue=1,_version_=-1", and that add may succeed
                     // and (2) return some version X which is put in the model.  But in between #1

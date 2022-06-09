@@ -80,8 +80,8 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
    *
    * <p>
    *
-   * <p>When it places a replica for an existing collection, it should pick the node with fewer cores
-   * that doesn't already have a replica for the shard.
+   * <p>When it places a replica for an existing collection, it should pick the node with fewer
+   * cores that doesn't already have a replica for the shard.
    */
   private void testBasicPlacementInternal(boolean hasExistingCollection) throws Exception {
     String collectionName = "basicCollection";

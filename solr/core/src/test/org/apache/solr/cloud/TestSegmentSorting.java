@@ -111,7 +111,8 @@ public class TestSegmentSorting extends SolrCloudTestCase {
 
   /**
    * Verify that atomic updates against our (DVO) segment sort field doesn't cause errors. In this
-   * situation, the updates should *NOT* be done in-place, because that would break the index sorting
+   * situation, the updates should *NOT* be done in-place, because that would break the index
+   * sorting
    */
   @Test
   // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 26-Mar-2018

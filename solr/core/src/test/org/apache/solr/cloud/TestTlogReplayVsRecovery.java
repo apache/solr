@@ -232,8 +232,8 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
   }
 
   /**
-   * Adds the specified number of docs directly to the leader, using increasing docIds beginning with
-   * startId. Commits if and only if the boolean is true.
+   * Adds the specified number of docs directly to the leader, using increasing docIds beginning
+   * with startId. Commits if and only if the boolean is true.
    */
   private void addDocs(final boolean commit, final int numDocs, final int startId)
       throws SolrServerException, IOException {

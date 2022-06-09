@@ -668,9 +668,9 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     /**
      * Indicates if this validator is for a transformer that returns true from {@link
      * DocTransformer#needsSolrIndexSearcher}. Other validators for transformers that do
-     * <em>not</em> require a re-opened searcher (but may have slightly different behavior depending on
-     * whether a doc comes from the index or from the update log) may use this information to decide
-     * whether they wish to enforce stricter assertions on the resulting document.
+     * <em>not</em> require a re-opened searcher (but may have slightly different behavior depending
+     * on whether a doc comes from the index or from the update log) may use this information to
+     * decide whether they wish to enforce stricter assertions on the resulting document.
      *
      * <p>The default implementation always returns <code>false</code>
      *
@@ -808,8 +808,8 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
    * logic in RawValueTransformerFactory related to the output format -- but that's out of the scope
    * of this randomized testing.
    *
-   * <p>What we're primarily concerned with is that the transformer does its job and puts the
-   * string in the response, regardless of cloud/RTG/uncommitted state of the document.
+   * <p>What we're primarily concerned with is that the transformer does its job and puts the string
+   * in the response, regardless of cloud/RTG/uncommitted state of the document.
    */
   private static class RawFieldValueValidator extends RenameFieldValueValidator {
     final String type;
@@ -1380,7 +1380,10 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     }
   }
 
-  /** helper method for adding a random number (the number may be 0) of items from {@link #FL_VALIDATORS} */
+  /**
+   * helper method for adding a random number (the number may be 0) of items from {@link
+   * #FL_VALIDATORS}
+   */
   private static void addRandomFlValidators(final Random r, final Set<FlValidator> validators) {
     List<FlValidator> copyToShuffle = new ArrayList<>(FL_VALIDATORS);
     Collections.shuffle(copyToShuffle, r);

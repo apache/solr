@@ -158,7 +158,8 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
       // start spinning up some threads to add some live_node children in parallel
 
       // we don't need a lot of threads or nodes (we don't want to swamp the CPUs just bursts of
-      // concurrent adds) but we do want to randomize it a bit, so we increase the odds of concurrent
+      // concurrent adds) but we do want to randomize it a bit, so we increase the odds of
+      // concurrent
       // watchers firing regardless of the num CPUs or load on the machine running the test (but we
       // deliberately don't look at availableProcessors() since we want randomization consistency
       // across all machines for a given seed)
