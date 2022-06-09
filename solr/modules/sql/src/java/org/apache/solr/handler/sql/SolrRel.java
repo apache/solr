@@ -55,7 +55,7 @@ interface SolrRel extends RelNode {
     boolean negativeQuery;
     String limitValue = null;
     String offsetValue = null;
-    String exp;
+    String physicalPlan;
     final List<Pair<String, String>> orders = new ArrayList<>();
     final List<String> buckets = new ArrayList<>();
     final List<Pair<String, String>> metricPairs = new ArrayList<>();

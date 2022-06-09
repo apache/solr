@@ -45,11 +45,12 @@ import org.apache.solr.client.solrj.io.eq.MultipleFieldEqualitor;
 import org.apache.solr.client.solrj.io.eq.StreamEqualitor;
 import org.apache.solr.client.solrj.io.eval.*;
 import org.apache.solr.client.solrj.io.stream.*;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
-import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.client.solrj.io.stream.expr.*;
 import org.apache.solr.client.solrj.io.stream.metrics.*;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.handler.SolrDefaultStreamFactory;
+import org.apache.solr.handler.StreamHandler;
 
 import static org.apache.solr.client.solrj.io.stream.metrics.CountDistinctMetric.APPROX_COUNT_DISTINCT;
 import static org.apache.solr.client.solrj.io.stream.metrics.CountDistinctMetric.COUNT_DISTINCT;
@@ -58,6 +59,8 @@ import static org.apache.solr.common.params.CommonParams.SORT;
 /** Relational expression representing a scan of a Solr collection. */
 class SolrTableScan extends TableScan implements SolrRel {
   private static final String DEFAULT_QUERY = "*:*";
+  private SolrDefaultStreamFactory streamFactory = new SolrDefaultStreamFactory();
+
   private final SolrTable solrTable;
   private final RelDataType projectRowType;
 
@@ -132,10 +135,10 @@ class SolrTableScan extends TableScan implements SolrRel {
     final boolean negativeQuery = implementor.negativeQuery;
     final String havingPredicate = implementor.havingPredicate;
     final String offset = implementor.offsetValue;
-    implementor.exp = getScanExpression(properties, collection, fields, query, orders, buckets, metricPairs, limit, negativeQuery, havingPredicate, offset);
+    implementor.physicalPlan = getPhysicalPlan(properties, collection, fields, query, orders, buckets, metricPairs, limit, negativeQuery, havingPredicate, offset);
   }
 
-  private String getScanExpression(final Properties properties,
+  private String getPhysicalPlan(final Properties properties,
                                    final String collection,
                                    final List<Map.Entry<String, Class<?>>> fields,
                                    final String query,
@@ -199,12 +202,11 @@ class SolrTableScan extends TableScan implements SolrRel {
           }
         }
       }
+
+      return ((Expressible)tupleStream).toExpression(streamFactory).toString();
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-
-
-    return "";
   }
 
   private List<Map.Entry<String, Class<?>>> zip(List<String> fields, PhysType physType) {
