@@ -204,11 +204,12 @@ public abstract class V2ApiMappingTest<T extends RequestHandlerBase> extends Sol
     return queryRequestCaptor.getValue().getParams();
   }
 
-  protected void assertAnnotatedApiExistsFor(String method, String path) {
+  protected AnnotatedApi assertAnnotatedApiExistsFor(String method, String path) {
     final AnnotatedApi api = getAnnotatedApiFor(method, path);
     assertTrue(
         "Expected to find API mapping for [" + method + " " + path + "] but none found!",
         api != null);
+    return api;
   }
 
   protected AnnotatedApi getAnnotatedApiFor(String method, String path) {
