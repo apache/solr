@@ -57,6 +57,10 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
     final RelDataType rowType = getRowType();
     final SolrRel.Implementor solrImplementor = new SolrRel.Implementor(implementor, pref, rowType);
 
+    /*
+    * May return a different implementer than was passed in. For example in the case of
+    * a join a tree of implementers will be returned.
+    */
     SolrRel.Implementor planner = solrImplementor.visitChild(0, getInput());
     final String expr = planner.getPhysicalPlan();
 
