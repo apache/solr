@@ -26,24 +26,24 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
 /**
- * V2 API for updating the authentication section of Solr's security.json configuration.
+ * V2 API for POST requests received when no authorization plugin is active.
  *
- * <p>Only registered when no authentication plugin is currently registered. This API (POST
- * /v2/cluster/security/authentication) is analogous to the v1 `POST /solr/admin/authentication`
- * API.
+ * <p>Solr's security APIs only supports authz config modifications once an Authorization plugin is
+ * in place. So this API serves solely as a placeholder that allows {@link SecurityConfHandler} to
+ * return a helpful error message (instead of the opaque 404 that users would get without this API).
  */
-public class DefaultUpdateAuthenticationConfigAPI {
+public class ModifyNoAuthzPluginSecurityConfigAPI {
   private final SecurityConfHandler securityConfHandler;
 
-  public DefaultUpdateAuthenticationConfigAPI(SecurityConfHandler securityConfHandler) {
+  public ModifyNoAuthzPluginSecurityConfigAPI(SecurityConfHandler securityConfHandler) {
     this.securityConfHandler = securityConfHandler;
   }
 
   @EndPoint(
-      path = {"/cluster/security/authentication"},
+      path = {"/cluster/security/authorization"},
       method = POST,
       permission = SECURITY_EDIT_PERM)
-  public void updateAuthenticationConfig(SolrQueryRequest req, SolrQueryResponse rsp)
+  public void updateAuthorizationConfig(SolrQueryRequest req, SolrQueryResponse rsp)
       throws Exception {
     securityConfHandler.handleRequestBody(req, rsp);
   }

@@ -42,10 +42,10 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.RequestHandlerUtils;
-import org.apache.solr.handler.admin.api.DefaultUpdateAuthenticationConfigAPI;
-import org.apache.solr.handler.admin.api.DefaultUpdateAuthorizationConfigAPI;
 import org.apache.solr.handler.admin.api.GetAuthenticationConfigAPI;
 import org.apache.solr.handler.admin.api.GetAuthorizationConfigAPI;
+import org.apache.solr.handler.admin.api.ModifyNoAuthPluginSecurityConfigAPI;
+import org.apache.solr.handler.admin.api.ModifyNoAuthzPluginSecurityConfigAPI;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthenticationPlugin;
@@ -289,9 +289,9 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
           // POST Apis come from the specific authc/z plugin registered (with a fallback used if
           // the plugin isn't a SpecProvider).
           final Api defaultAuthcApi =
-              AnnotatedApi.getApis(new DefaultUpdateAuthenticationConfigAPI(this)).get(0);
+              AnnotatedApi.getApis(new ModifyNoAuthPluginSecurityConfigAPI(this)).get(0);
           final Api defaultAuthzApi =
-              AnnotatedApi.getApis(new DefaultUpdateAuthorizationConfigAPI(this)).get(0);
+              AnnotatedApi.getApis(new ModifyNoAuthzPluginSecurityConfigAPI(this)).get(0);
 
           SpecProvider authcSpecProvider =
               () -> {

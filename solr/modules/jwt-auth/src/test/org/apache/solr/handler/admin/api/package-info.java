@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Tests for the API(s) bundled with the jwt-auth module.
- */
+/** Tests for the API(s) bundled with the jwt-auth module. */
 package org.apache.solr.handler.admin.api;

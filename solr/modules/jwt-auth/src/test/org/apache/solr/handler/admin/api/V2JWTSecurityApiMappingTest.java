@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.admin.api;
 
+import java.util.HashMap;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
@@ -24,42 +25,41 @@ import org.apache.solr.api.ApiBag;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.HashMap;
-
 public class V2JWTSecurityApiMappingTest extends SolrTestCaseJ4 {
 
-    private ApiBag apiBag;
+  private ApiBag apiBag;
 
-    @Before
-    public void setupApiBag() {
-        apiBag = new ApiBag(false);
+  @Before
+  public void setupApiBag() {
+    apiBag = new ApiBag(false);
+  }
+
+  @Test
+  public void testJwtConfigApiMapping() {
+    apiBag.registerObject(new ModifyJWTAuthPluginConfigAPI());
+
+    // Authc API
+    final AnnotatedApi updateAuthcConfig =
+        assertAnnotatedApiExistsFor("POST", "/cluster/security/authentication");
+    assertEquals(1, updateAuthcConfig.getCommands().size());
+    assertEquals("set-property", updateAuthcConfig.getCommands().keySet().iterator().next());
+  }
+
+  private AnnotatedApi assertAnnotatedApiExistsFor(String method, String path) {
+    final HashMap<String, String> parts = new HashMap<>();
+    final Api api = apiBag.lookup(path, method, parts);
+    if (api == null) {
+      fail("Expected to find API for path [" + path + "], but no API mapping found.");
+    }
+    if (!(api instanceof AnnotatedApi)) {
+      fail(
+          "Expected AnnotatedApi for path ["
+              + path
+              + "], but found non-annotated API ["
+              + api
+              + "]");
     }
 
-    @Test
-    public void testJwtConfigApiMapping() {
-        apiBag.registerObject(new ModifyJWTAuthPluginConfigAPI());
-
-        // Authc API
-        final AnnotatedApi updateAuthcConfig = assertAnnotatedApiExistsFor("POST", "/cluster/security/authentication");
-        assertEquals(1, updateAuthcConfig.getCommands().size());
-        assertEquals("set-property", updateAuthcConfig.getCommands().keySet().iterator().next());
-    }
-
-    private AnnotatedApi assertAnnotatedApiExistsFor(String method, String path) {
-        final HashMap<String, String> parts = new HashMap<>();
-        final Api api = apiBag.lookup(path, method, parts);
-        if (api == null) {
-            fail("Expected to find API for path [" + path + "], but no API mapping found.");
-        }
-        if (!(api instanceof AnnotatedApi)) {
-            fail(
-                    "Expected AnnotatedApi for path ["
-                            + path
-                            + "], but found non-annotated API ["
-                            + api
-                            + "]");
-        }
-
-        return (AnnotatedApi) api;
-    }
+    return (AnnotatedApi) api;
+  }
 }

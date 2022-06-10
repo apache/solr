@@ -17,16 +17,15 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
+import static org.apache.solr.security.PermissionNameProvider.Name.SECURITY_EDIT_PERM;
+
+import java.util.List;
+import java.util.Map;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.security.MultiAuthPlugin;
-
-import java.util.List;
-import java.util.Map;
-
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.security.PermissionNameProvider.Name.SECURITY_EDIT_PERM;
 
 /** V2 API to modify configuration options for the {@link MultiAuthPlugin}. */
 @EndPoint(
