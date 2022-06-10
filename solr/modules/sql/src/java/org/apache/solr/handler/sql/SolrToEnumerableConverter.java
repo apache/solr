@@ -19,7 +19,6 @@ package org.apache.solr.handler.sql;
 import com.google.common.collect.Lists;
 
 import java.util.*;
-
 import org.apache.calcite.adapter.enumerable.*;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -67,7 +66,6 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
     final TupleStream plan = planner.getPhysicalPlan();
     String planId = UUID.randomUUID().toString();
     SolrTable.plans.put(planId, plan);
-
     System.out.println("Fields:"+rowType.getFieldNames());
 
     final Expression table =

@@ -16,10 +16,7 @@
  */
 package org.apache.solr.handler.sql;
 
-
-import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.calcite.adapter.java.AbstractQueryableTable;
 import org.apache.calcite.linq4j.*;
@@ -33,7 +30,6 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.schema.impl.AbstractTableQueryable;
 import org.apache.solr.client.solrj.io.stream.*;
-import org.checkerframework.checker.units.qual.C;
 
 /** Table based on a Solr collection */
 class SolrTable extends AbstractQueryableTable implements TranslatableTable {
@@ -41,7 +37,20 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
   private final String collection;
   private final SolrSchema schema;
   private RelProtoDataType protoRowType;
-  public static ConcurrentHashMap<String, TupleStream> plans = new ConcurrentHashMap<String, TupleStream>();
+  public static Map<String, TupleStream> plans;
+
+  static {
+    SimpleBoundedCache<String, TupleStream> cache = new SimpleBoundedCache<String, TupleStream>();
+    plans = Collections.synchronizedMap(cache);
+  }
+
+  private static class SimpleBoundedCache<K, V> extends LinkedHashMap<K, V> {
+    private static final int MAX_ENTRIES = 1000;
+
+    protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {
+      return size() > MAX_ENTRIES;
+    }
+  }
 
   SolrTable(SolrSchema schema, String collection) {
     super(Object[].class);
