@@ -19,6 +19,8 @@ package org.apache.solr.handler.sql;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.apache.calcite.adapter.java.AbstractQueryableTable;
 import org.apache.calcite.linq4j.*;
 import org.apache.calcite.plan.RelOptCluster;
@@ -31,6 +33,7 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.schema.impl.AbstractTableQueryable;
 import org.apache.solr.client.solrj.io.stream.*;
+import org.checkerframework.checker.units.qual.C;
 
 /** Table based on a Solr collection */
 class SolrTable extends AbstractQueryableTable implements TranslatableTable {
@@ -38,6 +41,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
   private final String collection;
   private final SolrSchema schema;
   private RelProtoDataType protoRowType;
+  public static ConcurrentHashMap<String, TupleStream> plans = new ConcurrentHashMap<String, TupleStream>();
 
   SolrTable(SolrSchema schema, String collection) {
     super(Object[].class);
@@ -84,11 +88,10 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
       final Properties properties,
       final List<Map.Entry<String, Class<?>>> fields,
       final String query,
-      final String physicalPlan) {
+      final String planId) {
 
-    try {
-      System.out.println("Streaming Expression:"+physicalPlan);
-      TupleStream tupleStream = SolrTableScan.streamFactory.constructStream(physicalPlan);
+      System.out.println("Fields:"+fields);
+      TupleStream tupleStream = plans.remove(planId);
       StreamContext streamContext = new StreamContext();
       streamContext.setSolrClientCache(schema.getSolrClientCache());
       tupleStream.setStreamContext(streamContext);
@@ -99,9 +102,6 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
           return new SolrEnumerator(finalStream, fields);
         }
       };
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
   }
 
   public <T> Queryable<T> asQueryable(

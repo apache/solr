@@ -17,10 +17,9 @@
 package org.apache.solr.handler.sql;
 
 import com.google.common.collect.Lists;
-import java.util.AbstractList;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+
+import java.util.*;
+
 import org.apache.calcite.adapter.enumerable.*;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -34,6 +33,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Pair;
+import org.apache.solr.client.solrj.io.stream.TupleStream;
 
 /** Relational expression representing a scan of a table in Solr */
 class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
@@ -55,18 +55,21 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
     // Generates a call to "query" with the appropriate fields
     final BlockBuilder list = new BlockBuilder();
     final RelDataType rowType = getRowType();
-    final SolrRel.Implementor solrImplementor = new SolrRel.Implementor(implementor, pref, rowType);
+    final PhysType physType =
+        PhysTypeImpl.of(implementor.getTypeFactory(), rowType, pref.prefer(JavaRowFormat.ARRAY));
+    final SolrRel.Implementor solrImplementor = new SolrRel.Implementor(implementor, pref, rowType, physType);
 
     /*
     * May return a different implementer than was passed in. For example in the case of
     * a join a tree of implementers will be returned.
     */
     SolrRel.Implementor planner = solrImplementor.visitChild(0, getInput());
-    final String expr = planner.getPhysicalPlan();
+    final TupleStream plan = planner.getPhysicalPlan();
+    String planId = UUID.randomUUID().toString();
+    SolrTable.plans.put(planId, plan);
 
     System.out.println("Fields:"+rowType.getFieldNames());
-    final PhysType physType =
-        PhysTypeImpl.of(implementor.getTypeFactory(), rowType, pref.prefer(JavaRowFormat.ARRAY));
+
     final Expression table =
         list.append("table", solrImplementor.table.getExpression(SolrTable.SolrQueryable.class));
     final Expression fields =
@@ -90,7 +93,7 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
     final Expression query =
         list.append("query", Expressions.constant(solrImplementor.query, String.class));
     final Expression physicalPlan =
-        list.append("physicalPlan", Expressions.constant(expr, String.class));
+        list.append("physicalPlan", Expressions.constant(planId, String.class));
 
     Expression enumerable =
         list.append(

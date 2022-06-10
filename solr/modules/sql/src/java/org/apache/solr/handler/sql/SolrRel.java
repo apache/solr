@@ -27,6 +27,7 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.Pair;
+import org.apache.solr.client.solrj.io.stream.TupleStream;
 
 /** Relational expression that uses Solr calling convention. */
 interface SolrRel extends RelNode {
@@ -41,11 +42,11 @@ interface SolrRel extends RelNode {
    */
   class Implementor {
 
-    public Implementor(EnumerableRelImplementor _enumerableRelImplementor, EnumerableRel.Prefer _pref, RelDataType _rowType) {
+    public Implementor(EnumerableRelImplementor _enumerableRelImplementor, EnumerableRel.Prefer _pref, RelDataType _rowType, PhysType _physType) {
       enumerableRelImplementor = _enumerableRelImplementor;
       pref = _pref;
       rowType = _rowType;
-      physType= PhysTypeImpl.of(getTypeFactory(), rowType, getPref().prefer(JavaRowFormat.ARRAY));
+      physType= _physType;
     }
 
     final RelDataType rowType;
@@ -139,7 +140,7 @@ interface SolrRel extends RelNode {
       return ((SolrRel) input).implement(this);
     }
 
-    String getPhysicalPlan() {
+    TupleStream getPhysicalPlan() {
       final List<Map.Entry<String, Class<?>>> fields = zip(generateFields(SolrRules.solrFieldNames(rowType), fieldMappings), physType);
       return solrTableScan.getPhysicalPlan(fields, query, orders, buckets, metricPairs, limitValue, negativeQuery, havingPredicate, offsetValue);
     }
@@ -147,6 +148,7 @@ interface SolrRel extends RelNode {
     private List<Map.Entry<String, Class<?>>> zip(List<String> fields, PhysType physType) {
       List<Map.Entry<String, Class<?>>> zipped = new ArrayList<>();
       for(int i=0; i<fields.size(); i++) {
+        System.out.println("zip:"+fields.get(i)+":"+physType.fieldClass(i));
         Map.Entry<String, Class<?>> entry = new AbstractMap.SimpleEntry<String, Class<?>>(fields.get(i), physType.fieldClass(i));
         zipped.add(entry);
       }

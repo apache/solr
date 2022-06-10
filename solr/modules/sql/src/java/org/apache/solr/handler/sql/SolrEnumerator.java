@@ -73,6 +73,7 @@ class SolrEnumerator implements Enumerator<Object> {
   }
 
   private Object getter(Tuple tuple, Map.Entry<String, Class<?>> field) {
+    System.out.println("Field Key:"+field.getKey());
     Object val = tuple.get(field.getKey());
 
     if (val == null) {
@@ -83,7 +84,17 @@ class SolrEnumerator implements Enumerator<Object> {
     if (clazz.equals(Long.class)) {
       if (val instanceof Double) {
         return this.getRealVal(val);
+      } else if(val instanceof Integer) {
+        return Long.parseLong(val.toString());
       }
+      return val;
+    }
+
+    if(clazz.equals(Double.class)) {
+      if(val instanceof Float) {
+        return Double.parseDouble(val.toString());
+      }
+
       return val;
     }
 

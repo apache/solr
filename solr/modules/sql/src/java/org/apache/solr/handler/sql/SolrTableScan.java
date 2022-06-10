@@ -129,7 +129,7 @@ class SolrTableScan extends TableScan implements SolrRel {
     return implementor;
   }
 
-  public String getPhysicalPlan( final List<Map.Entry<String, Class<?>>> fields,
+  public TupleStream getPhysicalPlan( final List<Map.Entry<String, Class<?>>> fields,
                                  final String query,
                                  final List<Pair<String, String>> orders,
                                  final List<String> buckets,
@@ -194,7 +194,7 @@ class SolrTableScan extends TableScan implements SolrRel {
         }
       }
 
-      return ((Expressible)tupleStream).toExpression(streamFactory).toString();
+      return tupleStream;
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -859,22 +859,6 @@ class SolrTableScan extends TableScan implements SolrRel {
       String direction = getSortDirection(order);
       ComparatorOrder comparatorOrder = ComparatorOrder.fromString(direction);
       String sortKey = order.getKey();
-      comps[i] = new FieldComparator(sortKey, comparatorOrder);
-    }
-
-    if (comps.length == 1) {
-      return comps[0];
-    } else {
-      return new MultipleFieldComparator(comps);
-    }
-  }
-
-  private static StreamComparator bucketSortComp(List<Bucket> buckets, Map<String, String> dirs) {
-    FieldComparator[] comps = new FieldComparator[buckets.size()];
-    for (int i = 0; i < buckets.size(); i++) {
-      ComparatorOrder comparatorOrder =
-          ComparatorOrder.fromString(dirs.get(buckets.get(i).toString()));
-      String sortKey = buckets.get(i).toString();
       comps[i] = new FieldComparator(sortKey, comparatorOrder);
     }
 
