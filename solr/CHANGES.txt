@@ -61,6 +61,8 @@ Bug Fixes
 
 * SOLR-16110: Using Schema/Config API breaks the File-Upload of Config Set File (Steffen Moldenhauer, Kevin Risden)
 
+* SOLR-16218: failOnVersionConflicts option not working for in-place updates (Lamine Idjeraoui)
+
 Other Changes
 ---------------------
 * SOLR-15897: Remove <jmx/> from all unit test solrconfig.xml files. (Eric Pugh)
