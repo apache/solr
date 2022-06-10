@@ -24,7 +24,6 @@ import static org.apache.solr.common.util.ValidatingJsonMap.ENUM_OF;
 import static org.apache.solr.common.util.ValidatingJsonMap.NOT_NULL;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -183,7 +182,7 @@ public class ApiBag {
       PathTrie<Api> registry = apis.get(method);
 
       if (registry == null)
-        apis.put(method, registry = new CommandAggregatingPathTrie(ImmutableSet.of("_introspect")));
+        apis.put(method, registry = new CommandAggregatingPathTrie(Set.of("_introspect")));
       ValidatingJsonMap url = spec.getMap("url", NOT_NULL);
       ValidatingJsonMap params = url.getMap("params", null);
       if (params != null) {
@@ -200,8 +199,7 @@ public class ApiBag {
           if (!wildCardNames.contains(o.toString()))
             throw new RuntimeException("" + o + " is not a valid part name");
           ValidatingJsonMap pathMeta = parts.getMap(o.toString(), NOT_NULL);
-          pathMeta.get(
-              "type", ENUM_OF, ImmutableSet.of("enum", "string", "int", "number", "boolean"));
+          pathMeta.get("type", ENUM_OF, Set.of("enum", "string", "int", "number", "boolean"));
         }
       }
       verifyCommands(api.getSpec());
@@ -370,7 +368,7 @@ public class ApiBag {
   public static final SpecProvider EMPTY_SPEC = () -> ValidatingJsonMap.EMPTY;
   public static final String HANDLER_NAME = "handlerName";
   public static final Set<String> KNOWN_TYPES =
-      ImmutableSet.of("string", "boolean", "list", "int", "double", "object");
+      Set.of("string", "boolean", "list", "int", "double", "object");
 
   public PathTrie<Api> getRegistry(String method) {
     return apis.get(method);
