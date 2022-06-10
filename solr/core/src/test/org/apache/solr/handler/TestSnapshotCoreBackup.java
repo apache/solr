@@ -24,8 +24,8 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.CoreContainer;
@@ -43,7 +43,7 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
   }
 
   @After // unique core per test
-  public void coreDestroy() throws Exception {
+  public void coreDestroy() {
     deleteCore();
   }
 

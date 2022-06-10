@@ -171,7 +171,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testUrlParamParsing() throws Exception {
+  public void testUrlParamParsing() {
     final String[][] teststr =
         new String[][] {
           {"this is simple", "this%20is%20simple"},

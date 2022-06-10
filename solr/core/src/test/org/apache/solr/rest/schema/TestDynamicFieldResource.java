@@ -21,7 +21,7 @@ import org.junit.Test;
 
 public class TestDynamicFieldResource extends SolrRestletTestBase {
   @Test
-  public void testGetDynamicField() throws Exception {
+  public void testGetDynamicField() {
     final boolean expectedDocValues = Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP);
     assertQ(
         "/schema/dynamicfields/*_i?indent=on&wt=xml&showDefaults=on",
@@ -44,7 +44,7 @@ public class TestDynamicFieldResource extends SolrRestletTestBase {
   }
 
   @Test
-  public void testGetNotFoundDynamicField() throws Exception {
+  public void testGetNotFoundDynamicField() {
     assertQ(
         "/schema/dynamicfields/*not_in_there?indent=on&wt=xml",
         "count(/response/lst[@name='dynamicField']) = 0",

@@ -58,7 +58,7 @@ public class SolrTestCaseJ4Test extends SolrTestCaseJ4 {
   public static void AfterClass() throws Exception {}
 
   @Test
-  public void testCorrectCore() throws Exception {
+  public void testCorrectCore() {
     assertEquals("should be core1", "core1", h.getCore().getName());
   }
 

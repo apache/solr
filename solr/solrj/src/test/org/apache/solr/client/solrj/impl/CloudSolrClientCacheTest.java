@@ -78,10 +78,11 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
 
     LBHttpSolrClient mockLbclient = getMockLbHttpSolrClient(responses);
     AtomicInteger lbhttpRequestCount = new AtomicInteger();
-    try (CloudSolrClient cloudClient =
-        new CloudSolrClientBuilder(getStateProvider(livenodes, refs))
-            .withLBHttpSolrClient(mockLbclient)
-            .build()) {
+    try (ClusterStateProvider clusterStateProvider = getStateProvider(livenodes, refs);
+        CloudSolrClient cloudClient =
+            new CloudSolrClientBuilder(clusterStateProvider)
+                .withLBHttpSolrClient(mockLbclient)
+                .build()) {
       livenodes.addAll(ImmutableSet.of("192.168.1.108:7574_solr", "192.168.1.108:8983_solr"));
       ClusterState cs =
           ClusterState.createFromJson(1, coll1State.getBytes(UTF_8), Collections.emptySet());
@@ -91,9 +92,15 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
           "request",
           o -> {
             int i = lbhttpRequestCount.incrementAndGet();
-            if (i == 1) return new ConnectException("TEST");
-            if (i == 2) return new SocketException("TEST");
-            if (i == 3) return new NoHttpResponseException("TEST");
+            if (i == 1) {
+              return new ConnectException("TEST");
+            }
+            if (i == 2) {
+              return new SocketException("TEST");
+            }
+            if (i == 3) {
+              return new NoHttpResponseException("TEST");
+            }
             return okResponse;
           });
       UpdateRequest update = new UpdateRequest().add("id", "123", "desc", "Something 0");

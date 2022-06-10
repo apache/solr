@@ -262,7 +262,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
     }
   }
 
-  private void assertSendDocFails(int docId) throws Exception {
+  private void assertSendDocFails(int docId) {
     // sending a doc in this state fails
     expectThrows(
         SolrException.class,

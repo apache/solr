@@ -17,15 +17,15 @@
 package org.apache.solr.legacy;
 
 import java.io.StringReader;
-import org.apache.lucene.analysis.CannedTokenStream;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.tests.analysis.CannedTokenStream;
+import org.apache.lucene.tests.analysis.Token;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCase;
 
 public class TestLegacyField extends SolrTestCase {
 
-  public void testLegacyDoubleField() throws Exception {
+  public void testLegacyDoubleField() {
     Field fields[] =
         new Field[] {
           new LegacyDoubleField("foo", 5d, Field.Store.NO),
@@ -49,7 +49,7 @@ public class TestLegacyField extends SolrTestCase {
     }
   }
 
-  public void testLegacyFloatField() throws Exception {
+  public void testLegacyFloatField() {
     Field fields[] =
         new Field[] {
           new LegacyFloatField("foo", 5f, Field.Store.NO),
@@ -73,7 +73,7 @@ public class TestLegacyField extends SolrTestCase {
     }
   }
 
-  public void testLegacyIntField() throws Exception {
+  public void testLegacyIntField() {
     Field fields[] =
         new Field[] {
           new LegacyIntField("foo", 5, Field.Store.NO),
@@ -97,7 +97,7 @@ public class TestLegacyField extends SolrTestCase {
     }
   }
 
-  public void testLegacyLongField() throws Exception {
+  public void testLegacyLongField() {
     Field fields[] =
         new Field[] {
           new LegacyLongField("foo", 5L, Field.Store.NO),

@@ -30,7 +30,6 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
@@ -53,7 +52,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
     createIndex();
   }
 
-  public static void createIndex() throws IOException, Exception {
+  public static void createIndex() throws IOException {
     int i = 0;
     List<List<String[]>> blocks = createBlocks();
     for (List<String[]> block : blocks) {
@@ -142,7 +141,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testFull() throws IOException, Exception {
+  public void testFull() {
     String childb = "{!parent which=\"parent_s:[* TO *]\"}child_s:l";
     assertQ(req("q", childb), sixParents);
   }
@@ -159,12 +158,12 @@ public class BJQParserTest extends SolrTestCaseJ4 {
       };
 
   @Test
-  public void testJustParentsFilter() throws IOException {
+  public void testJustParentsFilter() {
     assertQ(req("q", "{!parent which=\"parent_s:[* TO *]\"}"), sixParents);
   }
 
   @Test
-  public void testJustParentsFilterInChild() throws IOException {
+  public void testJustParentsFilterInChild() {
     assertQ(
         req(
             "q",
@@ -226,7 +225,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
         beParents);
   }
 
-  public void testScoreNoneScoringForParent() throws Exception {
+  public void testScoreNoneScoringForParent() {
     assertQ(
         "score=none yields 0.0 score",
         req(
@@ -240,7 +239,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
         "(//float[@name='score'])[" + (random().nextInt(6) + 1) + "]=0.0");
   }
 
-  public void testWrongScoreExceptionForParent() throws Exception {
+  public void testWrongScoreExceptionForParent() {
     final String aMode = ScoreMode.values()[random().nextInt(ScoreMode.values().length)].name();
     final String wrongMode =
         rarely()
@@ -321,7 +320,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testIntersectParentBqChildBq() throws IOException {
+  public void testIntersectParentBqChildBq() {
 
     assertQ(
         req(
@@ -335,7 +334,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testGrandChildren() throws IOException {
+  public void testGrandChildren() {
     assertQ(
         req(
             "q",
@@ -388,7 +387,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testCacheHit() throws IOException {
+  public void testCacheHit() {
 
     MetricsMap parentFilterCache =
         (MetricsMap)
@@ -568,12 +567,18 @@ public class BJQParserTest extends SolrTestCaseJ4 {
             "child_s:[* TO *]"),
         "//*[@numFound='18']");
 
-    assertQEx(
-        "expecting exception on weird param",
+    /*
+    The below is admittedly a weird request; but QParser param dereferencing provides no way to
+    distinguish between `{!filters param=}` and `{!filters param=$fqs}` where `fqs` param is
+    absent. Because we want to support the latter case, we must also support the former, even it
+    would arguably make sense to throw a syntax error in the former case.
+     */
+    assertQ(
+        "should support weird absent param spec",
         req(
             "q", "{!filters v=$gchq param=}\"",
             "gchq", "child_s:[* TO *]"),
-        ErrorCode.BAD_REQUEST);
+        "//*[@numFound='18']");
 
     assertQ( // omit main query
         req(

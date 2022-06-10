@@ -21,7 +21,7 @@ import org.junit.Test;
 
 public class TestSchemaVersionResource extends SolrRestletTestBase {
   @Test
-  public void testGetSchemaVersion() throws Exception {
+  public void testGetSchemaVersion() {
     assertQ(
         "/schema/version?indent=on&wt=xml",
         "count(/response/float[@name='version']) = 1",

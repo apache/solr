@@ -59,7 +59,7 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     _testExpand("group_s", "", maybeTopFc());
   }
 
-  public void testStringDv() throws Exception {
+  public void testStringDv() {
     _testExpand("group_s_dv", "", maybeTopFc());
   }
 
@@ -67,7 +67,7 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     _testExpand("group_i", "", "");
   }
 
-  public void testIntDv() throws Exception {
+  public void testIntDv() {
     _testExpand("group_ti_dv", "", "");
   }
 
@@ -76,12 +76,12 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     _testExpand("group_f", ".0", ""); // explicit 0 check for 0 vs null group
   }
 
-  public void testFloatDv() throws Exception {
+  public void testFloatDv() {
     _testExpand("group_tf_dv", floatAppend(), "");
     _testExpand("group_tf_dv", ".0", ""); // explicit 0 check for 0 vs null group
   }
 
-  private void _testExpand(String group, String floatAppend, String hint) throws Exception {
+  private void _testExpand(String group, String floatAppend, String hint) {
     // NOTE: one of our groups uses '0' as the group value to explicitly check numeric expand for 0
     // vs null group behavior
     String[][] docs = {

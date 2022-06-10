@@ -148,7 +148,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testFacets() throws Exception {
+  public void testFacets() {
     StringBuilder sb = new StringBuilder();
 
     // go over 4096 to test some of the buffer resizing
@@ -228,7 +228,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRegularBig() throws Exception {
+  public void testRegularBig() {
     StringBuilder sb = new StringBuilder();
 
     // go over 4096 to test some of the buffer resizing
@@ -808,7 +808,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testThreadWait() throws Exception {
+  public void testThreadWait() {
 
     add50ocs();
     String[] methodParam =
@@ -1283,7 +1283,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testListedTermCounts() throws Exception {
+  public void testListedTermCounts() {
     assertU(adoc("id", "1", "title_ws", "Book1"));
     assertU(adoc("id", "2", "title_ws", "Book2"));
     assertU(adoc("id", "3", "title_ws", "Book3"));
@@ -1337,7 +1337,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testFacetCountsWithMinExactCount() throws Exception {
+  public void testFacetCountsWithMinExactCount() {
     final int NUM_DOCS = 20;
     for (int i = 0; i < NUM_DOCS; i++) {
       assertU(adoc("id", String.valueOf(i), "title_ws", "Book1"));

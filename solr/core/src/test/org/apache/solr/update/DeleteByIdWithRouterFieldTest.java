@@ -23,8 +23,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -285,7 +285,7 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
    * Test that {@link UpdateRequest#getRoutesToCollection} correctly populates routes for all
    * deletes
    */
-  public void testGlassBoxUpdateRequestRoutesToShards() throws Exception {
+  public void testGlassBoxUpdateRequestRoutesToShards() {
 
     final DocCollection docCol = cluster.getSolrClient().getClusterState().getCollection(COLL);
     // we don't need "real" urls for all replicas, just something we can use as lookup keys for

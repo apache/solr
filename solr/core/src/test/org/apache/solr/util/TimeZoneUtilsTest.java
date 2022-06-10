@@ -21,7 +21,7 @@ import java.util.Locale;
 import java.util.Random;
 import java.util.Set;
 import java.util.TimeZone;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 
 public class TimeZoneUtilsTest extends SolrTestCase {
@@ -40,7 +40,7 @@ public class TimeZoneUtilsTest extends SolrTestCase {
         label + ": " + expected.toString() + " [[NOT SAME RULES]] " + actual.toString(), same);
   }
 
-  public void testValidIds() throws Exception {
+  public void testValidIds() {
 
     final Set<String> idsTested = new HashSet<>();
 
@@ -63,7 +63,7 @@ public class TimeZoneUtilsTest extends SolrTestCase {
         idsTested.size());
   }
 
-  public void testCustom() throws Exception {
+  public void testCustom() {
 
     for (String input :
         new String[] {
@@ -88,7 +88,7 @@ public class TimeZoneUtilsTest extends SolrTestCase {
     }
   }
 
-  public void testStupidIKnowButIDontTrustTheJVM() throws Exception {
+  public void testStupidIKnowButIDontTrustTheJVM() {
 
     for (String input :
         new String[] {
@@ -113,7 +113,7 @@ public class TimeZoneUtilsTest extends SolrTestCase {
     }
   }
 
-  public void testInvalidInput() throws Exception {
+  public void testInvalidInput() {
 
     final String giberish = "giberish";
     assumeFalse(

@@ -30,9 +30,9 @@ import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexNotFoundException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NIOFSDirectory;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -83,7 +83,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
   }
 
   @AfterClass
-  public static void teardownClass() throws Exception {
+  public static void teardownClass() {
     System.clearProperty("test.build.data");
     System.clearProperty("test.cache.data");
     System.clearProperty("solr.allowPaths");

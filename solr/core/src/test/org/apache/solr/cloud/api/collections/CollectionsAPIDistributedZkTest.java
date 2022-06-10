@@ -16,7 +16,7 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 
 /** Tests the Cloud Collections API. */
 @Slow

@@ -420,7 +420,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
             }
 
             if (comparator == null) {
-              comparator = sortField.getComparator(1, 0);
+              comparator = sortField.getComparator(1, true);
               leafComparator = comparator.getLeafComparator(currentLeaf);
             }
 
@@ -681,7 +681,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
       return new LeafCollector() {
 
         @Override
-        public void setScorer(Scorable scorer) throws IOException {}
+        public void setScorer(Scorable scorer) {}
 
         public void collect(int doc) throws IOException {
           long value;
@@ -740,14 +740,14 @@ public class RankQueryTestPlugin extends QParserPlugin {
     }
 
     @Override
-    public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
+    public LeafCollector getLeafCollector(LeafReaderContext context) {
       final int base = context.docBase;
       return new LeafCollector() {
 
         Scorable scorer;
 
         @Override
-        public void setScorer(Scorable scorer) throws IOException {
+        public void setScorer(Scorable scorer) {
           this.scorer = scorer;
         }
 

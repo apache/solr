@@ -423,13 +423,7 @@ public class V2HttpCall extends HttpSolrCall {
     }
 
     // Get the templatize-ed path, ex: "/c/{collection}"
-    String path;
-    if (api instanceof AnnotatedApi) {
-      // ideal scenario; eventually everything might be AnnotatedApi?
-      path = ((AnnotatedApi) api).getEndPoint().path()[0]; // consider first to be primary
-    } else {
-      path = computeEndpointPath();
-    }
+    final String path = computeEndpointPath();
 
     String verb = null;
     // if this api has commands ...

@@ -78,7 +78,7 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testNonTrivialChildFilter() throws Exception {
+  public void testNonTrivialChildFilter() {
     // just check we don't throw an exception. This used to throw before SOLR-15152
     assertQ(
         req(
@@ -498,7 +498,7 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testExceptionThrownWParentFilter() throws Exception {
+  public void testExceptionThrownWParentFilter() {
     expectThrows(
         SolrException.class,
         "Exception was not thrown when parentFilter param was passed to ChildDocTransformer using a nested schema",

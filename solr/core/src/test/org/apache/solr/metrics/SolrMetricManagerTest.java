@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.PluginInfo;
@@ -36,7 +36,7 @@ import org.junit.Test;
 public class SolrMetricManagerTest extends SolrTestCaseJ4 {
 
   @Test
-  public void testSwapRegistries() throws Exception {
+  public void testSwapRegistries() {
     Random r = random();
 
     SolrMetricManager metricManager = new SolrMetricManager();
@@ -105,7 +105,7 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testClearMetrics() throws Exception {
+  public void testClearMetrics() {
     Random r = random();
 
     SolrMetricManager metricManager = new SolrMetricManager();
@@ -148,7 +148,7 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSimpleMetrics() throws Exception {
+  public void testSimpleMetrics() {
     Random r = random();
 
     SolrMetricManager metricManager = new SolrMetricManager();
@@ -167,7 +167,7 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRegistryName() throws Exception {
+  public void testRegistryName() {
     Random r = random();
 
     String name = TestUtil.randomSimpleString(r, 1, 10);
@@ -252,7 +252,7 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testDefaultCloudReporterPeriodUnchanged() throws Exception {
+  public void testDefaultCloudReporterPeriodUnchanged() {
     assertEquals(60, SolrMetricManager.DEFAULT_CLOUD_REPORTER_PERIOD);
   }
 

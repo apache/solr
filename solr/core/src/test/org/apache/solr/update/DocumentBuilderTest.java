@@ -28,7 +28,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.KnnVectorField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.VectorSimilarityFunction;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
@@ -64,7 +64,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testBuildDocument() throws Exception {
+  public void testBuildDocument() {
     SolrCore core = h.getCore();
     // undefined field
     SolrInputDocument doc = new SolrInputDocument();
@@ -114,7 +114,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testMultiField() throws Exception {
+  public void testMultiField() {
     SolrCore core = h.getCore();
 
     // make sure a null value is not indexed

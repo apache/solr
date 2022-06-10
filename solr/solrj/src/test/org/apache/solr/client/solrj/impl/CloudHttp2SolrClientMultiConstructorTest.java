@@ -22,7 +22,7 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
@@ -71,7 +71,10 @@ public class CloudHttp2SolrClientMultiConstructorTest extends SolrTestCase {
     try (CloudHttp2SolrClient client =
         new CloudHttp2SolrClient.Builder(new ArrayList<>(hosts), Optional.ofNullable(clientChroot))
             .build()) {
-      assertEquals(sb.toString(), ZkClientClusterStateProvider.from(client).getZkHost());
+      try (ZkClientClusterStateProvider zkClientClusterStateProvider =
+          ZkClientClusterStateProvider.from(client)) {
+        assertEquals(sb.toString(), zkClientClusterStateProvider.getZkHost());
+      }
     }
   }
 

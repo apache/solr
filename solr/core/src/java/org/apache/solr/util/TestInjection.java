@@ -65,7 +65,7 @@ public class TestInjection {
   private static final Pattern ENABLED_PERCENT =
       Pattern.compile("(true|false)(?:\\:(\\d+))?$", Pattern.CASE_INSENSITIVE);
 
-  private static final String LUCENE_TEST_CASE_FQN = "org.apache.lucene.util.LuceneTestCase";
+  private static final String LUCENE_TEST_CASE_FQN = "org.apache.lucene.tests.util.LuceneTestCase";
 
   /**
    * If null, then we are not being run as part of a test, and all TestInjection events should be

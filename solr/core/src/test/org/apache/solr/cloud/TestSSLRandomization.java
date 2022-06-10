@@ -47,7 +47,7 @@ public class TestSSLRandomization extends SolrCloudTestCase {
     TestMiniSolrCloudClusterSSL.checkClusterWithCollectionCreations(cluster, sslConfig);
   }
 
-  public void testBaseUrl() throws Exception {
+  public void testBaseUrl() {
     String url = buildUrl(6666, "/foo");
     assertEquals(
         sslConfig.isSSLMode() ? "https://127.0.0.1:6666/foo" : "http://127.0.0.1:6666/foo", url);

@@ -21,7 +21,7 @@ import org.junit.Test;
 
 public class TestFieldTypeResource extends SolrRestletTestBase {
   @Test
-  public void testXMLGetFieldType() throws Exception {
+  public void testXMLGetFieldType() {
     final String expectedFloatClass = RANDOMIZED_NUMERIC_FIELDTYPES.get(Float.class);
     final boolean expectedDocValues = Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP);
     assertQ(
@@ -48,7 +48,7 @@ public class TestFieldTypeResource extends SolrRestletTestBase {
   }
 
   @Test
-  public void testXMLGetNotFoundFieldType() throws Exception {
+  public void testXMLGetNotFoundFieldType() {
     assertQ(
         "/schema/fieldtypes/not_in_there?wt=xml",
         "count(/response/lst[@name='fieldtypes']) = 0",
@@ -81,7 +81,7 @@ public class TestFieldTypeResource extends SolrRestletTestBase {
   }
 
   @Test
-  public void testXMLGetFieldTypeDontShowDefaults() throws Exception {
+  public void testXMLGetFieldTypeDontShowDefaults() {
     assertQ(
         "/schema/fieldtypes/teststop?wt=xml",
         "count(/response/lst[@name='fieldType']/*) = 3",

@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
@@ -33,6 +32,7 @@ import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttributeImpl;
+import org.apache.lucene.tests.analysis.MockTokenizer;
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.client.solrj.request.FieldAnalysisRequest;
@@ -71,7 +71,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
   }
 
   @Test
-  public void testPointField() throws Exception {
+  public void testPointField() {
     FieldAnalysisRequest request = new FieldAnalysisRequest();
     request.addFieldType("pint");
     request.setFieldValue("5");
@@ -94,7 +94,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
    * FieldAnalysisRequestHandler#resolveAnalysisRequest(org.apache.solr.request.SolrQueryRequest)}
    */
   @Test
-  public void testResolveAnalysisRequest() throws Exception {
+  public void testResolveAnalysisRequest() {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(AnalysisParams.FIELD_NAME, "text,nametext");
     params.add(AnalysisParams.FIELD_TYPE, "whitetok,keywordtok");
@@ -178,7 +178,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
    */
   @Test
   @SuppressWarnings({"unchecked"})
-  public void testHandleAnalysisRequest() throws Exception {
+  public void testHandleAnalysisRequest() {
 
     FieldAnalysisRequest request = new FieldAnalysisRequest();
     request.addFieldName("whitetok");
@@ -511,7 +511,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
   }
 
   @Test
-  public void testCharFilterAnalysis() throws Exception {
+  public void testCharFilterAnalysis() {
 
     FieldAnalysisRequest request = new FieldAnalysisRequest();
     request.addFieldType("charfilthtmlmap");
@@ -551,7 +551,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
   }
 
   @Test
-  public void testPositionHistoryWithWDGF() throws Exception {
+  public void testPositionHistoryWithWDGF() {
 
     FieldAnalysisRequest request = new FieldAnalysisRequest();
     request.addFieldType("skutype1");
@@ -633,7 +633,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
   }
 
   @SuppressWarnings({"unchecked"})
-  public void testCommonGrams() throws Exception {
+  public void testCommonGrams() {
 
     final FieldAnalysisRequest request = new FieldAnalysisRequest();
     final String fieldType = "commongrams";
@@ -745,7 +745,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
   }
 
   @Test
-  public void testSpatial() throws Exception {
+  public void testSpatial() {
     FieldAnalysisRequest request = new FieldAnalysisRequest();
     request.addFieldType("location_rpt");
     request.setFieldValue("MULTIPOINT ((10 40), (40 30), (20 20), (30 10))");
@@ -771,7 +771,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
   }
 
   @Test // See SOLR-8460
-  public void testCustomAttribute() throws Exception {
+  public void testCustomAttribute() {
     FieldAnalysisRequest request = new FieldAnalysisRequest();
     request.addFieldType("skutype1");
     request.setFieldValue("hi, 3456-12 a Test");
@@ -810,7 +810,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
   }
 
   @Test(expected = Exception.class)
-  public void testNoDefaultField() throws Exception {
+  public void testNoDefaultField() {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(CommonParams.Q, "fox brown");
     SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), params);

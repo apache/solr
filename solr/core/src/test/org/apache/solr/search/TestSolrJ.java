@@ -31,7 +31,7 @@ import org.apache.solr.util.RTimer;
 
 public class TestSolrJ extends SolrTestCaseJ4 {
 
-  public void testSolrJ() throws Exception {
+  public void testSolrJ() {
     // docs, producers, connections, sleep_time
     //  main(new String[] {"1000000","4", "1", "0"});
 

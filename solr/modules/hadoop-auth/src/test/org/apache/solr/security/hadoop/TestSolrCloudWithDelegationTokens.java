@@ -25,7 +25,7 @@ import java.util.Optional;
 import java.util.Set;
 import org.apache.hadoop.util.Time;
 import org.apache.http.HttpStatus;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;

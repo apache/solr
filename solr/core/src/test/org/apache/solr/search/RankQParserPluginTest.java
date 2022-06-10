@@ -63,7 +63,7 @@ public class RankQParserPluginTest extends SolrTestCaseJ4 {
     }
   }
 
-  public void testSyntaxErrors() throws IOException, SyntaxError {
+  public void testSyntaxErrors() {
     assertSyntaxError(
         "No Field",
         "Field can't be empty",
@@ -82,7 +82,7 @@ public class RankQParserPluginTest extends SolrTestCaseJ4 {
         () -> getRankQParser(params(FIELD, "id"), null, req()).parse());
   }
 
-  public void testBadLogParameters() throws IOException, SyntaxError {
+  public void testBadLogParameters() {
     assertSyntaxError(
         "Expecting bad weight",
         "weight must be in",
@@ -109,7 +109,7 @@ public class RankQParserPluginTest extends SolrTestCaseJ4 {
                 .parse());
   }
 
-  public void testBadSaturationParameters() throws IOException, SyntaxError {
+  public void testBadSaturationParameters() {
     assertSyntaxError(
         "Expecting a pivot value",
         "A pivot value",
@@ -137,7 +137,7 @@ public class RankQParserPluginTest extends SolrTestCaseJ4 {
                 .parse());
   }
 
-  public void testBadSigmoidParameters() throws IOException, SyntaxError {
+  public void testBadSigmoidParameters() {
     assertSyntaxError(
         "Expecting missing pivot",
         "A pivot value",
@@ -204,7 +204,7 @@ public class RankQParserPluginTest extends SolrTestCaseJ4 {
                 .parse());
   }
 
-  public void testUnknownFunction() throws IOException, SyntaxError {
+  public void testUnknownFunction() {
     assertSyntaxError(
         "Expecting bad function",
         "Unknown function in rank query: \"foo\"",

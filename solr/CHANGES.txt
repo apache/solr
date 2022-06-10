@@ -33,6 +33,8 @@ New Features
 * SOLR-16111: Add hl.queryFieldPattern support, an advanced alternative to the hl.requireFieldMatch boolean flag.
   (Christine Poerschke, David Smiley)
 
+* SOLR-15921: Load jars in <solr-install-dir>/lib/ by default (janhoy)
+
 Improvements
 ---------------------
 * SOLR-15986: CommitUpdateCommand and SplitIndexCommand can write user commit metadata. (Bruno Roustant)
@@ -41,12 +43,21 @@ Improvements
 
 * SOLR-16002: Avoid redundant `FilterQuery` caching, e.g. via `filter($query)` syntax. (Michael Gibney, David Smiley)
 
+* SOLR-15045: `DistributedZkUpdateProcessor` now issues commits to local shards and remote shards in parallel,
+  halving the latency of synchronous commits (Michael Gibney)
+
+* SOLR-16181: Initialize the LogWatcher earlier in CoreContainer#load() (janhoy)
+
+* SOLR-16225: Upgrade dependencies (Carrot2, HPPC) (Dawid Weiss)
+
 Optimizations
 ---------------------
 * SOLR-16120: Optimise hl.fl expansion. (Christine Poerschke, David Smiley, Mike Drob)
 
 * SOLR-14765: Optimize DocList creation for sort-irrelevant cases. This issue also reworks the building and caching of liveDocs
   in SolrIndexSearcher, and refines/clarifies the effect of `useFilterForSortedQuery` (Michael Gibney, Mike Drob, David Smiley)
+
+* SOLR-16146: Avoid loading all collections during node startup (noble)
 
 * SOLR-16150: Embedded ZK Server used for zkRun should advertise itself on specific bound interfaces instead of
   generically on localhost. (Mike Drob)
@@ -63,8 +74,21 @@ Bug Fixes
 
 * SOLR-16112: DefaultSolrHighlighter.doHighlighting to Query#rewrite multiple times if necessary. (Christine Poerschke)
 
-* SOLR-15045: `DistributedZkUpdateProcessor` now issues commits to local shards and remote shards in parallel,
-  halving the latency of synchronous commits (Michael Gibney)
+* SOLR-13044: Fix NPE during core close racing with index replication check.  (David Smiley, hossman)
+
+* SOLR-16145: Fix very rare NPE in SolrCloud rejoinOverseerElection. (David Smiley)
+
+* SOLR-16168: Spellcheck NPE if invalid dictionary name is provided (Kevin Risden)
+
+* SOLR-15830: Concurrent core reloads mess up commits when using Schema API (Bence Szabo via Andras Salamon)
+
+* SOLR-16169: IndexBasedSpellChecker with empty spellcheck.q results in NegativeArraySizeException (Kevin Risden)
+
+* SOLR-16165: Rare Deadlock in SlotAcc initialization (Justin Sweeney, noble)
+
+* SOLR-16110: Using Schema/Config API breaks the File-Upload of Config Set File (Steffen Moldenhauer, Kevin Risden)
+
+* SOLR-16218: failOnVersionConflicts option not working for in-place updates (Lamine Idjeraoui)
 
 Other Changes
 ---------------------
@@ -80,8 +104,20 @@ Other Changes
 
 * SOLR-16114: SolrZooKeeper has been removed in favor of using ZooKeeper directly. (Mike Drob)
 
+* SOLR-16154: Event listeners submit through core container executor service instead of separate thread (Mike Drob, Kevin Risden)
+
+* SOLR-16190: Http2SolrClient should make sure to shutdown the executor (Kevin Risden)
+
+* SOLR-16191: Validate that installed ps utility supports -p flag, so that we do not inadvertantly stop the wrong process. (Mike Drob, Michael Gibney)
+
+* SOLR-16209: Rolling restart will no longer trigger as much PKI Plugin error logging. (Mike Drob, Tomás Fernández Löbbe)
+
+* SOLR-16213: Upgrade Jackson to 2.13.3 (janhoy)
+
 Build
 ---------------------
+* SOLR-16204: Change Lucene dependency to Lucene 9.1.0 (Elia Porciani via Alessandro Benedetti)
+
 * SOLR-16053: Upgrade scriptDepVersions (Kevin Risden)
 
 * SOLR-16050: Upgrade to errorprone 2.11.0 (Kevin Risden)
@@ -700,6 +736,9 @@ Other Changes
 
 * SOLR-16101: Add empty constructor for SolrInputDocument (Anshum Gupta)
 
+* SOLR-15780: The v2 API is now treated as "experimental".  It may change in backwards-incompatible ways in subsequent releases
+  as it expands to cover additional functionality and prepares to supplant the v1 API. (Jason Gerlowski)
+
 Bug Fixes
 ---------------------
 * SOLR-15849: Fix the connection reset problem caused by the incorrect use of 4LW with \n when monitoring zooKeeper status
@@ -770,6 +809,10 @@ Bug Fixes
 
 * SOLR-16022: Enforce special character requirements on passwords with length less than 15 (Timothy Potter)
 
+* SOLR-16143: SolrConfig can miss updates from ZooKeeper when deleting and recreating file items (Mike Drob)
+
+* SOLR-16164: ConfigSet API returns error if untrusted user creates from _default configset (Eric Pugh, Kevin Risden)
+
 ==================  8.11.2 ==================
 
 Bug Fixes
@@ -787,6 +830,14 @@ Bug Fixes
   but look like nonsense to Calcite, such as AND'd filters on the same multi-valued field (Timothy Potter, Kiran Chitturi)
 
 * SOLR-16022: Enforce special character requirements on passwords with length less than 15 (Timothy Potter)
+
+* SOLR-16199: Improve query syntax construction for SQL LIKE clause with phrases and wildcards
+  (Kiran Chitturi, Aroop Ganguly, Amrit Sarkar via Timothy Potter)
+
+* SOLR-16215: Escape query characters in Solr SQL Array UDF functions (Kiran Chitturi via Timothy Potter)
+
+* SOLR-16227: Solr SQL query parsing fails on multiple LIKE clauses and multiple terms
+  (Kiran Chitturi via David Smiley)
 
 ==================  8.11.1 ==================
 
@@ -12392,7 +12443,7 @@ Other Changes
 
 * SOLR-6448: Add SolrJ support for all current Collection API calls. (Anshum Gupta)
 
-* Fixed a typo in various solrconfig.xml files.  (sdumitriu - pull request #120)
+* Fixed a typo in various solrconfig.xml files.  (sdumitriu)
 
 * SOLR-6895: SolrServer classes are renamed to *SolrClient.  The existing
   classes still exist, but are deprecated. (Alan Woodward, Erik Hatcher)
@@ -14003,7 +14054,7 @@ Other Changes
   (Karl Wright via Shawn Heisey)
 
 * SOLR-2794: change the default of hl.phraseLimit to 5000.
-  (Michael Della Bitta via Robert Muir, Koji, zarni - pull request #11)
+  (Michael Della Bitta via Robert Muir, Koji, zarni)
 
 * SOLR-5632: Improve response message for reloading a non-existent core.
   (Anshum Gupta via Mark Miller)

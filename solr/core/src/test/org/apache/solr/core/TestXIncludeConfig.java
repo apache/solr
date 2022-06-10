@@ -45,7 +45,7 @@ public class TestXIncludeConfig extends SolrTestCaseJ4 {
     super.setUp();
   }
 
-  public void testXInclude() throws Exception {
+  public void testXInclude() {
     SolrCore core = h.getCore();
 
     assertNotNull("includedHandler is null", core.getRequestHandler("/includedHandler"));

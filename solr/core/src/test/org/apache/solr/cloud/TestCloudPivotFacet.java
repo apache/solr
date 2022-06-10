@@ -36,7 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
@@ -293,7 +293,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
    * on those constraints. Returns the recursive depth reached (for sanity checking)
    */
   private int assertPivotCountsAreCorrect(
-      String pivotName, SolrParams baseParams, PivotField constraint) throws SolrServerException {
+      String pivotName, SolrParams baseParams, PivotField constraint) {
 
     SolrParams p = SolrParams.wrapAppended(baseParams, params("fq", buildFilter(constraint)));
     List<PivotField> subPivots = null;

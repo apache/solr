@@ -19,6 +19,18 @@ apply plugin: 'java-library'
 
 description = 'Apache Solr Core'
 
+configurations {
+  // jettyClientImplementation should be used for all jetty client libraries used by the Solr Server.
+  // These libraries must be available in the WEB-INF/lib, as well as server/lib.
+  // Jetty does not allow for these specific libraries to be accessed from the webapp, if they only live in server/lib.
+  // Note: because of SolrEmbedded, this is not all jetty libraries.
+  // (Solr Core requires the jetty server libraries because of embedded Solr, however the webapp does not use these)
+  jettyClientImplementation
+  implementation {
+    extendsFrom jettyClientImplementation
+  }
+}
+
 dependencies {
   // Spotbugs Annotations are only needed for old findbugs
   // annotation usage like in Zookeeper during compilation time.
@@ -43,39 +55,30 @@ dependencies {
   api 'org.slf4j:slf4j-api'
 
   api project(':solr:solrj')
-  api project(':solr:server')
 
-  permitUnusedDeclared project(':solr:server')
-
-  // --- start of server/build.grade declared dependencies ---
-
-  // Note: server/build.gradle declares these dependencies yet
-  // we only want them to show up in server/lib when packaged
-  // and NOT in server/solr-webapp/webapp/WEB-INF/lib. So any
-  // "api" dependency in server/build.gradle that is needed in
-  // core/build.gradle needs to be defined as "compileOnlyApi"
-  // below.
-
-  compileOnlyApi 'io.dropwizard.metrics:metrics-core'
-  compileOnlyApi ('io.dropwizard.metrics:metrics-graphite', {
+  api 'io.dropwizard.metrics:metrics-core'
+  implementation ('io.dropwizard.metrics:metrics-graphite', {
     exclude group: "com.rabbitmq", module: "amqp-client"
   })
-  compileOnlyApi 'io.dropwizard.metrics:metrics-jmx'
-  compileOnlyApi 'io.dropwizard.metrics:metrics-jvm'
+  implementation 'io.dropwizard.metrics:metrics-jmx'
+  implementation 'io.dropwizard.metrics:metrics-jvm'
 
-  compileOnlyApi 'org.eclipse.jetty:jetty-alpn-server'
-  compileOnlyApi 'org.eclipse.jetty:jetty-http'
-  compileOnlyApi 'org.eclipse.jetty:jetty-io'
-  compileOnlyApi 'org.eclipse.jetty:jetty-rewrite'
-  compileOnlyApi 'org.eclipse.jetty:jetty-server'
-  compileOnlyApi 'org.eclipse.jetty:jetty-servlet'
-  compileOnlyApi 'org.eclipse.jetty:jetty-util'
+  // Jetty (both for client and server, which is only used by EmbeddedSolrServer)
+  implementation 'org.eclipse.jetty:jetty-alpn-server'
+  runtimeOnly('org.eclipse.jetty:jetty-alpn-java-server', {
+    exclude group: "org.eclipse.jetty.alpn", module: "alpn-api"
+  })
+  jettyClientImplementation 'org.eclipse.jetty:jetty-http'
+  jettyClientImplementation 'org.eclipse.jetty:jetty-io'
+  implementation 'org.eclipse.jetty:jetty-rewrite'
+  implementation 'org.eclipse.jetty:jetty-server'
+  implementation 'org.eclipse.jetty:jetty-servlet'
+  jettyClientImplementation 'org.eclipse.jetty:jetty-util'
 
-  compileOnlyApi 'org.eclipse.jetty.http2:http2-common'
-  compileOnlyApi 'org.eclipse.jetty.http2:http2-server'
+  jettyClientImplementation 'org.eclipse.jetty.http2:http2-common'
+  implementation 'org.eclipse.jetty.http2:http2-server'
 
-  compileOnlyApi 'javax.servlet:javax.servlet-api'
-  // --- end of server/build.gradle declared dependencies ---
+  implementation 'javax.servlet:javax.servlet-api'
 
   // Non-API below; although there are exceptions
 
@@ -84,6 +87,7 @@ dependencies {
   runtimeOnly "org.apache.lucene:lucene-analysis-phonetic"
   runtimeOnly "org.apache.lucene:lucene-backward-codecs"
   implementation "org.apache.lucene:lucene-codecs"
+  implementation "org.apache.lucene:lucene-backward-codecs"
   implementation "org.apache.lucene:lucene-classification"
   implementation "org.apache.lucene:lucene-expressions"
   implementation "org.apache.lucene:lucene-grouping"
@@ -94,6 +98,7 @@ dependencies {
   implementation "org.apache.lucene:lucene-sandbox"
   implementation "org.apache.lucene:lucene-spatial-extras"
   implementation "org.apache.lucene:lucene-suggest"
+
 
   // Collections & lang utilities
   implementation 'com.google.guava:guava'

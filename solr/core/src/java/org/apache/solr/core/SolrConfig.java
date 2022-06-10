@@ -18,7 +18,6 @@ package org.apache.solr.core;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.PATH;
-import static org.apache.solr.common.util.Utils.fromJSON;
 import static org.apache.solr.core.ConfigOverlay.ZNODEVER;
 import static org.apache.solr.core.SolrConfig.PluginOpts.LAZY;
 import static org.apache.solr.core.SolrConfig.PluginOpts.MULTI_OK;
@@ -180,7 +179,7 @@ public class SolrConfig implements MapSerializable {
         ZkSolrResourceLoader.ZkByteArrayInputStream zkin =
             (ZkSolrResourceLoader.ZkByteArrayInputStream) in;
         zkVersion = zkin.getStat().getVersion();
-        hash = Objects.hash(zkVersion, overlay.getZnodeVersion());
+        hash = Objects.hash(zkin.getStat().getCtime(), zkVersion, overlay.getZnodeVersion());
         this.fileName = zkin.fileName;
       }
     }
@@ -600,7 +599,7 @@ public class SolrConfig implements MapSerializable {
         log.debug("Config overlay loaded. version : {} ", version);
       }
       @SuppressWarnings("unchecked")
-      Map<String, Object> m = (Map<String, Object>) fromJSON(in);
+      Map<String, Object> m = (Map<String, Object>) Utils.fromJSON(in);
       return new ConfigOverlay(m, version);
     } catch (Exception e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error reading config overlay", e);

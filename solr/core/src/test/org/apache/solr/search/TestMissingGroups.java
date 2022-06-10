@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.After;
@@ -40,7 +40,7 @@ public class TestMissingGroups extends SolrTestCaseJ4 {
     assertU(optimize());
   }
 
-  public void testGroupsOnMissingValues() throws Exception {
+  public void testGroupsOnMissingValues() {
 
     final int numDocs = atLeast(500);
 

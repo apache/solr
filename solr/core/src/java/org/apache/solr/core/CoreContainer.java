@@ -79,6 +79,7 @@ import org.apache.solr.cluster.placement.impl.PlacementPluginFactoryLoader;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
@@ -696,6 +697,8 @@ public class CoreContainer {
       log.debug("Loading cores into CoreContainer [instanceDir={}]", getSolrHome());
     }
 
+    logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
+
     ClusterEventProducerFactory clusterEventProducerFactory = new ClusterEventProducerFactory(this);
     clusterEventProducer = clusterEventProducerFactory;
 
@@ -733,8 +736,6 @@ public class CoreContainer {
 
     solrCores.load(loader);
 
-    logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
-
     StartupLoggingUtils.checkRequestLogging();
 
     hostName = cfg.getNodeName();
@@ -746,7 +747,6 @@ public class CoreContainer {
               this,
               zkSys.getZkController().getNodeName(),
               (PublicKeyHandler) containerHandlers.get(PublicKeyHandler.PATH));
-      // use deprecated API for back-compat, remove in 9.0
       pkiAuthenticationSecurityBuilder.initializeMetrics(solrMetricsContext, "/authentication/pki");
 
       packageStoreAPI = new PackageStoreAPI(this);
@@ -2297,6 +2297,25 @@ public class CoreContainer {
 
   public long getStatus() {
     return status;
+  }
+
+  /**
+   * Retrieve the aliases from zookeeper. This is typically cached and does not hit zookeeper after
+   * the first use.
+   *
+   * @return an immutable instance of {@code Aliases} accurate as of at the time this method is
+   *     invoked, less any zookeeper update lag.
+   * @throws RuntimeException if invoked on a {@code CoreContainer} where {@link
+   *     #isZooKeeperAware()} returns false
+   */
+  public Aliases getAliases() {
+    if (isZooKeeperAware()) {
+      return getZkController().getZkStateReader().getAliases();
+    } else {
+      // fail fast because it's programmer error, but give slightly more info than NPE.
+      throw new IllegalStateException(
+          "Aliases don't exist in a non-cloud context, check isZookeeperAware() before calling this method.");
+    }
   }
 
   // Occasionally we need to access the transient cache handler in places other than coreContainer.
