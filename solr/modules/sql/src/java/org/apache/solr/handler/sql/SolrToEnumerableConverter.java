@@ -56,7 +56,10 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
     final BlockBuilder list = new BlockBuilder();
     final RelDataType rowType = getRowType();
     final SolrRel.Implementor solrImplementor = new SolrRel.Implementor(implementor, pref, rowType);
-    solrImplementor.visitChild(0, getInput());
+
+    SolrRel.Implementor planner = solrImplementor.visitChild(0, getInput());
+    final String expr = planner.getPhysicalPlan();
+
     System.out.println("Fields:"+rowType.getFieldNames());
     final PhysType physType =
         PhysTypeImpl.of(implementor.getTypeFactory(), rowType, pref.prefer(JavaRowFormat.ARRAY));
@@ -83,7 +86,7 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
     final Expression query =
         list.append("query", Expressions.constant(solrImplementor.query, String.class));
     final Expression physicalPlan =
-        list.append("physicalPlan", Expressions.constant(solrImplementor.physicalPlan, String.class));
+        list.append("physicalPlan", Expressions.constant(expr, String.class));
 
     Expression enumerable =
         list.append(

@@ -89,7 +89,9 @@ class SolrAggregate extends Aggregate implements SolrRel {
     return new SolrAggregate(getCluster(), traitSet, hints, input, groupSet, groupSets, aggCalls);
   }
 
-  public void implement(Implementor implementor) {
+  public Implementor implement(Implementor implementor) {
+
+    implementor.visitChild(0, getInput());
 
     final List<String> inNames = SolrRules.solrFieldNames(getInput().getRowType());
     for (Pair<AggregateCall, String> namedAggCall : getNamedAggCalls()) {
@@ -115,7 +117,7 @@ class SolrAggregate extends Aggregate implements SolrRel {
       implementor.addBucket(inName);
     }
 
-    implementor.visitChild(0, getInput());
+    return implementor;
   }
 
   @SuppressWarnings({"fallthrough"})

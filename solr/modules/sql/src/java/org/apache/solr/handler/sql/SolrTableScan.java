@@ -122,38 +122,25 @@ class SolrTableScan extends TableScan implements SolrRel {
             .FILTER_REDUCE_EXPRESSIONS); // prevent AND NOT from being reduced away, see SOLR-15461
   }
 
-  public void implement(Implementor implementor) {
+  public Implementor implement(Implementor implementor) {
     implementor.solrTable = solrTable;
     implementor.table = table;
-    Properties properties = solrTable.getSchema().properties;
-    String zk = properties.getProperty("zk");
-    String collection = solrTable.getCollection();
-    final PhysType physType =
-        PhysTypeImpl.of(implementor.getTypeFactory(), implementor.rowType, implementor.getPref().prefer(JavaRowFormat.ARRAY));
-    final List<Map.Entry<String, Class<?>>> fields = zip(generateFields(SolrRules.solrFieldNames(implementor.rowType), implementor.fieldMappings), physType);
-    final String query = implementor.query;
-    final List<Pair<String, String>> orders = implementor.orders;
-    final List<String> buckets = implementor.buckets;
-    final List<Pair<String, String>> metricPairs = implementor.metricPairs;
-    final String limit = implementor.limitValue;
-    final boolean negativeQuery = implementor.negativeQuery;
-    final String havingPredicate = implementor.havingPredicate;
-    final String offset = implementor.offsetValue;
-    implementor.physicalPlan = getPhysicalPlan(properties, collection, fields, query, orders, buckets, metricPairs, limit, negativeQuery, havingPredicate, offset);
+    implementor.solrTableScan = this;
+    return implementor;
   }
 
-  private String getPhysicalPlan(final Properties properties,
-                                   final String collection,
-                                   final List<Map.Entry<String, Class<?>>> fields,
-                                   final String query,
-                                   final List<Pair<String, String>> orders,
-                                   final List<String> buckets,
-                                   final List<Pair<String, String>> metricPairs,
-                                   final String limit,
-                                   final boolean negative,
-                                   final String havingPredicate,
-                                   final String offset)  {
+  public String getPhysicalPlan( final List<Map.Entry<String, Class<?>>> fields,
+                                 final String query,
+                                 final List<Pair<String, String>> orders,
+                                 final List<String> buckets,
+                                 final List<Pair<String, String>> metricPairs,
+                                 final String limit,
+                                 final boolean negative,
+                                 final String havingPredicate,
+                                 final String offset)  {
 
+    Properties properties = solrTable.getSchema().properties;
+    String collection = solrTable.getCollection();
     boolean mapReduce = "map_reduce".equals(properties.getProperty("aggregationMode"));
 
     String q = null;
@@ -213,41 +200,9 @@ class SolrTableScan extends TableScan implements SolrRel {
     }
   }
 
-  private List<Map.Entry<String, Class<?>>> zip(List<String> fields, PhysType physType) {
-    List<Map.Entry<String, Class<?>>> zipped = new ArrayList<>();
-    for(int i=0; i<fields.size(); i++) {
-      Map.Entry<String, Class<?>> entry = new AbstractMap.SimpleEntry<String, Class<?>>(fields.get(i), physType.fieldClass(i));
-      zipped.add(entry);
-    }
 
-    return zipped;
-  }
 
-  private List<String> generateFields(List<String> queryFields, Map<String, String> fieldMappings) {
 
-    if (fieldMappings.isEmpty()) {
-      return queryFields;
-    } else {
-      List<String> fields = new ArrayList<>();
-      for (String field : queryFields) {
-        fields.add(getField(fieldMappings, field));
-      }
-      return fields;
-    }
-  }
-
-  private String getField(Map<String, String> fieldMappings, String field) {
-    String retField = field;
-    while (fieldMappings.containsKey(field)) {
-      field = fieldMappings.getOrDefault(field, retField);
-      if (retField.equals(field)) {
-        break;
-      } else {
-        retField = field;
-      }
-    }
-    return retField;
-  }
 
   /**
    * E.g. {@code constantList("x", "y")} returns "{ConstantExpression("x"),
@@ -952,6 +907,7 @@ class SolrTableScan extends TableScan implements SolrRel {
       String ordering = sortItem.getValue();
       ComparatorOrder comparatorOrder = ascDescComp(ordering);
       String sortKey = sortItem.getKey();
+      System.out.println("Sort Key:"+sortKey);
       comps[i] = new FieldComparator(sortKey, comparatorOrder);
     }
 

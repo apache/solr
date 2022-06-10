@@ -20,8 +20,7 @@ import static org.apache.solr.handler.sql.SolrAggregate.solrAggMetricId;
 
 import java.util.*;
 
-import org.apache.calcite.adapter.enumerable.EnumerableRel;
-import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
+import org.apache.calcite.adapter.enumerable.*;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptTable;
@@ -31,7 +30,7 @@ import org.apache.calcite.util.Pair;
 
 /** Relational expression that uses Solr calling convention. */
 interface SolrRel extends RelNode {
-  void implement(Implementor implementor);
+  Implementor implement(Implementor implementor);
 
   /** Calling convention for relational operations that occur in Solr. */
   Convention CONVENTION = new Convention.Impl("Solr", SolrRel.class);
@@ -46,6 +45,7 @@ interface SolrRel extends RelNode {
       enumerableRelImplementor = _enumerableRelImplementor;
       pref = _pref;
       rowType = _rowType;
+      physType= PhysTypeImpl.of(getTypeFactory(), rowType, getPref().prefer(JavaRowFormat.ARRAY));
     }
 
     final RelDataType rowType;
@@ -53,6 +53,8 @@ interface SolrRel extends RelNode {
     final EnumerableRelImplementor enumerableRelImplementor;
     final Map<String, String> fieldMappings = new HashMap<>();
     final Map<String, String> reverseAggMappings = new HashMap<>();
+    final PhysType physType;
+    SolrTableScan solrTableScan;
     String query = null;
     String havingPredicate;
     boolean negativeQuery;
@@ -131,9 +133,52 @@ interface SolrRel extends RelNode {
       this.offsetValue = offset;
     }
 
-    void visitChild(int ordinal, RelNode input) {
+    Implementor visitChild(int ordinal, RelNode input) {
+      System.out.println("visit:"+input.getClass());
       assert ordinal == 0;
-      ((SolrRel) input).implement(this);
+      return ((SolrRel) input).implement(this);
     }
+
+    String getPhysicalPlan() {
+      final List<Map.Entry<String, Class<?>>> fields = zip(generateFields(SolrRules.solrFieldNames(rowType), fieldMappings), physType);
+      return solrTableScan.getPhysicalPlan(fields, query, orders, buckets, metricPairs, limitValue, negativeQuery, havingPredicate, offsetValue);
+    }
+
+    private List<Map.Entry<String, Class<?>>> zip(List<String> fields, PhysType physType) {
+      List<Map.Entry<String, Class<?>>> zipped = new ArrayList<>();
+      for(int i=0; i<fields.size(); i++) {
+        Map.Entry<String, Class<?>> entry = new AbstractMap.SimpleEntry<String, Class<?>>(fields.get(i), physType.fieldClass(i));
+        zipped.add(entry);
+      }
+
+      return zipped;
+    }
+
+    private List<String> generateFields(List<String> queryFields, Map<String, String> fieldMappings) {
+
+      if (fieldMappings.isEmpty()) {
+        return queryFields;
+      } else {
+        List<String> fields = new ArrayList<>();
+        for (String field : queryFields) {
+          fields.add(getField(fieldMappings, field));
+        }
+        return fields;
+      }
+    }
+
+    private String getField(Map<String, String> fieldMappings, String field) {
+      String retField = field;
+      while (fieldMappings.containsKey(field)) {
+        field = fieldMappings.getOrDefault(field, retField);
+        if (retField.equals(field)) {
+          break;
+        } else {
+          retField = field;
+        }
+      }
+      return retField;
+    }
+
   }
 }

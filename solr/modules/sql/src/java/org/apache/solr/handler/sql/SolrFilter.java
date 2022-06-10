@@ -93,7 +93,10 @@ class SolrFilter extends Filter implements SolrRel {
     return new SolrFilter(getCluster(), traitSet, input, condition);
   }
 
-  public void implement(Implementor implementor) {
+  public Implementor implement(Implementor implementor) {
+
+    implementor.visitChild(0, getInput());
+
     if (getInput() instanceof SolrAggregate) {
       HavingTranslator translator =
           new HavingTranslator(getRowType(), implementor.reverseAggMappings, builder);
@@ -105,7 +108,8 @@ class SolrFilter extends Filter implements SolrRel {
       implementor.addQuery(query);
       implementor.setNegativeQuery(query.startsWith("-"));
     }
-    implementor.visitChild(0, getInput());
+
+    return implementor;
   }
 
   private static class Translator {
