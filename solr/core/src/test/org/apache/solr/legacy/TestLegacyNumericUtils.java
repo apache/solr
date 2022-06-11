@@ -365,7 +365,8 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     if (useBitSet) {
       // after flipping all bits in the range, the cardinality should be zero
       bits.flip(0, upper - lower + 1);
-      assertEquals("The sub-range concatenated should match the whole range", 0, bits.cardinality());
+      assertEquals(
+          "The sub-range concatenated should match the whole range", 0, bits.cardinality());
     }
   }
 
@@ -576,7 +577,8 @@ public class TestLegacyNumericUtils extends SolrTestCase {
             0x80000000000000L, 0x80000000000003L),
         Arrays.asList(4, 8));
 
-    // the full long range should only consist of the lowest precision range; no bitset testing here,
+    // the full long range should only consist of the lowest precision range; no bitset testing
+    // here,
     // as too much memory needed :-)
     assertLongRangeSplit(
         Long.MIN_VALUE, Long.MAX_VALUE, 8, false, Arrays.asList(0x00L, 0xffL), Arrays.asList(56));
@@ -651,7 +653,8 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     if (useBitSet) {
       // after flipping all bits in the range, the cardinality should be zero
       bits.flip(0, upper - lower + 1);
-      assertEquals("The sub-range concatenated should match the whole range", 0, bits.cardinality());
+      assertEquals(
+          "The sub-range concatenated should match the whole range", 0, bits.cardinality());
     }
   }
 

@@ -106,7 +106,7 @@ public class SchemaVersionSpecificBehaviorTest extends SolrTestCaseJ4 {
           } else {
             // for fields where the property is explicit, make sure
             // we aren't getting a false negative because someone changed the
-            // schema and we're inheriting from fieldType
+            // schema , and we're inheriting from fieldType
             assertEquals(
                 f + " field's type has wrong multiValued is wrong for ver=" + ver,
                 (v < 1.1F),
@@ -145,7 +145,7 @@ public class SchemaVersionSpecificBehaviorTest extends SolrTestCaseJ4 {
           } else {
             // for fields where the property is explicit, make sure
             // we aren't getting a false negative because someone changed the
-            // schema and we're inheriting from fieldType
+            // schema, and we're inheriting from fieldType
             assertEquals(
                 f + " field's type has wrong useDocValuesAsStored for ver=" + ver,
                 (v < 1.6F ? false : true),
@@ -184,7 +184,7 @@ public class SchemaVersionSpecificBehaviorTest extends SolrTestCaseJ4 {
           } else {
             // for fields where the property is explicit, make sure
             // we aren't getting a false negative because someone changed the
-            // schema and we're inheriting from fieldType
+            // schema, and we're inheriting from fieldType
             assertEquals(
                 f + " field's type has wrong omitTfP for ver=" + ver,
                 (v < 1.2F ? false : !(field.getType() instanceof TextField)),
@@ -241,7 +241,7 @@ public class SchemaVersionSpecificBehaviorTest extends SolrTestCaseJ4 {
           } else {
             // for fields where the property is explicit, make sure
             // we aren't getting a false negative because someone changed the
-            // schema and we're inheriting from fieldType
+            // schema, and we're inheriting from fieldType
             assertEquals(
                 f + " field's type has wrong omitNorm for ver=" + ver,
                 (v < 1.5F ? false : !(field.getType() instanceof TextField)),

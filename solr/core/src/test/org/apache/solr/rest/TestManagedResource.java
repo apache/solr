@@ -100,7 +100,7 @@ public class TestManagedResource extends SolrTestCaseJ4 {
       this.managedData = managedData;
     }
 
-    // NOTE: These methods are better tested from the REST API
+    // NOTE: These methods are better tested from the REST API,
     // so they are stubbed out here and not used in this test
 
     @Override
