@@ -91,7 +91,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
 
     // compute nodes, some live, some down
     final int maxNodesOfAType =
-        perShardCounts.stream() // not too important how many we have, but lets have plenty
+        perShardCounts.stream() // not too important how many we have, but let's have plenty
             .mapToInt(c -> c.totalReplicasInLiveNodes + c.totalReplicasInDownNodes + c.myReplicas)
             .max()
             .getAsInt();
@@ -187,7 +187,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
       Collections.shuffle(myDescs, random());
 
       List<CoreDescriptor> resultDescs = CoreSorter.sortCores(mockCC, myDescs);
-      // map descriptors back to counts, removing consecutive duplicates
+      // map descriptors back to count's, removing consecutive duplicates
       List<CountsForEachShard> resultCounts = new ArrayList<>();
       CountsForEachShard lastCounts = null;
       for (CoreDescriptor resultDesc : resultDescs) {

@@ -96,7 +96,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
         new ResponseParser() {
           @Override
           public String getWriterType() {
-            // unfortunately this gets put onto params wt=mock but it apparently has no effect
+            // unfortunately this gets put onto params wt=mock, but it apparently has no effect
             return "mock";
           }
 

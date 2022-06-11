@@ -149,7 +149,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     // used when doing key overrides in conjunction with the baseParamsSet
     //
     // even when these aren't included in the request, using them helps us
-    // test the code path of an exclusion that refers to an fq that doesn't exist
+    // test the code path of an exclusion that refers to a fq that doesn't exist
     final String all_possible_ex = "fq1,fq2";
 
     assertU(adoc("id", "1", f, "-10"));
@@ -790,7 +790,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
           "{!type=func key=" + f + " ex=key_ex_tag v='product(1," + f + ")'}",
         }) {
       assertQ(
-          "test statis & stats.facet over field specified as a function: " + param,
+          "test stats & stats.facet over field specified as a function: " + param,
           req(
               "q",
               "*:*",
@@ -1054,7 +1054,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
 
     assertQ(
-        "test exluding filter query",
+        "test excluding filter query",
         req,
         "//lst[@name='id_i']/double[@name='min'][.='1.0']",
         "//lst[@name='id_i']/double[@name='max'][.='4.0']");
@@ -1246,7 +1246,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
         kpre + "double[@name='mean'][.='34.40666643778483']",
         kpre + "double[@name='stddev'][.='10.622007151430441']");
 
-    // force constant score for matches so we aren't dependent on similarity
+    // force constant score for matches, so we aren't dependent on similarity
     final float constScore = 4.2F;
     final double expectedScore = (double) constScore;
     assertQ(
@@ -1263,7 +1263,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
   }
 
   /**
-   * Whitebox test of {@link StatsField} parsing to ensure expected equivilence operations hold up
+   * Whitebox test of {@link StatsField} parsing to ensure expected equivalence operations hold up
    */
   public void testStatsFieldWhitebox() throws Exception {
     StatsComponent component = new StatsComponent();
@@ -1491,7 +1491,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     return cat_docValues;
   }
 
-  /** Convinience struct used in {@link #testIndividualStatLocalParams} */
+  /** Convenience struct used in {@link #testIndividualStatLocalParams} */
   private static final class ExpectedStat {
     public static final String KPRE = XPRE + "lst[@name='stats_fields']/lst[@name='k']/";
     public final Stat stat;
@@ -1557,7 +1557,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
         kpre + "double[@name='min'][.='9.0']",
         "count(" + kpre + "*)=2");
 
-    // for stats that are true/false, sanity check false does it's job
+    // for stats that are true/false, sanity check false does its job
     assertQ(
         "min=true & max=false: only min should come back",
         req("q", "*:*", "stats", "true", "stats.field", "{!key=k max=false min=true}a_i"),
@@ -1981,7 +1981,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
           params("stats.field", "{!key=a min=true cardinality=false}a_l"),
           params("stats.field", "{!key=a min=true cardinality=$doit}a_l", "doit", "false"),
           params("stats.field", "{!key=a min=true cardinality=$doit}a_l"), // missing doit param
-          // other tunning options shouldn't change things
+          // other tuning options shouldn't change things
           params("stats.field", "{!key=a min=true hllPreHashed=true cardinality=false}a_l"),
           params(
               "stats.field",
@@ -2021,26 +2021,26 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     assertNull(HllOptions.parseHllOptions(params(), field_l));
     assertNull(HllOptions.parseHllOptions(params("cardinality", "false"), field_l));
 
-    // sanity check, future proof against the HLL library changing stuff on us
+    // sanity check, future-proof against the HLL library changing stuff on us
     assertEquals(
         "HLL Changed definition min for log2m, "
-            + "need to note in upgrade instructions and maybe adjust accuracy hueristic",
+            + "need to note in upgrade instructions and maybe adjust accuracy heuristic",
         4,
         HLL.MINIMUM_LOG2M_PARAM);
     // NOTE: https://github.com/aggregateknowledge/java-hll/issues/14
     assertEquals(
         "HLL Changed definition max for log2m, "
-            + "need to note in upgrade instructions and maybe adjust accuracy hueristic",
+            + "need to note in upgrade instructions and maybe adjust accuracy heuristic",
         30,
         HLL.MAXIMUM_LOG2M_PARAM);
     assertEquals(
         "HLL Changed definition min for regwidth, "
-            + "need to note in upgrade instructions and probably adjust hueristic",
+            + "need to note in upgrade instructions and probably adjust heuristic",
         1,
         HLL.MINIMUM_REGWIDTH_PARAM);
     assertEquals(
         "HLL Changed definition max for regwidth, "
-            + "need to note in upgrade instructions and probably adjust hueristic",
+            + "need to note in upgrade instructions and probably adjust heuristic",
         8,
         HLL.MAXIMUM_REGWIDTH_PARAM);
 
@@ -2074,7 +2074,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
       // non defaults: lower/upper accuracy bounds should give min/max log2m & adjusted regwidth
       HllOptions optsMin = HllOptions.parseHllOptions(params("cardinality", "0"), field);
       assertEquals(f + " min log2m", HLL.MINIMUM_LOG2M_PARAM, optsMin.getLog2m());
-      assertEquals(f + " min regwidth", 5, optsMin.getRegwidth()); // lowest hueristic for 64bit
+      assertEquals(f + " min regwidth", 5, optsMin.getRegwidth()); // lowest heuristic for 64bit
 
       HllOptions optsMax = HllOptions.parseHllOptions(params("cardinality", "1"), field);
       assertEquals(f + " max log2m", HLL.MAXIMUM_LOG2M_PARAM, optsMax.getLog2m());
@@ -2095,7 +2095,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
           params(
               "cardinality", "true", "hllLog2m", "13", "hllRegwidth", "5", "hllPreHash", "false"),
 
-          // explicit hllLog2M & hllRegwidth should override hueristic float arg
+          // explicit hllLog2M & hllRegwidth should override heuristic float arg
           params("cardinality", "1.0", "hllLog2m", "13", "hllRegwidth", "5"),
           params("cardinality", "0.0", "hllLog2m", "13", "hllRegwidth", "5", "hllPreHash", "false")
         };
@@ -2111,7 +2111,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
       // non defaults: lower/upper accuracy bounds should give min/max log2m & adjusted regwidth
       HllOptions optsMin = HllOptions.parseHllOptions(params("cardinality", "0"), field);
       assertEquals(f + " min log2m", HLL.MINIMUM_LOG2M_PARAM, optsMin.getLog2m());
-      assertEquals(f + " min regwidth", 4, optsMin.getRegwidth()); // lowest hueristic for 32bit
+      assertEquals(f + " min regwidth", 4, optsMin.getRegwidth()); // lowest heuristic for 32bit
 
       HllOptions optsMax = HllOptions.parseHllOptions(params("cardinality", "1"), field);
       assertEquals(f + " max log2m", HLL.MAXIMUM_LOG2M_PARAM, optsMax.getLog2m());
@@ -2264,7 +2264,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
             "stats.field",
             "{!percentiles='" + percentiles + "'}stat_f")) {
       SolrQueryResponse rsp = h.queryAndResponse(null, query);
-      NamedList<Double> pout = extractPercentils(rsp, "stat_f");
+      NamedList<Double> pout = extractPercentiles(rsp, "stat_f");
       for (int i = 0; i < percentilesList.size(); i++) {
         // ensure exact order, but all values should be null (empty result set)
         assertEquals(percentilesList.get(i), pout.getName(i));
@@ -2292,7 +2292,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
             "stats.field",
             "{!percentiles='" + percentiles + "'}stat_f")) {
       SolrQueryResponse rsp = h.queryAndResponse(null, query);
-      NamedList<Double> pout = extractPercentils(rsp, "stat_f");
+      NamedList<Double> pout = extractPercentiles(rsp, "stat_f");
       for (int i = 0; i < percentilesList.size(); i++) {
         String p = percentilesList.get(i);
         assertEquals(p, pout.getName(i));
@@ -2304,7 +2304,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     try (SolrQueryRequest query =
         req("q", "*:*", "stats", "true", "stats.field", "{!percentiles=''}stat_f")) {
       SolrQueryResponse rsp = h.queryAndResponse(null, query);
-      NamedList<Double> pout = extractPercentils(rsp, "stat_f");
+      NamedList<Double> pout = extractPercentiles(rsp, "stat_f");
       assertNull(pout);
     }
 
@@ -2325,13 +2325,13 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
             "stats.field",
             "{!percentiles='" + percentiles + "'}stat_s")) {
       SolrQueryResponse rsp = h.queryAndResponse(null, query);
-      assertNull(extractPercentils(rsp, "stat_dt"));
-      assertNull(extractPercentils(rsp, "stat_s"));
+      assertNull(extractPercentiles(rsp, "stat_dt"));
+      assertNull(extractPercentiles(rsp, "stat_s"));
     }
   }
 
   @SuppressWarnings({"unchecked"})
-  private NamedList<Double> extractPercentils(SolrQueryResponse rsp, String key) {
+  private NamedList<Double> extractPercentiles(SolrQueryResponse rsp, String key) {
     return ((NamedList<NamedList<NamedList<NamedList<Double>>>>) rsp.getValues().get("stats"))
         .get("stats_fields")
         .get(key)

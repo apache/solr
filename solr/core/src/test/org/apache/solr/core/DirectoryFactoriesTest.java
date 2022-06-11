@@ -27,7 +27,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 
 /**
- * Test some expected equivilencies of all DirectoryFactory implementations.
+ * Test some expected equivalencies of all DirectoryFactory implementations.
  *
  * <p>TODO: test more methods besides exists(String)
  */
@@ -43,7 +43,7 @@ public class DirectoryFactoriesTest extends SolrTestCaseJ4 {
           StandardDirectoryFactory.class);
 
   /* Test that MockDirectoryFactory's exist method behaves consistent w/other impls */
-  public void testExistsEquivilence() throws Exception {
+  public void testExistsEquivalence() throws Exception {
     // TODO: ideally we'd init all of these using DirectoryFactory.loadDirectoryFactory() ...
     // ...but the scaffolding needed for dealing with the CoreContainer/SolrConfig is a PITA
 
@@ -57,7 +57,7 @@ public class DirectoryFactoriesTest extends SolrTestCaseJ4 {
     DirectoryFactory dirFac = null;
     try {
       dirFac = clazz.getConstructor().newInstance();
-      dirFac.initCoreContainer(null); // greybox testing directly against path
+      dirFac.initCoreContainer(null); // grey box testing directly against path
       dirFac.init(new NamedList<>());
 
       assertFalse(path + " should not exist yet", dirFac.exists(path));
