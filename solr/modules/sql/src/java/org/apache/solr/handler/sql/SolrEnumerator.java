@@ -73,7 +73,6 @@ class SolrEnumerator implements Enumerator<Object> {
   }
 
   private Object getter(Tuple tuple, Map.Entry<String, Class<?>> field) {
-    System.out.println("Field Key:"+field.getKey());
     Object val = tuple.get(field.getKey());
 
     if (val == null) {
