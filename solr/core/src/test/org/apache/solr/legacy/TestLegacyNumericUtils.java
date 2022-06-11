@@ -318,7 +318,7 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     }
   }
 
-  // INFO: Tests for trieCodeLong()/trieCodeInt() not needed because implicitely tested by range
+  // INFO: Tests for trieCodeLong()/trieCodeInt() not needed because implicitly tested by range
   // filter tests
 
   /** Note: The neededBounds Iterable must be unsigned (easier understanding what's happening) */
@@ -365,7 +365,7 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     if (useBitSet) {
       // after flipping all bits in the range, the cardinality should be zero
       bits.flip(0, upper - lower + 1);
-      assertEquals("The sub-range concenated should match the whole range", 0, bits.cardinality());
+      assertEquals("The sub-range concatenated should match the whole range", 0, bits.cardinality());
     }
   }
 
@@ -576,7 +576,7 @@ public class TestLegacyNumericUtils extends SolrTestCase {
             0x80000000000000L, 0x80000000000003L),
         Arrays.asList(4, 8));
 
-    // the full long range should only consist of a lowest precision range; no bitset testing here,
+    // the full long range should only consist of the lowest precision range; no bitset testing here,
     // as too much memory needed :-)
     assertLongRangeSplit(
         Long.MIN_VALUE, Long.MAX_VALUE, 8, false, Arrays.asList(0x00L, 0xffL), Arrays.asList(56));
@@ -593,7 +593,7 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     assertLongRangeSplit(
         Long.MIN_VALUE, Long.MAX_VALUE, 1, false, Arrays.asList(0x0L, 0x1L), Arrays.asList(63));
 
-    // a inverse range should produce no sub-ranges
+    // the inverse range should produce no sub-ranges
     assertLongRangeSplit(
         9500L, -5000L, 4, false, Collections.<Long>emptyList(), Collections.<Integer>emptyList());
 
@@ -651,7 +651,7 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     if (useBitSet) {
       // after flipping all bits in the range, the cardinality should be zero
       bits.flip(0, upper - lower + 1);
-      assertEquals("The sub-range concenated should match the whole range", 0, bits.cardinality());
+      assertEquals("The sub-range concatenated should match the whole range", 0, bits.cardinality());
     }
   }
 
@@ -688,7 +688,7 @@ public class TestLegacyNumericUtils extends SolrTestCase {
             0x800000, 0x800003),
         Arrays.asList(4, 8));
 
-    // the full int range should only consist of a lowest precision range; no bitset testing here,
+    // the full int range should only consist of the lowest precision range; no bitset testing here,
     // as too much memory needed :-)
     assertIntRangeSplit(
         Integer.MIN_VALUE,
@@ -710,7 +710,7 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     assertIntRangeSplit(
         Integer.MIN_VALUE, Integer.MAX_VALUE, 1, false, Arrays.asList(0x0, 0x1), Arrays.asList(31));
 
-    // a inverse range should produce no sub-ranges
+    // the inverse range should produce no sub-ranges
     assertIntRangeSplit(
         9500, -5000, 4, false, Collections.<Integer>emptyList(), Collections.<Integer>emptyList());
 
