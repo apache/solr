@@ -55,13 +55,9 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
 
   @BeforeClass
   public static void createCluster() throws Exception {
-    System.setProperty("managed.schema.mutable", "true");
     configureCluster(1)
         .addConfig(DEFAULT_CONFIGSET_NAME, new File(ExternalPaths.DEFAULT_CONFIGSET).toPath())
         .configure();
-    // SchemaDesignerConfigSetHelper depends on the blob store
-    CollectionAdminRequest.createCollection(BLOB_STORE_ID, 1, 1).process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(BLOB_STORE_ID, 1, 1);
   }
 
   @AfterClass

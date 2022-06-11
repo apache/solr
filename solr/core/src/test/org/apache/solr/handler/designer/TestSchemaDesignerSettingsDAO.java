@@ -40,7 +40,6 @@ public class TestSchemaDesignerSettingsDAO extends SolrCloudTestCase
 
   @BeforeClass
   public static void createCluster() throws Exception {
-    System.setProperty("managed.schema.mutable", "true");
     configureCluster(1)
         .addConfig(DEFAULT_CONFIGSET_NAME, new File(ExternalPaths.DEFAULT_CONFIGSET).toPath())
         .configure();

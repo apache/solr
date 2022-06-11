@@ -67,13 +67,9 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
 
   @BeforeClass
   public static void createCluster() throws Exception {
-    System.setProperty("managed.schema.mutable", "true");
     configureCluster(1)
         .addConfig(DEFAULT_CONFIGSET_NAME, new File(ExternalPaths.DEFAULT_CONFIGSET).toPath())
         .configure();
-    // SchemaDesignerAPI depends on the blob store
-    CollectionAdminRequest.createCollection(BLOB_STORE_ID, 1, 1).process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(BLOB_STORE_ID, 1, 1);
   }
 
   @AfterClass
@@ -316,7 +312,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     assertNotNull(rsp.getValues().get("fieldTypes"));
     List<String> docIds = (List<String>) rsp.getValues().get("docIds");
     assertNotNull(docIds);
-    assertEquals(100, docIds.size()); // designer limits doc ids to top 100
+    assertEquals(100, docIds.size()); // designer limits the doc ids to top 100
 
     String idField = rsp.getValues()._getStr(UNIQUE_KEY_FIELD_PARAM, null);
     assertNotNull(idField);
