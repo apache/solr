@@ -27,6 +27,9 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.Pair;
+import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.eq.StreamEqualitor;
+import org.apache.solr.client.solrj.io.stream.InnerJoinStream;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 
 /** Relational expression that uses Solr calling convention. */
@@ -61,7 +64,6 @@ interface SolrRel extends RelNode {
     boolean negativeQuery;
     String limitValue = null;
     String offsetValue = null;
-    String physicalPlan;
     final List<Pair<String, String>> orders = new ArrayList<>();
     final List<String> buckets = new ArrayList<>();
     final List<Pair<String, String>> metricPairs = new ArrayList<>();
@@ -69,17 +71,6 @@ interface SolrRel extends RelNode {
     RelOptTable table;
     SolrTable solrTable;
 
-    JavaTypeFactory getTypeFactory() {
-      return enumerableRelImplementor.getTypeFactory();
-    }
-
-    EnumerableRel.Prefer getPref() {
-      return pref;
-    }
-
-    RelDataType getRowType() {
-      return rowType;
-    }
 
     void addFieldMapping(String key, String val, boolean overwrite) {
       if (key != null) {
@@ -135,7 +126,6 @@ interface SolrRel extends RelNode {
     }
 
     Implementor visitChild(int ordinal, RelNode input) {
-      System.out.println("visit:"+input.getClass());
       assert ordinal == 0;
       return ((SolrRel) input).implement(this);
     }
@@ -148,7 +138,6 @@ interface SolrRel extends RelNode {
     private List<Map.Entry<String, Class<?>>> zip(List<String> fields, PhysType physType) {
       List<Map.Entry<String, Class<?>>> zipped = new ArrayList<>();
       for(int i=0; i<fields.size(); i++) {
-        System.out.println("zip:"+fields.get(i)+":"+physType.fieldClass(i));
         Map.Entry<String, Class<?>> entry = new AbstractMap.SimpleEntry<String, Class<?>>(fields.get(i), physType.fieldClass(i));
         zipped.add(entry);
       }
@@ -169,6 +158,7 @@ interface SolrRel extends RelNode {
       }
     }
 
+
     private String getField(Map<String, String> fieldMappings, String field) {
       String retField = field;
       while (fieldMappings.containsKey(field)) {
@@ -181,6 +171,42 @@ interface SolrRel extends RelNode {
       }
       return retField;
     }
-
   }
+
+  /*
+  *  The JoinImplementor would be called by the SolrLogicalJoinRule
+  */
+  class JoinImplementor extends Implementor {
+
+    private Implementor left;
+    private Implementor right;
+    private StreamEqualitor streamEqualitor;
+
+    JoinImplementor(EnumerableRelImplementor _enumerableRelImplementor, EnumerableRel.Prefer _pref, RelDataType _rowType, PhysType _physType) {
+      super( _enumerableRelImplementor, _pref,  _rowType, _physType);
+    }
+
+    public void setLeft(Implementor left) {
+      this.left = left;
+    }
+
+    public void setRight(Implementor right) {
+      this.right = right;
+    }
+
+    public void setStreamEqualitor(StreamEqualitor streamEqualitor) {
+      this.streamEqualitor = streamEqualitor;
+    }
+
+    TupleStream getPhysicalPlan() {
+      try {
+        TupleStream leftPlan = left.getPhysicalPlan();
+        TupleStream righPlain = right.getPhysicalPlan();
+        return new InnerJoinStream(leftPlan, righPlain, streamEqualitor);
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
+
 }

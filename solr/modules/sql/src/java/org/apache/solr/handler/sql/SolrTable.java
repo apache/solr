@@ -40,7 +40,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
   public static Map<String, TupleStream> plans;
 
   static {
-    SimpleBoundedCache<String, TupleStream> cache = new SimpleBoundedCache<String, TupleStream>();
+    SimpleBoundedCache<String, TupleStream> cache = new SimpleBoundedCache<>();
     plans = Collections.synchronizedMap(cache);
   }
 

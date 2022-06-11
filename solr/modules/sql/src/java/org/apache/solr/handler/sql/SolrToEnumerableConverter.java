@@ -66,7 +66,6 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
     final TupleStream plan = planner.getPhysicalPlan();
     String planId = UUID.randomUUID().toString();
     SolrTable.plans.put(planId, plan);
-    System.out.println("Fields:"+rowType.getFieldNames());
 
     final Expression table =
         list.append("table", solrImplementor.table.getExpression(SolrTable.SolrQueryable.class));
