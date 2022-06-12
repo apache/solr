@@ -351,7 +351,7 @@ public class TestLang extends SolrTestCase {
     "drill",
     "input",
     "countDist",
-      "hll"
+    "hll"
   };
 
   @Test
