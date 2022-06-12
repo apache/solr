@@ -50,7 +50,7 @@ interface SolrRel extends RelNode {
       enumerableRelImplementor = _enumerableRelImplementor;
       pref = _pref;
       rowType = _rowType;
-      physType= _physType;
+      physType = _physType;
     }
 
     final RelDataType rowType;
@@ -71,7 +71,6 @@ interface SolrRel extends RelNode {
 
     RelOptTable table;
     SolrTable solrTable;
-
 
     void addFieldMapping(String key, String val, boolean overwrite) {
       if (key != null) {
@@ -135,7 +134,8 @@ interface SolrRel extends RelNode {
       final List<Map.Entry<String, Class<?>>> fields =
           zip(generateFields(SolrRules.solrFieldNames(rowType), fieldMappings), physType);
 
-      return solrTableScan.getPhysicalPlan(fields,
+      return solrTableScan.getPhysicalPlan(
+          fields,
           query,
           orders,
           buckets,
@@ -148,8 +148,9 @@ interface SolrRel extends RelNode {
 
     private List<Map.Entry<String, Class<?>>> zip(List<String> fields, PhysType physType) {
       List<Map.Entry<String, Class<?>>> zipped = new ArrayList<>();
-      for (int i=0; i<fields.size(); i++) {
-        Map.Entry<String, Class<?>> entry = new AbstractMap.SimpleEntry<String, Class<?>>(fields.get(i), physType.fieldClass(i));
+      for (int i = 0; i < fields.size(); i++) {
+        Map.Entry<String, Class<?>> entry =
+            new AbstractMap.SimpleEntry<String, Class<?>>(fields.get(i), physType.fieldClass(i));
         zipped.add(entry);
       }
 
