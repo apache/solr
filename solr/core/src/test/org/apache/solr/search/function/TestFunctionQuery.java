@@ -935,7 +935,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
         req("fl", "*,score", "q", "{!func}strdist(x_s, 'foit', edit)", "fq", "id:1"),
         "//float[@name='score']='0.75'");
     assertQ(
-        req("fl", "*,score", "q", "{!func}strdist(x_s, 'dsfoit', jw)", "fq", "id:1"),
+        req("fl", "*,score", "q", "{!func}strdist(x_s, 'foit', jw)", "fq", "id:1"),
         "//float[@name='score']='0.8833333'");
     assertQ(
         req("fl", "*,score", "q", "{!func}strdist(x_s, 'foit', ngram, 2)", "fq", "id:1"),
