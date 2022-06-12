@@ -281,7 +281,7 @@ public class TestUninvertingReader extends SolrTestCase {
 
     final int NUM_LEAVES = ir.leaves().size();
 
-    // check the leaves: no more then total set size
+    // check the leaves: no more than total set size
     for (LeafReaderContext rc : ir.leaves()) {
       final LeafReader ar = rc.reader();
       for (String f : UNINVERT_MAP.keySet()) {

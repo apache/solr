@@ -163,7 +163,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
         DistanceUtils.EARTH_MEAN_RADIUS_KM,
         2,
         10,
-        11); // this goes over the north pole
+        11); // this goes over the North Pole
     checkHits(
         fieldName,
         "-89.8, 50",
@@ -171,7 +171,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
         DistanceUtils.EARTH_MEAN_RADIUS_KM,
         2,
         12,
-        13); // this goes over the south pole
+        13); // this goes over the South Pole
     // try some normal cases
     checkHits(fieldName, "33.0,-80.0", 300, DistanceUtils.EARTH_MEAN_RADIUS_KM, 2);
     // large distance
@@ -196,11 +196,11 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
     checkHits(fieldName, "0,0", 3001, DistanceUtils.EARTH_MEAN_RADIUS_KM, 3, 14, 15, 16);
     checkHits(fieldName, "0,0", 3000.1, DistanceUtils.EARTH_MEAN_RADIUS_KM, 3, 14, 15, 16);
 
-    // really fine grained distance and reflects some of the vagaries of how we are calculating the
+    // really fine-grained distance and reflects some vagaries of how we are calculating the
     // box
     checkHits(fieldName, "43.517030,-96.789603", 109, DistanceUtils.EARTH_MEAN_RADIUS_KM, 0);
 
-    // falls outside of the real distance, but inside the bounding box
+    // falls outside the real distance, but inside the bounding box
     checkHits(fieldName, true, "43.517030,-96.789603", 110, DistanceUtils.EARTH_MEAN_RADIUS_KM, 0);
     checkHits(
         fieldName, false, "43.517030,-96.789603", 110, DistanceUtils.EARTH_MEAN_RADIUS_KM, 1, 17);
@@ -276,7 +276,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
 
     // Test using the Lucene spatial syntax
     {
-      // never actually need the score but lets test
+      // we never actually need the score but let's test anyway
       String score = randomScoreMode();
 
       double distDEG = DistanceUtils.dist2Degrees(distKM, DistanceUtils.EARTH_MEAN_RADIUS_KM);
@@ -358,7 +358,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
     int docId = 1;
     int count = 1;
 
-    String score = randomScoreMode(); // never actually need the score but lets test
+    String score = randomScoreMode(); // we never actually need the score but let's test anyway
     assertQ(
         req(
             "fl",
@@ -444,7 +444,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
         req(
             "q", radiusQuery(3, 4, 9, "distance", null),
             "fl", "id,score",
-            "sort", "score asc"), // want ascending due to increasing distance
+            "sort", "score asc"), // want ascending due to increasing distances
         1e-3,
         "/response/docs/[0]/id=='100'",
         "/response/docs/[0]/score==2.827493",
@@ -551,7 +551,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
   @Test
   public void testSortMultiVal() throws Exception {
     assumeTrue("dist sorting not supported on field " + fieldName, canCalcDistance);
-    assumeFalse("Multivalue not supported for this field", isBBoxField(fieldName));
+    assumeFalse("Multivalued not supported for this field", isBBoxField(fieldName));
 
     assertU(adoc("id", "100", fieldName, "1,2")); // 1 point
     assertU(

@@ -38,7 +38,7 @@ public class TestUpdate extends SolrTestCaseJ4 {
     // do without commits
     doUpdateTest(() -> null);
 
-    // do with commits
+    // do with commit operation
     doUpdateTest(
         () -> {
           assertU(commit("softCommit", "false"));

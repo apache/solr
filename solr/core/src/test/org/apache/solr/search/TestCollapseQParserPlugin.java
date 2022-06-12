@@ -660,7 +660,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[3]/str[@name='id'][.='2']",
         "//result/doc[4]/str[@name='id'][.='6']");
 
-    // Non trivial sort local param for picking group head
+    // Non-trivial sort local param for picking group head
     params = new ModifiableSolrParams();
     params.add("q", "*:*");
     params.add(
@@ -1346,8 +1346,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     // function based query for deterministic scores
     final String q = "{!func}sum(asc_i,42)";
 
-    // results should be the same regardless of wether we collapse on a string field or numeric
-    // field (docs have identicle group identifiers in both fields)
+    // results should be the same regardless of whether we collapse on a string field or numeric
+    // field (docs have identical group identifiers in both fields)
     for (String f : Arrays.asList("group_i", "group_s")) {
 
       // these group head selectors should all result in identical group heads for our query...

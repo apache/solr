@@ -32,7 +32,7 @@ public class MockStreamingSolrClients extends StreamingSolrClients {
     CONNECT_EXCEPTION,
     SOCKET_EXCEPTION,
     BAD_REQUEST
-  };
+  }
 
   private volatile Exp exp = null;
 

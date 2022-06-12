@@ -1146,7 +1146,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
   }
 
   public void testAsctimeLeniency() throws Exception {
-    // test double digit day
+    // test double-digit day
     assertParsedDate(
         "Fri Oct 07 13:14:15 2005",
         Date.from(inst20051007131415()),
