@@ -17,7 +17,6 @@
 package org.apache.solr.handler.sql;
 
 import com.google.common.collect.Lists;
-
 import java.util.*;
 import org.apache.calcite.adapter.enumerable.*;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
@@ -56,12 +55,13 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
     final RelDataType rowType = getRowType();
     final PhysType physType =
         PhysTypeImpl.of(implementor.getTypeFactory(), rowType, pref.prefer(JavaRowFormat.ARRAY));
-    final SolrRel.Implementor solrImplementor = new SolrRel.Implementor(implementor, pref, rowType, physType);
+    final SolrRel.Implementor solrImplementor =
+        new SolrRel.Implementor(implementor, pref, rowType, physType);
 
     /*
-    * May return a different implementer than was passed in. For example in the case of
-    * a join a tree of implementers will be returned.
-    */
+     * May return a different implementer than was passed in. For example in the case of
+     * a join a tree of implementers will be returned.
+     */
     SolrRel.Implementor planner = solrImplementor.visitChild(0, getInput());
     final TupleStream plan = planner.getPhysicalPlan();
     String planId = UUID.randomUUID().toString();
@@ -74,7 +74,8 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
             "fields",
             constantArrayList(
                 Pair.zip(
-                    generateFields(SolrRules.solrFieldNames(rowType), solrImplementor.fieldMappings),
+                    generateFields(
+                        SolrRules.solrFieldNames(rowType), solrImplementor.fieldMappings),
                     new AbstractList<Class<?>>() {
                       @Override
                       public Class<?> get(int index) {
@@ -96,11 +97,7 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
         list.append(
             "enumerable",
             Expressions.call(
-                table,
-                SolrMethod.SOLR_QUERYABLE_QUERY.method,
-                fields,
-                query,
-                physicalPlan));
+                table, SolrMethod.SOLR_QUERYABLE_QUERY.method, fields, query, physicalPlan));
     Hook.QUERY_PLAN.run(query);
     list.add(Expressions.return_(null, enumerable));
     return implementor.result(physType, list.toBlock());

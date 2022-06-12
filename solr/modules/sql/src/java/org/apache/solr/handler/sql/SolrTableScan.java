@@ -16,11 +16,14 @@
  */
 package org.apache.solr.handler.sql;
 
+import static org.apache.solr.client.solrj.io.stream.metrics.CountDistinctMetric.APPROX_COUNT_DISTINCT;
+import static org.apache.solr.client.solrj.io.stream.metrics.CountDistinctMetric.COUNT_DISTINCT;
+import static org.apache.solr.common.params.CommonParams.SORT;
+
+import com.google.common.collect.Lists;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import com.google.common.collect.Lists;
 import org.apache.calcite.adapter.enumerable.EnumerableRules;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -46,17 +49,15 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.handler.SolrDefaultStreamFactory;
 
-import static org.apache.solr.client.solrj.io.stream.metrics.CountDistinctMetric.APPROX_COUNT_DISTINCT;
-import static org.apache.solr.client.solrj.io.stream.metrics.CountDistinctMetric.COUNT_DISTINCT;
-import static org.apache.solr.common.params.CommonParams.SORT;
-
 /** Relational expression representing a scan of a Solr collection. */
 class SolrTableScan extends TableScan implements SolrRel {
   private static final String DEFAULT_QUERY = "*:*";
   public static final SolrDefaultStreamFactory streamFactory = new SolrDefaultStreamFactory();
+
   static {
     streamFactory.withFunctionName("limit", LimitStream.class);
   }
+
   private final SolrTable solrTable;
   private final RelDataType projectRowType;
 
@@ -82,7 +83,6 @@ class SolrTableScan extends TableScan implements SolrRel {
     assert solrTable != null;
     assert getConvention() == SolrRel.CONVENTION;
   }
-
 
   @Override
   public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
@@ -123,15 +123,16 @@ class SolrTableScan extends TableScan implements SolrRel {
     return implementor;
   }
 
-  public TupleStream getPhysicalPlan( final List<Map.Entry<String, Class<?>>> fields,
-                                 final String query,
-                                 final List<Pair<String, String>> orders,
-                                 final List<String> buckets,
-                                 final List<Pair<String, String>> metricPairs,
-                                 final String limit,
-                                 final boolean negative,
-                                 final String havingPredicate,
-                                 final String offset)  {
+  public TupleStream getPhysicalPlan(
+      final List<Map.Entry<String, Class<?>>> fields,
+      final String query,
+      final List<Pair<String, String>> orders,
+      final List<String> buckets,
+      final List<Pair<String, String>> metricPairs,
+      final String limit,
+      final boolean negative,
+      final String havingPredicate,
+      final String offset) {
 
     Properties properties = solrTable.getSchema().properties;
     String collection = solrTable.getCollection();
@@ -193,10 +194,6 @@ class SolrTableScan extends TableScan implements SolrRel {
       throw new RuntimeException(e);
     }
   }
-
-
-
-
 
   /**
    * E.g. {@code constantList("x", "y")} returns "{ConstantExpression("x"),
@@ -320,7 +317,6 @@ class SolrTableScan extends TableScan implements SolrRel {
 
     return buf.toString();
   }
-
 
   private TupleStream handleGroupByMapReduce(
       String zk,
@@ -898,5 +894,4 @@ class SolrTableScan extends TableScan implements SolrRel {
       return ComparatorOrder.ASCENDING;
     }
   }
-
 }

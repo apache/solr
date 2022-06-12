@@ -171,7 +171,6 @@ interface SolrRel extends RelNode {
       }
     }
 
-
     private String getField(Map<String, String> fieldMappings, String field) {
       String retField = field;
       while (fieldMappings.containsKey(field)) {
@@ -200,7 +199,7 @@ interface SolrRel extends RelNode {
         EnumerableRel.Prefer _pref,
         RelDataType _rowType,
         PhysType _physType) {
-      super(_enumerableRelImplementor, _pref,  _rowType, _physType);
+      super(_enumerableRelImplementor, _pref, _rowType, _physType);
     }
 
     public void setLeft(Implementor left) {

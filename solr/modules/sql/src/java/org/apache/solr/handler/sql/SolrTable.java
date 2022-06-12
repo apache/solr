@@ -17,7 +17,6 @@
 package org.apache.solr.handler.sql;
 
 import java.util.*;
-
 import org.apache.calcite.adapter.java.AbstractQueryableTable;
 import org.apache.calcite.linq4j.*;
 import org.apache.calcite.plan.RelOptCluster;
@@ -78,11 +77,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
   }
 
   private Enumerable<Object> query(final Properties properties) {
-    return query(
-        properties,
-        Collections.emptyList(),
-        null,
-        null);
+    return query(properties, Collections.emptyList(), null, null);
   }
 
   /**
@@ -99,17 +94,17 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
       final String query,
       final String planId) {
 
-      TupleStream tupleStream = plans.remove(planId);
-      StreamContext streamContext = new StreamContext();
-      streamContext.setSolrClientCache(schema.getSolrClientCache());
-      tupleStream.setStreamContext(streamContext);
-      final TupleStream finalStream = tupleStream;
-      return new AbstractEnumerable<Object>() {
-        // Use original fields list to make sure only the fields specified are enumerated
-        public Enumerator<Object> enumerator() {
-          return new SolrEnumerator(finalStream, fields);
-        }
-      };
+    TupleStream tupleStream = plans.remove(planId);
+    StreamContext streamContext = new StreamContext();
+    streamContext.setSolrClientCache(schema.getSolrClientCache());
+    tupleStream.setStreamContext(streamContext);
+    final TupleStream finalStream = tupleStream;
+    return new AbstractEnumerable<Object>() {
+      // Use original fields list to make sure only the fields specified are enumerated
+      public Enumerator<Object> enumerator() {
+        return new SolrEnumerator(finalStream, fields);
+      }
+    };
   }
 
   public <T> Queryable<T> asQueryable(
@@ -151,15 +146,8 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
      */
     @SuppressWarnings({"UnusedDeclaration"})
     public Enumerable<Object> query(
-        List<Map.Entry<String, Class<?>>> fields,
-        String query,
-        String physicalPlan) {
-      return getTable()
-          .query(
-              getProperties(),
-              fields,
-              query,
-              physicalPlan);
+        List<Map.Entry<String, Class<?>>> fields, String query, String physicalPlan) {
+      return getTable().query(getProperties(), fields, query, physicalPlan);
     }
   }
 }
