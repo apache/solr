@@ -157,7 +157,8 @@ interface SolrRel extends RelNode {
       return zipped;
     }
 
-    private List<String> generateFields(List<String> queryFields, Map<String, String> fieldMappings) {
+    private List<String> generateFields(
+        List<String> queryFields, Map<String, String> fieldMappings) {
 
       if (fieldMappings.isEmpty()) {
         return queryFields;
@@ -186,16 +187,20 @@ interface SolrRel extends RelNode {
   }
 
   /*
-  *  The JoinImplementor would be called by the SolrLogicalJoinRule
-  */
+   *  The JoinImplementor would be called by the SolrLogicalJoinRule
+   */
   class JoinImplementor extends Implementor {
 
     private Implementor left;
     private Implementor right;
     private StreamEqualitor streamEqualitor;
 
-    JoinImplementor(EnumerableRelImplementor _enumerableRelImplementor, EnumerableRel.Prefer _pref, RelDataType _rowType, PhysType _physType) {
-      super( _enumerableRelImplementor, _pref,  _rowType, _physType);
+    JoinImplementor(
+        EnumerableRelImplementor _enumerableRelImplementor,
+        EnumerableRel.Prefer _pref,
+        RelDataType _rowType,
+        PhysType _physType) {
+      super(_enumerableRelImplementor, _pref,  _rowType, _physType);
     }
 
     public void setLeft(Implementor left) {
@@ -220,5 +225,4 @@ interface SolrRel extends RelNode {
       }
     }
   }
-
 }
