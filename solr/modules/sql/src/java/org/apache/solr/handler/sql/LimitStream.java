@@ -43,22 +43,23 @@ public class LimitStream extends TupleStream implements Expressible {
 
     StreamExpressionNamedParameter limitExpression = factory.getNamedOperand(expression, "limit");
 
-    if(limitExpression == null) {
+    if (limitExpression == null) {
       throw new IOException("Invalid expression limit parameter expected");
     }
 
-    this.limit = Integer.parseInt(((StreamExpressionValue) limitExpression.getParameter()).getValue());
+    this.limit =
+        Integer.parseInt(((StreamExpressionValue) limitExpression.getParameter()).getValue());
 
     StreamExpressionNamedParameter offsetExpression = factory.getNamedOperand(expression, "offset");
-    if(offsetExpression == null) {
+    if (offsetExpression == null) {
       this.offset = 0;
     } else {
-      this.offset = Integer.parseInt(((StreamExpressionValue) offsetExpression.getParameter()).getValue());
+      this.offset =
+          Integer.parseInt(((StreamExpressionValue) offsetExpression.getParameter()).getValue());
     }
   }
 
-  public StreamExpression toExpression(StreamFactory factory)
-      throws IOException {
+  public StreamExpression toExpression(StreamFactory factory) throws IOException {
     // function name
     StreamExpression expression = new StreamExpression("limit");
 
@@ -66,7 +67,7 @@ public class LimitStream extends TupleStream implements Expressible {
       expression.addParameter(((Expressible) stream).toExpression(factory));
     } else {
       throw new IOException(
-          "This UniqueStream contains a non-expressible TupleStream - it cannot be converted to an expression");
+          "This Stream contains a non-expressible TupleStream - it cannot be converted to an expression");
     }
 
     expression.addParameter(new StreamExpressionNamedParameter("limit", Integer.toString(this.limit)));
