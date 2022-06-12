@@ -21,13 +21,11 @@ import static org.apache.solr.handler.sql.SolrAggregate.solrAggMetricId;
 import java.util.*;
 
 import org.apache.calcite.adapter.enumerable.*;
-import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.Pair;
-import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.eq.StreamEqualitor;
 import org.apache.solr.client.solrj.io.stream.InnerJoinStream;
 import org.apache.solr.client.solrj.io.stream.TupleStream;

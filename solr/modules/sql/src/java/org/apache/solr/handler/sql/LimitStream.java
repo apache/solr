@@ -27,9 +27,7 @@ import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.expr.*;
-import org.apache.solr.common.params.ModifiableSolrParams;
 
-import static org.apache.solr.common.params.CommonParams.ID;
 
 public class LimitStream extends TupleStream implements Expressible {
 
