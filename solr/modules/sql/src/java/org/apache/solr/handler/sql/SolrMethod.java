@@ -24,7 +24,7 @@ import org.apache.calcite.linq4j.tree.Types;
 enum SolrMethod {
   SOLR_QUERYABLE_QUERY(
       SolrTable.SolrQueryable.class,
-      "query",
+"query",
       List.class,
       String.class,
       String.class);

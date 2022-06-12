@@ -129,13 +129,23 @@ interface SolrRel extends RelNode {
     }
 
     TupleStream getPhysicalPlan() {
-      final List<Map.Entry<String, Class<?>>> fields = zip(generateFields(SolrRules.solrFieldNames(rowType), fieldMappings), physType);
-      return solrTableScan.getPhysicalPlan(fields, query, orders, buckets, metricPairs, limitValue, negativeQuery, havingPredicate, offsetValue);
+      final List<Map.Entry<String, Class<?>>> fields =
+          zip(generateFields(SolrRules.solrFieldNames(rowType), fieldMappings), physType);
+
+      return solrTableScan.getPhysicalPlan(fields,
+          query,
+          orders,
+          buckets,
+          metricPairs,
+          limitValue,
+          negativeQuery,
+          havingPredicate,
+          offsetValue);
     }
 
     private List<Map.Entry<String, Class<?>>> zip(List<String> fields, PhysType physType) {
       List<Map.Entry<String, Class<?>>> zipped = new ArrayList<>();
-      for(int i=0; i<fields.size(); i++) {
+      for (int i=0; i<fields.size(); i++) {
         Map.Entry<String, Class<?>> entry = new AbstractMap.SimpleEntry<String, Class<?>>(fields.get(i), physType.fieldClass(i));
         zipped.add(entry);
       }

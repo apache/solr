@@ -70,12 +70,13 @@ public class LimitStream extends TupleStream implements Expressible {
           "This Stream contains a non-expressible TupleStream - it cannot be converted to an expression");
     }
 
-    expression.addParameter(new StreamExpressionNamedParameter("limit", Integer.toString(this.limit)));
-    expression.addParameter(new StreamExpressionNamedParameter("offset", Integer.toString(this.offset)));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("limit", Integer.toString(this.limit)));
+
+    expression.addParameter(
+        new StreamExpressionNamedParameter("offset", Integer.toString(this.offset)));
     return expression;
   }
-
-
 
   LimitStream(TupleStream stream, int limit) {
     this(stream, limit, 0);
