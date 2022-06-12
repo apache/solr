@@ -19,7 +19,6 @@ package org.apache.solr.handler.sql;
 import static org.apache.solr.handler.sql.SolrAggregate.solrAggMetricId;
 
 import java.util.*;
-
 import org.apache.calcite.adapter.enumerable.*;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptTable;
@@ -43,7 +42,11 @@ interface SolrRel extends RelNode {
    */
   class Implementor {
 
-    public Implementor(EnumerableRelImplementor _enumerableRelImplementor, EnumerableRel.Prefer _pref, RelDataType _rowType, PhysType _physType) {
+    public Implementor(
+        EnumerableRelImplementor _enumerableRelImplementor,
+        EnumerableRel.Prefer _pref,
+        RelDataType _rowType,
+        PhysType _physType) {
       enumerableRelImplementor = _enumerableRelImplementor;
       pref = _pref;
       rowType = _rowType;
