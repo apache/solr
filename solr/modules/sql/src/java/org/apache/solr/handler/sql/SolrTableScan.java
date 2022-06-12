@@ -885,7 +885,6 @@ class SolrTableScan extends TableScan implements SolrRel {
       String ordering = sortItem.getValue();
       ComparatorOrder comparatorOrder = ascDescComp(ordering);
       String sortKey = sortItem.getKey();
-      System.out.println("Sort Key:"+sortKey);
       comps[i] = new FieldComparator(sortKey, comparatorOrder);
     }
 
