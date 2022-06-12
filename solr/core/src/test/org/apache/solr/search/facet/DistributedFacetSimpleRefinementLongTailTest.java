@@ -26,7 +26,7 @@ import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 
 /**
- * A test the demonstrates some of the expected behavior fo "long tail" terms when using <code>
+ * A test the demonstrates some expected behavior for "long tail" terms when using <code>
  * refine:simple</code>
  *
  * <p><b>NOTE:</b> This test ignores the control collection (in single node mode, there is no need
@@ -248,7 +248,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
     }
 
     // even if we enable refinement, we still won't find the long 'tail' ...
-    // regardless of wether we use either the default overrequest, or disable overrequesting...
+    // regardless of whether we use either the default overrequest, or disable overrequesting...
     for (String over : Arrays.asList("", "overrequest:0,")) {
       List<NamedList> foo_buckets =
           (List<NamedList>)

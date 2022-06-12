@@ -111,7 +111,7 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
           final List<String> chVals = addValsField(child, "childFilter_s");
           parent.addChildDocument(child);
 
-          // let's pickup at least matching child
+          // lets pickup at least matching child
           final boolean canPickMatchingChild = !chVals.isEmpty() && !parentFilter.isEmpty();
           final boolean haveNtPickedMatchingChild = matchingParent == null || matchingChild == null;
           if (canPickMatchingChild && haveNtPickedMatchingChild && usually()) {
@@ -177,11 +177,11 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
                 fl)
             : new SolrQuery( // same bjq as a subordinate clause
                 "q",
-                "+type_s:parent " + parentFilter + " +{!v=$parentcaluse}",
-                "parentcaluse",
+                "+type_s:parent " + parentFilter + " +{!v=$parentclause}",
+                "parentclause",
                 "{!parent which=type_s:parent v='" + (childFilter).replace("+", "") + "'}",
                 "sort",
-                sortClause.replace("val_s1", "childfield(val_s1,$parentcaluse)"),
+                sortClause.replace("val_s1", "childfield(val_s1,$parentclause)"),
                 "rows",
                 "" + maxDocs,
                 "fl",

@@ -174,7 +174,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
         davesDepartments);
 
     // find people that develop stuff - but limit via filter query to a name of "john"
-    // this tests filters being pushed down to queries (SOLR-3062)
+    // this tests filters being pushed down to the queries (SOLR-3062)
     assertJQ(
         req(
             "q",
