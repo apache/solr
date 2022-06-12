@@ -99,7 +99,6 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
       final String query,
       final String planId) {
 
-      System.out.println("Fields:"+fields);
       TupleStream tupleStream = plans.remove(planId);
       StreamContext streamContext = new StreamContext();
       streamContext.setSolrClientCache(schema.getSolrClientCache());
