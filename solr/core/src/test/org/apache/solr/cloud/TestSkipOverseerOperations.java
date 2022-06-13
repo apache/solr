@@ -229,7 +229,7 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
 
   /**
    * Returns the value corresponding to stat: "overseer_operations", "leader", "requests" This stat
-   * (see {@link org.apache.solr.cloud.api.collections.OverseerStatusCmd} ) is updated when the
+   * (see {@link org.apache.solr.cloud.api.collections.OverseerStatusCmd}) is updated when the
    * cluster state updater processes a message of type {@link
    * org.apache.solr.cloud.overseer.OverseerAction#LEADER} to set a shard leader
    *

@@ -136,7 +136,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     sendNonDirectUpdateRequestReplicaWithRetry(leader, up, 2, testCollectionName);
     sendNonDirectUpdateRequestReplicaWithRetry(replicas.get(0), up, 2, testCollectionName);
 
-    // Insure nothing is tricky about a delete operation where only one shard needs to delete
+    // Ensure nothing is tricky about a delete operation where only one shard needs to delete
     // anything.
     sendNonDirectDeletesRequestReplicaWithRetry(
         leader, getSomeIds(1), 2, getSomeIds(1), 2, testCollectionName);

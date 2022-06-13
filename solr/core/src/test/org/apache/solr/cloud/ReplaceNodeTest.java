@@ -84,7 +84,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     ArrayList<String> l = new ArrayList<>(liveNodes);
     Collections.shuffle(l, random());
     String emptyNode = l.remove(0);
-    String node2BeDecommissioned = l.get(0);
+    String nodeToBeDecommissioned = l.get(0);
     CollectionAdminRequest.Create create;
     // NOTE: always using the createCollection that takes in 'int' for all types of replicas, so we
     // never have to worry about null checking when comparing the Create command with the final

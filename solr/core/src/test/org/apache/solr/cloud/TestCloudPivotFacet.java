@@ -405,7 +405,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
   }
 
   /**
-   * Verify that the PivotFields we're looking at doesn't violate any of the expected behaviors
+   * Verify that the PivotFields we're looking at don't violate any of the expected behaviors
    * based on the <code>TRACE_*</code> params found in the base params
    */
   private void assertTraceOk(

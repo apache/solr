@@ -423,7 +423,7 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
 
                   QueryResponse response = clients.get(clientId).query(params);
                   if (response.getResults().size() == 0) {
-                    // there's no info we can get back with from a delete operation, so not much we
+                    // there's no info we can get back from a delete operation, so not much we
                     // can check
                     // without further synchronization
                   } else if (response.getResults().size() == 1) {
@@ -463,7 +463,7 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
                         msg + " ...how did a doc in solr get a non positive longVal?", 0 < longVal);
                     assertEquals(
                         msg
-                            + " ...intVal and longVal in solr doc are internally (modulo) inconsistent w/each other",
+                            + " ...intVal and longVal in solr doc are internally (modulo) inconsistent with each other",
                         0,
                         (longVal % intVal));
 
@@ -586,7 +586,7 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
           assertEquals(msg, expected.version, actual.getFieldValue("_version_"));
           assertTrue(msg + " doc exists in solr, but version is negative???", 0 < expected.version);
 
-          // sanity check the model (which we already know matches the doc)
+          // check the model (which we already know matches the doc)
           assertEquals(
               "Inconsistent (modulo) values in model for id " + id + "=" + expected,
               0,

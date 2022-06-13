@@ -77,7 +77,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   private static final List<HttpSolrClient> CLIENTS =
       Collections.synchronizedList(new ArrayList<>(5));
 
-  /** Always included in fl, so we can vet what doc we're looking at */
+  /** Always included in fl, so we can check what doc we're looking at */
   private static final FlValidator ID_VALIDATOR = new SimpleFieldValueValidator("id");
 
   /**
@@ -215,7 +215,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     // and a specific Jira for fixing this is listed as a comment
     final List<String> knownBugs =
         Arrays.asList(
-            "child" // way to complicated to vet with this test, see SOLR-9379 instead
+            "child" // way too complicated to check with this test, see SOLR-9379 instead
             );
 
     for (String buggy : knownBugs) {
