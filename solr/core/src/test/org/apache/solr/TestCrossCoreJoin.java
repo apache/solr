@@ -195,7 +195,7 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
     assertFalse(fromCore.isClosed());
     assertFalse(h.getCore().isClosed());
 
-    // find people that develop stuff - but limit via filter query to a name of "john"
+    // find people that develop stuff - but limit via filter query to a name of "john",
     // this tests filters being pushed down to queries (SOLR-3062)
     assertJQ(
         req(
