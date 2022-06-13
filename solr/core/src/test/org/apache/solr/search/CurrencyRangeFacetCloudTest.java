@@ -102,7 +102,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
       // exchange rates relative to USD...
       //
       // for all of these permutations, the numDocs in each bucket that we get back should be the
-      // same (regardless of the any asymmetric exchanges ranges, or the currency used for the
+      // same (regardless of any asymmetric exchanges ranges, or the currency used for the
       // 'gap')
       // because the start & end are always in USD.
       //
