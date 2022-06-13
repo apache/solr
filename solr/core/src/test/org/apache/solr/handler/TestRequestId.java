@@ -45,7 +45,7 @@ public class TestRequestId extends SolrTestCaseJ4 {
 
     try (LogListener reqLog = LogListener.info(SolrCore.class.getName() + ".Request")) {
 
-      // Sanity check that our MDC doesn't already have some sort of rid set in it
+      // Check that our MDC doesn't already have some sort of rid set in it
       assertNull(MDC.get(CommonParams.REQUEST_ID));
 
       // simple request that should successfully be logged ...

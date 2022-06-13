@@ -246,7 +246,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
         if (3 < namedSnapshots.size()
             && random().nextInt(3 + numBackupIters - i) < random().nextInt(namedSnapshots.size())) {
 
-          assert 0 < namedSnapshots.size() : "Someone broke the conditional";
+          assert 0 < namedSnapshots.size() : "Something broke the conditional";
           final String snapshotName = namedSnapshots.poll();
           final String backupName = "backup_as_of_" + snapshotName;
           log.info("Creating {} from {} in iter={}", backupName, snapshotName, i);

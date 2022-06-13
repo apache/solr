@@ -49,7 +49,7 @@ public class BlobRepositoryCloudTest extends SolrCloudTestCase {
     HashMap<String, String> params = new HashMap<>();
     CollectionAdminRequest.createCollection(CollectionAdminParams.SYSTEM_COLL, null, 1, 1)
         .process(cluster.getSolrClient());
-    // test component will fail if it can't' find a blob with this data by this name
+    // test component will fail if it can't find a blob with this data by this name
     TestBlobHandler.postData(
         cluster.getSolrClient(),
         findLiveNodeURI(),

@@ -280,8 +280,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
           "Failed corep4 should not have left a core.properties file around",
           Files.exists(corePropFile));
 
-      // Finally, just for yucks, let's determine that this create path operation also leaves a prop
-      // file.
+      // Finally, let's determine that this create path operation also leaves a prop file.
 
       corePropFile = Paths.get(solrHomeDirectory.toString(), "corep5", "core.properties");
       assertFalse("Should not be a properties file yet for corep5", Files.exists(corePropFile));

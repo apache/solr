@@ -91,7 +91,7 @@ public class TestIncrementalCoreBackup extends SolrTestCaseJ4 {
 
   public void testBackupBeforeFirstCommit() throws Exception {
 
-    // even w/o a user sending any data, the SolrCore initialization logic should have automatically
+    // even without a user sending any data, the SolrCore initialization logic should have automatically
     // created an "empty" commit point that can be backed up...
     final IndexCommit empty = h.getCore().getDeletionPolicy().getLatestCommit();
     assertNotNull(empty);
@@ -147,7 +147,7 @@ public class TestIncrementalCoreBackup extends SolrTestCaseJ4 {
     assertU(adoc("id", "1")); // uncommitted
 
     final ShardBackupId secondShardBackupId = new ShardBackupId("shard1", new BackupId(1));
-    { // second backup w/uncommitted docs
+    { // second backup with uncommitted docs
       SolrQueryResponse resp = new SolrQueryResponse();
       admin.handleRequestBody(
           req(
