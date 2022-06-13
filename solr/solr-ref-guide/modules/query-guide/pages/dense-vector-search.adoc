@@ -277,17 +277,6 @@ The `knn` query parser can be used with filter queries:
 [source,text]
 &q={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]&fq=id:(1 2 3)
 
-[IMPORTANT]
-====
-When using `knn` in these scenarios make sure you have a clear understanding of how filter queries work in Apache Solr:
-
-The Ranked List of document IDs resulting from the main query `q` is intersected with the set of document IDs deriving from each filter query `fq`.
-
-e.g.
-
-Ranked List from `q`=`[ID1, ID4, ID2, ID10]` <intersects> Set from `fq`=`{ID3, ID2, ID9, ID4}` = `[ID4,ID2]`
-====
-
 
 ==== Usage as Re-Ranking Query
 The `knn` query parser can be used to rerank first pass query results:
