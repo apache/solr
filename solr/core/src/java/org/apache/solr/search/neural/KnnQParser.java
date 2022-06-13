@@ -16,6 +16,11 @@
  */
 package org.apache.solr.search.neural;
 
+import static java.util.Optional.ofNullable;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -30,12 +35,6 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SyntaxError;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
-import static java.util.Optional.ofNullable;
 
 public class KnnQParser extends QParser {
 
@@ -84,47 +83,48 @@ public class KnnQParser extends QParser {
     float[] parsedVectorToSearch = parseVector(vectorToSearch, denseVectorType.getDimension());
 
     return getFilterQuery()
-            .map(filterQuery -> denseVectorType.getKnnVectorQuery(schemaField.getName(), parsedVectorToSearch, topK, filterQuery))
-            .orElse(denseVectorType.getKnnVectorQuery(schemaField.getName(), parsedVectorToSearch, topK));
-
+        .map(
+            filterQuery ->
+                denseVectorType.getKnnVectorQuery(
+                    schemaField.getName(), parsedVectorToSearch, topK, filterQuery))
+        .orElse(
+            denseVectorType.getKnnVectorQuery(schemaField.getName(), parsedVectorToSearch, topK));
   }
 
   private Optional<? extends Query> getFilterQuery() throws SolrException {
-    if (!isFilter()){
+    if (!isFilter()) {
       String[] filterQueries = req.getParams().getParams(CommonParams.FQ);
-      return ofNullable(filterQueries)
-              .filter(fq -> fq.length != 0)
-              .map(this::computeFilterQuery);
+      return ofNullable(filterQueries).filter(fq -> fq.length != 0).map(this::computeFilterQuery);
     }
     return Optional.empty();
   }
 
   private Query computeFilterQuery(String[] filterQueries) throws SolrException {
 
-      List<Query> filters = new ArrayList<>(filterQueries.length);
+    List<Query> filters = new ArrayList<>(filterQueries.length);
 
-      for (String filterQuery : filterQueries) {
-        if (filterQuery != null && filterQuery.trim().length() != 0) {
-          QParser filterParser;
-          try {
-            filterParser = QParser.getParser(filterQuery, super.getReq());
-            filterParser.setIsFilter(true);
-            filters.add(filterParser.getQuery());
-          } catch (SyntaxError e) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                    "error in parsing filter queries:" + e.getMessage());
-          }
+    for (String filterQuery : filterQueries) {
+      if (filterQuery != null && filterQuery.trim().length() != 0) {
+        QParser filterParser;
+        try {
+          filterParser = QParser.getParser(filterQuery, super.getReq());
+          filterParser.setIsFilter(true);
+          filters.add(filterParser.getQuery());
+        } catch (SyntaxError e) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "error in parsing filter queries:" + e.getMessage());
         }
       }
+    }
 
-      BooleanQuery.Builder builder = new BooleanQuery.Builder();
-      for (Query query : filters) {
-        builder.add(query, BooleanClause.Occur.FILTER);
-      }
+    BooleanQuery.Builder builder = new BooleanQuery.Builder();
+    for (Query query : filters) {
+      builder.add(query, BooleanClause.Occur.FILTER);
+    }
 
-      return builder.build();
+    return builder.build();
   }
-
 
   /**
    * Parses a String vector.
