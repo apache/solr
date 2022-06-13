@@ -211,7 +211,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
 
     // now that we've confirmed the basics work, let's check some fine grain stuff...
 
-    // first off, sanity check that this special docId doesn't somehow already exist
+    // first off, check that this special docId doesn't somehow already exist
     waitForNoResults(0, params("q", "id:special99", "rows", "0", "_trace", "sanity_check99"));
 
     {
