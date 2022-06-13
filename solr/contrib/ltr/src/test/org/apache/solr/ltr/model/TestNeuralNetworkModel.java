@@ -137,7 +137,7 @@ public class TestNeuralNetworkModel extends TestRerankBase {
 
     {
       // pretend all features scored zero
-      float[] testVec = { 0.0f, 0.0f, 0.0f, 0.0f };
+      Float[] testVec = { 0.0f, 0.0f, 0.0f, 0.0f };
       // with all zero inputs the layer1 node outputs are layer1 node biases only
       final double layer1Node1Output = layer1Node1Bias;
       final double layer1Node2Output = layer1Node2Bias;
@@ -157,7 +157,7 @@ public class TestNeuralNetworkModel extends TestRerankBase {
 
     {
       // pretend all features scored one
-      float[] testVec = { 1.0f, 1.0f, 1.0f, 1.0f };
+      Float[] testVec = { 1.0f, 1.0f, 1.0f, 1.0f };
       // with all one inputs the layer1 node outputs are simply sum of weights and biases
       final double layer1Node1Output = layer1Node1Weight1 + layer1Node1Weight2 + layer1Node1Weight3 + layer1Node1Weight4 + layer1Node1Bias;
       final double layer1Node2Output = layer1Node2Weight1 + layer1Node2Weight2 + layer1Node2Weight3 + layer1Node2Weight4 + layer1Node2Bias;
@@ -181,7 +181,7 @@ public class TestNeuralNetworkModel extends TestRerankBase {
       final float input2 = random().nextFloat();
       final float input3 = random().nextFloat();
       final float input4 = random().nextFloat();
-      float[] testVec = {input1, input2, input3, input4};
+      Float[] testVec = {input1, input2, input3, input4};
       // the layer1 node outputs are sum of input-times-weight plus bias
       final double layer1Node1Output = input1*layer1Node1Weight1 + input2*layer1Node1Weight2 + input3*layer1Node1Weight3 + input4*layer1Node1Weight4 + layer1Node1Bias;
       final double layer1Node2Output = input1*layer1Node2Weight1 + input2*layer1Node2Weight2 + input3*layer1Node2Weight3 + input4*layer1Node2Weight4 + layer1Node2Bias;
@@ -271,7 +271,7 @@ public class TestNeuralNetworkModel extends TestRerankBase {
     final LTRScoringModel model = createModelFromFiles("neuralnetworkmodel_explainable.json",
         "neuralnetworkmodel_features.json");
 
-    final float[] featureValues = { 1.2f, 3.4f, 5.6f, 7.8f };
+    final Float[] featureValues = { 1.2f, 3.4f, 5.6f, 7.8f };
 
     final List<Explanation> explanations = new ArrayList<Explanation>();
     for (int ii=0; ii<featureValues.length; ++ii)
@@ -332,9 +332,9 @@ public class TestNeuralNetworkModel extends TestRerankBase {
     final LTRScoringModel model = createModelFromFiles("neuralnetworkmodel_custom.json",
         "neuralnetworkmodel_features.json");
 
-    final float featureValue1 = 4f;
+    final Float featureValue1 = 4f;
     final float featureValue2 = 2f;
-    final float[] featureValues = { featureValue1, featureValue2 };
+    final Float[] featureValues = { featureValue1, featureValue2 };
 
     final double expectedScore = (featureValue1+featureValue2) * 42f;
     float actualScore = model.score(featureValues);

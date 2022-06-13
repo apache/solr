@@ -134,8 +134,8 @@ public class TestLTRQParserExplain extends TestRerankBase {
     query.add("rq", "{!ltr reRankDocs=4 model=external_model_binary_feature efi.user_device_tablet=1}");
     query.add("fl", "*,score");
 
-    final String tree1 = "(weight=1.0,root=(feature=user_device_smartphone,threshold=0.5,left=0.0,right=50.0))";
-    final String tree2 = "(weight=1.0,root=(feature=user_device_tablet,threshold=0.5,left=0.0,right=65.0))";
+    final String tree1 = "(weight=1.0,root=(feature=user_device_smartphone,threshold=0.5,missing=null,left=0.0,right=50.0))";
+    final String tree2 = "(weight=1.0,root=(feature=user_device_tablet,threshold=0.5,missing=null,left=0.0,right=65.0))";
     final String trees = "["+tree1+","+tree2+"]";
 
     query.add("wt", "json");

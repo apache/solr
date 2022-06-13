@@ -356,7 +356,7 @@ public class LTRScoringQuery extends Query implements Accountable {
     // List of the model's features used for scoring. This is a subset of the
     // features used for logging.
     final private Feature.FeatureWeight[] modelFeatureWeights;
-    final private float[] modelFeatureValuesNormalized;
+    final private Float[] modelFeatureValuesNormalized;
     final private Feature.FeatureWeight[] extractedFeatureWeights;
 
     // List of all the feature names, values - used for both scoring and logging
@@ -386,7 +386,7 @@ public class LTRScoringQuery extends Query implements Accountable {
       super(LTRScoringQuery.this);
       this.extractedFeatureWeights = extractedFeatureWeights;
       this.modelFeatureWeights = modelFeatureWeights;
-      this.modelFeatureValuesNormalized = new float[modelFeatureWeights.length];
+      this.modelFeatureValuesNormalized = new Float[modelFeatureWeights.length];
       this.featuresInfo = new FeatureInfo[allFeaturesSize];
       setFeaturesInfo();
     }
@@ -410,7 +410,7 @@ public class LTRScoringQuery extends Query implements Accountable {
     }
 
     // for test use
-    float[] getModelFeatureValuesNormalized() {
+    Float[] getModelFeatureValuesNormalized() {
       return modelFeatureValuesNormalized;
     }
 

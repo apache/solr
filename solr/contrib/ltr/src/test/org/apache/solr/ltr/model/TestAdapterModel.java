@@ -142,7 +142,7 @@ public class TestAdapterModel extends TestRerankBase {
     }
 
     @Override
-    public float score(float[] modelFeatureValuesNormalized) {
+    public float score(Float[] modelFeatureValuesNormalized) {
       return answerValue;
     }
 
