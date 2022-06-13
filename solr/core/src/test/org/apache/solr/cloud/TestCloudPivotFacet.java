@@ -405,8 +405,8 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
   }
 
   /**
-   * Verify that the PivotFields we're looking at don't violate any of the expected behaviors
-   * based on the <code>TRACE_*</code> params found in the base params
+   * Verify that the PivotFields we're looking at don't violate any of the expected behaviors based
+   * on the <code>TRACE_*</code> params found in the base params
    */
   private void assertTraceOk(
       String pivotName, SolrParams baseParams, List<PivotField> constraints) {

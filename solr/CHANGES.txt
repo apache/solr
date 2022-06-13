@@ -3154,7 +3154,7 @@ Bug Fixes
   Jason Gerlowski, Kesharee Nandan Vishwakarma)
 
 * SOLR-12291: prematurely reporting not yet finished async Collections API call as completed
-  when collection's replicas are collocated at least at one node (Varun Thacker, Mikhail Khludnev)
+  when collection's replicas are colocated at least at one node (Varun Thacker, Mikhail Khludnev)
 
 * SOLR-13410: Designated overseer wasn't able to rejoin election queue upon restart (Ishan Chattopadhyaya,
   Kesharee Nandan Vishwakarma)
@@ -3531,7 +3531,7 @@ Bug fixes
 * SOLR-13718: SPLITSHARD (async) with failures in underlying sub-operations can result in data loss (Ishan Chattopadhyaya)
 
 * SOLR-12291: prematurely reporting not yet finished async Collections API call as completed
-  when collection's replicas are collocated at least at one node (Varun Thacker, Mikhail Khludnev)
+  when collection's replicas are colocated at least at one node (Varun Thacker, Mikhail Khludnev)
 
 * SOLR-13828: Improve ExecutePlanAction error handling.
 
