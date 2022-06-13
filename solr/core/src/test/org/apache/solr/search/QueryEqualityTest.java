@@ -655,7 +655,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
           QParser.getParser("{!parent which=foo_s:parent}", req).getQuery());
     }
 
-    // sanity check multiple ways of specifying _nest_path_ prefixes
+    // check multiple ways of specifying _nest_path_ prefixes
     final String parent_path = "/aa/bb";
     try (SolrQueryRequest req =
         req(
