@@ -214,7 +214,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
           continue;
         }
 
-        if (docs == null) { // could have been initialized in the shards' info block above
+        if (docs == null) { // could have been initialized in the 'shardInfo' block above
           docs = (SolrDocumentList) srsp.getSolrResponse().getResponse().get("response");
         }
 
