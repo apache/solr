@@ -88,7 +88,8 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
 
   public void testBackupBeforeFirstCommit() throws Exception {
 
-    // even without a user sending any data, the SolrCore initialization logic should have automatically
+    // even without a user sending any data, the SolrCore initialization logic should have
+    // automatically
     // created an "empty" commit point that can be backed up...
     final IndexCommit empty = h.getCore().getDeletionPolicy().getLatestCommit();
     assertNotNull(empty);
