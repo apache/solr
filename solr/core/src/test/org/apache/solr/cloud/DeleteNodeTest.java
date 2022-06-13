@@ -70,7 +70,7 @@ public class DeleteNodeTest extends SolrCloudTestCase {
     create.setCreateNodeSet(StrUtils.join(l, ','));
     cloudClient.request(create);
     state = cloudClient.getClusterState();
-    String node2BeDecommissioned = l.get(0);
+    String nodeToBeDecommissioned = l.get(0);
     // check what replicas are on the node, and whether the call should fail
     boolean shouldFail = false;
     DocCollection docColl = state.getCollection(coll);
