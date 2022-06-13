@@ -582,7 +582,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
 
     // grandchildren
     //
-    // each topDoc has t children where each child has x = 0 + 2 + 4 + ..(t-1)*2 grands
+    // each topDoc has t children where each child has x = 0 + 2 + 4 + ..(t-1)*2 grandchildren
     // x = 2 * (1 + 2 + 3 +.. (t-1)) => arithmetic sum of t-1
     // x = 2 * ((t-1) * t / 2) = t * (t - 1)
     assertEquals(
