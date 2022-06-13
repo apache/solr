@@ -75,16 +75,16 @@ public class DeleteNodeTest extends SolrCloudTestCase {
     boolean shouldFail = false;
     DocCollection docColl = state.getCollection(coll);
     log.info("#### DocCollection: {}", docColl);
-    List<Replica> replicas = docColl.getReplicas(node2BeDecommissioned);
+    List<Replica> replicas = docColl.getReplicas(nodeToBeDecommissioned);
     if (replicas != null) {
       for (Replica replica : replicas) {
         String shard =
-            docColl.getShardId(node2BeDecommissioned, replica.getStr(ZkStateReader.CORE_NAME_PROP));
+            docColl.getShardId(nodeToBeDecommissioned, replica.getStr(ZkStateReader.CORE_NAME_PROP));
         Slice slice = docColl.getSlice(shard);
         boolean hasOtherNonPullReplicas = false;
         for (Replica r : slice.getReplicas()) {
           if (!r.getName().equals(replica.getName())
-              && !r.getNodeName().equals(node2BeDecommissioned)
+              && !r.getNodeName().equals(nodeToBeDecommissioned)
               && r.getType() != Replica.Type.PULL) {
             hasOtherNonPullReplicas = true;
             break;
@@ -96,7 +96,7 @@ public class DeleteNodeTest extends SolrCloudTestCase {
         }
       }
     }
-    new CollectionAdminRequest.DeleteNode(node2BeDecommissioned).processAsync("003", cloudClient);
+    new CollectionAdminRequest.DeleteNode(nodeToBeDecommissioned).processAsync("003", cloudClient);
     CollectionAdminRequest.RequestStatus requestStatus =
         CollectionAdminRequest.requestStatus("003");
     CollectionAdminRequest.RequestStatusResponse rsp = null;
