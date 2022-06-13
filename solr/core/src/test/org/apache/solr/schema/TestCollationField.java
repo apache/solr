@@ -36,7 +36,7 @@ public class TestCollationField extends SolrTestCaseJ4 {
     // add some docs
     assertU(adoc("id", "1", "text", "\u0633\u0627\u0628"));
     assertU(adoc("id", "2", "text", "I WİLL USE TURKİSH CASING"));
-    assertU(adoc("id", "3", "text", "ı will use turkish casing"));
+    assertU(adoc("id", "3", "text", "ı will use turkish casıng"));
     assertU(adoc("id", "4", "text", "Töne"));
     assertU(adoc("id", "5", "text", "I W\u0049\u0307LL USE TURKİSH CASING"));
     assertU(adoc("id", "6", "text", "Ｔｅｓｔｉｎｇ"));
