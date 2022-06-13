@@ -44,7 +44,7 @@ public class DelayingSearchComponent extends SearchComponent {
         //
         // (Tests using this component are explicitly to ensure 'timeAllowed'
         // has exceeded in order to get their expected results, we would rather over-sleep
-        // then under sleep)
+        // than under sleep)
         for (long sleepNanos = totalSleepNanos;
             0 < sleepNanos;
             sleepNanos = totalSleepNanos - (System.nanoTime() - startNanos)) {
