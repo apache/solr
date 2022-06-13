@@ -79,7 +79,8 @@ public class DeleteNodeTest extends SolrCloudTestCase {
     if (replicas != null) {
       for (Replica replica : replicas) {
         String shard =
-            docColl.getShardId(nodeToBeDecommissioned, replica.getStr(ZkStateReader.CORE_NAME_PROP));
+            docColl.getShardId(
+                nodeToBeDecommissioned, replica.getStr(ZkStateReader.CORE_NAME_PROP));
         Slice slice = docColl.getSlice(shard);
         boolean hasOtherNonPullReplicas = false;
         for (Replica r : slice.getReplicas()) {
