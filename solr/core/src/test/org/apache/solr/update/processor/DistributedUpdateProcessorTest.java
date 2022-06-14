@@ -65,7 +65,7 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
 
   @AfterClass
   public static void AfterClass() {
-    if (null != executor) { // may not have been inited due to lack of mockito
+    if (null != executor) { // may not have been initialized due to lack of mockito
       executor.shutdown();
     }
     System.clearProperty("enable.update.log");
