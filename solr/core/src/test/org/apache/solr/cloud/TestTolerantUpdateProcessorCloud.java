@@ -162,7 +162,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
         fail("unexpected shard: " + shardName);
       }
     }
-    assertEquals("Should be exactly one server left (hosting either shard)", 1, urlMap.size());
+    assertEquals("Should be exactly one server left (not hosting either shard)", 1, urlMap.size());
     NO_COLLECTION_CLIENT =
         getHttpSolrClient(urlMap.values().iterator().next() + "/" + COLLECTION_NAME + "/");
 

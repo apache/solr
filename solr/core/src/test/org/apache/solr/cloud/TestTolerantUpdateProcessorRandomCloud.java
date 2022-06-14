@@ -221,7 +221,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
             if (causeError) {
               // even though our DBQ is gibberish that's going to fail, record a docId as affected
               // so that we don't generate the same random DBQ and get redundant errors
-              // (problematic because of how DUP forwarded DBQs have to have their errors deduced by
+              // (problematic because of how DUP forwarded DBQs have to have their errors deduped by
               // TUP)
               final int id_i = randomUnsetBit(random(), docsAffectedThisRequest, maxDocId);
               docsAffectedThisRequest.set(id_i);
