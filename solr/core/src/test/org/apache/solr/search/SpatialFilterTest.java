@@ -66,7 +66,7 @@ public class SpatialFilterTest extends SolrTestCaseJ4 {
     // Try some edge cases
     checkHits(fieldName, "1,1", 175, 3, 5, 6, 7);
     checkHits(fieldName, "0,179.8", 200, 2, 8, 9);
-    checkHits(fieldName, "89.8, 50", 200, 2, 10, 11); // this goes over the   North Pole
+    checkHits(fieldName, "89.8, 50", 200, 2, 10, 11); // this goes over the North Pole
     checkHits(fieldName, "-89.8, 50", 200, 2, 12, 13); // this goes over the South Pole
     // try some normal cases
     checkHits(fieldName, "33.0,-80.0", 300, 2);
