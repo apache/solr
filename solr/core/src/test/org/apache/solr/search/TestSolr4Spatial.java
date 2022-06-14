@@ -444,7 +444,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
         req(
             "q", radiusQuery(3, 4, 9, "distance", null),
             "fl", "id,score",
-            "sort", "score asc"), // want ascending due to increasing distances
+            "sort", "score asc"), // want ascending due to increasing 'distance' values
         1e-3,
         "/response/docs/[0]/id=='100'",
         "/response/docs/[0]/score==2.827493",
