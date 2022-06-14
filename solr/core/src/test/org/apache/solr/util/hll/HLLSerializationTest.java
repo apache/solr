@@ -172,7 +172,7 @@ public class HLLSerializationTest extends SolrTestCase {
 
   /**
    * Iterates over all possible constructor args, except for log2m, which is only iterated up to the
-   * specified max so the test runs in a "reasonable" amount of time and ram.
+   * specified max so the test runs in a "reasonable" amount of time and RAM.
    */
   private static void assertCardinality(
       final HLLType hllType, final int maxLog2m, final Collection<Long> items)
