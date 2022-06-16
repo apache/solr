@@ -305,8 +305,10 @@ public abstract class LTRScoringModel implements Accountable {
       throw new FeatureException("Must have normalizer for every feature");
     }
     for(int idx = 0; idx < modelFeatureValuesNormalized.length; ++idx) {
-      modelFeatureValuesNormalized[idx] =
-          norms.get(idx).normalize(modelFeatureValuesNormalized[idx]);
+      if (!Float.isNaN(modelFeatureValuesNormalized[idx])) {
+        modelFeatureValuesNormalized[idx] =
+                norms.get(idx).normalize(modelFeatureValuesNormalized[idx]);
+      }
     }
   }
 

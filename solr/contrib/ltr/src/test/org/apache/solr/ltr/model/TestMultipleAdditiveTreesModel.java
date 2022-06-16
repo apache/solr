@@ -69,18 +69,18 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     // and feature depended on it.
     query.add("rq", "{!ltr reRankDocs=3 model=multipleadditivetreesmodel efi.user_query=dsjkafljjk}");
 
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==-120.0");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==-120.0");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/score==-120.0");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==30.0");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==30.0");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/score==30.0");
 
     // Matched user query since it was passed in
     query.remove("rq");
-    query.add("rq", "{!ltr reRankDocs=3 model=multipleadditivetreesmodel efi.user_query=w3}");
+    query.add("rq", "{!ltr reRankDocs=3 model=multipleadditivetreesmodel efi.user_query=w3 efi.user_device=1}");
 
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='3'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==30.0");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==-120.0");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/score==-120.0");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==45.0");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==45.0");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/score==45.0");
   }
 
   private void doTestMultipleAdditiveTreesExplain() throws Exception {
@@ -155,7 +155,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
   }
 
   @Test
-  public void multipleAdditiveTreesTestTreesParamDoesNotContatinTree() throws Exception {
+  public void multipleAdditiveTreesTestTreesParamDoesNotContainTree() throws Exception {
     final ModelException expectedException =
         new ModelException("MultipleAdditiveTreesModel tree doesn't contain a tree");
     Exception ex = expectThrows(Exception.class, () -> {

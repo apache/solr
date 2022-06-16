@@ -46,6 +46,7 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.model.LTRScoringModel;
+import org.apache.solr.ltr.model.MultipleAdditiveTreesModel;
 import org.apache.solr.request.SolrQueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -432,7 +433,12 @@ public class LTRScoringQuery extends Query implements Accountable {
         if (fInfo.isUsed()) { // not checking for finfo == null as that would be a bug we should catch
           modelFeatureValuesNormalized[pos] = fInfo.getValue();
         } else {
-          modelFeatureValuesNormalized[pos] = feature.getDefaultValue();
+          if (ltrScoringModel instanceof MultipleAdditiveTreesModel) {
+            modelFeatureValuesNormalized[pos] = Float.NaN;
+          }
+          else {
+            modelFeatureValuesNormalized[pos] = feature.getDefaultValue();
+          }
         }
         pos++;
       }

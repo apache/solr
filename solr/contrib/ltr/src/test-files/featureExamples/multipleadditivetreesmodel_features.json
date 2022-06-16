@@ -12,5 +12,13 @@
         "params": {
             "value": 1
         }
+    },
+    {
+        "name": "userDevice",
+        "class": "org.apache.solr.ltr.feature.ValueFeature",
+        "params": {
+            "value": "${user_device}",
+            "required": false
+        }
     }
 ]
