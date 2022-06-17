@@ -251,7 +251,6 @@ public class ZkStateReader implements SolrCloseable {
    */
   private static class DocCollectionWatches
       extends ConcurrentHashMap<String, DocCollectionWatch<DocCollectionWatcher>> {
-    private static final Set<String> activeCollections = ConcurrentHashMap.newKeySet();
 
     /**
      * Gets the DocCollection (state) of the collection which the corresponding watch last observed
@@ -271,7 +270,9 @@ public class ZkStateReader implements SolrCloseable {
      * @return an immutable set of active collection names
      */
     private Set<String> activeCollections() {
-      return Collections.unmodifiableSet(activeCollections);
+      return this.entrySet().stream()
+              .filter((Entry<String, DocCollectionWatch<DocCollectionWatcher>> entry) -> entry.getValue().currentDoc != null)
+              .map(Entry::getKey).collect(Collectors.toUnmodifiableSet());
     }
 
     /**
@@ -293,11 +294,9 @@ public class ZkStateReader implements SolrCloseable {
             log.debug("Add data for [{}] ver [{}]", collection, newState.getZNodeVersion());
           }
           watch.currentDoc = newState;
-          activeCollections.add(collection);
         } else if (newState == null) {
           log.debug("Removing cached collection state for [{}]", collection);
           watch.currentDoc = null;
-          activeCollections.remove(collection);
         } else { // both new and old states are non-null
           int oldCVersion =
               oldState.getPerReplicaStates() == null ? -1 : oldState.getPerReplicaStates().cversion;
