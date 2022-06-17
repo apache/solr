@@ -23,7 +23,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -268,7 +267,8 @@ public class ZkStateReader implements SolrCloseable {
 
     /**
      * Gets the active collections (collections that exist) being watched
-     * @return  an immutable set of active collection names
+     *
+     * @return an immutable set of active collection names
      */
     private Set<String> activeCollections() {
       return Collections.unmodifiableSet(activeCollections);
