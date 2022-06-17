@@ -139,10 +139,7 @@ public abstract class CountCollector extends ReductionDataCollector<CountCollect
     @Override
     public void collect() {
       tempCount = 0;
-      param.streamObjects(
-          obj -> {
-            ++tempCount;
-          });
+      param.streamObjects(obj -> ++tempCount);
       tempMissing = tempCount == 0 ? 1 : 0;
       tempDocCount = tempCount > 0 ? 1 : 0;
     }

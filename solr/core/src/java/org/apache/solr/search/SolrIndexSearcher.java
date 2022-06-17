@@ -1235,7 +1235,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     // Set pf.postFilter
     if (postFilters != null) {
-      Collections.sort(postFilters, sortByCost);
+      postFilters.sort(sortByCost);
       for (int i = postFilters.size() - 1; i >= 0; i--) {
         DelegatingCollector prev = pf.postFilter;
         pf.postFilter = postFilters.get(i).getFilterCollector(this);
@@ -2516,13 +2516,13 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         liveDocsCacheMetrics, true, "liveDocsCache", Category.SEARCHER.toString(), scope);
     // reader stats
     parentContext.gauge(
-        rgauge(parentContext.nullNumber(), () -> reader.numDocs()),
+        rgauge(parentContext.nullNumber(), reader::numDocs),
         true,
         "numDocs",
         Category.SEARCHER.toString(),
         scope);
     parentContext.gauge(
-        rgauge(parentContext.nullNumber(), () -> reader.maxDoc()),
+        rgauge(parentContext.nullNumber(), reader::maxDoc),
         true,
         "maxDoc",
         Category.SEARCHER.toString(),
@@ -2534,7 +2534,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         Category.SEARCHER.toString(),
         scope);
     parentContext.gauge(
-        rgauge(parentContext.nullString(), () -> reader.toString()),
+        rgauge(parentContext.nullString(), reader::toString),
         true,
         "reader",
         Category.SEARCHER.toString(),
@@ -2546,7 +2546,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         Category.SEARCHER.toString(),
         scope);
     parentContext.gauge(
-        rgauge(parentContext.nullNumber(), () -> reader.getVersion()),
+        rgauge(parentContext.nullNumber(), reader::getVersion),
         true,
         "indexVersion",
         Category.SEARCHER.toString(),

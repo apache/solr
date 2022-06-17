@@ -87,7 +87,7 @@ public class TestNamedListCodec extends SolrTestCase {
       list = (SolrDocumentList) res.getVal(1);
       assertEquals(12, list.getNumFound());
       assertEquals(10, list.getStart());
-      assertEquals(101, ((List) list.get(1).getFieldValue("f")).get(1));
+      assertEquals(101, ((List<?>) list.get(1).getFieldValue("f")).get(1));
     }
   }
 

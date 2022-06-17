@@ -263,7 +263,7 @@ class RequiredValidator extends Validator<List<String>> {
             return false;
           }
           String subprop = requiredProp.substring(requiredProp.indexOf(".") + 1);
-          if (!validate(((Map) o).get(requiredProp), errs, Collections.singleton(subprop))) {
+          if (!validate(((Map<?, ?>) o).get(requiredProp), errs, Collections.singleton(subprop))) {
             return false;
           }
         } else {

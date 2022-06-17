@@ -121,7 +121,7 @@ public abstract class SortedListCollector<T extends Comparable<T>>
   @Override
   public SortedListData<T> newData() {
     SortedListData<T> data = new SortedListData<>();
-    data.list = new ArrayList<T>();
+    data.list = new ArrayList<>();
     data.exists = false;
     return data;
   }
@@ -245,10 +245,7 @@ public abstract class SortedListCollector<T extends Comparable<T>>
     public void submitReservations(Consumer<ReductionDataReservation<?, ?>> consumer) {
       consumer.accept(
           new IntArrayReservation(
-              value -> importNext(value),
-              importSize -> startImport(importSize),
-              () -> exportNext(),
-              () -> startExport()));
+              this::importNext, this::startImport, this::exportNext, this::startExport));
     }
   }
 
@@ -270,10 +267,7 @@ public abstract class SortedListCollector<T extends Comparable<T>>
     public void submitReservations(Consumer<ReductionDataReservation<?, ?>> consumer) {
       consumer.accept(
           new LongArrayReservation(
-              value -> importNext(value),
-              importSize -> startImport(importSize),
-              () -> exportNext(),
-              () -> startExport()));
+              this::importNext, this::startImport, this::exportNext, this::startExport));
     }
   }
 
@@ -295,10 +289,7 @@ public abstract class SortedListCollector<T extends Comparable<T>>
     public void submitReservations(Consumer<ReductionDataReservation<?, ?>> consumer) {
       consumer.accept(
           new FloatArrayReservation(
-              value -> importNext(value),
-              importSize -> startImport(importSize),
-              () -> exportNext(),
-              () -> startExport()));
+              this::importNext, this::startImport, this::exportNext, this::startExport));
     }
   }
 
@@ -320,10 +311,7 @@ public abstract class SortedListCollector<T extends Comparable<T>>
     public void submitReservations(Consumer<ReductionDataReservation<?, ?>> consumer) {
       consumer.accept(
           new DoubleArrayReservation(
-              value -> importNext(value),
-              importSize -> startImport(importSize),
-              () -> exportNext(),
-              () -> startExport()));
+              this::importNext, this::startImport, this::exportNext, this::startExport));
     }
   }
 
@@ -345,10 +333,7 @@ public abstract class SortedListCollector<T extends Comparable<T>>
     public void submitReservations(Consumer<ReductionDataReservation<?, ?>> consumer) {
       consumer.accept(
           new StringArrayReservation(
-              value -> importNext(value),
-              importSize -> startImport(importSize),
-              () -> exportNext(),
-              () -> startExport()));
+              this::importNext, this::startImport, this::exportNext, this::startExport));
     }
   }
 }

@@ -92,21 +92,19 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
       commit();
 
       indexThread =
-          new Thread() {
-            @Override
-            public void run() {
-              int max = atLeast(401);
-              for (int id = 101; id < max; id++) {
-                try {
-                  indexAndUpdateCount(
-                      router, ranges, docCounts, String.valueOf(id), id, documentIds);
-                  Thread.sleep(atLeast(25));
-                } catch (Exception e) {
-                  log.error("Exception while adding doc", e);
+          new Thread(
+              () -> {
+                int max = atLeast(401);
+                for (int id = 101; id < max; id++) {
+                  try {
+                    indexAndUpdateCount(
+                        router, ranges, docCounts, String.valueOf(id), id, documentIds);
+                    Thread.sleep(atLeast(25));
+                  } catch (Exception e) {
+                    log.error("Exception while adding doc", e);
+                  }
                 }
-              }
-            }
-          };
+              });
       indexThread.start();
 
       // kill the leader

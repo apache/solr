@@ -88,17 +88,13 @@ public class LogicFunction {
   public static class AndFunction {
     public static final String name = "and";
     public static final CreatorFunction creatorFunction =
-        (params -> {
-          return LogicFunction.createBitwiseFunction(name, (a, b) -> a && b, params);
-        });
+        (params -> LogicFunction.createBitwiseFunction(name, (a, b) -> a && b, params));
   }
 
   /** A mapping function for the logical operation OR. */
   public static class OrFunction {
     public static final String name = "or";
     public static final CreatorFunction creatorFunction =
-        (params -> {
-          return LogicFunction.createBitwiseFunction(name, (a, b) -> a || b, params);
-        });
+        (params -> LogicFunction.createBitwiseFunction(name, (a, b) -> a || b, params));
   }
 }

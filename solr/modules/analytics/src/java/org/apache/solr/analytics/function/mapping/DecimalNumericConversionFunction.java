@@ -87,30 +87,27 @@ public class DecimalNumericConversionFunction {
   public static class FloorFunction {
     public static final String name = "floor";
     public static final CreatorFunction creatorFunction =
-        (params -> {
-          return DecimalNumericConversionFunction.createDecimalConversionFunction(
-              name, val -> (int) Math.floor(val), val -> (long) Math.floor(val), params);
-        });
+        (params ->
+            DecimalNumericConversionFunction.createDecimalConversionFunction(
+                name, val -> (int) Math.floor(val), val -> (long) Math.floor(val), params));
   }
 
   /** A numeric mapping function that returns the ceiling of the input. */
   public static class CeilingFunction {
     public static final String name = "ceil";
     public static final CreatorFunction creatorFunction =
-        (params -> {
-          return DecimalNumericConversionFunction.createDecimalConversionFunction(
-              name, val -> (int) Math.ceil(val), val -> (long) Math.ceil(val), params);
-        });
+        (params ->
+            DecimalNumericConversionFunction.createDecimalConversionFunction(
+                name, val -> (int) Math.ceil(val), val -> (long) Math.ceil(val), params));
   }
 
   /** A numeric mapping function that returns the rounded input. */
   public static class RoundFunction {
     public static final String name = "round";
     public static final CreatorFunction creatorFunction =
-        (params -> {
-          return DecimalNumericConversionFunction.createDecimalConversionFunction(
-              name, val -> Math.round(val), val -> Math.round(val), params);
-        });
+        (params ->
+            DecimalNumericConversionFunction.createDecimalConversionFunction(
+                name, Math::round, Math::round, params));
   }
 
   @FunctionalInterface

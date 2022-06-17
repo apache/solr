@@ -64,7 +64,7 @@ public class ValueFeature extends Feature {
     } else if (value instanceof Double) {
       configValue = ((Double) value).floatValue();
     } else if (value instanceof Float) {
-      configValue = ((Float) value).floatValue();
+      configValue = (Float) value;
     } else if (value instanceof Integer) {
       configValue = ((Integer) value).floatValue();
     } else if (value instanceof Long) {

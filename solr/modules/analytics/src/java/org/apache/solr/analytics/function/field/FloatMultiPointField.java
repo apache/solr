@@ -82,6 +82,6 @@ public class FloatMultiPointField extends AnalyticsField implements CastingFloat
 
   @Override
   public void streamObjects(Consumer<Object> cons) {
-    streamFloats(value -> cons.accept(value));
+    streamFloats(cons::accept);
   }
 }

@@ -78,9 +78,7 @@ public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
         expectThrows(
             CloudSolrClient.RouteException.class,
             "Expected an exception on the client when failure is injected during updates",
-            () -> {
-              solrClient.add(collectionName, new SolrInputDocument("id", "2"));
-            });
+            () -> solrClient.add(collectionName, new SolrInputDocument("id", "2")));
       } finally {
         TestInjection.reset();
       }

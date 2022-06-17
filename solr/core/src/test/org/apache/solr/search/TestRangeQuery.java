@@ -21,6 +21,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -415,11 +416,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     // sometimes a very small index, sometimes a very large index
     // final int numDocs = random().nextBoolean() ? random().nextInt(50) : atLeast(1000);
     final int numDocs = 99;
-    createIndex(
-        numDocs,
-        doc -> {
-          addInt(doc, 0, 0, "foo_i");
-        });
+    createIndex(numDocs, doc -> addInt(doc, 0, 0, "foo_i"));
 
     // ensure delay comes after createIndex - so we don't affect/count any cache warming from
     // queries left over by other test methods
@@ -774,7 +771,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
       assert ft instanceof StrField;
       values[0] = randomInt(max);
       values[1] = randomInt(max);
-      Arrays.sort(values, (o1, o2) -> String.valueOf(o1).compareTo(String.valueOf(o2)));
+      Arrays.sort(values, Comparator.comparing(String::valueOf));
     } else {
       switch (ft.getNumberType()) {
         case DOUBLE:

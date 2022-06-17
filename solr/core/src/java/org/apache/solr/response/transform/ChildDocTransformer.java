@@ -282,7 +282,7 @@ class ChildDocTransformer extends DocTransformer {
       return;
     }
     // is single value
-    parent.setField(trimmedPath, ((List) children).get(0));
+    parent.setField(trimmedPath, ((List<?>) children).get(0));
   }
 
   private static String getLastPath(String path) {

@@ -56,9 +56,7 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
         false,
         false,
         ".",
-        (k, v) -> {
-          ((MapWriter) v).toMap(map);
-        });
+        (k, v) -> ((MapWriter) v).toMap(map));
     NamedList<?> lst = new NamedList<>(map);
     // check that expected metrics were obtained
     assertEquals(14, lst.size());
@@ -114,17 +112,9 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
         };
     registry.register("memory.expected.error", error);
 
-    MetricsMap metricsMapWithMap =
-        new MetricsMap(
-            (detailed, map) -> {
-              map.put("foo", "bar");
-            });
+    MetricsMap metricsMapWithMap = new MetricsMap((detailed, map) -> map.put("foo", "bar"));
     registry.register("mapWithMap", metricsMapWithMap);
-    MetricsMap metricsMap =
-        new MetricsMap(
-            map -> {
-              map.putNoEx("foo", "bar");
-            });
+    MetricsMap metricsMap = new MetricsMap(map -> map.putNoEx("foo", "bar"));
     registry.register("map", metricsMap);
 
     SolrMetricManager.GaugeWrapper<Map<String, Object>> gaugeWrapper =

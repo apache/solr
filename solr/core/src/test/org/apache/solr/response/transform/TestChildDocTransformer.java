@@ -126,16 +126,15 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
     SolrException e =
         expectThrows(
             SolrException.class,
-            () -> {
-              h.query(
-                  req(
-                      "q",
-                      "*:*",
-                      "fq",
-                      "subject:\"parentDocument\" ",
-                      "fl",
-                      "id, subject,[child parentFilter=\"subject:bleh\" childFilter=\"title:bar\" limit=2]"));
-            });
+            () ->
+                h.query(
+                    req(
+                        "q",
+                        "*:*",
+                        "fq",
+                        "subject:\"parentDocument\" ",
+                        "fl",
+                        "id, subject,[child parentFilter=\"subject:bleh\" childFilter=\"title:bar\" limit=2]")));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
     assertThat(
         e.getMessage(),
@@ -145,16 +144,15 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
     e =
         expectThrows(
             SolrException.class,
-            () -> {
-              h.query(
-                  req(
-                      "q",
-                      "*:*",
-                      "fq",
-                      "subject:\"parentDocument\" ",
-                      "fl",
-                      "id, subject,[child parentFilter=e childFilter=\"title:bar\" limit=2]"));
-            });
+            () ->
+                h.query(
+                    req(
+                        "q",
+                        "*:*",
+                        "fq",
+                        "subject:\"parentDocument\" ",
+                        "fl",
+                        "id, subject,[child parentFilter=e childFilter=\"title:bar\" limit=2]")));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
     assertThat(
         e.getMessage(),
@@ -164,16 +162,15 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
     e =
         expectThrows(
             SolrException.class,
-            () -> {
-              h.query(
-                  req(
-                      "q",
-                      "*:*",
-                      "fq",
-                      "subject:\"parentDocument\" ",
-                      "fl",
-                      "id, subject,[child parentFilter=\"\"]"));
-            });
+            () ->
+                h.query(
+                    req(
+                        "q",
+                        "*:*",
+                        "fq",
+                        "subject:\"parentDocument\" ",
+                        "fl",
+                        "id, subject,[child parentFilter=\"\"]")));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
     assertThat(e.getMessage(), containsString("Invalid Parent filter '', resolves to null"));
   }

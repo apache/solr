@@ -16,6 +16,7 @@
  */
 package org.apache.solr.spelling;
 
+import java.util.Objects;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.tokenattributes.PackedTokenAttributeImpl;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
@@ -135,7 +136,7 @@ public class Token extends PackedTokenAttributeImpl implements FlagsAttribute, P
     if (obj instanceof Token) {
       final Token other = (Token) obj;
       return (flags == other.flags
-          && (payload == null ? other.payload == null : payload.equals(other.payload))
+          && (Objects.equals(payload, other.payload))
           && super.equals(obj));
     } else return false;
   }

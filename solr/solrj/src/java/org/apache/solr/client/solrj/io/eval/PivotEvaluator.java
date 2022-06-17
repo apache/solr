@@ -69,8 +69,7 @@ public class PivotEvaluator extends RecursiveObjectEvaluator implements ManyValu
       Set<String> xset = new TreeSet<>();
       Set<String> yset = new TreeSet<>();
 
-      for (int i = 0; i < tuples.size(); i++) {
-        Tuple tuple = tuples.get(i);
+      for (Tuple tuple : tuples) {
         xset.add(tuple.getString(x));
         yset.add(tuple.getString(y));
       }

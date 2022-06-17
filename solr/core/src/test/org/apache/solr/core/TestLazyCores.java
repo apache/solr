@@ -359,15 +359,13 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       Thread[] threads = new Thread[15];
       for (int idx = 0; idx < threads.length; idx++) {
         threads[idx] =
-            new Thread() {
-              @Override
-              public void run() {
-                SolrCore core = cc.getCore("collection3");
-                synchronized (theCores) {
-                  theCores.add(core);
-                }
-              }
-            };
+            new Thread(
+                () -> {
+                  SolrCore core = cc.getCore("collection3");
+                  synchronized (theCores) {
+                    theCores.add(core);
+                  }
+                });
         threads[idx].start();
       }
       for (Thread thread : threads) {

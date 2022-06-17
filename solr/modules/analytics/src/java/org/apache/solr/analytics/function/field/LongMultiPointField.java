@@ -81,6 +81,6 @@ public class LongMultiPointField extends AnalyticsField implements CastingLongVa
 
   @Override
   public void streamObjects(Consumer<Object> cons) {
-    streamLongs(value -> cons.accept(value));
+    streamLongs(cons::accept);
   }
 }

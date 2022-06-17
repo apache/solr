@@ -18,7 +18,6 @@ package org.apache.solr.analytics.facet;
 
 import com.google.common.collect.Iterables;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -82,7 +81,7 @@ public abstract class SortableFacet extends AnalyticsFacet {
       return facetResults;
     }
     Comparator<FacetBucket> comp = sort.getComparator();
-    Collections.sort(facetResults, comp);
+    facetResults.sort(comp);
 
     Iterable<FacetBucket> facetResultsIter = facetResults;
     // apply the limit
@@ -92,7 +91,7 @@ public abstract class SortableFacet extends AnalyticsFacet {
       }
       facetResultsIter = Iterables.limit(facetResultsIter, sort.getLimit());
     } else if (sort.getLimit() == 0) {
-      return new LinkedList<FacetBucket>();
+      return new LinkedList<>();
     }
     return facetResultsIter;
   }

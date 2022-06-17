@@ -85,7 +85,7 @@ public class TestToleratedUpdateError extends SolrTestCase {
     // randomized
     int numIters = atLeast(5000);
     for (int i = 0; i < numIters; i++) {
-      valid = new SimpleOrderedMap<String>();
+      valid = new SimpleOrderedMap<>();
       valid.add("type", ALL_TYPES[TestUtil.nextInt(random(), 0, ALL_TYPES.length - 1)].toString());
       valid.add("id", TestUtil.randomUnicodeString(random()));
       valid.add("message", TestUtil.randomUnicodeString(random()));

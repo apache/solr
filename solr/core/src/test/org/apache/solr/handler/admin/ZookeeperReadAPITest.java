@@ -73,8 +73,8 @@ public class ZookeeperReadAPITest extends SolrCloudTestCase {
       assertEquals("0", String.valueOf(getObjectByPath(o, true, split("/stat/version", '/'))));
 
       o = Utils.executeGET(client.getHttpClient(), basezk + "/configs", Utils.JSONCONSUMER);
-      assertTrue(((Map) o).containsKey("/configs"));
-      assertNull(((Map) o).get("/configs"));
+      assertTrue(((Map<?, ?>) o).containsKey("/configs"));
+      assertNull(((Map<?, ?>) o).get("/configs"));
 
       byte[] bytes = new byte[1024 * 5];
       for (int i = 0; i < bytes.length; i++) {

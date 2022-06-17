@@ -136,21 +136,18 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     threads = new Thread[7];
     for (int i = 0; i < threads.length; i++) {
       threads[i] =
-          new Thread() {
-
-            @Override
-            public void run() {
-              for (int i = 0; i < 30; i++) {
-                // h.update(adoc("id", Integer.toString(1+ i), "v_t",
-                // "Goodbye Dude girl!"));
-                try {
-                  addDoc(adoc("id", Integer.toString(1 + i), "v_t", "Goodbye Dude girl!"));
-                } catch (Exception e) {
-                  throw new RuntimeException(e);
+          new Thread(
+              () -> {
+                for (int i12 = 0; i12 < 30; i12++) {
+                  // h.update(adoc("id", Integer.toString(1+ i), "v_t",
+                  // "Goodbye Dude girl!"));
+                  try {
+                    addDoc(adoc("id", Integer.toString(1 + i12), "v_t", "Goodbye Dude girl!"));
+                  } catch (Exception e) {
+                    throw new RuntimeException(e);
+                  }
                 }
-              }
-            }
-          };
+              });
 
       threads[i].setName("testThread-" + i);
     }
@@ -158,41 +155,38 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     threads2 = new Thread[3];
     for (int i = 0; i < threads2.length; i++) {
       threads2[i] =
-          new Thread() {
-
-            @Override
-            public void run() {
-              for (int i = 0; i < 10; i++) {
-                // h.update(adoc("id" , Integer.toString(1+ i + 10000), "v_t",
-                // "Goodbye Dude girl"));
-                // h.update(commit());
-                try {
-                  addDoc(adoc("id", Integer.toString(1 + i), "v_t", "Goodbye Dude girl!"));
-                  addDoc(commit());
-                } catch (Exception e) {
-                  throw new RuntimeException(e);
+          new Thread(
+              () -> {
+                for (int i1 = 0; i1 < 10; i1++) {
+                  // h.update(adoc("id" , Integer.toString(1+ i + 10000), "v_t",
+                  // "Goodbye Dude girl"));
+                  // h.update(commit());
+                  try {
+                    addDoc(adoc("id", Integer.toString(1 + i1), "v_t", "Goodbye Dude girl!"));
+                    addDoc(commit());
+                  } catch (Exception e) {
+                    throw new RuntimeException(e);
+                  }
                 }
-              }
-            }
-          };
+              });
 
       threads2[i].setName("testThread2-" + i);
     }
 
-    for (int i = 0; i < threads.length; i++) {
-      threads[i].start();
+    for (Thread element : threads) {
+      element.start();
     }
 
-    for (int i = 0; i < threads2.length; i++) {
-      threads2[i].start();
+    for (Thread item : threads2) {
+      item.start();
     }
 
-    for (int i = 0; i < threads.length; i++) {
-      threads[i].join();
+    for (Thread value : threads) {
+      value.join();
     }
 
-    for (int i = 0; i < threads2.length; i++) {
-      threads2[i].join();
+    for (Thread thread : threads2) {
+      thread.join();
     }
     SolrCore core = h.getCore();
 

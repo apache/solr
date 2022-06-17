@@ -59,8 +59,7 @@ public class AnalyticsDriver {
     // results
     if (collectionManager.needsCollection()) {
       List<LeafReaderContext> contexts = searcher.getTopReaderContext().leaves();
-      for (int leafNum = 0; leafNum < contexts.size(); leafNum++) {
-        LeafReaderContext context = contexts.get(leafNum);
+      for (LeafReaderContext context : contexts) {
         DocIdSetIterator disi = filter.iterator(context);
         if (disi != null) {
           collectionManager.doSetNextReader(context);
@@ -68,7 +67,7 @@ public class AnalyticsDriver {
           while (doc != DocIdSetIterator.NO_MORE_DOCS) {
             // Add a document to the statistics being generated
             collectionManager.collect(doc);
-            streamingFacets.forEach(facet -> facet.addFacetValueCollectionTargets());
+            streamingFacets.forEach(StreamingFacet::addFacetValueCollectionTargets);
             collectionManager.apply();
             doc = disi.nextDoc();
           }

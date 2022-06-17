@@ -112,37 +112,37 @@ public class TestStressIncrementalBackup extends SolrCloudTestCase {
     // this thread will do nothing but add/commit new 'dummy' docs over and over again as fast as
     // possible to create a lot of index churn w/ segment merging
     final Thread heavyCommitting =
-        new Thread() {
-          public void run() {
-            try {
-              int docIdCounter = 0;
-              while (keepGoing.get()) {
-                docIdCounter++;
+        new Thread(
+            () -> {
+              try {
+                int docIdCounter = 0;
+                while (keepGoing.get()) {
+                  docIdCounter++;
 
-                final UpdateRequest req =
-                    new UpdateRequest().add(makeDoc("dummy_" + docIdCounter, "dummy"));
-                // always commit to force lots of new segments
-                req.setParam(UpdateParams.COMMIT, "true");
-                req.setParam(UpdateParams.OPEN_SEARCHER, "false"); // we don't care about searching
+                  final UpdateRequest req =
+                      new UpdateRequest().add(makeDoc("dummy_" + docIdCounter, "dummy"));
+                  // always commit to force lots of new segments
+                  req.setParam(UpdateParams.COMMIT, "true");
+                  req.setParam(
+                      UpdateParams.OPEN_SEARCHER, "false"); // we don't care about searching
 
-                // frequently forceMerge to ensure segments are frequently deleted
-                if (0 == (docIdCounter % 13)) { // arbitrary
-                  req.setParam(UpdateParams.OPTIMIZE, "true");
-                  req.setParam(UpdateParams.MAX_OPTIMIZE_SEGMENTS, "5"); // arbitrary
+                  // frequently forceMerge to ensure segments are frequently deleted
+                  if (0 == (docIdCounter % 13)) { // arbitrary
+                    req.setParam(UpdateParams.OPTIMIZE, "true");
+                    req.setParam(UpdateParams.MAX_OPTIMIZE_SEGMENTS, "5"); // arbitrary
+                  }
+
+                  log.info("Heavy Committing #{}: {}", docIdCounter, req);
+                  final UpdateResponse rsp = req.process(coreClient);
+                  assertEquals(
+                      "Dummy Doc#" + docIdCounter + " add status: " + rsp.toString(),
+                      0,
+                      rsp.getStatus());
                 }
-
-                log.info("Heavy Committing #{}: {}", docIdCounter, req);
-                final UpdateResponse rsp = req.process(coreClient);
-                assertEquals(
-                    "Dummy Doc#" + docIdCounter + " add status: " + rsp.toString(),
-                    0,
-                    rsp.getStatus());
+              } catch (Throwable t) {
+                heavyCommitFailure.set(t);
               }
-            } catch (Throwable t) {
-              heavyCommitFailure.set(t);
-            }
-          }
-        };
+            });
 
     heavyCommitting.start();
     try {

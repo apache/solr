@@ -294,7 +294,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
     { // convert our docs to update commands, along with some commits, in a shuffled order and
       // process all of them...
       final List<String> updates =
-          Stream.concat(Stream.of(commit()), makeBlockDocs().stream().map(doc -> adoc(doc)))
+          Stream.concat(Stream.of(commit()), makeBlockDocs().stream().map(SolrTestCaseJ4::adoc))
               .collect(Collectors.toList());
       Collections.shuffle(updates, random());
       for (String u : updates) {
@@ -618,7 +618,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
                               dupFields(sdoc("id", "z3", "num_i", 3)),
                               dupFields(sdoc("id", "z100", "num_i", 100)))
                               .stream())
-                      .map(doc -> adoc(doc)))
+                      .map(SolrTestCaseJ4::adoc))
               .collect(Collectors.toList());
       Collections.shuffle(updates, random());
       for (String u : updates) {
@@ -965,7 +965,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
                               dupFields(sdoc("id", "z2", "num_i", 2)),
                               dupFields(sdoc("id", "z3", "num_i", 3)))
                               .stream())
-                      .map(doc -> adoc(doc)))
+                      .map(SolrTestCaseJ4::adoc))
               .collect(Collectors.toList());
       Collections.shuffle(updates, random());
       for (String u : updates) {
@@ -1133,7 +1133,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
     // as num_i value increases, the asc_* fields increase
     // as num_i value increases, the desc_* fields decrease
     if (doc.getFieldNames().contains("num_i")) {
-      final int val = ((Integer) doc.getFieldValue("num_i")).intValue();
+      final int val = (Integer) doc.getFieldValue("num_i");
       for (String suffix : SELECTOR_FIELD_SUFFIXES) {
         doc.setField("asc" + suffix, val);
         doc.setField("desc" + suffix, 0 - val);

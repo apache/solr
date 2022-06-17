@@ -250,11 +250,7 @@ public class V2NodeAPIMappingTest {
       throws Exception {
     final HashMap<String, String> parts = new HashMap<>();
     final Map<String, String[]> inputParamsMap = Maps.newHashMap();
-    inputParams.stream()
-        .forEach(
-            e -> {
-              inputParamsMap.put(e.getKey(), e.getValue());
-            });
+    inputParams.stream().forEach(e -> inputParamsMap.put(e.getKey(), e.getValue()));
     final Api api = apiBag.lookup(path, method, parts);
     final SolrQueryResponse rsp = new SolrQueryResponse();
     final LocalSolrQueryRequest req =

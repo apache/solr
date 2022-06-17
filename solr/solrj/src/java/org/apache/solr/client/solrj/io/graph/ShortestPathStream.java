@@ -473,7 +473,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
       joinParams.set("qt", "/export");
       joinParams.set(SORT, toField + " asc," + fromField + " asc");
 
-      StringBuffer nodeQuery = new StringBuffer();
+      StringBuilder nodeQuery = new StringBuilder();
 
       for (String node : nodes) {
         nodeQuery.append(node).append(" ");

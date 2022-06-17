@@ -33,10 +33,7 @@ public class CastingStringValueStreamTest extends SolrTestCaseJ4 {
 
     // No values
     val.setValues();
-    casted.streamObjects(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    casted.streamObjects(value -> assertTrue("There should be no values to stream", false));
 
     // Multiple Values
     val.setValues("abc", "def", "ghi");

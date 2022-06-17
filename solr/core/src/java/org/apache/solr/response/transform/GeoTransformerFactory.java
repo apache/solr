@@ -19,7 +19,6 @@ package org.apache.solr.response.transform;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import org.apache.lucene.index.IndexableField;
@@ -216,9 +215,8 @@ public class GeoTransformerFactory extends TransformerFactory
       doc.remove(display);
       if (val != null) {
         if (val instanceof Iterable) {
-          Iterator<?> iter = ((Iterable<?>) val).iterator();
-          while (iter.hasNext()) {
-            addValue(doc, iter.next());
+          for (Object o : (Iterable<?>) val) {
+            addValue(doc, o);
           }
         } else {
           addValue(doc, val);

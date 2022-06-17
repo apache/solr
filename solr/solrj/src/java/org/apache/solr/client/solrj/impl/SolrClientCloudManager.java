@@ -171,7 +171,7 @@ public class SolrClientCloudManager implements SolrCloudManager {
         throw new IOException("Unsupported method " + method);
     }
     if (headers != null) {
-      headers.forEach((k, v) -> req.addHeader(k, v));
+      headers.forEach(req::addHeader);
     }
     RequestConfig.Builder requestConfigBuilder = HttpClientUtil.createDefaultRequestConfigBuilder();
     if (timeout > 0) {

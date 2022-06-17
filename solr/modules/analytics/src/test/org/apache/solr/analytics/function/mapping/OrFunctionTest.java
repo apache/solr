@@ -118,18 +118,12 @@ public class OrFunctionTest extends SolrTestCaseJ4 {
     // No values, One value
     val1.setValue(false).setExists(true);
     val2.setValues();
-    func.streamBooleans(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamBooleans(value -> assertTrue("There should be no values to stream", false));
 
     // Multiple values, no value
     val1.setExists(false);
     val2.setValues(true, false);
-    func.streamBooleans(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamBooleans(value -> assertTrue("There should be no values to stream", false));
 
     // Multiple values, one value
     val1.setValue(false).setExists(true);

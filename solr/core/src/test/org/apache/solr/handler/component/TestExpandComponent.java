@@ -988,20 +988,19 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     SolrException e =
         expectThrows(
             SolrException.class,
-            () -> {
-              h.query(
-                  req(
-                      "q",
-                      "*:*",
-                      "expand",
-                      "true",
-                      "expand.field",
-                      "id",
-                      "group",
-                      "true",
-                      "group.field",
-                      "id"));
-            });
+            () ->
+                h.query(
+                    req(
+                        "q",
+                        "*:*",
+                        "expand",
+                        "true",
+                        "expand.field",
+                        "id",
+                        "group",
+                        "true",
+                        "group.field",
+                        "id")));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
     assertEquals("Can not use expand with Grouping enabled", e.getMessage());
 

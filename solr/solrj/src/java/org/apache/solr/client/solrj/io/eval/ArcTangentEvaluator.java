@@ -45,8 +45,7 @@ public class ArcTangentEvaluator extends RecursiveNumericEvaluator implements On
     if (null == value) {
       return null;
     } else if (value instanceof List) {
-      return ((List<?>) value)
-          .stream().map(innerValue -> doWork(innerValue)).collect(Collectors.toList());
+      return ((List<?>) value).stream().map(this::doWork).collect(Collectors.toList());
     } else {
       // we know it's a BigDecimal
       return Math.atan(((Number) value).doubleValue());

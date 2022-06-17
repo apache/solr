@@ -44,25 +44,16 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
     IllegalArgumentException e =
         expectThrows(
             IllegalArgumentException.class,
-            () -> {
-              new CopyField(new SchemaField("source", new TextField()), null);
-            });
+            () -> new CopyField(new SchemaField("source", new TextField()), null));
     assertTrue(e.getLocalizedMessage().contains("can't be NULL"));
 
     e =
         expectThrows(
             IllegalArgumentException.class,
-            () -> {
-              new CopyField(null, new SchemaField("destination", new TextField()));
-            });
+            () -> new CopyField(null, new SchemaField("destination", new TextField())));
     assertTrue(e.getLocalizedMessage().contains("can't be NULL"));
 
-    e =
-        expectThrows(
-            IllegalArgumentException.class,
-            () -> {
-              new CopyField(null, null);
-            });
+    e = expectThrows(IllegalArgumentException.class, () -> new CopyField(null, null));
     assertTrue(e.getLocalizedMessage().contains("can't be NULL"));
   }
 
@@ -71,36 +62,26 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
     IllegalArgumentException e =
         expectThrows(
             IllegalArgumentException.class,
-            () -> {
-              new CopyField(null, new SchemaField("destination", new TextField()), 1000);
-            });
+            () -> new CopyField(null, new SchemaField("destination", new TextField()), 1000));
     assertTrue(e.getLocalizedMessage().contains("can't be NULL"));
 
     e =
         expectThrows(
             IllegalArgumentException.class,
-            () -> {
-              new CopyField(new SchemaField("source", new TextField()), null, 1000);
-            });
+            () -> new CopyField(new SchemaField("source", new TextField()), null, 1000));
+    assertTrue(e.getLocalizedMessage().contains("can't be NULL"));
+
+    e = expectThrows(IllegalArgumentException.class, () -> new CopyField(null, null, 1000));
     assertTrue(e.getLocalizedMessage().contains("can't be NULL"));
 
     e =
         expectThrows(
             IllegalArgumentException.class,
-            () -> {
-              new CopyField(null, null, 1000);
-            });
-    assertTrue(e.getLocalizedMessage().contains("can't be NULL"));
-
-    e =
-        expectThrows(
-            IllegalArgumentException.class,
-            () -> {
-              new CopyField(
-                  new SchemaField("source", new TextField()),
-                  new SchemaField("destination", new TextField()),
-                  -1000);
-            });
+            () ->
+                new CopyField(
+                    new SchemaField("source", new TextField()),
+                    new SchemaField("destination", new TextField()),
+                    -1000));
     assertTrue(e.getLocalizedMessage().contains("can't have a negative value"));
 
     new CopyField(

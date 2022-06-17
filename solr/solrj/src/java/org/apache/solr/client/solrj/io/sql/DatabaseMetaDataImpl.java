@@ -123,7 +123,7 @@ class DatabaseMetaDataImpl implements DatabaseMetaData {
 
         QueryResponse rsp = solrClient.query(sysQuery);
         return String.valueOf(
-            ((SimpleOrderedMap) rsp.getResponse().get("lucene")).get("solr-spec-version"));
+            ((SimpleOrderedMap<?>) rsp.getResponse().get("lucene")).get("solr-spec-version"));
       } catch (SolrServerException | IOException ignore) {
         return "";
       } finally {

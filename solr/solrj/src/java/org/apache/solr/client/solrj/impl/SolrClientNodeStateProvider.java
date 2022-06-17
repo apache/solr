@@ -138,8 +138,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
         (coll, shardVsReplicas) ->
             shardVsReplicas.forEach(
                 (shard, replicaInfos) -> {
-                  for (int i = 0; i < replicaInfos.size(); i++) {
-                    Replica r = replicaInfos.get(i);
+                  for (Replica r : replicaInfos) {
                     consumer.accept(r);
                   }
                 }));
@@ -187,7 +186,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       String node, Map<String, Pair<String, Replica>> metricsKeyVsTagReplica) {
     Map<String, Set<Object>> collect =
         metricsKeyVsTagReplica.entrySet().stream()
-            .collect(Collectors.toMap(e -> e.getKey(), e -> Set.of(e.getKey())));
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> Set.of(e.getKey())));
     ClientSnitchCtx ctx = new ClientSnitchCtx(null, null, emptyMap(), solrClient);
     fetchReplicaMetrics(node, ctx, collect);
     return ctx.getTags();

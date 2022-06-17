@@ -304,11 +304,11 @@ public class TestStressUserVersions extends TestRTGBase {
                     // without further synchronization
                   } else {
                     assertEquals(1, doclist.size());
-                    boolean isLive = (Boolean) (((Map) doclist.get(0)).get(lfield));
-                    long foundVer = (Long) (((Map) doclist.get(0)).get(vfield));
+                    boolean isLive = (Boolean) (((Map<?, ?>) doclist.get(0)).get(lfield));
+                    long foundVer = (Long) (((Map<?, ?>) doclist.get(0)).get(vfield));
 
                     if (isLive) {
-                      long foundVal = (Long) (((Map) doclist.get(0)).get(FIELD));
+                      long foundVal = (Long) (((Map<?, ?>) doclist.get(0)).get(FIELD));
                       if (foundVer < Math.abs(info.version)
                           || (foundVer == info.version
                               && foundVal != info.val)) { // if the version matches, the val must
@@ -317,7 +317,7 @@ public class TestStressUserVersions extends TestRTGBase {
                       }
                     } else {
                       // if the doc is deleted (via tombstone), it shouldn't have a value on it.
-                      assertNull(((Map) doclist.get(0)).get(FIELD));
+                      assertNull(((Map<?, ?>) doclist.get(0)).get(FIELD));
 
                       if (foundVer < Math.abs(info.version)) {
                         log.error("ERROR, id={} found={} model {}", id, response, info);

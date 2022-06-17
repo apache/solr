@@ -79,10 +79,7 @@ public class ModificationRequestImpl {
     Shard shard = solrCollection.getShard(shardName);
     Slice slice = docCollection.getSlice(shardName);
     Set<Replica> solrReplicas = new HashSet<>();
-    replicas.forEach(
-        replica -> {
-          solrReplicas.add(shard.getReplica(replica.getName()));
-        });
+    replicas.forEach(replica -> solrReplicas.add(shard.getReplica(replica.getName())));
     return createDeleteReplicasRequest(solrCollection, solrReplicas);
   }
 

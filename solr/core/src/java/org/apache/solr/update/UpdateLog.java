@@ -500,8 +500,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         };
 
     solrMetricsContext.gauge(bufferedOpsGauge, true, "ops", scope, "buffered");
-    solrMetricsContext.gauge(() -> logs.size(), true, "logs", scope, "replay", "remaining");
-    solrMetricsContext.gauge(() -> getTotalLogsSize(), true, "bytes", scope, "replay", "remaining");
+    solrMetricsContext.gauge(logs::size, true, "logs", scope, "replay", "remaining");
+    solrMetricsContext.gauge(this::getTotalLogsSize, true, "bytes", scope, "replay", "remaining");
     applyingBufferedOpsMeter = solrMetricsContext.meter("ops", scope, "applyingBuffered");
     replayOpsMeter = solrMetricsContext.meter("ops", scope, "replay");
     copyOverOldUpdatesMeter = solrMetricsContext.meter("ops", scope, "copyOverOldUpdates");
@@ -1689,7 +1689,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       long maxRecentVersion = 0L;
       if (updates != null) {
         for (Long key : updates.keySet())
-          maxRecentVersion = Math.max(maxRecentVersion, Math.abs(key.longValue()));
+          maxRecentVersion = Math.max(maxRecentVersion, Math.abs(key));
       }
       return maxRecentVersion;
     }
@@ -2258,7 +2258,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
           Integer.MAX_VALUE,
           1,
           TimeUnit.SECONDS,
-          new SynchronousQueue<Runnable>(),
+          new SynchronousQueue<>(),
           new SolrNamedThreadFactory("recoveryExecutor"));
 
   public static void deleteFile(Path file) {

@@ -463,18 +463,14 @@ public class ZkController implements Closeable {
                 }
               }
             },
-            new BeforeReconnect() {
-
-              @Override
-              public void command() {
-                try {
-                  ZkController.this.overseer.close();
-                } catch (Exception e) {
-                  log.error("Error trying to stop any Overseer threads", e);
-                }
-                closeOutstandingElections(descriptorsSupplier);
-                markAllAsNotLeader(descriptorsSupplier);
+            () -> {
+              try {
+                ZkController.this.overseer.close();
+              } catch (Exception e) {
+                log.error("Error trying to stop any Overseer threads", e);
               }
+              closeOutstandingElections(descriptorsSupplier);
+              markAllAsNotLeader(descriptorsSupplier);
             },
             zkACLProvider,
             cc::isShutDown);

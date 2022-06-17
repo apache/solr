@@ -43,7 +43,7 @@ public final class RecordingUpdateProcessorFactory extends UpdateRequestProcesso
    *
    * @see #startRecording
    */
-  public final BlockingQueue<UpdateCommand> commandQueue = new LinkedBlockingQueue<UpdateCommand>();
+  public final BlockingQueue<UpdateCommand> commandQueue = new LinkedBlockingQueue<>();
 
   /**
    * @see #stopRecording

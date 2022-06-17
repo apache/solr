@@ -94,11 +94,10 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
         expectThrows(
             BaseHttpSolrClient.RemoteSolrException.class,
             "Expected an exception in case split.key is not specified",
-            () -> {
-              CollectionAdminRequest.migrateData(sourceCollection, targetCollection, "")
-                  .setForwardTimeout(45)
-                  .process(cluster.getSolrClient());
-            });
+            () ->
+                CollectionAdminRequest.migrateData(sourceCollection, targetCollection, "")
+                    .setForwardTimeout(45)
+                    .process(cluster.getSolrClient()));
     assertTrue(remoteSolrException.getMessage().contains("split.key cannot be null or empty"));
   }
 

@@ -272,14 +272,13 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
     CloudSolrClient client = cluster.getSolrClient();
     expectThrows(
         TimeoutException.class,
-        () -> {
-          ZkStateReader.from(client)
-              .waitForState(
-                  "nosuchcollection",
-                  (long) 1,
-                  TimeUnit.SECONDS,
-                  ((liveNodes, collectionState) -> false));
-        });
+        () ->
+            ZkStateReader.from(client)
+                .waitForState(
+                    "nosuchcollection",
+                    (long) 1,
+                    TimeUnit.SECONDS,
+                    ((liveNodes, collectionState) -> false)));
     waitFor(
         "Watchers for collection should be removed after timeout",
         MAX_WAIT_TIMEOUT,
@@ -343,14 +342,13 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
 
     expectThrows(
         TimeoutException.class,
-        () -> {
-          ZkStateReader.from(client)
-              .waitForState(
-                  "no-such-collection",
-                  (long) 10,
-                  TimeUnit.MILLISECONDS,
-                  (CollectionStatePredicate) (n, c) -> DocCollection.isFullyActive(n, c, 1, 1));
-        });
+        () ->
+            ZkStateReader.from(client)
+                .waitForState(
+                    "no-such-collection",
+                    (long) 10,
+                    TimeUnit.MILLISECONDS,
+                    (CollectionStatePredicate) (n, c) -> DocCollection.isFullyActive(n, c, 1, 1)));
 
     waitFor(
         "Watchers for collection should be removed after timeout",

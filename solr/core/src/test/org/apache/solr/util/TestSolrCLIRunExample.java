@@ -117,9 +117,8 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           String solrHomeDir = getArg("-s", args);
           int port = Integer.parseInt(getArg("-p", args));
           String solrxml =
-              new String(
-                  Files.readAllBytes(Paths.get(solrHomeDir).resolve("solr.xml")),
-                  Charset.defaultCharset());
+              Files.readString(
+                  Paths.get(solrHomeDir).resolve("solr.xml"), Charset.defaultCharset());
 
           JettyConfig jettyConfig = JettyConfig.builder().setContext("/solr").setPort(port).build();
           try {
@@ -230,19 +229,18 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
       standaloneSolr = new JettySolrRunner(solrHomeDir.getAbsolutePath(), "/solr", port);
       Thread bg =
-          new Thread() {
-            public void run() {
-              try {
-                standaloneSolr.start();
-              } catch (Exception e) {
-                if (e instanceof RuntimeException) {
-                  throw (RuntimeException) e;
-                } else {
-                  throw new RuntimeException(e);
+          new Thread(
+              () -> {
+                try {
+                  standaloneSolr.start();
+                } catch (Exception e) {
+                  if (e instanceof RuntimeException) {
+                    throw (RuntimeException) e;
+                  } else {
+                    throw new RuntimeException(e);
+                  }
                 }
-              }
-            }
-          };
+              });
       bg.start();
 
       return 0;

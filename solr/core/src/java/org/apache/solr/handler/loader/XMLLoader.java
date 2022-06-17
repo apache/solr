@@ -368,11 +368,8 @@ public class XMLLoader extends ContentStreamLoader {
             Object v = isNull ? null : text.toString();
             if (update != null) {
               if (updateMap == null) updateMap = new HashMap<>();
-              Map<String, Object> extendedValues = updateMap.get(name);
-              if (extendedValues == null) {
-                extendedValues = new HashMap<>(1);
-                updateMap.put(name, extendedValues);
-              }
+              Map<String, Object> extendedValues =
+                  updateMap.computeIfAbsent(name, k -> new HashMap<>(1));
               Object val = extendedValues.get(update);
               if (val == null) {
                 extendedValues.put(update, v);

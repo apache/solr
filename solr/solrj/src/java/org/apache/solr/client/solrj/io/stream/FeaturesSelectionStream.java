@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -411,7 +412,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
     Map<K, V> result = new LinkedHashMap<>();
     Stream<Map.Entry<K, V>> st = map.entrySet().stream();
 
-    st.sorted(Map.Entry.comparingByValue((c1, c2) -> c2.compareTo(c1)))
+    st.sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
         .forEachOrdered(e -> result.put(e.getKey(), e.getValue()));
 
     return result;

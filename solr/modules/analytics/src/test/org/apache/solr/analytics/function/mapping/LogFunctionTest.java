@@ -66,10 +66,7 @@ public class LogFunctionTest extends SolrTestCaseJ4 {
 
     // No values
     val.setValues();
-    func.streamDoubles(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamDoubles(value -> assertTrue("There should be no values to stream", false));
 
     // One value
     val.setValues(4);
@@ -135,18 +132,12 @@ public class LogFunctionTest extends SolrTestCaseJ4 {
     // No values, One value
     base.setValues();
     val.setValue(21.56F).setExists(true);
-    func.streamDoubles(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamDoubles(value -> assertTrue("There should be no values to stream", false));
 
     // Multiple values, no value
     base.setValues(4L, 10023L);
     val.setExists(false);
-    func.streamDoubles(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamDoubles(value -> assertTrue("There should be no values to stream", false));
 
     // Multiple values, one value
     base.setValues(4L, 123L, 2L);
@@ -178,18 +169,12 @@ public class LogFunctionTest extends SolrTestCaseJ4 {
     // No values, One value
     base.setValue(21.56F).setExists(true);
     val.setValues();
-    func.streamDoubles(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamDoubles(value -> assertTrue("There should be no values to stream", false));
 
     // Multiple values, no value
     base.setExists(false);
     val.setValues(4L, 10023L);
-    func.streamDoubles(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamDoubles(value -> assertTrue("There should be no values to stream", false));
 
     // Multiple values, one value
     base.setValue(4.56F).setExists(true);

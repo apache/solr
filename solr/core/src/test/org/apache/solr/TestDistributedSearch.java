@@ -1129,7 +1129,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
                 "stats.field",
                 "{!" + stat1 + "=true " + stat2 + "=true}" + i1);
 
-        final List<String> statsExpected = new ArrayList<String>(2);
+        final List<String> statsExpected = new ArrayList<>(2);
         statsExpected.add(stat1);
         if (!stat1.equals(stat2)) {
           statsExpected.add(stat2);
@@ -1357,7 +1357,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
               }) {
 
             // EnumSets use natural ordering, we want to randomize the order of the params
-            List<Stat> combo = new ArrayList<Stat>(set);
+            List<Stat> combo = new ArrayList<>(set);
             Collections.shuffle(combo, random());
 
             StringBuilder paras = new StringBuilder("{!key=k ");
@@ -1947,23 +1947,20 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       Callable<Object>[] threads = (Callable<Object>[]) Array.newInstance(Callable.class, nThreads);
       for (int i = 0; i < threads.length; i++) {
         threads[i] =
-            new Callable<>() {
-              @Override
-              public Object call() {
-                for (int j = 0; j < stress; j++) {
-                  int which = r.nextInt(upClients.size());
-                  SolrClient client = upClients.get(which);
-                  try {
-                    QueryResponse rsp = client.query(new ModifiableSolrParams(params));
-                    if (verifyStress) {
-                      comparePartialResponses(rsp, controlRsp, upShards);
-                    }
-                  } catch (SolrServerException | IOException e) {
-                    throw new RuntimeException(e);
+            () -> {
+              for (int j = 0; j < stress; j++) {
+                int which = r.nextInt(upClients.size());
+                SolrClient client = upClients.get(which);
+                try {
+                  QueryResponse rsp1 = client.query(new ModifiableSolrParams(params));
+                  if (verifyStress) {
+                    comparePartialResponses(rsp1, controlRsp, upShards);
                   }
+                } catch (SolrServerException | IOException e) {
+                  throw new RuntimeException(e);
                 }
-                return null;
               }
+              return null;
             };
         pending.add(cs.submit(threads[i]));
       }
@@ -2006,8 +2003,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       String shard = entry.getKey();
       NamedList<?> info = (NamedList<?>) entry.getValue();
       boolean found = false;
-      for (int i = 0; i < shardsArr.length; i++) {
-        String s = shardsArr[i];
+      for (String s : shardsArr) {
         if (shard.contains(s)) {
           found = true;
           // make sure that it responded if it's up and the landing node didn't error before sending

@@ -17,7 +17,6 @@
 package org.apache.solr.handler.component;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -114,38 +113,38 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
 
     QueryResponse rsp = queryServer(params);
 
-    List<PivotField> expectedPlacePivots = new UnorderedEqualityArrayList<PivotField>();
-    List<PivotField> expectedCardiffPivots = new UnorderedEqualityArrayList<PivotField>();
+    List<PivotField> expectedPlacePivots = new UnorderedEqualityArrayList<>();
+    List<PivotField> expectedCardiffPivots = new UnorderedEqualityArrayList<>();
     expectedCardiffPivots.add(new ComparablePivotField("company_t", "microsoft", 2, null));
     expectedCardiffPivots.add(new ComparablePivotField("company_t", "null", 2, null));
     expectedCardiffPivots.add(new ComparablePivotField("company_t", "bbc", 2, null));
     expectedCardiffPivots.add(new ComparablePivotField("company_t", "polecat", 3, null));
     expectedCardiffPivots.add(new ComparablePivotField("company_t", "fujitsu", 1, null));
-    List<PivotField> expectedDublinPivots = new UnorderedEqualityArrayList<PivotField>();
+    List<PivotField> expectedDublinPivots = new UnorderedEqualityArrayList<>();
     expectedDublinPivots.add(new ComparablePivotField("company_t", "polecat", 4, null));
     expectedDublinPivots.add(new ComparablePivotField("company_t", "microsoft", 4, null));
     expectedDublinPivots.add(new ComparablePivotField("company_t", "null", 3, null));
     expectedDublinPivots.add(new ComparablePivotField("company_t", "fujitsu", 2, null));
     expectedDublinPivots.add(new ComparablePivotField("company_t", "bbc", 1, null));
-    List<PivotField> expectedLondonPivots = new UnorderedEqualityArrayList<PivotField>();
+    List<PivotField> expectedLondonPivots = new UnorderedEqualityArrayList<>();
     expectedLondonPivots.add(new ComparablePivotField("company_t", "polecat", 3, null));
     expectedLondonPivots.add(new ComparablePivotField("company_t", "microsoft", 2, null));
     expectedLondonPivots.add(new ComparablePivotField("company_t", "fujitsu", 2, null));
     expectedLondonPivots.add(new ComparablePivotField("company_t", "null", 3, null));
     expectedLondonPivots.add(new ComparablePivotField("company_t", "bbc", 2, null));
-    List<PivotField> expectedLAPivots = new UnorderedEqualityArrayList<PivotField>();
+    List<PivotField> expectedLAPivots = new UnorderedEqualityArrayList<>();
     expectedLAPivots.add(new ComparablePivotField("company_t", "microsoft", 2, null));
     expectedLAPivots.add(new ComparablePivotField("company_t", "fujitsu", 2, null));
     expectedLAPivots.add(new ComparablePivotField("company_t", "null", 2, null));
     expectedLAPivots.add(new ComparablePivotField("company_t", "bbc", 1, null));
     expectedLAPivots.add(new ComparablePivotField("company_t", "polecat", 2, null));
-    List<PivotField> expectedKrakowPivots = new UnorderedEqualityArrayList<PivotField>();
+    List<PivotField> expectedKrakowPivots = new UnorderedEqualityArrayList<>();
     expectedKrakowPivots.add(new ComparablePivotField("company_t", "polecat", 2, null));
     expectedKrakowPivots.add(new ComparablePivotField("company_t", "bbc", 2, null));
     expectedKrakowPivots.add(new ComparablePivotField("company_t", "null", 3, null));
     expectedKrakowPivots.add(new ComparablePivotField("company_t", "fujitsu", 1, null));
     expectedKrakowPivots.add(new ComparablePivotField("company_t", "microsoft", 1, null));
-    List<PivotField> expectedCorkPivots = new UnorderedEqualityArrayList<PivotField>();
+    List<PivotField> expectedCorkPivots = new UnorderedEqualityArrayList<>();
     expectedCorkPivots.add(new ComparablePivotField("company_t", "fujitsu", 1, null));
     expectedCorkPivots.add(new ComparablePivotField("company_t", "rte", 1, null));
     expectedPlacePivots.add(new ComparablePivotField("place_t", "dublin", 4, expectedDublinPivots));
@@ -180,11 +179,11 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
 
     rsp = queryServer(params);
 
-    expectedPlacePivots = new UnorderedEqualityArrayList<PivotField>();
-    expectedDublinPivots = new UnorderedEqualityArrayList<PivotField>();
+    expectedPlacePivots = new UnorderedEqualityArrayList<>();
+    expectedDublinPivots = new UnorderedEqualityArrayList<>();
     expectedDublinPivots.add(new ComparablePivotField("company_t", "polecat", 4, null));
     expectedDublinPivots.add(new ComparablePivotField("company_t", "microsoft", 4, null));
-    expectedLondonPivots = new UnorderedEqualityArrayList<PivotField>();
+    expectedLondonPivots = new UnorderedEqualityArrayList<>();
     expectedLondonPivots.add(new ComparablePivotField("company_t", "null", 3, null));
     expectedLondonPivots.add(new ComparablePivotField("company_t", "polecat", 3, null));
     expectedPlacePivots.add(new ComparablePivotField("place_t", "dublin", 4, expectedDublinPivots));
@@ -202,30 +201,30 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
 
     rsp = queryServer(params);
 
-    expectedPlacePivots = new UnorderedEqualityArrayList<PivotField>();
+    expectedPlacePivots = new UnorderedEqualityArrayList<>();
 
-    expectedDublinPivots = new UnorderedEqualityArrayList<PivotField>();
+    expectedDublinPivots = new UnorderedEqualityArrayList<>();
     expectedDublinPivots.add(new ComparablePivotField("company_t", "microsoft", 4, null));
     expectedDublinPivots.add(new ComparablePivotField("company_t", "polecat", 4, null));
     expectedDublinPivots.add(new ComparablePivotField("company_t", "null", 3, null));
     expectedDublinPivots.add(new ComparablePivotField("company_t", "fujitsu", 2, null));
 
-    expectedLondonPivots = new UnorderedEqualityArrayList<PivotField>();
+    expectedLondonPivots = new UnorderedEqualityArrayList<>();
     expectedLondonPivots.add(new ComparablePivotField("company_t", "null", 3, null));
     expectedLondonPivots.add(new ComparablePivotField("company_t", "polecat", 3, null));
     expectedLondonPivots.add(new ComparablePivotField("company_t", "bbc", 2, null));
     expectedLondonPivots.add(new ComparablePivotField("company_t", "fujitsu", 2, null));
 
-    expectedCardiffPivots = new UnorderedEqualityArrayList<PivotField>();
+    expectedCardiffPivots = new UnorderedEqualityArrayList<>();
     expectedCardiffPivots.add(new ComparablePivotField("company_t", "polecat", 3, null));
 
-    expectedKrakowPivots = new UnorderedEqualityArrayList<PivotField>();
+    expectedKrakowPivots = new UnorderedEqualityArrayList<>();
     expectedKrakowPivots.add(new ComparablePivotField("company_t", "null", 3, null));
 
-    expectedLAPivots = new UnorderedEqualityArrayList<PivotField>();
+    expectedLAPivots = new UnorderedEqualityArrayList<>();
     expectedLAPivots.add(new ComparablePivotField("company_t", "fujitsu", 2, null));
 
-    expectedCorkPivots = new UnorderedEqualityArrayList<PivotField>();
+    expectedCorkPivots = new UnorderedEqualityArrayList<>();
     expectedCorkPivots.add(new ComparablePivotField("company_t", "fujitsu", 1, null));
 
     expectedPlacePivots.add(new ComparablePivotField("place_t", "dublin", 4, expectedDublinPivots));
@@ -530,8 +529,8 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
 
     QueryResponse rsp = queryServer(params);
 
-    List<PivotField> expectedPlacePivots = new UnorderedEqualityArrayList<PivotField>();
-    List<PivotField> expectedCardiffPivots = new UnorderedEqualityArrayList<PivotField>();
+    List<PivotField> expectedPlacePivots = new UnorderedEqualityArrayList<>();
+    List<PivotField> expectedCardiffPivots = new UnorderedEqualityArrayList<>();
     expectedCardiffPivots.add(
         new ComparablePivotField(
             "company_t",
@@ -572,7 +571,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
             null,
             null,
             createExpectedRange("price", 0, 100, 20, 0, 0, 0, 0, 0)));
-    List<PivotField> expectedDublinPivots = new UnorderedEqualityArrayList<PivotField>();
+    List<PivotField> expectedDublinPivots = new UnorderedEqualityArrayList<>();
     expectedDublinPivots.add(
         new ComparablePivotField(
             "company_t",
@@ -613,7 +612,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
             null,
             null,
             createExpectedRange("price", 0, 100, 20, 0, 0, 0, 0, 0)));
-    List<PivotField> expectedLondonPivots = new UnorderedEqualityArrayList<PivotField>();
+    List<PivotField> expectedLondonPivots = new UnorderedEqualityArrayList<>();
     expectedLondonPivots.add(
         new ComparablePivotField(
             "company_t",
@@ -654,7 +653,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
             null,
             null,
             createExpectedRange("price", 0, 100, 20, 0, 1, 0, 0, 0)));
-    List<PivotField> expectedLAPivots = new UnorderedEqualityArrayList<PivotField>();
+    List<PivotField> expectedLAPivots = new UnorderedEqualityArrayList<>();
     expectedLAPivots.add(
         new ComparablePivotField(
             "company_t",
@@ -695,7 +694,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
             null,
             null,
             createExpectedRange("price", 0, 100, 20, 0, 1, 0, 0, 0)));
-    List<PivotField> expectedKrakowPivots = new UnorderedEqualityArrayList<PivotField>();
+    List<PivotField> expectedKrakowPivots = new UnorderedEqualityArrayList<>();
     expectedKrakowPivots.add(
         new ComparablePivotField(
             "company_t",
@@ -736,7 +735,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
             null,
             null,
             createExpectedRange("price", 0, 100, 20, 0, 0, 0, 0, 0)));
-    List<PivotField> expectedCorkPivots = new UnorderedEqualityArrayList<PivotField>();
+    List<PivotField> expectedCorkPivots = new UnorderedEqualityArrayList<>();
     expectedCorkPivots.add(
         new ComparablePivotField(
             "company_t",
@@ -827,8 +826,8 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
 
     rsp = queryServer(params);
 
-    expectedPlacePivots = new UnorderedEqualityArrayList<PivotField>();
-    expectedDublinPivots = new UnorderedEqualityArrayList<PivotField>();
+    expectedPlacePivots = new UnorderedEqualityArrayList<>();
+    expectedDublinPivots = new UnorderedEqualityArrayList<>();
     expectedDublinPivots.add(
         new ComparablePivotField(
             "company_t",
@@ -845,7 +844,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
             null,
             null,
             createExpectedRange("price", 0, 100, 20, 2, 1, 0, 0, 0)));
-    expectedLondonPivots = new UnorderedEqualityArrayList<PivotField>();
+    expectedLondonPivots = new UnorderedEqualityArrayList<>();
     expectedLondonPivots.add(
         new ComparablePivotField(
             "company_t",
@@ -891,9 +890,9 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
 
     rsp = queryServer(params);
 
-    expectedPlacePivots = new UnorderedEqualityArrayList<PivotField>();
+    expectedPlacePivots = new UnorderedEqualityArrayList<>();
 
-    expectedDublinPivots = new UnorderedEqualityArrayList<PivotField>();
+    expectedDublinPivots = new UnorderedEqualityArrayList<>();
     expectedDublinPivots.add(
         new ComparablePivotField(
             "company_t",
@@ -927,7 +926,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
             null,
             createExpectedRange("price", 0, 100, 20, 0, 1, 0, 0, 0)));
 
-    expectedLondonPivots = new UnorderedEqualityArrayList<PivotField>();
+    expectedLondonPivots = new UnorderedEqualityArrayList<>();
     expectedLondonPivots.add(
         new ComparablePivotField(
             "company_t",
@@ -961,7 +960,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
             null,
             createExpectedRange("price", 0, 100, 20, 0, 1, 0, 0, 0)));
 
-    expectedCardiffPivots = new UnorderedEqualityArrayList<PivotField>();
+    expectedCardiffPivots = new UnorderedEqualityArrayList<>();
     expectedCardiffPivots.add(
         new ComparablePivotField(
             "company_t",
@@ -971,7 +970,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
             null,
             createExpectedRange("price", 0, 100, 20, 1, 1, 0, 0, 0)));
 
-    expectedKrakowPivots = new UnorderedEqualityArrayList<PivotField>();
+    expectedKrakowPivots = new UnorderedEqualityArrayList<>();
     expectedKrakowPivots.add(
         new ComparablePivotField(
             "company_t",
@@ -981,7 +980,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
             null,
             createExpectedRange("price", 0, 100, 20, 0, 1, 0, 0, 0)));
 
-    expectedLAPivots = new UnorderedEqualityArrayList<PivotField>();
+    expectedLAPivots = new UnorderedEqualityArrayList<>();
     expectedLAPivots.add(
         new ComparablePivotField(
             "company_t",
@@ -991,7 +990,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
             null,
             createExpectedRange("price", 0, 100, 20, 0, 1, 0, 0, 0)));
 
-    expectedCorkPivots = new UnorderedEqualityArrayList<PivotField>();
+    expectedCorkPivots = new UnorderedEqualityArrayList<>();
     expectedCorkPivots.add(
         new ComparablePivotField(
             "company_t",
@@ -1192,8 +1191,8 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
 
     QueryResponse rsp = queryServer(params);
 
-    List<PivotField> expectedPlacePivots = new UnorderedEqualityArrayList<PivotField>();
-    List<PivotField> expectedCardiffPivots = new UnorderedEqualityArrayList<PivotField>();
+    List<PivotField> expectedPlacePivots = new UnorderedEqualityArrayList<>();
+    List<PivotField> expectedCardiffPivots = new UnorderedEqualityArrayList<>();
     expectedCardiffPivots.add(
         new ComparablePivotField(
             "company_t",
@@ -1234,7 +1233,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
             null,
             createExpectedQCount(new String[] {"highPrice"}, new int[] {0}),
             null));
-    List<PivotField> expectedDublinPivots = new UnorderedEqualityArrayList<PivotField>();
+    List<PivotField> expectedDublinPivots = new UnorderedEqualityArrayList<>();
     expectedDublinPivots.add(
         new ComparablePivotField(
             "company_t",
@@ -1275,7 +1274,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
             null,
             createExpectedQCount(new String[] {"highPrice"}, new int[] {0}),
             null));
-    List<PivotField> expectedLondonPivots = new UnorderedEqualityArrayList<PivotField>();
+    List<PivotField> expectedLondonPivots = new UnorderedEqualityArrayList<>();
     expectedLondonPivots.add(
         new ComparablePivotField(
             "company_t",
@@ -1316,7 +1315,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
             null,
             createExpectedQCount(new String[] {"highPrice"}, new int[] {1}),
             null));
-    List<PivotField> expectedLAPivots = new UnorderedEqualityArrayList<PivotField>();
+    List<PivotField> expectedLAPivots = new UnorderedEqualityArrayList<>();
     expectedLAPivots.add(
         new ComparablePivotField(
             "company_t",
@@ -1357,7 +1356,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
             null,
             createExpectedQCount(new String[] {"highPrice"}, new int[] {1}),
             null));
-    List<PivotField> expectedKrakowPivots = new UnorderedEqualityArrayList<PivotField>();
+    List<PivotField> expectedKrakowPivots = new UnorderedEqualityArrayList<>();
     expectedKrakowPivots.add(
         new ComparablePivotField(
             "company_t",
@@ -1398,7 +1397,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
             null,
             createExpectedQCount(new String[] {"highPrice"}, new int[] {0}),
             null));
-    List<PivotField> expectedCorkPivots = new UnorderedEqualityArrayList<PivotField>();
+    List<PivotField> expectedCorkPivots = new UnorderedEqualityArrayList<>();
     expectedCorkPivots.add(
         new ComparablePivotField(
             "company_t",
@@ -1475,8 +1474,8 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
 
     // Add second query for low price
     params.add("facet.query", "{!tag=s1 key=lowPrice}price_ti:[0 TO 20]");
-    expectedPlacePivots = new UnorderedEqualityArrayList<PivotField>();
-    expectedCardiffPivots = new UnorderedEqualityArrayList<PivotField>();
+    expectedPlacePivots = new UnorderedEqualityArrayList<>();
+    expectedCardiffPivots = new UnorderedEqualityArrayList<>();
     expectedCardiffPivots.add(
         new ComparablePivotField(
             "company_t",
@@ -1517,7 +1516,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
             null,
             createExpectedQCount(new String[] {"highPrice", "lowPrice"}, new int[] {0, 0}),
             null));
-    expectedDublinPivots = new UnorderedEqualityArrayList<PivotField>();
+    expectedDublinPivots = new UnorderedEqualityArrayList<>();
     expectedDublinPivots.add(
         new ComparablePivotField(
             "company_t",
@@ -1558,7 +1557,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
             null,
             createExpectedQCount(new String[] {"highPrice", "lowPrice"}, new int[] {0, 0}),
             null));
-    expectedLondonPivots = new UnorderedEqualityArrayList<PivotField>();
+    expectedLondonPivots = new UnorderedEqualityArrayList<>();
     expectedLondonPivots.add(
         new ComparablePivotField(
             "company_t",
@@ -1599,7 +1598,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
             null,
             createExpectedQCount(new String[] {"highPrice", "lowPrice"}, new int[] {1, 0}),
             null));
-    expectedLAPivots = new UnorderedEqualityArrayList<PivotField>();
+    expectedLAPivots = new UnorderedEqualityArrayList<>();
     expectedLAPivots.add(
         new ComparablePivotField(
             "company_t",
@@ -1640,7 +1639,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
             null,
             createExpectedQCount(new String[] {"highPrice", "lowPrice"}, new int[] {1, 0}),
             null));
-    expectedKrakowPivots = new UnorderedEqualityArrayList<PivotField>();
+    expectedKrakowPivots = new UnorderedEqualityArrayList<>();
     expectedKrakowPivots.add(
         new ComparablePivotField(
             "company_t",
@@ -1681,7 +1680,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
             null,
             createExpectedQCount(new String[] {"highPrice", "lowPrice"}, new int[] {0, 0}),
             null));
-    expectedCorkPivots = new UnorderedEqualityArrayList<PivotField>();
+    expectedCorkPivots = new UnorderedEqualityArrayList<>();
     expectedCorkPivots.add(
         new ComparablePivotField(
             "company_t",
@@ -1773,8 +1772,8 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
 
     rsp = queryServer(params);
 
-    expectedPlacePivots = new UnorderedEqualityArrayList<PivotField>();
-    expectedDublinPivots = new UnorderedEqualityArrayList<PivotField>();
+    expectedPlacePivots = new UnorderedEqualityArrayList<>();
+    expectedDublinPivots = new UnorderedEqualityArrayList<>();
     expectedDublinPivots.add(
         new ComparablePivotField(
             "company_t",
@@ -1791,7 +1790,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
             null,
             createExpectedQCount(new String[] {"highPrice", "lowPrice"}, new int[] {1, 2}),
             null));
-    expectedLondonPivots = new UnorderedEqualityArrayList<PivotField>();
+    expectedLondonPivots = new UnorderedEqualityArrayList<>();
     expectedLondonPivots.add(
         new ComparablePivotField(
             "company_t",
@@ -1837,9 +1836,9 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
 
     rsp = queryServer(params);
 
-    expectedPlacePivots = new UnorderedEqualityArrayList<PivotField>();
+    expectedPlacePivots = new UnorderedEqualityArrayList<>();
 
-    expectedDublinPivots = new UnorderedEqualityArrayList<PivotField>();
+    expectedDublinPivots = new UnorderedEqualityArrayList<>();
     expectedDublinPivots.add(
         new ComparablePivotField(
             "company_t",
@@ -1873,7 +1872,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
             createExpectedQCount(new String[] {"highPrice", "lowPrice"}, new int[] {1, 0}),
             null));
 
-    expectedLondonPivots = new UnorderedEqualityArrayList<PivotField>();
+    expectedLondonPivots = new UnorderedEqualityArrayList<>();
     expectedLondonPivots.add(
         new ComparablePivotField(
             "company_t",
@@ -1907,7 +1906,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
             createExpectedQCount(new String[] {"highPrice", "lowPrice"}, new int[] {1, 0}),
             null));
 
-    expectedCardiffPivots = new UnorderedEqualityArrayList<PivotField>();
+    expectedCardiffPivots = new UnorderedEqualityArrayList<>();
     expectedCardiffPivots.add(
         new ComparablePivotField(
             "company_t",
@@ -1917,7 +1916,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
             createExpectedQCount(new String[] {"highPrice", "lowPrice"}, new int[] {1, 1}),
             null));
 
-    expectedKrakowPivots = new UnorderedEqualityArrayList<PivotField>();
+    expectedKrakowPivots = new UnorderedEqualityArrayList<>();
     expectedKrakowPivots.add(
         new ComparablePivotField(
             "company_t",
@@ -1927,7 +1926,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
             createExpectedQCount(new String[] {"highPrice", "lowPrice"}, new int[] {1, 0}),
             null));
 
-    expectedLAPivots = new UnorderedEqualityArrayList<PivotField>();
+    expectedLAPivots = new UnorderedEqualityArrayList<>();
     expectedLAPivots.add(
         new ComparablePivotField(
             "company_t",
@@ -1937,7 +1936,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
             createExpectedQCount(new String[] {"highPrice", "lowPrice"}, new int[] {1, 0}),
             null));
 
-    expectedCorkPivots = new UnorderedEqualityArrayList<PivotField>();
+    expectedCorkPivots = new UnorderedEqualityArrayList<>();
     expectedCorkPivots.add(
         new ComparablePivotField(
             "company_t",
@@ -2431,16 +2430,16 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
   // Useful to check for errors, orders lists and does toString() equality check
   private void testOrderedPivotsStringEquality(
       List<PivotField> expectedPlacePivots, List<PivotField> placePivots) {
-    Collections.sort(expectedPlacePivots, new PivotFieldComparator());
+    expectedPlacePivots.sort(new PivotFieldComparator());
     for (PivotField expectedPivot : expectedPlacePivots) {
       if (expectedPivot.getPivot() != null) {
-        Collections.sort(expectedPivot.getPivot(), new PivotFieldComparator());
+        expectedPivot.getPivot().sort(new PivotFieldComparator());
       }
     }
-    Collections.sort(placePivots, new PivotFieldComparator());
+    placePivots.sort(new PivotFieldComparator());
     for (PivotField pivot : placePivots) {
       if (pivot.getPivot() != null) {
-        Collections.sort(pivot.getPivot(), new PivotFieldComparator());
+        pivot.getPivot().sort(new PivotFieldComparator());
       }
     }
     assertEquals(expectedPlacePivots.toString(), placePivots.toString());

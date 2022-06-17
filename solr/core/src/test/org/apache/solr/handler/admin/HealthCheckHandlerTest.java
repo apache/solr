@@ -106,10 +106,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
       // negative check of our (new) "broken" node that we deliberately put into an unhealth state
       BaseHttpSolrClient.RemoteSolrException e =
           expectThrows(
-              BaseHttpSolrClient.RemoteSolrException.class,
-              () -> {
-                req.process(httpSolrClient);
-              });
+              BaseHttpSolrClient.RemoteSolrException.class, () -> req.process(httpSolrClient));
       assertTrue(e.getMessage(), e.getMessage().contains("Host Unavailable"));
       assertEquals(SolrException.ErrorCode.SERVICE_UNAVAILABLE.code, e.code());
     } finally {
@@ -201,9 +198,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
       BaseHttpSolrClient.RemoteSolrException e =
           expectThrows(
               BaseHttpSolrClient.RemoteSolrException.class,
-              () -> {
-                new V2Request.Builder("/node/health").build().process(httpSolrClient);
-              });
+              () -> new V2Request.Builder("/node/health").build().process(httpSolrClient));
       assertTrue(e.getMessage(), e.getMessage().contains("Host Unavailable"));
       assertEquals(SolrException.ErrorCode.SERVICE_UNAVAILABLE.code, e.code());
     } finally {

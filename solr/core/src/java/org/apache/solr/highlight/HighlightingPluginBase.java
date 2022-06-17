@@ -37,7 +37,7 @@ public abstract class HighlightingPluginBase implements SolrInfoBean {
     if (args != null) {
       Object o = args.get("defaults");
       if (o != null && o instanceof NamedList) {
-        defaults = ((NamedList) o).toSolrParams();
+        defaults = ((NamedList<?>) o).toSolrParams();
       }
     }
   }

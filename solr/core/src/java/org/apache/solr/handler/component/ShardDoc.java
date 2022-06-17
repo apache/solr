@@ -17,6 +17,7 @@
 package org.apache.solr.handler.component;
 
 import java.util.List;
+import java.util.Objects;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.solr.common.util.NamedList;
 
@@ -63,7 +64,7 @@ public class ShardDoc extends FieldDoc {
 
     ShardDoc shardDoc = (ShardDoc) o;
 
-    if (id != null ? !id.equals(shardDoc.id) : shardDoc.id != null) return false;
+    if (!Objects.equals(id, shardDoc.id)) return false;
 
     return true;
   }

@@ -90,14 +90,8 @@ public class DateMathFunctionTest extends SolrTestCaseJ4 {
 
     // No values
     val.setValues();
-    func.streamDates(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
-    func.streamLongs(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamDates(value -> assertTrue("There should be no values to stream", false));
+    func.streamLongs(value -> assertTrue("There should be no values to stream", false));
 
     // One value
     val.setValues("1800-01-01T10:30:15Z");

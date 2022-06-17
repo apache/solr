@@ -849,9 +849,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     SolrException ex =
         expectThrows(
             SolrException.class,
-            () -> {
-              query(false, new String[] {"q", "*:*", "group", "true", "group.field", t1});
-            });
+            () -> query(false, new String[] {"q", "*:*", "group", "true", "group.field", t1}));
     assertTrue(
         "Expected error from server that SortableTextFields are required",
         ex.getMessage()
@@ -1054,7 +1052,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
                 Integer.MAX_VALUE,
                 5,
                 TimeUnit.SECONDS,
-                new SynchronousQueue<Runnable>(),
+                new SynchronousQueue<>(),
                 new SolrNamedThreadFactory("testExecutor"));
         int cnt = 3;
 
@@ -1409,17 +1407,11 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
       String leader = props.getCoreUrl();
 
       testExecutor.execute(
-          new Runnable() {
-
-            @Override
-            public void run() {
-              try {
-                unloadClient.request(unloadCmd);
-              } catch (SolrServerException e) {
-                throw new RuntimeException(e);
-              } catch (IOException e) {
-                throw new RuntimeException(e);
-              }
+          () -> {
+            try {
+              unloadClient.request(unloadCmd);
+            } catch (SolrServerException | IOException e) {
+              throw new RuntimeException(e);
             }
           });
 

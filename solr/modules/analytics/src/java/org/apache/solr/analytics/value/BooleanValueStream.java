@@ -51,7 +51,7 @@ public interface BooleanValueStream extends AnalyticsValueStream {
 
     @Override
     public void streamObjects(Consumer<Object> cons) {
-      streamBooleans((boolean val) -> cons.accept(val));
+      streamBooleans(cons::accept);
     }
 
     @Override

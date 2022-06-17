@@ -95,10 +95,7 @@ public class SolrGen<T> implements Gen<T> {
               + RandomDataHistogram.MAX_TYPES_TO_COLLECT
               + COUNT_TYPES_ARE_TRACKED_LIMIT_WAS_REACHED);
     }
-    COUNTS.forEach(
-        (k, v) -> {
-          reports.add(v.print());
-        });
+    COUNTS.forEach((k, v) -> reports.add(v.print()));
     return reports;
   }
 

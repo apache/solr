@@ -582,11 +582,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     authConf.put("trustedCerts", trustedPemCert);
     authConf.put("trustedCertsFile", "/path/to/cert.pem");
     plugin = new JWTAuthPlugin();
-    expectThrows(
-        SolrException.class,
-        () -> {
-          plugin.init(authConf);
-        });
+    expectThrows(SolrException.class, () -> plugin.init(authConf));
   }
 
   @Test
@@ -601,12 +597,11 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     expectThrows(
         SolrException.class,
         CertificateException.class,
-        () -> {
-          CryptoKeys.parseX509Certs(
-              IOUtils.toInputStream(
-                  "-----BEGIN CERTIFICATE-----\n" + "foo\n" + "-----END CERTIFICATE-----\n",
-                  StandardCharsets.UTF_8));
-        });
+        () ->
+            CryptoKeys.parseX509Certs(
+                IOUtils.toInputStream(
+                    "-----BEGIN CERTIFICATE-----\n" + "foo\n" + "-----END CERTIFICATE-----\n",
+                    StandardCharsets.UTF_8)));
   }
 
   @Test

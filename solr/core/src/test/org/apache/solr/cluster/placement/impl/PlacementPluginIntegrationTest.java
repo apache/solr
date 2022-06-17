@@ -53,6 +53,7 @@ import org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory;
 import org.apache.solr.cluster.placement.plugins.MinimizeCoresPlacementFactory;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.LogLevel;
 import org.junit.After;
@@ -296,7 +297,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     Optional<String> onlySecondaryReplica =
         secondary.getReplicas().stream()
             .filter(replica -> !nodeSet.contains(replica.getNodeName()))
-            .map(replica -> replica.getName())
+            .map(Replica::getName)
             .findFirst();
     assertTrue("no secondary node without primary replica", onlySecondaryReplica.isPresent());
 
@@ -310,7 +311,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     Optional<String> secondaryWithPrimaryReplica =
         secondary.getReplicas().stream()
             .filter(replica -> nodeSet.contains(replica.getNodeName()))
-            .map(replica -> replica.getName())
+            .map(Replica::getName)
             .findFirst();
     assertTrue("no secondary node with primary replica", secondaryWithPrimaryReplica.isPresent());
     try {

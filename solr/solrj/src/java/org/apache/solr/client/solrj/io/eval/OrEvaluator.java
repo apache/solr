@@ -45,12 +45,7 @@ public class OrEvaluator extends RecursiveBooleanEvaluator implements ManyValueW
               "Unable to check %s(...) because a null value was found",
               constructingFactory.getFunctionName(getClass())));
     } else if (fromValue instanceof Boolean) {
-      return new BooleanChecker() {
-        @Override
-        public boolean test(Object left, Object right) {
-          return (Boolean) left || (Boolean) right;
-        }
-      };
+      return (BooleanChecker) (left, right) -> (Boolean) left || (Boolean) right;
     }
 
     throw new IOException(

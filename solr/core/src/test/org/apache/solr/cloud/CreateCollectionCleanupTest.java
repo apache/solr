@@ -87,11 +87,7 @@ public class CreateCollectionCleanupTest extends SolrCloudTestCase {
     Files.createFile(tmpDir);
     properties.put(CoreAdminParams.DATA_DIR, tmpDir.toString());
     create.setProperties(properties);
-    expectThrows(
-        BaseHttpSolrClient.RemoteSolrException.class,
-        () -> {
-          create.process(cloudClient);
-        });
+    expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> create.process(cloudClient));
 
     // Confirm using LIST that the collection does not exist
     assertThat(

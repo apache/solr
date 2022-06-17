@@ -50,10 +50,7 @@ public class PowerFunction {
         AnalyticsValueStream param2 = params[1];
         if (param1 instanceof DoubleValueStream && param2 instanceof DoubleValueStream) {
           return LambdaFunction.createDoubleLambdaFunction(
-              name,
-              (a, b) -> Math.pow(a, b),
-              (DoubleValueStream) param1,
-              (DoubleValueStream) param2);
+              name, Math::pow, (DoubleValueStream) param1, (DoubleValueStream) param2);
         } else {
           throw new SolrException(
               ErrorCode.BAD_REQUEST, "The " + name + " function requires numeric parameters.");

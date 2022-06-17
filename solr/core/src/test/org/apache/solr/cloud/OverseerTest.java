@@ -101,7 +101,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.internal.configuration.plugins.Plugins;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.plugins.MemberAccessor;
 import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
@@ -138,7 +137,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     private final ZkStateReader zkStateReader;
     private final String nodeName;
     private final Map<String, ElectionContext> electionContext =
-        Collections.synchronizedMap(new HashMap<String, ElectionContext>());
+        Collections.synchronizedMap(new HashMap<>());
     private List<Overseer> overseers;
 
     public MockZKController(String zkAddress, String nodeName, List<Overseer> overseers)
@@ -1335,12 +1334,10 @@ public class OverseerTest extends SolrTestCaseJ4 {
               ZkCoreNodeProps leaderProps;
               try {
                 leaderProps = zkController.getLeaderProps(COLLECTION, "shard1", 1000, false);
-              } catch (SolrException e) {
+              } catch (SolrException | SessionExpiredException e) {
                 return false;
               } catch (InterruptedException e) {
                 throw new RuntimeException(e);
-              } catch (SessionExpiredException e) {
-                return false;
               }
               if (leaderProps.getCoreName().equals("core4")) {
                 return true;
@@ -1886,12 +1883,11 @@ public class OverseerTest extends SolrTestCaseJ4 {
       SolrZkClient newZkClient =
           new SolrZkClient(server.getZkAddress(), AbstractZkTestCase.TIMEOUT);
       doAnswer(
-              new Answer<Void>() {
-                public Void answer(InvocationOnMock invocation) {
-                  newZkClient.close();
-                  return null;
-                }
-              })
+              (Answer<Void>)
+                  invocation -> {
+                    newZkClient.close();
+                    return null;
+                  })
           .when(zkController)
           .close();
       zkClient = newZkClient;
@@ -1907,7 +1903,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
         .thenReturn(testDone); // Allow retry on session expiry
     when(mockAlwaysUpCoreContainer.getResourceLoader())
         .thenReturn(new SolrResourceLoader(createTempDir()));
-    ClusterSingletons singletons = new ClusterSingletons(() -> true, r -> r.run());
+    ClusterSingletons singletons = new ClusterSingletons(() -> true, Runnable::run);
     // don't wait for all singletons
     singletons.setReady();
     final MemberAccessor accessor = Plugins.getMemberAccessor();

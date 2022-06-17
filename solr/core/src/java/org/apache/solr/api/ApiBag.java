@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -143,7 +144,7 @@ public class ApiBag {
     }
   }
 
-  class CommandAggregatingAnnotatedApi extends AnnotatedApi {
+  static class CommandAggregatingAnnotatedApi extends AnnotatedApi {
 
     private Collection<AnnotatedApi> combinedApis;
 
@@ -264,11 +265,9 @@ public class ApiBag {
         ValidatingJsonMap commands = specCopy.getMap("commands", null);
         if (commands != null) {
           ValidatingJsonMap m = commands.getMap(cmd, null);
-          if (m == null) {
-            specCopy.put("commands", Collections.singletonMap(cmd, "Command not found!"));
-          } else {
-            specCopy.put("commands", Collections.singletonMap(cmd, m));
-          }
+          specCopy.put(
+              "commands",
+              Collections.singletonMap(cmd, Objects.requireNonNullElse(m, "Command not found!")));
         }
         result = specCopy;
       }

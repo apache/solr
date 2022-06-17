@@ -92,10 +92,7 @@ public class TestSafeXMLParsing extends SolrTestCase {
 
     IOException ioe =
         expectThrows(
-            IOException.class,
-            () -> {
-              SafeXMLParsing.parseConfigXML(log, loader, "source1.xml");
-            });
+            IOException.class, () -> SafeXMLParsing.parseConfigXML(log, loader, "source1.xml"));
     assertTrue(ioe.getMessage().contains("Cannot resolve absolute systemIDs"));
 
     Document doc = SafeXMLParsing.parseConfigXML(log, loader, "source2.xml");

@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -1052,11 +1053,7 @@ public class IndexSchema {
 
   protected void registerExplicitSrcAndDestFields(
       String source, int maxChars, SchemaField destSchemaField, SchemaField sourceSchemaField) {
-    List<CopyField> copyFieldList = copyFieldsMap.get(source);
-    if (copyFieldList == null) {
-      copyFieldList = new ArrayList<>();
-      copyFieldsMap.put(source, copyFieldList);
-    }
+    List<CopyField> copyFieldList = copyFieldsMap.computeIfAbsent(source, k -> new ArrayList<>());
     copyFieldList.add(new CopyField(sourceSchemaField, destSchemaField, maxChars));
     incrementCopyFieldTargetCount(destSchemaField);
   }
@@ -1581,7 +1578,7 @@ public class IndexSchema {
                         : new TreeSet<>(sp.schema.fields.keySet()))
                     .stream()
                         .map(sp.schema::getFieldOrNull)
-                        .filter(it -> it != null)
+                        .filter(Objects::nonNull)
                         .filter(it -> sp.includeDynamic || !sp.schema.isDynamicField(it.name))
                         .map(sp::getProperties)
                         .collect(Collectors.toList());
@@ -1707,12 +1704,7 @@ public class IndexSchema {
     SortedMap<String, List<CopyField>> sortedCopyFields = new TreeMap<>(copyFieldsMap);
     for (List<CopyField> copyFields : sortedCopyFields.values()) {
       copyFields = new ArrayList<>(copyFields);
-      Collections.sort(
-          copyFields,
-          (cf1, cf2) -> {
-            // sources are all the same, just sorting by destination here
-            return cf1.getDestination().getName().compareTo(cf2.getDestination().getName());
-          });
+      copyFields.sort(Comparator.comparing(cf -> cf.getDestination().getName()));
       for (CopyField copyField : copyFields) {
         final String source = copyField.getSource().getName();
         final String destination = copyField.getDestination().getName();

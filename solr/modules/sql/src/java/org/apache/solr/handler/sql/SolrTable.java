@@ -180,7 +180,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
 
     final TupleStream finalStream = tupleStream;
 
-    return new AbstractEnumerable<Object>() {
+    return new AbstractEnumerable<>() {
       // Use original fields list to make sure only the fields specified are enumerated
       public Enumerator<Object> enumerator() {
         return new SolrEnumerator(finalStream, fields);

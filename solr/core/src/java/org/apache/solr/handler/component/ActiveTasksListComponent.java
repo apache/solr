@@ -94,11 +94,7 @@ public class ActiveTasksListComponent extends SearchComponent {
       LinkedHashMap<String, String> result =
           (LinkedHashMap<String, String>) r.getSolrResponse().getResponse().get("taskList");
 
-      Iterator<Map.Entry<String, String>> iterator = result.entrySet().iterator();
-
-      while (iterator.hasNext()) {
-        Map.Entry<String, String> entry = iterator.next();
-
+      for (Map.Entry<String, String> entry : result.entrySet()) {
         resultList.add(entry.getKey(), entry.getValue());
       }
     }

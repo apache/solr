@@ -1695,10 +1695,7 @@ public class TestFieldCacheSort extends SolrTestCase {
             DirectoryReader.open(indexStore), Collections.singletonMap("string", Type.SORTED));
     IndexSearcher searcher = new IndexSearcher(reader);
     expectThrows(
-        IllegalStateException.class,
-        () -> {
-          searcher.search(new MatchAllDocsQuery(), 500, sort);
-        });
+        IllegalStateException.class, () -> searcher.search(new MatchAllDocsQuery(), 500, sort));
     reader.close();
     indexStore.close();
   }

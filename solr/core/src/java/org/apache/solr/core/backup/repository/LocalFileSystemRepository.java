@@ -80,9 +80,9 @@ public class LocalFileSystemRepository implements BackupRepository {
     Preconditions.checkArgument(pathComponents.length > 0);
 
     Path result = Path.of(baseUri);
-    for (int i = 0; i < pathComponents.length; i++) {
+    for (String pathComponent : pathComponents) {
       try {
-        result = result.resolve(pathComponents[i]);
+        result = result.resolve(pathComponent);
       } catch (Exception e) {
         // unlikely to happen
         throw new RuntimeException(e);

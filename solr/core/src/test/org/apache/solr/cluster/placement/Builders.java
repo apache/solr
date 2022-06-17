@@ -151,17 +151,15 @@ public class Builders {
           nodeBuilder
               .getSysprops()
               .forEach(
-                  (name, value) -> {
-                    sysprops.computeIfAbsent(name, n -> new HashMap<>()).put(node, value);
-                  });
+                  (name, value) ->
+                      sysprops.computeIfAbsent(name, n -> new HashMap<>()).put(node, value));
         }
         if (nodeBuilder.getMetrics() != null) {
           nodeBuilder
               .getMetrics()
               .forEach(
-                  (name, value) -> {
-                    metrics.computeIfAbsent(name, n -> new HashMap<>()).put(node, value);
-                  });
+                  (name, value) ->
+                      metrics.computeIfAbsent(name, n -> new HashMap<>()).put(node, value));
         }
       }
 
@@ -180,12 +178,13 @@ public class Builders {
                           shard
                               .iterator()
                               .forEachRemaining(
-                                  replica -> {
-                                    nodeToCoreCount.compute(
-                                        replica.getNode(),
-                                        (node, count) ->
-                                            (count == null) ? 1 : ((Number) count).intValue() + 1);
-                                  }));
+                                  replica ->
+                                      nodeToCoreCount.compute(
+                                          replica.getNode(),
+                                          (node, count) ->
+                                              (count == null)
+                                                  ? 1
+                                                  : ((Number) count).intValue() + 1)));
             });
       }
 

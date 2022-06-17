@@ -90,14 +90,14 @@ public class TestUnInvertedFieldException extends SolrTestCaseJ4 {
             TestUtil.nextInt(random(), 3, 6),
             10,
             TimeUnit.MILLISECONDS,
-            new LinkedBlockingQueue<Runnable>(),
+            new LinkedBlockingQueue<>(),
             new NamedThreadFactory(getClass().getSimpleName()));
 
     try {
       TestInjection.uifOutOfMemoryError = true;
       if (assertsAreEnabled) { // if they aren't, we check that injection is disabled in live
         List<Future<UnInvertedField>> futures =
-            initCallables.stream().map((c) -> pool.submit(c)).collect(Collectors.toList());
+            initCallables.stream().map(pool::submit).collect(Collectors.toList());
         for (Future<UnInvertedField> uifuture : futures) {
           ExecutionException injection = assertThrows(ExecutionException.class, uifuture::get);
           Throwable root = SolrException.getRootCause(injection);
@@ -108,7 +108,7 @@ public class TestUnInvertedFieldException extends SolrTestCaseJ4 {
       }
       UnInvertedField prev = null;
       List<Future<UnInvertedField>> futures =
-          initCallables.stream().map((c) -> pool.submit(c)).collect(Collectors.toList());
+          initCallables.stream().map(pool::submit).collect(Collectors.toList());
       for (Future<UnInvertedField> uifuture : futures) {
         final UnInvertedField uif = uifuture.get();
         assertNotNull(uif);

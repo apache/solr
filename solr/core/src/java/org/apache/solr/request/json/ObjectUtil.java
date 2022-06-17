@@ -104,7 +104,7 @@ public class ObjectUtil {
       @SuppressWarnings({"unchecked"})
       Map<String, Object> sub = (Map<String, Object>) outer.get(path.get(i));
       if (sub == null) {
-        sub = new LinkedHashMap<String, Object>();
+        sub = new LinkedHashMap<>();
         outer.put(path.get(i), sub);
       }
       outer = sub;

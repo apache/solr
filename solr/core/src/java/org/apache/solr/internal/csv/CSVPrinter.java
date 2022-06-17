@@ -67,8 +67,8 @@ public class CSVPrinter {
    * @param values values to be outputted.
    */
   public void println(String[] values) throws IOException {
-    for (int i = 0; i < values.length; i++) {
-      print(values[i]);
+    for (String value : values) {
+      print(value);
     }
     println();
   }

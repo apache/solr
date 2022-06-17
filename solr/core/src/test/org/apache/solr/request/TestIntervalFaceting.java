@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Locale;
@@ -560,7 +561,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
       assert ft instanceof StrField;
       values[0] = randomInt(max);
       values[1] = randomInt(max);
-      Arrays.sort(values, (o1, o2) -> String.valueOf(o1).compareTo(String.valueOf(o2)));
+      Arrays.sort(values, Comparator.comparing(String::valueOf));
     } else {
       switch (ft.getNumberType()) {
         case DOUBLE:

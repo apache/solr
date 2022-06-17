@@ -111,12 +111,11 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     Exception e =
         expectThrows(
             Exception.class,
-            () -> {
-              CollectionAdminRequest.deleteReplica(
-                      collectionName, shard.getName(), replica.getName())
-                  .setOnlyIfDown(true)
-                  .process(cluster.getSolrClient());
-            });
+            () ->
+                CollectionAdminRequest.deleteReplica(
+                        collectionName, shard.getName(), replica.getName())
+                    .setOnlyIfDown(true)
+                    .process(cluster.getSolrClient()));
     assertTrue(
         "Unexpected error message: " + e.getMessage(),
         e.getMessage().contains("state is 'active'"));
@@ -537,8 +536,8 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     CollectionAdminRequest.deleteReplica(collectionName, "shard1", nonLeader.getName())
         .process(cluster.getSolrClient());
     closed.set(true);
-    for (int i = 0; i < threads.length; i++) {
-      threads[i].join();
+    for (Thread thread : threads) {
+      thread.join();
     }
 
     try {

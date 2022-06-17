@@ -228,11 +228,10 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     SolrException ex =
         expectThrows(
             SolrException.class,
-            () -> {
-              updateJ(
-                  jsonAdd(sdoc("id", "aaa", "name", "XX", "my_version_l", "42")),
-                  params("update.chain", "external-version-failhard"));
-            });
+            () ->
+                updateJ(
+                    jsonAdd(sdoc("id", "aaa", "name", "XX", "my_version_l", "42")),
+                    params("update.chain", "external-version-failhard")));
     assertEquals(409, ex.code());
 
     assertU(commit());
@@ -241,10 +240,10 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     ex =
         expectThrows(
             SolrException.class,
-            () -> {
-              deleteAndGetVersion(
-                  "aaa", params("del_version", "7", "update.chain", "external-version-failhard"));
-            });
+            () ->
+                deleteAndGetVersion(
+                    "aaa",
+                    params("del_version", "7", "update.chain", "external-version-failhard")));
     assertEquals(409, ex.code());
 
     assertJQ(req("qt", "/get", "id", "aaa", "fl", "name"), "=={'doc':{'name':'a1'}}");
@@ -257,10 +256,10 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     ex =
         expectThrows(
             SolrException.class,
-            () -> {
-              deleteAndGetVersion(
-                  "aaa", params("del_version", "8", "update.chain", "external-version-failhard"));
-            });
+            () ->
+                deleteAndGetVersion(
+                    "aaa",
+                    params("del_version", "8", "update.chain", "external-version-failhard")));
     assertEquals(409, ex.code());
 
     assertJQ(req("qt", "/get", "id", "aaa", "fl", "name"), "=={'doc':{'name':'a2'}}");
@@ -278,11 +277,10 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     ex =
         expectThrows(
             SolrException.class,
-            () -> {
-              updateJ(
-                  jsonAdd(sdoc("id", "aaa", "name", "XX", "my_version_l", "1005")),
-                  params("update.chain", "external-version-failhard"));
-            });
+            () ->
+                updateJ(
+                    jsonAdd(sdoc("id", "aaa", "name", "XX", "my_version_l", "1005")),
+                    params("update.chain", "external-version-failhard")));
     assertEquals(409, ex.code());
 
     assertJQ(
@@ -298,11 +296,10 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     ex =
         expectThrows(
             SolrException.class,
-            () -> {
-              updateJ(
-                  jsonAdd(sdoc("id", "aaa", "name", "XX", "my_version_l", "1009")),
-                  params("update.chain", "external-version-failhard"));
-            });
+            () ->
+                updateJ(
+                    jsonAdd(sdoc("id", "aaa", "name", "XX", "my_version_l", "1009")),
+                    params("update.chain", "external-version-failhard")));
     assertEquals(409, ex.code());
 
     assertJQ(
@@ -325,59 +322,56 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     SolrException ex =
         expectThrows(
             SolrException.class,
-            () -> {
-              updateJ(
-                  jsonAdd(
-                      sdoc(
-                          "id",
-                          "aaa",
-                          "name",
-                          "X1",
-                          "my_version_l",
-                          "1000",
-                          "my_version_f",
-                          "1.0")),
-                  params("update.chain", "external-version-failhard-multiple"));
-            });
+            () ->
+                updateJ(
+                    jsonAdd(
+                        sdoc(
+                            "id",
+                            "aaa",
+                            "name",
+                            "X1",
+                            "my_version_l",
+                            "1000",
+                            "my_version_f",
+                            "1.0")),
+                    params("update.chain", "external-version-failhard-multiple")));
     assertEquals(409, ex.code());
 
     ex =
         expectThrows(
             SolrException.class,
-            () -> {
-              updateJ(
-                  jsonAdd(
-                      sdoc(
-                          "id",
-                          "aaa",
-                          "name",
-                          "X2",
-                          "my_version_l",
-                          "1001",
-                          "my_version_f",
-                          "0.9")),
-                  params("update.chain", "external-version-failhard-multiple"));
-            });
+            () ->
+                updateJ(
+                    jsonAdd(
+                        sdoc(
+                            "id",
+                            "aaa",
+                            "name",
+                            "X2",
+                            "my_version_l",
+                            "1001",
+                            "my_version_f",
+                            "0.9")),
+                    params("update.chain", "external-version-failhard-multiple")));
     assertEquals(409, ex.code());
 
     // Also fails on the exact same version
     ex =
         expectThrows(
             SolrException.class,
-            () -> {
-              updateJ(
-                  jsonAdd(
-                      sdoc(
-                          "id",
-                          "aaa",
-                          "name",
-                          "X3",
-                          "my_version_l",
-                          "1001",
-                          "my_version_f",
-                          "1.0")),
-                  params("update.chain", "external-version-failhard-multiple"));
-            });
+            () ->
+                updateJ(
+                    jsonAdd(
+                        sdoc(
+                            "id",
+                            "aaa",
+                            "name",
+                            "X3",
+                            "my_version_l",
+                            "1001",
+                            "my_version_f",
+                            "1.0")),
+                    params("update.chain", "external-version-failhard-multiple")));
     assertEquals(409, ex.code());
 
     // Verify we are still unchanged
@@ -408,33 +402,31 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     SolrException ex =
         expectThrows(
             SolrException.class,
-            () -> {
-              deleteAndGetVersion(
-                  "aaa",
-                  params(
-                      "del_version",
-                      "1000",
-                      "del_version_2",
-                      "1.0",
-                      "update.chain",
-                      "external-version-failhard-multiple"));
-            });
+            () ->
+                deleteAndGetVersion(
+                    "aaa",
+                    params(
+                        "del_version",
+                        "1000",
+                        "del_version_2",
+                        "1.0",
+                        "update.chain",
+                        "external-version-failhard-multiple")));
     assertEquals(409, ex.code());
 
     ex =
         expectThrows(
             SolrException.class,
-            () -> {
-              deleteAndGetVersion(
-                  "aaa",
-                  params(
-                      "del_version",
-                      "1001",
-                      "del_version_2",
-                      "0.9",
-                      "update.chain",
-                      "external-version-failhard-multiple"));
-            });
+            () ->
+                deleteAndGetVersion(
+                    "aaa",
+                    params(
+                        "del_version",
+                        "1001",
+                        "del_version_2",
+                        "0.9",
+                        "update.chain",
+                        "external-version-failhard-multiple")));
     assertEquals(409, ex.code());
 
     // And just verify if we pass version 1, we still error if version 2 isn't found.
@@ -442,12 +434,14 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     ex =
         expectThrows(
             SolrException.class,
-            () -> {
-              deleteAndGetVersion(
-                  "aaa",
-                  params(
-                      "del_version", "1001", "update.chain", "external-version-failhard-multiple"));
-            });
+            () ->
+                deleteAndGetVersion(
+                    "aaa",
+                    params(
+                        "del_version",
+                        "1001",
+                        "update.chain",
+                        "external-version-failhard-multiple")));
     assertEquals(400, ex.code());
     unIgnoreException("Delete by ID must specify doc version param");
 
@@ -627,11 +621,13 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     SolrException ex =
         expectThrows(
             SolrException.class,
-            () -> {
-              updateJ(
-                  json("[{\"id\": \"b\", \"name\": \"b1\", \"my_version_l\": " + newVersion + "}]"),
-                  params("update.chain", "external-version-constraint"));
-            });
+            () ->
+                updateJ(
+                    json(
+                        "[{\"id\": \"b\", \"name\": \"b1\", \"my_version_l\": "
+                            + newVersion
+                            + "}]"),
+                    params("update.chain", "external-version-constraint")));
     assertEquals("Doc exists in index, but has null versionField: my_version_l", ex.getMessage());
     unIgnoreException("Doc exists in index, but has null versionField: my_version_l");
 

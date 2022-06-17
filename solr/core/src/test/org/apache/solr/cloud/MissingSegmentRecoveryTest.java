@@ -115,10 +115,7 @@ public class MissingSegmentRecoveryTest extends SolrCloudTestCase {
     try (SolrCore core =
         cluster.getReplicaJetty(replica).getCoreContainer().getCore(replica.getCoreName())) {
       File indexDir = new File(core.getDataDir(), "index");
-      return indexDir.listFiles(
-          (File dir, String name) -> {
-            return name.startsWith("segments_");
-          });
+      return indexDir.listFiles((File dir, String name) -> name.startsWith("segments_"));
     }
   }
 

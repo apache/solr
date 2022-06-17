@@ -48,19 +48,12 @@ public class GreaterThanEqualToEvaluator extends RecursiveBooleanEvaluator
               "Unable to check %s(...) because a null value was found",
               constructingFactory.getFunctionName(getClass())));
     } else if (fromValue instanceof Number) {
-      return new NumberChecker() {
-        @Override
-        public boolean test(Object left, Object right) {
-          return (new BigDecimal(left.toString())).compareTo(new BigDecimal(right.toString())) >= 0;
-        }
-      };
+      return (NumberChecker)
+          (left, right) ->
+              (new BigDecimal(left.toString())).compareTo(new BigDecimal(right.toString())) >= 0;
     } else if (fromValue instanceof String) {
-      return new StringChecker() {
-        @Override
-        public boolean test(Object left, Object right) {
-          return ((String) left).compareToIgnoreCase((String) right) >= 0;
-        }
-      };
+      return (StringChecker)
+          (left, right) -> ((String) left).compareToIgnoreCase((String) right) >= 0;
     }
 
     throw new IOException(

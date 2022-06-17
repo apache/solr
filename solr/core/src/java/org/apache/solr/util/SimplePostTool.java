@@ -641,7 +641,7 @@ public class SimplePostTool {
    * @return the normalized URL string
    */
   protected static String normalizeUrlEnding(String link) {
-    if (link.indexOf("#") > -1) link = link.substring(0, link.indexOf("#"));
+    if (link.contains("#")) link = link.substring(0, link.indexOf("#"));
     if (link.endsWith("?")) link = link.substring(0, link.length() - 1);
     if (link.endsWith("/")) link = link.substring(0, link.length() - 1);
     return link;
@@ -821,7 +821,7 @@ public class SimplePostTool {
    * @return true if "on"
    */
   protected static boolean isOn(String property) {
-    return ("true,on,yes,1".indexOf(property) > -1);
+    return ("true,on,yes,1".contains(property));
   }
 
   static void warn(String msg) {
@@ -895,11 +895,11 @@ public class SimplePostTool {
           // SolrCell
           suffix = "/extract";
           String urlStr = appendUrlPath(solrUrl, suffix).toString();
-          if (urlStr.indexOf("resource.name") == -1)
+          if (!urlStr.contains("resource.name"))
             urlStr =
                 appendParam(
                     urlStr, "resource.name=" + URLEncoder.encode(file.getAbsolutePath(), "UTF-8"));
-          if (urlStr.indexOf("literal.id") == -1)
+          if (!urlStr.contains("literal.id"))
             urlStr =
                 appendParam(
                     urlStr, "literal.id=" + URLEncoder.encode(file.getAbsolutePath(), "UTF-8"));

@@ -306,10 +306,9 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
     BaseHttpSolrClient.RemoteSolrException e =
         expectThrows(
             BaseHttpSolrClient.RemoteSolrException.class,
-            () -> {
-              solrClient.request(
-                  getProxyRequest("localHostAnyGroup", "bar", "[ff01::114]", "[::1]"));
-            });
+            () ->
+                solrClient.request(
+                    getProxyRequest("localHostAnyGroup", "bar", "[ff01::114]", "[::1]")));
     assertTrue(e.getMessage().contains(getExpectedHostExMsg("localHostAnyGroup")));
   }
 

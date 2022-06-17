@@ -76,8 +76,7 @@ public class ConjunctionSolrSpellChecker extends SolrSpellChecker {
 
   @Override
   public String init(NamedList<?> config, SolrCore core) {
-    for (int i = 0; i < checkers.size(); i++) {
-      SolrSpellChecker c = checkers.get(i);
+    for (SolrSpellChecker c : checkers) {
       String dn = c.init(config, core);
 
       // TODO:  in the future, we could develop this further to allow
@@ -132,11 +131,8 @@ public class ConjunctionSolrSpellChecker extends SolrSpellChecker {
       }
       for (Map.Entry<Token, LinkedHashMap<String, Integer>> entry :
           result.getSuggestions().entrySet()) {
-        List<LinkedHashMap<String, Integer>> allForThisToken = allSuggestions.get(entry.getKey());
-        if (allForThisToken == null) {
-          allForThisToken = new ArrayList<>();
-          allSuggestions.put(entry.getKey(), allForThisToken);
-        }
+        List<LinkedHashMap<String, Integer>> allForThisToken =
+            allSuggestions.computeIfAbsent(entry.getKey(), k -> new ArrayList<>());
         allForThisToken.add(entry.getValue());
       }
     }

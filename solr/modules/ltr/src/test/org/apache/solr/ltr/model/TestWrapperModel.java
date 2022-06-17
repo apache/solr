@@ -170,10 +170,9 @@ public class TestWrapperModel extends TestRerankBase {
         assertThrows(
             "WrapperModel need not override '" + superClassMethod.getName() + "'",
             NoSuchMethodException.class,
-            () -> {
-              WrapperModel.class.getDeclaredMethod(
-                  superClassMethod.getName(), superClassMethod.getParameterTypes());
-            });
+            () ->
+                WrapperModel.class.getDeclaredMethod(
+                    superClassMethod.getName(), superClassMethod.getParameterTypes()));
       } else {
         try {
           final Method subClassMethod =

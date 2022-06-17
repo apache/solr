@@ -87,17 +87,16 @@ public class CoreMergeIndexesAdminHandlerTest extends SolrTestCaseJ4 {
         SolrException e =
             expectThrows(
                 SolrException.class,
-                () -> {
-                  admin.handleRequestBody(
-                      req(
-                          CoreAdminParams.ACTION,
-                          CoreAdminParams.CoreAdminAction.MERGEINDEXES.toString(),
-                          CoreAdminParams.CORE,
-                          "collection1",
-                          CoreAdminParams.INDEX_DIR,
-                          workDir.getAbsolutePath()),
-                      new SolrQueryResponse());
-                });
+                () ->
+                    admin.handleRequestBody(
+                        req(
+                            CoreAdminParams.ACTION,
+                            CoreAdminParams.CoreAdminAction.MERGEINDEXES.toString(),
+                            CoreAdminParams.CORE,
+                            "collection1",
+                            CoreAdminParams.INDEX_DIR,
+                            workDir.getAbsolutePath()),
+                        new SolrQueryResponse()));
         assertEquals(
             FailingDirectoryFactory.FailingDirectoryFactoryException.class,
             e.getCause().getClass());

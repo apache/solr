@@ -1747,23 +1747,23 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertTrue(tuples.size() == 4);
     Tuple out = tuples.get(0);
 
-    assertEquals(out.getDouble("x").doubleValue(), 1.0, 0.0);
-    assertEquals(out.getDouble("y").doubleValue(), 10.0, 0.0);
+    assertEquals(out.getDouble("x"), 1.0, 0.0);
+    assertEquals(out.getDouble("y"), 10.0, 0.0);
 
     out = tuples.get(1);
 
-    assertEquals(out.getDouble("x").doubleValue(), 2.0, 0.0);
-    assertEquals(out.getDouble("y").doubleValue(), 11.0, 0.0);
+    assertEquals(out.getDouble("x"), 2.0, 0.0);
+    assertEquals(out.getDouble("y"), 11.0, 0.0);
 
     out = tuples.get(2);
 
-    assertEquals(out.getDouble("x").doubleValue(), 3.0, 0.0);
-    assertEquals(out.getDouble("y").doubleValue(), 12.0, 0.0);
+    assertEquals(out.getDouble("x"), 3.0, 0.0);
+    assertEquals(out.getDouble("y"), 12.0, 0.0);
 
     out = tuples.get(3);
 
-    assertEquals(out.getDouble("x").doubleValue(), 4.0, 0.0);
-    assertEquals(out.getDouble("y").doubleValue(), 13.0, 0.0);
+    assertEquals(out.getDouble("x"), 4.0, 0.0);
+    assertEquals(out.getDouble("y"), 13.0, 0.0);
 
     cexpr = "let(b=array(10,11,12,13)," + "        zplot(y=b))";
 
@@ -1777,23 +1777,23 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertTrue(tuples.size() == 4);
     out = tuples.get(0);
 
-    assertEquals(out.getDouble("x").doubleValue(), 0.0, 0.0);
-    assertEquals(out.getDouble("y").doubleValue(), 10.0, 0.0);
+    assertEquals(out.getDouble("x"), 0.0, 0.0);
+    assertEquals(out.getDouble("y"), 10.0, 0.0);
 
     out = tuples.get(1);
 
-    assertEquals(out.getDouble("x").doubleValue(), 1.0, 0.0);
-    assertEquals(out.getDouble("y").doubleValue(), 11.0, 0.0);
+    assertEquals(out.getDouble("x"), 1.0, 0.0);
+    assertEquals(out.getDouble("y"), 11.0, 0.0);
 
     out = tuples.get(2);
 
-    assertEquals(out.getDouble("x").doubleValue(), 2.0, 0.0);
-    assertEquals(out.getDouble("y").doubleValue(), 12.0, 0.0);
+    assertEquals(out.getDouble("x"), 2.0, 0.0);
+    assertEquals(out.getDouble("y"), 12.0, 0.0);
 
     out = tuples.get(3);
 
-    assertEquals(out.getDouble("x").doubleValue(), 3.0, 0.0);
-    assertEquals(out.getDouble("y").doubleValue(), 13.0, 0.0);
+    assertEquals(out.getDouble("x"), 3.0, 0.0);
+    assertEquals(out.getDouble("y"), 13.0, 0.0);
 
     cexpr = "zplot(dist=binomialDistribution(10, .50))";
 
@@ -2616,8 +2616,8 @@ public class MathExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(solrStream);
     assertEquals(tuples.size(), 1);
     Tuple tuple = tuples.get(0);
-    assertEquals(tuple.getDouble("a").doubleValue(), 1.88888, 0.0);
-    assertEquals(tuple.getDouble("b").doubleValue(), 8888888888.98, 0.0);
+    assertEquals(tuple.getDouble("a"), 1.88888, 0.0);
+    assertEquals(tuple.getDouble("b"), 8888888888.98, 0.0);
   }
 
   @Test
@@ -3836,8 +3836,8 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(reals.get(15).doubleValue(), 0, 0.0);
 
     List<Number> imaginary = fft.get(1);
-    for (int i = 0; i < imaginary.size(); i++) {
-      assertEquals(imaginary.get(i).doubleValue(), 0.0, 0.0);
+    for (Number number : imaginary) {
+      assertEquals(number.doubleValue(), 0.0, 0.0);
     }
 
     @SuppressWarnings({"unchecked"})
@@ -6596,7 +6596,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
   }
 
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
-    List<Tuple> tuples = new ArrayList<Tuple>();
+    List<Tuple> tuples = new ArrayList<>();
 
     try {
       tupleStream.open();

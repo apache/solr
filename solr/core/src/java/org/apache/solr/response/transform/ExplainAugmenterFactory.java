@@ -71,8 +71,8 @@ public class ExplainAugmenterFactory extends TransformerFactory {
     buffer.append("<br />\n");
 
     Explanation[] details = explanation.getDetails();
-    for (int i = 0; i < details.length; i++) {
-      buffer.append(toHtml(details[i]));
+    for (Explanation detail : details) {
+      buffer.append(toHtml(detail));
     }
 
     buffer.append("</li>\n");

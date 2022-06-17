@@ -41,7 +41,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -397,9 +396,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     }
 
     // check the value in properties are correct
-    Iterator<? extends Map.Entry<String, ?>> it = properties.iterator();
-    while (it.hasNext()) {
-      Map.Entry<String, ?> entry = it.next();
+    for (Map.Entry<String, ?> entry : properties) {
       String newValue = newProps != null ? newProps.get(entry.getKey()) : null;
       String oldValue = oldProps != null ? oldProps.get(entry.getKey()) : null;
       if (newValue != null) {
@@ -1262,14 +1259,13 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     Throwable thrown =
         expectThrows(
             BaseHttpSolrClient.RemoteSolrException.class,
-            () -> {
-              createCollection(
-                  "newcollection2",
-                  "with-script-processor" + untrustedSuffix,
-                  1,
-                  1,
-                  cluster.getSolrClient());
-            });
+            () ->
+                createCollection(
+                    "newcollection2",
+                    "with-script-processor" + untrustedSuffix,
+                    1,
+                    1,
+                    cluster.getSolrClient()));
     unIgnoreException("uploaded without any authentication in place");
 
     assertThat(thrown.getMessage(), containsString("Underlying core creation failed"));
@@ -1297,14 +1293,13 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     Throwable thrown =
         expectThrows(
             BaseHttpSolrClient.RemoteSolrException.class,
-            () -> {
-              createCollection(
-                  "newcollection3",
-                  "with-lib-directive" + untrustedSuffix,
-                  1,
-                  1,
-                  cluster.getSolrClient());
-            });
+            () ->
+                createCollection(
+                    "newcollection3",
+                    "with-lib-directive" + untrustedSuffix,
+                    1,
+                    1,
+                    cluster.getSolrClient()));
     unIgnoreException("without any authentication in place");
 
     assertThat(thrown.getMessage(), containsString("Underlying core creation failed"));
@@ -1566,7 +1561,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
   private static void zip(File directory, File zipfile) throws IOException {
     URI base = directory.toURI();
-    Deque<File> queue = new LinkedList<File>();
+    Deque<File> queue = new LinkedList<>();
     queue.push(directory);
     OutputStream out = new FileOutputStream(zipfile);
     ZipOutputStream zout = new ZipOutputStream(out);
@@ -1793,7 +1788,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       assertEquals(1, actualConfigSets.size()); // only the _default configset
 
       // test multiple
-      Set<String> configSets = new HashSet<String>();
+      Set<String> configSets = new HashSet<>();
       for (int i = 0; i < 5; ++i) {
         String configSet = "configSet" + i;
         getConfigSetService().uploadConfig(configSet, configset("configset-2"));

@@ -156,17 +156,16 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     SolrException se =
         expectThrows(
             SolrException.class,
-            () -> {
-              admin.handleRequestBody(
-                  req(
-                      CoreAdminParams.ACTION,
-                      CoreAdminParams.CoreAdminAction.CREATE.toString(),
-                      CoreAdminParams.INSTANCE_DIR,
-                      instPropFile.getAbsolutePath(),
-                      CoreAdminParams.NAME,
-                      "ugly$core=name"),
-                  new SolrQueryResponse());
-            });
+            () ->
+                admin.handleRequestBody(
+                    req(
+                        CoreAdminParams.ACTION,
+                        CoreAdminParams.CoreAdminAction.CREATE.toString(),
+                        CoreAdminParams.INSTANCE_DIR,
+                        instPropFile.getAbsolutePath(),
+                        CoreAdminParams.NAME,
+                        "ugly$core=name"),
+                    new SolrQueryResponse()));
     assertTrue("Expected error message for bad core name.", se.toString().contains("Invalid core"));
 
     CoreDescriptor cd = cores.getCoreDescriptor("ugly$core=name");
@@ -199,17 +198,16 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     se =
         expectThrows(
             SolrException.class,
-            () -> {
-              admin.handleRequestBody(
-                  req(
-                      CoreAdminParams.ACTION,
-                      CoreAdminParams.CoreAdminAction.CREATE.toString(),
-                      CoreAdminParams.NAME,
-                      "bogus_dir_core",
-                      CoreAdminParams.INSTANCE_DIR,
-                      "dir_does_not_exist_127896"),
-                  new SolrQueryResponse());
-            });
+            () ->
+                admin.handleRequestBody(
+                    req(
+                        CoreAdminParams.ACTION,
+                        CoreAdminParams.CoreAdminAction.CREATE.toString(),
+                        CoreAdminParams.NAME,
+                        "bogus_dir_core",
+                        CoreAdminParams.INSTANCE_DIR,
+                        "dir_does_not_exist_127896"),
+                    new SolrQueryResponse()));
     // :NOOP:
     // :TODO: CoreAdminHandler's exception messages are terrible, otherwise we could assert
     // something useful here
@@ -269,17 +267,16 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     se =
         expectThrows(
             SolrException.class,
-            () -> {
-              admin.handleRequestBody(
-                  req(
-                      CoreAdminParams.ACTION,
-                      CoreAdminParams.CoreAdminAction.RENAME.toString(),
-                      CoreAdminParams.CORE,
-                      "rename_me",
-                      CoreAdminParams.OTHER,
-                      "bad$name"),
-                  new SolrQueryResponse());
-            });
+            () ->
+                admin.handleRequestBody(
+                    req(
+                        CoreAdminParams.ACTION,
+                        CoreAdminParams.CoreAdminAction.RENAME.toString(),
+                        CoreAdminParams.CORE,
+                        "rename_me",
+                        CoreAdminParams.OTHER,
+                        "bad$name"),
+                    new SolrQueryResponse()));
     assertTrue(
         "Expected error message for bad core name.", se.getMessage().contains("Invalid core"));
 
@@ -499,15 +496,14 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     SolrException e =
         expectThrows(
             SolrException.class,
-            () -> {
-              admin.handleRequestBody(
-                  req(
-                      CoreAdminParams.ACTION,
-                      CoreAdminParams.CoreAdminAction.RELOAD.toString(),
-                      CoreAdminParams.CORE,
-                      "non-existent-core"),
-                  resp);
-            });
+            () ->
+                admin.handleRequestBody(
+                    req(
+                        CoreAdminParams.ACTION,
+                        CoreAdminParams.CoreAdminAction.RELOAD.toString(),
+                        CoreAdminParams.CORE,
+                        "non-existent-core"),
+                    resp));
     assertEquals(
         "Expected error message for non-existent core.",
         "No such core: non-existent-core",
@@ -517,11 +513,10 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     e =
         expectThrows(
             SolrException.class,
-            () -> {
-              admin.handleRequestBody(
-                  req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.RELOAD.toString()),
-                  resp);
-            });
+            () ->
+                admin.handleRequestBody(
+                    req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.RELOAD.toString()),
+                    resp));
     assertEquals(
         "Expected error message for non-existent core.",
         "Missing required parameter: core",

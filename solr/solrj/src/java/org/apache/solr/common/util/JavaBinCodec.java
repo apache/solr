@@ -775,8 +775,8 @@ public class JavaBinCodec implements PushWriter {
 
   public void writeArray(List<?> l) throws IOException {
     writeTag(ARR, l.size());
-    for (int i = 0; i < l.size(); i++) {
-      writeVal(l.get(i));
+    for (Object o : l) {
+      writeVal(o);
     }
   }
 
@@ -789,8 +789,7 @@ public class JavaBinCodec implements PushWriter {
 
   public void writeArray(Object[] arr) throws IOException {
     writeTag(ARR, arr.length);
-    for (int i = 0; i < arr.length; i++) {
-      Object o = arr[i];
+    for (Object o : arr) {
       writeVal(o);
     }
   }
@@ -842,7 +841,7 @@ public class JavaBinCodec implements PushWriter {
   public Map.Entry<Object, Object> readMapEntry(DataInputInputStream dis) throws IOException {
     final Object key = readVal(dis);
     final Object value = readVal(dis);
-    return new Map.Entry<Object, Object>() {
+    return new Map.Entry<>() {
 
       @Override
       public Object getKey() {
@@ -1054,16 +1053,16 @@ public class JavaBinCodec implements PushWriter {
     } else if (val instanceof Number) {
 
       if (val instanceof Integer) {
-        writeInt(((Integer) val).intValue());
+        writeInt((Integer) val);
         return true;
       } else if (val instanceof Long) {
-        writeLong(((Long) val).longValue());
+        writeLong((Long) val);
         return true;
       } else if (val instanceof Float) {
-        writeFloat(((Float) val).floatValue());
+        writeFloat((Float) val);
         return true;
       } else if (val instanceof Double) {
-        writeDouble(((Double) val).doubleValue());
+        writeDouble((Double) val);
         return true;
       } else if (val instanceof Byte) {
         daos.writeByte(BYTE);

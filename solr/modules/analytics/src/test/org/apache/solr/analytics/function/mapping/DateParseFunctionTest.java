@@ -130,14 +130,8 @@ public class DateParseFunctionTest extends SolrTestCaseJ4 {
 
     // No values
     val.setValues();
-    func.streamDates(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
-    func.streamLongs(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamDates(value -> assertTrue("There should be no values to stream", false));
+    func.streamLongs(value -> assertTrue("There should be no values to stream", false));
 
     // One value
     val.setValues(date1.getTime());
@@ -189,45 +183,21 @@ public class DateParseFunctionTest extends SolrTestCaseJ4 {
 
     // No values
     val.setValues();
-    func.streamDates(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
-    func.streamLongs(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamDates(value -> assertTrue("There should be no values to stream", false));
+    func.streamLongs(value -> assertTrue("There should be no values to stream", false));
 
     // Incorrect value
     val.setValues("10:30:15Z");
-    func.streamDates(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
-    func.streamLongs(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamDates(value -> assertTrue("There should be no values to stream", false));
+    func.streamLongs(value -> assertTrue("There should be no values to stream", false));
 
     val.setValues("01-33T10:30:15Z");
-    func.streamDates(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
-    func.streamLongs(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamDates(value -> assertTrue("There should be no values to stream", false));
+    func.streamLongs(value -> assertTrue("There should be no values to stream", false));
 
     val.setValues("1800-01T30:30:15Z");
-    func.streamDates(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
-    func.streamLongs(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamDates(value -> assertTrue("There should be no values to stream", false));
+    func.streamLongs(value -> assertTrue("There should be no values to stream", false));
 
     // One value
     val.setValues("1800-01-01T10:30:15Z");

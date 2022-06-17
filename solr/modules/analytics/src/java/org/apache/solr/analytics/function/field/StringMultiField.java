@@ -53,11 +53,11 @@ public class StringMultiField extends AnalyticsField implements CastingStringVal
 
   @Override
   public void streamStrings(Consumer<String> cons) {
-    values.forEach(value -> cons.accept(value));
+    values.forEach(cons);
   }
 
   @Override
   public void streamObjects(Consumer<Object> cons) {
-    values.forEach(value -> cons.accept(value));
+    values.forEach(cons);
   }
 }

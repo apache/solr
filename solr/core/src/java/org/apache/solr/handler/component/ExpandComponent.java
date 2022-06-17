@@ -276,8 +276,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
       ordBytes = new IntObjectHashMap<>();
 
-      for (int i = 0; i < globalDocs.length; i++) {
-        int globalDoc = globalDocs[i];
+      for (int globalDoc : globalDocs) {
         while (globalDoc >= nextDocBase) {
           currentContext++;
           currentDocBase = contexts.get(currentContext).docBase;
@@ -331,8 +330,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       groupSet = new LongHashSet(docList.size());
       NumericDocValues collapseValues =
           contexts.get(currentContext).reader().getNumericDocValues(field);
-      for (int i = 0; i < globalDocs.length; i++) {
-        int globalDoc = globalDocs[i];
+      for (int globalDoc : globalDocs) {
         while (globalDoc >= nextDocBase) {
           currentContext++;
           currentDocBase = contexts.get(currentContext).docBase;
@@ -825,10 +823,8 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     BytesRef[] bytesRefs = new BytesRef[size];
     int index = -1;
     BytesRefBuilder term = new BytesRefBuilder();
-    Iterator<LongCursor> it = groupSet.iterator();
 
-    while (it.hasNext()) {
-      LongCursor cursor = it.next();
+    for (LongCursor cursor : groupSet) {
       String stringVal = numericToString(ft, cursor.value);
       ft.readableToIndexed(stringVal, term);
       bytesRefs[++index] = term.toBytesRef();
@@ -871,9 +867,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
   private Query getGroupQuery(String fname, int size, IntObjectHashMap<BytesRef> ordBytes) {
     BytesRef[] bytesRefs = new BytesRef[size];
     int index = -1;
-    Iterator<IntObjectCursor<BytesRef>> it = ordBytes.iterator();
-    while (it.hasNext()) {
-      IntObjectCursor<BytesRef> cursor = it.next();
+    for (IntObjectCursor<BytesRef> cursor : ordBytes) {
       bytesRefs[++index] = cursor.value;
     }
     return new TermInSetQuery(fname, bytesRefs);

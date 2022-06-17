@@ -200,16 +200,16 @@ public class DirectUpdateHandler2 extends UpdateHandler
     solrMetricsContext = parentContext.getChildContext(this);
     commitCommands = solrMetricsContext.meter("commits", getCategory().toString(), scope);
     solrMetricsContext.gauge(
-        () -> commitTracker.getCommitCount(), true, "autoCommits", getCategory().toString(), scope);
+        commitTracker::getCommitCount, true, "autoCommits", getCategory().toString(), scope);
     solrMetricsContext.gauge(
-        () -> softCommitTracker.getCommitCount(),
+        softCommitTracker::getCommitCount,
         true,
         "softAutoCommits",
         getCategory().toString(),
         scope);
     if (commitTracker.getDocsUpperBound() > 0) {
       solrMetricsContext.gauge(
-          () -> commitTracker.getDocsUpperBound(),
+          commitTracker::getDocsUpperBound,
           true,
           "autoCommitMaxDocs",
           getCategory().toString(),
@@ -225,7 +225,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
     }
     if (commitTracker.getTLogFileSizeUpperBound() > 0) {
       solrMetricsContext.gauge(
-          () -> commitTracker.getTLogFileSizeUpperBound(),
+          commitTracker::getTLogFileSizeUpperBound,
           true,
           "autoCommitMaxSize",
           getCategory().toString(),
@@ -233,7 +233,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
     }
     if (softCommitTracker.getDocsUpperBound() > 0) {
       solrMetricsContext.gauge(
-          () -> softCommitTracker.getDocsUpperBound(),
+          softCommitTracker::getDocsUpperBound,
           true,
           "softAutoCommitMaxDocs",
           getCategory().toString(),

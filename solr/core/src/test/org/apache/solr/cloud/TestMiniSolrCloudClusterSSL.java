@@ -347,11 +347,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
           final String wrongUrl = wrongBaseURL + "/admin/cores";
           // vastly diff exception details between plain http vs https, not worried about details
           // here
-          expectThrows(
-              IOException.class,
-              () -> {
-                doHeadRequest(client, wrongUrl);
-              });
+          expectThrows(IOException.class, () -> doHeadRequest(client, wrongUrl));
         }
       }
 
@@ -363,11 +359,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
           if (sslConfig.isClientAuthMode()) {
             // w/o a valid client cert, SSL connection should fail
 
-            expectThrows(
-                IOException.class,
-                () -> {
-                  doHeadRequest(client, url);
-                });
+            expectThrows(IOException.class, () -> doHeadRequest(client, url));
           } else {
             assertEquals(
                 "Wrong status for head request ("

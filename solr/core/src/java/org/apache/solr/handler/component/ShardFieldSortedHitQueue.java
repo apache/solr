@@ -111,13 +111,7 @@ public class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
   Comparator<ShardDoc> getCachedComparator(SortField sortField, IndexSearcher searcher) {
     SortField.Type type = sortField.getType();
     if (type == SortField.Type.SCORE) {
-      return (o1, o2) -> {
-        final float f1 = o1.score;
-        final float f2 = o2.score;
-        if (f1 < f2) return -1;
-        if (f1 > f2) return 1;
-        return 0;
-      };
+      return (o1, o2) -> Float.compare(o1.score, o2.score);
     } else if (type == SortField.Type.REWRITEABLE) {
       try {
         sortField = sortField.rewrite(searcher);

@@ -212,13 +212,12 @@ public class ExpressionFactoryTest extends SolrTestCaseJ4 {
     manager
         .getUsedFields()
         .forEach(
-            field -> {
-              assertTrue(
-                  "Field '"
-                      + field.getName()
-                      + "' is either not unique or should not exist in the reductionManager.",
-                  usedFields.remove(field.getName()));
-            });
+            field ->
+                assertTrue(
+                    "Field '"
+                        + field.getName()
+                        + "' is either not unique or should not exist in the reductionManager.",
+                    usedFields.remove(field.getName())));
     assertEquals(hasExpressions, manager.needsCollection());
   }
 

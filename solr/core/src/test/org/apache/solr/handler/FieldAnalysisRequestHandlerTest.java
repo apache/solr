@@ -85,7 +85,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     @SuppressWarnings({"rawtypes"})
     ArrayList analyzerNL =
         (ArrayList) indexNL.get("org.apache.solr.schema.FieldType$DefaultAnalyzer$1");
-    String text = (String) ((NamedList) analyzerNL.get(0)).get("text");
+    String text = (String) ((NamedList<?>) analyzerNL.get(0)).get("text");
     assertEquals("5", text);
   }
 
@@ -818,7 +818,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
   }
 
   /** A custom impl of a standard attribute impl; test this instance is used. */
-  public class CustomFlagsAttributeImpl extends FlagsAttributeImpl {
+  public static class CustomFlagsAttributeImpl extends FlagsAttributeImpl {
     @Override
     public void setFlags(int flags) {
       super.setFlags(900 + flags); // silly modification

@@ -72,11 +72,7 @@ public class MinHashQParser extends QParser {
   }
 
   private void getHashesFromQueryString(String separator, ArrayList<BytesRef> hashes) {
-    Arrays.stream(qstr.split(separator))
-        .forEach(
-            s -> {
-              hashes.add(new BytesRef(s));
-            });
+    Arrays.stream(qstr.split(separator)).forEach(s -> hashes.add(new BytesRef(s)));
   }
 
   private void getHashesFromTokenStream(String analyserField, ArrayList<BytesRef> hashes)

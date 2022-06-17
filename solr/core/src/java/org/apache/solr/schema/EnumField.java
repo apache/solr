@@ -191,7 +191,7 @@ public class EnumField extends AbstractEnumField {
     newType.setNumericType(LegacyNumericType.INT);
     newType.setNumericPrecisionStep(DEFAULT_PRECISION_STEP);
 
-    return new LegacyIntField(field.getName(), intValue.intValue(), newType);
+    return new LegacyIntField(field.getName(), intValue, newType);
   }
 
   @Override

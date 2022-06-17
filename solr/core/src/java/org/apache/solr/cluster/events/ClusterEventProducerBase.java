@@ -85,9 +85,7 @@ public abstract class ClusterEventProducerBase implements ClusterEventProducer {
   @Override
   public void close() throws IOException {
     synchronized (listeners) {
-      listeners
-          .values()
-          .forEach(listenerSet -> listenerSet.forEach(listener -> IOUtils.closeQuietly(listener)));
+      listeners.values().forEach(listenerSet -> listenerSet.forEach(IOUtils::closeQuietly));
     }
   }
 

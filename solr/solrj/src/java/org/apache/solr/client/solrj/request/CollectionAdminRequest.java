@@ -979,7 +979,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       params.setNonNull(CommonParams.FL, fields);
       params.setNonNull("removeSource", removeSource);
       params.setNonNull(CommonParams.ROWS, batchSize);
-      collectionParams.forEach((k, v) -> params.setNonNull(k, v));
+      collectionParams.forEach(params::setNonNull);
       return params;
     }
   }

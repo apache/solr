@@ -115,9 +115,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
                   new InputDocument(docProps.get("id"), (String) docProps.get("language"));
 
               docProps.forEach(
-                  (fieldName, value) -> {
-                    doc.addClusteredField(fieldName, (String) value);
-                  });
+                  (fieldName, value) -> doc.addClusteredField(fieldName, (String) value));
               doc.visitFields(docProps::add);
               return doc;
             })

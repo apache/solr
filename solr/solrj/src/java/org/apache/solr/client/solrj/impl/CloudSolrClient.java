@@ -30,7 +30,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -560,11 +559,7 @@ public abstract class CloudSolrClient extends SolrClient {
         try {
           MDC.put("CloudSolrClient.url", url);
           responseFutures.put(
-              url,
-              threadPool.submit(
-                  () -> {
-                    return getLbClient().request(lbRequest).getResponse();
-                  }));
+              url, threadPool.submit(() -> getLbClient().request(lbRequest).getResponse()));
         } finally {
           MDC.remove("CloudSolrClient.url");
         }
@@ -734,7 +729,7 @@ public abstract class CloudSolrClient extends SolrClient {
       NamedList<?> shardResponse = (NamedList<?>) response.getVal(i);
       NamedList<?> header = (NamedList<?>) shardResponse.get("responseHeader");
       Integer shardStatus = (Integer) header.get("status");
-      int s = shardStatus.intValue();
+      int s = shardStatus;
       if (s > 0) {
         status = s;
       }
@@ -756,10 +751,10 @@ public abstract class CloudSolrClient extends SolrClient {
         maxToleratedErrors =
             Math.min(
                 maxToleratedErrors,
-                ToleratedUpdateError.getEffectiveMaxErrors(shardMaxToleratedErrors.intValue()));
+                ToleratedUpdateError.getEffectiveMaxErrors(shardMaxToleratedErrors));
 
         if (null == toleratedErrors) {
-          toleratedErrors = new ArrayList<SimpleOrderedMap<String>>(shardTolerantErrors.size());
+          toleratedErrors = new ArrayList<>(shardTolerantErrors.size());
         }
         for (SimpleOrderedMap<String> err : shardTolerantErrors) {
           toleratedErrors.add(err);
@@ -857,7 +852,7 @@ public abstract class CloudSolrClient extends SolrClient {
       this.routes = routes;
 
       // create a merged copy of the metadata from all wrapped exceptions
-      NamedList<String> metadata = new NamedList<String>();
+      NamedList<String> metadata = new NamedList<>();
       for (int i = 0; i < throwables.size(); i++) {
         Throwable t = throwables.getVal(i);
         if (t instanceof SolrException) {
@@ -1353,7 +1348,7 @@ public abstract class CloudSolrClient extends SolrClient {
     // it's probably already on the top-level header set by condense
     NamedList<?> header = (NamedList<?>) resp.get("responseHeader");
     Integer achRf = (Integer) header.get(UpdateRequest.REPFACT);
-    if (achRf != null) return achRf.intValue();
+    if (achRf != null) return achRf;
 
     // not on the top-level header, walk the shard route tree
     Map<String, Integer> shardRf = getShardReplicationFactor(collection, resp);
@@ -1362,7 +1357,7 @@ public abstract class CloudSolrClient extends SolrClient {
         achRf = rf;
       }
     }
-    return (achRf != null) ? achRf.intValue() : -1;
+    return (achRf != null) ? achRf : -1;
   }
 
   /**
@@ -1389,9 +1384,7 @@ public abstract class CloudSolrClient extends SolrClient {
         }
       }
 
-      Iterator<Map.Entry<String, NamedList<?>>> routeIter = routes.iterator();
-      while (routeIter.hasNext()) {
-        Map.Entry<String, NamedList<?>> next = routeIter.next();
+      for (Map.Entry<String, NamedList<?>> next : routes) {
         String host = next.getKey();
         NamedList<?> hostResp = next.getValue();
         Integer rf =

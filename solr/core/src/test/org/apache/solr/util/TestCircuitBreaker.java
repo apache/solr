@@ -84,7 +84,7 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
   }
 
   public void testCBAlwaysTrips() {
-    HashMap<String, String> args = new HashMap<String, String>();
+    HashMap<String, String> args = new HashMap<>();
 
     args.put(QueryParsing.DEFTYPE, CircuitBreaker.NAME);
     args.put(CommonParams.FL, "id");
@@ -101,15 +101,11 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
 
     h.getCore().getCircuitBreakerManager().register(circuitBreaker);
 
-    expectThrows(
-        SolrException.class,
-        () -> {
-          h.query(req("name:\"john smith\""));
-        });
+    expectThrows(SolrException.class, () -> h.query(req("name:\"john smith\"")));
   }
 
   public void testCBFakeMemoryPressure() {
-    HashMap<String, String> args = new HashMap<String, String>();
+    HashMap<String, String> args = new HashMap<>();
 
     args.put(QueryParsing.DEFTYPE, CircuitBreaker.NAME);
     args.put(CommonParams.FL, "id");
@@ -125,17 +121,13 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
 
     h.getCore().getCircuitBreakerManager().register(circuitBreaker);
 
-    expectThrows(
-        SolrException.class,
-        () -> {
-          h.query(req("name:\"john smith\""));
-        });
+    expectThrows(SolrException.class, () -> h.query(req("name:\"john smith\"")));
   }
 
   public void testBuildingMemoryPressure() {
     ExecutorService executor =
         ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("TestCircuitBreaker"));
-    HashMap<String, String> args = new HashMap<String, String>();
+    HashMap<String, String> args = new HashMap<>();
 
     args.put(QueryParsing.DEFTYPE, CircuitBreaker.NAME);
     args.put(CommonParams.FL, "id");

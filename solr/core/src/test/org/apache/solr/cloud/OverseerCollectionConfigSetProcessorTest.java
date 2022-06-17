@@ -36,7 +36,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -91,7 +90,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -303,9 +301,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
         .thenAnswer(
             invocation -> {
               QueueEvent result = null;
-              Iterator<QueueEvent> iter = queue.iterator();
-              while (iter.hasNext()) {
-                result = iter.next();
+              for (QueueEvent queueEvent : queue) {
+                result = queueEvent;
               }
               return result == null ? null : result.getId();
             });
@@ -457,19 +454,18 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     when(cloudManagerMock.getClusterState()).thenReturn(clusterStateMock);
 
     Mockito.doAnswer(
-            new Answer<Void>() {
-              public Void answer(InvocationOnMock invocation) {
-                System.out.println(
-                    "set data: " + invocation.getArgument(0) + " " + invocation.getArgument(1));
-                if (invocation.getArgument(1) == null) {
-                  zkClientData.put(invocation.getArgument(0), new byte[0]);
-                } else {
-                  zkClientData.put(invocation.getArgument(0), invocation.getArgument(1));
-                }
+            (Answer<Void>)
+                invocation -> {
+                  System.out.println(
+                      "set data: " + invocation.getArgument(0) + " " + invocation.getArgument(1));
+                  if (invocation.getArgument(1) == null) {
+                    zkClientData.put(invocation.getArgument(0), new byte[0]);
+                  } else {
+                    zkClientData.put(invocation.getArgument(0), invocation.getArgument(1));
+                  }
 
-                return null;
-              }
-            })
+                  return null;
+                })
         .when(distribStateManagerMock)
         .setData(anyString(), any(), anyInt());
 
@@ -503,13 +499,12 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
                     && zkClientData.get(invocation.getArgument(0)).length > 0);
 
     Mockito.doAnswer(
-            new Answer<Void>() {
-              public Void answer(InvocationOnMock invocation) {
-                System.out.println("set data: " + invocation.getArgument(0) + " " + new byte[0]);
-                zkClientData.put(invocation.getArgument(0), new byte[0]);
-                return null;
-              }
-            })
+            (Answer<Void>)
+                invocation -> {
+                  System.out.println("set data: " + invocation.getArgument(0) + " " + new byte[0]);
+                  zkClientData.put(invocation.getArgument(0), new byte[0]);
+                  return null;
+                })
         .when(distribStateManagerMock)
         .makePath(anyString());
 
@@ -543,41 +538,36 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
       // CreateCollectionCmd:
       // 1. Single line recording and executing a command
       Mockito.doAnswer(
-              new Answer<Void>() {
-                public Void answer(InvocationOnMock invocation) {
-                  handleCreateCollMessageProps(invocation.getArgument(1));
-                  return null;
-                }
-              })
+              (Answer<Void>)
+                  invocation -> {
+                    handleCreateCollMessageProps(invocation.getArgument(1));
+                    return null;
+                  })
           .when(distributedClusterStateUpdater)
           .doSingleStateUpdate(any(), any(), any(), any());
 
       // 2. Recording a command to be executed as part of a batch of commands
       Mockito.doAnswer(
-              new Answer<Void>() {
-                public Void answer(InvocationOnMock invocation) {
-                  handleCreateCollMessageProps(invocation.getArgument(1));
-                  return null;
-                }
-              })
+              (Answer<Void>)
+                  invocation -> {
+                    handleCreateCollMessageProps(invocation.getArgument(1));
+                    return null;
+                  })
           .when(stateChangeRecorder)
           .record(any(), any());
     } else {
       // Mocking for state change via the Overseer queue
       Mockito.doAnswer(
-              new Answer<Void>() {
-                public Void answer(InvocationOnMock invocation) {
-                  try {
-                    handleCreateCollMessage(invocation.getArgument(0));
-                    stateUpdateQueueMock.offer(invocation.getArgument(0));
-                  } catch (KeeperException e) {
-                    throw new RuntimeException(e);
-                  } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                  }
-                  return null;
-                }
-              })
+              (Answer<Void>)
+                  invocation -> {
+                    try {
+                      handleCreateCollMessage(invocation.getArgument(0));
+                      stateUpdateQueueMock.offer(invocation.getArgument(0));
+                    } catch (KeeperException | InterruptedException e) {
+                      throw new RuntimeException(e);
+                    }
+                    return null;
+                  })
           .when(overseerMock)
           .offerStateUpdate(any());
     }
@@ -587,19 +577,18 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     when(cloudManagerMock.getDistribStateManager()).thenReturn(distribStateManagerMock);
 
     Mockito.doAnswer(
-            new Answer<Void>() {
-              public Void answer(InvocationOnMock invocation) {
-                System.out.println(
-                    "set data: " + invocation.getArgument(0) + " " + invocation.getArgument(1));
-                if (invocation.getArgument(1) == null) {
-                  zkClientData.put(invocation.getArgument(0), new byte[0]);
-                } else {
-                  zkClientData.put(invocation.getArgument(0), invocation.getArgument(1));
-                }
+            (Answer<Void>)
+                invocation -> {
+                  System.out.println(
+                      "set data: " + invocation.getArgument(0) + " " + invocation.getArgument(1));
+                  if (invocation.getArgument(1) == null) {
+                    zkClientData.put(invocation.getArgument(0), new byte[0]);
+                  } else {
+                    zkClientData.put(invocation.getArgument(0), invocation.getArgument(1));
+                  }
 
-                return null;
-              }
-            })
+                  return null;
+                })
         .when(distribStateManagerMock)
         .setData(anyString(), any(), anyInt());
 
@@ -633,13 +622,12 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
                     && zkClientData.get(invocation.getArgument(0)).length > 0);
 
     Mockito.doAnswer(
-            new Answer<Void>() {
-              public Void answer(InvocationOnMock invocation) {
-                System.out.println("set data: " + invocation.getArgument(0) + " " + new byte[0]);
-                zkClientData.put(invocation.getArgument(0), new byte[0]);
-                return null;
-              }
-            })
+            (Answer<Void>)
+                invocation -> {
+                  System.out.println("set data: " + invocation.getArgument(0) + " " + new byte[0]);
+                  zkClientData.put(invocation.getArgument(0), new byte[0]);
+                  return null;
+                })
         .when(distribStateManagerMock)
         .makePath(anyString());
 
@@ -922,7 +910,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
             + numberOfNodesToCreateOn
             + " is not allowed to be higher than numberOfNodes "
             + numberOfNodes,
-        numberOfNodes.intValue() >= numberOfNodesToCreateOn.intValue());
+        numberOfNodes >= numberOfNodesToCreateOn);
     assertTrue(
         "Wrong usage of testTemplage. createNodeListOption has to be "
             + CreateNodeListOptions.SEND

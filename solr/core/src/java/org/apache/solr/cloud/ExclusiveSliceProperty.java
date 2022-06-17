@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
@@ -208,12 +207,7 @@ class ExclusiveSliceProperty {
 
   private void removeSliceAlreadyHostedFromPossibles(String sliceName) {
     for (Map.Entry<String, List<SliceReplica>> entReplica : nodesHostingReplicas.entrySet()) {
-
-      ListIterator<SliceReplica> iter = entReplica.getValue().listIterator();
-      while (iter.hasNext()) {
-        SliceReplica sr = iter.next();
-        if (sr.slice.getName().equals(sliceName)) iter.remove();
-      }
+      entReplica.getValue().removeIf(sr -> sr.slice.getName().equals(sliceName));
     }
   }
 
@@ -234,14 +228,12 @@ class ExclusiveSliceProperty {
           if (srToChange == null && ent.getValue().size() > 0) {
             srToChange = ent.getValue().get(0);
           }
-          ListIterator<SliceReplica> iter = ent.getValue().listIterator();
-          while (iter.hasNext()) {
-            SliceReplica sr = iter.next();
+          for (SliceReplica sr : ent.getValue()) {
             if (StringUtils.equals(slice, sr.slice.getName()) == false) {
               continue;
             }
             if (nodesHostingProp.containsKey(ent.getKey()) == false) {
-              nodesHostingProp.put(ent.getKey(), new ArrayList<SliceReplica>());
+              nodesHostingProp.put(ent.getKey(), new ArrayList<>());
             }
             if (minSize > nodesHostingReplicas.get(ent.getKey()).size()
                 && nodesHostingProp.get(ent.getKey()).size() < tmpMaxPropPerNode) {
@@ -255,7 +247,7 @@ class ExclusiveSliceProperty {
       // Now, you have a slice and node to put it on
       shardsNeedingHosts.remove(srToChange.slice.getName());
       if (nodesHostingProp.containsKey(nodeName) == false) {
-        nodesHostingProp.put(nodeName, new ArrayList<SliceReplica>());
+        nodesHostingProp.put(nodeName, new ArrayList<>());
       }
       nodesHostingProp.get(nodeName).add(srToChange);
       adjustLimits(nodesHostingProp.get(nodeName));
@@ -373,9 +365,7 @@ class ExclusiveSliceProperty {
 
     // Assemble the list of slices that do not have any replica hosting the property:
     for (Map.Entry<String, List<SliceReplica>> ent : nodesHostingReplicas.entrySet()) {
-      ListIterator<SliceReplica> iter = ent.getValue().listIterator();
-      while (iter.hasNext()) {
-        SliceReplica sr = iter.next();
+      for (SliceReplica sr : ent.getValue()) {
         shardsNeedingHosts.add(sr.slice.getName());
       }
     }

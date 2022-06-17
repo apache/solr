@@ -91,7 +91,7 @@ public class StddevAgg extends SimpleAggValueSource {
     }
   }
 
-  class StddevSortedNumericAcc extends DocValuesAcc.SDVSortedNumericAcc {
+  static class StddevSortedNumericAcc extends DocValuesAcc.SDVSortedNumericAcc {
 
     public StddevSortedNumericAcc(FacetContext fcontext, SchemaField sf, int numSlots)
         throws IOException {
@@ -105,7 +105,7 @@ public class StddevAgg extends SimpleAggValueSource {
     }
   }
 
-  class StddevSortedSetAcc extends DocValuesAcc.SDVSortedSetAcc {
+  static class StddevSortedSetAcc extends DocValuesAcc.SDVSortedSetAcc {
 
     public StddevSortedSetAcc(FacetContext fcontext, SchemaField sf, int numSlots)
         throws IOException {
@@ -119,7 +119,7 @@ public class StddevAgg extends SimpleAggValueSource {
     }
   }
 
-  class StddevUnInvertedFieldAcc extends UnInvertedFieldAcc.SDVUnInvertedFieldAcc {
+  static class StddevUnInvertedFieldAcc extends UnInvertedFieldAcc.SDVUnInvertedFieldAcc {
 
     public StddevUnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots)
         throws IOException {

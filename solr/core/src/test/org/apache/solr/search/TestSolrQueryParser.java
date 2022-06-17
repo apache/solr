@@ -71,8 +71,8 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     createIndex();
   }
 
-  private static final List<String> HAS_VAL_FIELDS = new ArrayList<String>(41);
-  private static final List<String> HAS_NAN_FIELDS = new ArrayList<String>(12);
+  private static final List<String> HAS_VAL_FIELDS = new ArrayList<>(41);
+  private static final List<String> HAS_NAN_FIELDS = new ArrayList<>(12);
 
   @AfterClass
   public static void afterClass() throws Exception {
@@ -1049,7 +1049,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
     @SuppressWarnings({"rawtypes"})
     Map all = (Map) Utils.fromJSONString(h.query(req("q", "*:*", "rows", "0", "wt", "json")));
-    int totalDocs = Integer.parseInt(((Map) all.get("response")).get("numFound").toString());
+    int totalDocs = Integer.parseInt(((Map<?, ?>) all.get("response")).get("numFound").toString());
     int allDocsExceptOne = totalDocs - 1;
 
     assertJQ(

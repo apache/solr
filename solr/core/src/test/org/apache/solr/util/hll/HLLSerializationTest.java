@@ -42,7 +42,7 @@ public class HLLSerializationTest extends SolrTestCase {
   public void serializationSmokeTest() throws Exception {
     final Random random = new Random(randomLong());
     final int randomCount = 250;
-    final List<Long> randoms = new ArrayList<Long>(randomCount);
+    final List<Long> randoms = new ArrayList<>(randomCount);
     for (int i = 0; i < randomCount; i++) {
       randoms.add(random.nextLong());
     }
@@ -68,7 +68,7 @@ public class HLLSerializationTest extends SolrTestCase {
   public void monsterHLLSerializationTest() throws Exception {
     final Random random = new Random(randomLong());
     final int randomCount = 250;
-    final List<Long> randoms = new ArrayList<Long>(randomCount);
+    final List<Long> randoms = new ArrayList<>(randomCount);
     for (int i = 0; i < randomCount; i++) {
       randoms.add(random.nextLong());
     }

@@ -98,31 +98,31 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
         new FastJavaBinDecoder()
             .withInputStream(new FastInputStream(null, baos.getbuf(), 0, baos.size()))
             .decode(
-                e -> {
-                  e.listenContainer(
-                      new LinkedHashMap<>(),
-                      e_ -> {
-                        Map rootMap = (Map) e_.ctx();
-                        if (e_.type() == DataEntry.Type.ENTRY_ITER) {
-                          e_.listenContainer(
-                              rootMap.computeIfAbsent(e_.name(), o -> new ArrayList<>()),
-                              FastJavaBinDecoder.getEntryListener());
-                        } else if (e_.type() == DataEntry.Type.KEYVAL_ITER) {
-                          e_.listenContainer(
-                              rootMap.computeIfAbsent(e_.name(), o -> new LinkedHashMap<>()),
-                              e1 -> {
-                                Map<CharSequence, String> m1 = (Map<CharSequence, String>) e1.ctx();
-                                if ("k1".equals(e1.name())) {
-                                  m1.put(e1.name(), e1.val().toString());
-                                }
-                                // eat up k2
-                              });
-                        } else if (e_.type() == DataEntry.Type.STR) {
-                          rootMap.put(e_.name(), e_.val().toString());
-                        }
-                      });
-                });
-    ((Map) m2.get("mapk")).remove("k2");
+                e ->
+                    e.listenContainer(
+                        new LinkedHashMap<>(),
+                        e_ -> {
+                          Map rootMap = (Map) e_.ctx();
+                          if (e_.type() == DataEntry.Type.ENTRY_ITER) {
+                            e_.listenContainer(
+                                rootMap.computeIfAbsent(e_.name(), o -> new ArrayList<>()),
+                                FastJavaBinDecoder.getEntryListener());
+                          } else if (e_.type() == DataEntry.Type.KEYVAL_ITER) {
+                            e_.listenContainer(
+                                rootMap.computeIfAbsent(e_.name(), o -> new LinkedHashMap<>()),
+                                e1 -> {
+                                  Map<CharSequence, String> m1 =
+                                      (Map<CharSequence, String>) e1.ctx();
+                                  if ("k1".equals(e1.name())) {
+                                    m1.put(e1.name(), e1.val().toString());
+                                  }
+                                  // eat up k2
+                                });
+                          } else if (e_.type() == DataEntry.Type.STR) {
+                            rootMap.put(e_.name(), e_.val().toString());
+                          }
+                        }));
+    ((Map<?, ?>) m2.get("mapk")).remove("k2");
     assertEquals(
         Utils.writeJson(m2, new StringWriter(), true).toString(),
         Utils.writeJson(newMap, new StringWriter(), true).toString());

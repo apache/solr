@@ -68,7 +68,7 @@ public class TestManagedResource extends SolrTestCaseJ4 {
     }
   }
 
-  private class ManagedTestResource extends ManagedResource {
+  private static class ManagedTestResource extends ManagedResource {
 
     private Object managedData;
 

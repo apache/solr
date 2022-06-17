@@ -1266,10 +1266,9 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       BaseHttpSolrClient.RemoteSolrException rse =
           expectThrows(
               BaseHttpSolrClient.RemoteSolrException.class,
-              () -> {
-                CollectionAdminRequest.createCollection("testcollection", "badconf", 1, 2)
-                    .process(client);
-              });
+              () ->
+                  CollectionAdminRequest.createCollection("testcollection", "badconf", 1, 2)
+                      .process(client));
       assertNotNull(rse.getMessage());
       assertNotSame(0, rse.code());
 

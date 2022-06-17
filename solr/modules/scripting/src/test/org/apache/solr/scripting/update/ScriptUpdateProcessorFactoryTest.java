@@ -18,7 +18,6 @@ package org.apache.solr.scripting.update;
 
 import java.util.ArrayList;
 import java.util.List;
-import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -78,13 +77,7 @@ public class ScriptUpdateProcessorFactoryTest extends UpdateProcessorTestBase {
     final ScriptUpdateProcessorFactory factory =
         ((ScriptUpdateProcessorFactory) chained.getProcessors().get(0));
     final List<String> functionMessages = new ArrayList<>();
-    factory.setScriptEngineCustomizer(
-        new ScriptEngineCustomizer() {
-          @Override
-          public void customize(ScriptEngine engine) {
-            engine.put("functionMessages", functionMessages);
-          }
-        });
+    factory.setScriptEngineCustomizer(engine -> engine.put("functionMessages", functionMessages));
     assertNotNull(chained);
 
     SolrInputDocument d =
@@ -116,12 +109,7 @@ public class ScriptUpdateProcessorFactoryTest extends UpdateProcessorTestBase {
           ((ScriptUpdateProcessorFactory) chained.getProcessors().get(0));
       final List<String> functionMessages = new ArrayList<>();
       ScriptEngineCustomizer customizer =
-          new ScriptEngineCustomizer() {
-            @Override
-            public void customize(ScriptEngine engine) {
-              engine.put("functionMessages", functionMessages);
-            }
-          };
+          engine -> engine.put("functionMessages", functionMessages);
       factory.setScriptEngineCustomizer(customizer);
       assertNotNull(chained);
 
@@ -237,8 +225,6 @@ public class ScriptUpdateProcessorFactoryTest extends UpdateProcessorTestBase {
     assumeTrue("This test only works with security manager", System.getSecurityManager() != null);
     expectThrows(
         SecurityException.class,
-        () -> {
-          processAdd("evil", doc(f("id", "5"), f("name", " foo "), f("subject", "BAR")));
-        });
+        () -> processAdd("evil", doc(f("id", "5"), f("name", " foo "), f("subject", "BAR"))));
   }
 }

@@ -42,7 +42,7 @@ public class LTRInterleavingTransformerFactory extends TransformerFactory {
     return new InterleavingTransformer(name, req);
   }
 
-  class InterleavingTransformer extends DocTransformer {
+  static class InterleavingTransformer extends DocTransformer {
 
     private final String name;
     private final SolrQueryRequest req;
@@ -74,9 +74,7 @@ public class LTRInterleavingTransformerFactory extends TransformerFactory {
       }
       rerankingQueries =
           (LTRInterleavingScoringQuery[]) SolrQueryRequestContextUtils.getScoringQueries(req);
-      for (int i = 0; i < rerankingQueries.length; i++) {
-        LTRScoringQuery scoringQuery = rerankingQueries[i];
-
+      for (LTRScoringQuery scoringQuery : rerankingQueries) {
         if (scoringQuery.getOriginalQuery() == null) {
           scoringQuery.setOriginalQuery(context.getQuery());
         }

@@ -29,11 +29,7 @@ public class DomainMapTest extends SolrTestCaseJ4 {
   @Test
   public void testRejectsInvalidFilters() {
     final Throwable thrown =
-        expectThrows(
-            IllegalArgumentException.class,
-            () -> {
-              new DomainMap().withFilter(null);
-            });
+        expectThrows(IllegalArgumentException.class, () -> new DomainMap().withFilter(null));
     assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
@@ -61,11 +57,7 @@ public class DomainMapTest extends SolrTestCaseJ4 {
   @Test
   public void testRejectsInvalidQueries() {
     final Throwable thrown =
-        expectThrows(
-            IllegalArgumentException.class,
-            () -> {
-              new DomainMap().withQuery(null);
-            });
+        expectThrows(IllegalArgumentException.class, () -> new DomainMap().withQuery(null));
     assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
@@ -93,11 +85,7 @@ public class DomainMapTest extends SolrTestCaseJ4 {
   @Test
   public void testRejectsInvalidTagsToExclude() {
     final Throwable thrown =
-        expectThrows(
-            IllegalArgumentException.class,
-            () -> {
-              new DomainMap().withTagsToExclude(null);
-            });
+        expectThrows(IllegalArgumentException.class, () -> new DomainMap().withTagsToExclude(null));
     assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
@@ -127,10 +115,7 @@ public class DomainMapTest extends SolrTestCaseJ4 {
   public void testRejectsInvalidBlockParentQuery() {
     final Throwable thrown =
         expectThrows(
-            IllegalArgumentException.class,
-            () -> {
-              new DomainMap().setBlockParentQuery(null);
-            });
+            IllegalArgumentException.class, () -> new DomainMap().setBlockParentQuery(null));
     assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
@@ -144,10 +129,7 @@ public class DomainMapTest extends SolrTestCaseJ4 {
   public void testRejectsInvalidBlockChildrenQuery() {
     final Throwable thrown =
         expectThrows(
-            IllegalArgumentException.class,
-            () -> {
-              new DomainMap().setBlockChildQuery(null);
-            });
+            IllegalArgumentException.class, () -> new DomainMap().setBlockChildQuery(null));
     assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
@@ -162,9 +144,7 @@ public class DomainMapTest extends SolrTestCaseJ4 {
     final Throwable thrown =
         expectThrows(
             IllegalArgumentException.class,
-            () -> {
-              new DomainMap().setJoinTransformation(null, "valid-to-field");
-            });
+            () -> new DomainMap().setJoinTransformation(null, "valid-to-field"));
     assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
@@ -173,9 +153,7 @@ public class DomainMapTest extends SolrTestCaseJ4 {
     final Throwable thrown =
         expectThrows(
             IllegalArgumentException.class,
-            () -> {
-              new DomainMap().setJoinTransformation("valid-from-field", null);
-            });
+            () -> new DomainMap().setJoinTransformation("valid-from-field", null));
     assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 

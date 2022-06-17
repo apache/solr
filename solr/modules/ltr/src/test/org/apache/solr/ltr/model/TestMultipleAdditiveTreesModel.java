@@ -125,11 +125,10 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     Exception ex =
         expectThrows(
             Exception.class,
-            () -> {
-              createModelFromFiles(
-                  "multipleadditivetreesmodel_no_params.json",
-                  "multipleadditivetreesmodel_features.json");
-            });
+            () ->
+                createModelFromFiles(
+                    "multipleadditivetreesmodel_no_params.json",
+                    "multipleadditivetreesmodel_features.json"));
     Throwable rootError = getRootCause(ex);
     assertEquals(expectedException.toString(), rootError.toString());
   }
@@ -141,11 +140,10 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     Exception ex =
         expectThrows(
             Exception.class,
-            () -> {
-              createModelFromFiles(
-                  "multipleadditivetreesmodel_no_trees.json",
-                  "multipleadditivetreesmodel_features.json");
-            });
+            () ->
+                createModelFromFiles(
+                    "multipleadditivetreesmodel_no_trees.json",
+                    "multipleadditivetreesmodel_features.json"));
     Throwable rootError = getRootCause(ex);
     assertEquals(expectedException.toString(), rootError.toString());
   }
@@ -157,11 +155,10 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     Exception ex =
         expectThrows(
             Exception.class,
-            () -> {
-              createModelFromFiles(
-                  "multipleadditivetreesmodel_no_weight.json",
-                  "multipleadditivetreesmodel_features.json");
-            });
+            () ->
+                createModelFromFiles(
+                    "multipleadditivetreesmodel_no_weight.json",
+                    "multipleadditivetreesmodel_features.json"));
     Throwable rootError = getRootCause(ex);
     assertEquals(expectedException.toString(), rootError.toString());
   }
@@ -173,11 +170,10 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     Exception ex =
         expectThrows(
             Exception.class,
-            () -> {
-              createModelFromFiles(
-                  "multipleadditivetreesmodel_no_tree.json",
-                  "multipleadditivetreesmodel_features.json");
-            });
+            () ->
+                createModelFromFiles(
+                    "multipleadditivetreesmodel_no_tree.json",
+                    "multipleadditivetreesmodel_features.json"));
     Throwable rootError = getRootCause(ex);
     assertEquals(expectedException.toString(), rootError.toString());
   }
@@ -189,11 +185,10 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     Exception ex =
         expectThrows(
             Exception.class,
-            () -> {
-              createModelFromFiles(
-                  "multipleadditivetreesmodel_no_features.json",
-                  "multipleadditivetreesmodel_features.json");
-            });
+            () ->
+                createModelFromFiles(
+                    "multipleadditivetreesmodel_no_features.json",
+                    "multipleadditivetreesmodel_features.json"));
     Throwable rootError = getRootCause(ex);
     assertEquals(expectedException.toString(), rootError.toString());
   }
@@ -205,11 +200,10 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     Exception ex =
         expectThrows(
             Exception.class,
-            () -> {
-              createModelFromFiles(
-                  "multipleadditivetreesmodel_no_right.json",
-                  "multipleadditivetreesmodel_features.json");
-            });
+            () ->
+                createModelFromFiles(
+                    "multipleadditivetreesmodel_no_right.json",
+                    "multipleadditivetreesmodel_features.json"));
     Throwable rootError = getRootCause(ex);
     assertEquals(expectedException.toString(), rootError.toString());
   }
@@ -221,11 +215,10 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     Exception ex =
         expectThrows(
             Exception.class,
-            () -> {
-              createModelFromFiles(
-                  "multipleadditivetreesmodel_no_left.json",
-                  "multipleadditivetreesmodel_features.json");
-            });
+            () ->
+                createModelFromFiles(
+                    "multipleadditivetreesmodel_no_left.json",
+                    "multipleadditivetreesmodel_features.json"));
     Throwable rootError = getRootCause(ex);
     assertEquals(expectedException.toString(), rootError.toString());
   }
@@ -237,11 +230,10 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     Exception ex =
         expectThrows(
             Exception.class,
-            () -> {
-              createModelFromFiles(
-                  "multipleadditivetreesmodel_no_threshold.json",
-                  "multipleadditivetreesmodel_features.json");
-            });
+            () ->
+                createModelFromFiles(
+                    "multipleadditivetreesmodel_no_threshold.json",
+                    "multipleadditivetreesmodel_features.json"));
     Throwable rootError = getRootCause(ex);
     assertEquals(expectedException.toString(), rootError.toString());
   }
@@ -255,11 +247,10 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     ModelException ex =
         expectThrows(
             ModelException.class,
-            () -> {
-              createModelFromFiles(
-                  "multipleadditivetreesmodel_no_feature.json",
-                  "multipleadditivetreesmodel_features.json");
-            });
+            () ->
+                createModelFromFiles(
+                    "multipleadditivetreesmodel_no_feature.json",
+                    "multipleadditivetreesmodel_features.json"));
     assertEquals(expectedException.toString(), ex.toString());
   }
 
@@ -271,11 +262,10 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     ModelException ex =
         expectThrows(
             ModelException.class,
-            () -> {
-              createModelFromFiles(
-                  "multipleadditivetreesmodel_notExistentStore.json",
-                  "multipleadditivetreesmodel_features.json");
-            });
+            () ->
+                createModelFromFiles(
+                    "multipleadditivetreesmodel_notExistentStore.json",
+                    "multipleadditivetreesmodel_features.json"));
     assertEquals(expectedException.toString(), ex.toString());
   }
 
@@ -287,11 +277,10 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     ModelException ex =
         expectThrows(
             ModelException.class,
-            () -> {
-              createModelFromFiles(
-                  "multipleadditivetreesmodel_unknownFeature.json",
-                  "multipleadditivetreesmodel_features.json");
-            });
+            () ->
+                createModelFromFiles(
+                    "multipleadditivetreesmodel_unknownFeature.json",
+                    "multipleadditivetreesmodel_features.json"));
     assertEquals(expectedException.toString(), ex.toString());
   }
 }

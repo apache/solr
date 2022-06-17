@@ -220,9 +220,8 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     leader = shard1.getLeader();
 
     String leaderBaseUrl = zkStateReader.getBaseUrlForNodeName(leader.getNodeName());
-    for (int i = 0; i < clients.size(); i++) {
-      if (((HttpSolrClient) clients.get(i)).getBaseURL().startsWith(leaderBaseUrl))
-        LEADER = clients.get(i);
+    for (SolrClient solrClient : clients) {
+      if (((HttpSolrClient) solrClient).getBaseURL().startsWith(leaderBaseUrl)) LEADER = solrClient;
     }
 
     NONLEADERS = new ArrayList<>();
@@ -231,9 +230,8 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
         continue;
       }
       String baseUrl = zkStateReader.getBaseUrlForNodeName(rep.getNodeName());
-      for (int i = 0; i < clients.size(); i++) {
-        if (((HttpSolrClient) clients.get(i)).getBaseURL().startsWith(baseUrl))
-          NONLEADERS.add(clients.get(i));
+      for (SolrClient client : clients) {
+        if (((HttpSolrClient) client).getBaseURL().startsWith(baseUrl)) NONLEADERS.add(client);
       }
     }
 
@@ -452,7 +450,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     int numDocs = atLeast(100);
     if (onlyLeaderIndexes) numDocs = TestUtil.nextInt(random(), 10, 50);
     log.info("Trying num docs = {}", numDocs);
-    final List<Integer> ids = new ArrayList<Integer>(numDocs);
+    final List<Integer> ids = new ArrayList<>(numDocs);
     for (int id = 0; id < numDocs; id++) {
       ids.add(id);
     }
@@ -1194,10 +1192,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     log.info("Doc in both replica 0: {}", doc0);
     log.info("Doc in both replica 1: {}", doc1);
     // assert both replicas have same effect
-    for (int i = 0;
-        i < NONLEADERS.size();
-        i++) { // 0th is re-ordered replica, 1st is well-ordered replica
-      SolrClient client = NONLEADERS.get(i);
+    for (SolrClient client : NONLEADERS) { // 0th is re-ordered replica, 1st is well-ordered replica
       SolrDocument doc = client.getById(String.valueOf(0), params("distrib", "false"));
       assertNotNull("Client: " + ((HttpSolrClient) client).getBaseURL(), doc);
       assertEquals(
@@ -1284,9 +1279,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
               try {
                 return (float) getReplicaValue(client, 1, "inplace_updatable_float")
                     == newinplace_updatable_float + 2.0f;
-              } catch (SolrServerException e) {
-                throw new RuntimeException(e);
-              } catch (IOException e) {
+              } catch (SolrServerException | IOException e) {
                 throw new RuntimeException(e);
               }
             });

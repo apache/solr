@@ -23,6 +23,7 @@ import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -236,8 +237,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
         failOnTimeout,
         timeoutSeconds);
 
-    zkStateReader.waitForState(
-        collection, timeoutSeconds, TimeUnit.SECONDS, (docCollection) -> docCollection == null);
+    zkStateReader.waitForState(collection, timeoutSeconds, TimeUnit.SECONDS, Objects::isNull);
     log.info("Collection has disappeared - collection:{}", collection);
   }
 

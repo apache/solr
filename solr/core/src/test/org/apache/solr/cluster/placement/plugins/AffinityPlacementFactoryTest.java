@@ -656,18 +656,16 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
           .incrementAndGet();
     }
     replicas.forEach(
-        (type, perTypeReplicas) -> {
-          perTypeReplicas.forEach(
-              (shard, azCounts) -> {
-                assertEquals("number of AZs", 2, azCounts.size());
-                azCounts.forEach(
-                    (az, count) -> {
-                      assertTrue(
-                          "too few replicas shard=" + shard + ", type=" + type + ", az=" + az,
-                          count.get() >= 1);
-                    });
-              });
-        });
+        (type, perTypeReplicas) ->
+            perTypeReplicas.forEach(
+                (shard, azCounts) -> {
+                  assertEquals("number of AZs", 2, azCounts.size());
+                  azCounts.forEach(
+                      (az, count) ->
+                          assertTrue(
+                              "too few replicas shard=" + shard + ", type=" + type + ", az=" + az,
+                              count.get() >= 1));
+                }));
   }
 
   @Test
@@ -737,18 +735,21 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
           .incrementAndGet();
     }
     replicas.forEach(
-        (type, perTypeReplicas) -> {
-          perTypeReplicas.forEach(
-              (shard, groupCounts) -> {
-                assertEquals("number of groups", 1, groupCounts.size());
-                groupCounts.forEach(
-                    (group, count) -> {
-                      assertTrue(
-                          "too few replicas shard=" + shard + ", type=" + type + ", group=" + group,
-                          count.get() >= 1);
-                    });
-              });
-        });
+        (type, perTypeReplicas) ->
+            perTypeReplicas.forEach(
+                (shard, groupCounts) -> {
+                  assertEquals("number of groups", 1, groupCounts.size());
+                  groupCounts.forEach(
+                      (group, count) ->
+                          assertTrue(
+                              "too few replicas shard="
+                                  + shard
+                                  + ", type="
+                                  + type
+                                  + ", group="
+                                  + group,
+                              count.get() >= 1));
+                }));
   }
 
   @Test
@@ -1155,18 +1156,9 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
           .incrementAndGet();
     }
     int perNode = TOTAL_REPLICAS > numNodes ? TOTAL_REPLICAS / numNodes : 1;
-    replicasPerNode.forEach(
-        (node, count) -> {
-          assertEquals(count.get(), perNode);
-        });
-    shardsPerNode.forEach(
-        (node, names) -> {
-          assertEquals(names.size(), perNode);
-        });
+    replicasPerNode.forEach((node, count) -> assertEquals(count.get(), perNode));
+    shardsPerNode.forEach((node, names) -> assertEquals(names.size(), perNode));
 
-    replicasPerShard.forEach(
-        (shard, count) -> {
-          assertEquals(count.get(), REPLICAS_PER_SHARD);
-        });
+    replicasPerShard.forEach((shard, count) -> assertEquals(count.get(), REPLICAS_PER_SHARD));
   }
 }

@@ -493,12 +493,7 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
           // if useDocValuesAsStored==true and maxCharsForDocValues=N then longer values should fail
 
           final String doc = adoc("id", docid, name, "apple pear orange");
-          SolrException ex =
-              expectThrows(
-                  SolrException.class,
-                  () -> {
-                    assertU(doc);
-                  });
+          SolrException ex = expectThrows(SolrException.class, () -> assertU(doc));
           for (String expect :
               Arrays.asList(
                   "field " + name,

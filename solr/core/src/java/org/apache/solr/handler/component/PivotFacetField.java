@@ -97,7 +97,7 @@ public class PivotFacetField {
     if (null != parentValue) {
       return parentValue.getValuePath();
     }
-    return new ArrayList<String>(3);
+    return new ArrayList<>(3);
   }
 
   /**
@@ -287,9 +287,7 @@ public class PivotFacetField {
   }
 
   private int numberOfValuesContributedByShard(final int shardNumber) {
-    return numberOfValuesContributedByShard.containsKey(shardNumber)
-        ? numberOfValuesContributedByShard.get(shardNumber)
-        : 0;
+    return numberOfValuesContributedByShard.getOrDefault(shardNumber, 0);
   }
 
   /**
@@ -321,7 +319,7 @@ public class PivotFacetField {
   }
 
   private int lowestCountContributedbyShard(int shardNumber) {
-    return (shardLowestCount.containsKey(shardNumber)) ? shardLowestCount.get(shardNumber) : 0;
+    return shardLowestCount.getOrDefault(shardNumber, 0);
   }
 
   private void refineNextLevelOfFacets(PivotFacet pf) {

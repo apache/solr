@@ -210,8 +210,7 @@ public class SpellCheckCollator {
     StringBuilder collation = new StringBuilder(origQuery);
     int offset = 0;
     String corr = "";
-    for (int i = 0; i < corrections.size(); i++) {
-      SpellCheckCorrection correction = corrections.get(i);
+    for (SpellCheckCorrection correction : corrections) {
       Token tok = correction.getOriginal();
       // we are replacing the query in order, but injected terms might cause
       // illegal offsets due to previous replacements.

@@ -123,10 +123,9 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
     monitor.doStuffAndExpectAtLeastOneCommit(
         hardCommitTracker,
         updateHandler,
-        () -> {
-          updateRequestHandler.handleRequest(
-              constructBatchAddDocRequest(0, numDocsToAdd), updateResp);
-        });
+        () ->
+            updateRequestHandler.handleRequest(
+                constructBatchAddDocRequest(0, numDocsToAdd), updateResp));
   }
 
   @Test
@@ -148,10 +147,9 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
     monitor.doStuffAndExpectAtLeastOneCommit(
         hardCommitTracker,
         updateHandler,
-        () -> {
-          updateRequestHandler.handleRequest(
-              constructBatchAddDocRequest(0, numDocsToAdd), updateResp);
-        });
+        () ->
+            updateRequestHandler.handleRequest(
+                constructBatchAddDocRequest(0, numDocsToAdd), updateResp));
 
     // Send a bunch of redundant deletes
     int numDeletesToSend = 500;
@@ -168,9 +166,7 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
     monitor.doStuffAndExpectAtLeastOneCommit(
         hardCommitTracker,
         updateHandler,
-        () -> {
-          updateRequestHandler.handleRequest(batchSingleDeleteRequest, updateResp);
-        });
+        () -> updateRequestHandler.handleRequest(batchSingleDeleteRequest, updateResp));
   }
 
   @Test
@@ -192,20 +188,18 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
     monitor.doStuffAndExpectAtLeastOneCommit(
         hardCommitTracker,
         updateHandler,
-        () -> {
-          updateRequestHandler.handleRequest(
-              constructBatchAddDocRequest(0, numDocsToAdd), updateResp);
-        });
+        () ->
+            updateRequestHandler.handleRequest(
+                constructBatchAddDocRequest(0, numDocsToAdd), updateResp));
 
     // Delete all documents - should trigger a commit
 
     monitor.doStuffAndExpectAtLeastOneCommit(
         hardCommitTracker,
         updateHandler,
-        () -> {
-          updateRequestHandler.handleRequest(
-              constructBatchDeleteDocRequest(0, numDocsToAdd), updateResp);
-        });
+        () ->
+            updateRequestHandler.handleRequest(
+                constructBatchDeleteDocRequest(0, numDocsToAdd), updateResp));
   }
 
   /**

@@ -224,7 +224,7 @@ public class SystemInfoHandler extends RequestHandlerBase {
         null,
         (name, metric) -> {
           if (info.get(name) == null) {
-            info.add(name, ((Gauge) metric).getValue());
+            info.add(name, ((Gauge<?>) metric).getValue());
           }
         });
 

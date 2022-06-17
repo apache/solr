@@ -541,7 +541,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
       resetExceptionIgnores();
     }
     assertNotNull("no error on un-comparable values", error);
-    assertTrue("error doesn't mention field name", 0 <= error.getMessage().indexOf("foo_s"));
+    assertTrue("error doesn't mention field name", error.getMessage().contains("foo_s"));
   }
 
   public void testMaxValue() throws Exception {
@@ -583,7 +583,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
       resetExceptionIgnores();
     }
     assertNotNull("no error on un-comparable values", error);
-    assertTrue("error doesn't mention field name", 0 <= error.getMessage().indexOf("foo_s"));
+    assertTrue("error doesn't mention field name", error.getMessage().contains("foo_s"));
   }
 
   public void testHtmlStrip() throws Exception {

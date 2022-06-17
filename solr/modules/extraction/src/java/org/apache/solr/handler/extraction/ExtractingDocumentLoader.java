@@ -238,9 +238,9 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
           writer.close();
           String[] names = metadata.names();
           NamedList<String[]> metadataNL = new NamedList<>();
-          for (int i = 0; i < names.length; i++) {
-            String[] vals = metadata.getValues(names[i]);
-            metadataNL.add(names[i], vals);
+          for (String name : names) {
+            String[] vals = metadata.getValues(name);
+            metadataNL.add(name, vals);
           }
           rsp.add(stream.getName() + "_metadata", metadataNL);
         }

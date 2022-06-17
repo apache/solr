@@ -67,10 +67,7 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
       CloudSolrClient client = cluster.getSolrClient();
       SolrException e =
           expectThrows(
-              SolrException.class,
-              () -> {
-                cluster.getZkClient().upConfig(configPath, "testconfig");
-              });
+              SolrException.class, () -> cluster.getZkClient().upConfig(configPath, "testconfig"));
       assertTrue(
           "Unexpected message: " + e.getMessage(),
           e.getMessage().contains("cluster not found/not ready"));
@@ -133,11 +130,7 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
     provider.close();
 
     if (random().nextBoolean()) {
-      expectThrows(
-          AlreadyClosedException.class,
-          () -> {
-            provider.connect();
-          });
+      expectThrows(AlreadyClosedException.class, provider::connect);
     }
     expectThrows(
         AlreadyClosedException.class,

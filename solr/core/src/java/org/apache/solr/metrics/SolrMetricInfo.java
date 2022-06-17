@@ -17,6 +17,7 @@
 package org.apache.solr.metrics;
 
 import com.codahale.metrics.MetricRegistry;
+import java.util.Objects;
 import org.apache.solr.core.SolrInfoBean;
 
 /** Wraps meta-data for a metric. */
@@ -97,8 +98,8 @@ public final class SolrMetricInfo {
 
     SolrMetricInfo that = (SolrMetricInfo) o;
 
-    if (name != null ? !name.equals(that.name) : that.name != null) return false;
-    if (scope != null ? !scope.equals(that.scope) : that.scope != null) return false;
+    if (!Objects.equals(name, that.name)) return false;
+    if (!Objects.equals(scope, that.scope)) return false;
     return category == that.category;
   }
 

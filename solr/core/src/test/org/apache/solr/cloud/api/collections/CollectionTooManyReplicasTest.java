@@ -76,11 +76,10 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
     Exception e =
         expectThrows(
             Exception.class,
-            () -> {
-              CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
-                  .setNode(nodeName)
-                  .process(cluster.getSolrClient());
-            });
+            () ->
+                CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
+                    .setNode(nodeName)
+                    .process(cluster.getSolrClient()));
     assertTrue(e.toString(), e.toString().contains("No node can satisfy"));
 
     // this should succeed because it places the replica on a different node
@@ -101,10 +100,9 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
     Exception e2 =
         expectThrows(
             Exception.class,
-            () -> {
-              CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
-                  .process(cluster.getSolrClient());
-            });
+            () ->
+                CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
+                    .process(cluster.getSolrClient()));
 
     assertTrue(
         "Should have gotten the right error message back",
@@ -148,10 +146,9 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
     Exception e =
         expectThrows(
             Exception.class,
-            () -> {
-              CollectionAdminRequest.createShard(collectionName, "shard3")
-                  .process(cluster.getSolrClient());
-            });
+            () ->
+                CollectionAdminRequest.createShard(collectionName, "shard3")
+                    .process(cluster.getSolrClient()));
     assertTrue(
         "Should have gotten the right error message back",
         e.getMessage().contains("No node can satisfy the rules"));
@@ -162,11 +159,10 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
     Exception e2 =
         expectThrows(
             Exception.class,
-            () -> {
-              CollectionAdminRequest.createShard(collectionName, "shard4")
-                  .setNodeSet(String.join(",", nodes))
-                  .process(cluster.getSolrClient());
-            });
+            () ->
+                CollectionAdminRequest.createShard(collectionName, "shard4")
+                    .setNodeSet(String.join(",", nodes))
+                    .process(cluster.getSolrClient()));
     assertTrue(
         "Should have gotten the right error message back",
         e2.getMessage().contains("No node can satisfy the rules"));
@@ -175,10 +171,9 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
     Exception e3 =
         expectThrows(
             Exception.class,
-            () -> {
-              CollectionAdminRequest.createShard(collectionName, "shard5")
-                  .process(cluster.getSolrClient());
-            });
+            () ->
+                CollectionAdminRequest.createShard(collectionName, "shard5")
+                    .process(cluster.getSolrClient()));
     assertTrue(
         "Should have gotten the right error message back",
         e3.getMessage().contains("No node can satisfy the rules"));
@@ -188,9 +183,7 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
     waitForState(
         "Expected shards shardstart, 1, 2, each with two active replicas",
         collectionName,
-        (n, c) -> {
-          return DocCollection.isFullyActive(n, c, 3, 2);
-        });
+        (n, c) -> DocCollection.isFullyActive(n, c, 3, 2));
     Map<String, Slice> slices = getCollectionState(collectionName).getSlicesMap();
     assertEquals("There should be exaclty three slices", slices.size(), 3);
     assertNotNull("shardstart should exist", slices.get("shardstart"));
@@ -224,11 +217,10 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
       Exception e1 =
           expectThrows(
               Exception.class,
-              () -> {
-                CollectionAdminRequest.addReplicaToShard(collectionName, "shardstart")
-                    .setNode(deadNode)
-                    .process(cluster.getSolrClient());
-              });
+              () ->
+                  CollectionAdminRequest.addReplicaToShard(collectionName, "shardstart")
+                      .setNode(deadNode)
+                      .process(cluster.getSolrClient()));
       assertTrue(
           "Should have gotten a message about shard not currently active: " + e1.toString(),
           e1.toString()
@@ -241,11 +233,10 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
       Exception e2 =
           expectThrows(
               Exception.class,
-              () -> {
-                CollectionAdminRequest.createShard(collectionName, "shard1")
-                    .setNodeSet(deadNode)
-                    .process(cluster.getSolrClient());
-              });
+              () ->
+                  CollectionAdminRequest.createShard(collectionName, "shard1")
+                      .setNodeSet(deadNode)
+                      .process(cluster.getSolrClient()));
 
       assertTrue(
           "Should have gotten a message about shard not currently active: " + e2.toString(),

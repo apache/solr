@@ -137,7 +137,7 @@ public final class LegacyFloatField extends LegacyField {
    */
   public LegacyFloatField(String name, float value, Store stored) {
     super(name, stored == Store.YES ? TYPE_STORED : TYPE_NOT_STORED);
-    fieldsData = Float.valueOf(value);
+    fieldsData = value;
   }
 
   /**
@@ -156,6 +156,6 @@ public final class LegacyFloatField extends LegacyField {
       throw new IllegalArgumentException(
           "type.numericType() must be FLOAT but got " + type.numericType());
     }
-    fieldsData = Float.valueOf(value);
+    fieldsData = value;
   }
 }

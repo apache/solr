@@ -16,8 +16,6 @@
  */
 package org.apache.solr.client.solrj.io.stream;
 
-import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -41,6 +39,7 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.security.BasicAuthPlugin;
 import org.apache.solr.security.RuleBasedAuthorizationPlugin;
+import org.apache.solr.security.Sha256AuthenticationProvider;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -85,7 +84,10 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
         Arrays.asList(READ_ONLY_USER, WRITE_X_USER, WRITE_Y_USER, ADMIN_USER);
     // For simplicity: every user uses a password the same as their name...
     final Map<String, String> credentials =
-        users.stream().collect(Collectors.toMap(Function.identity(), s -> getSaltedHashedValue(s)));
+        users.stream()
+            .collect(
+                Collectors.toMap(
+                    Function.identity(), Sha256AuthenticationProvider::getSaltedHashedValue));
 
     // For simplicity: Every user is their own role...
     final Map<String, String> roles =
@@ -937,7 +939,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
 
   /** Slurps a stream into a List */
   protected static List<Tuple> getTuples(final TupleStream tupleStream) throws IOException {
-    List<Tuple> tuples = new ArrayList<Tuple>();
+    List<Tuple> tuples = new ArrayList<>();
     try {
       log.trace("TupleStream: {}", tupleStream);
       tupleStream.open();

@@ -90,7 +90,7 @@ public abstract class SolrHighlighter {
 
   protected static String[] expandWildcardsInFields(
       Supplier<Collection<String>> availableFieldNamesSupplier, String... inFields) {
-    Set<String> expandedFields = new LinkedHashSet<String>();
+    Set<String> expandedFields = new LinkedHashSet<>();
     Collection<String> availableFieldNames = null;
     for (String inField : inFields) {
       for (String field : SolrPluginUtils.split(inField)) {

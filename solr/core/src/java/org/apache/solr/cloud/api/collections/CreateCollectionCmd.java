@@ -441,7 +441,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         // Let's cleanup as we hit an exception
         // We shouldn't be passing 'results' here for the cleanup as the response would then contain
         // 'success' element, which may be interpreted by the user as a positive ack
-        CollectionHandlingUtils.cleanupCollection(collectionName, new NamedList<Object>(), ccc);
+        CollectionHandlingUtils.cleanupCollection(collectionName, new NamedList<>(), ccc);
         log.info("Cleaned up artifacts for failed create collection for [{}]", collectionName);
         throw new SolrException(
             ErrorCode.BAD_REQUEST,

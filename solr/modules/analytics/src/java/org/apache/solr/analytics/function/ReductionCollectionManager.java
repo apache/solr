@@ -21,6 +21,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -65,11 +66,11 @@ public class ReductionCollectionManager {
       final Iterable<AnalyticsField> fields) {
     this.reductionDataCollectors = reductionDataCollectors;
     Arrays.sort(
-        reductionDataCollectors, (a, b) -> a.getExpressionStr().compareTo(b.getExpressionStr()));
+        reductionDataCollectors, Comparator.comparing(ReductionDataCollector::getExpressionStr));
 
     reservations = new LinkedList<>();
-    for (int i = 0; i < reductionDataCollectors.length; i++) {
-      reductionDataCollectors[i].submitReservations(reservation -> reservations.add(reservation));
+    for (ReductionDataCollector<?> reductionDataCollector : reductionDataCollectors) {
+      reductionDataCollector.submitReservations(reservations::add);
     }
 
     this.fields = fields;
@@ -175,8 +176,8 @@ public class ReductionCollectionManager {
   }
   /** Clear lasting collection targets. */
   public void clearLastingCollectTargets() {
-    for (int i = 0; i < reductionDataCollectors.length; i++) {
-      reductionDataCollectors[i].clearLastingCollectTargets();
+    for (ReductionDataCollector<?> reductionDataCollector : reductionDataCollectors) {
+      reductionDataCollector.clearLastingCollectTargets();
     }
   }
 
@@ -212,8 +213,8 @@ public class ReductionCollectionManager {
    * targets have been added.
    */
   public void apply() {
-    for (int i = 0; i < reductionDataCollectors.length; i++) {
-      reductionDataCollectors[i].collectAndApply();
+    for (ReductionDataCollector<?> reductionDataCollector : reductionDataCollectors) {
+      reductionDataCollector.collectAndApply();
       ;
     }
   }

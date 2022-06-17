@@ -118,7 +118,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
         ensureAllReplicasAreActive(testCollectionName, shardId, numShards, replicationFactor, 30);
     assertTrue("Expected active 1 replicas for " + testCollectionName, replicas.size() == 1);
 
-    List<SolrInputDocument> batch = new ArrayList<SolrInputDocument>(10);
+    List<SolrInputDocument> batch = new ArrayList<>(10);
     for (int i = 0; i < 15; i++) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField(id, String.valueOf(i));
@@ -226,7 +226,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     // First add the docs indicated
     List<String> byIdsList = new ArrayList<>();
     List<String> byQueryList = new ArrayList<>();
-    List<SolrInputDocument> batch = new ArrayList<SolrInputDocument>(10);
+    List<SolrInputDocument> batch = new ArrayList<>(10);
     for (int myId : byIdsSet) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField(id, myId);
@@ -321,7 +321,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     doDBIdWithRetry(2, 5, "deletes should have propagated to 2 replicas", 1);
 
     // SOLR-13599 sanity check if problem is related to sending a batch
-    List<SolrInputDocument> batch = new ArrayList<SolrInputDocument>(10);
+    List<SolrInputDocument> batch = new ArrayList<>(10);
     for (int i = 30; i < 45; i++) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField(id, String.valueOf(i));
@@ -359,7 +359,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     doDBIdWithRetry(3, 5, "delete should have propagated to all 3 replicas", 1);
 
     // now send a batch
-    batch = new ArrayList<SolrInputDocument>(10);
+    batch = new ArrayList<>(10);
     for (int i = 5; i < 15; i++) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField(id, String.valueOf(i));
@@ -385,7 +385,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     assertRf(2, "doc should have succeded, only one replica should be down", rf);
 
     // now send a batch (again)
-    batch = new ArrayList<SolrInputDocument>(10);
+    batch = new ArrayList<>(10);
     for (int i = 15; i < 30; i++) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField(id, String.valueOf(i));
@@ -403,7 +403,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     log.info("Closing second proxy port (again)");
     getProxyForReplica(replicas.get(1)).close();
 
-    batch = new ArrayList<SolrInputDocument>(10);
+    batch = new ArrayList<>(10);
     for (int i = 30; i < 45; i++) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField(id, String.valueOf(i));
@@ -434,7 +434,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
       sendDoc(idList[0]);
       return;
     }
-    List<SolrInputDocument> batch = new ArrayList<SolrInputDocument>(10);
+    List<SolrInputDocument> batch = new ArrayList<>(10);
     for (int docId : idList) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField(id, docId);

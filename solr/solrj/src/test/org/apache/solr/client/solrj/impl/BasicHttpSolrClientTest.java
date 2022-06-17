@@ -37,7 +37,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpException;
-import org.apache.http.HttpRequest;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.CookieStore;
@@ -50,7 +49,6 @@ import org.apache.http.cookie.CookieSpec;
 import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.cookie.BasicClientCookie;
-import org.apache.http.protocol.HttpContext;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -635,21 +633,16 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
 
   /** An interceptor changing the request */
   HttpRequestInterceptor changeRequestInterceptor =
-      new HttpRequestInterceptor() {
+      (request, context) -> {
+        log.info("Intercepted params: {}", context);
 
-        @Override
-        public void process(HttpRequest request, HttpContext context)
-            throws HttpException, IOException {
-          log.info("Intercepted params: {}", context);
-
-          HttpRequestWrapper wrapper = (HttpRequestWrapper) request;
-          URIBuilder uribuilder = new URIBuilder(wrapper.getURI());
-          uribuilder.addParameter("b", "\u4321");
-          try {
-            wrapper.setURI(uribuilder.build());
-          } catch (URISyntaxException ex) {
-            throw new HttpException("Invalid request URI", ex);
-          }
+        HttpRequestWrapper wrapper = (HttpRequestWrapper) request;
+        URIBuilder uribuilder = new URIBuilder(wrapper.getURI());
+        uribuilder.addParameter("b", "\u4321");
+        try {
+          wrapper.setURI(uribuilder.build());
+        } catch (URISyntaxException ex) {
+          throw new HttpException("Invalid request URI", ex);
         }
       };
 
@@ -658,25 +651,21 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
 
   /** An interceptor setting a cookie */
   HttpRequestInterceptor cookieSettingRequestInterceptor =
-      new HttpRequestInterceptor() {
-        @Override
-        public void process(HttpRequest request, HttpContext context)
-            throws HttpException, IOException {
-          BasicClientCookie cookie = new BasicClientCookie(cookieName, cookieValue);
-          cookie.setVersion(0);
-          cookie.setPath("/");
-          cookie.setDomain(jetty.getBaseUrl().getHost());
+      (request, context) -> {
+        BasicClientCookie cookie = new BasicClientCookie(cookieName, cookieValue);
+        cookie.setVersion(0);
+        cookie.setPath("/");
+        cookie.setDomain(jetty.getBaseUrl().getHost());
 
-          CookieStore cookieStore = new BasicCookieStore();
-          CookieSpec cookieSpec = new SolrPortAwareCookieSpecFactory().create(context);
-          // CookieSpec cookieSpec = registry.lookup(policy).create(context);
-          // Add the cookies to the request
-          List<Header> headers = cookieSpec.formatCookies(Collections.singletonList(cookie));
-          for (Header header : headers) {
-            request.addHeader(header);
-          }
-          context.setAttribute(HttpClientContext.COOKIE_STORE, cookieStore);
+        CookieStore cookieStore = new BasicCookieStore();
+        CookieSpec cookieSpec = new SolrPortAwareCookieSpecFactory().create(context);
+        // CookieSpec cookieSpec = registry.lookup(policy).create(context);
+        // Add the cookies to the request
+        List<Header> headers = cookieSpec.formatCookies(Collections.singletonList(cookie));
+        for (Header header : headers) {
+          request.addHeader(header);
         }
+        context.setAttribute(HttpClientContext.COOKIE_STORE, cookieStore);
       };
 
   /**

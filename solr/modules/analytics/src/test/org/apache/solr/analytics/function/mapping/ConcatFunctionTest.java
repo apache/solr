@@ -94,25 +94,16 @@ public class ConcatFunctionTest extends SolrTestCaseJ4 {
     // None exist
     val1.setExists(false);
     val2.setValues();
-    func.streamStrings(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamStrings(value -> assertTrue("There should be no values to stream", false));
 
     // One exists
     val1.setExists(false);
     val2.setValues("def");
-    func.streamStrings(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamStrings(value -> assertTrue("There should be no values to stream", false));
 
     val1.setValue("abc").setExists(true);
     val2.setValues();
-    func.streamStrings(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamStrings(value -> assertTrue("There should be no values to stream", false));
 
     // Both exist
     val1.setValue("abc").setExists(true);
@@ -140,25 +131,16 @@ public class ConcatFunctionTest extends SolrTestCaseJ4 {
     // None exist
     val1.setExists(false);
     val2.setValues();
-    func.streamStrings(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamStrings(value -> assertTrue("There should be no values to stream", false));
 
     // One exists
     val1.setExists(false);
     val2.setValues("def");
-    func.streamStrings(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamStrings(value -> assertTrue("There should be no values to stream", false));
 
     val1.setValue("abc").setExists(true);
     val2.setValues();
-    func.streamStrings(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamStrings(value -> assertTrue("There should be no values to stream", false));
 
     // Both exist
     val1.setValue("abc").setExists(true);
@@ -185,25 +167,16 @@ public class ConcatFunctionTest extends SolrTestCaseJ4 {
     // None exist
     val1.setValues();
     val2.setExists(false);
-    func.streamStrings(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamStrings(value -> assertTrue("There should be no values to stream", false));
 
     // One exists
     val1.setValues("def");
     val2.setExists(false);
-    func.streamStrings(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamStrings(value -> assertTrue("There should be no values to stream", false));
 
     val1.setValues();
     val2.setValue("abc").setExists(true);
-    func.streamStrings(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamStrings(value -> assertTrue("There should be no values to stream", false));
 
     // Both exist
     val1.setValues("def", "ghi", "jkl");
@@ -231,25 +204,16 @@ public class ConcatFunctionTest extends SolrTestCaseJ4 {
     // None exist
     val1.setValues();
     val2.setExists(false);
-    func.streamStrings(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamStrings(value -> assertTrue("There should be no values to stream", false));
 
     // One exists
     val1.setValues("def");
     val2.setExists(false);
-    func.streamStrings(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamStrings(value -> assertTrue("There should be no values to stream", false));
 
     val1.setValues();
     val2.setValue("abc").setExists(true);
-    func.streamStrings(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamStrings(value -> assertTrue("There should be no values to stream", false));
 
     // Both exist
     val1.setValues("def", "ghi", "jkl");

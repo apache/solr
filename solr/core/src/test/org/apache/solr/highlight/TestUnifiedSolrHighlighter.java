@@ -95,20 +95,19 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
     IllegalArgumentException e =
         expectThrows(
             IllegalArgumentException.class,
-            () -> {
-              h.query(
-                  req(
-                      "q",
-                      "text2:document",
-                      "hl.offsetSource",
-                      "postings",
-                      "hl.fl",
-                      "text2",
-                      "sort",
-                      "id asc",
-                      "hl",
-                      "true"));
-            });
+            () ->
+                h.query(
+                    req(
+                        "q",
+                        "text2:document",
+                        "hl.offsetSource",
+                        "postings",
+                        "hl.fl",
+                        "text2",
+                        "sort",
+                        "id asc",
+                        "hl",
+                        "true")));
     assertTrue("Should warn no offsets", e.getMessage().contains("indexed without offsets"));
   }
 

@@ -44,8 +44,7 @@ public class SineEvaluator extends RecursiveNumericEvaluator implements OneValue
     if (null == value) {
       return null;
     } else if (value instanceof List) {
-      return ((List<?>) value)
-          .stream().map(innerValue -> doWork(innerValue)).collect(Collectors.toList());
+      return ((List<?>) value).stream().map(this::doWork).collect(Collectors.toList());
     } else {
       return Math.sin(((Number) value).doubleValue());
     }

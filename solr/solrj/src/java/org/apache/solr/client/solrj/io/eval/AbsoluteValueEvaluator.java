@@ -45,8 +45,7 @@ public class AbsoluteValueEvaluator extends RecursiveNumericEvaluator implements
     if (null == value) {
       return null;
     } else if (value instanceof List) {
-      return ((List<?>) value)
-          .stream().map(innerValue -> doWork(innerValue)).collect(Collectors.toList());
+      return ((List<?>) value).stream().map(this::doWork).collect(Collectors.toList());
     } else {
       return Math.abs(((Number) value).doubleValue());
     }

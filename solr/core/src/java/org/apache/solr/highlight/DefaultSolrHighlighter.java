@@ -450,8 +450,8 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
 
     boolean rewrite =
         query != null
-            && !(Boolean.valueOf(params.get(HighlightParams.USE_PHRASE_HIGHLIGHTER, "true"))
-                && Boolean.valueOf(params.get(HighlightParams.HIGHLIGHT_MULTI_TERM, "true")));
+            && !(Boolean.parseBoolean(params.get(HighlightParams.USE_PHRASE_HIGHLIGHTER, "true"))
+                && Boolean.parseBoolean(params.get(HighlightParams.HIGHLIGHT_MULTI_TERM, "true")));
 
     SolrIndexSearcher searcher = req.getSearcher();
 
@@ -783,7 +783,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     if (frags.size() > 0) {
       // sort such that the fragments with the highest score come first
       if (!preserveMulti) {
-        Collections.sort(frags, (arg0, arg1) -> Float.compare(arg1.getScore(), arg0.getScore()));
+        frags.sort((arg0, arg1) -> Float.compare(arg1.getScore(), arg0.getScore()));
       }
 
       // Truncate list to hl.snippets, but not when hl.preserveMulti

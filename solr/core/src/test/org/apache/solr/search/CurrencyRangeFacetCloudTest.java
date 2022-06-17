@@ -211,9 +211,9 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
           final NamedList<Object> foo =
               ((NamedList<NamedList<Object>>) rsp.getResponse().get("facets")).get("foo");
 
-          assertEquals("before", 3L, ((NamedList) foo.get("before")).get("count"));
-          assertEquals("after", 3L, ((NamedList) foo.get("after")).get("count"));
-          assertEquals("between", 9L, ((NamedList) foo.get("between")).get("count"));
+          assertEquals("before", 3L, ((NamedList<?>) foo.get("before")).get("count"));
+          assertEquals("after", 3L, ((NamedList<?>) foo.get("after")).get("count"));
+          assertEquals("between", 9L, ((NamedList<?>) foo.get("between")).get("count"));
 
           @SuppressWarnings({"unchecked", "rawtypes"})
           final List<NamedList> buckets = (List<NamedList>) foo.get("buckets");
@@ -338,9 +338,9 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
         final NamedList<Object> foo =
             ((NamedList<NamedList<Object>>) rsp.getResponse().get("facets")).get("foo");
 
-        assertEquals("before", 6L, ((NamedList) foo.get("before")).get("count"));
-        assertEquals("after", 3L, ((NamedList) foo.get("after")).get("count"));
-        assertEquals("between", 6L, ((NamedList) foo.get("between")).get("count"));
+        assertEquals("before", 6L, ((NamedList<?>) foo.get("before")).get("count"));
+        assertEquals("after", 3L, ((NamedList<?>) foo.get("after")).get("count"));
+        assertEquals("between", 6L, ((NamedList<?>) foo.get("between")).get("count"));
 
         @SuppressWarnings({"unchecked", "rawtypes"})
         final List<NamedList> buckets = (List<NamedList>) foo.get("buckets");
@@ -598,9 +598,9 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
 
         // these are the 'x2' specific counts, based on our fq...
 
-        assertEquals("before", 2L, ((NamedList) bar.get("before")).get("count"));
-        assertEquals("after", 1L, ((NamedList) bar.get("after")).get("count"));
-        assertEquals("between", 2L, ((NamedList) bar.get("between")).get("count"));
+        assertEquals("before", 2L, ((NamedList<?>) bar.get("before")).get("count"));
+        assertEquals("after", 1L, ((NamedList<?>) bar.get("after")).get("count"));
+        assertEquals("between", 2L, ((NamedList<?>) bar.get("between")).get("count"));
 
         @SuppressWarnings({"unchecked", "rawtypes"})
         final List<NamedList> buckets = (List<NamedList>) bar.get("buckets");

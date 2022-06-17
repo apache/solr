@@ -212,12 +212,10 @@ public class PackageStoreAPI {
         } catch (IOException e) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
         }
-      } catch (InterruptedException e) {
-        log.error("Unexpected error", e);
       } catch (KeeperException.NodeExistsException e) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR, "A write is already in process , try later");
-      } catch (KeeperException e) {
+      } catch (InterruptedException | KeeperException e) {
         log.error("Unexpected error", e);
       } finally {
         try {

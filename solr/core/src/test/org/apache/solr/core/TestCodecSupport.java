@@ -192,9 +192,9 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     SolrException thrown =
         expectThrows(
             SolrException.class,
-            () -> {
-              doTestCompressionMode("something_that_doesnt_exist", "something_that_doesnt_exist");
-            });
+            () ->
+                doTestCompressionMode(
+                    "something_that_doesnt_exist", "something_that_doesnt_exist"));
     assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, thrown.code());
     assertTrue(
         "Unexpected Exception message: " + thrown.getMessage(),

@@ -312,7 +312,7 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
 
       @Override
       public Object readObject(StreamCodec codec, EntryImpl entry) {
-        return Byte.valueOf((byte) entry.numericVal);
+        return (byte) entry.numericVal;
       }
     },
     _SHORT(SHORT, LOWER_5_BITS, DataEntry.Type.INT) {
@@ -324,7 +324,7 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
 
       @Override
       public Object readObject(StreamCodec codec, EntryImpl entry) {
-        return Short.valueOf((short) entry.numericVal);
+        return (short) entry.numericVal;
       }
     },
     _DOUBLE(DOUBLE, LOWER_5_BITS, DataEntry.Type.DOUBLE) {
@@ -336,7 +336,7 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
 
       @Override
       public Object readObject(StreamCodec codec, EntryImpl entry) {
-        return Double.valueOf(entry.doubleVal);
+        return entry.doubleVal;
       }
     },
     _INT(INT, LOWER_5_BITS, DataEntry.Type.INT) {
@@ -347,7 +347,7 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
 
       @Override
       public Object readObject(StreamCodec codec, EntryImpl entry) {
-        return Integer.valueOf((int) entry.numericVal);
+        return (int) entry.numericVal;
       }
     }, // signed integer
     _LONG(LONG, LOWER_5_BITS, DataEntry.Type.LONG) {
@@ -358,7 +358,7 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
 
       @Override
       public Object readObject(StreamCodec codec, EntryImpl entry) {
-        return Long.valueOf(entry.numericVal);
+        return entry.numericVal;
       }
     },
     _FLOAT(FLOAT, LOWER_5_BITS, DataEntry.Type.FLOAT) {
@@ -369,7 +369,7 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
 
       @Override
       public Object readObject(StreamCodec codec, EntryImpl entry) {
-        return Float.valueOf((float) entry.doubleVal);
+        return (float) entry.doubleVal;
       }
     },
     _DATE(DATE, LOWER_5_BITS, DataEntry.Type.DATE) {
@@ -583,7 +583,7 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
 
       @Override
       public Object readObject(StreamCodec codec, EntryImpl entry) {
-        return Integer.valueOf((int) entry.numericVal);
+        return (int) entry.numericVal;
       }
     },
     _SLONG(SLONG, UPPER_3_BITS, DataEntry.Type.LONG) {
@@ -594,7 +594,7 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
 
       @Override
       public Object readObject(StreamCodec codec, EntryImpl entry) {
-        return Long.valueOf((int) entry.numericVal);
+        return (long) (int) entry.numericVal;
       }
     },
     _ARR(ARR, UPPER_3_BITS, DataEntry.Type.ENTRY_ITER) {

@@ -148,18 +148,17 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
     IllegalArgumentException ex =
         expectThrows(
             IllegalArgumentException.class,
-            () -> {
-              h.query(
-                  req(
-                      "qt",
-                      rh,
-                      SuggesterParams.SUGGEST_BUILD,
-                      "true",
-                      SuggesterParams.SUGGEST_DICT,
-                      "suggest_context_filtering_not_implemented",
-                      SuggesterParams.SUGGEST_Q,
-                      "examp"));
-            });
+            () ->
+                h.query(
+                    req(
+                        "qt",
+                        rh,
+                        SuggesterParams.SUGGEST_BUILD,
+                        "true",
+                        SuggesterParams.SUGGEST_DICT,
+                        "suggest_context_filtering_not_implemented",
+                        SuggesterParams.SUGGEST_Q,
+                        "examp")));
     assertThat(ex.getMessage(), is("this suggester doesn't support contexts"));
 
     // When not building, no exception is thrown

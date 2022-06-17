@@ -67,8 +67,7 @@ class MergeIndexesOp implements CoreAdminHandler.CoreAdminOp {
               SolrException.ErrorCode.BAD_REQUEST,
               "At least one indexDir or srcCore must be specified");
 
-        for (int i = 0; i < sources.length; i++) {
-          String source = sources[i];
+        for (String source : sources) {
           SolrCore srcCore = it.handler.coreContainer.getCore(source);
           if (srcCore == null)
             throw new SolrException(
@@ -80,16 +79,16 @@ class MergeIndexesOp implements CoreAdminHandler.CoreAdminOp {
         Arrays.stream(dirNames)
             .forEach(indexDir -> core.getCoreContainer().assertPathAllowed(Paths.get(indexDir)));
         DirectoryFactory dirFactory = core.getDirectoryFactory();
-        for (int i = 0; i < dirNames.length; i++) {
+        for (String dirName : dirNames) {
           boolean markAsDone = false;
           if (dirFactory instanceof CachingDirectoryFactory) {
-            if (!((CachingDirectoryFactory) dirFactory).getLivePaths().contains(dirNames[i])) {
+            if (!((CachingDirectoryFactory) dirFactory).getLivePaths().contains(dirName)) {
               markAsDone = true;
             }
           }
           Directory dir =
               dirFactory.get(
-                  dirNames[i],
+                  dirName,
                   DirectoryFactory.DirContext.DEFAULT,
                   core.getSolrConfig().indexConfig.lockType);
           dirsToBeReleased.put(dir, markAsDone);

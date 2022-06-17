@@ -39,12 +39,7 @@ public class SystemInfoHandlerTest extends SolrTestCase {
     // make another using MetricUtils.addMXBeanMetrics()
     SimpleOrderedMap<Object> info2 = new SimpleOrderedMap<>();
     MetricUtils.addMXBeanMetrics(
-        os,
-        OperatingSystemMXBean.class,
-        null,
-        (k, v) -> {
-          info2.add(k, ((Gauge) v).getValue());
-        });
+        os, OperatingSystemMXBean.class, null, (k, v) -> info2.add(k, ((Gauge<?>) v).getValue()));
 
     // make sure they got the same thing
     for (String p : Arrays.asList("name", "version", "arch")) {

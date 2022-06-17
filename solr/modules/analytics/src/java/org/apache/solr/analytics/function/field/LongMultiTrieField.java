@@ -90,6 +90,6 @@ public class LongMultiTrieField extends AnalyticsField implements CastingLongVal
 
   @Override
   public void streamObjects(Consumer<Object> cons) {
-    streamLongs(value -> cons.accept(value));
+    streamLongs(cons::accept);
   }
 }

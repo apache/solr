@@ -141,7 +141,7 @@ public final class LegacyLongField extends LegacyField {
    */
   public LegacyLongField(String name, long value, Store stored) {
     super(name, stored == Store.YES ? TYPE_STORED : TYPE_NOT_STORED);
-    fieldsData = Long.valueOf(value);
+    fieldsData = value;
   }
 
   /**
@@ -160,6 +160,6 @@ public final class LegacyLongField extends LegacyField {
       throw new IllegalArgumentException(
           "type.numericType() must be LONG but got " + type.numericType());
     }
-    fieldsData = Long.valueOf(value);
+    fieldsData = value;
   }
 }

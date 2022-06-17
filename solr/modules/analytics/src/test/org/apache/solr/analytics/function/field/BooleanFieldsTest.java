@@ -62,10 +62,7 @@ public class BooleanFieldsTest extends AbstractAnalyticsFieldTest {
             valueField,
             id -> {
               Map<Boolean, Integer> doc = new HashMap<>();
-              valueField.streamBooleans(
-                  value -> {
-                    doc.put(value, doc.getOrDefault(value, 0) + 1);
-                  });
+              valueField.streamBooleans(value -> doc.put(value, doc.getOrDefault(value, 0) + 1));
               if (doc.size() > 0) {
                 values.put(id, doc);
               }

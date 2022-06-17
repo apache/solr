@@ -120,7 +120,7 @@ public class SolrException extends RuntimeException {
     if (key == null || value == null)
       throw new IllegalArgumentException("Exception metadata cannot be null!");
 
-    if (metadata == null) metadata = new NamedList<String>();
+    if (metadata == null) metadata = new NamedList<>();
     metadata.add(key, value);
   }
 

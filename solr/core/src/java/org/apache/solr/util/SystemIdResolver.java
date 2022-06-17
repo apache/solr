@@ -22,7 +22,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import javax.xml.stream.XMLResolver;
 import javax.xml.stream.XMLStreamException;
-import javax.xml.transform.Source;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.URIResolver;
 import javax.xml.transform.sax.SAXSource;
@@ -66,32 +65,24 @@ public final class SystemIdResolver implements EntityResolver, EntityResolver2 {
   }
 
   public URIResolver asURIResolver() {
-    return new URIResolver() {
-      @Override
-      public Source resolve(String href, String base) throws TransformerException {
-        try {
-          final InputSource src = SystemIdResolver.this.resolveEntity(null, null, base, href);
-          return (src == null) ? null : new SAXSource(src);
-        } catch (IOException ioe) {
-          throw new TransformerException("Cannot resolve entity", ioe);
-        }
+    return (href, base) -> {
+      try {
+        final InputSource src = SystemIdResolver.this.resolveEntity(null, null, base, href);
+        return (src == null) ? null : new SAXSource(src);
+      } catch (IOException ioe) {
+        throw new TransformerException("Cannot resolve entity", ioe);
       }
     };
   }
 
   public XMLResolver asXMLResolver() {
-    return new XMLResolver() {
-      @Override
-      public Object resolveEntity(
-          String publicId, String systemId, String baseURI, String namespace)
-          throws XMLStreamException {
-        try {
-          final InputSource src =
-              SystemIdResolver.this.resolveEntity(null, publicId, baseURI, systemId);
-          return (src == null) ? null : src.getByteStream();
-        } catch (IOException ioe) {
-          throw new XMLStreamException("Cannot resolve entity", ioe);
-        }
+    return (publicId, systemId, baseURI, namespace) -> {
+      try {
+        final InputSource src =
+            SystemIdResolver.this.resolveEntity(null, publicId, baseURI, systemId);
+        return (src == null) ? null : src.getByteStream();
+      } catch (IOException ioe) {
+        throw new XMLStreamException("Cannot resolve entity", ioe);
       }
     };
   }

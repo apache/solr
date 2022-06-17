@@ -54,7 +54,7 @@ public abstract class UniqueCollector<T>
 
   public UniqueCollector(AnalyticsValueStream param) {
     this.exprStr = AnalyticsValueStream.createExpressionString(name, param);
-    this.tempSet = new HashSet<T>();
+    this.tempSet = new HashSet<>();
   }
 
   private long count;
@@ -70,7 +70,7 @@ public abstract class UniqueCollector<T>
 
   @Override
   public UniqueData<T> newData() {
-    UniqueData<T> data = new UniqueData<T>();
+    UniqueData<T> data = new UniqueData<>();
     data.set = new HashSet<>();
     data.exists = false;
     return data;
@@ -136,7 +136,7 @@ public abstract class UniqueCollector<T>
     public void submitReservations(Consumer<ReductionDataReservation<?, ?>> consumer) {
       consumer.accept(
           new IntArrayReservation(
-              value -> ioData.set.add(value), size -> {}, () -> exportNext(), () -> startExport()));
+              value -> ioData.set.add(value), size -> {}, this::exportNext, this::startExport));
     }
   }
 
@@ -158,7 +158,7 @@ public abstract class UniqueCollector<T>
     public void submitReservations(Consumer<ReductionDataReservation<?, ?>> consumer) {
       consumer.accept(
           new LongArrayReservation(
-              value -> ioData.set.add(value), size -> {}, () -> exportNext(), () -> startExport()));
+              value -> ioData.set.add(value), size -> {}, this::exportNext, this::startExport));
     }
   }
 
@@ -180,7 +180,7 @@ public abstract class UniqueCollector<T>
     public void submitReservations(Consumer<ReductionDataReservation<?, ?>> consumer) {
       consumer.accept(
           new FloatArrayReservation(
-              value -> ioData.set.add(value), size -> {}, () -> exportNext(), () -> startExport()));
+              value -> ioData.set.add(value), size -> {}, this::exportNext, this::startExport));
     }
   }
 
@@ -202,7 +202,7 @@ public abstract class UniqueCollector<T>
     public void submitReservations(Consumer<ReductionDataReservation<?, ?>> consumer) {
       consumer.accept(
           new DoubleArrayReservation(
-              value -> ioData.set.add(value), size -> {}, () -> exportNext(), () -> startExport()));
+              value -> ioData.set.add(value), size -> {}, this::exportNext, this::startExport));
     }
   }
 
@@ -224,7 +224,7 @@ public abstract class UniqueCollector<T>
     public void submitReservations(Consumer<ReductionDataReservation<?, ?>> consumer) {
       consumer.accept(
           new StringArrayReservation(
-              value -> ioData.set.add(value), size -> {}, () -> exportNext(), () -> startExport()));
+              value -> ioData.set.add(value), size -> {}, this::exportNext, this::startExport));
     }
   }
 }

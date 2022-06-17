@@ -19,6 +19,7 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
@@ -225,12 +226,9 @@ public class FloatPayloadValueSource extends ValueSource {
     FloatPayloadValueSource that = (FloatPayloadValueSource) o;
 
     if (!indexedField.equals(that.indexedField)) return false;
-    if (indexedBytes != null ? !indexedBytes.equals(that.indexedBytes) : that.indexedBytes != null)
-      return false;
+    if (!Objects.equals(indexedBytes, that.indexedBytes)) return false;
     if (!decoder.equals(that.decoder)) return false;
-    if (payloadFunction != null
-        ? !payloadFunction.equals(that.payloadFunction)
-        : that.payloadFunction != null) return false;
+    if (!Objects.equals(payloadFunction, that.payloadFunction)) return false;
     return defaultValueSource.equals(that.defaultValueSource);
   }
 

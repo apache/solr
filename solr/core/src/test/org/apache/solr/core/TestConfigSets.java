@@ -96,9 +96,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
           expectThrows(
               Exception.class,
               "Expected core creation to fail",
-              () -> {
-                container.create("core1", ImmutableMap.of("configSet", "nonexistent"));
-              });
+              () -> container.create("core1", ImmutableMap.of("configSet", "nonexistent")));
       Throwable wrappedException = getWrappedException(thrown);
       assertThat(wrappedException.getMessage(), containsString("nonexistent"));
     } finally {

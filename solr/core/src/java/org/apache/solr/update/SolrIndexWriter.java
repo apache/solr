@@ -24,6 +24,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -167,16 +168,8 @@ public class SolrIndexWriter extends IndexWriter {
       }
       Boolean Totals = config.metricsInfo.initArgs.getBooleanArg("merge");
       Boolean Details = config.metricsInfo.initArgs.getBooleanArg("mergeDetails");
-      if (Details != null) {
-        mergeDetails = Details;
-      } else {
-        mergeDetails = false;
-      }
-      if (Totals != null) {
-        mergeTotals = Totals;
-      } else {
-        mergeTotals = false;
-      }
+      mergeDetails = Objects.requireNonNullElse(Details, false);
+      mergeTotals = Objects.requireNonNullElse(Totals, false);
       if (mergeDetails) {
         mergeTotals = true; // override
         majorMergedDocs =
@@ -195,42 +188,42 @@ public class SolrIndexWriter extends IndexWriter {
             solrMetricsContext.counter("errors", SolrInfoBean.Category.INDEX.toString(), "merge");
         String tag = core.getMetricTag();
         solrMetricsContext.gauge(
-            () -> runningMajorMerges.get(),
+            runningMajorMerges::get,
             true,
             "running",
             SolrInfoBean.Category.INDEX.toString(),
             "merge",
             "major");
         solrMetricsContext.gauge(
-            () -> runningMinorMerges.get(),
+            runningMinorMerges::get,
             true,
             "running",
             SolrInfoBean.Category.INDEX.toString(),
             "merge",
             "minor");
         solrMetricsContext.gauge(
-            () -> runningMajorMergesDocs.get(),
+            runningMajorMergesDocs::get,
             true,
             "running.docs",
             SolrInfoBean.Category.INDEX.toString(),
             "merge",
             "major");
         solrMetricsContext.gauge(
-            () -> runningMinorMergesDocs.get(),
+            runningMinorMergesDocs::get,
             true,
             "running.docs",
             SolrInfoBean.Category.INDEX.toString(),
             "merge",
             "minor");
         solrMetricsContext.gauge(
-            () -> runningMajorMergesSegments.get(),
+            runningMajorMergesSegments::get,
             true,
             "running.segments",
             SolrInfoBean.Category.INDEX.toString(),
             "merge",
             "major");
         solrMetricsContext.gauge(
-            () -> runningMinorMergesSegments.get(),
+            runningMinorMergesSegments::get,
             true,
             "running.segments",
             SolrInfoBean.Category.INDEX.toString(),

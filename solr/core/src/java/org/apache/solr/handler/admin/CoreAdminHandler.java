@@ -109,9 +109,9 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     // should happen in the constructor...
     this.coreContainer = null;
     HashMap<String, Map<String, TaskObject>> map = new HashMap<>(3, 1.0f);
-    map.put(RUNNING, Collections.synchronizedMap(new LinkedHashMap<String, TaskObject>()));
-    map.put(COMPLETED, Collections.synchronizedMap(new LinkedHashMap<String, TaskObject>()));
-    map.put(FAILED, Collections.synchronizedMap(new LinkedHashMap<String, TaskObject>()));
+    map.put(RUNNING, Collections.synchronizedMap(new LinkedHashMap<>()));
+    map.put(COMPLETED, Collections.synchronizedMap(new LinkedHashMap<>()));
+    map.put(FAILED, Collections.synchronizedMap(new LinkedHashMap<>()));
     requestStatusMap = Collections.unmodifiableMap(map);
   }
 
@@ -123,9 +123,9 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   public CoreAdminHandler(final CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
     HashMap<String, Map<String, TaskObject>> map = new HashMap<>(3, 1.0f);
-    map.put(RUNNING, Collections.synchronizedMap(new LinkedHashMap<String, TaskObject>()));
-    map.put(COMPLETED, Collections.synchronizedMap(new LinkedHashMap<String, TaskObject>()));
-    map.put(FAILED, Collections.synchronizedMap(new LinkedHashMap<String, TaskObject>()));
+    map.put(RUNNING, Collections.synchronizedMap(new LinkedHashMap<>()));
+    map.put(COMPLETED, Collections.synchronizedMap(new LinkedHashMap<>()));
+    map.put(FAILED, Collections.synchronizedMap(new LinkedHashMap<>()));
     requestStatusMap = Collections.unmodifiableMap(map);
   }
 

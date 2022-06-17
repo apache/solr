@@ -231,11 +231,7 @@ public class AnalyticsRequestManager {
     ArrayList<FacetValueQueryExecuter> facetExecutors = new ArrayList<>();
     groupingManagers
         .values()
-        .forEach(
-            grouping -> {
-              grouping.getFacetExecuters(
-                  filter, queryRequest, executor -> facetExecutors.add(executor));
-            });
+        .forEach(grouping -> grouping.getFacetExecuters(filter, queryRequest, facetExecutors::add));
     return facetExecutors;
   }
 
@@ -249,9 +245,8 @@ public class AnalyticsRequestManager {
     NamedList<Object> analyticsResponse = new NamedList<>();
     Map<String, Object> ungroupedResults = getUngroupedResults();
     groupingManagers.forEach(
-        (name, groupingManager) -> {
-          analyticsResponse.add(name, groupingManager.createOldResponse(ungroupedResults));
-        });
+        (name, groupingManager) ->
+            analyticsResponse.add(name, groupingManager.createOldResponse(ungroupedResults)));
 
     return analyticsResponse;
   }
@@ -272,9 +267,7 @@ public class AnalyticsRequestManager {
 
     Map<String, Object> groupingsResponse = new HashMap<>();
     groupingManagers.forEach(
-        (name, groupingManager) -> {
-          groupingsResponse.put(name, groupingManager.createResponse());
-        });
+        (name, groupingManager) -> groupingsResponse.put(name, groupingManager.createResponse()));
 
     if (groupingsResponse.size() > 0) {
       analyticsResponse.put(AnalyticsResponseHeadings.GROUPINGS, groupingsResponse);

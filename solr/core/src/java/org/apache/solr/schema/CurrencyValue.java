@@ -230,13 +230,7 @@ public class CurrencyValue implements Comparable<CurrencyValue> {
           SolrException.ErrorCode.BAD_REQUEST,
           "Cannot compare CurrencyValues when their currencies are not equal");
     }
-    if (o.getAmount() < getAmount()) {
-      return 1;
-    }
-    if (o.getAmount() == getAmount()) {
-      return 0;
-    }
-    return -1;
+    return Long.compare(getAmount(), o.getAmount());
   }
 
   @Override

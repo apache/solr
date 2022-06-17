@@ -170,7 +170,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
       ModifiableSolrParams pivotP = params(FACET, "true");
 
       // put our FACET_PIVOT params in a set in case we just happen to pick the same one twice
-      LinkedHashSet<String> pivotParamValues = new LinkedHashSet<String>();
+      LinkedHashSet<String> pivotParamValues = new LinkedHashSet<>();
       pivotParamValues.add(buildPivotParamValue(buildRandomPivot(fieldNames)));
 
       if (random().nextBoolean()) {

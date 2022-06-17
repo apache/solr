@@ -211,7 +211,7 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
     }
   }
 
-  class TestTag implements Comparable<TestTag> {
+  static class TestTag implements Comparable<TestTag> {
     final int startOffset, endOffset;
     final String substring;
     final String docName;

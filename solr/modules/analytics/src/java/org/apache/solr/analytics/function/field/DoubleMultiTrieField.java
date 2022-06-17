@@ -87,6 +87,6 @@ public class DoubleMultiTrieField extends AnalyticsField implements CastingDoubl
 
   @Override
   public void streamObjects(Consumer<Object> cons) {
-    streamDoubles(value -> cons.accept(value));
+    streamDoubles(cons::accept);
   }
 }

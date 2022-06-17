@@ -284,11 +284,11 @@ public class VersionInfo {
   }
 
   public void seedBucketsWithHighestVersion(long highestVersion) {
-    for (int i = 0; i < buckets.length; i++) {
+    for (VersionBucket bucket : buckets) {
       // should not happen, but in case other threads are calling updateHighest on the version
       // bucket
-      synchronized (buckets[i]) {
-        if (buckets[i].highest < highestVersion) buckets[i].highest = highestVersion;
+      synchronized (bucket) {
+        if (bucket.highest < highestVersion) bucket.highest = highestVersion;
       }
     }
   }
@@ -302,7 +302,7 @@ public class VersionInfo {
     final Long max = (versionTerms != null) ? LegacyNumericUtils.getMaxLong(versionTerms) : null;
     if (null != max) {
       log.debug("Found MAX value {} from Terms for {} in index", max, versionFieldName);
-      return max.longValue();
+      return max;
     }
     return 0L;
   }

@@ -75,7 +75,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
     for (int i = 0; i < 10; i++) {
       List<CountsForEachShard> copy = new ArrayList<>(inputCounts);
       Collections.shuffle(copy, random());
-      Collections.sort(copy, CoreSorter.countsComparator);
+      copy.sort(CoreSorter.countsComparator);
       for (int j = 0; j < copy.size(); j++) {
         assertEquals(expectedCounts.get(j), copy.get(j));
       }

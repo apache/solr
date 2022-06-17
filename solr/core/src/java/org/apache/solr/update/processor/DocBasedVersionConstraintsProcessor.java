@@ -548,7 +548,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
     final SolrInputDocument newDoc = new SolrInputDocument();
 
     if (tombstoneConfig != null) {
-      tombstoneConfig.forEach((k, v) -> newDoc.addField(k, v));
+      tombstoneConfig.forEach(newDoc::addField);
     }
     newDoc.setField(schema.getUniqueKeyField().getName(), id);
     setDeleteParamValues(newDoc, versionFieldNames, deleteParamValues);

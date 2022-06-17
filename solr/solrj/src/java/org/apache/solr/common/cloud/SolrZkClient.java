@@ -645,9 +645,7 @@ public class SolrZkClient implements Closeable {
     byte[] data = getData(path, null, null, true);
     List<String> children = getChildren(path, null, true);
     StringBuilder dent = new StringBuilder();
-    for (int i = 0; i < indent; i++) {
-      dent.append(" ");
-    }
+    dent.append(" ".repeat(Math.max(0, indent)));
     string.append(dent).append(path).append(" (").append(children.size()).append(")").append(NEWL);
     if (data != null) {
       String dataString = new String(data, StandardCharsets.UTF_8);

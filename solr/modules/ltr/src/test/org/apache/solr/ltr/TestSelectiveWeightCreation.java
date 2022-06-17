@@ -59,7 +59,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
   private static List<Feature> makeFeatures(int[] featureIds) {
     final List<Feature> features = new ArrayList<>();
     for (final int i : featureIds) {
-      Map<String, Object> params = new HashMap<String, Object>();
+      Map<String, Object> params = new HashMap<>();
       params.put("value", i);
       final Feature f =
           Feature.getInstance(solrResourceLoader, ValueFeature.class.getName(), "f" + i, params);
@@ -168,8 +168,8 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
 
     assertEquals(features.size(), modelWeight.getModelFeatureValuesNormalized().length);
     int validFeatures = 0;
-    for (int i = 0; i < featuresInfo.length; ++i) {
-      if (featuresInfo[i] != null && featuresInfo[i].isUsed()) {
+    for (LTRScoringQuery.FeatureInfo info : featuresInfo) {
+      if (info != null && info.isUsed()) {
         validFeatures += 1;
       }
     }
@@ -196,8 +196,8 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     assertEquals(allFeatures.size(), modelWeight.getExtractedFeatureWeights().length);
 
     validFeatures = 0;
-    for (int i = 0; i < featuresInfo.length; ++i) {
-      if (featuresInfo[i] != null && featuresInfo[i].isUsed()) {
+    for (LTRScoringQuery.FeatureInfo featureInfo : featuresInfo) {
+      if (featureInfo != null && featureInfo.isUsed()) {
         validFeatures += 1;
       }
     }

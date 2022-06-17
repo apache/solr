@@ -504,7 +504,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     List<?> l = (List<?>) Utils.getObjectByPath(map, false, asList("config", "initParams"));
     assertNotNull("no object /config/initParams : " + map, l);
     assertEquals(2, l.size());
-    assertEquals("val", ((Map) l.get(1)).get("key"));
+    assertEquals("val", ((Map<?, ?>) l.get(1)).get("key"));
 
     payload =
         "{\n"
@@ -555,8 +555,8 @@ public class TestSolrConfigHandler extends RestTestBase {
     List<?> initArgs = (List<?>) map.get("initArgs");
     assertNotNull(initArgs);
     assertTrue(initArgs.size() >= 2);
-    assertTrue(((Map) initArgs.get(2)).containsKey("suggester"));
-    assertTrue(((Map) initArgs.get(1)).containsKey("suggester"));
+    assertTrue(((Map<?, ?>) initArgs.get(2)).containsKey("suggester"));
+    assertTrue(((Map<?, ?>) initArgs.get(1)).containsKey("suggester"));
 
     payload =
         "{\n"

@@ -439,7 +439,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
       assertEquals(debug, 5, docOut.size());
       assertEquals(
           debug,
-          new HashSet<String>(Arrays.asList("id", "subword", "uniq", "foo_2_s1", "store")),
+          new HashSet<>(Arrays.asList("id", "subword", "uniq", "foo_2_s1", "store")),
           docOut.getFieldNames());
       assertTrue(debug, docOut.get("id") instanceof StringField);
       assertTrue(debug, docOut.get("store") instanceof StringField);

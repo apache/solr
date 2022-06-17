@@ -593,16 +593,15 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     SolrException e =
         expectThrows(
             SolrException.class,
-            () -> {
-              h.query(
-                  req(
-                      "q", "*:*",
-                      "fq", "id_i1:[2000 TO 2004]",
-                      "group.facet", "true",
-                      "facet", "true",
-                      "facet.field", "airport_s1",
-                      "facet.prefix", "a"));
-            });
+            () ->
+                h.query(
+                    req(
+                        "q", "*:*",
+                        "fq", "id_i1:[2000 TO 2004]",
+                        "group.facet", "true",
+                        "facet", "true",
+                        "facet.field", "airport_s1",
+                        "facet.prefix", "a")));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
   }
 
@@ -4502,21 +4501,13 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
 
     // with facet.field
     SolrException ex =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              h.query(req(params, "facet.field", "myfield_s"));
-            });
+        expectThrows(SolrException.class, () -> h.query(req(params, "facet.field", "myfield_s")));
     assertEquals(ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(ex.getMessage().contains("Specify the group.field as parameter or local parameter"));
 
     // with facet.query
     ex =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              h.query(req(params, "facet.query", "myfield_s:*"));
-            });
+        expectThrows(SolrException.class, () -> h.query(req(params, "facet.query", "myfield_s:*")));
     assertEquals(ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(ex.getMessage().contains("Specify the group.field as parameter or local parameter"));
 

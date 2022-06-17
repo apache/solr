@@ -27,9 +27,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
@@ -240,11 +238,7 @@ public final class DocExpirationUpdateProcessorFactory extends UpdateRequestProc
         new ScheduledThreadPoolExecutor(
             1,
             new SolrNamedThreadFactory("autoExpireDocs"),
-            new RejectedExecutionHandler() {
-              public void rejectedExecution(Runnable r, ThreadPoolExecutor e) {
-                log.warn("Skipping execution of '{}' using '{}'", r, e);
-              }
-            });
+            (r, e) -> log.warn("Skipping execution of '{}' using '{}'", r, e));
 
     core.addCloseHook(
         new CloseHook() {
@@ -461,7 +455,7 @@ public final class DocExpirationUpdateProcessorFactory extends UpdateRequestProc
       return false;
     }
     List<Slice> slices = new ArrayList<>(Arrays.asList(docCollection.getActiveSlicesArr()));
-    Collections.sort(slices, COMPARE_SLICES_BY_NAME);
+    slices.sort(COMPARE_SLICES_BY_NAME);
     Replica firstSliceLeader = slices.get(0).getLeader();
     if (null == firstSliceLeader) {
       log.warn("Slice in charge of periodic deletes for {} does not currently have a leader", col);
@@ -490,5 +484,5 @@ public final class DocExpirationUpdateProcessorFactory extends UpdateRequestProc
   private volatile boolean previouslyInChargeOfDeletes = true;
 
   private static final Comparator<Slice> COMPARE_SLICES_BY_NAME =
-      (a, b) -> a.getName().compareTo(b.getName());
+      Comparator.comparing(Slice::getName);
 }

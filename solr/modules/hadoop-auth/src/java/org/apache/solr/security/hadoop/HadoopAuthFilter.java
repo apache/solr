@@ -76,24 +76,19 @@ public class HadoopAuthFilter extends DelegationTokenAuthenticationFilter {
       throws IOException, ServletException {
     // include Impersonator User Name in case someone (e.g. logger) wants it
     FilterChain filterChainWrapper =
-        new FilterChain() {
-          @Override
-          public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse)
-              throws IOException, ServletException {
-            HttpServletRequest httpRequest = (HttpServletRequest) servletRequest;
+        (servletRequest, servletResponse) -> {
+          HttpServletRequest httpRequest = (HttpServletRequest) servletRequest;
 
-            UserGroupInformation ugi = HttpUserGroupInformation.get();
-            if (ugi != null
-                && ugi.getAuthenticationMethod()
-                    == UserGroupInformation.AuthenticationMethod.PROXY) {
-              UserGroupInformation realUserUgi = ugi.getRealUser();
-              if (realUserUgi != null) {
-                httpRequest.setAttribute(
-                    KerberosPlugin.IMPERSONATOR_USER_NAME, realUserUgi.getShortUserName());
-              }
+          UserGroupInformation ugi = HttpUserGroupInformation.get();
+          if (ugi != null
+              && ugi.getAuthenticationMethod() == UserGroupInformation.AuthenticationMethod.PROXY) {
+            UserGroupInformation realUserUgi = ugi.getRealUser();
+            if (realUserUgi != null) {
+              httpRequest.setAttribute(
+                  KerberosPlugin.IMPERSONATOR_USER_NAME, realUserUgi.getShortUserName());
             }
-            filterChain.doFilter(servletRequest, servletResponse);
           }
+          filterChain.doFilter(servletRequest, servletResponse);
         };
 
     super.doFilter(request, response, filterChainWrapper);
@@ -215,7 +210,7 @@ public class HadoopAuthFilter extends DelegationTokenAuthenticationFilter {
     }
 
     private List<AuthInfo> createAuthInfo(SolrZkClient zkClient) {
-      List<AuthInfo> ret = new LinkedList<AuthInfo>();
+      List<AuthInfo> ret = new LinkedList<>();
 
       // In theory the credentials to add could change here if zookeeper hasn't been initialized
       ZkCredentialsProvider credentialsProvider =

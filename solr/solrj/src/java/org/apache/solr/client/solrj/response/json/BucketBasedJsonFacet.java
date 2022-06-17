@@ -63,13 +63,13 @@ public class BucketBasedJsonFacet {
       } else if ("numBuckets".equals(key)) {
         numBuckets = ((Number) value).longValue();
       } else if ("allBuckets".equals(key)) {
-        allBuckets = ((Number) ((NamedList) value).get("count")).longValue();
+        allBuckets = ((Number) ((NamedList<?>) value).get("count")).longValue();
       } else if ("before".equals(key)) {
-        beforeFirstBucketCount = ((Number) ((NamedList) value).get("count")).longValue();
+        beforeFirstBucketCount = ((Number) ((NamedList<?>) value).get("count")).longValue();
       } else if ("after".equals(key)) {
-        afterLastBucketCount = ((Number) ((NamedList) value).get("count")).longValue();
+        afterLastBucketCount = ((Number) ((NamedList<?>) value).get("count")).longValue();
       } else if ("between".equals(key)) {
-        betweenAllBucketsCount = ((Number) ((NamedList) value).get("count")).longValue();
+        betweenAllBucketsCount = ((Number) ((NamedList<?>) value).get("count")).longValue();
       } else {
         // We don't recognize the key.  Possible JSON faceting schema has changed without updating
         // client. Silently ignore for now, though we may want to consider throwing an error if this

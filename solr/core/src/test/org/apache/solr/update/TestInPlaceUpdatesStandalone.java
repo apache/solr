@@ -328,11 +328,10 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
     SolrException exception =
         expectThrows(
             SolrException.class,
-            () -> {
-              addAndGetVersion(
-                  sdoc("id", "20", "_version_", -1, "inplace_updatable_float", map("inc", 1)),
-                  null);
-            });
+            () ->
+                addAndGetVersion(
+                    sdoc("id", "20", "_version_", -1, "inplace_updatable_float", map("inc", 1)),
+                    null));
     assertEquals(exception.toString(), SolrException.ErrorCode.CONFLICT.code, exception.code());
     assertThat(exception.getMessage(), containsString("expected=-1"));
     assertThat(exception.getMessage(), containsString("actual=" + v20));
@@ -344,11 +343,10 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
     exception =
         expectThrows(
             SolrException.class,
-            () -> {
-              addAndGetVersion(
-                  sdoc("id", "20", "_version_", oldV20, "inplace_updatable_float", map("inc", 1)),
-                  null);
-            });
+            () ->
+                addAndGetVersion(
+                    sdoc("id", "20", "_version_", oldV20, "inplace_updatable_float", map("inc", 1)),
+                    null));
     assertEquals(exception.toString(), SolrException.ErrorCode.CONFLICT.code, exception.code());
     assertThat(exception.getMessage(), containsString("expected=" + oldV20));
     assertThat(exception.getMessage(), containsString("actual=" + v20));
@@ -1379,7 +1377,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
    */
   @Test
   public void testComputeInPlaceUpdatableFields() throws Exception {
-    Set<String> inPlaceUpdatedFields = new HashSet<String>();
+    Set<String> inPlaceUpdatedFields = new HashSet<>();
 
     // these asserts should hold true regardless of type, or wether the field has a default
     List<String> fieldsToCheck =

@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
@@ -41,7 +42,7 @@ public class CopyOfEvaluator extends RecursiveNumericEvaluator implements ManyVa
 
   @Override
   public Object doWork(Object... values) throws IOException {
-    if (Arrays.stream(values).anyMatch(item -> null == item)) {
+    if (Arrays.stream(values).anyMatch(Objects::isNull)) {
       return null;
     }
 

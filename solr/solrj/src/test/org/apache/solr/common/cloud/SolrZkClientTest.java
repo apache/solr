@@ -34,7 +34,6 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
@@ -167,20 +166,14 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     Semaphore semA = new Semaphore(0);
     Semaphore semB = new Semaphore(0);
     Watcher watcherA =
-        new Watcher() {
-          @Override
-          public void process(WatchedEvent event) {
-            calls.getAndIncrement();
-            semA.release();
-          }
+        event -> {
+          calls.getAndIncrement();
+          semA.release();
         };
     Watcher watcherB =
-        new Watcher() {
-          @Override
-          public void process(WatchedEvent event) {
-            calls.getAndDecrement();
-            semB.release();
-          }
+        event -> {
+          calls.getAndDecrement();
+          semB.release();
         };
     Watcher wrapped1A = defaultClient.wrapWatcher(watcherA);
     Watcher wrapped2A = defaultClient.wrapWatcher(watcherA);

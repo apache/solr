@@ -165,9 +165,7 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
     params.set("analytics", analyticsRequest);
 
     String[] revisedTests =
-        Arrays.stream(tests)
-            .map(test -> "analytics_response/" + test)
-            .toArray(size -> new String[size]);
+        Arrays.stream(tests).map(test -> "analytics_response/" + test).toArray(String[]::new);
     testResults(params, analyticsRequest, revisedTests);
   }
 
@@ -205,7 +203,7 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
         ", 'sort': { 'criteria' : [{'type': 'facetvalue', 'direction': '"
             + (sortAscending ? "ascending" : "descending")
             + "'}]}",
-        (fvp1, fvp2) -> fvp1.facetValue.compareTo(fvp2.facetValue),
+        Comparator.comparing(fvp -> fvp.facetValue),
         sortAscending);
   }
 
@@ -228,10 +226,7 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
             + "', 'direction': '"
             + (sortAscending ? "ascending" : "descending")
             + "'}]}",
-        (fvp1, fvp2) ->
-            fvp1.expectedResults
-                .get(sortExpression)
-                .compareTo(fvp2.expectedResults.get(sortExpression)),
+        Comparator.comparing(fvp -> fvp.expectedResults.get(sortExpression)),
         sortAscending);
   }
 
@@ -241,8 +236,7 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
       Map<String, String> facets,
       Map<String, List<FVP>> results)
       throws Exception {
-    testGroupingSorted(
-        grouping, expressions, facets, results, "", (fvp1, fvp2) -> fvp1.compareTo(fvp2), true);
+    testGroupingSorted(grouping, expressions, facets, results, "", Comparator.naturalOrder(), true);
   }
 
   private void testGroupingSorted(
@@ -282,7 +276,7 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
                   String resultList =
                       facet.getValue().stream()
                           .sorted(sortAscending ? comparator : comparator.reversed())
-                          .map(fvp -> fvp.toJsonResults())
+                          .map(FVP::toJsonResults)
                           .collect(Collectors.joining(" , "));
                   return '"' + facet.getKey() + "\" : [ " + resultList + " ]";
                 })
@@ -360,7 +354,7 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
     } else if (value instanceof Map) {
       ((Map<String, Object>) value).replaceAll((key, obj) -> convertDatesToStrings(obj));
     } else if (value instanceof List) {
-      ((List<Object>) value).replaceAll(obj -> convertDatesToStrings(obj));
+      ((List<Object>) value).replaceAll(SolrAnalyticsTestCase::convertDatesToStrings);
     }
     return value;
   }

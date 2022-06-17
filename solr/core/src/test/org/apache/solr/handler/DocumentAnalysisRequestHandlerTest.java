@@ -118,7 +118,7 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
       this.bytes = bytes;
       this.contentType = contentType;
       name = null;
-      size = Long.valueOf(bytes.length);
+      size = (long) bytes.length;
       sourceInfo = "rawBytes";
     }
 

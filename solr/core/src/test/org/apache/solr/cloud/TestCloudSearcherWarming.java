@@ -18,7 +18,6 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -275,70 +274,66 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
 
   private CollectionStateWatcher createActiveReplicaSearcherWatcher(
       AtomicInteger expectedDocs, AtomicReference<String> failingCoreNodeName) {
-    return new CollectionStateWatcher() {
-      @Override
-      public boolean onStateChanged(Set<String> liveNodes, DocCollection collectionState) {
-        try {
-          String coreNodeName = coreNodeNameRef.get();
-          String coreName = coreNameRef.get();
-          if (coreNodeName == null || coreName == null) return false;
-          Replica replica = collectionState.getReplica(coreNodeName);
-          if (replica == null) return false;
-          log.info("Collection state: {}", collectionState);
-          if (replica.isActive(liveNodes)) {
-            log.info("Active replica: {}", coreNodeName);
-            for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
-              JettySolrRunner jettySolrRunner = cluster.getJettySolrRunner(i);
-              if (log.isInfoEnabled()) {
-                log.info("Checking node: {}", jettySolrRunner.getNodeName());
-              }
-              if (jettySolrRunner.getNodeName().equals(replica.getNodeName())) {
-                SolrDispatchFilter solrDispatchFilter = jettySolrRunner.getSolrDispatchFilter();
-                try (SolrCore core = solrDispatchFilter.getCores().getCore(coreName)) {
-                  if (core.getSolrConfig().useColdSearcher) {
-                    log.error(
-                        "useColdSearcher is enabled! It should not be enabled for this test!");
-                    assert false;
+    return (liveNodes, collectionState) -> {
+      try {
+        String coreNodeName = coreNodeNameRef.get();
+        String coreName = coreNameRef.get();
+        if (coreNodeName == null || coreName == null) return false;
+        Replica replica = collectionState.getReplica(coreNodeName);
+        if (replica == null) return false;
+        log.info("Collection state: {}", collectionState);
+        if (replica.isActive(liveNodes)) {
+          log.info("Active replica: {}", coreNodeName);
+          for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
+            JettySolrRunner jettySolrRunner = cluster.getJettySolrRunner(i);
+            if (log.isInfoEnabled()) {
+              log.info("Checking node: {}", jettySolrRunner.getNodeName());
+            }
+            if (jettySolrRunner.getNodeName().equals(replica.getNodeName())) {
+              SolrDispatchFilter solrDispatchFilter = jettySolrRunner.getSolrDispatchFilter();
+              try (SolrCore core = solrDispatchFilter.getCores().getCore(coreName)) {
+                if (core.getSolrConfig().useColdSearcher) {
+                  log.error("useColdSearcher is enabled! It should not be enabled for this test!");
+                  assert false;
+                  return false;
+                }
+                if (log.isInfoEnabled()) {
+                  log.info("Found SolrCore: {}, id: {}", core.getName(), core);
+                }
+                RefCounted<SolrIndexSearcher> registeredSearcher = core.getRegisteredSearcher();
+                if (registeredSearcher != null) {
+                  log.error(
+                      "registered searcher not null, maxdocs = {}",
+                      registeredSearcher.get().maxDoc());
+                  if (registeredSearcher.get().maxDoc() != expectedDocs.get()) {
+                    failingCoreNodeName.set(coreNodeName);
+                    registeredSearcher.decref();
+                    return false;
+                  } else {
+                    registeredSearcher.decref();
                     return false;
                   }
-                  if (log.isInfoEnabled()) {
-                    log.info("Found SolrCore: {}, id: {}", core.getName(), core);
-                  }
-                  RefCounted<SolrIndexSearcher> registeredSearcher = core.getRegisteredSearcher();
-                  if (registeredSearcher != null) {
-                    log.error(
-                        "registered searcher not null, maxdocs = {}",
-                        registeredSearcher.get().maxDoc());
-                    if (registeredSearcher.get().maxDoc() != expectedDocs.get()) {
-                      failingCoreNodeName.set(coreNodeName);
-                      registeredSearcher.decref();
-                      return false;
-                    } else {
-                      registeredSearcher.decref();
-                      return false;
-                    }
+                } else {
+                  log.error("registered searcher was null!");
+                  RefCounted<SolrIndexSearcher> newestSearcher = core.getNewestSearcher(false);
+                  if (newestSearcher != null) {
+                    SolrIndexSearcher searcher = newestSearcher.get();
+                    log.warn("newest searcher was: {}", searcher);
+                    newestSearcher.decref();
                   } else {
-                    log.error("registered searcher was null!");
-                    RefCounted<SolrIndexSearcher> newestSearcher = core.getNewestSearcher(false);
-                    if (newestSearcher != null) {
-                      SolrIndexSearcher searcher = newestSearcher.get();
-                      log.warn("newest searcher was: {}", searcher);
-                      newestSearcher.decref();
-                    } else {
-                      log.error("newest searcher was also null!");
-                    }
-                    // no registered searcher but replica is active!
-                    failingCoreNodeName.set(coreNodeName);
+                    log.error("newest searcher was also null!");
                   }
+                  // no registered searcher but replica is active!
+                  failingCoreNodeName.set(coreNodeName);
                 }
               }
             }
           }
-        } catch (Exception e) {
-          log.error("Unexpected exception in state watcher", e);
         }
-        return false;
+      } catch (Exception e) {
+        log.error("Unexpected exception in state watcher", e);
       }
+      return false;
     };
   }
 

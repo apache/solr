@@ -83,10 +83,7 @@ public class FloatFieldsTest extends AbstractAnalyticsFieldTest {
             valueField,
             id -> {
               Map<Float, Integer> doc = new HashMap<>();
-              valueField.streamFloats(
-                  value -> {
-                    doc.put(value, doc.getOrDefault(value, 0) + 1);
-                  });
+              valueField.streamFloats(value -> doc.put(value, doc.getOrDefault(value, 0) + 1));
               if (doc.size() > 0) {
                 values.put(id, doc);
               }
@@ -106,10 +103,7 @@ public class FloatFieldsTest extends AbstractAnalyticsFieldTest {
             valueField,
             id -> {
               Map<Float, Integer> doc = new HashMap<>();
-              valueField.streamFloats(
-                  value -> {
-                    doc.put(value, doc.getOrDefault(value, 0) + 1);
-                  });
+              valueField.streamFloats(value -> doc.put(value, doc.getOrDefault(value, 0) + 1));
               if (doc.size() > 0) {
                 values.put(id, doc);
               }

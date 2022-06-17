@@ -57,38 +57,22 @@ class FlatKeysAttrVisitor implements AttrVisitor {
 
   @Override
   public void visit(String key, AttrBoolean attr) {
-    ifKeyExists(
-        key,
-        (path, value) -> {
-          attr.set(value == null ? null : Boolean.parseBoolean(value));
-        });
+    ifKeyExists(key, (path, value) -> attr.set(value == null ? null : Boolean.parseBoolean(value)));
   }
 
   @Override
   public void visit(String key, AttrInteger attr) {
-    ifKeyExists(
-        key,
-        (path, value) -> {
-          attr.set(value == null ? null : Integer.parseInt(value));
-        });
+    ifKeyExists(key, (path, value) -> attr.set(value == null ? null : Integer.parseInt(value)));
   }
 
   @Override
   public void visit(String key, AttrDouble attr) {
-    ifKeyExists(
-        key,
-        (path, value) -> {
-          attr.set(value == null ? null : Double.parseDouble(value));
-        });
+    ifKeyExists(key, (path, value) -> attr.set(value == null ? null : Double.parseDouble(value)));
   }
 
   @Override
   public void visit(String key, AttrString attr) {
-    ifKeyExists(
-        key,
-        (path, value) -> {
-          attr.set(value);
-        });
+    ifKeyExists(key, (path, value) -> attr.set(value));
   }
 
   @Override
@@ -140,11 +124,7 @@ class FlatKeysAttrVisitor implements AttrVisitor {
 
     T t = attr.get();
     if (t != null) {
-      withKey(
-          key,
-          path -> {
-            t.accept(this);
-          });
+      withKey(key, path -> t.accept(this));
     }
   }
 

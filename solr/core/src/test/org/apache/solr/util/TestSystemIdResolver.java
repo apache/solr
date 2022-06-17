@@ -98,18 +98,15 @@ public class TestSystemIdResolver extends SolrTestCaseJ4 {
     IOException ioe =
         expectThrows(
             IOException.class,
-            () -> {
-              resolver.resolveEntity(null, null, "solrres:/solrconfig.xml", fileUri);
-            });
+            () -> resolver.resolveEntity(null, null, "solrres:/solrconfig.xml", fileUri));
     assertTrue(ioe.getMessage().startsWith("Cannot resolve absolute"));
 
     ioe =
         expectThrows(
             IOException.class,
-            () -> {
-              resolver.resolveEntity(
-                  null, null, "solrres:/solrconfig.xml", "http://lucene.apache.org/test.xml");
-            });
+            () ->
+                resolver.resolveEntity(
+                    null, null, "solrres:/solrconfig.xml", "http://lucene.apache.org/test.xml"));
     assertTrue(ioe.getMessage().startsWith("Cannot resolve absolute"));
 
     // check that we can't escape with absolute file paths:
@@ -117,9 +114,7 @@ public class TestSystemIdResolver extends SolrTestCaseJ4 {
       ioe =
           expectThrows(
               IOException.class,
-              () -> {
-                resolver.resolveEntity(null, null, "solrres:/solrconfig.xml", path);
-              });
+              () -> resolver.resolveEntity(null, null, "solrres:/solrconfig.xml", path));
       assertTrue(
           ioe.getMessage().startsWith("Can't find resource")
               || ioe.getMessage().contains("access denied")

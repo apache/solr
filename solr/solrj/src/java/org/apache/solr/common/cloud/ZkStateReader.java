@@ -283,22 +283,17 @@ public class ZkStateReader implements SolrCloseable {
             zkClientTimeout,
             zkClientConnectTimeout,
             // on reconnect, reload cloud info
-            new OnReconnect() {
-              @Override
-              public void command() {
-                try {
-                  ZkStateReader.this.createClusterStateWatchersAndUpdate();
-                } catch (KeeperException e) {
-                  log.error("A ZK error has occurred", e);
-                  throw new ZooKeeperException(
-                      SolrException.ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
-                } catch (InterruptedException e) {
-                  // Restore the interrupted status
-                  Thread.currentThread().interrupt();
-                  log.error("Interrupted", e);
-                  throw new ZooKeeperException(
-                      SolrException.ErrorCode.SERVER_ERROR, "Interrupted", e);
-                }
+            () -> {
+              try {
+                ZkStateReader.this.createClusterStateWatchersAndUpdate();
+              } catch (KeeperException e) {
+                log.error("A ZK error has occurred", e);
+                throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
+              } catch (InterruptedException e) {
+                // Restore the interrupted status
+                Thread.currentThread().interrupt();
+                log.error("Interrupted", e);
+                throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "Interrupted", e);
               }
             });
     this.closeClient = true;
@@ -449,9 +444,8 @@ public class ZkStateReader implements SolrCloseable {
       }
 
       collectionPropsObservers.forEach(
-          (k, v) -> {
-            collectionPropsWatchers.computeIfAbsent(k, PropsWatcher::new).refreshAndWatch(true);
-          });
+          (k, v) ->
+              collectionPropsWatchers.computeIfAbsent(k, PropsWatcher::new).refreshAndWatch(true));
     } catch (KeeperException.NoNodeException nne) {
       throw new SolrException(
           ErrorCode.SERVICE_UNAVAILABLE,
@@ -796,11 +790,7 @@ public class ZkStateReader implements SolrCloseable {
 
     notifications.shutdownNow();
 
-    waitLatches.parallelStream()
-        .forEach(
-            c -> {
-              c.countDown();
-            });
+    waitLatches.parallelStream().forEach(CountDownLatch::countDown);
 
     ExecutorUtil.shutdownAndAwaitTermination(notifications);
     ExecutorUtil.shutdownAndAwaitTermination(collectionPropsNotifications);
@@ -1162,7 +1152,7 @@ public class ZkStateReader implements SolrCloseable {
     }
   }
 
-  private class VersionedCollectionProps {
+  private static class VersionedCollectionProps {
     int zkVersion;
     Map<String, String> props;
     long cacheUntilNs = 0;

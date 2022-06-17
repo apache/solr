@@ -20,7 +20,7 @@ package org.apache.solr.handler.admin;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
@@ -317,7 +317,7 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
       }
     }
     tupleStream.close();
-    Collections.sort(tuples, (o1, o2) -> (o1.getString("id").compareTo(o2.getString("id"))));
+    tuples.sort(Comparator.comparing(o -> o.getString("id")));
     return tuples;
   }
 

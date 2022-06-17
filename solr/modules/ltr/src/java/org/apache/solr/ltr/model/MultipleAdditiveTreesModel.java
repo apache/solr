@@ -182,7 +182,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
         sb.append(value);
       } else {
         sb.append("(feature=").append(feature);
-        sb.append(",threshold=").append(threshold.floatValue() - NODE_SPLIT_SLACK);
+        sb.append(",threshold=").append(threshold - NODE_SPLIT_SLACK);
         sb.append(",left=").append(left);
         sb.append(",right=").append(right);
         sb.append(')');
@@ -212,7 +212,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     }
 
     public float score(float[] featureVector) {
-      return weight.floatValue() * scoreNode(featureVector, root);
+      return weight * scoreNode(featureVector, root);
     }
 
     public String explain(float[] featureVector) {
@@ -244,7 +244,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
 
   @SuppressWarnings({"unchecked"})
   public void setTrees(Object trees) {
-    this.trees = new ArrayList<RegressionTree>();
+    this.trees = new ArrayList<>();
     for (final Object o : (List<Object>) trees) {
       final RegressionTree rt = createRegressionTree((Map<String, Object>) o);
       this.trees.add(rt);
@@ -260,7 +260,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
       Map<String, Object> params) {
     super(name, features, norms, featureStoreName, allFeatures, params);
 
-    fname2index = new HashMap<String, Integer>();
+    fname2index = new HashMap<>();
     for (int i = 0; i < features.size(); ++i) {
       final String key = features.get(i).getName();
       fname2index.put(key, i);
@@ -309,7 +309,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
   private static void validateNode(RegressionTreeNode regressionTreeNode) throws ModelException {
 
     // Create an empty stack and push root to it
-    Stack<RegressionTreeNode> stack = new Stack<RegressionTreeNode>();
+    Stack<RegressionTreeNode> stack = new Stack<>();
     stack.push(regressionTreeNode);
 
     while (stack.empty() == false) {

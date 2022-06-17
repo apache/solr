@@ -242,11 +242,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     AtomicUpdateDocumentMerger docMerger = new AtomicUpdateDocumentMerger(req());
 
     SolrException expected =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              docMerger.merge(updateDoc, existingDoc);
-            });
+        expectThrows(SolrException.class, () -> docMerger.merge(updateDoc, existingDoc));
     assertTrue(
         expected
             .getMessage()
@@ -1021,11 +1017,10 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     SolrException e =
         expectThrows(
             SolrException.class,
-            () -> {
-              addAndGetVersion(
-                  sdoc("id", "2", "grandchild", Collections.singletonMap("set", sdoc("id", "3"))),
-                  null);
-            });
+            () ->
+                addAndGetVersion(
+                    sdoc("id", "2", "grandchild", Collections.singletonMap("set", sdoc("id", "3"))),
+                    null));
     assertTrue(
         e.toString(),
         e.getMessage()
@@ -1053,7 +1048,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
       assertTrue("doc should contain field: " + fieldName, fullDoc.containsKey(fieldName));
       Object fullValue = fullDoc.getField(fieldName).getValue();
       if (fullValue instanceof Collection) {
-        ((Collection) fullValue).containsAll(field.getValues());
+        ((Collection<?>) fullValue).containsAll(field.getValues());
       } else {
         assertEquals(
             "docs should have the same value for field: " + fieldName, field.getValue(), fullValue);

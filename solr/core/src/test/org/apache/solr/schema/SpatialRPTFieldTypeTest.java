@@ -159,7 +159,7 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     IndexSchema oldSchema = h.getCore().getLatestSchema();
 
     SpatialRecursivePrefixTreeFieldType rptFieldType = new SpatialRecursivePrefixTreeFieldType();
-    Map<String, String> rptMap = new HashMap<String, String>();
+    Map<String, String> rptMap = new HashMap<>();
 
     rptFieldType.setTypeName("location_rpt");
     rptMap.put("geo", "true");
@@ -284,7 +284,7 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     if (fieldType == null) {
       fieldType = new SpatialRecursivePrefixTreeFieldType();
     }
-    Map<String, String> rptMap = new HashMap<String, String>();
+    Map<String, String> rptMap = new HashMap<>();
     if (distanceUnits != null) rptMap.put("distanceUnits", distanceUnits);
     if (geo != null) rptMap.put("geo", geo);
     if (format != null) {

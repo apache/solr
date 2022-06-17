@@ -320,7 +320,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     startTestInjection();
 
     // spin up parallel workers to hammer updates
-    List<Future<Worker>> results = new ArrayList<Future<Worker>>(NUM_THREADS);
+    List<Future<Worker>> results = new ArrayList<>(NUM_THREADS);
     for (int workerId = 0; workerId < NUM_THREADS; workerId++) {
       Worker worker =
           new Worker(
@@ -383,7 +383,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
       }
 
       Long actual = (null == doc) ? null : (Long) doc.getFirstValue(numericFieldName);
-      if (actual == null || expect != actual.longValue() || !foundWithFilter) {
+      if (actual == null || expect != actual || !foundWithFilter) {
         log.error(
             "docId={}, foundWithFilter={}, expected={}, actual={}",
             docId,

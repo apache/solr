@@ -45,7 +45,7 @@ public interface StringValueStream extends AnalyticsValueStream {
   public abstract static class AbstractStringValueStream implements CastingStringValueStream {
     @Override
     public void streamObjects(Consumer<Object> cons) {
-      streamStrings((String val) -> cons.accept(val));
+      streamStrings(cons::accept);
     }
 
     @Override

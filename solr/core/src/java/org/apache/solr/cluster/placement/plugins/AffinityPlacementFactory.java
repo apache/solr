@@ -380,13 +380,12 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
                   shard
                       .replicas()
                       .forEach(
-                          replica -> {
-                            secondaryNodeShardReplicas
-                                .computeIfAbsent(replica.getNode(), n -> new HashMap<>())
-                                .computeIfAbsent(
-                                    replica.getShard().getShardName(), s -> new AtomicInteger())
-                                .incrementAndGet();
-                          }));
+                          replica ->
+                              secondaryNodeShardReplicas
+                                  .computeIfAbsent(replica.getNode(), n -> new HashMap<>())
+                                  .computeIfAbsent(
+                                      replica.getShard().getShardName(), s -> new AtomicInteger())
+                                  .incrementAndGet()));
 
       // find the colocated-with collections
       Map<Node, Set<String>> colocatingNodes = new HashMap<>();
@@ -399,11 +398,10 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
                       shard
                           .replicas()
                           .forEach(
-                              replica -> {
-                                colocatingNodes
-                                    .computeIfAbsent(replica.getNode(), n -> new HashSet<>())
-                                    .add(coll.getName());
-                              }));
+                              replica ->
+                                  colocatingNodes
+                                      .computeIfAbsent(replica.getNode(), n -> new HashSet<>())
+                                      .add(coll.getName())));
         }
       } catch (IOException ioe) {
         throw new PlacementModificationException(

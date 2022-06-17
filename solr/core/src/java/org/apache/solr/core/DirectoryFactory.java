@@ -18,7 +18,6 @@ package org.apache.solr.core;
 
 import java.io.Closeable;
 import java.io.File;
-import java.io.FileFilter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -351,21 +350,18 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
     final File currentIndexDir = new File(currentIndexDirPath);
     File[] oldIndexDirs =
         dataDir.listFiles(
-            new FileFilter() {
-              @Override
-              public boolean accept(File file) {
-                String fileName = file.getName();
-                return file.isDirectory()
-                    && !file.equals(currentIndexDir)
-                    && (fileName.equals("index") || fileName.matches(INDEX_W_TIMESTAMP_REGEX));
-              }
+            file -> {
+              String fileName = file.getName();
+              return file.isDirectory()
+                  && !file.equals(currentIndexDir)
+                  && (fileName.equals("index") || fileName.matches(INDEX_W_TIMESTAMP_REGEX));
             });
 
     if (oldIndexDirs == null || oldIndexDirs.length == 0)
       return; // nothing to do (no log message needed)
 
     List<File> dirsList = Arrays.asList(oldIndexDirs);
-    Collections.sort(dirsList, Collections.reverseOrder());
+    dirsList.sort(Collections.reverseOrder());
 
     int i = 0;
     if (afterCoreReload) {

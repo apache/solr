@@ -19,7 +19,6 @@ package org.apache.solr.util;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -53,14 +52,7 @@ public class VersionedFile {
       try {
         if (!f.exists()) {
           File dir = new File(dirName);
-          String[] names =
-              dir.list(
-                  new FilenameFilter() {
-                    @Override
-                    public boolean accept(File dir, String name) {
-                      return name.startsWith(prefix);
-                    }
-                  });
+          String[] names = dir.list((dir1, name) -> name.startsWith(prefix));
           Arrays.sort(names);
           f = new File(dir, names[names.length - 1]);
           oldFiles = new ArrayList<>();

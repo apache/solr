@@ -215,8 +215,8 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     List<StreamExpression> metricExpressions =
         factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, Metric.class);
     List<Metric> metrics = new ArrayList<>();
-    for (int idx = 0; idx < metricExpressions.size(); ++idx) {
-      metrics.add(factory.constructMetric(metricExpressions.get(idx)));
+    for (StreamExpression metricExpression : metricExpressions) {
+      metrics.add(factory.constructMetric(metricExpression));
     }
 
     boolean trackTraversal = false;
@@ -265,7 +265,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
           Integer.parseInt(((StreamExpressionValue) docFreqExpression.getParameter()).getValue());
     }
 
-    Map<String, String> params = new HashMap<String, String>();
+    Map<String, String> params = new HashMap<>();
     for (StreamExpressionNamedParameter namedParam : namedParams) {
       if (!namedParam.getName().equals("zkHost")
           && !namedParam.getName().equals("gather")
@@ -549,7 +549,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       joinSParams.set("qt", "/export");
       joinSParams.set(SORT, gather + " asc," + traverseTo + " asc");
 
-      StringBuffer nodeQuery = new StringBuffer();
+      StringBuilder nodeQuery = new StringBuilder();
 
       boolean comma = false;
       for (String node : nodes) {

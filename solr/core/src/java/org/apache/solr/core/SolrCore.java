@@ -1324,7 +1324,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         "coreName",
         Category.CORE.toString());
     parentContext.gauge(() -> startTime, true, "startTime", Category.CORE.toString());
-    parentContext.gauge(() -> getOpenCount(), true, "refCount", Category.CORE.toString());
+    parentContext.gauge(this::getOpenCount, true, "refCount", Category.CORE.toString());
     parentContext.gauge(
         () -> getInstancePath().toString(), true, "instanceDir", Category.CORE.toString());
     parentContext.gauge(
@@ -1364,9 +1364,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     Path dataDirPath = Paths.get(dataDir);
     File dataDirFile = dataDirPath.toFile();
     parentContext.gauge(
-        () -> dataDirFile.getTotalSpace(), true, "totalSpace", Category.CORE.toString(), "fs");
+        dataDirFile::getTotalSpace, true, "totalSpace", Category.CORE.toString(), "fs");
     parentContext.gauge(
-        () -> dataDirFile.getUsableSpace(), true, "usableSpace", Category.CORE.toString(), "fs");
+        dataDirFile::getUsableSpace, true, "usableSpace", Category.CORE.toString(), "fs");
     parentContext.gauge(
         () -> dataDirPath.toAbsolutePath().toString(),
         true,
@@ -2729,7 +2729,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private RefCounted<SolrIndexSearcher> newHolder(
       SolrIndexSearcher newSearcher, final List<RefCounted<SolrIndexSearcher>> searcherList) {
     RefCounted<SolrIndexSearcher> holder =
-        new RefCounted<SolrIndexSearcher>(newSearcher) {
+        new RefCounted<>(newSearcher) {
           @Override
           public void close() {
             try {
@@ -2739,7 +2739,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
                 // we check the refcount again to see if this has happened and abort the close.
                 // This relies on the RefCounted class allowing close() to be called every
                 // time the counter hits zero.
-                if (refcount.get() > 0) return;
+                if (refcount.get() > 0) {
+                  return;
+                }
                 searcherList.remove(this);
               }
               resource.close();

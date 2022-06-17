@@ -167,8 +167,7 @@ public abstract class RuleBasedAuthorizationPluginBase
 
   private Permission findFirstGoverningPermission(
       List<Permission> permissions, AuthorizationContext context) {
-    for (int i = 0; i < permissions.size(); i++) {
-      Permission permission = permissions.get(i);
+    for (Permission permission : permissions) {
       if (permissionAppliesToRequest(permission, context)) return permission;
     }
 

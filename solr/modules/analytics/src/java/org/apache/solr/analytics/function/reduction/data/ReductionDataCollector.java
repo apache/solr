@@ -102,8 +102,8 @@ public abstract class ReductionDataCollector<T extends ReductionData> {
    */
   public void collectAndApply() {
     collect();
-    lastingTargets.forEach(target -> apply(target));
-    collectionTargets.forEach(target -> apply(target));
+    lastingTargets.forEach(this::apply);
+    collectionTargets.forEach(this::apply);
     collectionTargets.clear();
   }
 

@@ -105,17 +105,13 @@ public class ClusteringComponentTest extends SolrTestCaseJ4 {
         clusters(
             "mock",
             QUERY_TESTSET_SAMPLE_DOCUMENTS,
-            params -> {
-              params.set(EngineParameters.PARAM_INCLUDE_SUBCLUSTERS, false);
-            }));
+            params -> params.set(EngineParameters.PARAM_INCLUDE_SUBCLUSTERS, false)));
     compareToExpected(
         "on",
         clusters(
             "mock",
             QUERY_TESTSET_SAMPLE_DOCUMENTS,
-            params -> {
-              params.set(EngineParameters.PARAM_INCLUDE_SUBCLUSTERS, true);
-            }));
+            params -> params.set(EngineParameters.PARAM_INCLUDE_SUBCLUSTERS, true)));
   }
 
   @Test
@@ -124,9 +120,7 @@ public class ClusteringComponentTest extends SolrTestCaseJ4 {
         clusters(
             "mock",
             QUERY_TESTSET_SAMPLE_DOCUMENTS,
-            params -> {
-              params.set(EngineParameters.PARAM_INCLUDE_OTHER_TOPICS, false);
-            }));
+            params -> params.set(EngineParameters.PARAM_INCLUDE_OTHER_TOPICS, false)));
   }
 
   /**
@@ -149,18 +143,14 @@ public class ClusteringComponentTest extends SolrTestCaseJ4 {
             "echo",
             query,
             common.andThen(
-                params -> {
-                  params.add(EngineParameters.PARAM_PREFER_QUERY_CONTEXT, "true");
-                }));
+                params -> params.add(EngineParameters.PARAM_PREFER_QUERY_CONTEXT, "true")));
 
     List<Cluster<SolrDocument>> full =
         clusters(
             "echo",
             query,
             common.andThen(
-                params -> {
-                  params.add(EngineParameters.PARAM_PREFER_QUERY_CONTEXT, "false");
-                }));
+                params -> params.add(EngineParameters.PARAM_PREFER_QUERY_CONTEXT, "false")));
 
     // Echo clustering algorithm just returns document fields as cluster labels
     // so highlighted snippets should never be longer than full field content.
@@ -198,18 +188,14 @@ public class ClusteringComponentTest extends SolrTestCaseJ4 {
             "echo",
             query,
             common.andThen(
-                params -> {
-                  params.add(EngineParameters.PARAM_CONTEXT_SIZE, Integer.toString(30));
-                }));
+                params -> params.add(EngineParameters.PARAM_CONTEXT_SIZE, Integer.toString(30))));
 
     List<Cluster<SolrDocument>> longSummaries =
         clusters(
             "echo",
             query,
             common.andThen(
-                params -> {
-                  params.add(EngineParameters.PARAM_CONTEXT_COUNT, Integer.toString(80));
-                }));
+                params -> params.add(EngineParameters.PARAM_CONTEXT_COUNT, Integer.toString(80))));
 
     Assert.assertEquals(shortSummaries.size(), longSummaries.size());
     for (int i = 0; i < shortSummaries.size(); i++) {
@@ -258,10 +244,7 @@ public class ClusteringComponentTest extends SolrTestCaseJ4 {
               params.set(EngineParameters.PARAM_MAX_LABELS, "3");
             });
 
-    clusters.forEach(
-        c -> {
-          MatcherAssert.assertThat(c.getLabels(), Matchers.hasSize(3));
-        });
+    clusters.forEach(c -> MatcherAssert.assertThat(c.getLabels(), Matchers.hasSize(3)));
   }
 
   @Test
@@ -425,10 +408,7 @@ public class ClusteringComponentTest extends SolrTestCaseJ4 {
               break;
             case ClusteringResponse.CLUSTERS_NODE:
               ((List<NamedList<Object>>) value)
-                  .forEach(
-                      sub -> {
-                        c.addCluster(toCluster(sub, idToDoc));
-                      });
+                  .forEach(sub -> c.addCluster(toCluster(sub, idToDoc)));
               break;
             case ClusteringResponse.IS_OTHER_TOPICS:
               // Just ignore the attribute.

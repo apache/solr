@@ -905,8 +905,8 @@ public class TestRealTimeGet extends TestRTGBase {
                     // without further synchronization. This is also correct when filteredOut==true
                   } else {
                     assertEquals(1, doclist.size());
-                    long foundVal = (Long) (((Map) doclist.get(0)).get(FIELD));
-                    long foundVer = (Long) (((Map) doclist.get(0)).get("_version_"));
+                    long foundVal = (Long) (((Map<?, ?>) doclist.get(0)).get(FIELD));
+                    long foundVer = (Long) (((Map<?, ?>) doclist.get(0)).get("_version_"));
                     if (filteredOut
                         || foundVal < Math.abs(info.val)
                         || (foundVer == info.version

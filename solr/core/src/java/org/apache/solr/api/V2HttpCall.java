@@ -342,9 +342,8 @@ public class V2HttpCall extends HttpSolrCall {
         HashSet<String> subPaths = new HashSet<>();
         registry.lookup(path, new HashMap<>(), subPaths);
         for (String subPath : subPaths) {
-          Set<String> supportedMethods = pathsVsMethod.get(subPath);
-          if (supportedMethods == null)
-            pathsVsMethod.put(subPath, supportedMethods = new HashSet<>());
+          Set<String> supportedMethods =
+              pathsVsMethod.computeIfAbsent(subPath, k -> new HashSet<>());
           supportedMethods.add(m.toString());
         }
       }

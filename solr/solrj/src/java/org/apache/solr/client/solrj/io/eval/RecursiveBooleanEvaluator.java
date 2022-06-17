@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -61,7 +62,7 @@ public abstract class RecursiveBooleanEvaluator extends RecursiveEvaluator {
     }
 
     Checker checker = constructChecker(values[0]);
-    if (Arrays.stream(values).anyMatch(result -> null == result)) {
+    if (Arrays.stream(values).anyMatch(Objects::isNull)) {
       throw new IOException(
           String.format(
               Locale.ROOT,

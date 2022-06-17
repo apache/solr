@@ -170,10 +170,10 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
     public BoostedComp(IntIntHashMap boostedDocs, ScoreDoc[] scoreDocs, float maxScore) {
       this.boostedMap = new IntFloatHashMap(boostedDocs.size() * 2);
 
-      for (int i = 0; i < scoreDocs.length; i++) {
+      for (ScoreDoc scoreDoc : scoreDocs) {
         final int idx;
-        if ((idx = boostedDocs.indexOf(scoreDocs[i].doc)) >= 0) {
-          boostedMap.put(scoreDocs[i].doc, maxScore + boostedDocs.indexGet(idx));
+        if ((idx = boostedDocs.indexOf(scoreDoc.doc)) >= 0) {
+          boostedMap.put(scoreDoc.doc, maxScore + boostedDocs.indexGet(idx));
         } else {
           break;
         }

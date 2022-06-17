@@ -204,7 +204,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
             }
           };
 
-      UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
+      UpdateLog.testing_logReplayFinishHook = logReplayFinish::release;
 
       clearIndex();
       assertU(commit());
@@ -246,10 +246,10 @@ public class TestRecovery extends SolrTestCaseJ4 {
       assertEquals(UpdateLog.State.REPLAYING.ordinal(), state.getValue().intValue());
       @SuppressWarnings({"unchecked"})
       Gauge<Integer> replayingLogs = (Gauge<Integer>) metrics.get("TLOG.replay.remaining.logs");
-      assertTrue(replayingLogs.getValue().intValue() > 0);
+      assertTrue(replayingLogs.getValue() > 0);
       @SuppressWarnings({"unchecked"})
       Gauge<Long> replayingDocs = (Gauge<Long>) metrics.get("TLOG.replay.remaining.bytes");
-      assertTrue(replayingDocs.getValue().longValue() > 0);
+      assertTrue(replayingDocs.getValue() > 0);
       Meter replayDocs = (Meter) metrics.get("TLOG.replay.ops");
       long initialOps = replayDocs.getCount();
 
@@ -334,7 +334,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
             }
           };
 
-      UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
+      UpdateLog.testing_logReplayFinishHook = logReplayFinish::release;
 
       clearIndex();
       assertU(commit());
@@ -584,7 +584,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
             }
           };
 
-      UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
+      UpdateLog.testing_logReplayFinishHook = logReplayFinish::release;
 
       clearIndex();
       assertU(commit());
@@ -722,7 +722,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       // be bad for updates to be visible if we're just buffering.
       assertJQ(req("qt", "/get", "id", "B3"), "=={'doc':null}");
 
-      assertEquals(6, bufferedOps.getValue().intValue() - initialOps);
+      assertEquals(6, bufferedOps.getValue() - initialOps);
 
       rinfoFuture = ulog.applyBufferedUpdates();
       assertTrue(rinfoFuture != null);
@@ -849,7 +849,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
           }
         };
 
-    UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
+    UpdateLog.testing_logReplayFinishHook = logReplayFinish::release;
 
     SolrQueryRequest req = req();
     UpdateHandler uhandler = req.getCore().getUpdateHandler();
@@ -1027,7 +1027,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
           }
         };
 
-    UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
+    UpdateLog.testing_logReplayFinishHook = logReplayFinish::release;
 
     SolrQueryRequest req = req();
     UpdateHandler uhandler = req.getCore().getUpdateHandler();
@@ -1316,7 +1316,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
           }
         };
 
-    UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
+    UpdateLog.testing_logReplayFinishHook = logReplayFinish::release;
 
     SolrQueryRequest req = req();
     UpdateHandler uhandler = req.getCore().getUpdateHandler();
@@ -1373,7 +1373,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
             }
           };
 
-      UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
+      UpdateLog.testing_logReplayFinishHook = logReplayFinish::release;
 
       clearIndex();
       assertU(commit());
@@ -1486,8 +1486,8 @@ public class TestRecovery extends SolrTestCaseJ4 {
       addDocs(
           1,
           numIndexed,
-          new LinkedList<
-              Long>()); // don't add this to the versions list because we are going to lose it...
+          new LinkedList<>()); // don't add this to the versions list because we are going to lose
+      // it...
       h.close();
       files = ulog.getLogList(logDir);
       Arrays.sort(files);
@@ -1532,7 +1532,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
             }
           };
 
-      UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
+      UpdateLog.testing_logReplayFinishHook = logReplayFinish::release;
 
       UpdateLog ulog = h.getCore().getUpdateHandler().getUpdateLog();
       File logDir = new File(h.getCore().getUpdateHandler().getUpdateLog().getLogDir());
@@ -1682,7 +1682,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
             }
           };
 
-      UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
+      UpdateLog.testing_logReplayFinishHook = logReplayFinish::release;
 
       UpdateLog ulog = h.getCore().getUpdateHandler().getUpdateLog();
       File logDir = new File(h.getCore().getUpdateHandler().getUpdateLog().getLogDir());
@@ -1767,7 +1767,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
             }
           };
 
-      UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
+      UpdateLog.testing_logReplayFinishHook = logReplayFinish::release;
 
       clearIndex();
       assertU(commit());

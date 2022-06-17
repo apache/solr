@@ -97,21 +97,17 @@ public class CollectionPropsTest extends SolrCloudTestCase {
     // NOTE: Using a semaphore to ensure we wait for Watcher to fire before proceeding with
     // test logic, to prevent triggering SOLR-13678
     final Semaphore sawExpectedProps = new Semaphore(0);
-    final AtomicReference<Map<String, String>> expectedProps =
-        new AtomicReference<Map<String, String>>(null);
+    final AtomicReference<Map<String, String>> expectedProps = new AtomicReference<>(null);
 
     final CollectionPropsWatcher w =
-        new CollectionPropsWatcher() {
-          @Override
-          public boolean onStateChanged(Map<String, String> collectionProperties) {
-            log.info("collection properties changed. Now: {}", collectionProperties);
-            final Map<String, String> expected = expectedProps.get();
-            if (expected != null && expected.equals(collectionProperties)) {
-              log.info("...new props match expected");
-              sawExpectedProps.release();
-            }
-            return false;
+        collectionProperties -> {
+          log.info("collection properties changed. Now: {}", collectionProperties);
+          final Map<String, String> expected = expectedProps.get();
+          if (expected != null && expected.equals(collectionProperties)) {
+            log.info("...new props match expected");
+            sawExpectedProps.release();
           }
+          return false;
         };
 
     cluster.getZkStateReader().registerCollectionPropsWatcher(collectionName, w);

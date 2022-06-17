@@ -57,7 +57,7 @@ public class DescribeEvaluator extends RecursiveNumericEvaluator implements OneV
     ((List<?>) value)
         .stream()
             .mapToDouble(innerValue -> ((Number) innerValue).doubleValue())
-            .forEach(innerValue -> descriptiveStatistics.addValue(innerValue));
+            .forEach(descriptiveStatistics::addValue);
 
     Tuple tuple = new Tuple();
     tuple.put("max", descriptiveStatistics.getMax());

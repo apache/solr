@@ -144,7 +144,7 @@ public class TestValueFeature extends TestRerankBase {
 
   @Test
   public void testParamsToMap() throws Exception {
-    final LinkedHashMap<String, Object> params = new LinkedHashMap<String, Object>();
+    final LinkedHashMap<String, Object> params = new LinkedHashMap<>();
     params.put("value", "${val" + random().nextInt(10) + "}");
     if (random().nextBoolean()) {
       params.put("required", random().nextBoolean());

@@ -64,8 +64,6 @@ import org.apache.solr.update.UpdateCommand;
 import org.apache.solr.util.DateMathParser;
 import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.Before;
@@ -1051,17 +1049,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
   private void monitorAlias(CountDownLatch aliasUpdate)
       throws KeeperException, InterruptedException {
     Stat stat = new Stat();
-    zkClient()
-        .getData(
-            "/aliases.json",
-            new Watcher() {
-              @Override
-              public void process(WatchedEvent watchedEvent) {
-                aliasUpdate.countDown();
-              }
-            },
-            stat,
-            true);
+    zkClient().getData("/aliases.json", watchedEvent -> aliasUpdate.countDown(), stat, true);
   }
 
   /**

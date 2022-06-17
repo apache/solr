@@ -83,10 +83,7 @@ public class LongFieldsTest extends AbstractAnalyticsFieldTest {
             valueField,
             id -> {
               Map<Long, Integer> doc = new HashMap<>();
-              valueField.streamLongs(
-                  value -> {
-                    doc.put(value, doc.getOrDefault(value, 0) + 1);
-                  });
+              valueField.streamLongs(value -> doc.put(value, doc.getOrDefault(value, 0) + 1));
               if (doc.size() > 0) {
                 values.put(id, doc);
               }
@@ -106,10 +103,7 @@ public class LongFieldsTest extends AbstractAnalyticsFieldTest {
             valueField,
             id -> {
               Map<Long, Integer> doc = new HashMap<>();
-              valueField.streamLongs(
-                  value -> {
-                    doc.put(value, doc.getOrDefault(value, 0) + 1);
-                  });
+              valueField.streamLongs(value -> doc.put(value, doc.getOrDefault(value, 0) + 1));
               if (doc.size() > 0) {
                 values.put(id, doc);
               }

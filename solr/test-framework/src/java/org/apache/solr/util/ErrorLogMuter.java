@@ -81,11 +81,7 @@ public final class ErrorLogMuter implements Closeable, AutoCloseable {
   public static ErrorLogMuter substring(final String substr) {
     final String name = createName("substring");
     log.info("Creating {} for ERROR logs containing the substring: {}", name, substr);
-    return new ErrorLogMuter(
-        name,
-        (str) -> {
-          return str.contains(substr);
-        });
+    return new ErrorLogMuter(name, (str) -> str.contains(substr));
   }
 
   /**
@@ -104,11 +100,7 @@ public final class ErrorLogMuter implements Closeable, AutoCloseable {
   public static ErrorLogMuter regex(final Pattern pat) {
     final String name = createName("regex");
     log.info("Creating {} for ERROR logs matching regex: {}", name, pat);
-    return new ErrorLogMuter(
-        name,
-        (str) -> {
-          return pat.matcher(str).find();
-        });
+    return new ErrorLogMuter(name, (str) -> pat.matcher(str).find());
   }
 
   private final String name;

@@ -29,7 +29,6 @@ import java.lang.invoke.MethodHandles;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
@@ -168,7 +167,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       if (!regexFilter.startsWith("(?i)")) regexFilter = "(?i)" + regexFilter;
 
       Pattern filterRegex = Pattern.compile(regexFilter);
-      List<String> filtered = new ArrayList<String>();
+      List<String> filtered = new ArrayList<>();
       for (String next : collections) {
         if (matches(filterRegex, next)) filtered.add(next);
       }
@@ -279,13 +278,13 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
         throws KeeperException, InterruptedException {
       if (cachedCollections == null) {
         // cache is stale, rebuild the full list ...
-        cachedCollections = new ArrayList<String>();
+        cachedCollections = new ArrayList<>();
 
         List<String> fromZk = zkClient.getChildren("/collections", this, true);
         if (fromZk != null) cachedCollections.addAll(fromZk);
 
         // sort the final merged set of collections
-        Collections.sort(cachedCollections, this);
+        cachedCollections.sort(this);
       }
 
       return cachedCollections;
@@ -334,7 +333,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
             // using longs here as we don't know how long the 2nd group is
             int leftGroup2 = Integer.parseInt(leftMatcher.group(2));
             int rightGroup2 = Integer.parseInt(rightMatcher.group(2));
-            return (leftGroup2 > rightGroup2) ? 1 : ((leftGroup2 == rightGroup2) ? 0 : -1);
+            return Integer.compare(leftGroup2, rightGroup2);
           }
         }
       }
@@ -554,7 +553,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
           page.selectPage(matchesStatusFilter);
 
           // rebuild the Map of state data
-          SortedMap<String, Object> map = new TreeMap<String, Object>(pagingSupport);
+          SortedMap<String, Object> map = new TreeMap<>(pagingSupport);
           for (String next : page.selected) map.put(next, collectionStates.get(next));
           collectionStates = map;
         }
@@ -676,10 +675,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
             }
             first = false;
           }
-        } catch (KeeperException e) {
-          writeError(500, e.toString());
-          return false;
-        } catch (InterruptedException e) {
+        } catch (KeeperException | InterruptedException e) {
           writeError(500, e.toString());
           return false;
         } catch (IllegalArgumentException e) {
@@ -760,10 +756,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
         }
 
         json.endObject();
-      } catch (KeeperException e) {
-        writeError(500, e.toString());
-        return false;
-      } catch (InterruptedException e) {
+      } catch (KeeperException | InterruptedException e) {
         writeError(500, e.toString());
         return false;
       }

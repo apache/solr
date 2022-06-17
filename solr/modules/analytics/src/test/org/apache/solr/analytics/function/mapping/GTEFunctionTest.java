@@ -130,17 +130,11 @@ public class GTEFunctionTest extends SolrTestCaseJ4 {
     // No values
     base.setValue(-4.2).setExists(true);
     comp.setValues();
-    func.streamBooleans(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamBooleans(value -> assertTrue("There should be no values to stream", false));
 
     base.setExists(false);
     comp.setValues(-4.2);
-    func.streamBooleans(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamBooleans(value -> assertTrue("There should be no values to stream", false));
 
     // One value
     base.setValue(-4.2).setExists(true);
@@ -178,17 +172,11 @@ public class GTEFunctionTest extends SolrTestCaseJ4 {
     // No values
     base.setValues();
     comp.setValue(-4.2).setExists(true);
-    func.streamBooleans(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamBooleans(value -> assertTrue("There should be no values to stream", false));
 
     base.setValues(-4.2);
     comp.setExists(false);
-    func.streamBooleans(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamBooleans(value -> assertTrue("There should be no values to stream", false));
 
     // One value
     base.setValues(-4.2);
@@ -226,17 +214,11 @@ public class GTEFunctionTest extends SolrTestCaseJ4 {
     // No values
     base.setValue("1800-01-02T10:20:30Z").setExists(true);
     comp.setValues();
-    func.streamBooleans(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamBooleans(value -> assertTrue("There should be no values to stream", false));
 
     base.setExists(false);
     comp.setValues("1800-01-02T10:20:30Z");
-    func.streamBooleans(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamBooleans(value -> assertTrue("There should be no values to stream", false));
 
     // One value
     base.setValue("1803-01-02T10:20:30Z").setExists(true);
@@ -279,17 +261,11 @@ public class GTEFunctionTest extends SolrTestCaseJ4 {
     // No values
     base.setValues();
     comp.setValue("1800-01-02T10:20:30Z").setExists(true);
-    func.streamBooleans(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamBooleans(value -> assertTrue("There should be no values to stream", false));
 
     base.setValues("1800-01-02T10:20:30Z");
     comp.setExists(false);
-    func.streamBooleans(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamBooleans(value -> assertTrue("There should be no values to stream", false));
 
     // One value
     base.setValues("1800-01-02T10:20:30Z");

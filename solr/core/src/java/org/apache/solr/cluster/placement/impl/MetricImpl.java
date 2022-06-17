@@ -88,11 +88,7 @@ public abstract class MetricImpl<T> implements Metric<T> {
     Objects.requireNonNull(internalName);
     this.name = name;
     this.internalName = internalName;
-    if (converter == null) {
-      this.converter = IDENTITY_CONVERTER;
-    } else {
-      this.converter = converter;
-    }
+    this.converter = Objects.requireNonNullElse(converter, IDENTITY_CONVERTER);
   }
 
   @Override

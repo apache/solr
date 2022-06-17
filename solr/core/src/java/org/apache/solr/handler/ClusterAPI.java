@@ -132,7 +132,7 @@ public class ClusterAPI {
   @SuppressWarnings("unchecked")
   public void rolesForNode(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     String node = req.getPathTemplateValues().get("node");
-    Map<String, String> ret = new HashMap<String, String>();
+    Map<String, String> ret = new HashMap<>();
     Map<String, Map<String, Set<String>>> roles =
         (Map<String, Map<String, Set<String>>>)
             readRecursive(

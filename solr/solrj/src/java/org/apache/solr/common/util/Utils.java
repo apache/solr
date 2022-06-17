@@ -153,7 +153,7 @@ public class Utils {
         throw new RuntimeException(e);
       }
     } else if (o instanceof Map) {
-      ((Map) o).forEach((k, v) -> fun.accept(k, v));
+      ((Map) o).forEach(fun);
     }
   }
 
@@ -719,10 +719,9 @@ public class Utils {
   public static final Pattern ARRAY_ELEMENT_INDEX = Pattern.compile("(\\S*?)\\[([-]?\\d+)\\]");
 
   public static SpecProvider getSpec(final String name) {
-    return () -> {
-      return ValidatingJsonMap.parse(
-          CommonParams.APISPEC_LOCATION + name + ".json", CommonParams.APISPEC_LOCATION);
-    };
+    return () ->
+        ValidatingJsonMap.parse(
+            CommonParams.APISPEC_LOCATION + name + ".json", CommonParams.APISPEC_LOCATION);
   }
 
   public static String parseMetricsReplicaName(String collectionName, String coreName) {

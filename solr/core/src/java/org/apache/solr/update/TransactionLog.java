@@ -86,21 +86,18 @@ public class TransactionLog implements Closeable {
 
   // write a BytesRef as a byte array
   protected static final JavaBinCodec.ObjectResolver resolver =
-      new JavaBinCodec.ObjectResolver() {
-        @Override
-        public Object resolve(Object o, JavaBinCodec codec) throws IOException {
-          if (o instanceof BytesRef) {
-            BytesRef br = (BytesRef) o;
-            codec.writeByteArray(br.bytes, br.offset, br.length);
-            return null;
-          }
-          // Fallback: we have no idea how to serialize this.  Be noisy to prevent insidious bugs
-          throw new SolrException(
-              SolrException.ErrorCode.SERVER_ERROR,
-              "TransactionLog doesn't know how to serialize "
-                  + o.getClass()
-                  + "; try implementing ObjectResolver?");
+      (o, codec) -> {
+        if (o instanceof BytesRef) {
+          BytesRef br = (BytesRef) o;
+          codec.writeByteArray(br.bytes, br.offset, br.length);
+          return null;
         }
+        // Fallback: we have no idea how to serialize this.  Be noisy to prevent insidious bugs
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "TransactionLog doesn't know how to serialize "
+                + o.getClass()
+                + "; try implementing ObjectResolver?");
       };
 
   public class LogCodec extends JavaBinCodec {
@@ -798,7 +795,7 @@ public class TransactionLog implements Closeable {
     }
   }
 
-  public abstract class ReverseReader {
+  public abstract static class ReverseReader {
 
     /**
      * Returns the next object from the log, or null if none available.

@@ -22,7 +22,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -159,18 +158,17 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     SolrException exception =
         expectThrows(
             SolrException.class,
-            () -> {
-              h.query(
-                  req(
-                      "q",
-                      "title:title",
-                      "group",
-                      "true",
-                      "group.field",
-                      "group_i",
-                      "group.offset",
-                      "-1"));
-            });
+            () ->
+                h.query(
+                    req(
+                        "q",
+                        "title:title",
+                        "group",
+                        "true",
+                        "group.field",
+                        "group_i",
+                        "group.offset",
+                        "-1")));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
     assertEquals("'group.offset' parameter cannot be negative", exception.getMessage());
 
@@ -1707,7 +1705,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
         // first sort the docs in each group
         for (Grp grp : groups.values()) {
-          Collections.sort(grp.docs, groupComparator);
+          grp.docs.sort(groupComparator);
         }
 
         // now sort the groups
@@ -1718,8 +1716,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         }
 
         List<Grp> sortedGroups = new ArrayList<>(groups.values());
-        Collections.sort(
-            sortedGroups,
+        sortedGroups.sort(
             groupComparator == sortComparator
                 ? createFirstDocComparator(sortComparator)
                 : createMaxDocComparator(sortComparator));

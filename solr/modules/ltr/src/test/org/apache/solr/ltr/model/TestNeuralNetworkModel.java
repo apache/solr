@@ -65,20 +65,20 @@ public class TestNeuralNetworkModel extends TestRerankBase {
   protected static Map<String, Object> createLayerParams(
       double[][] matrix, double[] bias, String activation) {
 
-    final ArrayList<ArrayList<Double>> matrixList = new ArrayList<ArrayList<Double>>();
+    final ArrayList<ArrayList<Double>> matrixList = new ArrayList<>();
     for (int row = 0; row < matrix.length; row++) {
-      matrixList.add(new ArrayList<Double>());
+      matrixList.add(new ArrayList<>());
       for (int col = 0; col < matrix[row].length; col++) {
         matrixList.get(row).add(matrix[row][col]);
       }
     }
 
-    final ArrayList<Double> biasList = new ArrayList<Double>();
-    for (int i = 0; i < bias.length; i++) {
-      biasList.add(bias[i]);
+    final ArrayList<Double> biasList = new ArrayList<>();
+    for (double bia : bias) {
+      biasList.add(bia);
     }
 
-    final Map<String, Object> layer = new HashMap<String, Object>();
+    final Map<String, Object> layer = new HashMap<>();
     layer.put("matrix", matrixList);
     layer.put("bias", biasList);
     layer.put("activation", activation);
@@ -124,8 +124,8 @@ public class TestNeuralNetworkModel extends TestRerankBase {
 
     double[] biasTwo = {outputNodeBias};
 
-    Map<String, Object> params = new HashMap<String, Object>();
-    ArrayList<Map<String, Object>> layers = new ArrayList<Map<String, Object>>();
+    Map<String, Object> params = new HashMap<>();
+    ArrayList<Map<String, Object>> layers = new ArrayList<>();
 
     layers.add(createLayerParams(matrixOne, biasOne, "relu"));
     layers.add(createLayerParams(matrixTwo, biasTwo, "relu"));
@@ -144,8 +144,7 @@ public class TestNeuralNetworkModel extends TestRerankBase {
     assertEquals(4, featuresInModel.size()); // the test model uses four features
 
     final List<Normalizer> norms =
-        new ArrayList<Normalizer>(
-            Collections.nCopies(featuresInModel.size(), IdentityNormalizer.INSTANCE));
+        new ArrayList<>(Collections.nCopies(featuresInModel.size(), IdentityNormalizer.INSTANCE));
     final LTRScoringModel ltrScoringModel =
         createNeuralNetworkModel(
             "test_score", featuresInModel, norms, "test_score", allFeaturesInStore, params);
@@ -258,10 +257,9 @@ public class TestNeuralNetworkModel extends TestRerankBase {
     Exception ex =
         expectThrows(
             Exception.class,
-            () -> {
-              createModelFromFiles(
-                  "neuralnetworkmodel_bad_activation.json", "neuralnetworkmodel_features.json");
-            });
+            () ->
+                createModelFromFiles(
+                    "neuralnetworkmodel_bad_activation.json", "neuralnetworkmodel_features.json"));
     Throwable rootError = getRootCause(ex);
     assertEquals(expectedException.toString(), rootError.toString());
   }
@@ -275,10 +273,9 @@ public class TestNeuralNetworkModel extends TestRerankBase {
     Exception ex =
         expectThrows(
             Exception.class,
-            () -> {
-              createModelFromFiles(
-                  "neuralnetworkmodel_mismatch_bias.json", "neuralnetworkmodel_features.json");
-            });
+            () ->
+                createModelFromFiles(
+                    "neuralnetworkmodel_mismatch_bias.json", "neuralnetworkmodel_features.json"));
     Throwable rootError = getRootCause(ex);
     assertEquals(expectedException.toString(), rootError.toString());
   }
@@ -292,10 +289,9 @@ public class TestNeuralNetworkModel extends TestRerankBase {
     Exception ex =
         expectThrows(
             Exception.class,
-            () -> {
-              createModelFromFiles(
-                  "neuralnetworkmodel_mismatch_input.json", "neuralnetworkmodel_features.json");
-            });
+            () ->
+                createModelFromFiles(
+                    "neuralnetworkmodel_mismatch_input.json", "neuralnetworkmodel_features.json"));
     Throwable rootError = getRootCause(ex);
     assertEquals(expectedException.toString(), rootError.toString());
   }
@@ -309,10 +305,9 @@ public class TestNeuralNetworkModel extends TestRerankBase {
     Exception ex =
         expectThrows(
             Exception.class,
-            () -> {
-              createModelFromFiles(
-                  "neuralnetworkmodel_mismatch_layers.json", "neuralnetworkmodel_features.json");
-            });
+            () ->
+                createModelFromFiles(
+                    "neuralnetworkmodel_mismatch_layers.json", "neuralnetworkmodel_features.json"));
     Throwable rootError = getRootCause(ex);
     assertEquals(expectedException.toString(), rootError.toString());
   }
@@ -326,10 +321,9 @@ public class TestNeuralNetworkModel extends TestRerankBase {
     Exception ex =
         expectThrows(
             Exception.class,
-            () -> {
-              createModelFromFiles(
-                  "neuralnetworkmodel_too_many_rows.json", "neuralnetworkmodel_features.json");
-            });
+            () ->
+                createModelFromFiles(
+                    "neuralnetworkmodel_too_many_rows.json", "neuralnetworkmodel_features.json"));
     Throwable rootError = getRootCause(ex);
     assertEquals(expectedException.toString(), rootError.toString());
   }
@@ -343,9 +337,9 @@ public class TestNeuralNetworkModel extends TestRerankBase {
 
     final float[] featureValues = {1.2f, 3.4f, 5.6f, 7.8f};
 
-    final List<Explanation> explanations = new ArrayList<Explanation>();
-    for (int ii = 0; ii < featureValues.length; ++ii) {
-      explanations.add(Explanation.match(featureValues[ii], ""));
+    final List<Explanation> explanations = new ArrayList<>();
+    for (float featureValue : featureValues) {
+      explanations.add(Explanation.match(featureValue, ""));
     }
 
     final float finalScore = model.score(featureValues);
@@ -377,13 +371,7 @@ public class TestNeuralNetworkModel extends TestRerankBase {
         super.setActivation(o);
         switch (this.activationStr) {
           case "answer":
-            this.activation =
-                new Activation() {
-                  @Override
-                  public float apply(float in) {
-                    return in * 42f;
-                  }
-                };
+            this.activation = in -> in * 42f;
             break;
           default:
             break;
@@ -416,9 +404,9 @@ public class TestNeuralNetworkModel extends TestRerankBase {
     float actualScore = model.score(featureValues);
     assertEquals(expectedScore, actualScore, 0.001);
 
-    final List<Explanation> explanations = new ArrayList<Explanation>();
-    for (int ii = 0; ii < featureValues.length; ++ii) {
-      explanations.add(Explanation.match(featureValues[ii], ""));
+    final List<Explanation> explanations = new ArrayList<>();
+    for (float featureValue : featureValues) {
+      explanations.add(Explanation.match(featureValue, ""));
     }
     final Explanation explanation = model.explain(null, 0, actualScore, explanations);
     assertEquals(

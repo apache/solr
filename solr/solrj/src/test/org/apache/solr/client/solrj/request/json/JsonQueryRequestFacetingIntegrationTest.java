@@ -18,7 +18,6 @@
 package org.apache.solr.client.solrj.request.json;
 
 import java.io.File;
-import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
@@ -159,13 +158,10 @@ public class JsonQueryRequestFacetingIntegrationTest extends SolrCloudTestCase {
   @Test
   public void testFacetCanBeRepresentedByMapWriter() throws Exception {
     final MapWriter categoriesFacet =
-        new MapWriter() {
-          @Override
-          public void writeMap(EntryWriter ew) throws IOException {
-            ew.put("type", "terms");
-            ew.put("field", "cat");
-            ew.put("limit", 3);
-          }
+        ew -> {
+          ew.put("type", "terms");
+          ew.put("field", "cat");
+          ew.put("limit", 3);
         };
     final JsonQueryRequest request =
         new JsonQueryRequest().setQuery("*:*").withFacet("top_cats", categoriesFacet);
@@ -592,7 +588,7 @@ public class JsonQueryRequestFacetingIntegrationTest extends SolrCloudTestCase {
     assertEquals(7, topLevelFacetData.getBucketBasedFacets("price_range").getBetween());
   }
 
-  private class FacetBucket {
+  private static class FacetBucket {
     private final Object val;
     private final int count;
 

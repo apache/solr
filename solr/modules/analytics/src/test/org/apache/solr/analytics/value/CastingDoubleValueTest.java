@@ -67,10 +67,7 @@ public class CastingDoubleValueTest extends SolrTestCaseJ4 {
 
     // No values
     val.setExists(false);
-    casted.streamDoubles(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    casted.streamDoubles(value -> assertTrue("There should be no values to stream", false));
 
     // Multiple Values
     val.setValue(20.0).setExists(true);
@@ -92,10 +89,7 @@ public class CastingDoubleValueTest extends SolrTestCaseJ4 {
 
     // No values
     val.setExists(false);
-    casted.streamStrings(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    casted.streamStrings(value -> assertTrue("There should be no values to stream", false));
 
     // Multiple Values
     val.setValue(20.0).setExists(true);
@@ -117,10 +111,7 @@ public class CastingDoubleValueTest extends SolrTestCaseJ4 {
 
     // No values
     val.setExists(false);
-    casted.streamObjects(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    casted.streamObjects(value -> assertTrue("There should be no values to stream", false));
 
     // Multiple Values
     val.setValue(20.0).setExists(true);

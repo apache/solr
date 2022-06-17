@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import org.apache.commons.math3.stat.Frequency;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
@@ -46,7 +47,7 @@ public class FrequencyTableEvaluator extends RecursiveNumericEvaluator implement
 
   @Override
   public Object doWork(Object... values) throws IOException {
-    if (Arrays.stream(values).anyMatch(item -> null == item)) {
+    if (Arrays.stream(values).anyMatch(Objects::isNull)) {
       return null;
     }
 
@@ -77,7 +78,7 @@ public class FrequencyTableEvaluator extends RecursiveNumericEvaluator implement
     while (iterator.hasNext()) {
       Long value = (Long) iterator.next();
       Tuple tuple = new Tuple();
-      tuple.put("value", value.longValue());
+      tuple.put("value", value);
       tuple.put("count", frequency.getCount(value));
       tuple.put("cumFreq", frequency.getCumFreq(value));
       tuple.put("cumPct", frequency.getCumPct(value));

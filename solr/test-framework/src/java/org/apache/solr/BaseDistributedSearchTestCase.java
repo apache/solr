@@ -34,6 +34,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
@@ -786,7 +787,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   public static boolean eq(String a, String b) {
-    return a == b || (a != null && a.equals(b));
+    return Objects.equals(a, b);
   }
 
   public static int flags(Map<String, Integer> handle, Object key) {
@@ -964,8 +965,8 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
         // no id field to correlate... must compare ordered
         docb = b.get(i);
       } else {
-        for (int j = 0; j < b.size(); j++) {
-          docb = b.get(j);
+        for (SolrDocument entries : b) {
+          docb = entries;
           if (key.equals(docb.getFirstValue("id"))) break;
         }
       }
@@ -1019,7 +1020,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     }
 
     if (a instanceof List && b instanceof List) {
-      return compare(((List) a).toArray(), ((List) b).toArray(), flags, handle);
+      return compare(((List<?>) a).toArray(), ((List<?>) b).toArray(), flags, handle);
     }
 
     // equivalent integer numbers
@@ -1034,8 +1035,8 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
     if ((flags & FUZZY) != 0) {
       if ((a instanceof Double && b instanceof Double)) {
-        double aaa = ((Double) a).doubleValue();
-        double bbb = ((Double) b).doubleValue();
+        double aaa = (Double) a;
+        double bbb = (Double) b;
         if (aaa == bbb || ((Double) a).isNaN() && ((Double) b).isNaN()) {
           return null;
         }

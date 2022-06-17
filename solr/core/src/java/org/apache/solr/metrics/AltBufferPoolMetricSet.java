@@ -37,9 +37,9 @@ public class AltBufferPoolMetricSet implements MetricSet {
     List<BufferPoolMXBean> pools = ManagementFactory.getPlatformMXBeans(BufferPoolMXBean.class);
     for (final BufferPoolMXBean pool : pools) {
       String name = pool.getName();
-      metrics.put(name + ".Count", (Gauge<Long>) () -> pool.getCount());
-      metrics.put(name + ".MemoryUsed", (Gauge<Long>) () -> pool.getMemoryUsed());
-      metrics.put(name + ".TotalCapacity", (Gauge<Long>) () -> pool.getTotalCapacity());
+      metrics.put(name + ".Count", (Gauge<Long>) pool::getCount);
+      metrics.put(name + ".MemoryUsed", (Gauge<Long>) pool::getMemoryUsed);
+      metrics.put(name + ".TotalCapacity", (Gauge<Long>) pool::getTotalCapacity);
     }
     return metrics;
   }

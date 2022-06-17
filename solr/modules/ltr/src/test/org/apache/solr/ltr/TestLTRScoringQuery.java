@@ -66,7 +66,7 @@ public class TestLTRScoringQuery extends SolrTestCase {
   private static List<Feature> makeFeatures(int[] featureIds) {
     final List<Feature> features = new ArrayList<>();
     for (final int i : featureIds) {
-      Map<String, Object> params = new HashMap<String, Object>();
+      Map<String, Object> params = new HashMap<>();
       params.put("value", i);
       final Feature f =
           Feature.getInstance(solrResourceLoader, ValueFeature.class.getName(), "f" + i, params);
@@ -79,7 +79,7 @@ public class TestLTRScoringQuery extends SolrTestCase {
   private static List<Feature> makeFilterFeatures(int[] featureIds) {
     final List<Feature> features = new ArrayList<>();
     for (final int i : featureIds) {
-      Map<String, Object> params = new HashMap<String, Object>();
+      Map<String, Object> params = new HashMap<>();
       params.put("value", i);
       final Feature f =
           Feature.getInstance(solrResourceLoader, ValueFeature.class.getName(), "f" + i, params);
@@ -116,8 +116,7 @@ public class TestLTRScoringQuery extends SolrTestCase {
   public void testLTRScoringQueryEquality() throws ModelException {
     final List<Feature> features = makeFeatures(new int[] {0, 1, 2});
     final List<Normalizer> norms =
-        new ArrayList<Normalizer>(
-            Collections.nCopies(features.size(), IdentityNormalizer.INSTANCE));
+        new ArrayList<>(Collections.nCopies(features.size(), IdentityNormalizer.INSTANCE));
     final List<Feature> allFeatures = makeFeatures(new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
     final Map<String, Object> modelParams = TestLinearModel.makeFeatureWeights(features);
 
@@ -200,8 +199,7 @@ public class TestLTRScoringQuery extends SolrTestCase {
     List<Feature> features = makeFeatures(new int[] {0, 1, 2});
     final List<Feature> allFeatures = makeFeatures(new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
     List<Normalizer> norms =
-        new ArrayList<Normalizer>(
-            Collections.nCopies(features.size(), IdentityNormalizer.INSTANCE));
+        new ArrayList<>(Collections.nCopies(features.size(), IdentityNormalizer.INSTANCE));
     LTRScoringModel ltrScoringModel =
         TestLinearModel.createLinearModel(
             "test",
@@ -231,9 +229,7 @@ public class TestLTRScoringQuery extends SolrTestCase {
 
     final int[] mixPositions = new int[] {8, 2, 4, 9, 0};
     features = makeFeatures(mixPositions);
-    norms =
-        new ArrayList<Normalizer>(
-            Collections.nCopies(features.size(), IdentityNormalizer.INSTANCE));
+    norms = new ArrayList<>(Collections.nCopies(features.size(), IdentityNormalizer.INSTANCE));
     ltrScoringModel =
         TestLinearModel.createLinearModel(
             "test",
@@ -255,9 +251,7 @@ public class TestLTRScoringQuery extends SolrTestCase {
         new ModelException("no features declared for model test");
     final int[] noPositions = new int[] {};
     features = makeFeatures(noPositions);
-    norms =
-        new ArrayList<Normalizer>(
-            Collections.nCopies(features.size(), IdentityNormalizer.INSTANCE));
+    norms = new ArrayList<>(Collections.nCopies(features.size(), IdentityNormalizer.INSTANCE));
     try {
       ltrScoringModel =
           TestLinearModel.createLinearModel(
@@ -293,7 +287,7 @@ public class TestLTRScoringQuery extends SolrTestCase {
           @Override
           protected void validate() throws NormalizerException {}
         };
-    norms = new ArrayList<Normalizer>(Collections.nCopies(features.size(), norm));
+    norms = new ArrayList<>(Collections.nCopies(features.size(), norm));
     final LTRScoringModel normMeta =
         TestLinearModel.createLinearModel(
             "test",

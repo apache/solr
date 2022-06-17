@@ -130,11 +130,7 @@ public abstract class QParser {
   }
 
   private static void addTag(Map<Object, Collection<Object>> tagMap, Object key, Object val) {
-    Collection<Object> lst = tagMap.get(key);
-    if (lst == null) {
-      lst = new ArrayList<>(2);
-      tagMap.put(key, lst);
-    }
+    Collection<Object> lst = tagMap.computeIfAbsent(key, k -> new ArrayList<>(2));
     lst.add(val);
   }
 

@@ -272,7 +272,7 @@ public class PackageLoader implements Closeable {
         List<Path> paths = new ArrayList<>();
 
         List<String> errs = new ArrayList<>();
-        coreContainer.getPackageStoreAPI().validateFiles(version.files, true, s -> errs.add(s));
+        coreContainer.getPackageStoreAPI().validateFiles(version.files, true, errs::add);
         if (!errs.isEmpty()) {
           throw new RuntimeException("Cannot load package: " + errs);
         }

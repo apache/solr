@@ -260,8 +260,8 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
       SolrQueryResponse rsp = new SolrQueryResponse();
       handleRequestBody(req, rsp);
       Map<String, Object> data = m.get("/security.json").getData();
-      ((Map) data.get("authentication")).remove("");
-      ((Map) data.get("authorization")).remove("");
+      ((Map<?, ?>) data.get("authentication")).remove("");
+      ((Map<?, ?>) data.get("authorization")).remove("");
       return Utils.toJSONString(data);
     }
   }

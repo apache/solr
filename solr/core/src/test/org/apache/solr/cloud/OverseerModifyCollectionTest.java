@@ -56,12 +56,11 @@ public class OverseerModifyCollectionTest extends SolrCloudTestCase {
     Exception e =
         expectThrows(
             Exception.class,
-            () -> {
-              CollectionAdminRequest.modifyCollection(
-                      collName,
-                      Collections.singletonMap("collection.configName", "notARealConfigName"))
-                  .process(cluster.getSolrClient());
-            });
+            () ->
+                CollectionAdminRequest.modifyCollection(
+                        collName,
+                        Collections.singletonMap("collection.configName", "notARealConfigName"))
+                    .process(cluster.getSolrClient()));
 
     assertTrue(e.getMessage(), e.getMessage().contains("Can not find the specified config set"));
   }

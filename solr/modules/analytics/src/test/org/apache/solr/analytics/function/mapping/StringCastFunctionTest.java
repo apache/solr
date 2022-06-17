@@ -63,10 +63,7 @@ public class StringCastFunctionTest extends SolrTestCaseJ4 {
 
     // No values
     val.setValues();
-    func.streamStrings(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamStrings(value -> assertTrue("There should be no values to stream", false));
 
     // One value
     val.setValues(true);

@@ -88,8 +88,8 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
     String[] captureFields = params.getParams(CAPTURE_ELEMENTS);
     if (captureFields != null && captureFields.length > 0) {
       fieldBuilders = new HashMap<>();
-      for (int i = 0; i < captureFields.length; i++) {
-        fieldBuilders.put(captureFields[i], new StringBuilder());
+      for (String captureField : captureFields) {
+        fieldBuilders.put(captureField, new StringBuilder());
       }
     } else {
       fieldBuilders = Collections.emptyMap();

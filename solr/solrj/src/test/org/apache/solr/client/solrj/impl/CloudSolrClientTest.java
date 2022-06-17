@@ -275,9 +275,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     }
     CloudSolrClient.RouteResponse rr = (CloudSolrClient.RouteResponse) response;
     Map<String, LBSolrClient.Req> routes = rr.getRoutes();
-    Iterator<Map.Entry<String, LBSolrClient.Req>> it = routes.entrySet().iterator();
-    while (it.hasNext()) {
-      Map.Entry<String, LBSolrClient.Req> entry = it.next();
+    for (Map.Entry<String, LBSolrClient.Req> entry : routes.entrySet()) {
       String url = entry.getKey();
       UpdateRequest updateRequest = (UpdateRequest) entry.getValue().getRequest();
       SolrInputDocument doc = updateRequest.getDocuments().get(0);
@@ -321,9 +319,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       }
       rr = (CloudSolrClient.RouteResponse) response;
       routes = rr.getRoutes();
-      it = routes.entrySet().iterator();
-      while (it.hasNext()) {
-        Map.Entry<String, LBSolrClient.Req> entry = it.next();
+      for (Map.Entry<String, LBSolrClient.Req> entry : routes.entrySet()) {
         String url = entry.getKey();
         UpdateRequest updateRequest = (UpdateRequest) entry.getValue().getRequest();
         SolrInputDocument doc = updateRequest.getDocuments().get(0);
@@ -484,12 +480,12 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     SimpleOrderedMap<?> shardsInfoMap = (SimpleOrderedMap<?>) shardsInfo;
     @SuppressWarnings({"unchecked"})
     Iterator<Map.Entry<String, ?>> itr = shardsInfoMap.asMap(100).entrySet().iterator();
-    List<String> shardAddresses = new ArrayList<String>();
+    List<String> shardAddresses = new ArrayList<>();
     while (itr.hasNext()) {
       Map.Entry<String, ?> e = itr.next();
       assertTrue(
           "Did not find map-type value in " + ShardParams.SHARDS_INFO, e.getValue() instanceof Map);
-      String shardAddress = (String) ((Map) e.getValue()).get("shardAddress");
+      String shardAddress = (String) ((Map<?, ?>) e.getValue()).get("shardAddress");
       assertNotNull(
           ShardParams.SHARDS_INFO + " did not return 'shardAddress' parameter", shardAddress);
       shardAddresses.add(shardAddress);
@@ -499,7 +495,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     }
 
     // Make sure the distributed queries were directed to a single node only
-    Set<Integer> ports = new HashSet<Integer>();
+    Set<Integer> ports = new HashSet<>();
     for (String shardAddr : shardAddresses) {
       URL url = new URL(shardAddr);
       ports.add(url.getPort());
@@ -562,12 +558,12 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     SimpleOrderedMap<?> shardsInfoMap = (SimpleOrderedMap<?>) shardsInfo;
     @SuppressWarnings({"unchecked"})
     Iterator<Map.Entry<String, ?>> itr = shardsInfoMap.asMap(100).entrySet().iterator();
-    List<String> shardAddresses = new ArrayList<String>();
+    List<String> shardAddresses = new ArrayList<>();
     while (itr.hasNext()) {
       Map.Entry<String, ?> e = itr.next();
       assertTrue(
           "Did not find map-type value in " + ShardParams.SHARDS_INFO, e.getValue() instanceof Map);
-      String shardAddress = (String) ((Map) e.getValue()).get("shardAddress");
+      String shardAddress = (String) ((Map<?, ?>) e.getValue()).get("shardAddress");
       if (shardAddress.endsWith("/")) {
         shardAddress = shardAddress.substring(0, shardAddress.length() - 1);
       }
@@ -1022,9 +1018,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   private static void checkSingleServer(NamedList<Object> response) {
     final CloudSolrClient.RouteResponse rr = (CloudSolrClient.RouteResponse) response;
     final Map<String, LBSolrClient.Req> routes = rr.getRoutes();
-    final Iterator<Map.Entry<String, LBSolrClient.Req>> it = routes.entrySet().iterator();
-    while (it.hasNext()) {
-      Map.Entry<String, LBSolrClient.Req> entry = it.next();
+    for (Map.Entry<String, LBSolrClient.Req> entry : routes.entrySet()) {
       assertEquals(
           "wrong number of servers: " + entry.getValue().getServers(),
           1,
@@ -1121,7 +1115,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       Map.Entry<String, ?> e = itr.next();
       assertTrue(
           "Did not find map-type value in " + ShardParams.SHARDS_INFO, e.getValue() instanceof Map);
-      String shardAddress = (String) ((Map) e.getValue()).get("shardAddress");
+      String shardAddress = (String) ((Map<?, ?>) e.getValue()).get("shardAddress");
       assertNotNull(
           ShardParams.SHARDS_INFO + " did not return 'shardAddress' parameter", shardAddress);
       assertTrue(replicaTypeMap.containsKey(shardAddress));

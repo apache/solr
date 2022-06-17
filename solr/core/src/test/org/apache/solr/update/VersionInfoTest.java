@@ -115,7 +115,7 @@ public class VersionInfoTest extends SolrTestCaseJ4 {
             + version
             + " ?< "
             + maxVersionFromUlog,
-        version < maxVersionFromUlog.longValue());
+        version < maxVersionFromUlog);
 
     version = vInfo.getVersionFromIndex(idBytes);
     assertNull("version info should be null for uncommited test doc: " + docId, version);

@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -110,7 +109,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     }
     SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
     try {
-      handleRequest(req.getParams(), (k, v) -> rsp.add(k, v));
+      handleRequest(req.getParams(), rsp::add);
     } finally {
       SolrRequestInfo.clearRequestInfo();
     }
@@ -153,7 +152,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
           false,
           compact,
           false,
-          (k, v) -> result.add(k, v));
+          result::add);
       if (result.size() > 0) {
         response.add(registryName, result);
       }
@@ -203,16 +202,15 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     // find matching registries first, to avoid scanning non-matching registries
     Set<String> matchingRegistries = new TreeSet<>();
     metricsExprs.forEach(
-        me -> {
-          metricManager
-              .registryNames()
-              .forEach(
-                  name -> {
-                    if (me.registryRegex.matcher(name).matches()) {
-                      matchingRegistries.add(name);
-                    }
-                  });
-        });
+        me ->
+            metricManager
+                .registryNames()
+                .forEach(
+                    name -> {
+                      if (me.registryRegex.matcher(name).matches()) {
+                        matchingRegistries.add(name);
+                      }
+                    }));
     for (String registryName : matchingRegistries) {
       MetricRegistry registry = metricManager.registry(registryName);
       for (MetricsExpr me : metricsExprs) {
@@ -233,16 +231,14 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
             false,
             true,
             false,
-            (k, v) -> perRegistryTemp.add(k, v));
+            perRegistryTemp::add);
         // extracted some metrics and there's no entry for this registry yet
         if (perRegistryTemp.size() > 0) {
           if (perRegistryResult == null) { // new results for this registry
             result.add(registryName, perRegistryTemp);
           } else {
             // merge if needed
-            for (Iterator<Map.Entry<String, Object>> it = perRegistryTemp.iterator();
-                it.hasNext(); ) {
-              Map.Entry<String, Object> entry = it.next();
+            for (Map.Entry<String, Object> entry : perRegistryTemp) {
               Object existing = perRegistryResult.get(entry.getKey());
               if (existing == null) {
                 perRegistryResult.add(entry.getKey(), entry.getValue());
@@ -384,7 +380,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     if (filter.isEmpty()) {
       return MetricUtils.ALL_PROPERTIES;
     } else {
-      return (name) -> filter.contains(name);
+      return filter::contains;
     }
   }
 

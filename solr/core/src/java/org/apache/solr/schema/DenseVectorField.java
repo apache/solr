@@ -99,7 +99,7 @@ public class DenseVectorField extends FloatPointField {
   public void init(IndexSchema schema, Map<String, String> args) {
     this.dimension =
         ofNullable(args.get(KNN_VECTOR_DIMENSION))
-            .map(value -> Integer.parseInt(value))
+            .map(Integer::parseInt)
             .orElseThrow(
                 () ->
                     new SolrException(
@@ -117,15 +117,11 @@ public class DenseVectorField extends FloatPointField {
     args.remove(CODEC_FORMAT);
 
     this.hnswMaxConn =
-        ofNullable(args.get(HNSW_MAX_CONNECTIONS))
-            .map(value -> Integer.parseInt(value))
-            .orElse(DEFAULT_MAX_CONN);
+        ofNullable(args.get(HNSW_MAX_CONNECTIONS)).map(Integer::parseInt).orElse(DEFAULT_MAX_CONN);
     args.remove(HNSW_MAX_CONNECTIONS);
 
     this.hnswBeamWidth =
-        ofNullable(args.get(HNSW_BEAM_WIDTH))
-            .map(value -> Integer.parseInt(value))
-            .orElse(DEFAULT_BEAM_WIDTH);
+        ofNullable(args.get(HNSW_BEAM_WIDTH)).map(Integer::parseInt).orElse(DEFAULT_BEAM_WIDTH);
     args.remove(HNSW_BEAM_WIDTH);
 
     this.properties &= ~MULTIVALUED;

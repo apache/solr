@@ -271,10 +271,7 @@ public final class LogListener implements Closeable, AutoCloseable {
    * <p>At most one filtering method may be used
    */
   public LogListener substring(final String substr) {
-    setPredicate(
-        (str) -> {
-          return str.contains(substr);
-        });
+    setPredicate((str) -> str.contains(substr));
     return this;
   }
 
@@ -289,10 +286,7 @@ public final class LogListener implements Closeable, AutoCloseable {
    * <p>At most one filtering method may be used
    */
   public LogListener regex(final Pattern pat) {
-    setPredicate(
-        (str) -> {
-          return pat.matcher(str).find();
-        });
+    setPredicate((str) -> pat.matcher(str).find());
     return this;
   }
 
@@ -372,8 +366,7 @@ public final class LogListener implements Closeable, AutoCloseable {
     // specialized impl instead of writing & combining multiple generalized versions
 
     // may be mutated in main thread while background thread is actively logging
-    public final AtomicReference<Predicate<String>> predicate =
-        new AtomicReference<Predicate<String>>(null);
+    public final AtomicReference<Predicate<String>> predicate = new AtomicReference<>(null);
 
     final Level level;
 

@@ -462,7 +462,7 @@ public class TermsComponent extends SearchComponent {
         for (String field : fields) {
           // TODO: not sure 128 is the best starting size
           // It use it because that is what is used for facets
-          fieldmap.put(field, new HashMap<String, TermsResponse.Term>(128));
+          fieldmap.put(field, new HashMap<>(128));
         }
       }
     }
@@ -570,7 +570,7 @@ public class TermsComponent extends SearchComponent {
     public TermsResponse.Term[] getLexSorted(HashMap<String, TermsResponse.Term> data) {
       TermsResponse.Term[] arr = data.values().toArray(new TermsResponse.Term[data.size()]);
 
-      Arrays.sort(arr, (o1, o2) -> o1.getTerm().compareTo(o2.getTerm()));
+      Arrays.sort(arr, Comparator.comparing(TermsResponse.Term::getTerm));
 
       return arr;
     }
@@ -708,7 +708,7 @@ public class TermsComponent extends SearchComponent {
 
   private static void collectStats(SolrIndexSearcher searcher, NamedList<Number> stats) {
     int numDocs = searcher.getTopReaderContext().reader().numDocs();
-    stats.add("numDocs", Long.valueOf(numDocs));
+    stats.add("numDocs", (long) numDocs);
   }
 
   @Override

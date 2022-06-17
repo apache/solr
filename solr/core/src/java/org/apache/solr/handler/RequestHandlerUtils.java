@@ -49,7 +49,7 @@ public class RequestHandlerUtils {
       SolrQueryRequest req, UpdateRequestProcessor processor, SolrParams params, boolean force)
       throws IOException {
     if (params == null) {
-      params = new MapSolrParams(new HashMap<String, String>());
+      params = new MapSolrParams(new HashMap<>());
     }
 
     boolean optimize = params.getBool(UpdateParams.OPTIMIZE, false);
@@ -110,7 +110,7 @@ public class RequestHandlerUtils {
       SolrQueryRequest req, UpdateRequestProcessor processor, SolrParams params, boolean force)
       throws IOException {
     if (params == null) {
-      params = new MapSolrParams(new HashMap<String, String>());
+      params = new MapSolrParams(new HashMap<>());
     }
 
     boolean rollback = params.getBool(UpdateParams.ROLLBACK, false);

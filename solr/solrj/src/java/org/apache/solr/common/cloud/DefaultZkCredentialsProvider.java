@@ -34,6 +34,6 @@ public class DefaultZkCredentialsProvider implements ZkCredentialsProvider {
   }
 
   protected Collection<ZkCredentials> createCredentials() {
-    return new ArrayList<ZkCredentials>();
+    return new ArrayList<>();
   }
 }

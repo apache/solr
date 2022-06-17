@@ -48,7 +48,7 @@ public interface FloatValueStream extends AnalyticsValueStream {
   public abstract static class AbstractFloatValueStream implements CastingFloatValueStream {
     @Override
     public void streamDoubles(DoubleConsumer cons) {
-      streamFloats((float val) -> cons.accept(val));
+      streamFloats(cons::accept);
     }
 
     @Override
@@ -58,7 +58,7 @@ public interface FloatValueStream extends AnalyticsValueStream {
 
     @Override
     public void streamObjects(Consumer<Object> cons) {
-      streamFloats((float val) -> cons.accept(val));
+      streamFloats(cons::accept);
     }
 
     @Override

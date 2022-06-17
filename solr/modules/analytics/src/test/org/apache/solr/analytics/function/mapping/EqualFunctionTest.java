@@ -199,17 +199,11 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
     // No values
     val1.setValues();
     val2.setValue(false).setExists(true);
-    func.streamBooleans(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamBooleans(value -> assertTrue("There should be no values to stream", false));
 
     val1.setValues(true);
     val2.setExists(false);
-    func.streamBooleans(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamBooleans(value -> assertTrue("There should be no values to stream", false));
 
     // One value
     val1.setValues(false);
@@ -247,17 +241,11 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
     // No values
     val1.setValues();
     val2.setValue(false).setExists(true);
-    func.streamBooleans(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamBooleans(value -> assertTrue("There should be no values to stream", false));
 
     val1.setValues(true);
     val2.setExists(false);
-    func.streamBooleans(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamBooleans(value -> assertTrue("There should be no values to stream", false));
 
     // One value
     val1.setValues(false);
@@ -295,17 +283,11 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
     // No values
     val1.setValues();
     val2.setValue(-4.2).setExists(true);
-    func.streamBooleans(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamBooleans(value -> assertTrue("There should be no values to stream", false));
 
     val1.setValues(-4.2);
     val2.setExists(false);
-    func.streamBooleans(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamBooleans(value -> assertTrue("There should be no values to stream", false));
 
     // One value
     val1.setValues(-4.2);
@@ -343,17 +325,11 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
     // No values
     val1.setValues();
     val2.setValue(-4.2).setExists(true);
-    func.streamBooleans(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamBooleans(value -> assertTrue("There should be no values to stream", false));
 
     val1.setValues(-4.2);
     val2.setExists(false);
-    func.streamBooleans(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamBooleans(value -> assertTrue("There should be no values to stream", false));
 
     // One value
     val1.setValues(-4.2);
@@ -391,17 +367,11 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
     // No values
     val1.setValues();
     val2.setValue("1800-01-02T10:20:30Z").setExists(true);
-    func.streamBooleans(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamBooleans(value -> assertTrue("There should be no values to stream", false));
 
     val1.setValues("1800-01-02T10:20:30Z");
     val2.setExists(false);
-    func.streamBooleans(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamBooleans(value -> assertTrue("There should be no values to stream", false));
 
     // One value
     val1.setValues("1800-01-02T10:20:30Z");
@@ -443,17 +413,11 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
     // No values
     val1.setValues();
     val2.setValue("1800-01-02T10:20:30Z").setExists(true);
-    func.streamBooleans(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamBooleans(value -> assertTrue("There should be no values to stream", false));
 
     val1.setValues("1800-01-02T10:20:30Z");
     val2.setExists(false);
-    func.streamBooleans(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamBooleans(value -> assertTrue("There should be no values to stream", false));
 
     // One value
     val1.setValues("1800-01-02T10:20:30Z");
@@ -495,17 +459,11 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
     // No values
     val1.setValues();
     val2.setValue("abcdefghi").setExists(true);
-    func.streamBooleans(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamBooleans(value -> assertTrue("There should be no values to stream", false));
 
     val1.setValues("abcdefghi");
     val2.setExists(false);
-    func.streamBooleans(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamBooleans(value -> assertTrue("There should be no values to stream", false));
 
     // One value
     val1.setValues("abcdefghi");
@@ -543,17 +501,11 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
     // No values
     val1.setValues();
     val2.setValue("abcdefghi").setExists(true);
-    func.streamBooleans(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamBooleans(value -> assertTrue("There should be no values to stream", false));
 
     val1.setValues("abcdefghi");
     val2.setExists(false);
-    func.streamBooleans(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamBooleans(value -> assertTrue("There should be no values to stream", false));
 
     // One value
     val1.setValues("abcdefghi");

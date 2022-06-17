@@ -100,7 +100,7 @@ public class ParallelListStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l = new ArrayList<TupleStream>();
+    List<TupleStream> l = new ArrayList<>();
     for (TupleStream stream : streams) {
       l.add(stream);
     }
@@ -173,7 +173,7 @@ public class ParallelListStream extends TupleStream implements Expressible {
     }
   }
 
-  protected class StreamIndex {
+  protected static class StreamIndex {
     private TupleStream tupleStream;
     private int index;
 

@@ -37,21 +37,10 @@ import org.xml.sax.InputSource;
 public final class EmptyEntityResolver {
 
   public static final EntityResolver SAX_INSTANCE =
-      new EntityResolver() {
-        @Override
-        public InputSource resolveEntity(String publicId, String systemId) {
-          return new InputSource(InputStream.nullInputStream());
-        }
-      };
+      (publicId, systemId) -> new InputSource(InputStream.nullInputStream());
 
   public static final XMLResolver STAX_INSTANCE =
-      new XMLResolver() {
-        @Override
-        public InputStream resolveEntity(
-            String publicId, String systemId, String baseURI, String namespace) {
-          return InputStream.nullInputStream();
-        }
-      };
+      (publicId, systemId, baseURI, namespace) -> InputStream.nullInputStream();
 
   // no instance!
   private EmptyEntityResolver() {}

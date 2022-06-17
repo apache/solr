@@ -221,17 +221,13 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     SolrDocumentList docs = rsp.getResults();
     assertEquals(2, docs.size());
     docs.forEach(
-        doc -> {
-          assertTrue(doc.toString(), doc.getFieldValue("id").toString().startsWith("core0-"));
-        });
+        doc -> assertTrue(doc.toString(), doc.getFieldValue("id").toString().startsWith("core0-")));
 
     rsp = cli1.query(q);
     docs = rsp.getResults();
     assertEquals(1, docs.size());
     docs.forEach(
-        doc -> {
-          assertTrue(doc.toString(), doc.getFieldValue("id").toString().startsWith("core1-"));
-        });
+        doc -> assertTrue(doc.toString(), doc.getFieldValue("id").toString().startsWith("core1-")));
 
     // assert initial metrics
     SolrMetricManager metricManager = cores.getMetricManager();
@@ -258,17 +254,13 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     docs = rsp.getResults();
     assertEquals(1, docs.size());
     docs.forEach(
-        doc -> {
-          assertTrue(doc.toString(), doc.getFieldValue("id").toString().startsWith("core1-"));
-        });
+        doc -> assertTrue(doc.toString(), doc.getFieldValue("id").toString().startsWith("core1-")));
 
     rsp = cli1.query(q);
     docs = rsp.getResults();
     assertEquals(2, docs.size());
     docs.forEach(
-        doc -> {
-          assertTrue(doc.toString(), doc.getFieldValue("id").toString().startsWith("core0-"));
-        });
+        doc -> assertTrue(doc.toString(), doc.getFieldValue("id").toString().startsWith("core0-")));
 
     core0Registry = metricManager.registry(core0RegistryName);
     core1Registry = metricManager.registry(core1RegistryName);

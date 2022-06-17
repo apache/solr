@@ -62,7 +62,7 @@ public class LazySolrCluster implements SolrCluster {
               return Boolean.FALSE;
             });
 
-    return new SimpleMap<CollectionConfig>() {
+    return new SimpleMap<>() {
       @Override
       public CollectionConfig get(String key) {
         if (configNames.contains(key)) {
@@ -87,7 +87,7 @@ public class LazySolrCluster implements SolrCluster {
   }
 
   private SimpleMap<SolrNode> lazyNodeMap() {
-    return new SimpleMap<SolrNode>() {
+    return new SimpleMap<>() {
       @Override
       public SolrNode get(String key) {
         if (!zkStateReader.getClusterState().liveNodesContain(key)) {
@@ -111,14 +111,18 @@ public class LazySolrCluster implements SolrCluster {
   }
 
   private SimpleMap<SolrCollection> lazyCollectionsWithAlias(ZkStateReader zkStateReader) {
-    return new SimpleMap<SolrCollection>() {
+    return new SimpleMap<>() {
       @Override
       public SolrCollection get(String key) {
         SolrCollection result = collections.get(key);
-        if (result != null) return result;
+        if (result != null) {
+          return result;
+        }
         Aliases aliases = zkStateReader.getAliases();
         List<String> aliasNames = aliases.resolveAliases(key);
-        if (aliasNames == null || aliasNames.isEmpty()) return null;
+        if (aliasNames == null || aliasNames.isEmpty()) {
+          return null;
+        }
         return _collection(aliasNames.get(0), null);
       }
 
@@ -128,7 +132,9 @@ public class LazySolrCluster implements SolrCluster {
         Aliases aliases = zkStateReader.getAliases();
         aliases.forEachAlias(
             (s, colls) -> {
-              if (colls == null || colls.isEmpty()) return;
+              if (colls == null || colls.isEmpty()) {
+                return;
+              }
               fun.accept(s, _collection(colls.get(0), null));
             });
       }
@@ -141,7 +147,7 @@ public class LazySolrCluster implements SolrCluster {
   }
 
   private SimpleMap<SolrCollection> lazyCollectionsMap(ZkStateReader zkStateReader) {
-    return new SimpleMap<SolrCollection>() {
+    return new SimpleMap<>() {
       @Override
       public SolrCollection get(String key) {
         return _collection(key, null);

@@ -164,16 +164,15 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   protected void writeException(Exception e, PushWriter w, boolean logException)
       throws IOException {
     w.writeMap(
-        mw -> {
-          mw.put("responseHeader", singletonMap("status", 400))
-              .put(
-                  "response",
-                  Map.of(
-                      "numFound",
-                      0,
-                      "docs",
-                      singletonList(singletonMap("EXCEPTION", e.getMessage()))));
-        });
+        mw ->
+            mw.put("responseHeader", singletonMap("status", 400))
+                .put(
+                    "response",
+                    Map.of(
+                        "numFound",
+                        0,
+                        "docs",
+                        singletonList(singletonMap("EXCEPTION", e.getMessage())))));
     if (logException) {
       SolrException.log(log, e);
     }
@@ -245,7 +244,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     // probably OK.
     // This came to light in the very artifical case of indexing a single doc to Cloud.
     if (req.getContext().get("totalHits") != null) {
-      totalHits = ((Integer) req.getContext().get("totalHits")).intValue();
+      totalHits = (Integer) req.getContext().get("totalHits");
       sets = (FixedBitSet[]) req.getContext().get("export");
       if (sets == null) {
         writeException(
@@ -417,7 +416,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
               }
               // use decorated writer to monitor the number of output writes
               // and flush the output quickly in case of very few (reduced) output items
-              buffers.getWriter().add((MapWriter) ew -> t.writeMap(ew));
+              buffers.getWriter().add((MapWriter) t::writeMap);
               if (t.EXCEPTION && t.EOF) {
                 break;
               }
@@ -656,9 +655,9 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     public MergeIterator(SegmentIterator[] segmentIterators, SortDoc proto) throws IOException {
       outDoc = proto.copy();
       this.segmentIterators = segmentIterators;
-      for (int i = 0; i < segmentIterators.length; i++) {
+      for (SegmentIterator segmentIterator : segmentIterators) {
         try {
-          SortDoc sortDoc = segmentIterators[i].next();
+          SortDoc sortDoc = segmentIterator.next();
           if (sortDoc != null) {
             set.add(sortDoc);
           }
@@ -696,8 +695,8 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       List<LeafReaderContext> leaves, FixedBitSet[] bits, SortDoc sortDoc) throws IOException {
     try {
       long totalDocs = 0;
-      for (int i = 0; i < leaves.size(); i++) {
-        totalDocs += leaves.get(i).reader().maxDoc();
+      for (LeafReaderContext leaf : leaves) {
+        totalDocs += leaf.reader().maxDoc();
       }
 
       // Resize the priorityQueueSize down for small result sets.

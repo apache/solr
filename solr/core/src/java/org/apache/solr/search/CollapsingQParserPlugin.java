@@ -704,13 +704,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
       // Handle the boosted docs.
       boostedDocsCollector.purgeGroupsThatHaveBoostedDocs(
-          collapsedSet,
-          (ord) -> {
-            ords.remove(ord);
-          },
-          () -> {
-            nullDoc = -1;
-          });
+          collapsedSet, (ord) -> ords.remove(ord), () -> nullDoc = -1);
 
       // Build the sorted DocSet of group heads.
       if (nullDoc > -1) {
@@ -911,21 +905,13 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
       // Handle the boosted docs.
       boostedDocsCollector.purgeGroupsThatHaveBoostedDocs(
-          collapsedSet,
-          (key) -> {
-            cmap.remove(key);
-          },
-          () -> {
-            nullDoc = -1;
-          });
+          collapsedSet, (key) -> cmap.remove(key), () -> nullDoc = -1);
 
       // Build the sorted DocSet of group heads.
       if (nullDoc > -1) {
         collapsedSet.set(nullDoc);
       }
-      Iterator<IntLongCursor> it1 = cmap.iterator();
-      while (it1.hasNext()) {
-        IntLongCursor cursor = it1.next();
+      for (IntLongCursor cursor : cmap) {
         int doc = (int) cursor.value;
         collapsedSet.set(doc);
       }
@@ -2095,7 +2081,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       FieldType minMaxFieldType = null;
       if (GroupHeadSelectorType.MIN_MAX.contains(groupHeadSelector.type)) {
         final String text = groupHeadSelector.selectorText;
-        if (text.indexOf("(") == -1) {
+        if (!text.contains("(")) {
           minMaxFieldType = searcher.getSchema().getField(text).getType();
         } else {
           SolrParams params = new ModifiableSolrParams();
@@ -2243,7 +2229,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
      * sources if they depend on score
      */
     public static boolean wantsCScore(final String text) {
-      return (0 <= text.indexOf("cscore()"));
+      return (text.contains("cscore()"));
     }
 
     private CollapseScore() {
@@ -2303,13 +2289,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     public FixedBitSet getCollapsedSet() {
       // Handle the boosted docs.
       boostedDocsCollector.purgeGroupsThatHaveBoostedDocs(
-          collapsedSet,
-          (ord) -> {
-            ords.remove(ord);
-          },
-          () -> {
-            nullDoc = -1;
-          });
+          collapsedSet, (ord) -> ords.remove(ord), () -> nullDoc = -1);
 
       // Build the sorted DocSet of group heads.
       if (nullDoc > -1) {
@@ -2823,21 +2803,13 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
       // Handle the boosted docs.
       boostedDocsCollector.purgeGroupsThatHaveBoostedDocs(
-          collapsedSet,
-          (key) -> {
-            cmap.remove(key);
-          },
-          () -> {
-            nullDoc = -1;
-          });
+          collapsedSet, (key) -> cmap.remove(key), () -> nullDoc = -1);
 
       // Build the sorted DocSet of group heads.
       if (nullDoc > -1) {
         this.collapsedSet.set(nullDoc);
       }
-      Iterator<IntIntCursor> it1 = cmap.iterator();
-      while (it1.hasNext()) {
-        IntIntCursor cursor = it1.next();
+      for (IntIntCursor cursor : cmap) {
         int pointer = cursor.value;
         collapsedSet.set(docs.get(pointer));
       }
@@ -3406,12 +3378,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         final IntProcedure removeGroupKey,
         final Runnable resetNullGroupHead) {
       // Add the (collected) boosted docs to the collapsedSet
-      boostedDocs.forEach(
-          new IntProcedure() {
-            public void apply(int globalDoc) {
-              collapsedSet.set(globalDoc);
-            }
-          });
+      boostedDocs.forEach((IntProcedure) collapsedSet::set);
       // Remove any group heads that are in the same groups as (collected) boosted documents.
       boostedKeys.forEach(removeGroupKey);
       if (boostedNullGroup) {

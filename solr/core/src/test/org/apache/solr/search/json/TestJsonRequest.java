@@ -557,20 +557,17 @@ public class TestJsonRequest extends SolrTestCaseHS {
     Exception e =
         expectThrows(
             Exception.class,
-            () -> {
-              client.testJQ(params("json", "{query:{'lucene':'foo_s:ignore_exception'}}"));
-            });
+            () -> client.testJQ(params("json", "{query:{'lucene':'foo_s:ignore_exception'}}")));
     assertThat(e.getMessage(), containsString("foo_s"));
 
     // test failure on unknown parameter
     e =
         expectThrows(
             Exception.class,
-            () -> {
-              client.testJQ(
-                  params("json", "{query:'cat_s:A', foobar_ignore_exception:5}"),
-                  "response/numFound==2");
-            });
+            () ->
+                client.testJQ(
+                    params("json", "{query:'cat_s:A', foobar_ignore_exception:5}"),
+                    "response/numFound==2"));
     assertThat(e.getMessage(), containsString("foobar"));
 
     resetExceptionIgnores();

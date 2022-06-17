@@ -98,18 +98,12 @@ public class AddFunctionTest extends SolrTestCaseJ4 {
     // No values, One value
     val1.setValues();
     val2.setValue(21.56F).setExists(true);
-    func.streamDoubles(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamDoubles(value -> assertTrue("There should be no values to stream", false));
 
     // Multiple values, no value
     val1.setValues(4L, 10023L);
     val2.setExists(false);
-    func.streamDoubles(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    func.streamDoubles(value -> assertTrue("There should be no values to stream", false));
 
     // Multiple values, one value
     val1.setValues(4L, 10023L, 48L);

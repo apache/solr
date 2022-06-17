@@ -519,8 +519,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
     }
     @SuppressWarnings("unchecked")
     List<NamedList<?>> allBuckets = (List<NamedList<?>>) nl.get("buckets");
-    for (int b = 0; b < allBuckets.size(); b++) {
-      NamedList<?> bucket = allBuckets.get(b);
+    for (NamedList<?> bucket : allBuckets) {
       Object val = bucket.get("val");
       Tuple tx = currentTuple.clone();
 
@@ -539,8 +538,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
         }
         @SuppressWarnings({"unchecked"})
         List<NamedList<?>> sbuckets = (List<NamedList<?>>) splitBuckets.get("buckets");
-        for (int d = 0; d < sbuckets.size(); d++) {
-          NamedList<?> bucketS = sbuckets.get(d);
+        for (NamedList<?> bucketS : sbuckets) {
           Object valS = bucketS.get("val");
           if (valS instanceof Integer) {
             valS = ((Integer) valS).longValue();

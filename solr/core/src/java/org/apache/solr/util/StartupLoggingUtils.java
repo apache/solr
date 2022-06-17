@@ -175,7 +175,7 @@ public final class StartupLoggingUtils {
     for (final org.apache.logging.log4j.core.Logger logger : logCtx.getLoggers()) {
       for (final Appender appender : logger.getAppenders().values()) {
         if (appender instanceof AbstractOutputStreamAppender) {
-          ((AbstractOutputStreamAppender) appender).getManager().flush();
+          ((AbstractOutputStreamAppender<?>) appender).getManager().flush();
         }
       }
     }

@@ -78,12 +78,12 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
 
     zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
     zkStateReader = new ZkStateReader(zkClient);
-    seqToThread = Collections.synchronizedMap(new HashMap<Integer, Thread>());
+    seqToThread = Collections.synchronizedMap(new HashMap<>());
     zkClient.makePath("/collections/collection1", true);
     zkClient.makePath("/collections/collection2", true);
   }
 
-  class TestLeaderElectionContext extends ShardLeaderElectionContextBase {
+  static class TestLeaderElectionContext extends ShardLeaderElectionContextBase {
     private long runLeaderDelay = 0;
 
     public TestLeaderElectionContext(
@@ -475,7 +475,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
   public void testStressElection() throws Exception {
     final ScheduledExecutorService scheduler =
         Executors.newScheduledThreadPool(15, new SolrNamedThreadFactory("stressElection"));
-    final List<ClientThread> threads = Collections.synchronizedList(new ArrayList<ClientThread>());
+    final List<ClientThread> threads = Collections.synchronizedList(new ArrayList<>());
 
     // start with a leader
     ClientThread thread1 = null;
@@ -484,51 +484,46 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     scheduler.schedule(thread1, 0, TimeUnit.MILLISECONDS);
 
     Thread scheduleThread =
-        new Thread() {
-          @Override
-          public void run() {
-            int count = atLeast(5);
-            for (int i = 1; i < count; i++) {
-              int launchIn = random().nextInt(500);
-              ClientThread thread = null;
-              try {
-                thread = new ClientThread("shard1", i);
-              } catch (Exception e) {
-                //
+        new Thread(
+            () -> {
+              int count = atLeast(5);
+              for (int i = 1; i < count; i++) {
+                int launchIn = random().nextInt(500);
+                ClientThread thread = null;
+                try {
+                  thread = new ClientThread("shard1", i);
+                } catch (Exception e) {
+                  //
+                }
+                if (thread != null) {
+                  threads.add(thread);
+                  scheduler.schedule(thread, launchIn, TimeUnit.MILLISECONDS);
+                }
               }
-              if (thread != null) {
-                threads.add(thread);
-                scheduler.schedule(thread, launchIn, TimeUnit.MILLISECONDS);
-              }
-            }
-          }
-        };
+            });
 
     Thread killThread =
-        new Thread() {
-          @Override
-          public void run() {
+        new Thread(
+            () -> {
+              while (!stopStress) {
+                try {
+                  int j;
+                  try {
+                    // always 1 we won't kill...
+                    j = random().nextInt(threads.size() - 2);
+                  } catch (IllegalArgumentException e) {
+                    continue;
+                  }
+                  try {
+                    threads.get(j).close();
+                  } catch (Exception e) {
+                  }
 
-            while (!stopStress) {
-              try {
-                int j;
-                try {
-                  // always 1 we won't kill...
-                  j = random().nextInt(threads.size() - 2);
-                } catch (IllegalArgumentException e) {
-                  continue;
-                }
-                try {
-                  threads.get(j).close();
+                  Thread.sleep(10);
                 } catch (Exception e) {
                 }
-
-                Thread.sleep(10);
-              } catch (Exception e) {
               }
-            }
-          }
-        };
+            });
 
     Thread connLossThread =
         new Thread(

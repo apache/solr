@@ -18,7 +18,6 @@
 package org.apache.solr.client.solrj.request.json;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -114,9 +113,7 @@ public class JsonQueryRequestIntegrationTest extends SolrCloudTestCase {
   @Test
   public void testQueriesCanBeRepresentedUsingMapWriters() throws Exception {
     final MapWriter queryWriter =
-        new MapWriter() {
-          @Override
-          public void writeMap(EntryWriter ew) throws IOException {
+        ew ->
             ew.put(
                 "lucene",
                 (MapWriter)
@@ -124,8 +121,6 @@ public class JsonQueryRequestIntegrationTest extends SolrCloudTestCase {
                       queryParamWriter.put("df", "genre_s");
                       queryParamWriter.put("query", "scifi");
                     });
-          }
-        };
 
     final JsonQueryRequest simpleQuery = new JsonQueryRequest().setQuery(queryWriter);
     QueryResponse queryResponse = simpleQuery.process(cluster.getSolrClient(), COLLECTION_NAME);

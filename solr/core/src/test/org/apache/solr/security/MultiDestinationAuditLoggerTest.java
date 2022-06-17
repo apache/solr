@@ -34,7 +34,7 @@ public class MultiDestinationAuditLoggerTest extends SolrTestCaseJ4 {
     config.put("class", "solr.MultiDestinationAuditLogger");
     config.put("async", false);
     config.put("eventTypes", Arrays.asList(AuditEvent.EventType.COMPLETED.name()));
-    ArrayList<Map<String, Object>> plugins = new ArrayList<Map<String, Object>>();
+    ArrayList<Map<String, Object>> plugins = new ArrayList<>();
 
     Map<String, Object> conf1 = new HashMap<>();
     conf1.put("class", "solr.SolrLogAuditLoggerPlugin");

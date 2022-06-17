@@ -190,14 +190,18 @@ public class PerReplicaStates implements ReflectMapWriter {
 
   private StringBuilder appendStates(StringBuilder sb) {
     states.forEachEntry(
-        new BiConsumer<String, State>() {
+        new BiConsumer<>() {
           int count = 0;
 
           @Override
           public void accept(String s, State state) {
-            if (count++ > 0) sb.append(", ");
+            if (count++ > 0) {
+              sb.append(", ");
+            }
             sb.append(state.asString);
-            for (State d : state.getDuplicates()) sb.append(d.asString);
+            for (State d : state.getDuplicates()) {
+              sb.append(d.asString);
+            }
           }
         });
     return sb;

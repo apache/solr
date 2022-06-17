@@ -30,9 +30,7 @@ public class TestCollectionAdminRequest extends SolrTestCase {
     final SolrException e =
         expectThrows(
             SolrException.class,
-            () -> {
-              CollectionAdminRequest.createCollection("invalid$collection@name", null, 1, 1);
-            });
+            () -> CollectionAdminRequest.createCollection("invalid$collection@name", null, 1, 1));
     final String exceptionMessage = e.getMessage();
     assertTrue(exceptionMessage.contains("Invalid collection"));
     assertTrue(exceptionMessage.contains("invalid$collection@name"));
@@ -46,10 +44,9 @@ public class TestCollectionAdminRequest extends SolrTestCase {
     final SolrException e =
         expectThrows(
             SolrException.class,
-            () -> {
-              CollectionAdminRequest.createCollectionWithImplicitRouter(
-                  "fine", "fine", "invalid$shard@name", 1, 0, 0);
-            });
+            () ->
+                CollectionAdminRequest.createCollectionWithImplicitRouter(
+                    "fine", "fine", "invalid$shard@name", 1, 0, 0));
     final String exceptionMessage = e.getMessage();
     assertTrue(exceptionMessage.contains("Invalid shard"));
     assertTrue(exceptionMessage.contains("invalid$shard@name"));
@@ -63,11 +60,7 @@ public class TestCollectionAdminRequest extends SolrTestCase {
     CollectionAdminRequest.Create request =
         CollectionAdminRequest.createCollectionWithImplicitRouter("fine", null, "fine", 1);
     final SolrException e =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              request.setShards("invalid$shard@name");
-            });
+        expectThrows(SolrException.class, () -> request.setShards("invalid$shard@name"));
     final String exceptionMessage = e.getMessage();
     assertTrue(exceptionMessage.contains("Invalid shard"));
     assertTrue(exceptionMessage.contains("invalid$shard@name"));

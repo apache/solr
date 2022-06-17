@@ -54,17 +54,17 @@ public interface IntValueStream extends AnalyticsValueStream {
   public abstract static class AbstractIntValueStream implements CastingIntValueStream {
     @Override
     public void streamLongs(LongConsumer cons) {
-      streamInts((int val) -> cons.accept(val));
+      streamInts(cons::accept);
     }
 
     @Override
     public void streamFloats(FloatConsumer cons) {
-      streamInts((int val) -> cons.accept(val));
+      streamInts(cons::accept);
     }
 
     @Override
     public void streamDoubles(DoubleConsumer cons) {
-      streamInts((int val) -> cons.accept(val));
+      streamInts(cons::accept);
     }
 
     @Override
@@ -74,7 +74,7 @@ public interface IntValueStream extends AnalyticsValueStream {
 
     @Override
     public void streamObjects(Consumer<Object> cons) {
-      streamInts((int val) -> cons.accept(val));
+      streamInts(cons::accept);
     }
 
     @Override

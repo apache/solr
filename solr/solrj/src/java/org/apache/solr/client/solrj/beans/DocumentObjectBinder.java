@@ -405,7 +405,7 @@ public class DocumentObjectBinder {
                 arr[0] = val;
                 val = arr;
               } else {
-                val = Array.newInstance(type, ((List) val).size());
+                val = Array.newInstance(type, ((List<?>) val).size());
               }
             }
             allValuesMap.put(field, val);

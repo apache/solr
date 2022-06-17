@@ -302,7 +302,7 @@ public class LegacyAbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
         miss++;
       }
     }
-    return Long.valueOf(miss);
+    return miss;
   }
 
   public static SolrQueryRequest request(String... args) {
@@ -343,7 +343,7 @@ public class LegacyAbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
 
   protected void removeNodes(String xPath, List<Double> string) throws XPathExpressionException {
     NodeList missingNodes = getNodes(xPath);
-    List<Double> result = new ArrayList<Double>();
+    List<Double> result = new ArrayList<>();
     for (int idx = 0; idx < missingNodes.getLength(); ++idx) {
       result.add(Double.parseDouble(missingNodes.item(idx).getTextContent()));
     }

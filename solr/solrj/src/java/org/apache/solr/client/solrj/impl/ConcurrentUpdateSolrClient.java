@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
@@ -35,7 +34,6 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ContentProducer;
 import org.apache.http.entity.EntityTemplate;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
@@ -241,77 +239,72 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
 
           EntityTemplate template =
               new EntityTemplate(
-                  new ContentProducer() {
-
-                    @Override
-                    public void writeTo(OutputStream out) throws IOException {
-
-                      if (isXml) {
-                        out.write("<stream>".getBytes(StandardCharsets.UTF_8)); // can be anything
+                  out -> {
+                    if (isXml) {
+                      out.write("<stream>".getBytes(StandardCharsets.UTF_8)); // can be anything
+                    }
+                    Update upd = update;
+                    while (upd != null) {
+                      UpdateRequest req = upd.getRequest();
+                      SolrParams currentParams = new ModifiableSolrParams(req.getParams());
+                      if (!origParams.toNamedList().equals(currentParams.toNamedList())
+                          || !StringUtils.equals(origTargetCollection, upd.getCollection())) {
+                        // Request has different params or destination core/collection, return to
+                        // queue
+                        queue.add(upd);
+                        break;
                       }
-                      Update upd = update;
-                      while (upd != null) {
-                        UpdateRequest req = upd.getRequest();
-                        SolrParams currentParams = new ModifiableSolrParams(req.getParams());
-                        if (!origParams.toNamedList().equals(currentParams.toNamedList())
-                            || !StringUtils.equals(origTargetCollection, upd.getCollection())) {
-                          // Request has different params or destination core/collection, return to
-                          // queue
-                          queue.add(upd);
-                          break;
-                        }
 
-                        client.requestWriter.write(req, out);
-                        if (isXml) {
-                          // check for commit or optimize
-                          SolrParams params = req.getParams();
-                          if (params != null) {
-                            String fmt = null;
-                            if (params.getBool(UpdateParams.OPTIMIZE, false)) {
-                              fmt = "<optimize waitSearcher=\"%s\" />";
-                            } else if (params.getBool(UpdateParams.COMMIT, false)) {
-                              fmt = "<commit waitSearcher=\"%s\" />";
-                            }
-                            if (fmt != null) {
-                              byte[] content =
-                                  String.format(
-                                          Locale.ROOT,
-                                          fmt,
-                                          params.getBool(UpdateParams.WAIT_SEARCHER, false) + "")
-                                      .getBytes(StandardCharsets.UTF_8);
-                              out.write(content);
-                            }
+                      client.requestWriter.write(req, out);
+                      if (isXml) {
+                        // check for commit or optimize
+                        SolrParams params = req.getParams();
+                        if (params != null) {
+                          String fmt = null;
+                          if (params.getBool(UpdateParams.OPTIMIZE, false)) {
+                            fmt = "<optimize waitSearcher=\"%s\" />";
+                          } else if (params.getBool(UpdateParams.COMMIT, false)) {
+                            fmt = "<commit waitSearcher=\"%s\" />";
+                          }
+                          if (fmt != null) {
+                            byte[] content =
+                                String.format(
+                                        Locale.ROOT,
+                                        fmt,
+                                        params.getBool(UpdateParams.WAIT_SEARCHER, false) + "")
+                                    .getBytes(StandardCharsets.UTF_8);
+                            out.write(content);
                           }
                         }
-                        out.flush();
+                      }
+                      out.flush();
 
-                        notifyQueueAndRunnersIfEmptyQueue();
-                        inPoll = true;
-                        try {
-                          while (true) {
-                            try {
-                              upd = queue.poll(pollQueueTime, TimeUnit.MILLISECONDS);
-                              break;
-                            } catch (InterruptedException e) {
-                              if (log.isDebugEnabled()) pollInterrupts.incrementAndGet();
-                              if (!queue.isEmpty()) {
-                                continue;
-                              }
-                              if (log.isDebugEnabled()) pollExits.incrementAndGet();
-                              upd = null;
-                              break;
-                            } finally {
-                              inPoll = false;
+                      notifyQueueAndRunnersIfEmptyQueue();
+                      inPoll = true;
+                      try {
+                        while (true) {
+                          try {
+                            upd = queue.poll(pollQueueTime, TimeUnit.MILLISECONDS);
+                            break;
+                          } catch (InterruptedException e) {
+                            if (log.isDebugEnabled()) pollInterrupts.incrementAndGet();
+                            if (!queue.isEmpty()) {
+                              continue;
                             }
+                            if (log.isDebugEnabled()) pollExits.incrementAndGet();
+                            upd = null;
+                            break;
+                          } finally {
+                            inPoll = false;
                           }
-                        } finally {
-                          inPoll = false;
                         }
+                      } finally {
+                        inPoll = false;
                       }
+                    }
 
-                      if (isXml) {
-                        out.write("</stream>".getBytes(StandardCharsets.UTF_8));
-                      }
+                    if (isXml) {
+                      out.write("</stream>".getBytes(StandardCharsets.UTF_8));
                     }
                   });
 

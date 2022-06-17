@@ -28,6 +28,7 @@ import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.AttributeFetcher;
 import org.apache.solr.cluster.placement.AttributeValues;
 import org.apache.solr.cluster.placement.CollectionMetrics;
+import org.apache.solr.cluster.placement.Metric;
 import org.apache.solr.cluster.placement.NodeMetric;
 import org.apache.solr.cluster.placement.ReplicaMetric;
 import org.apache.solr.common.SolrException;
@@ -94,7 +95,7 @@ public class AttributeFetcherImpl implements AttributeFetcher {
     Map<Node, Set<String>> nodeToReplicaInternalTags = new HashMap<>();
     Map<String, Set<ReplicaMetric<?>>> requestedCollectionNamesMetrics =
         requestedCollectionMetrics.entrySet().stream()
-            .collect(Collectors.toMap(e -> e.getKey().getName(), e -> e.getValue()));
+            .collect(Collectors.toMap(e -> e.getKey().getName(), Map.Entry::getValue));
 
     // In order to match the returned values for the various snitches, we need to keep track of
     // where each received value goes. Given the target maps are of different types (the maps from
@@ -118,7 +119,7 @@ public class AttributeFetcherImpl implements AttributeFetcher {
     requestedCollectionMetrics.forEach(
         (collection, tags) -> {
           Set<String> collectionTags =
-              tags.stream().map(tag -> tag.getInternalName()).collect(Collectors.toSet());
+              tags.stream().map(Metric::getInternalName).collect(Collectors.toSet());
           collection
               .shards()
               .forEach(
@@ -175,8 +176,7 @@ public class AttributeFetcherImpl implements AttributeFetcher {
                               collectionMetricsBuilder
                                   .getShardMetricsBuilders()
                                   .computeIfAbsent(
-                                      shardName,
-                                      s -> new CollectionMetricsBuilder.ShardMetricsBuilder(s));
+                                      shardName, CollectionMetricsBuilder.ShardMetricsBuilder::new);
                           replicas.forEach(
                               replica -> {
                                 CollectionMetricsBuilder.ReplicaMetricsBuilder
@@ -185,9 +185,8 @@ public class AttributeFetcherImpl implements AttributeFetcher {
                                             .getReplicaMetricsBuilders()
                                             .computeIfAbsent(
                                                 replica.getName(),
-                                                n ->
-                                                    new CollectionMetricsBuilder
-                                                        .ReplicaMetricsBuilder(n));
+                                                CollectionMetricsBuilder.ReplicaMetricsBuilder
+                                                    ::new);
                                 replicaMetricsBuilder.setLeader(replica.isLeader());
                                 if (replica.isLeader()) {
                                   shardMetricsBuilder.setLeaderMetrics(replicaMetricsBuilder);
@@ -195,10 +194,9 @@ public class AttributeFetcherImpl implements AttributeFetcher {
                                 Set<ReplicaMetric<?>> requestedMetrics =
                                     requestedCollectionNamesMetrics.get(replica.getCollection());
                                 requestedMetrics.forEach(
-                                    metric -> {
-                                      replicaMetricsBuilder.addMetric(
-                                          metric, replica.get(metric.getInternalName()));
-                                    });
+                                    metric ->
+                                        replicaMetricsBuilder.addMetric(
+                                            metric, replica.get(metric.getInternalName())));
                               });
                         });
               });

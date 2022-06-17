@@ -22,16 +22,14 @@ import java.security.NoSuchAlgorithmException;
 
 public class MD5Signature extends Signature {
   private static ThreadLocal<MessageDigest> DIGESTER_FACTORY =
-      new ThreadLocal<MessageDigest>() {
-        @Override
-        protected MessageDigest initialValue() {
-          try {
-            return MessageDigest.getInstance("MD5");
-          } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-          }
-        }
-      };
+      ThreadLocal.withInitial(
+          () -> {
+            try {
+              return MessageDigest.getInstance("MD5");
+            } catch (NoSuchAlgorithmException e) {
+              throw new RuntimeException(e);
+            }
+          });
   private MessageDigest digester;
 
   public MD5Signature() {
