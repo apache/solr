@@ -374,8 +374,8 @@ class SolrFilter extends Filter implements SolrRel {
         // the complexphrase parser
         // but that expects the terms wrapped in double-quotes, not parens
         boolean hasMultipleTerms = terms.split("\\s+").length > 1;
-        if (solrFieldType.equals("text")
-            && hasMultipleTerms
+        if (hasMultipleTerms
+            && "text".equals(solrFieldType)
             && (terms.contains("*") || terms.contains("?"))) {
           String quotedTerms = "\"" + terms.substring(1, terms.length() - 1) + "\"";
           String query = ClientUtils.encodeLocalParamVal(pair.getKey() + ":" + quotedTerms);
@@ -479,7 +479,7 @@ class SolrFilter extends Filter implements SolrRel {
     // escaping protected query chars
     private String escapeWithWildcard(String terms, String solrFieldType) {
       String escaped = ClientUtils.escapeQueryChars(terms).replace("\\*", "*").replace("\\?", "?");
-      if (solrFieldType.equals("text")) {
+      if ("text".equals(solrFieldType)) {
         escaped = escaped.replace("\\ ", " ");
         // if multiple terms, then wrap with parens
         if (escaped.split("\\s+").length > 1) {
