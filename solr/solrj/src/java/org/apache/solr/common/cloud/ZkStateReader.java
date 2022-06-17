@@ -296,10 +296,10 @@ public class ZkStateReader implements SolrCloseable {
             watch.currentDoc = newState;
             if (log.isDebugEnabled()) {
               log.debug(
-                      "Updating data for [{}] from [{}] to [{}]",
-                      collection,
-                      oldState.getZNodeVersion(),
-                      newState.getZNodeVersion());
+                  "Updating data for [{}] from [{}] to [{}]",
+                  collection,
+                  oldState.getZNodeVersion(),
+                  newState.getZNodeVersion());
             }
           }
         }
