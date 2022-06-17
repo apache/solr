@@ -295,7 +295,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
       req.setBasicAuthCredentials("solr", SOLR_PASS);
       client.request(req);
 
-      // collection creation leads to AuditEvent's for the core as well...
+      // collection creation leads to audit events for the core as well...
       final List<AuditEvent> events = receiver.waitForAuditEvents(2);
       assertAuditEvent(
           events.get(0), COMPLETED, "/admin/cores", ADMIN, null, 200, "action", "CREATE");
@@ -601,9 +601,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
 
     public List<AuditEvent> waitForAuditEvents(final int expected) throws InterruptedException {
       final LinkedList<AuditEvent> results = new LinkedList<>();
-      for (int i = 1;
-          i <= expected;
-          i++) { // NOTE: counting from 1 for error message readability...
+      for (int i = 1; i <= expected; i++) { // NOTE: counting from 1 for error message readability
         final AuditEvent e = queue.poll(120, TimeUnit.SECONDS);
         if (null == e) {
           fail(

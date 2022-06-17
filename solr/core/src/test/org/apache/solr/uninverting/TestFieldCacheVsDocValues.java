@@ -122,7 +122,7 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
   // LUCENE-4853
   public void testHugeBinaryValues() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
-    // FSDirectory because SimpleText will consume gobs of
+    // FSDirectory because SimpleText will consume lots of
     // space when storing big binary values:
     try (Directory d = newFSDirectory(createTempDir("hugeBinaryValues"))) {
       boolean doFixed = random().nextBoolean();

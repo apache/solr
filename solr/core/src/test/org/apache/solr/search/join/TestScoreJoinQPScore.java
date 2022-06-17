@@ -346,8 +346,8 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
               "true"),
           SolrException.ErrorCode.BAD_REQUEST);
     }
-    // these queries are not overlapping with other in this test case.
-    // however, it might be better to extract this method into the separate suite
+    // these queries are not overlapping with others in this test case.
+    // however, it might be better to extract this method into a separate suite
     // for a while let's nuke a cache content, in case of repetitions
     @SuppressWarnings("rawtypes")
     SolrCache cache = (SolrCache) h.getCore().getInfoRegistry().get("queryResultCache");

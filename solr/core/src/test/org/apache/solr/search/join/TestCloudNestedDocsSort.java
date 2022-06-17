@@ -111,7 +111,7 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
           final List<String> chVals = addValsField(child, "childFilter_s");
           parent.addChildDocument(child);
 
-          // lets pickup at least matching child
+          // let's pickup at least matching child
           final boolean canPickMatchingChild = !chVals.isEmpty() && !parentFilter.isEmpty();
           final boolean haveNtPickedMatchingChild = matchingParent == null || matchingChild == null;
           if (canPickMatchingChild && haveNtPickedMatchingChild && usually()) {

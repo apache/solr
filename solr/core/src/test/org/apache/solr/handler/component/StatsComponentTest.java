@@ -1557,7 +1557,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
         kpre + "double[@name='min'][.='9.0']",
         "count(" + kpre + "*)=2");
 
-    // for stats that are true/false, sanity check false does its job
+    // for stats that are true/false, check false does its job
     assertQ(
         "min=true & max=false: only min should come back",
         req("q", "*:*", "stats", "true", "stats.field", "{!key=k max=false min=true}a_i"),
@@ -2021,7 +2021,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     assertNull(HllOptions.parseHllOptions(params(), field_l));
     assertNull(HllOptions.parseHllOptions(params("cardinality", "false"), field_l));
 
-    // sanity check, future-proof against the HLL library changing stuff on us
+    // check, future-proof against the HLL library changing stuff on us
     assertEquals(
         "HLL Changed definition min for log2m, "
             + "need to note in upgrade instructions and maybe adjust accuracy heuristic",

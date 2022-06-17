@@ -98,7 +98,7 @@ public class TestDocTermOrdsUninvertLimit extends SolrTestCase {
                 + " with message "
                 + e.getMessage());
       }
-      // This is (hopefully) "Too many values for UnInvertedField faceting on field "field", so all
+      // This is (hopefully) "Too many values for UnInvertedField faceting on field", so all
       // is as expected
     } finally {
       r.close();
