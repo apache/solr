@@ -279,7 +279,9 @@ public class ZkStateReader implements SolrCloseable {
         if (oldState == null && newState == null) {
           // OK, the collection not yet exist in ZK
         } else if (oldState == null) {
-          log.debug("Add data for [{}] ver [{}]", collection, newState.getZNodeVersion());
+          if (log.isDebugEnabled()) {
+            log.debug("Add data for [{}] ver [{}]", collection, newState.getZNodeVersion());
+          }
           watch.currentDoc = newState;
         } else if (newState == null) {
           log.debug("Removing cached collection state for [{}]", collection);
@@ -292,11 +294,13 @@ public class ZkStateReader implements SolrCloseable {
           if (oldState.getZNodeVersion() < newState.getZNodeVersion()
               || oldCVersion < newCVersion) {
             watch.currentDoc = newState;
-            log.debug(
-                "Updating data for [{}] from [{}] to [{}]",
-                collection,
-                oldState.getZNodeVersion(),
-                newState.getZNodeVersion());
+            if (log.isDebugEnabled()) {
+              log.debug(
+                      "Updating data for [{}] from [{}] to [{}]",
+                      collection,
+                      oldState.getZNodeVersion(),
+                      newState.getZNodeVersion());
+            }
           }
         }
         return true;
