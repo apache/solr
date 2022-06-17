@@ -275,7 +275,8 @@ public class V2CollectionsAPIMappingTest extends V2ApiMappingTest<CollectionsHan
     assertEquals(123, v1Params.getPrimitiveInt(CoreAdminParams.BACKUP_ID));
     assertEquals("requestTrackingId", v1Params.get(CommonAdminParams.ASYNC));
     // NOTE: Unlike other v2 APIs that have a nested object for collection-creation params,
-    // the restore API's v1 equivalent for these properties doesn't have a "create-collection." prefix.
+    // the restore API's v1 equivalent for these properties doesn't have a "create-collection."
+    // prefix.
     assertEquals(1, v1Params.getPrimitiveInt(CollectionAdminParams.NUM_SHARDS));
     assertEquals("bar", v1Params.get("property.foo"));
     assertEquals("bar2", v1Params.get("property.foo2"));
