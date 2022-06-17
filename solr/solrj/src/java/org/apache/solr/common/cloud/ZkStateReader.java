@@ -252,6 +252,8 @@ public class ZkStateReader implements SolrCloseable {
    */
   private static class DocCollectionWatches
       extends ConcurrentHashMap<String, DocCollectionWatch<DocCollectionWatcher>> {
+    private static final Set<String> activeCollections = ConcurrentHashMap.newKeySet();
+
     /**
      * Gets the DocCollection (state) of the collection which the corresponding watch last observed
      *
@@ -262,6 +264,14 @@ public class ZkStateReader implements SolrCloseable {
     private DocCollection getDocCollection(String collection) {
       DocCollectionWatch<DocCollectionWatcher> watch = get(collection);
       return watch != null ? watch.currentDoc : null;
+    }
+
+    /**
+     * Gets the active collections (collections that exist) being watched
+     * @return  an immutable set of active collection names
+     */
+    private Set<String> activeCollections() {
+      return Collections.unmodifiableSet(activeCollections);
     }
 
     /**
@@ -283,9 +293,11 @@ public class ZkStateReader implements SolrCloseable {
             log.debug("Add data for [{}] ver [{}]", collection, newState.getZNodeVersion());
           }
           watch.currentDoc = newState;
+          activeCollections.add(collection);
         } else if (newState == null) {
           log.debug("Removing cached collection state for [{}]", collection);
           watch.currentDoc = null;
+          activeCollections.remove(collection);
         } else { // both new and old states are non-null
           int oldCVersion =
               oldState.getPerReplicaStates() == null ? -1 : oldState.getPerReplicaStates().cversion;
@@ -394,10 +406,9 @@ public class ZkStateReader implements SolrCloseable {
       // No need to set watchers because we should already have watchers registered for everything.
       refreshCollectionList(null);
       refreshLiveNodes(null);
-      // Need a copy so we don't delete from what we're iterating over.
-      Collection<String> safeCopy = new ArrayList<>(collectionWatches.keySet());
+
       Set<String> updatedCollections = new HashSet<>();
-      for (String coll : safeCopy) {
+      for (String coll : collectionWatches.activeCollections()) {
         DocCollection newState = fetchCollectionState(coll, null);
         if (collectionWatches.updateDocCollection(coll, newState)) {
           updatedCollections.add(coll);
@@ -612,16 +623,18 @@ public class ZkStateReader implements SolrCloseable {
 
     if (log.isDebugEnabled()) {
       log.debug(
-          "clusterStateSet: watched [{}] lazy [{}] total [{}]",
+          "clusterStateSet: interesting [{}] watched [{}] lazy [{}] total [{}]",
           collectionWatches.keySet().size(),
+          collectionWatches.activeCollections().size(),
           lazyCollectionStates.keySet().size(),
           clusterState.getCollectionStates().size());
     }
 
     if (log.isTraceEnabled()) {
       log.trace(
-          "clusterStateSet: interesting [{}] lazy [{}] total [{}]",
+          "clusterStateSet: interesting [{}] watched [{}] lazy [{}] total [{}]",
           collectionWatches.keySet(),
+          collectionWatches.activeCollections().size(),
           lazyCollectionStates.keySet(),
           clusterState.getCollectionStates());
     }
@@ -716,7 +729,7 @@ public class ZkStateReader implements SolrCloseable {
 
   private Set<String> getCurrentCollections() {
     Set<String> collections = new HashSet<>();
-    collections.addAll(collectionWatches.keySet());
+    collections.addAll(collectionWatches.activeCollections());
     collections.addAll(lazyCollectionStates.keySet());
     return collections;
   }
