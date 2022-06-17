@@ -392,7 +392,7 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
 
     assertU(commit());
 
-    // direct value source usage, gets "raw" form od default currency
+    // direct value source usage, gets "raw" form of default currency
     // default==USD, so raw==pennies
     assertQ(
         req(
@@ -650,7 +650,7 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
         "//lst[@name='xxx']/lst[@name='after'  ]/long[@name='count'][.='1']",
         "//lst[@name='xxx']/lst[@name='between']/long[@name='count'][.='4']");
 
-    // NOTE: because of asymmetric EUR exchange rate, these buckets are diff then the similar
+    // NOTE: because of asymmetric EUR exchange rate, these buckets are diff from the similar
     // looking
     // USD based request above
     // This request converts the values in each doc into EUR to decide what range buck it's in.

@@ -401,7 +401,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     // regardless of the facet method (parameterized via default at test class level)
     // faceting on an "uninvertible=false docValues=true" field should work,
     //
-    // it should behave equivalently to it's copyField source...
+    // it should behave equivalently to its copyField source...
     for (String f :
         Arrays.asList(
             "where_s", "where_s_multi_not_uninvert_dv", "where_s_single_not_uninvert_dv")) {
@@ -421,7 +421,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     // faceting on an "uninvertible=false docValues=false" field should be possible
     // when using method:enum w/sort:index
     //
-    // it should behave equivalent to it's copyField source...
+    // it should behave equivalent to its copyField source...
     for (String f :
         Arrays.asList("where_s", "where_s_multi_not_uninvert", "where_s_single_not_uninvert")) {
       assertJQ(
@@ -2046,8 +2046,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
             + ", f2:{  'buckets':[{ val:'B', count:3, n1:-3.0}, { val:'A', count:2, n1:6.0 }]} }");
 
     // test trivial re-sorting by stats
-    // (there are other more in depth tests of this in doTestPrelimSorting, but this lets us sanity
-    // check
+    // (there are other more in depth tests of this in doTestPrelimSorting, but this lets us check
     // small responses with multiple templated params of diff real types)
     client.testJQ(
         params(
@@ -3743,7 +3742,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
    */
   public void doTestPrelimSortingDistrib(final boolean extraAgg, final boolean extraSubFacet)
       throws Exception {
-    // we only use 2 shards, but we also want to sanity check code paths if one (additional)
+    // we only use 2 shards, but we also want to check code paths if one (additional)
     // shard is empty
     final int totalShards = random().nextBoolean() ? 2 : 3;
 
@@ -4252,7 +4251,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     // 5 bucket, on each shard
     assertEqualsAndReset(numShardsWithData * 5, DebugAgg.Acc.collectDocSets);
 
-    { // sanity check how deferred stats are handled
+    { // check how deferred stats are handled
 
       // here we'll prelim_sort & sort on things that are both "not x" and using the debug()
       // counters (wrapping x) to assert that 'x' is correctly deferred and only collected for the

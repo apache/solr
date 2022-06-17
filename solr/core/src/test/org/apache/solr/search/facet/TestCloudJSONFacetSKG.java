@@ -199,7 +199,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
 
   /**
    * Given a (random) number, and a (static) array of possible suffixes returns a consistent field
-   * name that uses that number and one of hte specified suffixes in its name.
+   * name that uses that number and one of the specified suffixes in its name.
    *
    * @see #MULTI_STR_FIELD_SUFFIXES
    * @see #MULTI_INT_FIELD_SUFFIXES
