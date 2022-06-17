@@ -1558,7 +1558,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
         SPECIAL);
 
     // two really trivial documents, unrelated to the rest of the tests,
-    // for the purpose of demoing the problem with mincount=0
+    // to demonstrate the problem with mincount=0
     addPivotDoc(oneShard, "id", getDocNum(), "top_s", "aaa", "sub_s", "bbb");
     addPivotDoc(twoShard, "id", getDocNum(), "top_s", "xxx", "sub_s", "yyy");
 

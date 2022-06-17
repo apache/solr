@@ -30,7 +30,7 @@ import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
 import org.noggit.ObjectBuilder;
 
-/** Whitebox test of the various syntax's for specifying stats in JSON Facets */
+/** Whitebox test of the various syntaxes for specifying stats in JSON Facets */
 public class TestJsonFacetsStatsParsing extends SolrTestCaseJ4 {
 
   @BeforeClass

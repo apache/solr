@@ -539,7 +539,7 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
   }
 
   /**
-   * tests that a SortableTextField using KeywordTokenizer (w/docValues) behaves exactly the same as
+   * tests that a SortableTextField using KeywordTokenizer (with docValues) behaves exactly the same as
    * StrFields that it's copied to for querying and sorting
    */
   public void testRandomStrEquivalentBehavior() throws Exception {

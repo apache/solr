@@ -150,11 +150,11 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
         41,
         HAS_VAL_FIELDS.size());
     for (String f : HAS_VAL_FIELDS) {
-      // for all of these fields, these 2 syntax's should be functionally equivalent
+      // for all of these fields, these 2 query forms should be functionally equivalent
       // in matching the one doc that contains these fields
       for (String q : Arrays.asList(f + ":*", f + ":[* TO *]")) {
         assertJQ(req("q", q), "/response/numFound==1", "/response/docs/[0]/id=='999'");
-        // the same syntax's should be valid even if no doc has the field...
+        // the same syntax should be valid even if no doc has the field...
         assertJQ(req("q", "bogus___" + q), "/response/numFound==0");
       }
     }
@@ -171,7 +171,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       assertJQ(req("q", f + ":[* TO *]"), "/response/numFound==0");
       assertJQ(req("q", f + ":[-Infinity TO Infinity]"), "/response/numFound==0");
       for (String q : Arrays.asList(f + ":*", f + ":[* TO *]", f + ":[-Infinity TO Infinity]")) {
-        // the same syntax's should be valid even if no doc has the field...
+        // the same syntax should be valid even if no doc has the field...
         assertJQ(req("q", "bogus___" + q), "/response/numFound==0");
       }
     }
@@ -477,7 +477,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     sb.append(")");
 
     // this should trip the lucene level global BooleanQuery.getMaxClauseCount() limit,
-    // causing a parsing error, before Solr even gets a chance to enforce it's lower level limit
+    // causing a parsing error, before Solr even gets a chance to enforce its lower level limit
     final String way_too_long = sb.toString();
 
     final String expectedMsg = "too many boolean clauses";

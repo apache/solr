@@ -26,7 +26,7 @@ import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 
 /**
- * A test the demonstrates some expected behavior for "long tail" terms when using <code>
+ * A test that demonstrates some expected behavior for "long tail" terms when using <code>
  * refine:simple</code>
  *
  * <p><b>NOTE:</b> This test ignores the control collection (in single node mode, there is no need
