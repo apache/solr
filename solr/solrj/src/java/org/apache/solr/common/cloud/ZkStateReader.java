@@ -271,8 +271,11 @@ public class ZkStateReader implements SolrCloseable {
      */
     private Set<String> activeCollections() {
       return this.entrySet().stream()
-              .filter((Entry<String, DocCollectionWatch<DocCollectionWatcher>> entry) -> entry.getValue().currentDoc != null)
-              .map(Entry::getKey).collect(Collectors.toUnmodifiableSet());
+          .filter(
+              (Entry<String, DocCollectionWatch<DocCollectionWatcher>> entry) ->
+                  entry.getValue().currentDoc != null)
+          .map(Entry::getKey)
+          .collect(Collectors.toUnmodifiableSet());
     }
 
     /**
