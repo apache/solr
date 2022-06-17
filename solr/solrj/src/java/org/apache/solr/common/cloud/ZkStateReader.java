@@ -253,8 +253,8 @@ public class ZkStateReader implements SolrCloseable {
   private static class DocCollectionWatches extends ConcurrentHashMap<String, DocCollectionWatch<DocCollectionWatcher>> {
     /**
      * Gets the DocCollection (state) of the collection which the corresponding watch last observed
-     * @param collection
-     * @return
+     * @param collection  the collection name to get DocCollection on
+     * @return  The last observed DocCollection(state). if null, that means there's no such collection.
      */
     private DocCollection getDocCollection(String collection) {
       DocCollectionWatch<DocCollectionWatcher> watch = get(collection);
@@ -263,7 +263,7 @@ public class ZkStateReader implements SolrCloseable {
 
     /**
      * Updates the latest observed DocCollection (state) of the {@link DocCollectionWatch} if the collection is being watched
-     * @param collection
+     * @param collection the collection name
      * @param newState  the new DocCollection (state) observed
      * @return whether an active watch exists for such collection
      */
