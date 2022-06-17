@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import org.apache.lucene.codecs.lucene91.Lucene91HnswVectorsFormat;
 import org.apache.lucene.document.KnnVectorField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.VectorSimilarityFunction;
@@ -41,9 +40,8 @@ import org.apache.solr.uninverting.UninvertingReader;
  * Provides a field type to support Lucene's {@link org.apache.lucene.document.KnnVectorField}. See
  * {@link org.apache.lucene.search.KnnVectorQuery} for more details. It supports a fixed cardinality
  * dimension for the vector and a fixed similarity function. The default similarity is
- * EUCLIDEAN_HNSW (L2). The default algorithm is HNSW.
- * For Lucene 9.1 e.g. See {@link org.apache.lucene.util.hnsw.HnswGraph} for more details
- * about the implementation. <br>
+ * EUCLIDEAN_HNSW (L2). The default algorithm is HNSW. For Lucene 9.1 e.g. See {@link
+ * org.apache.lucene.util.hnsw.HnswGraph} for more details about the implementation. <br>
  * Only {@code Indexed} and {@code Stored} attributes are supported.
  */
 public class DenseVectorField extends FloatPointField {
