@@ -408,7 +408,7 @@ public class ZkStateReader implements SolrCloseable {
       refreshLiveNodes(null);
 
       Set<String> updatedCollections = new HashSet<>();
-      for (String coll : collectionWatches.activeCollections()) {
+      for (String coll : collectionWatches.keySet()) {
         DocCollection newState = fetchCollectionState(coll, null);
         if (collectionWatches.updateDocCollection(coll, newState)) {
           updatedCollections.add(coll);
