@@ -357,7 +357,9 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
     SolrZkClient zkClient = null;
     ZkStateReader reader = null;
-    ExecutorService executorService = ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("zkStateReaderTest"));
+    ExecutorService executorService =
+        ExecutorUtil.newMDCAwareSingleThreadExecutor(
+            new SolrNamedThreadFactory("zkStateReaderTest"));
 
     try {
       server.run();
