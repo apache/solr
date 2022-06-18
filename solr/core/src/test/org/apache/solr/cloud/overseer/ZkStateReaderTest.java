@@ -31,6 +31,7 @@ import org.apache.solr.cloud.Stats;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
@@ -357,7 +358,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
     SolrZkClient zkClient = null;
     ZkStateReader reader = null;
-    ExecutorService executorService = Executors.newSingleThreadExecutor(new SolrNamedThreadFactory("zkStateReaderTest"));
+    ExecutorService executorService = ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("zkStateReaderTest"));
 
     try {
       server.run();
