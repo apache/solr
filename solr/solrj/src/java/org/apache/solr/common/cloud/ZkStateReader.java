@@ -729,7 +729,7 @@ public class ZkStateReader implements SolrCloseable {
     }
   }
 
-  private Set<String> getCurrentCollections() {
+  public Set<String> getCurrentCollections() {
     Set<String> collections = new HashSet<>();
     collections.addAll(collectionWatches.activeCollections());
     collections.addAll(lazyCollectionStates.keySet());
