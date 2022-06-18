@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.OverseerTest;
@@ -224,12 +223,12 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
       // create new collection
       DocCollection state =
-              new DocCollection(
-                      "c1",
-                      new HashMap<>(),
-                      Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-                      DocRouter.DEFAULT,
-                      0);
+          new DocCollection(
+              "c1",
+              new HashMap<>(),
+              Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
+              DocRouter.DEFAULT,
+              0);
       ZkWriteCommand wc = new ZkWriteCommand("c1", state);
       writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
       writer.writePendingUpdates();
@@ -242,12 +241,13 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       assertFalse(ref.isLazilyLoaded());
       assertEquals(0, ref.get().getZNodeVersion());
 
-      //update the collection
-      state = new DocCollection(
-                      "c1",
-                      new HashMap<>(),
-                      Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-                      DocRouter.DEFAULT,
+      // update the collection
+      state =
+          new DocCollection(
+              "c1",
+              new HashMap<>(),
+              Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
+              DocRouter.DEFAULT,
               ref.get().getZNodeVersion());
       wc = new ZkWriteCommand("c1", state);
       writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
@@ -259,16 +259,17 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       assertFalse(ref.isLazilyLoaded());
       assertEquals(1, ref.get().getZNodeVersion());
 
-      //delete the collection c1, add a collection c2 that is NOT watched
+      // delete the collection c1, add a collection c2 that is NOT watched
       ZkWriteCommand wc1 = new ZkWriteCommand("c1", null);
 
       zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c2", true);
-      state = new DocCollection(
-                      "c2",
-                      new HashMap<>(),
-                      Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-                      DocRouter.DEFAULT,
-                      0);
+      state =
+          new DocCollection(
+              "c2",
+              new HashMap<>(),
+              Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
+              DocRouter.DEFAULT,
+              0);
       ZkWriteCommand wc2 = new ZkWriteCommand("c2", state);
 
       writer.enqueueUpdate(reader.getClusterState(), Arrays.asList(wc1, wc2), null);
@@ -304,28 +305,30 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
       reader = new ZkStateReader(zkClient);
       reader.createClusterStateWatchersAndUpdate();
-      reader.registerCore("c1"); //listen to c1. not yet exist
+      reader.registerCore("c1"); // listen to c1. not yet exist
       zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
       reader.forceUpdateCollection("c1");
       Set<String> currentCollections = reader.getCurrentCollections();
-      assertEquals(0, currentCollections.size()); //no active collections yet
-      
-      //now create both c1 (watched) and c2 (not watched)
-      DocCollection state1 = new DocCollection(
+      assertEquals(0, currentCollections.size()); // no active collections yet
+
+      // now create both c1 (watched) and c2 (not watched)
+      DocCollection state1 =
+          new DocCollection(
               "c1",
               new HashMap<>(),
               Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
               DocRouter.DEFAULT,
               0);
       ZkWriteCommand wc1 = new ZkWriteCommand("c1", state1);
-      DocCollection state2 = new DocCollection(
+      DocCollection state2 =
+          new DocCollection(
               "c2",
               new HashMap<>(),
               Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
               DocRouter.DEFAULT,
               0);
 
-      //do not listen to c2
+      // do not listen to c2
       zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c2", true);
       ZkWriteCommand wc2 = new ZkWriteCommand("c2", state2);
 
@@ -335,7 +338,9 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
       reader.forceUpdateCollection("c1");
       reader.forceUpdateCollection("c2");
-      currentCollections = reader.getCurrentCollections(); //should detect both collections (c1 watched, c2 lazy loaded)
+      currentCollections =
+          reader.getCurrentCollections(); // should detect both collections (c1 watched, c2 lazy
+      // loaded)
       assertEquals(2, currentCollections.size());
     } finally {
       IOUtils.close(reader, zkClient);
@@ -364,48 +369,55 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       reader.createClusterStateWatchersAndUpdate();
       zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
 
-      //start another thread to constantly updating the state
+      // start another thread to constantly updating the state
       final AtomicBoolean stopMutatingThread = new AtomicBoolean(false);
       final ZkStateWriter writer = new ZkStateWriter(reader, new Stats());
       final AtomicInteger updateCounts = new AtomicInteger(0);
       final AtomicReference<Exception> updateException = new AtomicReference<>();
-      executorService.submit(() -> {
-        try {
-          ClusterState clusterState = readerRef.getClusterState();
-          while (!stopMutatingThread.get()) {
-            DocCollection collection = clusterState.getCollectionOrNull("c1");
-            int currentVersion = collection != null? collection.getZNodeVersion() : 0;
-            System.out.println("current version " + currentVersion);
-            // create new collection
-            DocCollection state =
+      executorService.submit(
+          () -> {
+            try {
+              ClusterState clusterState = readerRef.getClusterState();
+              while (!stopMutatingThread.get()) {
+                DocCollection collection = clusterState.getCollectionOrNull("c1");
+                int currentVersion = collection != null ? collection.getZNodeVersion() : 0;
+                System.out.println("current version " + currentVersion);
+                // create new collection
+                DocCollection state =
                     new DocCollection(
-                            "c1",
-                            new HashMap<>(),
-                            Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-                            DocRouter.DEFAULT,
-                            currentVersion);
-            ZkWriteCommand wc = new ZkWriteCommand("c1", state);
-            writer.enqueueUpdate(clusterState, Collections.singletonList(wc), null);
-            clusterState = writer.writePendingUpdates();
-          }
-        } catch (Exception e) {
-          updateException.set(e);
-        }
-        return null;
-      });
+                        "c1",
+                        new HashMap<>(),
+                        Map.of(
+                            ZkStateReader.CONFIGNAME_PROP,
+                            ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
+                        DocRouter.DEFAULT,
+                        currentVersion);
+                ZkWriteCommand wc = new ZkWriteCommand("c1", state);
+                writer.enqueueUpdate(clusterState, Collections.singletonList(wc), null);
+                clusterState = writer.writePendingUpdates();
+              }
+            } catch (Exception e) {
+              updateException.set(e);
+            }
+            return null;
+          });
       executorService.shutdown();
 
-      DocCollectionWatcher dummyWatcher = collection -> false; //do not remove itself
+      DocCollectionWatcher dummyWatcher = collection -> false; // do not remove itself
       for (int i = 0; i < RUN_COUNT; i++) {
         reader.registerDocCollectionWatcher("c1", dummyWatcher);
         TimeUnit.MILLISECONDS.sleep(10);
         reader.removeDocCollectionWatcher("c1", dummyWatcher);
-        assert(reader.getClusterState().getCollectionRef("c1").isLazilyLoaded()); //it should always be lazy loaded, as the collection is not watched anymore
+        assert (reader
+            .getClusterState()
+            .getCollectionRef("c1")
+            .isLazilyLoaded()); // it should always be lazy loaded, as the collection is not watched
+        // anymore
       }
 
       stopMutatingThread.set(true);
       if (updateException.get() != null) {
-        throw(updateException.get());
+        throw (updateException.get());
       }
 
     } finally {
