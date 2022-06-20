@@ -63,6 +63,8 @@ Bug Fixes
 
 * SOLR-16218: failOnVersionConflicts option not working for in-place updates (Lamine Idjeraoui)
 
+* SOLR-16259: Missing newline at the end of solr.in.sh breaks the installer. (John Gately via Shawn Heisey)
+
 Other Changes
 ---------------------
 * SOLR-15897: Remove <jmx/> from all unit test solrconfig.xml files. (Eric Pugh)
