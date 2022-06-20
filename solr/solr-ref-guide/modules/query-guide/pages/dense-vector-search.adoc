@@ -277,6 +277,16 @@ The `knn` query parser can be used with filter queries:
 [source,text]
 &q={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]&fq=id:(1 2 3)
 
+[IMPORTANT]
+====
+
+Filter queries are executed as pre-filtering for the main query. This means that in the first scenario, the query id:(1,2,3)
+is applied only on the result of the query `{!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]`.
+
+
+Instead, for the second query, the knn algorithm finds the topK documents among the results of the filter query `id:(1 2 3)`.
+====
+
 
 ==== Usage as Re-Ranking Query
 The `knn` query parser can be used to rerank first pass query results:
