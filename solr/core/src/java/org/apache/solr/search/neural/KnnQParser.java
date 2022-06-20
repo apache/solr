@@ -16,11 +16,8 @@
  */
 package org.apache.solr.search.neural;
 
-import static java.util.Optional.ofNullable;
-
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -82,21 +79,18 @@ public class KnnQParser extends QParser {
     DenseVectorField denseVectorType = (DenseVectorField) fieldType;
     float[] parsedVectorToSearch = parseVector(vectorToSearch, denseVectorType.getDimension());
 
-    return getFilterQuery()
-        .map(
-            filterQuery ->
-                denseVectorType.getKnnVectorQuery(
-                    schemaField.getName(), parsedVectorToSearch, topK, filterQuery))
-        .orElse(
-            denseVectorType.getKnnVectorQuery(schemaField.getName(), parsedVectorToSearch, topK));
+    return denseVectorType.getKnnVectorQuery(
+        schemaField.getName(), parsedVectorToSearch, topK, getFilterQuery());
   }
 
-  private Optional<? extends Query> getFilterQuery() throws SolrException {
+  private Query getFilterQuery() throws SolrException {
     if (!isFilter()) {
       String[] filterQueries = req.getParams().getParams(CommonParams.FQ);
-      return ofNullable(filterQueries).filter(fq -> fq.length != 0).map(this::computeFilterQuery);
+      if (filterQueries != null && filterQueries.length != 0) {
+        return computeFilterQuery(filterQueries);
+      }
     }
-    return Optional.empty();
+    return null;
   }
 
   private Query computeFilterQuery(String[] filterQueries) throws SolrException {
@@ -116,6 +110,10 @@ public class KnnQParser extends QParser {
               "error in parsing filter queries:" + e.getMessage());
         }
       }
+    }
+
+    if (filters.size() == 1) {
+      return filters.get(0);
     }
 
     BooleanQuery.Builder builder = new BooleanQuery.Builder();

@@ -208,6 +208,7 @@ public class QueryComponent extends SearchComponent {
             filters.add(fqp.getQuery());
           }
         }
+        
         // only set the filters if they are not empty otherwise
         // fq=&someotherParam= will trigger all docs filter for every request
         // if filter cache is disabled
