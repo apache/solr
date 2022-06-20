@@ -131,7 +131,8 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
                   return new Lucene91HnswVectorsFormat(maxConn, beamWidth);
                 }
               } else {
-                throw new SolrException(ErrorCode.SERVER_ERROR, "provided KNN algorithm not supported");
+                throw new SolrException(
+                    ErrorCode.SERVER_ERROR, "provided KNN algorithm not supported");
               }
             }
             return super.getKnnVectorsFormatForField(field);
