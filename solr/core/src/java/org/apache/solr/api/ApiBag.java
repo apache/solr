@@ -26,6 +26,7 @@ import static org.apache.solr.common.util.ValidatingJsonMap.NOT_NULL;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -149,7 +150,7 @@ public class ApiBag {
     private Collection<AnnotatedApi> combinedApis;
 
     protected CommandAggregatingAnnotatedApi(AnnotatedApi api) {
-      super(api.spec, api.getEndPoint(), api.getCommands(), null);
+      super(api.spec, api.getEndPoint(), Maps.newHashMap(api.getCommands()), null);
       combinedApis = Lists.newArrayList();
     }
 
