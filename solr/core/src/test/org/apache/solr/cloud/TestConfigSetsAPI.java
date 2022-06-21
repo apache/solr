@@ -67,6 +67,7 @@ import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
@@ -95,6 +96,7 @@ import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.ConfigSetProperties;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.TestSolrConfigHandler;
+import org.apache.solr.handler.admin.api.ModifyBasicAuthConfigAPI;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.AuthorizationResponse;
@@ -1881,7 +1883,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
         @Override
         public ValidatingJsonMap getSpec() {
-          return Utils.getSpec("cluster.security.BasicAuth.Commands").getSpec();
+          return AnnotatedApi.getApis(new ModifyBasicAuthConfigAPI()).get(0).getSpec();
         }
 
         @Override

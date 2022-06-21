@@ -31,9 +31,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.api.Api;
 import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
+import org.apache.solr.handler.admin.api.ModifyBasicAuthConfigAPI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -173,7 +175,8 @@ public class Sha256AuthenticationProvider
 
   @Override
   public ValidatingJsonMap getSpec() {
-    return Utils.getSpec("cluster.security.BasicAuth.Commands").getSpec();
+    final List<Api> apis = AnnotatedApi.getApis(new ModifyBasicAuthConfigAPI());
+    return apis.get(0).getSpec();
   }
 
   static final Set<String> supported_ops = ImmutableSet.of("set-user", "delete-user");

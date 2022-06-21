@@ -26,6 +26,7 @@ import static org.apache.solr.common.util.ValidatingJsonMap.NOT_NULL;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -149,16 +150,28 @@ public class ApiBag {
     private Collection<AnnotatedApi> combinedApis;
 
     protected CommandAggregatingAnnotatedApi(AnnotatedApi api) {
-      super(api.spec, api.getEndPoint(), api.getCommands(), null);
+      super(api.spec, api.getEndPoint(), Maps.newHashMap(api.getCommands()), null);
       combinedApis = Lists.newArrayList();
     }
 
     public void combineWith(AnnotatedApi api) {
       // Merge in new 'command' entries
-      getCommands().putAll(api.getCommands());
+      boolean newCommandsAdded = false;
+      for (Map.Entry<String, AnnotatedApi.Cmd> entry : api.getCommands().entrySet()) {
+        // Skip registering command if it's identical to an already registered command.
+        if (getCommands().containsKey(entry.getKey())
+            && getCommands().get(entry.getKey()).equals(entry.getValue())) {
+          continue;
+        }
+
+        newCommandsAdded = true;
+        getCommands().put(entry.getKey(), entry.getValue());
+      }
 
       // Reference to Api must be saved to to merge uncached values (i.e. 'spec') lazily
-      combinedApis.add(api);
+      if (newCommandsAdded) {
+        combinedApis.add(api);
+      }
     }
 
     @Override
