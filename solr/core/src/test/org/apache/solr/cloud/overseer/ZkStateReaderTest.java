@@ -217,7 +217,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
       reader = new ZkStateReader(zkClient);
       reader.createClusterStateWatchersAndUpdate();
-      reader.registerCore("c1");
+      reader.registerCore("c1"); // watching c1, so it should get non lazy reference
       zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
 
       reader.forciblyRefreshAllClusterStateSlow();
@@ -286,7 +286,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
       ref = reader.getClusterState().getCollectionRef("c2");
       assertNotNull(ref);
-      assertFalse(ref.isLazilyLoaded());
+      assert (ref.isLazilyLoaded()); // c2 should be lazily loaded as it's not watched
       assertEquals(0, ref.get().getZNodeVersion());
     } finally {
       IOUtils.close(reader, zkClient);
