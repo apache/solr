@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search.neural;
 
-import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.search.BooleanClause;
@@ -31,6 +30,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
+import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.SyntaxError;
 
 public class KnnQParser extends QParser {
@@ -95,21 +95,12 @@ public class KnnQParser extends QParser {
 
   private Query computeFilterQuery(String[] filterQueries) throws SolrException {
 
-    List<Query> filters = new ArrayList<>(filterQueries.length);
+    List<Query> filters;
 
-    for (String filterQuery : filterQueries) {
-      if (filterQuery != null && filterQuery.trim().length() != 0) {
-        QParser filterParser;
-        try {
-          filterParser = QParser.getParser(filterQuery, super.getReq());
-          filterParser.setIsFilter(true);
-          filters.add(filterParser.getQuery());
-        } catch (SyntaxError e) {
-          throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST,
-              "error in parsing filter queries:" + e.getMessage());
-        }
-      }
+    try {
+      filters = QueryUtils.parseFilterQueries(req);
+    } catch (SyntaxError e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
 
     if (filters.size() == 1) {

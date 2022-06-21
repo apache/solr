@@ -53,18 +53,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.DocIterator;
-import org.apache.solr.search.DocList;
-import org.apache.solr.search.DocListAndSet;
-import org.apache.solr.search.QParser;
-import org.apache.solr.search.QParserPlugin;
-import org.apache.solr.search.QueryParsing;
-import org.apache.solr.search.ReturnFields;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.search.SolrQueryTimeoutImpl;
-import org.apache.solr.search.SolrReturnFields;
-import org.apache.solr.search.SortSpec;
-import org.apache.solr.search.SyntaxError;
+import org.apache.solr.search.*;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.util.SolrPluginUtils;
 import org.slf4j.Logger;
@@ -117,16 +106,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
           sortSpec = parser.getSortSpec(true);
         }
 
-        String[] fqs = req.getParams().getParams(CommonParams.FQ);
-        if (fqs != null && fqs.length != 0) {
-          filters = new ArrayList<>();
-          for (String fq : fqs) {
-            if (fq != null && fq.trim().length() != 0) {
-              QParser fqp = QParser.getParser(fq, req);
-              filters.add(fqp.getQuery());
-            }
-          }
-        }
+        filters = QueryUtils.parseFilterQueries(req);
       } catch (SyntaxError e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
       }

@@ -16,7 +16,10 @@
  */
 package org.apache.solr.search;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
@@ -27,6 +30,8 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.request.SolrQueryRequest;
 
 /** */
 public class QueryUtils {
@@ -214,5 +219,32 @@ public class QueryUtils {
             .build();
       }
     }
+  }
+
+  /**
+   * Parse the filter queries in Solr request
+   *
+   * @param req Solr request
+   * @return and array of Query. If the request does not contain filter queries, returns an empty
+   *     list.
+   * @throws SyntaxError if an error occurs during parsing
+   */
+  public static List<Query> parseFilterQueries(SolrQueryRequest req) throws SyntaxError {
+
+    String[] filterQueriesStr = req.getParams().getParams(CommonParams.FQ);
+
+    if (filterQueriesStr != null) {
+      List<Query> filters = new ArrayList<>(filterQueriesStr.length);
+      for (String fq : filterQueriesStr) {
+        if (fq != null && fq.trim().length() != 0) {
+          QParser fqp = QParser.getParser(fq, req);
+          fqp.setIsFilter(true);
+          filters.add(fqp.getQuery());
+        }
+      }
+      return filters;
+    }
+
+    return Collections.emptyList();
   }
 }
