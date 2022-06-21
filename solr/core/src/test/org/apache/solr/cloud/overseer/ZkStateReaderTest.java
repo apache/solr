@@ -428,7 +428,9 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             refLazilyLoaded = true; // it should eventually be lazily loaded
             break;
           }
-          log.info("ref is not lazily loaded yet. Attempt : {}", (j + 1));
+          if (log.isInfoEnabled()) {
+            log.info("ref is not lazily loaded yet. Attempt : {}", (j + 1));
+          }
           TimeUnit.MILLISECONDS.sleep(100);
         }
         assert (refLazilyLoaded);
