@@ -16,8 +16,10 @@
  */
 package org.apache.solr.cloud.overseer;
 
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -35,9 +37,11 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.util.TimeOut;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ZkStateReaderTest extends SolrTestCaseJ4 {
-
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final long TIMEOUT = 30;
 
   public void testExternalCollectionWatchedNotWatched() throws Exception {
@@ -350,8 +354,8 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
   }
 
   public void testWatchRaceCondition() throws Exception {
-    final int RUN_COUNT = 1000;
-    Path zkDir = createTempDir("testConcurrencyWatch");
+    final int RUN_COUNT = 10000;
+    Path zkDir = createTempDir("testWatchRaceCondition");
 
     ZkTestServer server = new ZkTestServer(zkDir);
 
@@ -384,7 +388,6 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
               while (!stopMutatingThread.get()) {
                 DocCollection collection = clusterState.getCollectionOrNull("c1");
                 int currentVersion = collection != null ? collection.getZNodeVersion() : 0;
-                System.out.println("current version " + currentVersion);
                 // create new collection
                 DocCollection state =
                     new DocCollection(
@@ -406,16 +409,31 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
           });
       executorService.shutdown();
 
-      DocCollectionWatcher dummyWatcher = collection -> false; // do not remove itself
       for (int i = 0; i < RUN_COUNT; i++) {
+        final CountDownLatch latch = new CountDownLatch(2);
+
+        // remove itself on 2nd trigger
+        DocCollectionWatcher dummyWatcher = collection -> {
+          latch.countDown();
+          return latch.getCount() == 0;
+        };
         reader.registerDocCollectionWatcher("c1", dummyWatcher);
-        TimeUnit.MILLISECONDS.sleep(10);
+        latch.await(10, TimeUnit.SECONDS);
         reader.removeDocCollectionWatcher("c1", dummyWatcher);
-        assert (reader
-            .getClusterState()
-            .getCollectionRef("c1")
-            .isLazilyLoaded()); // it should always be lazy loaded, as the collection is not watched
-        // anymore
+
+        boolean refLazilyLoaded = false;
+        for (int j = 0 ; j < 10; j++) {
+          if (reader
+                  .getClusterState()
+                  .getCollectionRef("c1")
+                  .isLazilyLoaded()) {
+            refLazilyLoaded = true; // it should eventually be lazily loaded
+            break;
+          }
+          log.info("ref is not lazily loaded yet. Attempt : {}", (j + 1));
+          TimeUnit.MILLISECONDS.sleep(100);
+        }
+        assert(refLazilyLoaded);
       }
 
       stopMutatingThread.set(true);
