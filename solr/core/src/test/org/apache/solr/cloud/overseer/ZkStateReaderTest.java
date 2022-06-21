@@ -413,27 +413,25 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
         final CountDownLatch latch = new CountDownLatch(2);
 
         // remove itself on 2nd trigger
-        DocCollectionWatcher dummyWatcher = collection -> {
-          latch.countDown();
-          return latch.getCount() == 0;
-        };
+        DocCollectionWatcher dummyWatcher =
+            collection -> {
+              latch.countDown();
+              return latch.getCount() == 0;
+            };
         reader.registerDocCollectionWatcher("c1", dummyWatcher);
         latch.await(10, TimeUnit.SECONDS);
         reader.removeDocCollectionWatcher("c1", dummyWatcher);
 
         boolean refLazilyLoaded = false;
-        for (int j = 0 ; j < 10; j++) {
-          if (reader
-                  .getClusterState()
-                  .getCollectionRef("c1")
-                  .isLazilyLoaded()) {
+        for (int j = 0; j < 10; j++) {
+          if (reader.getClusterState().getCollectionRef("c1").isLazilyLoaded()) {
             refLazilyLoaded = true; // it should eventually be lazily loaded
             break;
           }
           log.info("ref is not lazily loaded yet. Attempt : {}", (j + 1));
           TimeUnit.MILLISECONDS.sleep(100);
         }
-        assert(refLazilyLoaded);
+        assert (refLazilyLoaded);
       }
 
       stopMutatingThread.set(true);
