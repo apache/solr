@@ -41,6 +41,8 @@ Improvements
 
 * SOLR-15652: Add Slack channel for community support to Admin UI footer, update links.  (Eric Pugh)
 
+* SOLR-16002: Avoid redundant `FilterQuery` caching, e.g. via `filter($query)` syntax. (Michael Gibney, David Smiley)
+
 * SOLR-15045: `DistributedZkUpdateProcessor` now issues commits to local shards and remote shards in parallel,
   halving the latency of synchronous commits (Michael Gibney)
 
