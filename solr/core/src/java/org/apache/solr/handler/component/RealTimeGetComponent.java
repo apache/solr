@@ -205,7 +205,7 @@ public class RealTimeGetComponent extends SearchComponent {
         List<Query> filters = rb.getFilters();
         // if filters already exists, make a copy instead of modifying the original
         filters = filters == null ? new ArrayList<>(fqs.length) : new ArrayList<>(filters);
-        filters.addAll(QueryUtils.parseFilterQueries(req));
+        filters.addAll(QueryUtils.parseFilterQueries(req, true));
         if (!filters.isEmpty()) {
           rb.setFilters(filters);
         }

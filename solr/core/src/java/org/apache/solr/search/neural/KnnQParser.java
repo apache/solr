@@ -98,7 +98,7 @@ public class KnnQParser extends QParser {
     List<Query> filters;
 
     try {
-      filters = QueryUtils.parseFilterQueries(req);
+      filters = QueryUtils.parseFilterQueries(req, true);
     } catch (SyntaxError e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }

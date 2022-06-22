@@ -53,7 +53,19 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.*;
+import org.apache.solr.search.DocIterator;
+import org.apache.solr.search.DocList;
+import org.apache.solr.search.DocListAndSet;
+import org.apache.solr.search.QParser;
+import org.apache.solr.search.QParserPlugin;
+import org.apache.solr.search.QueryParsing;
+import org.apache.solr.search.QueryUtils;
+import org.apache.solr.search.ReturnFields;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SolrQueryTimeoutImpl;
+import org.apache.solr.search.SolrReturnFields;
+import org.apache.solr.search.SortSpec;
+import org.apache.solr.search.SyntaxError;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.util.SolrPluginUtils;
 import org.slf4j.Logger;
@@ -106,7 +118,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
           sortSpec = parser.getSortSpec(true);
         }
 
-        filters = QueryUtils.parseFilterQueries(req);
+        filters = QueryUtils.parseFilterQueries(req, false);
       } catch (SyntaxError e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
       }

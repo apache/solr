@@ -37,7 +37,14 @@ import org.apache.solr.response.AnalyticsShardResponseWriter;
 import org.apache.solr.response.AnalyticsShardResponseWriter.AnalyticsResponse;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.search.*;
+import org.apache.solr.search.DocSet;
+import org.apache.solr.search.QParser;
+import org.apache.solr.search.QParserPlugin;
+import org.apache.solr.search.QueryParsing;
+import org.apache.solr.search.QueryUtils;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SolrQueryTimeoutImpl;
+import org.apache.solr.search.SyntaxError;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -123,7 +130,7 @@ public class AnalyticsHandler extends RequestHandlerBase
     queries.add(query);
 
     // Filter Params
-    queries.addAll(QueryUtils.parseFilterQueries(req));
+    queries.addAll(QueryUtils.parseFilterQueries(req, false));
     return req.getSearcher().getDocSet(queries);
   }
 
