@@ -335,6 +335,18 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
         "//result/doc[4]/str[@name='id'][.='9']");
   }
 
+  @Test
+  public void knnQueryWithNegativeFilterQuery_shouldPerformKnnSearchInPreFilteredResults() {
+    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+    assertQ(
+        req(CommonParams.Q, "{!knn f=vector topK=4}" + vectorToSearch, "fq", "-id:4", "fl", "id"),
+        "//result[@numFound='4']",
+        "//result/doc[1]/str[@name='id'][.='1']",
+        "//result/doc[2]/str[@name='id'][.='2']",
+        "//result/doc[3]/str[@name='id'][.='10']",
+        "//result/doc[4]/str[@name='id'][.='3']");
+  }
+
   /*
    * See {@link org.apache.solr.search.ReRankQParserPlugin.ReRankQueryRescorer.combine} for more details.
    * */

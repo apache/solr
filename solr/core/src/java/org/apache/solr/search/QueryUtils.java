@@ -171,6 +171,7 @@ public class QueryUtils {
    * @lucene.experimental throw exception if max boolean clauses are exceeded
    */
   public static BooleanQuery build(BooleanQuery.Builder builder, QParser parser) {
+
     int configuredMax =
         parser != null
             ? parser.getReq().getCore().getSolrConfig().booleanQueryMaxClauseCount
@@ -239,7 +240,7 @@ public class QueryUtils {
         if (fq != null && fq.trim().length() != 0) {
           QParser fqp = QParser.getParser(fq, req);
           fqp.setIsFilter(true);
-          filters.add(fqp.getQuery());
+          filters.add(makeQueryable(fqp.getQuery()));
         }
       }
       return filters;
