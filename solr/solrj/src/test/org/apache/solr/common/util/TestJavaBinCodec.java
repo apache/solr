@@ -23,6 +23,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -448,6 +452,24 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     assertEquals(l1, l2);
     assertSame(l1.get(0), l2.get(0));
     assertSame(l1.get(1), l2.get(1));
+  }
+
+  public void testJsr310Classes() throws Exception {
+    Instant instant = Instant.EPOCH;
+    LocalDate localDate = LocalDate.EPOCH;
+    ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(instant, ZoneOffset.UTC);
+
+    Object instantResult = serializeAndDeserialize(instant);
+    assertTrue(instantResult instanceof Date);
+    assertEquals(instant.toEpochMilli(), ((Date) instantResult).getTime());
+
+    Object localDateResult = serializeAndDeserialize(localDate);
+    assertTrue(localDateResult instanceof Date);
+    assertEquals(localDate.toEpochDay(), ((Date) localDateResult).getTime());
+
+    Object zonedDateTimeResult = serializeAndDeserialize(zonedDateTime);
+    assertTrue(zonedDateTimeResult instanceof Date);
+    assertEquals(zonedDateTime.toInstant().toEpochMilli(), ((Date) zonedDateTimeResult).getTime());
   }
 
   public void genBinaryFiles() throws IOException {
