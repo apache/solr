@@ -64,8 +64,9 @@ import org.apache.solr.search.ExtendedDismaxQParser.ExtendedSolrQueryParser.Alia
 import org.apache.solr.util.SolrPluginUtils;
 
 /**
- * Query parser that generates DisjunctionMaxQueries based on user configuration. See the
- * <a href="https://solr.apache.org/guide/solr/latest/query-guide/edismax-query-parser.html">Reference Guide page</a>
+ * Query parser that generates DisjunctionMaxQueries based on user configuration. See the <a
+ * href="https://solr.apache.org/guide/solr/latest/query-guide/edismax-query-parser.html">Reference
+ * Guide page</a>
  */
 public class ExtendedDismaxQParser extends QParser {
 

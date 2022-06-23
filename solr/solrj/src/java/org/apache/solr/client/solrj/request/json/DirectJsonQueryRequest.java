@@ -24,8 +24,9 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 
 /**
- * Represents a query using the <a href="https://solr.apache.org/guide/solr/latest/query-guide/json-request-api.html">JSON
- * Query DSL</a>
+ * Represents a query using the <a
+ * href="https://solr.apache.org/guide/solr/latest/query-guide/json-request-api.html">JSON Query
+ * DSL</a>
  *
  * <p>This class doesn't construct the request body itself. It uses a provided String without any
  * modification. Often used in combination with the JSON DSL's <a
