@@ -284,7 +284,7 @@ public class JDBCStream extends TupleStream implements Expressible {
     // Unfortunately it is impossible to use a custom ClassLoader with DriverManager, so we would
     // need to remove our use of this class in order to support JDBC drivers loaded in via solr's
     // additional library methods. This comment is relevant for JDBC drivers loaded in via custom
-    // plugins and even Solr modules.
+    // plugins and even Solr Modules.
     try {
       if (null != driverClassName) {
         Class.forName(driverClassName);

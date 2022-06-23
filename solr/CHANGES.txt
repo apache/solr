@@ -48,6 +48,8 @@ Improvements
 
 * SOLR-16181: Initialize the LogWatcher earlier in CoreContainer#load() (janhoy)
 
+* SOLR-16225: Upgrade dependencies (Carrot2, HPPC) (Dawid Weiss)
+
 Optimizations
 ---------------------
 * SOLR-16120: Optimise hl.fl expansion. (Christine Poerschke, David Smiley, Mike Drob)
@@ -82,6 +84,10 @@ Bug Fixes
 * SOLR-16165: Rare Deadlock in SlotAcc initialization (Justin Sweeney, noble)
 
 * SOLR-16110: Using Schema/Config API breaks the File-Upload of Config Set File (Steffen Moldenhauer, Kevin Risden)
+
+* SOLR-16218: failOnVersionConflicts option not working for in-place updates (Lamine Idjeraoui)
+
+* SOLR-16259: Missing newline at the end of solr.in.sh breaks the installer. (John Gately via Shawn Heisey)
 
 Other Changes
 ---------------------
@@ -814,7 +820,15 @@ Bug Fixes
 ---------------------
 * SOLR-15871: Update Log4J to 2.17.1 (weidongkl via janhoy)
 
-* SOLR-15587: Don't use the UrlScheme singleton on the client-side to determine cluster's scheme, only get from ClusterState provider impl (Timothy Potter)
+* SOLR-15854: Let RealtimeGet component support negative filters (Tomás Fernández Löbbe)
+
+* SOLR-15961: Fix bug in PKIAuthenticationPlugin that can cause a request to fail with 401 Unauthorized instead
+  of re-fetching expired remote keys from other nodes. (Tomás Fernández Löbbe)
+
+* SOLR-15558: Don't wait for zombie processes to exit when stopping. (Colvin Cowie)
+
+* SOLR-15587: Don't use the UrlScheme singleton on the client-side to determine cluster's scheme,
+  only get from ClusterState provider impl (Timothy Potter)
 
 * SOLR-14569: Configuring a shardHandlerFactory on the /select requestHandler results in HTTP 401 when searching on alias
   in secured Solr. (Isabelle Giguere, Jason Gerlowski, Anshum Gupta, Mark Mark Miller)
@@ -824,12 +838,44 @@ Bug Fixes
 * SOLR-16009: Force Calcite's Rel simplify config flag to false to avoid erasing filters that are meaningful to Solr,
   but look like nonsense to Calcite, such as AND'd filters on the same multi-valued field (Timothy Potter, Kiran Chitturi)
 
+* SOLR-16095: Upgrade JQuery to 3.5.1 in velocity contrib module (Bence Szabo via Jan Høydahl)
+
 * SOLR-16022: Enforce special character requirements on passwords with length less than 15 (Timothy Potter)
 
-* SOLR-16199: Improve query syntax construction for SQL LIKE clause with phrases and wildcards
-  (Kiran Chitturi, Aroop Ganguly, Amrit Sarkar via Timothy Potter)
+* SOLR-15849: Fix the connection reset problem caused by the incorrect use of 4LW with \n when monitoring zooKeeper status (Fa Ming).
+
+* SOLR-15116: Support a HEAD request for managed resources. (Eric Pugh)
+
+* SOLR-16089: Fix empty columns in Cloud Node UI Screen when replica is in down state. (hossman)
+
+* SOLR-16145: Fix very rare NPE in SolrCloud rejoinOverseerElection. (David Smiley)
+
+* SOLR-16168: Spellcheck NPE if invalid dictionary name is provided (Kevin Risden)
+
+* SOLR-15968: Hide annoying WARN log from bin/solr zk command (janhoy, Mike Drob)
+
+* SOLR-16075: ShowFileHandler path parameter is now validated to be relative to instance conf dir in standalone mode (janhoy)
+
+* SOLR-16019: UTF-8 parsing errors for parameters should cause a HTTP 400 status code, not 500 (janhoy, Matthias Pigulla)
+
+* SOLR-16143: SolrConfig can miss updates from ZooKeeper when deleting and recreating file items (Mike Drob)
+
+* SOLR-16199: Improve query syntax construction for SQL LIKE clause with phrases and wildcards (Kiran Chitturi, Aroop Ganguly, Amrit Sarkar via Timothy Potter)
+
+* SOLR-16191: Validate that installed ps utility supports -p flag, so that we do not inadvertantly stop the wrong process. (Mike Drob, Michael Gibney)
+
+* SOLR-16213: Upgrade Jackson to version 2.13.3 (janhoy)
 
 * SOLR-16215: Escape query characters in Solr SQL Array UDF functions (Kiran Chitturi via Timothy Potter)
+
+* SOLR-15965: Use better signatures for the PKI Authentication plugin. (Mike Drob)
+
+* SOLR-16209: Rolling restart will no longer trigger as much PKI Plugin error logging. (Mike Drob, Tomás Fernández Löbbe)
+
+* SOLR-16227: Solr SQL query parsing fails on multiple LIKE clauses and multiple terms
+  (Kiran Chitturi via David Smiley)
+
+* SOLR-16218: failOnVersionConflicts option not working for in-place updates (Lamine Idjeraoui, Houston Putman, Anshum Gupta)
 
 ==================  8.11.1 ==================
 

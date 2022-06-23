@@ -94,10 +94,11 @@ This script is used on *nix systems to install Solr as a service.
 It is described in more detail in the section xref:taking-solr-to-production.adoc[].
 
 modules/::
-Solr's `modules` directory includes 1st-party add-on plugins for specialized features of Solr.
+Solr's `modules` directory includes 1st-party add-ons for specialized features that enhance Solr.
+See the section xref:configuration-guide:solr-modules.adoc[] for more information.
 
 prometheus-exporter/::
-A standalone application, included under `bin/`, that montiors Solr instances and produces Prometheus metrics.
+A standalone application, included under `bin/`, that monitors Solr instances and produces Prometheus metrics.
 See the section xref:deployment-guide:monitoring-with-prometheus-and-grafana.adoc[] for more information.
 
 docker/::

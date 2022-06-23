@@ -17,9 +17,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
-== Facet & Analytics Module
+== JSON Faceting & Analytics
 
-The JSON Faceting module exposes similar functionality to Solr's traditional faceting module but with a stronger emphasis on usability.
+JSON Faceting exposes similar functionality to Solr's traditional faceting but with a stronger emphasis on usability.
 It has several benefits over traditional faceting:
 
 * easier programmatic construction of complex or nested facets

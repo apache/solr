@@ -21,36 +21,41 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ONLY_IF_DOWN;
-import static org.apache.solr.common.cloud.ZkStateReader.*;
-import static org.apache.solr.common.params.CollectionAdminParams.*;
+import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
+import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
+import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionParams.NAME;
-import static org.apache.solr.common.params.CommonAdminParams.*;
-import static org.apache.solr.common.params.CommonParams.*;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonAdminParams.NUM_SUB_SHARDS;
+import static org.apache.solr.common.params.CommonAdminParams.SPLIT_BY_PREFIX;
+import static org.apache.solr.common.params.CommonAdminParams.SPLIT_FUZZ;
+import static org.apache.solr.common.params.CommonAdminParams.SPLIT_KEY;
+import static org.apache.solr.common.params.CommonAdminParams.SPLIT_METHOD;
+import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.common.params.CommonParams.ACTION;
-import static org.apache.solr.common.params.CoreAdminParams.*;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.apache.solr.common.params.CommonParams.TIMING;
+import static org.apache.solr.common.params.CoreAdminParams.DELETE_DATA_DIR;
+import static org.apache.solr.common.params.CoreAdminParams.DELETE_INDEX;
+import static org.apache.solr.common.params.CoreAdminParams.DELETE_INSTANCE_DIR;
+import static org.apache.solr.common.params.CoreAdminParams.REPLICA;
+import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 
-import java.util.*;
-import org.apache.solr.api.Api;
-import org.apache.solr.api.ApiBag;
-import org.apache.solr.common.params.*;
-import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.common.util.ContentStreamBase;
+import java.util.Locale;
+import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.handler.admin.CollectionsHandler;
+import org.apache.solr.handler.admin.V2ApiMappingTest;
 import org.apache.solr.handler.api.ApiRegistrar;
-import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 
 /**
  * Unit tests for the V2 APIs that use the /c/{collection}/shards or /c/{collection}/shards/{shard}
@@ -61,24 +66,21 @@ import org.mockito.ArgumentCaptor;
  * provided. This is done to exercise conversion of all parameters, even if particular combinations
  * are never expected in the same request.
  */
-public class V2ShardsAPIMappingTest {
-  private ApiBag apiBag;
+public class V2ShardsAPIMappingTest extends V2ApiMappingTest<CollectionsHandler> {
 
-  private ArgumentCaptor<SolrQueryRequest> queryRequestCaptor;
-  private CollectionsHandler mockCollectionsHandler;
-
-  @BeforeClass
-  public static void ensureWorkingMockito() {
-    assumeWorkingMockito();
+  @Override
+  public void populateApiBag() {
+    ApiRegistrar.registerShardApis(apiBag, getRequestHandler());
   }
 
-  @Before
-  public void setupApiBag() {
-    mockCollectionsHandler = mock(CollectionsHandler.class);
-    queryRequestCaptor = ArgumentCaptor.forClass(SolrQueryRequest.class);
+  @Override
+  public CollectionsHandler createUnderlyingRequestHandler() {
+    return createMock(CollectionsHandler.class);
+  }
 
-    apiBag = new ApiBag(false);
-    ApiRegistrar.registerShardApis(apiBag, mockCollectionsHandler);
+  @Override
+  public boolean isCoreSpecific() {
+    return false;
   }
 
   @Test
@@ -269,45 +271,5 @@ public class V2ShardsAPIMappingTest {
     assertEquals("true", v1Params.get(FOLLOW_ALIASES));
     assertEquals("4", v1Params.get(COUNT_PROP));
     assertEquals("true", v1Params.get(ONLY_IF_DOWN));
-  }
-
-  private SolrParams captureConvertedV1Params(String path, String method, SolrParams queryParams)
-      throws Exception {
-    return captureConvertedV1Params(path, method, queryParams, null);
-  }
-
-  private SolrParams captureConvertedV1Params(String path, String method, String v2RequestBody)
-      throws Exception {
-    return captureConvertedV1Params(path, method, new ModifiableSolrParams(), v2RequestBody);
-  }
-
-  private SolrParams captureConvertedV1Params(
-      String path, String method, SolrParams queryParams, String v2RequestBody) throws Exception {
-    final HashMap<String, String> parts = new HashMap<>();
-    final Api api = apiBag.lookup(path, method, parts);
-    final SolrQueryResponse rsp = new SolrQueryResponse();
-    final LocalSolrQueryRequest req =
-        new LocalSolrQueryRequest(null, queryParams) {
-          @Override
-          public List<CommandOperation> getCommands(boolean validateInput) {
-            if (v2RequestBody == null) return Collections.emptyList();
-            return ApiBag.getCommandOperations(
-                new ContentStreamBase.StringStream(v2RequestBody), api.getCommandSchema(), true);
-          }
-
-          @Override
-          public Map<String, String> getPathTemplateValues() {
-            return parts;
-          }
-
-          @Override
-          public String getHttpMethod() {
-            return method;
-          }
-        };
-
-    api.call(req, rsp);
-    verify(mockCollectionsHandler).handleRequestBody(queryRequestCaptor.capture(), any());
-    return queryRequestCaptor.getValue().getParams();
   }
 }

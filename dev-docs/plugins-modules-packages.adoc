@@ -13,7 +13,7 @@ See ref guide page https://solr.apache.org/guide/solr/latest/configuration-guide
 
 === Module
 
-Solr modules are addon Solr plugins that are not part of solr-core, but officially maintained
+Solr Modules are addon Solr plugins that are not part of solr-core, but officially maintained
 by the Solr project. They provide well-defined features such as the "extracting" module which lets
 users index rich text documents with Apache Tika. Modules were earlier known as "contribs".
 
