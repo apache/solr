@@ -79,7 +79,8 @@ import org.slf4j.LoggerFactory;
  * A SearchComponent implementation which provides support for spell checking and suggestions using
  * the Lucene contributed SpellChecker.
  *
- * <p>Refer to https://solr.apache.org/guide/spell-checking.html for more details
+ * <p>Refer to <a href="https://solr.apache.org/guide/solr/latest/query-guide/spell-checking.html">
+ *   https://solr.apache.org/guide/solr/latest/query-guide/spell-checking.html</a> for more details
  *
  * @since solr 1.3
  */

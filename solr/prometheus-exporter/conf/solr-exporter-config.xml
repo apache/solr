@@ -70,7 +70,7 @@
       {
       name: "solr_metrics_core_query_{UNIQUE}",
       type: "{TYPE}",
-      help: "See: https://solr.apache.org/guide/performance-statistics-reference.html",
+      help: "See: https://solr.apache.org/guide/solr/latest/deployment-guide/performance-statistics-reference.html",
       label_names: ["category", "searchHandler", "internal", "core"],
       label_values: [$category, $handler, $internal, $core],
       value: $value
@@ -79,7 +79,7 @@
       {
       name: "solr_metrics_core_query_{UNIQUE}",
       type: "{TYPE}",
-      help: "See: https://solr.apache.org/guide/performance-statistics-reference.html",
+      help: "See: https://solr.apache.org/guide/solr/latest/deployment-guide/performance-statistics-reference.html",
       label_names: ["category", "searchHandler", "internal", "core", "collection", "shard", "replica"],
       label_values: [$category, $handler, $internal, $core, $collection, $shard, $replica],
       value: $value
@@ -248,7 +248,7 @@
             {
               name         : "solr_ping",
               type         : "GAUGE",
-              help         : "See following URL: https://solr.apache.org/guide/ping.html",
+              help         : "See following URL: https://solr.apache.org/guide/solr/latest/deployment-guide/ping.html",
               label_names  : [],
               label_values : [],
               value        : $value
@@ -1054,7 +1054,7 @@
             {
             name         : "solr_zookeeper_ensemble_size",
             type         : "GAUGE",
-            help         : "See following URL: https://solr.apache.org/guide/cloud-screens.html#zk-status-view",
+            help         : "See following URL: https://solr.apache.org/guide/solr/latest/deployment-guide/cloud-screens.html#zk-status-view",
             label_names  : [],
             label_values : [],
             value        : $value
@@ -1068,7 +1068,7 @@
             {
             name         : "solr_zookeeper_nodestatus",
             type         : "GAUGE",
-            help         : "See following URL: https://solr.apache.org/guide/cloud-screens.html#zk-status-view",
+            help         : "See following URL: https://solr.apache.org/guide/solr/latest/deployment-guide/cloud-screens.html#zk-status-view",
             label_names  : ["host"],
             label_values : [$host],
             value        : $value
@@ -1080,7 +1080,7 @@
             {
             name         : "solr_zookeeper_status",
             type         : "GAUGE",
-            help         : "See following URL: https://solr.apache.org/guide/cloud-screens.html#zk-status-view",
+            help         : "See following URL: https://solr.apache.org/guide/solr/latest/deployment-guide/cloud-screens.html#zk-status-view",
             label_names  : ["status"],
             label_values : [$statusText],
             value        : $value

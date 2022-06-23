@@ -279,7 +279,7 @@ Below is a slightly shortened version of it:
             {
               name         : "solr_ping",
               type         : "GAUGE",
-              help         : "See following URL: https://solr.apache.org/guide/ping.html",
+              help         : "See following URL: https://solr.apache.org/guide/solr/latest/deployment-guide/ping.html",
               label_names  : [],
               label_values : [],
               value        : $value
@@ -473,7 +473,7 @@ A jq query has to output JSON in the following format:
 {
   "name": "solr_ping",
   "type": "GAUGE",
-  "help": "See following URL: https://solr.apache.org/guide/ping.html",
+  "help": "See following URL: https://solr.apache.org/guide/solr/latest/deployment-guide/ping.html",
   "label_names": ["base_url","core"],
   "label_values": ["http://localhost:8983/solr","collection1"],
   "value": 1.0
@@ -523,7 +523,7 @@ For example, `solr-exporter` converts the JSON in the previous section to the fo
 [source,plain]
 ----
 # TYPE solr_ping gauge
-# HELP solr_ping See following URL: https://solr.apache.org/guide/ping.html
+# HELP solr_ping See following URL: https://solr.apache.org/guide/solr/latest/deployment-guide/ping.html
 solr_ping{base_url="http://localhost:8983/solr",core="collection1"} 1.0
 ----
 

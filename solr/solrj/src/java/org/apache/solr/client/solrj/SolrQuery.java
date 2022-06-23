@@ -296,7 +296,7 @@ public class SolrQuery extends ModifiableSolrParams {
   /**
    * Add Interval Faceting on a field. All intervals for the same field should be included in the
    * same call to this method. For syntax documentation see <a
-   * href="https://solr.apache.org/guide/faceting.html#interval-faceting">Solr wiki</a>. <br>
+   * href="https://solr.apache.org/guide/solr/latest/query-guide/faceting.html#interval-faceting">Solr wiki</a>. <br>
    * Key substitution, filter exclusions or other local params on the field are not supported when
    * using this method, if this is needed, use the lower level {@link #add} method.<br>
    * Key substitution IS supported on intervals when using this method.

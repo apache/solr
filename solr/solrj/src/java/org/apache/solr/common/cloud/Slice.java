@@ -87,7 +87,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
 
     /**
      * A shard is put in that state after it has been successfully split. See <a
-     * href="https://solr.apache.org/guide/collections-api.html#splitshard">the reference guide</a>
+     * href="https://solr.apache.org/guide/solr/latest/deployment-guide/shard-management.html#splitshard">the reference guide</a>
      * for more details.
      */
     INACTIVE,

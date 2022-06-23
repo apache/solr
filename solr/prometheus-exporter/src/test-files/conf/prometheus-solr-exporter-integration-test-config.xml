@@ -77,7 +77,7 @@
             {
               name         : "solr_ping",
               type         : "GAUGE",
-              help         : "See following URL: https://solr.apache.org/guide/ping.html",
+              help         : "See following URL: https://solr.apache.org/guide/solr/latest/deployment-guide/ping.html",
               label_names  : [],
               label_values : [],
               value        : $value
