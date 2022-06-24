@@ -113,10 +113,11 @@ def main():
             failed[frm] = "404"
 
     if conf.htaccess:
-        print("# Existing pages moved to sub path")
+        print("# Existing pages moved to sub path in the 9.0 guide")
         for key in regex_new:
             print("RedirectMatch 301 ^/guide/(%s)\.html /guide/solr/latest/%s/$1.html" % ("|".join(regex_new[key]), key))
-        print("# Page renames in 9.0")
+        print("# Page renames between 8.x and 9.0")
+        print("RewriteRule ^guide/9_0/solr-tutorial.html /guide/solr/latest/getting-started/solr-tutorial.html [R=301,NE,L]")
         for key in result:
             if result[key].startswith("https://"):
                 print("RewriteRule ^guide/%s %s [R=301,NE,L]" % (key, result[key]))
