@@ -45,7 +45,8 @@ public class HyperbolicCosineEvaluator extends RecursiveNumericEvaluator impleme
     if (null == value) {
       return null;
     } else if (value instanceof List) {
-      return ((List<?>) value).stream().map(this::doWork).collect(Collectors.toList());
+      return ((List<?>) value)
+          .stream().map(innerValue -> doWork(innerValue)).collect(Collectors.toList());
     } else {
       return Math.cosh(((Number) value).doubleValue());
     }

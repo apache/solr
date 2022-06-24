@@ -54,7 +54,11 @@ public class EnvSSLCredentialProvider extends AbstractSSLCredentialProvider {
   }
 
   protected String getCredential(String envKey) {
-    return envVars.getOrDefault(envKey, null);
+    if (envVars.containsKey(envKey)) {
+      return envVars.get(envKey);
+    } else {
+      return null;
+    }
   }
 
   @VisibleForTesting

@@ -287,13 +287,22 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
       // try and remove a core that does not exist
       SolrException thrown =
-          expectThrows(SolrException.class, () -> cores.unload("non_existent_core"));
+          expectThrows(
+              SolrException.class,
+              () -> {
+                cores.unload("non_existent_core");
+              });
       assertThat(
           thrown.getMessage(),
           containsString("Cannot unload non-existent core [non_existent_core]"));
 
       // try and remove a null core
-      thrown = expectThrows(SolrException.class, () -> cores.unload(null));
+      thrown =
+          expectThrows(
+              SolrException.class,
+              () -> {
+                cores.unload(null);
+              });
       assertThat(thrown.getMessage(), containsString("Cannot unload non-existent core [null]"));
     } finally {
       cores.shutdown();
@@ -700,7 +709,9 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     assertThrows(
         "Path /tmp should not be allowed",
         SolrException.class,
-        () -> cc.assertPathAllowed(Paths.get("/tmp")));
+        () -> {
+          cc.assertPathAllowed(Paths.get("/tmp"));
+        });
     cc.shutdown();
     System.clearProperty("solr.allowPaths");
   }
@@ -714,7 +725,9 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     assertThrows(
         "Path C:\\tmp should not be allowed",
         SolrException.class,
-        () -> cc.assertPathAllowed(Paths.get("C:\\tmp")));
+        () -> {
+          cc.assertPathAllowed(Paths.get("C:\\tmp"));
+        });
     cc.shutdown();
     System.clearProperty("solr.allowPaths");
   }
@@ -819,7 +832,9 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     SolrException thrown =
         expectThrows(
             SolrException.class,
-            () -> cc.create("bogus", ImmutableMap.of("configSet", "bogus_path")));
+            () -> {
+              cc.create("bogus", ImmutableMap.of("configSet", "bogus_path"));
+            });
     Throwable rootCause = Throwables.getRootCause(thrown);
     assertTrue(
         "init exception doesn't mention bogus dir: " + rootCause.getMessage(),
@@ -943,7 +958,9 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     thrown =
         expectThrows(
             SolrException.class,
-            () -> cc.create("bogus", ImmutableMap.of("configSet", "bogus_path")));
+            () -> {
+              cc.create("bogus", ImmutableMap.of("configSet", "bogus_path"));
+            });
     assertTrue(
         "init exception doesn't mention bogus dir: " + thrown.getCause().getCause().getMessage(),
         0 < thrown.getCause().getCause().getMessage().indexOf("bogus_path"));
@@ -994,7 +1011,9 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             "corrupt solrconfig.xml failed to trigger exception from reload",
-            () -> cc.reload("col_bad"));
+            () -> {
+              cc.reload("col_bad");
+            });
     Throwable rootException = getWrappedException(thrown);
     assertTrue(
         "We're supposed to have a wrapped SAXParserException here, but we don't",

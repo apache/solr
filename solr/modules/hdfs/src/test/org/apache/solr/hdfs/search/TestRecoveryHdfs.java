@@ -679,7 +679,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
           }
         };
 
-    UpdateLog.testing_logReplayFinishHook = logReplayFinish::release;
+    UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
 
     SolrQueryRequest req = req();
     UpdateHandler uhandler = req.getCore().getUpdateHandler();
@@ -828,8 +828,8 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       addDocs(
           1,
           start,
-          new LinkedList<>()); // don't add this to the versions list because we are going to lose
-      // it...
+          new LinkedList<
+              Long>()); // don't add this to the versions list because we are going to lose it...
       h.close();
       files = HdfsUpdateLog.getLogList(fs, new Path(logDir));
       Arrays.sort(files);
@@ -875,7 +875,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
             }
           };
 
-      UpdateLog.testing_logReplayFinishHook = logReplayFinish::release;
+      UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
 
       String logDir = h.getCore().getUpdateHandler().getUpdateLog().getLogDir();
 
@@ -1014,7 +1014,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
             }
           };
 
-      UpdateLog.testing_logReplayFinishHook = logReplayFinish::release;
+      UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
 
       String logDir = h.getCore().getUpdateHandler().getUpdateLog().getLogDir();
 

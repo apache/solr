@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.solr.hdfs.store.blockcache.BlockCache.OnRelease;
 
 /**
  * @lucene.experimental
@@ -46,8 +47,17 @@ public class BlockDirectoryCache implements Cache {
     names = Caffeine.newBuilder().maximumSize(50000).build();
 
     if (releaseBlocks) {
-      keysToRelease = Collections.newSetFromMap(new ConcurrentHashMap<>(1024, 0.75f, 512));
-      blockCache.setOnRelease(key -> keysToRelease.remove(key));
+      keysToRelease =
+          Collections.newSetFromMap(
+              new ConcurrentHashMap<BlockCacheKey, Boolean>(1024, 0.75f, 512));
+      blockCache.setOnRelease(
+          new OnRelease() {
+
+            @Override
+            public void release(BlockCacheKey key) {
+              keysToRelease.remove(key);
+            }
+          });
     }
   }
 

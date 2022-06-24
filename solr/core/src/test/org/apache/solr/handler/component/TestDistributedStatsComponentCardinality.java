@@ -180,7 +180,7 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
         // check the relative error of the estimate returned against the known truth
 
         final double relErr = expectedRelativeError(log2m);
-        final long estimate = stats.get(f).getCardinality();
+        final long estimate = stats.get(f).getCardinality().longValue();
         assertTrue(
             f
                 + ": relativeErr="

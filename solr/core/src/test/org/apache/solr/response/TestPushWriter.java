@@ -101,40 +101,46 @@ public class TestPushWriter extends SolrTestCaseJ4 {
 
   protected void writeData(PushWriter pw) throws IOException {
     pw.writeMap(
-        m ->
-            m.put("responseHeader", singletonMap("status", 0))
-                .put(
-                    "response",
-                    (MapWriter)
-                        m1 ->
-                            m1.put("numFound", 10)
-                                .put(
-                                    "docs",
-                                    (IteratorWriter)
-                                        w ->
-                                            w.add((MapWriter) m3 -> m3.put("id", 1))
-                                                .add(singletonMap("id", 2))
-                                                .add(singletonMap("id", 3)))));
+        m -> {
+          m.put("responseHeader", singletonMap("status", 0))
+              .put(
+                  "response",
+                  (MapWriter)
+                      m1 -> {
+                        m1.put("numFound", 10)
+                            .put(
+                                "docs",
+                                (IteratorWriter)
+                                    w -> {
+                                      w.add((MapWriter) m3 -> m3.put("id", 1))
+                                          .add(singletonMap("id", 2))
+                                          .add(singletonMap("id", 3));
+                                    });
+                      });
+        });
     pw.close();
   }
 
   protected void writeData(String name, TextWriter pw) throws IOException {
     pw.writeMap(
         name,
-        m ->
-            m.put("responseHeader", singletonMap("status", 0))
-                .put(
-                    "response",
-                    (MapWriter)
-                        m1 ->
-                            m1.put("numFound", 10)
-                                .put(
-                                    "docs",
-                                    (IteratorWriter)
-                                        w ->
-                                            w.add((MapWriter) m3 -> m3.put("id", 1))
-                                                .add(singletonMap("id", 2))
-                                                .add(singletonMap("id", 3)))));
+        m -> {
+          m.put("responseHeader", singletonMap("status", 0))
+              .put(
+                  "response",
+                  (MapWriter)
+                      m1 -> {
+                        m1.put("numFound", 10)
+                            .put(
+                                "docs",
+                                (IteratorWriter)
+                                    w -> {
+                                      w.add((MapWriter) m3 -> m3.put("id", 1))
+                                          .add(singletonMap("id", 2))
+                                          .add(singletonMap("id", 3));
+                                    });
+                      });
+        });
     pw.close();
   }
 }

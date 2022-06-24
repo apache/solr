@@ -170,7 +170,9 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
         Assert.assertThrows(
             "Single string value should throw an exception",
             SolrException.class,
-            () -> toTest.parseVector("string"));
+            () -> {
+              toTest.parseVector("string");
+            });
     MatcherAssert.assertThat(
         thrown.getMessage(),
         is(
@@ -181,7 +183,9 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
         Assert.assertThrows(
             "Single float value should throw an exception",
             SolrException.class,
-            () -> toTest.parseVector(1.5f));
+            () -> {
+              toTest.parseVector(1.5f);
+            });
     MatcherAssert.assertThat(
         thrown.getMessage(),
         is(
@@ -197,12 +201,11 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
         Assert.assertThrows(
             "Incorrect elements should throw an exception",
             SolrException.class,
-            () ->
-                toTest.parseVector(
-                    Arrays.asList(
-                        new DenseVectorField(3),
-                        new DenseVectorField(4),
-                        new DenseVectorField(5))));
+            () -> {
+              toTest.parseVector(
+                  Arrays.asList(
+                      new DenseVectorField(3), new DenseVectorField(4), new DenseVectorField(5)));
+            });
     MatcherAssert.assertThat(
         thrown.getMessage(),
         is(
@@ -217,7 +220,9 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
         Assert.assertThrows(
             "Incorrect vector dimension should throw an exception",
             SolrException.class,
-            () -> toTest.parseVector(Arrays.asList(1.0f, 1.5f)));
+            () -> {
+              toTest.parseVector(Arrays.asList(1.0f, 1.5f));
+            });
     MatcherAssert.assertThat(
         thrown.getMessage(),
         is(
@@ -232,7 +237,9 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
         Assert.assertThrows(
             "Incorrect elements should throw an exception",
             SolrException.class,
-            () -> toTest.parseVector(Arrays.asList("1.0f", "string", "string2")));
+            () -> {
+              toTest.parseVector(Arrays.asList("1.0f", "string", "string2"));
+            });
     MatcherAssert.assertThat(
         thrown.getMessage(),
         is(

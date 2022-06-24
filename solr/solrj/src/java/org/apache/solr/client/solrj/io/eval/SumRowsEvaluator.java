@@ -49,11 +49,11 @@ public class SumRowsEvaluator extends RecursiveObjectEvaluator implements OneVal
       double[][] data = matrix.getData();
       List<Number> sums = new ArrayList<>(data.length);
 
-      for (double[] datum : data) {
+      for (int i = 0; i < data.length; i++) {
         double sum = 0;
-        double[] row = datum;
-        for (double v : row) {
-          sum += v;
+        double[] row = data[i];
+        for (int j = 0; j < row.length; j++) {
+          sum += row[j];
         }
 
         sums.add(sum);

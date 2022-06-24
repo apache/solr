@@ -315,7 +315,13 @@ public abstract class FacetProcessor<T extends FacetRequest> {
       return;
     }
     createAccs(docCount, 1);
-    long collected = collect(docs, 0, slotNum -> new SlotContext(bucketQ));
+    long collected =
+        collect(
+            docs,
+            0,
+            slotNum -> {
+              return new SlotContext(bucketQ);
+            });
     countAcc.incrementCount(0, collected);
     assert collected == docCount;
     addStats(bucket, 0);

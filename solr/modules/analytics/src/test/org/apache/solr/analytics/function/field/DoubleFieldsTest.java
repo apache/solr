@@ -83,7 +83,10 @@ public class DoubleFieldsTest extends AbstractAnalyticsFieldTest {
             valueField,
             id -> {
               Map<Double, Integer> doc = new HashMap<>();
-              valueField.streamDoubles(value -> doc.put(value, doc.getOrDefault(value, 0) + 1));
+              valueField.streamDoubles(
+                  value -> {
+                    doc.put(value, doc.getOrDefault(value, 0) + 1);
+                  });
               if (doc.size() > 0) {
                 values.put(id, doc);
               }
@@ -103,7 +106,10 @@ public class DoubleFieldsTest extends AbstractAnalyticsFieldTest {
             valueField,
             id -> {
               Map<Double, Integer> doc = new HashMap<>();
-              valueField.streamDoubles(value -> doc.put(value, doc.getOrDefault(value, 0) + 1));
+              valueField.streamDoubles(
+                  value -> {
+                    doc.put(value, doc.getOrDefault(value, 0) + 1);
+                  });
               if (doc.size() > 0) {
                 values.put(id, doc);
               }

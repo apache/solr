@@ -158,7 +158,7 @@ public class FetchStream extends TupleStream implements Expressible {
     this.fields = fieldList.split(",");
     this.fieldList = fieldList;
 
-    if (on.contains("=")) {
+    if (on.indexOf("=") > -1) {
       String[] leftright = on.split("=");
       leftKey = leftright[0].trim();
       rightKey = leftright[1].trim();
@@ -324,7 +324,7 @@ public class FetchStream extends TupleStream implements Expressible {
   }
 
   private String appendFields() {
-    StringBuilder buf = new StringBuilder();
+    StringBuffer buf = new StringBuffer();
     if (appendKey) {
       buf.append(",");
       buf.append(rightKey);

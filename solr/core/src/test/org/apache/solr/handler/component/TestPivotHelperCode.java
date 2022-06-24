@@ -64,7 +64,7 @@ public class TestPivotHelperCode extends SolrTestCaseJ4 {
     final int numIters = atLeast(100);
     for (int i = 0; i < numIters; i++) {
       final int numStrs = atLeast(1);
-      List<String> data = new ArrayList<>(numStrs);
+      List<String> data = new ArrayList<String>(numStrs);
       for (int j = 0; j < numStrs; j++) {
         // :TODO: mix in nulls
         data.add(TestUtil.randomUnicodeString(random()));
@@ -89,7 +89,7 @@ public class TestPivotHelperCode extends SolrTestCaseJ4 {
     assertEquals(a.compareTo(b), PivotFacetFieldValueCollection.compareWithNullLast(a, b));
     assertEquals(b.compareTo(a), PivotFacetFieldValueCollection.compareWithNullLast(b, a));
 
-    Long bb = new Long(b);
+    Long bb = new Long(b.longValue());
     assertEquals(0, PivotFacetFieldValueCollection.compareWithNullLast(b, bb));
 
     assertEquals(0, PivotFacetFieldValueCollection.compareWithNullLast(null, null));

@@ -1005,69 +1005,81 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         }),
     DELETESTATUS_OP(
         DELETESTATUS,
-        (req, rsp, h) -> {
-          final CoreContainer coreContainer = h.coreContainer;
-          final String requestId = req.getParams().get(REQUESTID);
-          final ZkController zkController = coreContainer.getZkController();
-          Boolean flush = req.getParams().getBool(CollectionAdminParams.FLUSH, false);
+        new CollectionOp() {
+          @SuppressWarnings("unchecked")
+          @Override
+          public Map<String, Object> execute(
+              SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler h) throws Exception {
+            final CoreContainer coreContainer = h.coreContainer;
+            final String requestId = req.getParams().get(REQUESTID);
+            final ZkController zkController = coreContainer.getZkController();
+            Boolean flush = req.getParams().getBool(CollectionAdminParams.FLUSH, false);
 
-          if (requestId == null && !flush) {
-            throw new SolrException(
-                ErrorCode.BAD_REQUEST, "Either requestid or flush parameter must be specified.");
-          }
+            if (requestId == null && !flush) {
+              throw new SolrException(
+                  ErrorCode.BAD_REQUEST, "Either requestid or flush parameter must be specified.");
+            }
 
-          if (requestId != null && flush) {
-            throw new SolrException(
-                ErrorCode.BAD_REQUEST,
-                "Both requestid and flush parameters can not be specified together.");
-          }
+            if (requestId != null && flush) {
+              throw new SolrException(
+                  ErrorCode.BAD_REQUEST,
+                  "Both requestid and flush parameters can not be specified together.");
+            }
 
-          if (coreContainer.getDistributedCollectionCommandRunner().isEmpty()) {
-            if (flush) {
-              Collection<String> completed = zkController.getOverseerCompletedMap().keys();
-              Collection<String> failed = zkController.getOverseerFailureMap().keys();
-              for (String asyncId : completed) {
-                zkController.getOverseerCompletedMap().remove(asyncId);
-                zkController.clearAsyncId(asyncId);
-              }
-              for (String asyncId : failed) {
-                zkController.getOverseerFailureMap().remove(asyncId);
-                zkController.clearAsyncId(asyncId);
-              }
-              rsp.getValues().add("status", "successfully cleared stored collection api responses");
-            } else {
-              // Request to cleanup
-              if (zkController.getOverseerCompletedMap().remove(requestId)) {
-                zkController.clearAsyncId(requestId);
+            if (coreContainer.getDistributedCollectionCommandRunner().isEmpty()) {
+              if (flush) {
+                Collection<String> completed = zkController.getOverseerCompletedMap().keys();
+                Collection<String> failed = zkController.getOverseerFailureMap().keys();
+                for (String asyncId : completed) {
+                  zkController.getOverseerCompletedMap().remove(asyncId);
+                  zkController.clearAsyncId(asyncId);
+                }
+                for (String asyncId : failed) {
+                  zkController.getOverseerFailureMap().remove(asyncId);
+                  zkController.clearAsyncId(asyncId);
+                }
                 rsp.getValues()
-                    .add("status", "successfully removed stored response for [" + requestId + "]");
-              } else if (zkController.getOverseerFailureMap().remove(requestId)) {
-                zkController.clearAsyncId(requestId);
-                rsp.getValues()
-                    .add("status", "successfully removed stored response for [" + requestId + "]");
+                    .add("status", "successfully cleared stored collection api responses");
               } else {
-                rsp.getValues().add("status", "[" + requestId + "] not found in stored responses");
-                // Don't call zkController.clearAsyncId for this, since it could be a
-                // running/pending task
+                // Request to cleanup
+                if (zkController.getOverseerCompletedMap().remove(requestId)) {
+                  zkController.clearAsyncId(requestId);
+                  rsp.getValues()
+                      .add(
+                          "status", "successfully removed stored response for [" + requestId + "]");
+                } else if (zkController.getOverseerFailureMap().remove(requestId)) {
+                  zkController.clearAsyncId(requestId);
+                  rsp.getValues()
+                      .add(
+                          "status", "successfully removed stored response for [" + requestId + "]");
+                } else {
+                  rsp.getValues()
+                      .add("status", "[" + requestId + "] not found in stored responses");
+                  // Don't call zkController.clearAsyncId for this, since it could be a
+                  // running/pending task
+                }
+              }
+            } else {
+              if (flush) {
+                coreContainer.getDistributedCollectionCommandRunner().get().deleteAllAsyncIds();
+                rsp.getValues()
+                    .add("status", "successfully cleared stored collection api responses");
+              } else {
+                if (coreContainer
+                    .getDistributedCollectionCommandRunner()
+                    .get()
+                    .deleteSingleAsyncId(requestId)) {
+                  rsp.getValues()
+                      .add(
+                          "status", "successfully removed stored response for [" + requestId + "]");
+                } else {
+                  rsp.getValues()
+                      .add("status", "[" + requestId + "] not found in stored responses");
+                }
               }
             }
-          } else {
-            if (flush) {
-              coreContainer.getDistributedCollectionCommandRunner().get().deleteAllAsyncIds();
-              rsp.getValues().add("status", "successfully cleared stored collection api responses");
-            } else {
-              if (coreContainer
-                  .getDistributedCollectionCommandRunner()
-                  .get()
-                  .deleteSingleAsyncId(requestId)) {
-                rsp.getValues()
-                    .add("status", "successfully removed stored response for [" + requestId + "]");
-              } else {
-                rsp.getValues().add("status", "[" + requestId + "] not found in stored responses");
-              }
-            }
+            return null;
           }
-          return null;
         }),
     ADDREPLICA_OP(
         ADDREPLICA,
@@ -1656,7 +1668,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
                 "Collection '" + collectionName + "' does not exist, no action taken.");
           }
 
-          NamedList<Object> snapshots = new NamedList<>();
+          NamedList<Object> snapshots = new NamedList<Object>();
           SolrZkClient client = h.coreContainer.getZkController().getZkClient();
           Collection<CollectionSnapshotMetaData> m =
               SolrSnapshotManager.listSnapshots(client, collectionName);
@@ -1864,7 +1876,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
     int replicaFailCount;
     if (createCollResponse.getResponse().get("failure") != null) {
-      replicaFailCount = ((NamedList<?>) createCollResponse.getResponse().get("failure")).size();
+      replicaFailCount = ((NamedList) createCollResponse.getResponse().get("failure")).size();
     } else {
       replicaFailCount = 0;
     }
@@ -1899,7 +1911,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
                     Collection<Replica> replicas;
                     if (!checkLeaderOnly) replicas = shard.getReplicas();
                     else {
-                      replicas = new ArrayList<>();
+                      replicas = new ArrayList<Replica>();
                       replicas.add(shard.getLeader());
                     }
                     for (Replica replica : replicas) {

@@ -354,7 +354,7 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
    * Custom SynonymMap.Parser implementation that provides synonym mappings from the managed JSON in
    * this class during SynonymMap building.
    */
-  private static class ManagedSynonymParser extends SynonymMap.Parser {
+  private class ManagedSynonymParser extends SynonymMap.Parser {
 
     SynonymManager synonymManager;
 

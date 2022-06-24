@@ -102,7 +102,7 @@ public class QueryRateLimiter extends RequestRateLimiter {
     }
 
     if (rateLimiterMeta.allowedRequests != null) {
-      rateLimiterConfig.allowedRequests = rateLimiterMeta.allowedRequests;
+      rateLimiterConfig.allowedRequests = rateLimiterMeta.allowedRequests.intValue();
     }
 
     if (rateLimiterMeta.enabled != null) {

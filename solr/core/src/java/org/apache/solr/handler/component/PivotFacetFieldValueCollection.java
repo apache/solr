@@ -258,9 +258,9 @@ public class PivotFacetFieldValueCollection implements Iterable<PivotFacetValue>
 
     if (dirty) {
       if (facetFieldSort.equals(FacetParams.FACET_SORT_COUNT)) {
-        this.explicitValues.sort(new PivotFacetCountComparator());
+        Collections.sort(this.explicitValues, new PivotFacetCountComparator());
       } else if (facetFieldSort.equals(FacetParams.FACET_SORT_INDEX)) {
-        this.explicitValues.sort(new PivotFacetValueComparator());
+        Collections.sort(this.explicitValues, new PivotFacetValueComparator());
       }
       dirty = false;
     }
@@ -282,9 +282,8 @@ public class PivotFacetFieldValueCollection implements Iterable<PivotFacetValue>
   @Override
   public Iterator<PivotFacetValue> iterator() {
     Iterator<PivotFacetValue> it =
-        new Iterator<>() {
+        new Iterator<PivotFacetValue>() {
           private final Iterator valuesIterator = explicitValues.iterator();
-
           private boolean shouldGiveMissingValue = (missingValue != null);
 
           @Override

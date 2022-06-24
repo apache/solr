@@ -101,8 +101,8 @@ public class SampleEvaluator extends RecursiveObjectEvaluator implements ManyVal
             (MultivariateNormalDistribution) first;
         double[] sample = multivariateNormalDistribution.sample();
         List<Number> sampleList = new ArrayList<>(sample.length);
-        for (double v : sample) {
-          sampleList.add(v);
+        for (int i = 0; i < sample.length; i++) {
+          sampleList.add(sample[i]);
         }
         return sampleList;
       }

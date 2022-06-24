@@ -33,7 +33,8 @@ public class TestSizeLimitedDistributedMap extends TestDistributedMap {
     try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), 10000)) {
       String path = getAndMakeInitialPath(zkClient);
       DistributedMap map =
-          new SizeLimitedDistributedMap(zkClient, path, numResponsesToStore, deletedItems::add);
+          new SizeLimitedDistributedMap(
+              zkClient, path, numResponsesToStore, (element) -> deletedItems.add(element));
       for (int i = 0; i < numResponsesToStore; i++) {
         map.put("xyz_" + i, new byte[0]);
         expectedKeys.add("xyz_" + i);

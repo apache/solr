@@ -51,41 +51,44 @@ public class JsonValidatorTest extends SolrTestCaseJ4 {
     Exception e =
         expectThrows(
             Exception.class,
-            () ->
-                new JsonSchemaValidator(
-                    "{"
-                        + "  type:object,"
-                        + "  properties: {"
-                        + "   age : {type: int},"
-                        + "   adult : {type: Boolean},"
-                        + "   name: {type: string}}}"));
+            () -> {
+              new JsonSchemaValidator(
+                  "{"
+                      + "  type:object,"
+                      + "  properties: {"
+                      + "   age : {type: int},"
+                      + "   adult : {type: Boolean},"
+                      + "   name: {type: string}}}");
+            });
     assertTrue(e.getMessage().contains("Unknown type int"));
 
     e =
         expectThrows(
             Exception.class,
-            () ->
-                new JsonSchemaValidator(
-                    "{"
-                        + "  type:object,"
-                        + "   x : y,"
-                        + "  properties: {"
-                        + "   age : {type: number},"
-                        + "   adult : {type: boolean},"
-                        + "   name: {type: string}}}"));
+            () -> {
+              new JsonSchemaValidator(
+                  "{"
+                      + "  type:object,"
+                      + "   x : y,"
+                      + "  properties: {"
+                      + "   age : {type: number},"
+                      + "   adult : {type: boolean},"
+                      + "   name: {type: string}}}");
+            });
     assertTrue(e.getMessage().contains("Unknown key"));
 
     e =
         expectThrows(
             Exception.class,
-            () ->
-                new JsonSchemaValidator(
-                    "{"
-                        + "  type:object,"
-                        + "  propertes: {"
-                        + "   age : {type: number},"
-                        + "   adult : {type: boolean},"
-                        + "   name: {type: string}}}"));
+            () -> {
+              new JsonSchemaValidator(
+                  "{"
+                      + "  type:object,"
+                      + "  propertes: {"
+                      + "   age : {type: number},"
+                      + "   adult : {type: boolean},"
+                      + "   name: {type: string}}}");
+            });
     assertTrue(e.getMessage().contains("Unknown key : propertes"));
 
     final JsonSchemaValidator personWithEnumValidator =

@@ -47,7 +47,7 @@ public class LogFunction {
               ErrorCode.BAD_REQUEST, "The " + name + " function requires at least 1.");
         } else if (params.length == 1) {
           return LambdaFunction.createDoubleLambdaFunction(
-              name, Math::log, (DoubleValueStream) params[0]);
+              name, (a) -> Math.log(a), (DoubleValueStream) params[0]);
         } else if (params.length == 2) {
           return LambdaFunction.createDoubleLambdaFunction(
               name,

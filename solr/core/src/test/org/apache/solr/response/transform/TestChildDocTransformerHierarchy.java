@@ -567,9 +567,7 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
       if (val instanceof Collection) {
         Object newVals =
             ((Collection) val)
-                .stream()
-                    .map(TestChildDocTransformerHierarchy::cleanIndexableField)
-                    .collect(Collectors.toList());
+                .stream().map((item) -> (cleanIndexableField(item))).collect(Collectors.toList());
         input.setField(field.getKey(), newVals);
         continue;
       }

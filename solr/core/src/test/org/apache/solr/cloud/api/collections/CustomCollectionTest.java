@@ -61,7 +61,7 @@ public class CustomCollectionTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     DocCollection coll = getCollectionState(collection);
-    assertEquals("implicit", ((Map<?, ?>) coll.get(DOC_ROUTER)).get("name"));
+    assertEquals("implicit", ((Map) coll.get(DOC_ROUTER)).get("name"));
     assertNotNull(coll.getStr(REPLICATION_FACTOR));
     assertNull(
         "A shard of a Collection configured with implicit router must have null range",
@@ -257,6 +257,8 @@ public class CustomCollectionTest extends SolrCloudTestCase {
     waitForState(
         "Not enough active replicas in shard 'x'",
         collectionName,
-        (n, c) -> c.getSlice("x").getReplicas().size() == 1);
+        (n, c) -> {
+          return c.getSlice("x").getReplicas().size() == 1;
+        });
   }
 }

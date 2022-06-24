@@ -334,7 +334,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
 
     List<Integer> boostedResults = new ArrayList<>();
 
-    for (int result : resultsArray) {
+    for (int i = 0; i < resultsArray.length; i++) {
+      int result = resultsArray[i];
       if (mergeBoost.boost(result)) {
         boostedResults.add(result);
       }
@@ -342,7 +343,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
 
     List<Integer> controlResults = new ArrayList<>();
 
-    for (int result : resultsArray) {
+    for (int i = 0; i < resultsArray.length; i++) {
+      int result = resultsArray[i];
       if (Arrays.binarySearch(boostedArray, result) > -1) {
         controlResults.add(result);
       }
@@ -956,18 +958,19 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     SolrException ex =
         expectThrows(
             SolrException.class,
-            () ->
-                h.query(
-                    req(
-                        params(
-                            "q",
-                            "*:*",
-                            "fq",
-                            "{!collapse field=" + group + hint + "}",
-                            "group",
-                            "true",
-                            "group.field",
-                            "id"))));
+            () -> {
+              h.query(
+                  req(
+                      params(
+                          "q",
+                          "*:*",
+                          "fq",
+                          "{!collapse field=" + group + hint + "}",
+                          "group",
+                          "true",
+                          "group.field",
+                          "id")));
+            });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertThat(ex.getMessage(), containsString("Can not use collapse with Grouping enabled"));
 
@@ -1332,7 +1335,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     // convert our docs to update commands, along with some commits, in a shuffled order and process
     // all of them...
     final List<String> updates =
-        Stream.concat(Stream.of(commit(), commit()), docs.stream().map(SolrTestCaseJ4::adoc))
+        Stream.concat(Stream.of(commit(), commit()), docs.stream().map(doc -> adoc(doc)))
             .collect(Collectors.toList());
     Collections.shuffle(updates, random());
     for (String u : updates) {

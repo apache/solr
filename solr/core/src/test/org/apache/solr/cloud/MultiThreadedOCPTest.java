@@ -286,18 +286,20 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
   public void testLongAndShortRunningParallelApiCalls()
       throws InterruptedException, IOException, SolrServerException {
     Thread indexThread =
-        new Thread(
-            () -> {
-              Random random = random();
-              int max = atLeast(random, 200);
-              for (int id = 101; id < max; id++) {
-                try {
-                  doAddDoc(String.valueOf(id));
-                } catch (Exception e) {
-                  log.error("Exception while adding docs", e);
-                }
+        new Thread() {
+          @Override
+          public void run() {
+            Random random = random();
+            int max = atLeast(random, 200);
+            for (int id = 101; id < max; id++) {
+              try {
+                doAddDoc(String.valueOf(id));
+              } catch (Exception e) {
+                log.error("Exception while adding docs", e);
               }
-            });
+            }
+          }
+        };
     indexThread.start();
     try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
 

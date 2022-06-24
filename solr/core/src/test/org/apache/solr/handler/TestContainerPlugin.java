@@ -403,7 +403,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       method = GET,
       path = "/plugin/my/plugin",
       permission = PermissionNameProvider.Name.COLL_READ_PERM)
-  public static class C2 {}
+  public class C2 {}
 
   @EndPoint(
       method = GET,

@@ -263,7 +263,12 @@ public class CollectionHandlingUtils {
     log.debug("Waiting for slice {} of collection {} to be available", sliceName, collectionName);
     try {
       zkStateReader.waitForState(
-          collectionName, 320, TimeUnit.SECONDS, c -> c != null && c.getSlice(sliceName) != null);
+          collectionName,
+          320,
+          TimeUnit.SECONDS,
+          c -> {
+            return c != null && c.getSlice(sliceName) != null;
+          });
     } catch (TimeoutException | InterruptedException e) {
       SolrZkClient.checkInterrupted(e);
       throw new SolrException(
@@ -561,7 +566,7 @@ public class CollectionHandlingUtils {
     private final String adminPath;
     private final ZkStateReader zkStateReader;
     private final ShardHandlerFactory shardHandlerFactory;
-    private final NamedList<String> shardAsyncIdByNode = new NamedList<>();
+    private final NamedList<String> shardAsyncIdByNode = new NamedList<String>();
 
     public ShardRequestTracker(
         String asyncId,

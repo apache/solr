@@ -547,7 +547,7 @@ public class PackageManager implements Closeable {
         collections.stream()
             .filter(c -> !previouslyDeployed.contains(c))
             .collect(Collectors.toList());
-    return new Pair<>(deployedCollections, previouslyDeployed);
+    return new Pair<List<String>, List<String>>(deployedCollections, previouslyDeployed);
   }
 
   @SuppressWarnings("unchecked")
@@ -713,7 +713,9 @@ public class PackageManager implements Closeable {
       String[] overrides,
       String collection) {
     Map<String, String> collectionParameterOverrides =
-        isUpdate ? getPackageParams(packageInstance.name, collection) : new HashMap<>();
+        isUpdate
+            ? getPackageParams(packageInstance.name, collection)
+            : new HashMap<String, String>();
     if (overrides != null) {
       for (String override : overrides) {
         collectionParameterOverrides.put(override.split("=")[0], override.split("=")[1]);
@@ -883,7 +885,8 @@ public class PackageManager implements Closeable {
     SolrPackageInstance latest = null;
     if (versions != null && !versions.isEmpty()) {
       latest = versions.get(0);
-      for (SolrPackageInstance pkg : versions) {
+      for (int i = 0; i < versions.size(); i++) {
+        SolrPackageInstance pkg = versions.get(i);
         if (pkg.version.equals(version)) {
           return pkg;
         }
@@ -1107,7 +1110,7 @@ public class PackageManager implements Closeable {
     } catch (KeeperException | InterruptedException e) {
       throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, e);
     }
-    Map<String, String> deployed = new HashMap<>();
+    Map<String, String> deployed = new HashMap<String, String>();
     for (String collection : allCollections) {
       // Check package version installed
       String paramsJson =

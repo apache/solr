@@ -129,7 +129,7 @@ public class RandomSortField extends FieldType {
 
             @Override
             public void setTopValue(Integer value) {
-              topVal = value;
+              topVal = value.intValue();
             }
 
             @Override

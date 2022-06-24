@@ -688,7 +688,7 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
     req.setShowSchema(true);
     NamedList<Object> rsp = controlClient.request(req);
     @SuppressWarnings({"unchecked"})
-    NamedList<Object> fields = (NamedList) ((NamedList<?>) rsp.get("schema")).get("fields");
+    NamedList<Object> fields = (NamedList) ((NamedList) rsp.get("schema")).get("fields");
     ArrayList<String> names = new ArrayList<>(fields.size());
     for (Map.Entry<String, Object> item : fields) {
       names.add(item.getKey());

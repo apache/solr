@@ -53,9 +53,10 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
   protected BaseHandlerApiSupport() {
     commandsMapping = new HashMap<>();
     for (ApiCommand cmd : getCommands()) {
-      Map<V2EndPoint, List<ApiCommand>> m =
-          commandsMapping.computeIfAbsent(cmd.meta().getHttpMethod(), k -> new HashMap<>());
-      List<ApiCommand> list = m.computeIfAbsent(cmd.meta().getEndPoint(), k -> new ArrayList<>());
+      Map<V2EndPoint, List<ApiCommand>> m = commandsMapping.get(cmd.meta().getHttpMethod());
+      if (m == null) commandsMapping.put(cmd.meta().getHttpMethod(), m = new HashMap<>());
+      List<ApiCommand> list = m.get(cmd.meta().getEndPoint());
+      if (list == null) m.put(cmd.meta().getEndPoint(), list = new ArrayList<>());
       list.add(cmd);
     }
   }
@@ -203,7 +204,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
                   || Boolean.class.isAssignableFrom(oClass)) {
                 suppliedMap.put(param, String.valueOf(o));
               } else if (List.class.isAssignableFrom(oClass)
-                  && ((List<?>) o).get(0) instanceof String) {
+                  && ((List) o).get(0) instanceof String) {
                 @SuppressWarnings({"unchecked"})
                 List<String> l = (List<String>) o;
                 suppliedMap.put(param, l.toArray(new String[0]));

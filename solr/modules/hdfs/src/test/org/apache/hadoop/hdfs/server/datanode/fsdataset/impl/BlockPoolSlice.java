@@ -114,7 +114,12 @@ public class BlockPoolSlice {
   private static final int VOLUMES_REPLICA_ADD_THREADPOOL_SIZE = Runtime
       .getRuntime().availableProcessors();
   private static final Comparator<File> FILE_COMPARATOR =
-          Comparator.comparing(File::getName);
+      new Comparator<File>() {
+        @Override
+        public int compare(File f1, File f2) {
+          return f1.getName().compareTo(f2.getName());
+        }
+      };
 
   /**
    * Create a blook pool slice
@@ -195,7 +200,12 @@ public class BlockPoolSlice {
       initializeAddReplicaPool(conf, (FsDatasetImpl) volume.getDataset());
     }
     // Make the dfs usage to be saved during shutdown.
-    shutdownHook = () -> addReplicaThreadPool.shutdownNow();
+    shutdownHook = new Runnable() {
+      @Override
+      public void run() {
+        addReplicaThreadPool.shutdownNow();
+      }
+    };
     ShutdownHookManager.get().addShutdownHook(shutdownHook,
         SHUTDOWN_HOOK_PRIORITY);
   }
@@ -334,9 +344,9 @@ public class BlockPoolSlice {
     boolean  success = readReplicasFromCache(volumeMap, lazyWriteReplicaMap);
     if (!success) {
       List<IOException> exceptions = Collections
-          .synchronizedList(new ArrayList<>());
+          .synchronizedList(new ArrayList<IOException>());
       Queue<RecursiveAction> subTaskQueue =
-          new ConcurrentLinkedQueue<>();
+          new ConcurrentLinkedQueue<RecursiveAction>();
 
       // add finalized replicas
       AddReplicaProcessor task = new AddReplicaProcessor(volumeMap,

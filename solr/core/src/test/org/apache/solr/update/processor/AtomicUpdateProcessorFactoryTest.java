@@ -185,31 +185,33 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     for (int i = 0; i < 10; i++) {
       int index = random().nextInt(5);
       Thread t =
-          new Thread(
-              () -> {
-                ModifiableSolrParams params =
-                    new ModifiableSolrParams()
-                        .add("processor", "atomic")
-                        .add("atomic.cat", "add")
-                        .add("atomic.int_i", "inc")
-                        .add("commit", "true");
-                try (SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), params)) {
-                  AddUpdateCommand cmd = new AddUpdateCommand(req);
-                  cmd.solrDoc = new SolrInputDocument();
-                  cmd.solrDoc.addField("id", 10); // hardcoded id=10
-                  cmd.solrDoc.addField("cat", strings[index]);
-                  cmd.solrDoc.addField("int_i", index);
-                  SolrQueryResponse rsp = new SolrQueryResponse();
-                  factory
-                      .getInstance(
-                          cmd.getReq(),
-                          new SolrQueryResponse(),
-                          createDistributedUpdateProcessor(
-                              cmd.getReq(), rsp, createRunUpdateProcessor(cmd.getReq(), rsp, null)))
-                      .processAdd(cmd);
-                } catch (IOException e) {
-                }
-              });
+          new Thread() {
+            @Override
+            public void run() {
+              ModifiableSolrParams params =
+                  new ModifiableSolrParams()
+                      .add("processor", "atomic")
+                      .add("atomic.cat", "add")
+                      .add("atomic.int_i", "inc")
+                      .add("commit", "true");
+              try (SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), params)) {
+                AddUpdateCommand cmd = new AddUpdateCommand(req);
+                cmd.solrDoc = new SolrInputDocument();
+                cmd.solrDoc.addField("id", 10); // hardcoded id=10
+                cmd.solrDoc.addField("cat", strings[index]);
+                cmd.solrDoc.addField("int_i", index);
+                SolrQueryResponse rsp = new SolrQueryResponse();
+                factory
+                    .getInstance(
+                        cmd.getReq(),
+                        new SolrQueryResponse(),
+                        createDistributedUpdateProcessor(
+                            cmd.getReq(), rsp, createRunUpdateProcessor(cmd.getReq(), rsp, null)))
+                    .processAdd(cmd);
+              } catch (IOException e) {
+              }
+            }
+          };
       threads.add(t);
       t.start();
       finalCount += index; // int_i

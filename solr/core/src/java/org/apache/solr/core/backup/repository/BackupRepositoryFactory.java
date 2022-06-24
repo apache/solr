@@ -37,9 +37,9 @@ public class BackupRepositoryFactory {
 
   public BackupRepositoryFactory(PluginInfo[] backupRepoPlugins) {
     if (backupRepoPlugins != null) {
-      for (PluginInfo backupRepoPlugin : backupRepoPlugins) {
-        String name = backupRepoPlugin.name;
-        boolean isDefault = backupRepoPlugin.isDefault();
+      for (int i = 0; i < backupRepoPlugins.length; i++) {
+        String name = backupRepoPlugins[i].name;
+        boolean isDefault = backupRepoPlugins[i].isDefault();
 
         if (backupRepoPluginByName.containsKey(name)) {
           throw new SolrException(
@@ -50,10 +50,10 @@ public class BackupRepositoryFactory {
             throw new SolrException(
                 ErrorCode.SERVER_ERROR, "More than one backup repository is configured as default");
           }
-          this.defaultBackupRepoPlugin = backupRepoPlugin;
+          this.defaultBackupRepoPlugin = backupRepoPlugins[i];
         }
-        backupRepoPluginByName.put(name, backupRepoPlugin);
-        log.info("Added backup repository with configuration params {}", backupRepoPlugin);
+        backupRepoPluginByName.put(name, backupRepoPlugins[i]);
+        log.info("Added backup repository with configuration params {}", backupRepoPlugins[i]);
       }
       if (backupRepoPlugins.length == 1) {
         this.defaultBackupRepoPlugin = backupRepoPlugins[0];

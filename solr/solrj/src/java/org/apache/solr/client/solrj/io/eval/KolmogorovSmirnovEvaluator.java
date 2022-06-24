@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.stat.inference.KolmogorovSmirnovTest;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -39,7 +38,8 @@ public class KolmogorovSmirnovEvaluator extends RecursiveObjectEvaluator impleme
   @Override
   public Object doWork(Object first, Object second) throws IOException {
     if (null == first
-        || (first instanceof List<?> && ((List<?>) first).stream().anyMatch(Objects::isNull))) {
+        || (first instanceof List<?>
+            && ((List<?>) first).stream().anyMatch(item -> null == item))) {
       throw new IOException(
           String.format(
               Locale.ROOT,
@@ -47,7 +47,8 @@ public class KolmogorovSmirnovEvaluator extends RecursiveObjectEvaluator impleme
               toExpression(constructingFactory)));
     }
     if (null == second
-        || (second instanceof List<?> && ((List<?>) second).stream().anyMatch(Objects::isNull))) {
+        || (second instanceof List<?>
+            && ((List<?>) second).stream().anyMatch(item -> null == item))) {
       throw new IOException(
           String.format(
               Locale.ROOT,

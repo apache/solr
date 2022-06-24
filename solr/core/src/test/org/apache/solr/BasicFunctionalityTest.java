@@ -798,9 +798,9 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertFalse(d1.getField("id") instanceof LazyDocument.LazyField);
     values1 = d1.getFields("test_hlt");
     assertEquals(4, values1.length);
-    for (IndexableField field : values1) {
-      assertTrue(field instanceof LazyDocument.LazyField);
-      LazyDocument.LazyField f = (LazyDocument.LazyField) field;
+    for (int i = 0; i < values1.length; i++) {
+      assertTrue(values1[i] instanceof LazyDocument.LazyField);
+      LazyDocument.LazyField f = (LazyDocument.LazyField) values1[i];
       assertFalse(f.hasBeenLoaded());
     }
     req.close();
@@ -825,9 +825,9 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     }
 
     assertNotNull(values2[0].stringValue()); // actuallize one value
-    for (IndexableField indexableField : values2) {
+    for (int i = 0; i < values2.length; i++) {
       // now all values for this field should be loaded & cached
-      LazyDocument.LazyField f = (LazyDocument.LazyField) indexableField;
+      LazyDocument.LazyField f = (LazyDocument.LazyField) values2[i];
       assertTrue(f.hasBeenLoaded());
     }
 

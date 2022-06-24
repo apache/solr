@@ -98,7 +98,7 @@ public class NodeRolesTest extends SolrCloudTestCase {
             .build()
             .process(cluster.getSolrClient());
     assertFalse(
-        ((Collection<?>) rsp._get("node-roles/overseer/" + overseerModeOnDataNode, null))
+        ((Collection) rsp._get("node-roles/overseer/" + overseerModeOnDataNode, null))
             .contains(j1.getNodeName()));
   }
 

@@ -1148,7 +1148,9 @@ public final class ManagedIndexSchema extends IndexSchema {
 
   private Map<String, List<CopyField>> cloneCopyFieldsMap(Map<String, List<CopyField>> original) {
     Map<String, List<CopyField>> clone = new HashMap<>(original.size());
-    for (Map.Entry<String, List<CopyField>> entry : original.entrySet()) {
+    Iterator<Map.Entry<String, List<CopyField>>> iterator = original.entrySet().iterator();
+    while (iterator.hasNext()) {
+      Map.Entry<String, List<CopyField>> entry = iterator.next();
       clone.put(entry.getKey(), new ArrayList<>(entry.getValue()));
     }
     return clone;

@@ -39,7 +39,10 @@ public class CastingDateValueStreamTest extends SolrTestCaseJ4 {
 
     // No values
     val.setValues();
-    casted.streamDates(value -> assertTrue("There should be no values to stream", false));
+    casted.streamDates(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple Values
     val.setValues("1800-01-01T10:30:15Z", "1920-04-15T18:15:45Z", "2012-11-30T20:30:15Z");
@@ -61,7 +64,10 @@ public class CastingDateValueStreamTest extends SolrTestCaseJ4 {
 
     // No values
     val.setValues();
-    casted.streamStrings(value -> assertTrue("There should be no values to stream", false));
+    casted.streamStrings(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple Values
     val.setValues("1800-01-01T10:30:15Z", "1920-04-15T18:15:45Z", "2012-11-30T20:30:15Z");
@@ -88,7 +94,10 @@ public class CastingDateValueStreamTest extends SolrTestCaseJ4 {
 
     // No values
     val.setValues();
-    casted.streamObjects(value -> assertTrue("There should be no values to stream", false));
+    casted.streamObjects(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple Values
     val.setValues("1800-01-01T10:30:15Z", "1920-04-15T18:15:45Z", "2012-11-30T20:30:15Z");

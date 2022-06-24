@@ -161,7 +161,7 @@ public class JavabinLoader extends ContentStreamLoader {
               Object o = readVal(fis);
               if (o == END_OBJ) break;
               if (o instanceof NamedList) {
-                params = ((NamedList<?>) o).toSolrParams();
+                params = ((NamedList) o).toSolrParams();
               } else {
                 try {
                   if (o instanceof byte[]) {

@@ -62,7 +62,10 @@ public class StringFieldsTest extends AbstractAnalyticsFieldTest {
             valueField,
             id -> {
               Map<String, Integer> doc = new HashMap<>();
-              valueField.streamStrings(value -> doc.put(value, doc.getOrDefault(value, 0) + 1));
+              valueField.streamStrings(
+                  value -> {
+                    doc.put(value, doc.getOrDefault(value, 0) + 1);
+                  });
               if (doc.size() > 0) {
                 values.put(id, doc);
               }

@@ -194,7 +194,9 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
       repo.delete(getBaseUri(), Lists.newArrayList("file4.txt"), IGNORE_NONEXISTENT);
       expectThrows(
           IOException.class,
-          () -> repo.delete(getBaseUri(), Lists.newArrayList("file4.txt"), REPORT_NONEXISTENT));
+          () -> {
+            repo.delete(getBaseUri(), Lists.newArrayList("file4.txt"), REPORT_NONEXISTENT);
+          });
 
       // Delete existing files individually and in 'bulk'
       repo.delete(getBaseUri(), Lists.newArrayList("file1.txt"), REPORT_NONEXISTENT);

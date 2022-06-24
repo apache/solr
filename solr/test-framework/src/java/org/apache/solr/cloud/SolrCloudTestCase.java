@@ -209,11 +209,15 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   }
 
   public static LiveNodesPredicate containsLiveNode(String node) {
-    return (oldNodes, newNodes) -> newNodes.contains(node);
+    return (oldNodes, newNodes) -> {
+      return newNodes.contains(node);
+    };
   }
 
   public static LiveNodesPredicate missingLiveNode(String node) {
-    return (oldNodes, newNodes) -> !newNodes.contains(node);
+    return (oldNodes, newNodes) -> {
+      return !newNodes.contains(node);
+    };
   }
 
   public static LiveNodesPredicate missingLiveNodes(List<String> nodes) {

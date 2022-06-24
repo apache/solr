@@ -41,9 +41,12 @@ import org.apache.hadoop.security.authentication.server.AuthenticationFilter;
 import org.apache.hadoop.security.authentication.server.AuthenticationHandler;
 import org.apache.hadoop.security.authentication.server.AuthenticationToken;
 import org.apache.hadoop.security.token.delegation.web.DelegationTokenAuthenticationHandler;
+import org.apache.http.HttpException;
+import org.apache.http.HttpRequest;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
+import org.apache.http.protocol.HttpContext;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpListenerFactory;
@@ -72,8 +75,13 @@ public class HttpParamDelegationTokenPlugin extends KerberosPlugin {
   }
 
   private final HttpRequestInterceptor interceptor =
-      (httpRequest, httpContext) ->
+      new HttpRequestInterceptor() {
+        @Override
+        public void process(HttpRequest httpRequest, HttpContext httpContext)
+            throws HttpException, IOException {
           getPrincipal().ifPresent(usr -> httpRequest.setHeader(INTERNAL_REQUEST_HEADER, usr));
+        }
+      };
 
   public HttpParamDelegationTokenPlugin(CoreContainer coreContainer) {
     super(coreContainer);
@@ -266,7 +274,7 @@ public class HttpParamDelegationTokenPlugin extends KerberosPlugin {
         throws IOException, ServletException {
       // remove the filter-specific authentication information, so it doesn't get accidentally
       // forwarded.
-      List<NameValuePair> newPairs = new LinkedList<>();
+      List<NameValuePair> newPairs = new LinkedList<NameValuePair>();
       List<NameValuePair> pairs =
           URLEncodedUtils.parse(request.getQueryString(), Charset.forName("UTF-8"));
       for (NameValuePair nvp : pairs) {

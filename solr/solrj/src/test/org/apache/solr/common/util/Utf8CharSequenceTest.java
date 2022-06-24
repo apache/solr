@@ -28,7 +28,9 @@ public class Utf8CharSequenceTest extends SolrTestCaseJ4 {
 
   public void testLargeString() throws IOException {
     StringBuilder sb = new StringBuilder();
-    sb.append("Hello World!".repeat(100));
+    for (int i = 0; i < 100; i++) {
+      sb.append("Hello World!");
+    }
     ByteArrayUtf8CharSequence utf8 = new ByteArrayUtf8CharSequence(sb.toString());
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     byte[] buf = new byte[256];
@@ -64,12 +66,14 @@ public class Utf8CharSequenceTest extends SolrTestCaseJ4 {
     NamedList<String> nl = new NamedList<>();
     String str = " The value!";
     for (int i = 0; i < 5; i++) {
-      StringBuilder sb = new StringBuilder();
+      StringBuffer sb = new StringBuffer();
       sb.append(i);
-      sb.append(str.repeat(i));
+      for (int j = 0; j < i; j++) {
+        sb.append(str);
+      }
       nl.add("key" + i, sb.toString());
     }
-    StringBuilder sb = new StringBuilder();
+    StringBuffer sb = new StringBuffer();
     for (; ; ) {
       sb.append(str);
       if (sb.length() > 1024 * 4) break;

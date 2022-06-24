@@ -582,7 +582,10 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
 
     SolrException e =
         expectThrows(
-            SolrException.class, () -> h.query(req("q", "*:*", "json.facet", "{bleh:'div(2,4)'}")));
+            SolrException.class,
+            () -> {
+              h.query(req("q", "*:*", "json.facet", "{bleh:'div(2,4)'}"));
+            });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
     assertThat(
         e.getMessage(),
@@ -592,7 +595,9 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
     e =
         expectThrows(
             SolrException.class,
-            () -> h.query(req("q", "*:*", "json.facet", "{b:'agg(div(2,4))'}")));
+            () -> {
+              h.query(req("q", "*:*", "json.facet", "{b:'agg(div(2,4))'}"));
+            });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
     assertThat(
         e.getMessage(),
@@ -602,14 +607,19 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
     e =
         expectThrows(
             SolrException.class,
-            () -> h.query(req("q", "*:*", "json.facet", "{b:'agg(bleh(2,4))'}")));
+            () -> {
+              h.query(req("q", "*:*", "json.facet", "{b:'agg(bleh(2,4))'}"));
+            });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
     assertThat(
         e.getMessage(), containsString("Unknown aggregation 'bleh' in input ('agg(bleh(2,4))"));
 
     e =
         expectThrows(
-            SolrException.class, () -> h.query(req("q", "*:*", "json.facet", "{b:'bleh(2,4)'}")));
+            SolrException.class,
+            () -> {
+              h.query(req("q", "*:*", "json.facet", "{b:'bleh(2,4)'}"));
+            });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
     assertThat(e.getMessage(), containsString("Unknown aggregation 'bleh' in input ('bleh(2,4)"));
 

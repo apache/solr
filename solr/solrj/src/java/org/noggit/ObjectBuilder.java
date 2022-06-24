@@ -120,14 +120,14 @@ public class ObjectBuilder {
   }
 
   public Object getLong() throws IOException {
-    return parser.getLong();
+    return Long.valueOf(parser.getLong());
   }
 
   public Object getNumber() throws IOException {
     CharArr num = parser.getNumberChars();
     String numstr = num.toString();
     double d = Double.parseDouble(numstr);
-    if (!Double.isInfinite(d)) return d;
+    if (!Double.isInfinite(d)) return Double.valueOf(d);
     // TODO: use more efficient constructor in Java5
     return new BigDecimal(num.buf, num.start, num.size());
   }
@@ -151,7 +151,7 @@ public class ObjectBuilder {
   }
 
   public Object newObject() throws IOException {
-    return new LinkedHashMap<>();
+    return new LinkedHashMap<Object, Object>();
   }
 
   public Object getKey() throws IOException {
@@ -181,7 +181,7 @@ public class ObjectBuilder {
   }
 
   public Object newArray() {
-    return new ArrayList<>();
+    return new ArrayList<Object>();
   }
 
   @SuppressWarnings("unchecked")

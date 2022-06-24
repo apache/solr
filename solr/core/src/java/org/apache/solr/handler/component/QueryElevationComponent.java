@@ -441,7 +441,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         String id = DOMUtil.getAttr(child, "id", "missing 'id'");
         String e = DOMUtil.getAttr(child, EXCLUDE, null);
         if (e != null) {
-          if (Boolean.parseBoolean(e)) {
+          if (Boolean.valueOf(e)) {
             elevationBuilder.addExcludedIds(Collections.singleton(id));
             continue;
           }
@@ -1220,7 +1220,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   }
 
   /** Elevates certain docs to the top. */
-  private static class ElevationComparatorSource extends FieldComparatorSource {
+  private class ElevationComparatorSource extends FieldComparatorSource {
 
     private final IntIntHashMap elevatedWithPriority;
     private final boolean useConfiguredElevatedOrder;

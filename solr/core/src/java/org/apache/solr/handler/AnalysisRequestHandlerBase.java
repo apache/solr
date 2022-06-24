@@ -219,7 +219,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
   // a static mapping of the reflected attribute keys to the names used in Solr 1.4
   static Map<String, String> ATTRIBUTE_MAPPING =
       Collections.unmodifiableMap(
-          new HashMap<>() {
+          new HashMap<String, String>() {
             {
               put(OffsetAttribute.class.getName() + "#startOffset", "start");
               put(OffsetAttribute.class.getName() + "#endOffset", "end");
@@ -246,7 +246,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     // sort the tokens by absolute position
     ArrayUtil.timSort(
         tokens,
-        new Comparator<>() {
+        new Comparator<AttributeSource>() {
           @Override
           public int compare(AttributeSource a, AttributeSource b) {
             return arrayCompare(
@@ -259,9 +259,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
             final int stop = Math.min(a.length, b.length);
             while (p < stop) {
               int diff = a[p] - b[p];
-              if (diff != 0) {
-                return diff;
-              }
+              if (diff != 0) return diff;
               p++;
             }
             // One is a prefix of the other, or, they are equal:
@@ -269,7 +267,8 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
           }
         });
 
-    for (AttributeSource token : tokens) {
+    for (int i = 0; i < tokens.length; i++) {
+      AttributeSource token = tokens[i];
       final NamedList<Object> tokenNamedList = new SimpleOrderedMap<>();
       final BytesRef rawBytes;
       if (token.hasAttribute(BytesTermAttribute.class)) {
@@ -296,25 +295,28 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       }
 
       token.reflectWith(
-          (attClass, key, value) -> {
-            // leave out position and bytes term
-            if (TermToBytesRefAttribute.class.isAssignableFrom(attClass)) return;
-            if (CharTermAttribute.class.isAssignableFrom(attClass)) return;
-            if (PositionIncrementAttribute.class.isAssignableFrom(attClass)) return;
+          new AttributeReflector() {
+            @Override
+            public void reflect(Class<? extends Attribute> attClass, String key, Object value) {
+              // leave out position and bytes term
+              if (TermToBytesRefAttribute.class.isAssignableFrom(attClass)) return;
+              if (CharTermAttribute.class.isAssignableFrom(attClass)) return;
+              if (PositionIncrementAttribute.class.isAssignableFrom(attClass)) return;
 
-            String k = attClass.getName() + '#' + key;
+              String k = attClass.getName() + '#' + key;
 
-            // map keys for "standard attributes":
-            if (ATTRIBUTE_MAPPING.containsKey(k)) {
-              k = ATTRIBUTE_MAPPING.get(k);
+              // map keys for "standard attributes":
+              if (ATTRIBUTE_MAPPING.containsKey(k)) {
+                k = ATTRIBUTE_MAPPING.get(k);
+              }
+
+              if (value instanceof BytesRef) {
+                final BytesRef p = (BytesRef) value;
+                value = p.toString();
+              }
+
+              tokenNamedList.add(k, value);
             }
-
-            if (value instanceof BytesRef) {
-              final BytesRef p = (BytesRef) value;
-              value = p.toString();
-            }
-
-            tokenNamedList.add(k, value);
           });
 
       tokensNamedLists.add(tokenNamedList);

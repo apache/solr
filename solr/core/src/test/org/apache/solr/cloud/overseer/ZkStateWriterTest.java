@@ -32,6 +32,7 @@ import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
@@ -149,7 +150,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
                 "c1",
                 new DocCollection(
                     "c1",
-                    new HashMap<>(),
+                    new HashMap<String, Slice>(),
                     Collections.singletonMap(
                         ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
                     DocRouter.DEFAULT,
@@ -200,7 +201,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
                 "c2",
                 new DocCollection(
                     "c2",
-                    new HashMap<>(),
+                    new HashMap<String, Slice>(),
                     Collections.singletonMap(
                         ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
                     DocRouter.DEFAULT,
@@ -235,7 +236,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
                 "c1",
                 new DocCollection(
                     "c1",
-                    new HashMap<>(),
+                    new HashMap<String, Slice>(),
                     Collections.singletonMap(
                         ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
                     DocRouter.DEFAULT,

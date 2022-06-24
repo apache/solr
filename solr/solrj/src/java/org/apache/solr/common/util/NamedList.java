@@ -333,7 +333,8 @@ public class NamedList<T>
   public Object findRecursive(String... args) {
     NamedList<?> currentList = null;
     Object value = null;
-    for (String key : args) {
+    for (int i = 0; i < args.length; i++) {
+      String key = args[i];
       /*
        * The first time through the loop, the current list is null, so we assign
        * it to this list. Then we retrieve the first key from this list and
@@ -395,7 +396,7 @@ public class NamedList<T>
   }
 
   public Map<String, T> asShallowMap(boolean allowDps) {
-    return new Map<>() {
+    return new Map<String, T>() {
       @Override
       public int size() {
         return NamedList.this.size();
@@ -609,7 +610,7 @@ public class NamedList<T>
     final NamedList<T> list = this;
 
     Iterator<Map.Entry<String, T>> iter =
-        new Iterator<>() {
+        new Iterator<Map.Entry<String, T>>() {
 
           int idx = 0;
 
@@ -622,7 +623,7 @@ public class NamedList<T>
           public Map.Entry<String, T> next() {
             final int index = idx++;
             Map.Entry<String, T> nv =
-                new Map.Entry<>() {
+                new Map.Entry<String, T>() {
                   @Override
                   public String getKey() {
                     return list.getName(index);

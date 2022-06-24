@@ -498,10 +498,10 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
 
   private void assertExpandGroups(Map<String, SolrDocumentList> expandedResults, String... groups)
       throws Exception {
-    for (String group : groups) {
-      if (!expandedResults.containsKey(group)) {
+    for (int i = 0; i < groups.length; i++) {
+      if (!expandedResults.containsKey(groups[i])) {
         throw new Exception(
-            "Expanded Group Not Found:" + group + ", Found:" + exportGroups(expandedResults));
+            "Expanded Group Not Found:" + groups[i] + ", Found:" + exportGroups(expandedResults));
       }
     }
   }

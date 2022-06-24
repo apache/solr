@@ -180,7 +180,17 @@ public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
       SolrZkClient zkClient, String path, ZkMaintenanceUtils.VISIT_ORDER visitOrder)
       throws KeeperException, InterruptedException {
     List<String> result = new ArrayList<>();
-    ZkMaintenanceUtils.traverseZkTree(zkClient, path, visitOrder, result::add);
+    ZkMaintenanceUtils.traverseZkTree(
+        zkClient,
+        path,
+        visitOrder,
+        new ZkMaintenanceUtils.ZkVisitor() {
+
+          @Override
+          public void visit(String path) throws InterruptedException, KeeperException {
+            result.add(path);
+          }
+        });
     return result;
   }
 }

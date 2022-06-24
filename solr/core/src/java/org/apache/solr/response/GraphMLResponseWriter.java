@@ -131,23 +131,23 @@ public class GraphMLResponseWriter implements QueryResponseWriter {
   }
 
   private String xmlEscape(String s) {
-    if (s.contains(">")) {
+    if (s.indexOf(">") > -1) {
       s = s.replace(">", "&gt;");
     }
 
-    if (s.contains("<")) {
+    if (s.indexOf("<") > -1) {
       s = s.replace("<", "&lt;");
     }
 
-    if (s.contains("\"")) {
+    if (s.indexOf("\"") > -1) {
       s = s.replace("\"", "&quot;");
     }
 
-    if (s.contains("'")) {
+    if (s.indexOf("'") > -1) {
       s = s.replace("'", "&apos;");
     }
 
-    if (s.contains("&")) {
+    if (s.indexOf("&") > -1) {
       s = s.replace("&", "&amp;");
     }
 

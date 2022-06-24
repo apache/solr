@@ -17,7 +17,6 @@
 package org.apache.solr;
 
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -223,7 +222,7 @@ public class DistributedIntervalFacetingTest extends BaseDistributedSearchTestCa
     values[0] = random().nextInt(max);
     values[1] = random().nextInt(max);
     if ("test_s_dv".equals(fieldName) || "test_ss_dv".equals(fieldName)) {
-      Arrays.sort(values, Comparator.comparing(String::valueOf));
+      Arrays.sort(values, (o1, o2) -> String.valueOf(o1).compareTo(String.valueOf(o2)));
     } else {
       Arrays.sort(values);
     }

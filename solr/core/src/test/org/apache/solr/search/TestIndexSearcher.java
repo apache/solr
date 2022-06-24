@@ -317,15 +317,17 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
       assertFalse(newCore.getSolrConfig().useColdSearcher);
 
       Thread t =
-          new Thread(
-              () -> {
-                try {
-                  doQuery(newCore);
-                  querySucceeded.set(true);
-                } catch (Exception e) {
-                  throw new RuntimeException(e);
-                }
-              });
+          new Thread() {
+            public void run() {
+              try {
+                doQuery(newCore);
+                querySucceeded.set(true);
+              } catch (Exception e) {
+                throw new RuntimeException(e);
+              }
+            }
+            ;
+          };
       t.start();
 
       if (System.getProperty(SYSPROP_NIGHTLY) != null) {
@@ -387,15 +389,17 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
       assertTrue(newCore.getSolrConfig().useColdSearcher);
 
       Thread t =
-          new Thread(
-              () -> {
-                try {
-                  doQuery(newCore);
-                  querySucceeded.set(true);
-                } catch (Exception e) {
-                  throw new RuntimeException(e);
-                }
-              });
+          new Thread() {
+            public void run() {
+              try {
+                doQuery(newCore);
+                querySucceeded.set(true);
+              } catch (Exception e) {
+                throw new RuntimeException(e);
+              }
+            }
+            ;
+          };
       t.start();
 
       // validate that the query runs before the searcher warmer finishes

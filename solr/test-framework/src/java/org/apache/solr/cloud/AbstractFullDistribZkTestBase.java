@@ -27,7 +27,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,7 +34,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
@@ -229,12 +227,16 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
   protected static void setErrorHook() {
     SolrCmdDistributor.testing_errorHook =
-        data -> {
-          Exception e = (Exception) data[0];
-          if (e == null) return;
-          String msg = e.getMessage();
-          if (msg != null && msg.contains("Timeout")) {
-            Diagnostics.logThreadDumps("REQUESTING THREAD DUMP DUE TO TIMEOUT: " + e.getMessage());
+        new Diagnostics.Callable() {
+          @Override
+          public void call(Object... data) {
+            Exception e = (Exception) data[0];
+            if (e == null) return;
+            String msg = e.getMessage();
+            if (msg != null && msg.contains("Timeout")) {
+              Diagnostics.logThreadDumps(
+                  "REQUESTING THREAD DUMP DUE TO TIMEOUT: " + e.getMessage());
+            }
           }
         };
   }
@@ -497,6 +499,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                   SolrClient client = createNewSolrClient(j.getLocalPort());
                   clients.add(client);
 
+                } catch (IOException e) {
+                  e.printStackTrace();
+                  throw new RuntimeException(e);
                 } catch (Exception e) {
                   e.printStackTrace();
                   throw new RuntimeException(e);
@@ -536,6 +541,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                   coreClients.add(createNewSolrClient(coreName, j.getLocalPort()));
                   SolrClient client = createNewSolrClient(j.getLocalPort());
                   clients.add(client);
+                } catch (IOException e) {
+                  e.printStackTrace();
+                  throw new RuntimeException(e);
                 } catch (Exception e) {
                   e.printStackTrace();
                   throw new RuntimeException(e);
@@ -573,6 +581,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                 coreClients.add(createNewSolrClient(coreName, j.getLocalPort()));
                 SolrClient client = createNewSolrClient(j.getLocalPort());
                 clients.add(client);
+              } catch (IOException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
               } catch (Exception e) {
                 e.printStackTrace();
                 throw new RuntimeException(e);
@@ -961,8 +972,11 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         for (Entry<String, Replica> entry : entries) {
           Replica replica = entry.getValue();
           if (replica.getBaseUrl().contains(":" + port)) {
-            List<CloudJettyRunner> list =
-                shardToJetty.computeIfAbsent(slice.getName(), k -> new ArrayList<>());
+            List<CloudJettyRunner> list = shardToJetty.get(slice.getName());
+            if (list == null) {
+              list = new ArrayList<>();
+              shardToJetty.put(slice.getName(), list);
+            }
             boolean isLeader = slice.getLeader() == replica;
             CloudJettyRunner cjr = new CloudJettyRunner();
             cjr.jetty = jetty;
@@ -1980,7 +1994,13 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     customThreadPool.submit(() -> IOUtils.closeQuietly(controlClient));
 
-    customThreadPool.submit(() -> coreClients.parallelStream().forEach(IOUtils::closeQuietly));
+    customThreadPool.submit(
+        () ->
+            coreClients.parallelStream()
+                .forEach(
+                    c -> {
+                      IOUtils.closeQuietly(c);
+                    }));
 
     customThreadPool.submit(() -> IOUtils.closeQuietly(controlClientCloud));
 
@@ -2044,17 +2064,21 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                   ZkStateReader.REPLICATION_FACTOR);
     }
     if (numNrtReplicas == null) {
-      numNrtReplicas = 0;
+      numNrtReplicas = Integer.valueOf(0);
     }
     Integer numTlogReplicas = (Integer) collectionProps.get(ZkStateReader.TLOG_REPLICAS);
     if (numTlogReplicas == null) {
-      numTlogReplicas = 0;
+      numTlogReplicas = Integer.valueOf(0);
     }
     Integer numPullReplicas = (Integer) collectionProps.get(ZkStateReader.PULL_REPLICAS);
     if (numPullReplicas == null) {
-      numPullReplicas = 0;
+      numPullReplicas = Integer.valueOf(0);
     }
-    params.set("collection.configName", Objects.requireNonNullElse(confSetName, "conf1"));
+    if (confSetName != null) {
+      params.set("collection.configName", confSetName);
+    } else {
+      params.set("collection.configName", "conf1");
+    }
 
     int clientIndex = random().nextInt(2);
     List<Integer> list = new ArrayList<>();
@@ -2729,9 +2753,14 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         List<NamedList<Object>> commits =
             (List<NamedList<Object>>)
                 response.getResponse().get(ReplicationHandler.CMD_SHOW_COMMITS);
-        Collections.max(commits, Comparator.comparing(a -> ((Long) a.get("indexVersion"))));
+        Collections.max(
+            commits,
+            (a, b) -> ((Long) a.get("indexVersion")).compareTo((Long) b.get("indexVersion")));
         return (long)
-            Collections.max(commits, Comparator.comparing(a -> ((Long) a.get("indexVersion"))))
+            Collections.max(
+                    commits,
+                    (a, b) ->
+                        ((Long) a.get("indexVersion")).compareTo((Long) b.get("indexVersion")))
                 .get("indexVersion");
       } catch (SolrServerException e) {
         log.warn(

@@ -73,7 +73,10 @@ public final class CoreSorter implements Comparator<CoreDescriptor> {
         // If all else is same. prioritize fewer replicas I have because that will complete the
         // quorum for shard faster. If I have only one replica for a shard I can finish it faster
         // than a shard with 2 replicas in this node
-        return Integer.compare(c1.myReplicas, c2.myReplicas);
+        if (c1.myReplicas < c2.myReplicas) return -1;
+        if (c2.myReplicas < c1.myReplicas) return 1;
+        // if everything is same return 0
+        return 0;
       };
 
   /** Primary entry-point to sort the cores. */

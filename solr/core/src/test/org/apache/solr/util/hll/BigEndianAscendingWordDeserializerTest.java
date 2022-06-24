@@ -31,33 +31,36 @@ public class BigEndianAscendingWordDeserializerTest extends SolrTestCase {
     IllegalArgumentException e =
         expectThrows(
             IllegalArgumentException.class,
-            () ->
-                new BigEndianAscendingWordDeserializer(
-                    0 /*wordLength, below minimum of 1*/,
-                    0 /*bytePadding, arbitrary*/,
-                    new byte[1] /*bytes, arbitrary, not used here*/));
+            () -> {
+              new BigEndianAscendingWordDeserializer(
+                  0 /*wordLength, below minimum of 1*/,
+                  0 /*bytePadding, arbitrary*/,
+                  new byte[1] /*bytes, arbitrary, not used here*/);
+            });
     assertTrue(e.getMessage().contains("Word length must be"));
 
     // word length too large
     e =
         expectThrows(
             IllegalArgumentException.class,
-            () ->
-                new BigEndianAscendingWordDeserializer(
-                    65 /*wordLength, above maximum of 64*/,
-                    0 /*bytePadding, arbitrary*/,
-                    new byte[1] /*bytes, arbitrary, not used here*/));
+            () -> {
+              new BigEndianAscendingWordDeserializer(
+                  65 /*wordLength, above maximum of 64*/,
+                  0 /*bytePadding, arbitrary*/,
+                  new byte[1] /*bytes, arbitrary, not used here*/);
+            });
     assertTrue(e.getMessage().contains("Word length must be"));
 
     // byte padding negative
     e =
         expectThrows(
             IllegalArgumentException.class,
-            () ->
-                new BigEndianAscendingWordDeserializer(
-                    5 /*wordLength, arbitrary*/,
-                    -1 /*bytePadding, too small*/,
-                    new byte[1] /*bytes, arbitrary, not used here*/));
+            () -> {
+              new BigEndianAscendingWordDeserializer(
+                  5 /*wordLength, arbitrary*/,
+                  -1 /*bytePadding, too small*/,
+                  new byte[1] /*bytes, arbitrary, not used here*/);
+            });
     assertTrue(e.getMessage().contains("Byte padding must be"));
   }
 

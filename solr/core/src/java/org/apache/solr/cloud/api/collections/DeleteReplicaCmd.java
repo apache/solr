@@ -158,7 +158,9 @@ public class DeleteReplicaCmd implements CollectionApiCommand {
       String shardId = shardSlice.getName();
       Set<String> replicaNames = entry.getValue();
       Set<Replica> replicas =
-          replicaNames.stream().map(shardSlice::getReplica).collect(Collectors.toSet());
+          replicaNames.stream()
+              .map(name -> shardSlice.getReplica(name))
+              .collect(Collectors.toSet());
       assignStrategy.verifyDeleteReplicas(ccc.getSolrCloudManager(), coll, shardId, replicas);
     }
 
@@ -182,7 +184,7 @@ public class DeleteReplicaCmd implements CollectionApiCommand {
       Slice slice, String shard, String collectionName, int count) {
     validateReplicaAvailability(slice, shard, collectionName, count);
     Collection<Replica> allReplicas = slice.getReplicas();
-    Set<String> replicasToBeRemoved = new HashSet<>();
+    Set<String> replicasToBeRemoved = new HashSet<String>();
     Replica leader = slice.getLeader();
     for (Replica replica : allReplicas) {
       if (count == 0) {

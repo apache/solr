@@ -20,6 +20,7 @@ import static org.apache.solr.handler.ReplicationTestHelper.*;
 import static org.junit.matchers.JUnitMatchers.containsString;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -353,7 +354,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       assertEquals(i + ": " + "follower isFollower?", "true", details.get("isFollower"));
       assertNotNull(i + ": " + "follower has follower section", details.get("follower"));
       // SOLR-2677: assert not false negatives
-      Object timesFailed = ((NamedList<?>) details.get("follower")).get(IndexFetcher.TIMES_FAILED);
+      Object timesFailed = ((NamedList) details.get("follower")).get(IndexFetcher.TIMES_FAILED);
       // SOLR-7134: we can have a fail because some mock index files have no checksum, will
       // always be downloaded, and may not be able to be moved into the existing index
       assertTrue(
@@ -1097,10 +1098,13 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     String[] list =
         new File(ddir)
             .list(
-                (dir, name) -> {
-                  File f = new File(dir, name);
-                  return f.isDirectory()
-                      && !SolrSnapshotMetaDataManager.SNAPSHOT_METADATA_DIR.equals(name);
+                new FilenameFilter() {
+                  @Override
+                  public boolean accept(File dir, String name) {
+                    File f = new File(dir, name);
+                    return f.isDirectory()
+                        && !SolrSnapshotMetaDataManager.SNAPSHOT_METADATA_DIR.equals(name);
+                  }
                 });
     return list.length;
   }
@@ -1589,7 +1593,12 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   public void testShouldReportErrorWhenRequiredCommandArgMissing() throws Exception {
     SolrQuery q = new SolrQuery();
     q.add("qt", "/replication").add("wt", "json");
-    SolrException thrown = expectThrows(SolrException.class, () -> followerClient.query(q));
+    SolrException thrown =
+        expectThrows(
+            SolrException.class,
+            () -> {
+              followerClient.query(q);
+            });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, thrown.code());
     assertThat(thrown.getMessage(), containsString("Missing required parameter: command"));
   }
@@ -1598,7 +1607,12 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   public void testShouldReportErrorWhenDeletingBackupButNameMissing() {
     SolrQuery q = new SolrQuery();
     q.add("qt", "/replication").add("wt", "json").add("command", "deletebackup");
-    SolrException thrown = expectThrows(SolrException.class, () -> followerClient.query(q));
+    SolrException thrown =
+        expectThrows(
+            SolrException.class,
+            () -> {
+              followerClient.query(q);
+            });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, thrown.code());
     assertThat(thrown.getMessage(), containsString("Missing required parameter: name"));
   }
@@ -1716,7 +1730,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertEquals("aaa", ReplicationHandler.getObjectWithBackwardCompatibility(nl, "foo", "bar"));
   }
 
-  private static class AddExtraDocs implements Runnable {
+  private class AddExtraDocs implements Runnable {
 
     SolrClient leaderClient;
     int startId;

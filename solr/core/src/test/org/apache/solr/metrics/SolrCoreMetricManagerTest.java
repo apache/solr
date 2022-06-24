@@ -159,7 +159,7 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
     Map<String, Metric> registeredMetrics =
         registry.getMetrics().entrySet().stream()
             .filter(e -> e.getKey() != null && e.getKey().contains(filter))
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
     for (Map.Entry<String, Metric> entry : registeredMetrics.entrySet()) {
       String name = entry.getKey();
       Metric expectedMetric = entry.getValue();

@@ -51,7 +51,9 @@ import org.apache.solr.common.SolrException.ErrorCode;
 public class ConcatFunction {
   public static final String name = "concat";
   public static final CreatorFunction creatorFunction =
-      (params -> createConcatFunction(name, name, (a, b) -> a + b, params));
+      (params -> {
+        return createConcatFunction(name, name, (a, b) -> a + b, params);
+      });
 
   /**
    * A concatenation mapping function, combining the string values of the given parameters with a

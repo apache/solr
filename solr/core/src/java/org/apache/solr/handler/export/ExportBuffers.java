@@ -98,7 +98,7 @@ class ExportBuffers {
 
     bufferOne.initialize(writerSortDoc);
     bufferTwo.initialize(writerSortDoc);
-    barrier = new CyclicBarrier(2, this::swapBuffers);
+    barrier = new CyclicBarrier(2, () -> swapBuffers());
     filler =
         () -> {
           try {

@@ -44,8 +44,8 @@ public class Pair<T1, T2> implements Serializable, MapWriter {
   @Override
   public boolean equals(Object that) {
     return that instanceof Pair
-        && Objects.equals(this.first, ((Pair<?, ?>) that).first)
-        && Objects.equals(this.second, ((Pair<?, ?>) that).second);
+        && Objects.equals(this.first, ((Pair) that).first)
+        && Objects.equals(this.second, ((Pair) that).second);
   }
 
   @Override

@@ -51,7 +51,7 @@ public interface DoubleValueStream extends AnalyticsValueStream {
 
     @Override
     public void streamObjects(Consumer<Object> cons) {
-      streamDoubles(cons::accept);
+      streamDoubles((double val) -> cons.accept(val));
     }
 
     @Override

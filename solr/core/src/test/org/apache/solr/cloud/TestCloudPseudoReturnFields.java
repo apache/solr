@@ -691,7 +691,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
       String msg = id + ": fl=[docid] => " + doc;
       assertEquals(msg, 1, doc.size());
       assertTrue(msg, doc.getFieldValue("[docid]") instanceof Integer);
-      assertTrue(msg, -1 <= (Integer) doc.getFieldValue("[docid]"));
+      assertTrue(msg, -1 <= ((Integer) doc.getFieldValue("[docid]")).intValue());
     }
   }
 
@@ -721,7 +721,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
         assertTrue(msg, doc.getFieldValue("x_alias") instanceof Integer);
         assertEquals(msg, 10, doc.getFieldValue("x_alias"));
         assertTrue(msg, doc.getFieldValue("[docid]") instanceof Integer);
-        assertTrue(msg, -1 <= (Integer) doc.getFieldValue("[docid]"));
+        assertTrue(msg, -1 <= ((Integer) doc.getFieldValue("[docid]")).intValue());
       }
     }
   }
@@ -782,7 +782,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
         assertTrue(msg, doc.getFieldValue("x_alias") instanceof Integer);
         assertEquals(msg, 10, doc.getFieldValue("x_alias"));
         assertTrue(msg, doc.getFieldValue("[docid]") instanceof Integer);
-        assertTrue(msg, -1 <= (Integer) doc.getFieldValue("[docid]"));
+        assertTrue(msg, -1 <= ((Integer) doc.getFieldValue("[docid]")).intValue());
       }
     }
   }
@@ -872,7 +872,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
         assertEquals(msg, 10, doc.getFieldValue("x_alias"));
         // RTG: [explain] and score should be missing (ignored)
         assertTrue(msg, doc.getFieldValue("d_alias") instanceof Integer);
-        assertTrue(msg, -1 <= (Integer) doc.getFieldValue("d_alias"));
+        assertTrue(msg, -1 <= ((Integer) doc.getFieldValue("d_alias")).intValue());
       }
     }
   }
@@ -940,7 +940,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
           assertEquals(msg, 1, doc.getFieldValue("val_i"));
           assertTrue(msg, doc.getFieldValue("subject") instanceof String);
           assertTrue(msg, doc.getFieldValue("[docid]") instanceof Integer);
-          assertTrue(msg, -1 <= (Integer) doc.getFieldValue("[docid]"));
+          assertTrue(msg, -1 <= ((Integer) doc.getFieldValue("[docid]")).intValue());
           // RTG: [explain] and score should be missing (ignored)
         }
       }

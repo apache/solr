@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -344,7 +345,8 @@ public class TestSort extends SolrTestCaseJ4 {
 
         searcher.search(query, myCollector);
 
-        collectedDocs.sort(
+        Collections.sort(
+            collectedDocs,
             (o1, o2) -> {
               String v1 = o1.val == null ? nullRep : o1.val;
               String v2 = o2.val == null ? nullRep : o2.val;

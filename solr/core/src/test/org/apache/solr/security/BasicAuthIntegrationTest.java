@@ -159,7 +159,9 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       BaseHttpSolrClient.RemoteSolrException exp =
           expectThrows(
               BaseHttpSolrClient.RemoteSolrException.class,
-              () -> cluster.getSolrClient().request(genericReq));
+              () -> {
+                cluster.getSolrClient().request(genericReq);
+              });
       assertEquals(401, exp.code());
       assertAuthMetricsMinimums(2, 0, 2, 0, 0, 0);
       assertPkiAuthMetricsMinimums(0, 0, 0, 0, 0, 0);
@@ -237,12 +239,13 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
 
       expectThrows(
           BaseHttpSolrClient.RemoteSolrException.class,
-          () ->
-              cluster
-                  .getSolrClient()
-                  .request(
-                      CollectionAdminRequest.reloadCollection(COLLECTION)
-                          .setBasicAuthCredentials("harry", "Cool12345")));
+          () -> {
+            cluster
+                .getSolrClient()
+                .request(
+                    CollectionAdminRequest.reloadCollection(COLLECTION)
+                        .setBasicAuthCredentials("harry", "Cool12345"));
+          });
       assertAuthMetricsMinimums(14, 5, 8, 1, 0, 0);
 
       executeCommand(
@@ -269,7 +272,9 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
         BaseHttpSolrClient.RemoteSolrException e =
             expectThrows(
                 BaseHttpSolrClient.RemoteSolrException.class,
-                () -> new UpdateRequest().deleteByQuery("*:*").process(aNewClient, COLLECTION));
+                () -> {
+                  new UpdateRequest().deleteByQuery("*:*").process(aNewClient, COLLECTION);
+                });
         assertTrue(e.getMessage(), e.getMessage().contains("Authentication failed"));
       } finally {
         aNewClient.close();
@@ -321,7 +326,9 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       exp =
           expectThrows(
               BaseHttpSolrClient.RemoteSolrException.class,
-              () -> cluster.getSolrClient().query(COLLECTION, params));
+              () -> {
+                cluster.getSolrClient().query(COLLECTION, params);
+              });
       assertEquals(401, exp.code());
       assertAuthMetricsMinimums(19, 8, 8, 1, 2, 0);
       assertPkiAuthMetricsMinimums(3, 3, 0, 0, 0, 0);

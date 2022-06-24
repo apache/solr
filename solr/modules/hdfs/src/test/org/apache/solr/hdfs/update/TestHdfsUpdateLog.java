@@ -102,38 +102,40 @@ public class TestHdfsUpdateLog extends SolrTestCaseJ4 {
     // problems (SOLR-7113)
 
     Thread thread =
-        new Thread(
-            () -> {
-              int cnt = 0;
-              while (true) {
-                ulog.init(uhandler, req.getCore());
-                try {
-                  Thread.sleep(100);
-                } catch (InterruptedException e) {
+        new Thread() {
+          public void run() {
+            int cnt = 0;
+            while (true) {
+              ulog.init(uhandler, req.getCore());
+              try {
+                Thread.sleep(100);
+              } catch (InterruptedException e) {
 
-                }
-                if (cnt++ > 50) {
-                  break;
-                }
               }
-            });
+              if (cnt++ > 50) {
+                break;
+              }
+            }
+          }
+        };
 
     Thread thread2 =
-        new Thread(
-            () -> {
-              int cnt = 0;
-              while (true) {
-                assertU(adoc("id", Integer.toString(cnt)));
-                try {
-                  Thread.sleep(10);
-                } catch (InterruptedException e) {
+        new Thread() {
+          public void run() {
+            int cnt = 0;
+            while (true) {
+              assertU(adoc("id", Integer.toString(cnt)));
+              try {
+                Thread.sleep(10);
+              } catch (InterruptedException e) {
 
-                }
-                if (cnt++ > 500) {
-                  break;
-                }
               }
-            });
+              if (cnt++ > 500) {
+                break;
+              }
+            }
+          }
+        };
 
     thread.start();
     thread2.start();

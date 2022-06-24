@@ -26,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 import org.apache.commons.io.IOUtils;
@@ -208,8 +209,9 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
 
       try (DirectoryStream<Path> stream =
           Files.newDirectoryStream(Paths.get(leader.getDataDir()), "snapshot*")) {
-        for (Path path : stream) {
-          remainingBackups.add(path.getFileName().toString());
+        Iterator<Path> iter = stream.iterator();
+        while (iter.hasNext()) {
+          remainingBackups.add(iter.next().getFileName().toString());
         }
       }
 

@@ -137,7 +137,7 @@ public final class LegacyIntField extends LegacyField {
    */
   public LegacyIntField(String name, int value, Store stored) {
     super(name, stored == Store.YES ? TYPE_STORED : TYPE_NOT_STORED);
-    fieldsData = value;
+    fieldsData = Integer.valueOf(value);
   }
 
   /**
@@ -156,6 +156,6 @@ public final class LegacyIntField extends LegacyField {
       throw new IllegalArgumentException(
           "type.numericType() must be INT but got " + type.numericType());
     }
-    fieldsData = value;
+    fieldsData = Integer.valueOf(value);
   }
 }

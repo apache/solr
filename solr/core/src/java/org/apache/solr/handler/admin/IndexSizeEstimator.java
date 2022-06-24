@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -296,37 +297,37 @@ public class IndexSizeEstimator {
   private void estimateSummary(Map<String, Object> details, Map<String, Object> summary) {
     log.info("- preparing summary...");
     details.forEach(
-        (type, perType) ->
-            ((Map<String, Object>) perType)
-                .forEach(
-                    (field, perField) -> {
-                      Map<String, Object> perFieldSummary =
-                          (Map<String, Object>)
-                              summary.computeIfAbsent(field, f -> new HashMap<>());
-                      ((Map<String, Object>) perField)
-                          .forEach(
-                              (k, val) -> {
-                                if (val instanceof SummaryStatistics) {
-                                  SummaryStatistics stats = (SummaryStatistics) val;
-                                  if (k.startsWith("lengths")) {
-                                    AtomicLong total =
-                                        (AtomicLong)
-                                            perFieldSummary.computeIfAbsent(
-                                                "totalSize", kt -> new AtomicLong());
-                                    total.addAndGet((long) stats.getSum());
-                                  }
-                                  Map<String, Object> perTypeSummary =
-                                      (Map<String, Object>)
-                                          perFieldSummary.computeIfAbsent(
-                                              "perType", pt -> new HashMap<>());
+        (type, perType) -> {
+          ((Map<String, Object>) perType)
+              .forEach(
+                  (field, perField) -> {
+                    Map<String, Object> perFieldSummary =
+                        (Map<String, Object>) summary.computeIfAbsent(field, f -> new HashMap<>());
+                    ((Map<String, Object>) perField)
+                        .forEach(
+                            (k, val) -> {
+                              if (val instanceof SummaryStatistics) {
+                                SummaryStatistics stats = (SummaryStatistics) val;
+                                if (k.startsWith("lengths")) {
                                   AtomicLong total =
                                       (AtomicLong)
-                                          perTypeSummary.computeIfAbsent(
-                                              type + "_" + k, t -> new AtomicLong());
+                                          perFieldSummary.computeIfAbsent(
+                                              "totalSize", kt -> new AtomicLong());
                                   total.addAndGet((long) stats.getSum());
                                 }
-                              });
-                    }));
+                                Map<String, Object> perTypeSummary =
+                                    (Map<String, Object>)
+                                        perFieldSummary.computeIfAbsent(
+                                            "perType", pt -> new HashMap<>());
+                                AtomicLong total =
+                                    (AtomicLong)
+                                        perTypeSummary.computeIfAbsent(
+                                            type + "_" + k, t -> new AtomicLong());
+                                total.addAndGet((long) stats.getSum());
+                              }
+                            });
+                  });
+        });
   }
 
   private void estimateNorms(Map<String, Object> result) throws IOException {
@@ -663,11 +664,12 @@ public class IndexSizeEstimator {
 
     public String toString() {
       StringBuilder sb = new StringBuilder();
-      for (Item item : this) {
+      Iterator<Item> it = iterator();
+      while (it.hasNext()) {
         if (sb.length() > 0) {
           sb.append('\n');
         }
-        sb.append(item);
+        sb.append(it.next());
       }
       return sb.toString();
     }

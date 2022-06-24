@@ -221,7 +221,8 @@ public class AnalyticsRequestParser {
 
     // Functions
     if (request.functions != null) {
-      request.functions.forEach(expressionFactory::addUserDefinedVariableFunction);
+      request.functions.forEach(
+          (funcSig, retSig) -> expressionFactory.addUserDefinedVariableFunction(funcSig, retSig));
     }
 
     // Expressions
@@ -239,9 +240,10 @@ public class AnalyticsRequestParser {
     // Groupings
     if (request.groupings != null) {
       request.groupings.forEach(
-          (name, grouping) ->
-              manager.addGrouping(
-                  constructGrouping(name, grouping, expressionFactory, isDistribRequest)));
+          (name, grouping) -> {
+            manager.addGrouping(
+                constructGrouping(name, grouping, expressionFactory, isDistribRequest));
+          });
     }
     return manager;
   }

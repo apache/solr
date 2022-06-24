@@ -18,6 +18,7 @@ package org.apache.solr.spelling;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -111,7 +112,7 @@ public class PossibilityIterator implements Iterator<PossibilityIterator.RankedS
       } else {
         // Needs to be in token-offset order so that the match-and-replace
         // option for collations can work.
-        rsp.corrections.sort(new StartOffsetComparator());
+        Collections.sort(rsp.corrections, new StartOffsetComparator());
         if (removeDuplicates.add(rsp)) {
           rankedPossibilities.offer(rsp);
         }

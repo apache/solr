@@ -93,11 +93,12 @@ public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
     Exception e =
         expectThrows(
             Exception.class,
-            () ->
-                CollectionAdminRequest.backupCollection(COLLECTION_NAME, BACKUP_NAME)
-                    .setRepositoryName("some-nonexistent-repo-name")
-                    .setLocation(validBackupLocation)
-                    .process(cluster.getSolrClient()));
+            () -> {
+              CollectionAdminRequest.backupCollection(COLLECTION_NAME, BACKUP_NAME)
+                  .setRepositoryName("some-nonexistent-repo-name")
+                  .setLocation(validBackupLocation)
+                  .process(cluster.getSolrClient());
+            });
     assertTrue(
         e.getMessage()
             .contains("Could not find a backup repository with name some-nonexistent-repo-name"));
@@ -106,11 +107,12 @@ public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
     e =
         expectThrows(
             Exception.class,
-            () ->
-                CollectionAdminRequest.listBackup(BACKUP_NAME)
-                    .setBackupLocation(validBackupLocation)
-                    .setBackupRepository("some-nonexistent-repo-name")
-                    .process(cluster.getSolrClient()));
+            () -> {
+              CollectionAdminRequest.listBackup(BACKUP_NAME)
+                  .setBackupLocation(validBackupLocation)
+                  .setBackupRepository("some-nonexistent-repo-name")
+                  .process(cluster.getSolrClient());
+            });
     assertTrue(
         e.getMessage()
             .contains("Could not find a backup repository with name some-nonexistent-repo-name"));
@@ -119,11 +121,12 @@ public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
     e =
         expectThrows(
             Exception.class,
-            () ->
-                CollectionAdminRequest.deleteBackupById(BACKUP_NAME, 1)
-                    .setLocation(validBackupLocation)
-                    .setRepositoryName("some-nonexistent-repo-name")
-                    .process(cluster.getSolrClient()));
+            () -> {
+              CollectionAdminRequest.deleteBackupById(BACKUP_NAME, 1)
+                  .setLocation(validBackupLocation)
+                  .setRepositoryName("some-nonexistent-repo-name")
+                  .process(cluster.getSolrClient());
+            });
     assertTrue(
         e.getMessage()
             .contains("Could not find a backup repository with name some-nonexistent-repo-name"));
@@ -132,11 +135,12 @@ public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
     e =
         expectThrows(
             Exception.class,
-            () ->
-                CollectionAdminRequest.restoreCollection(COLLECTION_NAME + "_restored", BACKUP_NAME)
-                    .setLocation(validBackupLocation)
-                    .setRepositoryName("some-nonexistent-repo-name")
-                    .process(cluster.getSolrClient()));
+            () -> {
+              CollectionAdminRequest.restoreCollection(COLLECTION_NAME + "_restored", BACKUP_NAME)
+                  .setLocation(validBackupLocation)
+                  .setRepositoryName("some-nonexistent-repo-name")
+                  .process(cluster.getSolrClient());
+            });
     assertTrue(
         e.getMessage()
             .contains("Could not find a backup repository with name some-nonexistent-repo-name"));
@@ -148,12 +152,12 @@ public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
     Exception e =
         expectThrows(
             Exception.class,
-            () ->
-                CollectionAdminRequest.backupCollection(COLLECTION_NAME, BACKUP_NAME)
-                    .setRepositoryName(VALID_REPOSITORY_NAME)
-                    .setLocation(
-                        validBackupLocation + File.pathSeparator + "someNonexistentLocation")
-                    .process(cluster.getSolrClient()));
+            () -> {
+              CollectionAdminRequest.backupCollection(COLLECTION_NAME, BACKUP_NAME)
+                  .setRepositoryName(VALID_REPOSITORY_NAME)
+                  .setLocation(validBackupLocation + File.pathSeparator + "someNonexistentLocation")
+                  .process(cluster.getSolrClient());
+            });
     assertTrue(e.getMessage().contains("specified location"));
     assertTrue(e.getMessage().contains("does not exist"));
 
@@ -161,12 +165,13 @@ public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
     e =
         expectThrows(
             Exception.class,
-            () ->
-                CollectionAdminRequest.listBackup(BACKUP_NAME)
-                    .setBackupLocation(
-                        validBackupLocation + File.pathSeparator + "someNonexistentLocation")
-                    .setBackupRepository(VALID_REPOSITORY_NAME)
-                    .process(cluster.getSolrClient()));
+            () -> {
+              CollectionAdminRequest.listBackup(BACKUP_NAME)
+                  .setBackupLocation(
+                      validBackupLocation + File.pathSeparator + "someNonexistentLocation")
+                  .setBackupRepository(VALID_REPOSITORY_NAME)
+                  .process(cluster.getSolrClient());
+            });
     assertTrue(e.getMessage().contains("specified location"));
     assertTrue(e.getMessage().contains("does not exist"));
 
@@ -174,12 +179,12 @@ public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
     e =
         expectThrows(
             Exception.class,
-            () ->
-                CollectionAdminRequest.deleteBackupById(BACKUP_NAME, 1)
-                    .setLocation(
-                        validBackupLocation + File.pathSeparator + "someNonexistentLocation")
-                    .setRepositoryName(VALID_REPOSITORY_NAME)
-                    .process(cluster.getSolrClient()));
+            () -> {
+              CollectionAdminRequest.deleteBackupById(BACKUP_NAME, 1)
+                  .setLocation(validBackupLocation + File.pathSeparator + "someNonexistentLocation")
+                  .setRepositoryName(VALID_REPOSITORY_NAME)
+                  .process(cluster.getSolrClient());
+            });
     assertTrue(e.getMessage().contains("specified location"));
     assertTrue(e.getMessage().contains("does not exist"));
 
@@ -187,12 +192,12 @@ public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
     e =
         expectThrows(
             Exception.class,
-            () ->
-                CollectionAdminRequest.restoreCollection(COLLECTION_NAME + "_restored", BACKUP_NAME)
-                    .setLocation(
-                        validBackupLocation + File.pathSeparator + "someNonexistentLocation")
-                    .setRepositoryName(VALID_REPOSITORY_NAME)
-                    .process(cluster.getSolrClient()));
+            () -> {
+              CollectionAdminRequest.restoreCollection(COLLECTION_NAME + "_restored", BACKUP_NAME)
+                  .setLocation(validBackupLocation + File.pathSeparator + "someNonexistentLocation")
+                  .setRepositoryName(VALID_REPOSITORY_NAME)
+                  .process(cluster.getSolrClient());
+            });
     assertTrue(e.getMessage().contains("specified location"));
     assertTrue(e.getMessage().contains("does not exist"));
   }
@@ -212,11 +217,12 @@ public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
     Exception e =
         expectThrows(
             Exception.class,
-            () ->
-                CollectionAdminRequest.listBackup(BACKUP_NAME)
-                    .setBackupLocation(nonIncrementalBackupLocation)
-                    .setBackupRepository(VALID_REPOSITORY_NAME)
-                    .process(cluster.getSolrClient()));
+            () -> {
+              CollectionAdminRequest.listBackup(BACKUP_NAME)
+                  .setBackupLocation(nonIncrementalBackupLocation)
+                  .setBackupRepository(VALID_REPOSITORY_NAME)
+                  .process(cluster.getSolrClient());
+            });
     assertTrue(e.getMessage().contains("The backup name [backup_name] at location"));
     assertTrue(
         e.getMessage()
@@ -227,11 +233,12 @@ public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
     e =
         expectThrows(
             Exception.class,
-            () ->
-                CollectionAdminRequest.deleteBackupById(BACKUP_NAME, 1)
-                    .setLocation(nonIncrementalBackupLocation)
-                    .setRepositoryName(VALID_REPOSITORY_NAME)
-                    .process(cluster.getSolrClient()));
+            () -> {
+              CollectionAdminRequest.deleteBackupById(BACKUP_NAME, 1)
+                  .setLocation(nonIncrementalBackupLocation)
+                  .setRepositoryName(VALID_REPOSITORY_NAME)
+                  .process(cluster.getSolrClient());
+            });
     assertTrue(e.getMessage().contains("The backup name [backup_name] at location"));
     assertTrue(
         e.getMessage()
@@ -244,11 +251,12 @@ public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
     Exception e =
         expectThrows(
             Exception.class,
-            () ->
-                CollectionAdminRequest.deleteBackupById(BACKUP_NAME, 123)
-                    .setLocation(validBackupLocation)
-                    .setRepositoryName(VALID_REPOSITORY_NAME)
-                    .process(cluster.getSolrClient()));
+            () -> {
+              CollectionAdminRequest.deleteBackupById(BACKUP_NAME, 123)
+                  .setLocation(validBackupLocation)
+                  .setRepositoryName(VALID_REPOSITORY_NAME)
+                  .process(cluster.getSolrClient());
+            });
     assertTrue(e.getMessage().contains("Backup ID [123] not found; cannot be deleted"));
   }
 }

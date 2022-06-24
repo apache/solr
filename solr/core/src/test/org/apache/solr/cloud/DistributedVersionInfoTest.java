@@ -154,100 +154,104 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     final AtomicInteger docsSent = new AtomicInteger(0);
     final Random rand = new Random(5150);
     Thread docSenderThread =
-        new Thread(
-            () -> {
+        new Thread() {
+          public void run() {
 
-              // brief delay before sending docs
-              try {
-                Thread.sleep(rand.nextInt(30) + 1);
-              } catch (InterruptedException e) {
-              }
+            // brief delay before sending docs
+            try {
+              Thread.sleep(rand.nextInt(30) + 1);
+            } catch (InterruptedException e) {
+            }
 
-              for (int i = 0; i < 1000; i++) {
-                if (i % (rand.nextInt(20) + 1) == 0) {
-                  try {
-                    Thread.sleep(rand.nextInt(50) + 1);
-                  } catch (InterruptedException e) {
-                  }
-                }
-
-                int docId = i + 1;
-                try {
-                  sendDoc(docId);
-                  docsSent.incrementAndGet();
-                } catch (Exception e) {
-                }
-              }
-            });
-
-    Thread reloaderThread =
-        new Thread(
-            () -> {
-              try {
-                Thread.sleep(rand.nextInt(300) + 1);
-              } catch (InterruptedException e) {
-              }
-
-              for (int i = 0; i < 3; i++) {
-                try {
-                  reloadCollection(leader, COLLECTION);
-                } catch (Exception e) {
-                }
-
-                try {
-                  Thread.sleep(rand.nextInt(300) + 300);
-                } catch (InterruptedException e) {
-                }
-              }
-            });
-
-    Thread deleteThread =
-        new Thread(
-            () -> {
-
-              // brief delay before sending docs
-              try {
-                Thread.sleep(500);
-              } catch (InterruptedException e) {
-              }
-
-              for (int i = 0; i < 200; i++) {
+            for (int i = 0; i < 1000; i++) {
+              if (i % (rand.nextInt(20) + 1) == 0) {
                 try {
                   Thread.sleep(rand.nextInt(50) + 1);
                 } catch (InterruptedException e) {
                 }
-
-                int ds = docsSent.get();
-                if (ds > 0) {
-                  int docToDelete = rand.nextInt(ds) + 1;
-                  if (!deletedDocs.contains(docToDelete)) {
-                    delI(String.valueOf(docToDelete));
-                    deletedDocs.add(docToDelete);
-                  }
-                }
               }
-            });
 
-    Thread committerThread =
-        new Thread(
-            () -> {
+              int docId = i + 1;
               try {
-                Thread.sleep(rand.nextInt(200) + 1);
+                sendDoc(docId);
+                docsSent.incrementAndGet();
+              } catch (Exception e) {
+              }
+            }
+          }
+        };
+
+    Thread reloaderThread =
+        new Thread() {
+          public void run() {
+            try {
+              Thread.sleep(rand.nextInt(300) + 1);
+            } catch (InterruptedException e) {
+            }
+
+            for (int i = 0; i < 3; i++) {
+              try {
+                reloadCollection(leader, COLLECTION);
+              } catch (Exception e) {
+              }
+
+              try {
+                Thread.sleep(rand.nextInt(300) + 300);
+              } catch (InterruptedException e) {
+              }
+            }
+          }
+        };
+
+    Thread deleteThread =
+        new Thread() {
+          public void run() {
+
+            // brief delay before sending docs
+            try {
+              Thread.sleep(500);
+            } catch (InterruptedException e) {
+            }
+
+            for (int i = 0; i < 200; i++) {
+              try {
+                Thread.sleep(rand.nextInt(50) + 1);
               } catch (InterruptedException e) {
               }
 
-              for (int i = 0; i < 20; i++) {
-                try {
-                  cluster.getSolrClient().commit(COLLECTION);
-                } catch (Exception e) {
-                }
-
-                try {
-                  Thread.sleep(rand.nextInt(100) + 100);
-                } catch (InterruptedException e) {
+              int ds = docsSent.get();
+              if (ds > 0) {
+                int docToDelete = rand.nextInt(ds) + 1;
+                if (!deletedDocs.contains(docToDelete)) {
+                  delI(String.valueOf(docToDelete));
+                  deletedDocs.add(docToDelete);
                 }
               }
-            });
+            }
+          }
+        };
+
+    Thread committerThread =
+        new Thread() {
+          public void run() {
+            try {
+              Thread.sleep(rand.nextInt(200) + 1);
+            } catch (InterruptedException e) {
+            }
+
+            for (int i = 0; i < 20; i++) {
+              try {
+                cluster.getSolrClient().commit(COLLECTION);
+              } catch (Exception e) {
+              }
+
+              try {
+                Thread.sleep(rand.nextInt(100) + 100);
+              } catch (InterruptedException e) {
+              }
+            }
+          }
+        };
 
     docSenderThread.start();
     reloaderThread.start();
@@ -305,7 +309,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     if (vers == null)
       fail("Failed to get version using query " + query + " from " + replica.getCoreUrl());
 
-    return vers;
+    return vers.longValue();
   }
 
   protected void assertDocsExistInAllReplicas(
@@ -317,7 +321,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
       Set<Integer> deletedDocs)
       throws Exception {
     HttpSolrClient leaderSolr = getHttpSolrClient(leader);
-    List<HttpSolrClient> replicas = new ArrayList<>(notLeaders.size());
+    List<HttpSolrClient> replicas = new ArrayList<HttpSolrClient>(notLeaders.size());
     for (Replica r : notLeaders) replicas.add(getHttpSolrClient(r));
 
     try {

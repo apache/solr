@@ -237,7 +237,7 @@ public class JaspellTernarySearchTrie implements Accountable {
           Float occur2 = null;
           if (node != null) occur2 = ((Float) (node.data));
           if (occur2 != null) {
-            occur += occur2;
+            occur += occur2.floatValue();
           }
           currentNode = getOrCreateNode(word.trim().toLowerCase(locale));
           currentNode.data = occur;
@@ -540,7 +540,7 @@ public class JaspellTernarySearchTrie implements Accountable {
         matchAlmostDiff,
         key,
         ((numReturnValues < 0) ? -1 : numReturnValues),
-        new Vector<>(),
+        new Vector<String>(),
         false);
   }
 
@@ -783,7 +783,7 @@ public class JaspellTernarySearchTrie implements Accountable {
    */
   protected List<String> sortKeys(TSTNode startNode, int numReturnValues) {
     return sortKeysRecursion(
-        startNode, ((numReturnValues < 0) ? -1 : numReturnValues), new Vector<>());
+        startNode, ((numReturnValues < 0) ? -1 : numReturnValues), new Vector<String>());
   }
 
   /**

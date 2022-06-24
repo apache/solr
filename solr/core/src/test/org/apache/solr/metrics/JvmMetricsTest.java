@@ -79,7 +79,7 @@ public class JvmMetricsTest extends SolrJettyTestBase {
       assertNotNull(name, metrics.get(name));
       Object g = metrics.get(name);
       assertTrue(g instanceof Gauge);
-      Object v = ((Gauge<?>) g).getValue();
+      Object v = ((Gauge) g).getValue();
       assertTrue(v instanceof Long);
     }
   }
@@ -115,13 +115,18 @@ public class JvmMetricsTest extends SolrJettyTestBase {
     String solrXml = Files.readString(home.resolve("solr.xml"), StandardCharsets.UTF_8);
     NodeConfig config = SolrXmlConfig.fromString(home, solrXml);
     NodeConfig.NodeConfigBuilder.DEFAULT_HIDDEN_SYS_PROPS.forEach(
-        s -> assertTrue(s, config.getMetricsConfig().getHiddenSysProps().contains(s)));
+        s -> {
+          assertTrue(s, config.getMetricsConfig().getHiddenSysProps().contains(s));
+        });
 
     // custom config
     solrXml = Files.readString(home.resolve("solr-hiddensysprops.xml"), StandardCharsets.UTF_8);
     NodeConfig config2 = SolrXmlConfig.fromString(home, solrXml);
     Arrays.asList("foo", "bar", "baz")
-        .forEach(s -> assertTrue(s, config2.getMetricsConfig().getHiddenSysProps().contains(s)));
+        .forEach(
+            s -> {
+              assertTrue(s, config2.getMetricsConfig().getHiddenSysProps().contains(s));
+            });
   }
 
   @Test

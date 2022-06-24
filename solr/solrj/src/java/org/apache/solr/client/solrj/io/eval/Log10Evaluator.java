@@ -44,7 +44,8 @@ public class Log10Evaluator extends RecursiveNumericEvaluator implements OneValu
     if (null == value) {
       return null;
     } else if (value instanceof List) {
-      return ((List<?>) value).stream().map(this::doWork).collect(Collectors.toList());
+      return ((List<?>) value)
+          .stream().map(innerValue -> doWork(innerValue)).collect(Collectors.toList());
     } else {
       return Math.log10(((Number) value).doubleValue());
     }

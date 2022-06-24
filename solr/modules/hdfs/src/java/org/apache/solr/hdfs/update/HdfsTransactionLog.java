@@ -36,6 +36,7 @@ import org.apache.solr.common.util.FastOutputStream;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.hdfs.util.HdfsRecoverLeaseFileSystemUtils;
+import org.apache.solr.hdfs.util.HdfsRecoverLeaseFileSystemUtils.CallerInfo;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.TransactionLog;
 import org.apache.solr.update.UpdateLog;
@@ -89,7 +90,16 @@ public class HdfsTransactionLog extends TransactionLog {
 
       if (fs.exists(tlogFile) && openExisting) {
         HdfsRecoverLeaseFileSystemUtils.recoverFileLease(
-            fs, tlogFile, fs.getConf(), () -> isClosed);
+            fs,
+            tlogFile,
+            fs.getConf(),
+            new CallerInfo() {
+
+              @Override
+              public boolean isCallerClosed() {
+                return isClosed;
+              }
+            });
 
         tlogOutStream = fs.append(tlogFile);
       } else {

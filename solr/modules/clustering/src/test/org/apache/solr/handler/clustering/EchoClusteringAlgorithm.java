@@ -50,7 +50,10 @@ public class EchoClusteringAlgorithm extends AttrComposite implements Clustering
         document -> {
           final Cluster<T> cluster = new Cluster<>();
           cluster.addDocument(document);
-          document.visitFields((field, value) -> cluster.addLabel(field + ":" + value));
+          document.visitFields(
+              (field, value) -> {
+                cluster.addLabel(field + ":" + value);
+              });
           clusters.add(cluster);
         });
 

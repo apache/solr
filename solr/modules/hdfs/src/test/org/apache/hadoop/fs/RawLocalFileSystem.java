@@ -605,12 +605,12 @@ public class RawLocalFileSystem extends FileSystem {
       String[] names = FileUtil.list(localf);
       results = new FileStatus[names.length];
       int j = 0;
-      for (String name : names) {
+      for (int i = 0; i < names.length; i++) {
         try {
           // Assemble the path using the Path 3 arg constructor to make sure
           // paths with colon are properly resolved on Linux
           results[j] = getFileStatus(new Path(f, new Path(null, null,
-              name)));
+              names[i])));
           j++;
         } catch (FileNotFoundException e) {
           // ignore the files not found since the dir list may have have

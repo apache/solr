@@ -560,7 +560,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
           instanceof
           EnumField) { // Trie field TermInSetQuery non-XML chars serialize with "#XX;" syntax
         Pattern nonXMLCharPattern = Pattern.compile("[\u0000-\u0008\u000B\u000C\u000E-\u0019]");
-        StringBuilder munged = new StringBuilder();
+        StringBuffer munged = new StringBuffer();
         Matcher matcher = nonXMLCharPattern.matcher(setQuery);
         while (matcher.find()) {
           matcher.appendReplacement(munged, "#" + (int) matcher.group(0).charAt(0) + ";");
@@ -641,7 +641,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
       // Trie field TermInSetQuery non-XML chars serialize with "#XX;" syntax
       if (sf.getType() instanceof EnumField) {
         Pattern nonXMLCharPattern = Pattern.compile("[\u0000-\u0008\u000B\u000C\u000E-\u0019]");
-        StringBuilder munged = new StringBuilder();
+        StringBuffer munged = new StringBuffer();
         Matcher matcher = nonXMLCharPattern.matcher(setQuery);
         while (matcher.find()) {
           matcher.appendReplacement(munged, "#" + (int) matcher.group(0).charAt(0) + ";");

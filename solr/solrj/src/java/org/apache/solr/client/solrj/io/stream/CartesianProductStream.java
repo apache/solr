@@ -282,7 +282,7 @@ public class CartesianProductStream extends TupleStream implements Expressible {
       Object evaluatedValue = evaluatedValues.get(evaluators.get(offset).getName());
       if (evaluatedValue instanceof Collection) {
         int currentIndexValue = indexes[offset];
-        if (currentIndexValue < ((Collection<?>) evaluatedValue).size() - 1) {
+        if (currentIndexValue < ((Collection) evaluatedValue).size() - 1) {
           indexes[offset] = currentIndexValue + 1;
           return true;
         } else if (0 != offset) {
@@ -331,7 +331,7 @@ public class CartesianProductStream extends TupleStream implements Expressible {
     return 0;
   }
 
-  static class NamedEvaluator {
+  class NamedEvaluator {
     private String name;
     private StreamEvaluator evaluator;
 

@@ -152,11 +152,13 @@ public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
 
           final NamedList<Object> lazy_dog = details.get(0);
           assertEquals("dog text", "the lazy dog", lazy_dog.get("text"));
-          assertEquals("dog score", 0.166666D, (Double) lazy_dog.get("score"), 0.000001D);
+          assertEquals(
+              "dog score", 0.166666D, ((Double) lazy_dog.get("score")).doubleValue(), 0.000001D);
 
           final NamedList<Object> brown_fox = details.get(1);
           assertEquals("fox text", "brown FOX", brown_fox.get("text"));
-          assertEquals("fox score", 0.083333D, (Double) brown_fox.get("score"), 0.000001D);
+          assertEquals(
+              "fox score", 0.083333D, ((Double) brown_fox.get("score")).doubleValue(), 0.000001D);
 
         } catch (AssertionError e) {
           throw new AssertionError(e.getMessage() + " ::: " + path + " ==> " + rsp, e);

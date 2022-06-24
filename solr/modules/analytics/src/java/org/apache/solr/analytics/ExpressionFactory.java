@@ -185,7 +185,9 @@ public class ExpressionFactory {
       throws SolrException {
     return addVariableFunction(
         functionName,
-        Arrays.stream(functionParams.split(",")).map(String::trim).toArray(String[]::new),
+        Arrays.stream(functionParams.split(","))
+            .map(param -> param.trim())
+            .toArray(size -> new String[size]),
         returnSignature,
         systemVariableFunctions);
   }
@@ -697,7 +699,7 @@ public class ExpressionFactory {
     }
     String paramsStr = m.group(1);
 
-    ArrayList<String> paramsList = new ArrayList<>();
+    ArrayList<String> paramsList = new ArrayList<String>();
     StringBuilder param = new StringBuilder();
 
     // Variables to help while filling out the values of for-each lambda functions.

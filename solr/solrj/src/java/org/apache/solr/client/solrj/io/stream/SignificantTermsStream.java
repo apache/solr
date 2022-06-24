@@ -21,6 +21,7 @@ import static org.apache.solr.common.params.CommonParams.DISTRIB;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -355,7 +356,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
           maps.add(map);
         }
 
-        maps.sort(new ScoreComp());
+        Collections.sort(maps, new ScoreComp());
         List<Tuple> tuples = new ArrayList<>();
         for (Map<String, Object> map : maps) {
           if (tuples.size() == numTerms) break;

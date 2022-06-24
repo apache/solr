@@ -99,24 +99,25 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
 
     expectThrows(
         Exception.class,
-        () ->
-            assertJQ(
-                req(
-                    "qt",
-                    rh,
-                    SpellCheckComponent.COMPONENT_NAME,
-                    "true",
-                    SpellingParams.SPELLCHECK_BUILD,
-                    "true",
-                    "q",
-                    "lowerfilt:(this OR brwn)",
-                    SpellingParams.SPELLCHECK_COUNT,
-                    "5",
-                    SpellingParams.SPELLCHECK_EXTENDED_RESULTS,
-                    "false",
-                    SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST,
-                    "6"),
-                "/spellcheck/suggestions/[1]/numFound==1"));
+        () -> {
+          assertJQ(
+              req(
+                  "qt",
+                  rh,
+                  SpellCheckComponent.COMPONENT_NAME,
+                  "true",
+                  SpellingParams.SPELLCHECK_BUILD,
+                  "true",
+                  "q",
+                  "lowerfilt:(this OR brwn)",
+                  SpellingParams.SPELLCHECK_COUNT,
+                  "5",
+                  SpellingParams.SPELLCHECK_EXTENDED_RESULTS,
+                  "false",
+                  SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST,
+                  "6"),
+              "/spellcheck/suggestions/[1]/numFound==1");
+        });
 
     assertJQ(
         req(
@@ -143,28 +144,29 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
 
     expectThrows(
         Exception.class,
-        () ->
-            assertJQ(
-                req(
-                    "qt",
-                    rh,
-                    SpellCheckComponent.COMPONENT_NAME,
-                    "true",
-                    SpellingParams.SPELLCHECK_BUILD,
-                    "true",
-                    "q",
-                    "lowerfilt:(this OR brwn)",
-                    "fq",
-                    "id:[0 TO 9]", /*returns 10, less selective */
-                    "fq",
-                    "lowerfilt:th*", /* returns 8, most selective */
-                    SpellingParams.SPELLCHECK_COUNT,
-                    "5",
-                    SpellingParams.SPELLCHECK_EXTENDED_RESULTS,
-                    "false",
-                    SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST,
-                    ".80"),
-                "/spellcheck/suggestions/[1]/numFound==1"));
+        () -> {
+          assertJQ(
+              req(
+                  "qt",
+                  rh,
+                  SpellCheckComponent.COMPONENT_NAME,
+                  "true",
+                  SpellingParams.SPELLCHECK_BUILD,
+                  "true",
+                  "q",
+                  "lowerfilt:(this OR brwn)",
+                  "fq",
+                  "id:[0 TO 9]", /*returns 10, less selective */
+                  "fq",
+                  "lowerfilt:th*", /* returns 8, most selective */
+                  SpellingParams.SPELLCHECK_COUNT,
+                  "5",
+                  SpellingParams.SPELLCHECK_EXTENDED_RESULTS,
+                  "false",
+                  SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST,
+                  ".80"),
+              "/spellcheck/suggestions/[1]/numFound==1");
+        });
 
     assertJQ(
         req(
@@ -191,28 +193,29 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
 
     expectThrows(
         Exception.class,
-        () ->
-            assertJQ(
-                req(
-                    "qt",
-                    rh,
-                    SpellCheckComponent.COMPONENT_NAME,
-                    "true",
-                    SpellingParams.SPELLCHECK_BUILD,
-                    "true",
-                    "q",
-                    "lowerfilt:(this OR brwn)",
-                    "fq",
-                    "id:[0 TO 9]",
-                    SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST_FQ,
-                    "lowerfilt:th*",
-                    SpellingParams.SPELLCHECK_COUNT,
-                    "5",
-                    SpellingParams.SPELLCHECK_EXTENDED_RESULTS,
-                    "false",
-                    SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST,
-                    ".64"),
-                "/spellcheck/suggestions/[1]/numFound==1"));
+        () -> {
+          assertJQ(
+              req(
+                  "qt",
+                  rh,
+                  SpellCheckComponent.COMPONENT_NAME,
+                  "true",
+                  SpellingParams.SPELLCHECK_BUILD,
+                  "true",
+                  "q",
+                  "lowerfilt:(this OR brwn)",
+                  "fq",
+                  "id:[0 TO 9]",
+                  SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST_FQ,
+                  "lowerfilt:th*",
+                  SpellingParams.SPELLCHECK_COUNT,
+                  "5",
+                  SpellingParams.SPELLCHECK_EXTENDED_RESULTS,
+                  "false",
+                  SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST,
+                  ".64"),
+              "/spellcheck/suggestions/[1]/numFound==1");
+        });
   }
 
   @Test
@@ -387,7 +390,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     final String q = "documemtsss broens";
     final String jsonNl = "map";
     final boolean collateExtendedResults = random().nextBoolean();
-    final List<String> testsList = new ArrayList<>();
+    final List<String> testsList = new ArrayList<String>();
     if (collateExtendedResults) {
       testsList.add("/spellcheck/collations/collation/collationQuery=='document brown'");
       testsList.add("/spellcheck/collations/collation/hits==0");

@@ -33,7 +33,10 @@ public class CastingFloatValueStreamTest extends SolrTestCaseJ4 {
 
     // No values
     val.setValues();
-    casted.streamDoubles(value -> assertTrue("There should be no values to stream", false));
+    casted.streamDoubles(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple Values
     val.setValues(20F, -3.32F, 42.5F);
@@ -55,7 +58,10 @@ public class CastingFloatValueStreamTest extends SolrTestCaseJ4 {
 
     // No values
     val.setValues();
-    casted.streamStrings(value -> assertTrue("There should be no values to stream", false));
+    casted.streamStrings(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple Values
     val.setValues(20F, -3.32F, 42.5F);
@@ -77,7 +83,10 @@ public class CastingFloatValueStreamTest extends SolrTestCaseJ4 {
 
     // No values
     val.setValues();
-    casted.streamObjects(value -> assertTrue("There should be no values to stream", false));
+    casted.streamObjects(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple Values
     val.setValues(20F, -3.32F, 42.5F);

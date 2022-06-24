@@ -93,6 +93,6 @@ public class FloatMultiTrieField extends AnalyticsField implements CastingFloatV
 
   @Override
   public void streamObjects(Consumer<Object> cons) {
-    streamFloats(cons::accept);
+    streamFloats(value -> cons.accept(value));
   }
 }

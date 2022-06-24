@@ -718,7 +718,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    */
   @Deprecated
   public static void ignoreException(String pattern) {
-    errorMuters.computeIfAbsent(pattern, ErrorLogMuter::regex);
+    errorMuters.computeIfAbsent(pattern, (pat) -> ErrorLogMuter.regex(pat));
   }
 
   /**
@@ -2078,36 +2078,18 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       return createComparator("score_f", asc, sortMissingLast, sortMissingFirst, sortMissingAsZero);
     }
 
-    return new Comparator<>() {
+    return new Comparator<Doc>() {
       @SuppressWarnings({"rawtypes"})
       private Comparable zeroVal(Comparable template) {
-        if (template == null) {
-          return null;
-        }
-        if (template instanceof String) {
-          return null; // fast-path for string
-        }
-        if (template instanceof Integer) {
-          return 0;
-        }
-        if (template instanceof Long) {
-          return (long) 0;
-        }
-        if (template instanceof Float) {
-          return (float) 0;
-        }
-        if (template instanceof Double) {
-          return (double) 0;
-        }
-        if (template instanceof Short) {
-          return (short) 0;
-        }
-        if (template instanceof Byte) {
-          return (byte) 0;
-        }
-        if (template instanceof Character) {
-          return (char) 0;
-        }
+        if (template == null) return null;
+        if (template instanceof String) return null; // fast-path for string
+        if (template instanceof Integer) return 0;
+        if (template instanceof Long) return (long) 0;
+        if (template instanceof Float) return (float) 0;
+        if (template instanceof Double) return (double) 0;
+        if (template instanceof Short) return (short) 0;
+        if (template instanceof Byte) return (byte) 0;
+        if (template instanceof Character) return (char) 0;
         return null;
       }
 
@@ -2126,21 +2108,13 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
         if (v1 == v2) {
           c = 0;
         } else if (v1 == null) {
-          if (sortMissingLast) {
-            c = mul;
-          } else if (sortMissingFirst) {
-            c = -mul;
-          } else {
-            c = -1;
-          }
+          if (sortMissingLast) c = mul;
+          else if (sortMissingFirst) c = -mul;
+          else c = -1;
         } else if (v2 == null) {
-          if (sortMissingLast) {
-            c = -mul;
-          } else if (sortMissingFirst) {
-            c = mul;
-          } else {
-            c = 1;
-          }
+          if (sortMissingLast) c = -mul;
+          else if (sortMissingFirst) c = mul;
+          else c = 1;
         } else {
           c = v1.compareTo(v2);
         }
@@ -2204,7 +2178,11 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       List<Comparable> vals = doc.getValues(field);
       if (vals == null) continue;
       for (Comparable val : vals) {
-        List<Comparable> ids = value_to_id.computeIfAbsent(val, k -> new ArrayList<>(2));
+        List<Comparable> ids = value_to_id.get(val);
+        if (ids == null) {
+          ids = new ArrayList<>(2);
+          value_to_id.put(val, ids);
+        }
         ids.add(key);
       }
     }

@@ -52,13 +52,13 @@ public abstract class RecursiveNumericEvaluator extends RecursiveEvaluator {
       return new BigDecimal(value.toString());
     } else if (value instanceof Collection) {
       if (value instanceof List) {
-        if (((List<?>) value).get(0) instanceof Number) {
+        if (((List) value).get(0) instanceof Number) {
           return value;
         }
       }
 
       return ((Collection<?>) value)
-          .stream().map(this::normalizeInputType).collect(Collectors.toList());
+          .stream().map(innerValue -> normalizeInputType(innerValue)).collect(Collectors.toList());
     } else if (value.getClass().isArray()) {
       Stream<?> stream = Stream.empty();
       if (value instanceof double[]) {
@@ -70,7 +70,7 @@ public abstract class RecursiveNumericEvaluator extends RecursiveEvaluator {
       } else if (value instanceof String[]) {
         stream = Arrays.stream((String[]) value);
       }
-      return stream.map(this::normalizeInputType).collect(Collectors.toList());
+      return stream.map(innerValue -> normalizeInputType(innerValue)).collect(Collectors.toList());
     } else {
       throw new StreamEvaluatorException(
           "Numeric value expected but found type %s for value %s",

@@ -308,11 +308,13 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
         try {
           try {
             AccessController.doPrivileged(
-                (PrivilegedExceptionAction<Void>)
-                    () -> {
-                      engine.eval(scriptSrc);
-                      return null;
-                    },
+                new PrivilegedExceptionAction<Void>() {
+                  @Override
+                  public Void run() throws ScriptException {
+                    engine.eval(scriptSrc);
+                    return null;
+                  }
+                },
                 SCRIPT_SANDBOX);
           } catch (PrivilegedActionException e) {
             throw (ScriptException) e.getException();
@@ -428,7 +430,13 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
      */
     private boolean invokeFunction(String name, Object... cmd) {
       return AccessController.doPrivileged(
-          (PrivilegedAction<Boolean>) () -> invokeFunctionUnsafe(name, cmd), SCRIPT_SANDBOX);
+          new PrivilegedAction<Boolean>() {
+            @Override
+            public Boolean run() {
+              return invokeFunctionUnsafe(name, cmd);
+            }
+          },
+          SCRIPT_SANDBOX);
     }
 
     private boolean invokeFunctionUnsafe(String name, Object... cmd) {
@@ -437,7 +445,7 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
         try {
           Object result = engine.getEngine().invokeFunction(name, cmd);
           if (null != result && result instanceof Boolean) {
-            if (!(Boolean) result) {
+            if (!((Boolean) result).booleanValue()) {
               return false;
             }
           }

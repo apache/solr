@@ -424,8 +424,8 @@ public final class LegacyNumericRangeQuery<T extends Number> extends MultiTermQu
     if (!super.equals(o)) return false;
     if (o instanceof LegacyNumericRangeQuery) {
       final LegacyNumericRangeQuery<?> q = (LegacyNumericRangeQuery<?>) o;
-      return ((Objects.equals(q.min, min))
-          && (Objects.equals(q.max, max))
+      return ((q.min == null ? min == null : q.min.equals(min))
+          && (q.max == null ? max == null : q.max.equals(max))
           && minInclusive == q.minInclusive
           && maxInclusive == q.maxInclusive
           && precisionStep == q.precisionStep);

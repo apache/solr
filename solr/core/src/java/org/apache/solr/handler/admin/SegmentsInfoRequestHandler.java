@@ -256,9 +256,18 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
                       size = dir.fileLength(f);
                     } catch (IOException e) {
                     }
-                    return new Pair<>(f, size);
+                    return new Pair<String, Long>(f, size);
                   })
-              .sorted((p1, p2) -> p2.second().compareTo(p1.second()))
+              .sorted(
+                  (p1, p2) -> {
+                    if (p1.second() > p2.second()) {
+                      return -1;
+                    } else if (p1.second() < p2.second()) {
+                      return 1;
+                    } else {
+                      return 0;
+                    }
+                  })
               .collect(Collectors.toList());
       if (!files.isEmpty()) {
         SimpleOrderedMap<Object> topFiles = new SimpleOrderedMap<>();

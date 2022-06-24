@@ -363,7 +363,8 @@ public class QueryResponse extends SolrResponseBase {
       _intervalFacets = new ArrayList<>(intervalsNL.size());
       for (Map.Entry<String, NamedList<Object>> intervalField : intervalsNL) {
         String field = intervalField.getKey();
-        List<IntervalFacet.Count> counts = new ArrayList<>(intervalField.getValue().size());
+        List<IntervalFacet.Count> counts =
+            new ArrayList<IntervalFacet.Count>(intervalField.getValue().size());
         for (Map.Entry<String, Object> interval : intervalField.getValue()) {
           counts.add(new IntervalFacet.Count(interval.getKey(), (Integer) interval.getValue()));
         }
@@ -435,7 +436,7 @@ public class QueryResponse extends SolrResponseBase {
       assert "value".equals(nl.getName(1));
       Object v = nl.getVal(1);
       assert "count".equals(nl.getName(2));
-      int cnt = (Integer) nl.getVal(2);
+      int cnt = ((Integer) nl.getVal(2)).intValue();
 
       List<PivotField> subPivots = null;
       Map<String, FieldStatsInfo> fieldStatsInfos = null;

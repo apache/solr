@@ -339,9 +339,10 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
     SolrException e =
         expectThrows(
             SolrException.class,
-            () ->
-                cluster
-                    .getSolrClient()
-                    .query(COLLECTION, new SolrQuery("{!mlt qf=lowerfilt_u}999999")));
+            () -> {
+              cluster
+                  .getSolrClient()
+                  .query(COLLECTION, new SolrQuery("{!mlt qf=lowerfilt_u}999999"));
+            });
   }
 }

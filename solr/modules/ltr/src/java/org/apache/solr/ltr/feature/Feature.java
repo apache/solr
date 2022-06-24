@@ -134,7 +134,7 @@ public abstract class Feature extends Query implements Accountable {
     } else if (obj instanceof Double) {
       defaultValue = ((Double) obj).floatValue();
     } else if (obj instanceof Float) {
-      defaultValue = (Float) obj;
+      defaultValue = ((Float) obj).floatValue();
     } else if (obj instanceof Integer) {
       defaultValue = ((Integer) obj).floatValue();
     } else if (obj instanceof Long) {

@@ -122,48 +122,90 @@ public class TestLegacyField extends SolrTestCase {
   }
 
   private void trySetByteValue(Field f) {
-    expectThrows(IllegalArgumentException.class, () -> f.setByteValue((byte) 10));
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          f.setByteValue((byte) 10);
+        });
   }
 
   private void trySetBytesValue(Field f) {
-    expectThrows(IllegalArgumentException.class, () -> f.setBytesValue(new byte[] {5, 5}));
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          f.setBytesValue(new byte[] {5, 5});
+        });
   }
 
   private void trySetBytesRefValue(Field f) {
-    expectThrows(IllegalArgumentException.class, () -> f.setBytesValue(new BytesRef("bogus")));
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          f.setBytesValue(new BytesRef("bogus"));
+        });
   }
 
   private void trySetDoubleValue(Field f) {
-    expectThrows(IllegalArgumentException.class, () -> f.setDoubleValue(Double.MAX_VALUE));
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          f.setDoubleValue(Double.MAX_VALUE);
+        });
   }
 
   private void trySetIntValue(Field f) {
-    expectThrows(IllegalArgumentException.class, () -> f.setIntValue(Integer.MAX_VALUE));
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          f.setIntValue(Integer.MAX_VALUE);
+        });
   }
 
   private void trySetLongValue(Field f) {
-    expectThrows(IllegalArgumentException.class, () -> f.setLongValue(Long.MAX_VALUE));
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          f.setLongValue(Long.MAX_VALUE);
+        });
   }
 
   private void trySetFloatValue(Field f) {
-    expectThrows(IllegalArgumentException.class, () -> f.setFloatValue(Float.MAX_VALUE));
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          f.setFloatValue(Float.MAX_VALUE);
+        });
   }
 
   private void trySetReaderValue(Field f) {
-    expectThrows(IllegalArgumentException.class, () -> f.setReaderValue(new StringReader("BOO!")));
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          f.setReaderValue(new StringReader("BOO!"));
+        });
   }
 
   private void trySetShortValue(Field f) {
-    expectThrows(IllegalArgumentException.class, () -> f.setShortValue(Short.MAX_VALUE));
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          f.setShortValue(Short.MAX_VALUE);
+        });
   }
 
   private void trySetStringValue(Field f) {
-    expectThrows(IllegalArgumentException.class, () -> f.setStringValue("BOO!"));
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          f.setStringValue("BOO!");
+        });
   }
 
   private void trySetTokenStreamValue(Field f) {
     expectThrows(
         IllegalArgumentException.class,
-        () -> f.setTokenStream(new CannedTokenStream(new Token("foo", 0, 3))));
+        () -> {
+          f.setTokenStream(new CannedTokenStream(new Token("foo", 0, 3)));
+        });
   }
 }

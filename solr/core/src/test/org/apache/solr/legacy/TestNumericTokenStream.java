@@ -104,9 +104,17 @@ public class TestNumericTokenStream extends BaseTokenStreamTestCase {
   public void testNotInitialized() throws Exception {
     final LegacyNumericTokenStream stream = new LegacyNumericTokenStream();
 
-    expectThrows(IllegalStateException.class, stream::reset);
+    expectThrows(
+        IllegalStateException.class,
+        () -> {
+          stream.reset();
+        });
 
-    expectThrows(IllegalStateException.class, stream::incrementToken);
+    expectThrows(
+        IllegalStateException.class,
+        () -> {
+          stream.incrementToken();
+        });
 
     stream.close();
   }
@@ -119,12 +127,18 @@ public class TestNumericTokenStream extends BaseTokenStreamTestCase {
     final LegacyNumericTokenStream stream = new LegacyNumericTokenStream();
     IllegalArgumentException e =
         expectThrows(
-            IllegalArgumentException.class, () -> stream.addAttribute(CharTermAttribute.class));
+            IllegalArgumentException.class,
+            () -> {
+              stream.addAttribute(CharTermAttribute.class);
+            });
     assertTrue(e.getMessage().startsWith("LegacyNumericTokenStream does not support"));
 
     e =
         expectThrows(
-            IllegalArgumentException.class, () -> stream.addAttribute(TestAttribute.class));
+            IllegalArgumentException.class,
+            () -> {
+              stream.addAttribute(TestAttribute.class);
+            });
     assertTrue(e.getMessage().startsWith("LegacyNumericTokenStream does not support"));
     stream.close();
   }

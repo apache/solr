@@ -262,7 +262,10 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
               }
             }
           }
-        } catch (IOException | SyntaxError e) {
+        } catch (IOException e) {
+          log.error("Error", e);
+          return null;
+        } catch (SyntaxError e) {
           log.error("Error", e);
           return null;
         }
@@ -329,7 +332,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
 
   private void addOriginalTermsToResponse(
       NamedList<Object> response, Collection<Token> originalTerms) {
-    List<String> originalTermStr = new ArrayList<>();
+    List<String> originalTermStr = new ArrayList<String>();
     for (Token t : originalTerms) {
       originalTermStr.add(t.toString());
     }
@@ -484,8 +487,11 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     }
     for (SpellCheckResponse.Suggestion suggestion : spellCheckResp.getSuggestions()) {
       mergeData.origVsSuggestion.put(suggestion.getToken(), suggestion);
-      HashSet<String> suggested =
-          mergeData.origVsSuggested.computeIfAbsent(suggestion.getToken(), k -> new HashSet<>());
+      HashSet<String> suggested = mergeData.origVsSuggested.get(suggestion.getToken());
+      if (suggested == null) {
+        suggested = new HashSet<>();
+        mergeData.origVsSuggested.put(suggestion.getToken(), suggested);
+      }
 
       // sum up original frequency
       int origFreq = 0;

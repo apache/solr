@@ -101,10 +101,10 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
             int v = -Long.compare(o1.count, o2.count) * sortMul;
             return v == 0 ? o1.bucketValue.compareTo(o2.bucketValue) : v;
           };
-      sortedBuckets.sort(comparator);
+      Collections.sort(sortedBuckets, comparator);
     } else if ("index".equals(sort.sortVariable)) {
       comparator = (o1, o2) -> -o1.bucketValue.compareTo(o2.bucketValue) * sortMul;
-      sortedBuckets.sort(comparator);
+      Collections.sort(sortedBuckets, comparator);
     } else {
       final String key = sort.sortVariable;
 
@@ -120,7 +120,8 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
        */
       List<SortVal> lst = new ArrayList<>(buckets.size());
       List<FacetBucket> nulls = new ArrayList<>(buckets.size() >> 1);
-      for (FacetBucket bucket : sortedBuckets) {
+      for (int i = 0; i < sortedBuckets.size(); i++) {
+        FacetBucket bucket = sortedBuckets.get(i);
         FacetMerger merger = bucket.getExistingMerger(key);
         if (merger == null) {
           nulls.add(bucket);
@@ -135,7 +136,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
         }
       }
       Collections.sort(lst);
-      nulls.sort(Comparator.comparing(o -> o.bucketValue));
+      Collections.sort(nulls, (o1, o2) -> o1.bucketValue.compareTo(o2.bucketValue));
 
       ArrayList<FacetBucket> out = new ArrayList<>(buckets.size());
       for (SortVal sv : lst) {

@@ -34,9 +34,15 @@ public class SuggesterResult {
 
   /** Add suggestion results for <code>token</code> */
   public void add(String suggesterName, String token, List<LookupResult> results) {
-    this.suggestionsMap.computeIfAbsent(suggesterName, k -> new HashMap<>());
-    List<LookupResult> res =
-        this.suggestionsMap.get(suggesterName).computeIfAbsent(token, k -> results);
+    Map<String, List<LookupResult>> suggesterRes = this.suggestionsMap.get(suggesterName);
+    if (suggesterRes == null) {
+      this.suggestionsMap.put(suggesterName, new HashMap<String, List<LookupResult>>());
+    }
+    List<LookupResult> res = this.suggestionsMap.get(suggesterName).get(token);
+    if (res == null) {
+      res = results;
+      this.suggestionsMap.get(suggesterName).put(token, res);
+    }
   }
 
   /**
@@ -46,14 +52,14 @@ public class SuggesterResult {
   public List<LookupResult> getLookupResult(String suggesterName, String token) {
     return (this.suggestionsMap.containsKey(suggesterName))
         ? this.suggestionsMap.get(suggesterName).get(token)
-        : new ArrayList<>();
+        : new ArrayList<LookupResult>();
   }
 
   /** Get the set of tokens that are present in the instance */
   public Set<String> getTokens(String suggesterName) {
     return (this.suggestionsMap.containsKey(suggesterName))
         ? this.suggestionsMap.get(suggesterName).keySet()
-        : new HashSet<>();
+        : new HashSet<String>();
   }
 
   /** Get the set of suggesterNames for which this instance holds results */

@@ -324,7 +324,7 @@ public class RequestUtil {
   }
 
   private static void getParamsFromJSON(Map<String, String[]> params, String json) {
-    if (!json.contains("params")) {
+    if (json.indexOf("params") < 0) {
       return;
     }
 

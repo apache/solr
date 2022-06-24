@@ -21,8 +21,10 @@ import static org.apache.solr.common.params.CommonParams.SORT;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -101,8 +103,10 @@ public class MoreLikeThisComponent extends SearchComponent {
           NamedList<BooleanQuery> bQuery = mlt.getMoreLikeTheseQuery(rb.getResults().docList);
 
           NamedList<String> temp = new NamedList<>();
+          Iterator<Entry<String, BooleanQuery>> idToQueryIt = bQuery.iterator();
 
-          for (Entry<String, BooleanQuery> idToQuery : bQuery) {
+          while (idToQueryIt.hasNext()) {
+            Entry<String, BooleanQuery> idToQuery = idToQueryIt.next();
             String s = idToQuery.getValue().toString();
 
             log.debug("MLT Query:{}", s);
@@ -269,7 +273,7 @@ public class MoreLikeThisComponent extends SearchComponent {
 
     // hmm...we are ordering by scores that are not really comparable...
     Comparator<SolrDocument> c =
-        new Comparator<>() {
+        new Comparator<SolrDocument>() {
           public int compare(SolrDocument o1, SolrDocument o2) {
             Float f1 = getFloat(o1);
             Float f2 = getFloat(o2);
@@ -288,7 +292,7 @@ public class MoreLikeThisComponent extends SearchComponent {
           }
         };
 
-    l.sort(c);
+    Collections.sort(l, c);
 
     // Truncate list to maxSize
     if (l.size() > maxSize) {

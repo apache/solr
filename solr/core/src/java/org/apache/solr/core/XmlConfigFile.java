@@ -273,6 +273,10 @@ public class XmlConfigFile { // formerly simply "Config"
       log.trace("{}:{}={}", name, path, nd);
       return nd;
 
+    } catch (XPathExpressionException e) {
+      SolrException.log(log, "Error in xpath", e);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Error in xpath:" + xstr + " for " + name, e);
     } catch (SolrException e) {
       throw (e);
     } catch (Exception e) {
@@ -301,6 +305,10 @@ public class XmlConfigFile { // formerly simply "Config"
       log.trace("{}:{}={}", name, path, nodeList);
       return nodeList;
 
+    } catch (XPathExpressionException e) {
+      SolrException.log(log, "Error in xpath", e);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Error in xpath:" + xstr + " for " + name, e);
     } catch (SolrException e) {
       throw (e);
     } catch (Exception e) {
@@ -342,8 +350,11 @@ public class XmlConfigFile { // formerly simply "Config"
       Set<String> unknownAttributes = getUnknownAttributes(element, knownAttributes);
       if (null != unknownAttributes) {
         String elementName = element.getNodeName();
-        SortedSet<String> allUnknownAttributes =
-            problems.computeIfAbsent(elementName, k -> new TreeSet<>());
+        SortedSet<String> allUnknownAttributes = problems.get(elementName);
+        if (null == allUnknownAttributes) {
+          allUnknownAttributes = new TreeSet<>();
+          problems.put(elementName, allUnknownAttributes);
+        }
         allUnknownAttributes.addAll(unknownAttributes);
       }
     }

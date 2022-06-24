@@ -71,12 +71,18 @@ public class DivideFunctionTest extends SolrTestCaseJ4 {
     // No values, One value
     dividend.setValues();
     divisor.setValue(21.56F).setExists(true);
-    func.streamDoubles(value -> assertTrue("There should be no values to stream", false));
+    func.streamDoubles(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple values, no value
     dividend.setValues(4L, 10023L);
     divisor.setExists(false);
-    func.streamDoubles(value -> assertTrue("There should be no values to stream", false));
+    func.streamDoubles(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple values, one value
     dividend.setValues(20L, 5L, -234L);
@@ -103,12 +109,18 @@ public class DivideFunctionTest extends SolrTestCaseJ4 {
     // No values, One value
     dividend.setValue(21.56F).setExists(true);
     divisor.setValues();
-    func.streamDoubles(value -> assertTrue("There should be no values to stream", false));
+    func.streamDoubles(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple values, no value
     dividend.setExists(false);
     divisor.setValues(4L, 10023L);
-    func.streamDoubles(value -> assertTrue("There should be no values to stream", false));
+    func.streamDoubles(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple values, one value
     dividend.setValue(44.56F).setExists(true);

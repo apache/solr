@@ -148,7 +148,7 @@ public final class DefaultSolrCoreState extends SolrCoreState
     // and then add a releaseWriter() call.
     if (refCntWriter == null && indexWriter != null) {
       refCntWriter =
-          new RefCounted<>(indexWriter) {
+          new RefCounted<IndexWriter>(indexWriter) {
 
             @Override
             public void decref() {
@@ -296,70 +296,73 @@ public final class DefaultSolrCoreState extends SolrCoreState
   public void doRecovery(CoreContainer cc, CoreDescriptor cd) {
 
     Runnable recoveryTask =
-        () -> {
-          MDCLoggingContext.setCoreDescriptor(cc, cd);
-          try {
-            if (SKIP_AUTO_RECOVERY) {
-              log.warn("Skipping recovery according to sys prop solrcloud.skip.autorecovery");
-              return;
-            }
-
-            // check before we grab the lock
-            if (cc.isShutDown()) {
-              log.warn("Skipping recovery because Solr is shutdown");
-              return;
-            }
-
-            // if we can't get the lock, another recovery is running
-            // we check to see if there is already one waiting to go
-            // after the current one, and if there is, bail
-            boolean locked = recoveryLock.tryLock();
+        new Runnable() {
+          @Override
+          public void run() {
+            MDCLoggingContext.setCoreDescriptor(cc, cd);
             try {
-              if (!locked && recoveryWaiting.get() > 0) {
+              if (SKIP_AUTO_RECOVERY) {
+                log.warn("Skipping recovery according to sys prop solrcloud.skip.autorecovery");
                 return;
               }
 
-              recoveryWaiting.incrementAndGet();
-              cancelRecovery();
+              // check before we grab the lock
+              if (cc.isShutDown()) {
+                log.warn("Skipping recovery because Solr is shutdown");
+                return;
+              }
 
-              recoveryLock.lock();
+              // if we can't get the lock, another recovery is running
+              // we check to see if there is already one waiting to go
+              // after the current one, and if there is, bail
+              boolean locked = recoveryLock.tryLock();
               try {
-                // don't use recoveryLock.getQueueLength() for this
-                if (recoveryWaiting.decrementAndGet() > 0) {
-                  // another recovery waiting behind us, let it run now instead of after we finish
+                if (!locked && recoveryWaiting.get() > 0) {
                   return;
                 }
 
-                // to be air tight we must also check after lock
-                if (cc.isShutDown()) {
-                  log.warn("Skipping recovery because Solr is shutdown");
-                  return;
-                }
-                log.info("Running recovery");
+                recoveryWaiting.incrementAndGet();
+                cancelRecovery();
 
-                recoveryThrottle.minimumWaitBetweenActions();
-                recoveryThrottle.markAttemptingAction();
-
-                recoveryStrat = recoveryStrategyBuilder.create(cc, cd, DefaultSolrCoreState.this);
-                recoveryStrat.setRecoveringAfterStartup(recoveringAfterStartup);
-                Future<?> future =
-                    cc.getUpdateShardHandler().getRecoveryExecutor().submit(recoveryStrat);
+                recoveryLock.lock();
                 try {
-                  future.get();
-                } catch (InterruptedException e) {
-                  Thread.currentThread().interrupt();
-                  throw new SolrException(ErrorCode.SERVER_ERROR, e);
-                } catch (ExecutionException e) {
-                  throw new SolrException(ErrorCode.SERVER_ERROR, e);
+                  // don't use recoveryLock.getQueueLength() for this
+                  if (recoveryWaiting.decrementAndGet() > 0) {
+                    // another recovery waiting behind us, let it run now instead of after we finish
+                    return;
+                  }
+
+                  // to be air tight we must also check after lock
+                  if (cc.isShutDown()) {
+                    log.warn("Skipping recovery because Solr is shutdown");
+                    return;
+                  }
+                  log.info("Running recovery");
+
+                  recoveryThrottle.minimumWaitBetweenActions();
+                  recoveryThrottle.markAttemptingAction();
+
+                  recoveryStrat = recoveryStrategyBuilder.create(cc, cd, DefaultSolrCoreState.this);
+                  recoveryStrat.setRecoveringAfterStartup(recoveringAfterStartup);
+                  Future<?> future =
+                      cc.getUpdateShardHandler().getRecoveryExecutor().submit(recoveryStrat);
+                  try {
+                    future.get();
+                  } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new SolrException(ErrorCode.SERVER_ERROR, e);
+                  } catch (ExecutionException e) {
+                    throw new SolrException(ErrorCode.SERVER_ERROR, e);
+                  }
+                } finally {
+                  recoveryLock.unlock();
                 }
               } finally {
-                recoveryLock.unlock();
+                if (locked) recoveryLock.unlock();
               }
             } finally {
-              if (locked) recoveryLock.unlock();
+              MDCLoggingContext.clear();
             }
-          } finally {
-            MDCLoggingContext.clear();
           }
         };
     try {

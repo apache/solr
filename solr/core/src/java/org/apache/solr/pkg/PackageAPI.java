@@ -277,7 +277,7 @@ public class PackageAPI {
         return;
       }
       PackageStoreAPI packageStoreAPI = coreContainer.getPackageStoreAPI();
-      packageStoreAPI.validateFiles(add.files, true, payload::addError);
+      packageStoreAPI.validateFiles(add.files, true, s -> payload.addError(s));
       if (payload.hasError()) return;
       Packages[] finalState = new Packages[1];
       try {

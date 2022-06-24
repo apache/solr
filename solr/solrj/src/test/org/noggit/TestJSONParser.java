@@ -651,7 +651,8 @@ public class TestJSONParser extends SolrTestCaseJ4 {
           Double.MIN_VALUE,
           2.2250738585072014E-308, /* Double.MIN_NORMAL */
         };
-    for (double d : vals) {
+    for (int i = 0; i < vals.length; i++) {
+      double d = vals[i];
       parse("[" + d + "," + -d + "]", new Object[] {a, o(d), o(-d), A, e});
     }
 

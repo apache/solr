@@ -76,6 +76,6 @@ public class DoubleMultiPointField extends AnalyticsField implements CastingDoub
 
   @Override
   public void streamObjects(Consumer<Object> cons) {
-    streamDoubles(cons::accept);
+    streamDoubles(value -> cons.accept(value));
   }
 }

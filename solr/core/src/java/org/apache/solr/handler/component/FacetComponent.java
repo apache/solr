@@ -22,7 +22,6 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -181,9 +180,11 @@ public class FacetComponent extends SearchComponent {
       taggedRangeFacets = new HashMap<>();
       for (RangeFacetRequest rf : this.allRangeFacets) {
         for (String tag : rf.getTags()) {
-          List<RangeFacetRequest> list =
-              taggedRangeFacets.computeIfAbsent(tag, k -> new ArrayList<>(1));
-          // typically just one object
+          List<RangeFacetRequest> list = taggedRangeFacets.get(tag);
+          if (list == null) {
+            list = new ArrayList<>(1); // typically just one object
+            taggedRangeFacets.put(tag, list);
+          }
           list.add(rf);
         }
       }
@@ -191,7 +192,11 @@ public class FacetComponent extends SearchComponent {
       taggedQueryFacets = new HashMap<>();
       for (FacetBase qf : this.allQueryFacets) {
         for (String tag : qf.getTags()) {
-          List<FacetBase> list = taggedQueryFacets.computeIfAbsent(tag, k -> new ArrayList<>(1));
+          List<FacetBase> list = taggedQueryFacets.get(tag);
+          if (list == null) {
+            list = new ArrayList<>(1);
+            taggedQueryFacets.put(tag, list);
+          }
           list.add(qf);
         }
       }
@@ -945,16 +950,18 @@ public class FacetComponent extends SearchComponent {
         } else {
           // not the first time, merge current field counts
           Iterator<Map.Entry<String, Integer>> newItr = entry.getValue().iterator();
+          Iterator<Map.Entry<String, Integer>> exItr = existingCounts.iterator();
 
           // all intervals should be returned by each shard, even if they have zero count,
           // and in the same order
-          for (Entry<String, Integer> exItem : existingCounts) {
+          while (exItr.hasNext()) {
+            Map.Entry<String, Integer> exItem = exItr.next();
             if (!newItr.hasNext()) {
               throw new SolrException(
                   ErrorCode.SERVER_ERROR,
                   "Interval facet shard response missing key: " + exItem.getKey());
             }
-            Entry<String, Integer> newItem = newItr.next();
+            Map.Entry<String, Integer> newItem = newItr.next();
             if (!newItem.getKey().equals(exItem.getKey())) {
               throw new SolrException(
                   ErrorCode.SERVER_ERROR,
@@ -1141,8 +1148,8 @@ public class FacetComponent extends SearchComponent {
         int lim = dff.limit >= 0 ? dff.limit : Integer.MAX_VALUE;
 
         // index order...
-        for (ShardFacetCount shardFacetCount : counts) {
-          long count = shardFacetCount.count;
+        for (int i = 0; i < counts.length; i++) {
+          long count = counts[i].count;
           if (count < dff.minCount) continue;
           if (off > 0) {
             off--;
@@ -1152,7 +1159,7 @@ public class FacetComponent extends SearchComponent {
             break;
           }
           lim--;
-          fieldCounts.add(shardFacetCount.name, num(count));
+          fieldCounts.add(counts[i].name, num(count));
         }
       }
 
@@ -1217,7 +1224,7 @@ public class FacetComponent extends SearchComponent {
    *     else a {@link java.lang.Long}
    */
   static Number num(Long val) {
-    if (val < Integer.MAX_VALUE) return val.intValue();
+    if (val.longValue() < Integer.MAX_VALUE) return val.intValue();
     else return val;
   }
 
@@ -1520,7 +1527,7 @@ public class FacetComponent extends SearchComponent {
 
     public ShardFacetCount[] getLexSorted() {
       ShardFacetCount[] arr = counts.values().toArray(new ShardFacetCount[counts.size()]);
-      Arrays.sort(arr, Comparator.comparing(o -> o.indexed));
+      Arrays.sort(arr, (o1, o2) -> o1.indexed.compareTo(o2.indexed));
       countSorted = arr;
       return arr;
     }

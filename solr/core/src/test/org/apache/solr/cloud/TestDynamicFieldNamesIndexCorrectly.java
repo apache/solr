@@ -86,23 +86,26 @@ public class TestDynamicFieldNamesIndexCorrectly extends AbstractFullDistribZkTe
     assertEquals("Wrong number of docs found", resultDocs.getNumFound(), solrDocs.size());
     final Map<Object, SolrDocument> resultMap =
         resultDocs.stream().collect(Collectors.toMap(doc -> doc.getFieldValue("id"), doc -> doc));
-    for (SolrInputDocument inDoc : solrDocs) {
+    Iterator<SolrInputDocument> it = solrDocs.iterator();
+    while (it.hasNext()) {
+      final SolrInputDocument inDoc = it.next();
       final String id = inDoc.getField("id").getValue().toString();
       final SolrDocument resultDoc = resultMap.get(id);
       final Collection<String> resultFieldNames = resultDoc.getFieldNames();
       inDoc
           .getFieldNames()
           .forEach(
-              fieldName ->
-                  assertThat(
-                      String.format(
-                          Locale.ROOT,
-                          "Doc %s does not have field %s, it has %s",
-                          id,
-                          fieldName,
-                          resultFieldNames),
-                      resultFieldNames,
-                      new IsCollectionContaining<>(new IsEqual<>(fieldName))));
+              fieldName -> {
+                assertThat(
+                    String.format(
+                        Locale.ROOT,
+                        "Doc %s does not have field %s, it has %s",
+                        id,
+                        fieldName,
+                        resultFieldNames),
+                    resultFieldNames,
+                    new IsCollectionContaining<>(new IsEqual<>(fieldName)));
+              });
     }
   }
 

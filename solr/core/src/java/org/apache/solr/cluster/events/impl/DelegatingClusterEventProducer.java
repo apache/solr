@@ -74,19 +74,20 @@ public final class DelegatingClusterEventProducer extends ClusterEventProducerBa
     this.delegate = newDelegate;
     // transfer all listeners to the new delegate
     listeners.forEach(
-        (type, listenerSet) ->
-            listenerSet.forEach(
-                listener -> {
-                  try {
-                    delegate.registerListener(listener, type);
-                  } catch (Exception e) {
-                    log.warn("Exception registering listener with the new event producer", e);
-                    // make sure it's not registered
-                    delegate.unregisterListener(listener, type);
-                    // unregister it here, too
-                    super.unregisterListener(listener, type);
-                  }
-                }));
+        (type, listenerSet) -> {
+          listenerSet.forEach(
+              listener -> {
+                try {
+                  delegate.registerListener(listener, type);
+                } catch (Exception e) {
+                  log.warn("Exception registering listener with the new event producer", e);
+                  // make sure it's not registered
+                  delegate.unregisterListener(listener, type);
+                  // unregister it here, too
+                  super.unregisterListener(listener, type);
+                }
+              });
+        });
     if ((state == State.RUNNING || state == State.STARTING)
         && !(delegate.getState() == State.RUNNING || delegate.getState() == State.STARTING)) {
       try {

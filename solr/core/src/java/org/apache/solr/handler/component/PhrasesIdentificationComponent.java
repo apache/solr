@@ -294,7 +294,7 @@ public class PhrasesIdentificationComponent extends SearchComponent {
             //  - more hard & fast documentation about the "range" of scores that may be returned
             //  - "useful" scores for single words
             .filter(p -> 0.0D < p.getTotalScore())
-            .sorted(Comparator.comparing((Phrase::getTotalScore), Collections.reverseOrder()))
+            .sorted(Comparator.comparing((p -> p.getTotalScore()), Collections.reverseOrder()))
             .collect(Collectors.toList());
 
     // we want to return only high scoring phrases that don't overlap w/higher scoring phrase
@@ -319,7 +319,7 @@ public class PhrasesIdentificationComponent extends SearchComponent {
     output.add("summary", contextData.summarize(results));
     // useful user level info on every (high scoring) phrase found (in current, descending score,
     // order)
-    output.add("details", results.stream().map(Phrase::getDetails).collect(Collectors.toList()));
+    output.add("details", results.stream().map(p -> p.getDetails()).collect(Collectors.toList()));
   }
 
   @Override
@@ -491,12 +491,12 @@ public class PhrasesIdentificationComponent extends SearchComponent {
      * @return the original user input, decorated to indicate the identified phrases
      */
     public String summarize(final List<Phrase> results) {
-      final StringBuilder out = new StringBuilder(rawInput);
+      final StringBuffer out = new StringBuffer(rawInput);
 
       // sort by *reverse* position so we can go back to front
       final List<Phrase> reversed =
           results.stream()
-              .sorted(Comparator.comparing((Phrase::getPositionStart), Collections.reverseOrder()))
+              .sorted(Comparator.comparing((p -> p.getPositionStart()), Collections.reverseOrder()))
               .collect(Collectors.toList());
 
       for (Phrase p : reversed) {

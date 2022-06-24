@@ -43,7 +43,12 @@ public class TestConfigSetProperties extends SolrTestCaseJ4 {
 
   @Test
   public void testEmptyConfigSetProperties() {
-    SolrException thrown = expectThrows(SolrException.class, () -> createConfigSetProps(""));
+    SolrException thrown =
+        expectThrows(
+            SolrException.class,
+            () -> {
+              createConfigSetProps("");
+            });
     assertEquals(ErrorCode.SERVER_ERROR.code, thrown.code());
   }
 
@@ -52,7 +57,9 @@ public class TestConfigSetProperties extends SolrTestCaseJ4 {
     SolrException thrown =
         expectThrows(
             SolrException.class,
-            () -> createConfigSetProps(Utils.toJSONString(new String[] {"test"})));
+            () -> {
+              createConfigSetProps(Utils.toJSONString(new String[] {"test"}));
+            });
     assertEquals(ErrorCode.SERVER_ERROR.code, thrown.code());
   }
 

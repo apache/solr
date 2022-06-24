@@ -168,7 +168,11 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
           "Specified index generation is too old to be saved: " + generation);
     }
     final AtomicInteger refCount =
-        savedCommits.computeIfAbsent(generation, s -> new AtomicInteger());
+        savedCommits.computeIfAbsent(
+            generation,
+            s -> {
+              return new AtomicInteger();
+            });
     final int currentCount = refCount.incrementAndGet();
     log.debug("Saving generation={}, refCount={}", generation, currentCount);
     return commit;
@@ -333,7 +337,7 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
         if ((System.nanoTime() < reserves.getOrDefault(gen, 0L))
             || savedCommits.containsKey(gen)
             || snapshotMgr.isSnapshotted(gen)
-            || (null != latestCommit && gen == latestCommit.getGeneration())) {
+            || (null != latestCommit && gen.longValue() == latestCommit.getGeneration())) {
           return; // skip deletion
         }
         log.debug("Deleting generation={}", gen);

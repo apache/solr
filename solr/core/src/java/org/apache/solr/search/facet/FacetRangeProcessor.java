@@ -586,7 +586,13 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       // TODO: only save if number of slots is small enough?
       intersections[slot] = intersection;
     }
-    long num = collect(intersection, slot, slotNum -> new SlotAcc.SlotContext(rangeQ));
+    long num =
+        collect(
+            intersection,
+            slot,
+            slotNum -> {
+              return new SlotAcc.SlotContext(rangeQ);
+            });
     countAcc.incrementCount(slot, num); // TODO: roll this into collect()
   }
 

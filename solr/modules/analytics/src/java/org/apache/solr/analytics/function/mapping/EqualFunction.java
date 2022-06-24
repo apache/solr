@@ -67,7 +67,12 @@ public class EqualFunction {
                 (BooleanValue) paramB, (BooleanValueStream) paramA);
           }
         } else if (paramA instanceof DoubleValueStream && paramB instanceof DoubleValueStream) {
-          return ComparisonFunction.createComparisonFunction(name, val -> val == 0, params);
+          return ComparisonFunction.createComparisonFunction(
+              name,
+              val -> {
+                return val == 0;
+              },
+              params);
         } else if (paramA instanceof AnalyticsValue) {
           // This means that the Objects created by the AnalyticsValueStreams are not comparable, so
           // use the .equals() method instead

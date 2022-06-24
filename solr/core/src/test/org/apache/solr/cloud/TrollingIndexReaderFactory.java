@@ -39,7 +39,8 @@ import org.apache.solr.core.StandardIndexReaderFactory;
 public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
 
   private static volatile Trap trap;
-  private static final BlockingQueue<List<Object>> lastStacktraces = new LinkedBlockingQueue<>();
+  private static final BlockingQueue<List<Object>> lastStacktraces =
+      new LinkedBlockingQueue<List<Object>>();
   private static final long startTime = ManagementFactory.getRuntimeMXBean().getStartTime();
   private static final int keepStackTraceLines = 20;
   protected static final int maxTraces = 4;
@@ -105,10 +106,10 @@ public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
 
   public static Trap catchClass(String className, Runnable onCaught) {
     Predicate<StackTraceElement> judge =
-        new Predicate<>() {
+        new Predicate<StackTraceElement>() {
           @Override
           public boolean test(StackTraceElement trace) {
-            return trace.getClassName().contains(className);
+            return trace.getClassName().indexOf(className) >= 0;
           }
 
           @Override
@@ -191,7 +192,7 @@ public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
   private static void recordStackTrace(StackTraceElement[] stackTrace) {
     // keep the last n limited traces.
     // e.printStackTrace();
-    ArrayList<Object> stack = new ArrayList<>();
+    ArrayList<Object> stack = new ArrayList<Object>();
     stack.add(
         "" + (new Date().getTime() - startTime) + " (" + Thread.currentThread().getName() + ")");
     for (int l = 2; l < stackTrace.length && l < keepStackTraceLines; l++) {

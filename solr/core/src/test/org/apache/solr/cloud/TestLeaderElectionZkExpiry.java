@@ -58,22 +58,25 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
               .setLeaderVoteWait(180000)
               .build();
       final ZkController zkController =
-          new ZkController(cc, server.getZkAddress(), 15000, cloudConfig, Collections::emptyList);
+          new ZkController(
+              cc, server.getZkAddress(), 15000, cloudConfig, () -> Collections.emptyList());
       try {
         Thread killer =
-            new Thread(
-                () -> {
-                  long timeout =
-                      System.nanoTime() + TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS);
-                  while (System.nanoTime() < timeout) {
-                    server.expire(zkController.getZkClient().getZooKeeper().getSessionId());
-                    try {
-                      Thread.sleep(10);
-                    } catch (InterruptedException e) {
-                      return;
-                    }
+            new Thread() {
+              @Override
+              public void run() {
+                long timeout =
+                    System.nanoTime() + TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS);
+                while (System.nanoTime() < timeout) {
+                  server.expire(zkController.getZkClient().getZooKeeper().getSessionId());
+                  try {
+                    Thread.sleep(10);
+                  } catch (InterruptedException e) {
+                    return;
                   }
-                });
+                }
+              }
+            };
         killer.start();
         killer.join();
         long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(60, TimeUnit.SECONDS);

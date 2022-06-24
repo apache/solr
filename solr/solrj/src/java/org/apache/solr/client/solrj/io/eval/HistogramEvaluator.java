@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import org.apache.commons.math3.random.EmpiricalDistribution;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -46,7 +45,7 @@ public class HistogramEvaluator extends RecursiveNumericEvaluator implements Man
 
   @Override
   public Object doWork(Object... values) throws IOException {
-    if (Arrays.stream(values).anyMatch(Objects::isNull)) {
+    if (Arrays.stream(values).anyMatch(item -> null == item)) {
       return null;
     }
 

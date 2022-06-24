@@ -123,8 +123,10 @@ public class CacheConfig implements MapSerializable {
       }
       config.args = mapCopy;
     }
-    // OPTIONAL
-    config.args.computeIfAbsent(NAME, k -> config.nodeName);
+    String nameAttr = config.args.get(NAME); // OPTIONAL
+    if (nameAttr == null) {
+      config.args.put(NAME, config.nodeName);
+    }
 
     SolrResourceLoader loader = solrConfig.getResourceLoader();
     config.cacheImpl = config.args.get("class");

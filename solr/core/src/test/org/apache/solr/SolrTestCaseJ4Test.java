@@ -73,9 +73,16 @@ public class SolrTestCaseJ4Test extends SolrTestCaseJ4 {
     params.add("rows", "42");
     assertEquals(params.toString(), params("q", "*:*", "rows", "42").toString());
 
-    expectThrows(RuntimeException.class, () -> params("parameterWithoutValue"));
+    expectThrows(
+        RuntimeException.class,
+        () -> {
+          params("parameterWithoutValue");
+        });
 
     expectThrows(
-        RuntimeException.class, () -> params("q", "*:*", "rows", "42", "parameterWithoutValue"));
+        RuntimeException.class,
+        () -> {
+          params("q", "*:*", "rows", "42", "parameterWithoutValue");
+        });
   }
 }

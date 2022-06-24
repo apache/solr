@@ -101,7 +101,9 @@ public class SortedIntDocSet extends DocSet {
     int low = 0;
     int max = b.length - 1;
 
-    for (int doca : a) {
+    for (int i = 0; i < a.length; i++) {
+      int doca = a[i];
+
       int high = max;
 
       int probe = low + step; // 40% improvement!
@@ -163,7 +165,8 @@ public class SortedIntDocSet extends DocSet {
     int low = 0;
     int max = b.length - 1;
 
-    for (int doca : a) {
+    for (int i = 0; i < a.length; i++) {
+      int doca = a[i];
       int high = max;
       int probe = low + step;
       if (probe < high) {
@@ -204,8 +207,8 @@ public class SortedIntDocSet extends DocSet {
     if (!(other instanceof SortedIntDocSet)) {
       // BitDocSet is  better at random access than we are
       int icount = 0;
-      for (int doc : docs) {
-        if (other.exists(doc)) icount++;
+      for (int i = 0; i < docs.length; i++) {
+        if (other.exists(docs[i])) icount++;
       }
       return icount;
     }
@@ -399,7 +402,8 @@ public class SortedIntDocSet extends DocSet {
     if (!(other instanceof SortedIntDocSet)) {
       int icount = 0;
       int arr[] = new int[docs.length];
-      for (int doc : docs) {
+      for (int i = 0; i < docs.length; i++) {
+        int doc = docs[i];
         if (other.exists(doc)) arr[icount++] = doc;
       }
       if (icount == docs.length) {
@@ -527,7 +531,8 @@ public class SortedIntDocSet extends DocSet {
     if (!(other instanceof SortedIntDocSet)) {
       int count = 0;
       int arr[] = new int[docs.length];
-      for (int doc : docs) {
+      for (int i = 0; i < docs.length; i++) {
+        int doc = docs[i];
         if (!other.exists(doc)) arr[count++] = doc;
       }
       if (count == docs.length) {

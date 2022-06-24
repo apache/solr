@@ -104,8 +104,8 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
     nl.add(null, null);
     rsp.add("nl", nl);
 
-    rsp.add("byte", (byte) -3);
-    rsp.add("short", (short) -4);
+    rsp.add("byte", Byte.valueOf((byte) -3));
+    rsp.add("short", Short.valueOf((short) -4));
     rsp.add("bytes", "abc".getBytes(StandardCharsets.UTF_8));
 
     w.write(buf, req, rsp);

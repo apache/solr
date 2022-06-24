@@ -95,6 +95,6 @@ public class BooleanMultiField extends AnalyticsField implements CastingBooleanV
 
   @Override
   public void streamObjects(Consumer<Object> cons) {
-    streamBooleans(cons::accept);
+    streamBooleans(value -> cons.accept(value));
   }
 }

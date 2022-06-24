@@ -143,7 +143,7 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
     }
   }
 
-  public static final class LatchCountingPredicateWrapper implements CollectionStatePredicate {
+  public final class LatchCountingPredicateWrapper implements CollectionStatePredicate {
     private final CountDownLatch latch;
     private final CollectionStatePredicate inner;
 

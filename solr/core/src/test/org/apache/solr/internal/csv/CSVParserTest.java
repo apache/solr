@@ -216,9 +216,9 @@ public class CSVParserTest extends TestCase {
   public void testGetLine() throws IOException {
     CSVParser parser = new CSVParser(new StringReader(code));
     String[] tmp = null;
-    for (String[] re : res) {
+    for (int i = 0; i < res.length; i++) {
       tmp = parser.getLine();
-      assertTrue(Arrays.equals(re, tmp));
+      assertTrue(Arrays.equals(res[i], tmp));
     }
     tmp = parser.getLine();
     assertTrue(tmp == null);
@@ -227,10 +227,10 @@ public class CSVParserTest extends TestCase {
   public void testNextValue() throws IOException {
     CSVParser parser = new CSVParser(new StringReader(code));
     String tmp = null;
-    for (String[] re : res) {
-      for (String s : re) {
+    for (int i = 0; i < res.length; i++) {
+      for (int j = 0; j < res[i].length; j++) {
         tmp = parser.nextValue();
-        assertEquals(s, tmp);
+        assertEquals(res[i][j], tmp);
       }
     }
     tmp = parser.nextValue();
@@ -302,8 +302,8 @@ public class CSVParserTest extends TestCase {
       {"world", ""}
     };
     String code;
-    for (String s : codes) {
-      code = s;
+    for (int codeIndex = 0; codeIndex < codes.length; codeIndex++) {
+      code = codes[codeIndex];
       CSVParser parser = new CSVParser(new StringReader(code), CSVStrategy.EXCEL_STRATEGY);
       String[][] tmp = parser.getAllValues();
       assertEquals(res.length, tmp.length);
@@ -330,8 +330,8 @@ public class CSVParserTest extends TestCase {
       {"world", ""}
     };
     String code;
-    for (String s : codes) {
-      code = s;
+    for (int codeIndex = 0; codeIndex < codes.length; codeIndex++) {
+      code = codes[codeIndex];
       CSVParser parser = new CSVParser(new StringReader(code));
       String[][] tmp = parser.getAllValues();
       assertEquals(res.length, tmp.length);
@@ -352,8 +352,8 @@ public class CSVParserTest extends TestCase {
       {""}
     };
     String code;
-    for (String s : codes) {
-      code = s;
+    for (int codeIndex = 0; codeIndex < codes.length; codeIndex++) {
+      code = codes[codeIndex];
       CSVParser parser = new CSVParser(new StringReader(code), CSVStrategy.EXCEL_STRATEGY);
       String[][] tmp = parser.getAllValues();
       assertEquals(res.length, tmp.length);
@@ -372,8 +372,8 @@ public class CSVParserTest extends TestCase {
       {"hello", ""} // CSV Strategy ignores empty lines
     };
     String code;
-    for (String s : codes) {
-      code = s;
+    for (int codeIndex = 0; codeIndex < codes.length; codeIndex++) {
+      code = codes[codeIndex];
       CSVParser parser = new CSVParser(new StringReader(code));
       String[][] tmp = parser.getAllValues();
       assertEquals(res.length, tmp.length);
@@ -579,10 +579,10 @@ public class CSVParserTest extends TestCase {
     String[][] data = parser.getAllValues();
     parser = new CSVParser(new StringReader(code));
     CSVParser parser1 = new CSVParser(new StringReader(code));
-    for (String[] datum : data) {
-      assertTrue(Arrays.equals(parser1.getLine(), datum));
-      for (String s : datum) {
-        assertEquals(parser.nextValue(), s);
+    for (int i = 0; i < data.length; i++) {
+      assertTrue(Arrays.equals(parser1.getLine(), data[i]));
+      for (int j = 0; j < data[i].length; j++) {
+        assertEquals(parser.nextValue(), data[i][j]);
       }
     }
   }

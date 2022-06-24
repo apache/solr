@@ -61,7 +61,7 @@ public interface DateValueStream extends LongValueStream {
 
     @Override
     public void streamObjects(Consumer<Object> cons) {
-      streamDates(cons::accept);
+      streamDates((Date val) -> cons.accept(val));
     }
 
     @Override

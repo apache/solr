@@ -292,7 +292,8 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
     // verification so we'll use the shard names as "leader urls"
     final Map<String, List<String>> urlMap =
         docCol.getActiveSlices().stream()
-            .collect(Collectors.toMap(Slice::getName, s -> Collections.singletonList(s.getName())));
+            .collect(
+                Collectors.toMap(s -> s.getName(), s -> Collections.singletonList(s.getName())));
 
     // simplified rote info we'll build up with the shards for each delete (after sanity checking
     // they have routing info at all)...

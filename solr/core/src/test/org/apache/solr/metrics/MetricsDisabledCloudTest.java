@@ -63,16 +63,17 @@ public class MetricsDisabledCloudTest extends SolrCloudTestCase {
       registry
           .getMetrics()
           .forEach(
-              (name, metric) ->
-                  assertTrue(
-                      "should be NoOpMetric but was: "
-                          + name
-                          + "="
-                          + metric
-                          + "("
-                          + metric.getClass()
-                          + ")",
-                      metric instanceof MetricSuppliers.NoOpMetric));
+              (name, metric) -> {
+                assertTrue(
+                    "should be NoOpMetric but was: "
+                        + name
+                        + "="
+                        + metric
+                        + "("
+                        + metric.getClass()
+                        + ")",
+                    metric instanceof MetricSuppliers.NoOpMetric);
+              });
     }
   }
 

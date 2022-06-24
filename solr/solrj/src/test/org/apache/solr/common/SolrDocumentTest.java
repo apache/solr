@@ -19,6 +19,7 @@ package org.apache.solr.common;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCase;
@@ -177,7 +178,13 @@ public class SolrDocumentTest extends SolrTestCase {
     doc.clear();
     assertEquals(0, doc.getFieldNames().size());
 
-    Iterable<String> iter = c0::iterator;
+    Iterable<String> iter =
+        new Iterable<>() {
+          @Override
+          public Iterator<String> iterator() {
+            return c0.iterator();
+          }
+        };
     doc.addField("v", iter);
     assertEquals(c0.size(), doc.getFieldValues("v").size());
     // do it again to get twice the size...

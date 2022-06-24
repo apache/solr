@@ -17,6 +17,7 @@
 package org.apache.solr.update.processor;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -121,7 +122,7 @@ public class TextProfileSignature extends MD5Signature {
       }
       profile.add(t);
     }
-    profile.sort(new TokenComparator());
+    Collections.sort(profile, new TokenComparator());
     StringBuilder newText = new StringBuilder();
     it = profile.iterator();
     while (it.hasNext()) {

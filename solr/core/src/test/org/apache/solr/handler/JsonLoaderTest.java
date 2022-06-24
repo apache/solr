@@ -172,8 +172,9 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     SolrException ex =
         expectThrows(
             SolrException.class,
-            () ->
-                loader.load(req(), rsp, new ContentStreamBase.StringStream(invalidJsonString), p));
+            () -> {
+              loader.load(req(), rsp, new ContentStreamBase.StringStream(invalidJsonString), p);
+            });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(ex.getMessage().contains("Cannot parse"));
     assertTrue(ex.getMessage().contains("JSON"));
@@ -499,9 +500,9 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     f = d.getField("b2");
     assertEquals(Boolean.FALSE, f.getValue());
     f = d.getField("b3");
-    assertEquals(2, ((List<?>) f.getValue()).size());
-    assertEquals(Boolean.FALSE, ((List<?>) f.getValue()).get(0));
-    assertEquals(Boolean.TRUE, ((List<?>) f.getValue()).get(1));
+    assertEquals(2, ((List) f.getValue()).size());
+    assertEquals(Boolean.FALSE, ((List) f.getValue()).get(0));
+    assertEquals(Boolean.TRUE, ((List) f.getValue()).get(1));
 
     req.close();
   }
@@ -524,9 +525,9 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     f = d.getField("i2");
     assertEquals(-5123456789L, f.getValue());
     f = d.getField("i3");
-    assertEquals(2, ((List<?>) f.getValue()).size());
-    assertEquals(0L, ((List<?>) f.getValue()).get(0));
-    assertEquals(1L, ((List<?>) f.getValue()).get(1));
+    assertEquals(2, ((List) f.getValue()).size());
+    assertEquals(0L, ((List) f.getValue()).get(0));
+    assertEquals(1L, ((List) f.getValue()).get(1));
 
     req.close();
   }
@@ -551,9 +552,9 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     f = d.getField("d2");
     assertEquals(-5123456789.0, f.getValue());
     f = d.getField("d3");
-    assertEquals(2, ((List<?>) f.getValue()).size());
-    assertTrue(((List<?>) f.getValue()).contains(0.0));
-    assertTrue(((List<?>) f.getValue()).contains(1.0));
+    assertEquals(2, ((List) f.getValue()).size());
+    assertTrue(((List) f.getValue()).contains(0.0));
+    assertTrue(((List) f.getValue()).contains(1.0));
     f = d.getField("d4");
     assertEquals(1.7E-10, f.getValue());
 
@@ -584,9 +585,9 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertTrue(f.getValue() instanceof String);
     assertEquals("12345678901234567890.12345678901234567890", f.getValue());
     f = d.getField("bd3");
-    assertEquals(2, ((List<?>) f.getValue()).size());
-    assertTrue(((List<?>) f.getValue()).contains("0.012345678901234567890123456789012345"));
-    assertTrue(((List<?>) f.getValue()).contains("123456789012345678900.012345678901234567890"));
+    assertEquals(2, ((List) f.getValue()).size());
+    assertTrue(((List) f.getValue()).contains("0.012345678901234567890123456789012345"));
+    assertTrue(((List) f.getValue()).contains("123456789012345678900.012345678901234567890"));
 
     req.close();
   }
@@ -614,9 +615,9 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertTrue(f.getValue() instanceof String);
     assertEquals("1098765432109876543210", f.getValue());
     f = d.getField("bi3");
-    assertEquals(2, ((List<?>) f.getValue()).size());
-    assertTrue(((List<?>) f.getValue()).contains("1234567890123456789012"));
-    assertTrue(((List<?>) f.getValue()).contains("10987654321098765432109"));
+    assertEquals(2, ((List) f.getValue()).size());
+    assertTrue(((List) f.getValue()).contains("1234567890123456789012"));
+    assertTrue(((List) f.getValue()).contains("10987654321098765432109"));
 
     req.close();
   }
@@ -647,7 +648,9 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     SolrException ex =
         expectThrows(
             SolrException.class,
-            () -> updateJ(json("[{'id':'1','big_integer_tl':12345678901234567890}]"), null));
+            () -> {
+              updateJ(json("[{'id':'1','big_integer_tl':12345678901234567890}]"), null);
+            });
     assertTrue(ex.getCause() instanceof NumberFormatException);
 
     // Adding a BigInteger to an integer field should fail
@@ -655,7 +658,9 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     ex =
         expectThrows(
             SolrException.class,
-            () -> updateJ(json("[{'id':'1','big_integer_ti':12345678901234567890}]"), null));
+            () -> {
+              updateJ(json("[{'id':'1','big_integer_ti':12345678901234567890}]"), null);
+            });
     assertTrue(ex.getCause() instanceof NumberFormatException);
 
     unIgnoreException("big_integer_t");
@@ -847,7 +852,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     if (anonChildDocs) {
       cd = d.getChildDocuments().get(1);
     } else {
-      cd = (SolrInputDocument) ((List<?>) (d.getField("childLabel")).getValue()).get(1);
+      cd = (SolrInputDocument) ((List) (d.getField("childLabel")).getValue()).get(1);
     }
     cf = cd.getField("id");
     if (rawJsonStr.contains("\"3\"")) {

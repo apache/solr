@@ -143,7 +143,7 @@ public class JWTIssuerConfigTest extends SolrTestCase {
 
     JWTIssuerConfig issuerConfig = new JWTIssuerConfig(issuerConfigMap);
 
-    SolrException e = expectThrows(SolrException.class, issuerConfig::getHttpsJwks);
+    SolrException e = expectThrows(SolrException.class, () -> issuerConfig.getHttpsJwks());
     assertEquals(400, e.code());
     assertEquals(
         "jwksUrl is using http protocol. HTTPS required for IDP communication. Please use SSL or start your nodes with -Dsolr.auth.jwt.allowOutboundHttp=true to allow HTTP for test purposes.",

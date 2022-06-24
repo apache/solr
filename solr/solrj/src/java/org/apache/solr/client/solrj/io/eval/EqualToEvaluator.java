@@ -47,13 +47,26 @@ public class EqualToEvaluator extends RecursiveBooleanEvaluator implements ManyV
         }
       };
     } else if (fromValue instanceof Boolean) {
-      return (BooleanChecker) (left, right) -> (boolean) left == (boolean) right;
+      return new BooleanChecker() {
+        @Override
+        public boolean test(Object left, Object right) {
+          return (boolean) left == (boolean) right;
+        }
+      };
     } else if (fromValue instanceof Number) {
-      return (NumberChecker)
-          (left, right) ->
-              0 == (new BigDecimal(left.toString())).compareTo(new BigDecimal(right.toString()));
+      return new NumberChecker() {
+        @Override
+        public boolean test(Object left, Object right) {
+          return 0 == (new BigDecimal(left.toString())).compareTo(new BigDecimal(right.toString()));
+        }
+      };
     } else if (fromValue instanceof String) {
-      return (StringChecker) Object::equals;
+      return new StringChecker() {
+        @Override
+        public boolean test(Object left, Object right) {
+          return left.equals(right);
+        }
+      };
     }
 
     throw new IOException(

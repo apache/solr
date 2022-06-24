@@ -1046,7 +1046,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "4"));
     assertU(commit());
 
-    Map<String, String> args = new HashMap<>();
+    Map<String, String> args = new HashMap<String, String>();
     args.put(CommonParams.Q, "*:*");
     args.put(StatsParams.STATS, "true");
     args.put(StatsParams.STATS_FIELD, "{!ex=id}id_i");
@@ -1059,7 +1059,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
         "//lst[@name='id_i']/double[@name='min'][.='1.0']",
         "//lst[@name='id_i']/double[@name='max'][.='4.0']");
 
-    args = new HashMap<>();
+    args = new HashMap<String, String>();
     args.put(CommonParams.Q, "*:*");
     args.put(StatsParams.STATS, "true");
     args.put(StatsParams.STATS_FIELD, "{!key=id2}id_i");
@@ -1499,7 +1499,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     public final List<String> perShardXpaths;
     public final List<String> finalXpaths;
 
-    public static final Map<Stat, ExpectedStat> ALL = new LinkedHashMap<>();
+    public static final Map<Stat, ExpectedStat> ALL = new LinkedHashMap<Stat, ExpectedStat>();
 
     private ExpectedStat(
         Stat stat, String input, List<String> perShardXpaths, List<String> finalXpaths) {
@@ -1511,7 +1511,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
 
     public static void createSimple(Stat stat, String input, String type, String result) {
       EnumSet<Stat> deps = stat.getDistribDeps();
-      List<String> perShardXpaths = new ArrayList<>(deps.size());
+      List<String> perShardXpaths = new ArrayList<String>(deps.size());
       String xpath = KPRE + type + "[@name='" + stat + "'][.='" + result + "']";
       for (Stat dep : deps) {
         if (dep.equals(stat)) { // self dependency
@@ -1604,7 +1604,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
 
     EnumSet<Stat> allStats = EnumSet.allOf(Stat.class);
 
-    final List<ExpectedStat> expected = new ArrayList<>(allStats.size());
+    final List<ExpectedStat> expected = new ArrayList<ExpectedStat>(allStats.size());
     ExpectedStat.createSimple(Stat.min, "true", "double", "0.0");
     ExpectedStat.createSimple(Stat.max, "true", "double", "9.0");
     ExpectedStat.createSimple(Stat.missing, "true", "long", "0");
@@ -1660,7 +1660,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
       Stat stat = expect.stat;
 
       StringBuilder exclude = new StringBuilder();
-      List<String> testXpaths = new ArrayList<>(5 + expect.perShardXpaths.size());
+      List<String> testXpaths = new ArrayList<String>(5 + expect.perShardXpaths.size());
       testXpaths.addAll(expect.perShardXpaths);
 
       int numKeysExpected = 0;
@@ -1697,11 +1697,11 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     for (int numParams = 1; numParams <= allStats.size(); numParams++) {
       for (EnumSet<Stat> set : new StatSetCombinations(numParams, allStats)) {
         // EnumSets use natural ordering, we want to randomize the order of the params
-        List<Stat> combo = new ArrayList<>(set);
+        List<Stat> combo = new ArrayList<Stat>(set);
         Collections.shuffle(combo, random());
 
         StringBuilder paras = new StringBuilder("{!key=k ");
-        List<String> testXpaths = new ArrayList<>(numParams + 5);
+        List<String> testXpaths = new ArrayList<String>(numParams + 5);
 
         int numKeysExpected = 0;
         for (Stat stat : combo) {
@@ -2146,9 +2146,10 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
       SolrException ex =
           expectThrows(
               SolrException.class,
-              () ->
-                  HllOptions.parseHllOptions(
-                      params("cardinality", "true", "hllPreHashed", "true"), field));
+              () -> {
+                HllOptions.parseHllOptions(
+                    params("cardinality", "true", "hllPreHashed", "true"), field);
+              });
       assertTrue(
           "MSG: " + ex.getMessage(),
           ex.getMessage().contains("hllPreHashed is only supported with Long"));
@@ -2166,9 +2167,10 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     SolrException ex =
         expectThrows(
             SolrException.class,
-            () ->
-                HllOptions.parseHllOptions(
-                    params("cardinality", "true", "hllPreHashed", "true"), null));
+            () -> {
+              HllOptions.parseHllOptions(
+                  params("cardinality", "true", "hllPreHashed", "true"), null);
+            });
     assertTrue(
         "MSG: " + ex.getMessage(),
         ex.getMessage().contains("hllPreHashed is only supported with Long"));
@@ -2188,7 +2190,9 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
       ex =
           expectThrows(
               SolrException.class,
-              () -> HllOptions.parseHllOptions(params("cardinality", invalid), foo_s));
+              () -> {
+                HllOptions.parseHllOptions(params("cardinality", invalid), foo_s);
+              });
       assertTrue("MSG: " + ex.getMessage(), ex.getMessage().contains("number between 0 and 1"));
       // blackbox
       assertQEx(
@@ -2204,9 +2208,10 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
       ex =
           expectThrows(
               SolrException.class,
-              () ->
-                  HllOptions.parseHllOptions(
-                      params("cardinality", "true", "hllLog2m", "" + invalid), foo_s));
+              () -> {
+                HllOptions.parseHllOptions(
+                    params("cardinality", "true", "hllLog2m", "" + invalid), foo_s);
+              });
       assertTrue("MSG: " + ex.getMessage(), ex.getMessage().contains("hllLog2m must be"));
 
       // blackbox
@@ -2225,9 +2230,10 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
       ex =
           expectThrows(
               SolrException.class,
-              () ->
-                  HllOptions.parseHllOptions(
-                      params("cardinality", "true", "hllRegwidth", "" + invalid), foo_s));
+              () -> {
+                HllOptions.parseHllOptions(
+                    params("cardinality", "true", "hllRegwidth", "" + invalid), foo_s);
+              });
       assertTrue("MSG: " + ex.getMessage(), ex.getMessage().contains("hllRegwidth must be"));
 
       // blackbox
@@ -2348,7 +2354,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     }
 
     public Iterator<EnumSet<Stat>> iterator() {
-      return new Iterator<>() {
+      return new Iterator<EnumSet<Stat>>() {
         final Iterator<int[]> wrapped = intCombos.iterator();
 
         public void remove() {
@@ -2362,8 +2368,8 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
         public EnumSet<Stat> next() {
           EnumSet<Stat> result = EnumSet.noneOf(Stat.class);
           int[] indexes = wrapped.next();
-          for (int index : indexes) {
-            result.add(all[index]);
+          for (int i = 0; i < indexes.length; i++) {
+            result.add(all[indexes[i]]);
           }
           return result;
         }

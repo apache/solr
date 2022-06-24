@@ -119,7 +119,11 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       if (!byDirectoryCache.containsKey(dir)) {
         throw new IllegalArgumentException("Unknown directory: " + dir + " " + byDirectoryCache);
       }
-      List<CloseListener> listeners = closeListeners.computeIfAbsent(dir, k -> new ArrayList<>());
+      List<CloseListener> listeners = closeListeners.get(dir);
+      if (listeners == null) {
+        listeners = new ArrayList<>();
+        closeListeners.put(dir, listeners);
+      }
       listeners.add(closeListener);
 
       closeListeners.put(dir, listeners);

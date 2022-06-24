@@ -23,7 +23,9 @@
 package org.apache.solr.handler.tagger;
 
 import com.ctc.wstx.stax.WstxInputFactory;
+import java.io.InputStream;
 import java.io.StringReader;
+import javax.xml.stream.XMLResolver;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.events.XMLEvent;
 import org.apache.commons.io.input.ClosedInputStream;
@@ -51,7 +53,13 @@ public class XmlOffsetCorrector extends OffsetCorrector {
     // note: similar code in Solr's EmptyEntityResolver
     XML_INPUT_FACTORY = new WstxInputFactory();
     XML_INPUT_FACTORY.setXMLResolver(
-        (publicId, systemId, baseURI, namespace) -> ClosedInputStream.CLOSED_INPUT_STREAM);
+        new XMLResolver() {
+          @Override
+          public InputStream resolveEntity(
+              String publicId, String systemId, String baseURI, String namespace) {
+            return ClosedInputStream.CLOSED_INPUT_STREAM;
+          }
+        });
     // TODO disable DTD?
     // XML_INPUT_FACTORY.setProperty(XMLInputFactory.IS_VALIDATING, Boolean.FALSE)
     XML_INPUT_FACTORY.configureForSpeed();

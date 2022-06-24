@@ -240,12 +240,13 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
         .request(CollectionAdminRequest.createCollection("test", 1, 1));
     expectThrows(
         SolrException.class,
-        () ->
-            testHarness
-                .get()
-                .cluster
-                .getSolrClient()
-                .query("test", new MapSolrParams(Collections.singletonMap("q", "a(bc"))));
+        () -> {
+          testHarness
+              .get()
+              .cluster
+              .getSolrClient()
+              .query("test", new MapSolrParams(Collections.singletonMap("q", "a(bc")));
+        });
     final List<AuditEvent> events = testHarness.get().receiver.waitForAuditEvents(3);
     assertAuditEvent(events.get(0), COMPLETED, "/admin/cores");
     assertAuditEvent(events.get(1), COMPLETED, "/admin/collections");
@@ -258,9 +259,10 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     String baseUrl = testHarness.get().cluster.getJettySolrRunner(0).getBaseUrl().toString();
     expectThrows(
         FileNotFoundException.class,
-        () ->
-            IOUtils.toString(
-                new URL(baseUrl.replace("/solr", "") + "/api/node/foo"), StandardCharsets.UTF_8));
+        () -> {
+          IOUtils.toString(
+              new URL(baseUrl.replace("/solr", "") + "/api/node/foo"), StandardCharsets.UTF_8);
+        });
     final List<AuditEvent> events = testHarness.get().receiver.waitForAuditEvents(1);
     assertAuditEvent(events.get(0), ERROR, "/api/node/foo", ADMIN, null, 404);
   }
@@ -552,7 +554,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   // code. This all goes back to MiniSolrCloudCluster.close, which really _can_ throw an
   // InterruptedException
   @SuppressWarnings({"try"})
-  private static class CallbackReceiver implements Runnable, AutoCloseable {
+  private class CallbackReceiver implements Runnable, AutoCloseable {
     private final ServerSocket serverSocket;
     private BlockingQueue<AuditEvent> queue = new LinkedBlockingDeque<>();
 

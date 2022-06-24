@@ -115,7 +115,7 @@ public class TermVectorsEvaluator extends RecursiveObjectEvaluator implements Ma
 
           if (excludes != null) {
             for (String exclude : excludes) {
-              if (term.contains(exclude)) {
+              if (term.indexOf(exclude) > -1) {
                 continue OUTER;
               }
             }
@@ -124,7 +124,7 @@ public class TermVectorsEvaluator extends RecursiveObjectEvaluator implements Ma
           if (!docTerms.contains(term)) {
             docTerms.add(term);
             if (docFreqs.containsKey(term)) {
-              int count = docFreqs.get(term);
+              int count = docFreqs.get(term).intValue();
               docFreqs.put(term, ++count);
             } else {
               docFreqs.put(term, 1);
@@ -142,7 +142,7 @@ public class TermVectorsEvaluator extends RecursiveObjectEvaluator implements Ma
       Iterator<Map.Entry<String, Integer>> it = entries.iterator();
       while (it.hasNext()) {
         Map.Entry<String, Integer> entry = it.next();
-        int count = entry.getValue();
+        int count = entry.getValue().intValue();
 
         if (count < min || count > max) {
           it.remove();
@@ -161,7 +161,7 @@ public class TermVectorsEvaluator extends RecursiveObjectEvaluator implements Ma
         for (String term : terms) {
           if (docFreqs.containsKey(term)) {
             if (termFreq.containsKey(term)) {
-              int count = termFreq.get(term);
+              int count = termFreq.get(term).intValue();
               termFreq.put(term, ++count);
             } else {
               termFreq.put(term, 1);
@@ -173,7 +173,7 @@ public class TermVectorsEvaluator extends RecursiveObjectEvaluator implements Ma
         for (int i = 0; i < totalTerms; i++) {
           String feature = features.get(i);
           int df = docFreqs.get(feature);
-          int tf = termFreq.getOrDefault(feature, 0);
+          int tf = termFreq.containsKey(feature) ? termFreq.get(feature) : 0;
           termVec[i] = Math.sqrt(tf) * (Math.log((tuples.size() + 1) / (double) (df + 1)) + 1.0);
         }
         docVec[t] = termVec;

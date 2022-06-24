@@ -25,14 +25,14 @@ public class DOMUtilTest extends DOMUtilTestBase {
     DOMUtil.addToNamedList(getNode("<str name=\"String\">STRING</str>", "/str"), namedList, null);
     assertTypeAndValue(namedList, "String", "STRING");
     DOMUtil.addToNamedList(getNode("<int name=\"Integer\">100</int>", "/int"), namedList, null);
-    assertTypeAndValue(namedList, "Integer", 100);
+    assertTypeAndValue(namedList, "Integer", Integer.valueOf(100));
     DOMUtil.addToNamedList(getNode("<long name=\"Long\">200</long>", "/long"), namedList, null);
-    assertTypeAndValue(namedList, "Long", 200L);
+    assertTypeAndValue(namedList, "Long", Long.valueOf(200));
     DOMUtil.addToNamedList(getNode("<float name=\"Float\">300</float>", "/float"), namedList, null);
-    assertTypeAndValue(namedList, "Float", 300F);
+    assertTypeAndValue(namedList, "Float", Float.valueOf(300));
     DOMUtil.addToNamedList(
         getNode("<double name=\"Double\">400</double>", "/double"), namedList, null);
-    assertTypeAndValue(namedList, "Double", 400.0);
+    assertTypeAndValue(namedList, "Double", Double.valueOf(400));
     DOMUtil.addToNamedList(getNode("<bool name=\"Boolean\">true</bool>", "/bool"), namedList, null);
     assertTypeAndValue(namedList, "Boolean", true);
     DOMUtil.addToNamedList(getNode("<bool name=\"Boolean\">on</bool>", "/bool"), namedList, null);

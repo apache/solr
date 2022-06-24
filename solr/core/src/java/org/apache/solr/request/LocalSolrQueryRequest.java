@@ -18,6 +18,7 @@ package org.apache.solr.request;
 
 import java.security.Principal;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.solr.common.params.CommonParams;
@@ -36,7 +37,8 @@ public class LocalSolrQueryRequest extends SolrQueryRequestBase {
   protected static SolrParams makeParams(
       String query, String qtype, int start, int limit, Map<?, ?> args) {
     Map<String, String[]> map = new HashMap<>();
-    for (Map.Entry<?, ?> e : args.entrySet()) {
+    for (Iterator<? extends Map.Entry<?, ?>> iter = args.entrySet().iterator(); iter.hasNext(); ) {
+      Map.Entry<?, ?> e = iter.next();
       String k = e.getKey().toString();
       Object v = e.getValue();
       if (v instanceof String[]) map.put(k, (String[]) v);
@@ -84,7 +86,7 @@ public class LocalSolrQueryRequest extends SolrQueryRequestBase {
     this.userPrincipalName = s;
   }
 
-  private static final class LocalPrincipal implements Principal {
+  private final class LocalPrincipal implements Principal {
     private final String user;
 
     public LocalPrincipal(String user) {

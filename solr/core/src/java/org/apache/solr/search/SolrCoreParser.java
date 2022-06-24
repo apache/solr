@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Iterator;
 import java.util.Map;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queryparser.xml.CoreParser;
@@ -59,7 +60,9 @@ public class SolrCoreParser extends CoreParser implements NamedListInitializedPl
     }
     final SolrResourceLoader loader = req.getCore().getResourceLoader();
 
-    for (Map.Entry<String, ?> entry : initArgs) {
+    Iterator<? extends Map.Entry<String, ?>> it = initArgs.iterator();
+    while (it.hasNext()) {
+      Map.Entry<String, ?> entry = it.next();
       final String queryName = entry.getKey();
       final String queryBuilderClassName = (String) entry.getValue();
 

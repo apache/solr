@@ -149,7 +149,11 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
     SolrQueryRequest req = req();
     CommitUpdateCommand cmtCmd = new CommitUpdateCommand(req, true);
     cmtCmd.maxOptimizeSegments = -1;
-    expectThrows(IllegalArgumentException.class, () -> updater.commit(cmtCmd));
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          updater.commit(cmtCmd);
+        });
   }
 
   public void testLogMergePolicyFactoryConfig() throws Exception {

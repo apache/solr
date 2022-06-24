@@ -261,18 +261,18 @@ public class SolrPluginUtils {
   public static Set<String> getDebugInterests(String[] params, ResponseBuilder rb) {
     Set<String> debugInterests = new HashSet<>();
     if (params != null) {
-      for (String param : params) {
-        if (param.equalsIgnoreCase("all") || param.equalsIgnoreCase("true")) {
+      for (int i = 0; i < params.length; i++) {
+        if (params[i].equalsIgnoreCase("all") || params[i].equalsIgnoreCase("true")) {
           rb.setDebug(true);
           break;
           // still might add others
-        } else if (param.equals(CommonParams.TIMING)) {
+        } else if (params[i].equals(CommonParams.TIMING)) {
           rb.setDebugTimings(true);
-        } else if (param.equals(CommonParams.QUERY)) {
+        } else if (params[i].equals(CommonParams.QUERY)) {
           rb.setDebugQuery(true);
-        } else if (param.equals(CommonParams.RESULTS)) {
+        } else if (params[i].equals(CommonParams.RESULTS)) {
           rb.setDebugResults(true);
-        } else if (param.equals(CommonParams.TRACK)) {
+        } else if (params[i].equals(CommonParams.TRACK)) {
           rb.setDebugTrack(true);
         }
       }
@@ -626,7 +626,7 @@ public class SolrPluginUtils {
     int result = optionalClauseCount;
     spec = spec.trim();
 
-    if (spec.contains("<")) {
+    if (-1 < spec.indexOf("<")) {
       /* we have conditional spec(s) */
       spec = spaceAroundLessThanPattern.matcher(spec).replaceAll("<");
       for (String s : spacePattern.split(spec)) {
@@ -771,7 +771,8 @@ public class SolrPluginUtils {
    * @return Returns The {@code dest} input object
    */
   public static <T> NamedList<T> removeNulls(Map.Entry<String, T>[] entries, NamedList<T> dest) {
-    for (Map.Entry<String, T> entry : entries) {
+    for (int i = 0; i < entries.length; i++) {
+      Map.Entry<String, T> entry = entries[i];
       if (entry != null) {
         String key = entry.getKey();
         if (key != null) {

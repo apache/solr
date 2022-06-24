@@ -252,7 +252,7 @@ public class ExactStatsCache extends StatsCache {
     ModifiableSolrParams params = outgoing.params;
     Set<Term> terms = StatsUtil.termsFromEncodedString((String) rb.req.getContext().get(TERMS_KEY));
     if (!terms.isEmpty()) {
-      Set<String> fields = terms.stream().map(Term::field).collect(Collectors.toSet());
+      Set<String> fields = terms.stream().map(t -> t.field()).collect(Collectors.toSet());
       Map<String, TermStats> globalTermStats = new HashMap<>();
       Map<String, CollectionStats> globalColStats = new HashMap<>();
       // aggregate collection stats, only for the field in terms

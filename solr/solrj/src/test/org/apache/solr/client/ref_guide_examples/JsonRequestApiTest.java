@@ -744,7 +744,7 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
         new FacetBucket("search", 1));
   }
 
-  private static class FacetBucket {
+  private class FacetBucket {
     private final Object val;
     private final int count;
 

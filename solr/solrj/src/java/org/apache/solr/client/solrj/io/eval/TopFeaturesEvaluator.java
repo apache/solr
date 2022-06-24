@@ -58,7 +58,8 @@ public class TopFeaturesEvaluator extends RecursiveObjectEvaluator implements Tw
       double[][] data = matrix.getData();
       List<List<String>> topFeatures = new ArrayList<>();
 
-      for (double[] row : data) {
+      for (int i = 0; i < data.length; i++) {
+        double[] row = data[i];
         List<String> featuresRow = new ArrayList<>();
         List<Integer> indexes = getMaxIndexes(row, k);
         for (int index : indexes) {

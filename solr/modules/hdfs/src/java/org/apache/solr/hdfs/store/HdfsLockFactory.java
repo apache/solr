@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileAlreadyExistsException;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.ipc.RemoteException;
@@ -66,6 +67,8 @@ public class HdfsLockFactory extends LockFactory {
 
         file = fs.create(lockFile, false);
         break;
+      } catch (FileAlreadyExistsException e) {
+        throw new LockObtainFailedException("Cannot obtain lock file: " + lockFile, e);
       } catch (RemoteException e) {
         if (e.getClassName().equals("org.apache.hadoop.hdfs.server.namenode.SafeModeException")) {
           log.warn("The NameNode is in SafeMode - Solr will wait 5 seconds and try again.");

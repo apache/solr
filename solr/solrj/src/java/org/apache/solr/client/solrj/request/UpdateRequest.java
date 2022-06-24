@@ -290,7 +290,10 @@ public class UpdateRequest extends AbstractUpdateRequest {
 
     if (deleteById != null) {
 
-      for (Entry<String, Map<String, Object>> entry : deleteById.entrySet()) {
+      Iterator<Map.Entry<String, Map<String, Object>>> entries = deleteById.entrySet().iterator();
+      while (entries.hasNext()) {
+
+        Map.Entry<String, Map<String, Object>> entry = entries.next();
 
         String deleteId = entry.getKey();
         Map<String, Object> map = entry.getValue();

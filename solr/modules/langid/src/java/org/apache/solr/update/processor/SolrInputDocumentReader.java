@@ -229,7 +229,7 @@ public class SolrInputDocumentReader extends Reader {
   }
 
   protected static String[] getStringFields(SolrInputDocument doc) {
-    Iterable<SolrInputField> iterable = doc::iterator;
+    Iterable<SolrInputField> iterable = () -> doc.iterator();
     List<String> strFields =
         StreamSupport.stream(iterable.spliterator(), false)
             .filter(f -> f.getFirstValue() instanceof String)

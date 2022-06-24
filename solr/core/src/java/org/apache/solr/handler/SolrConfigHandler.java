@@ -45,7 +45,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -367,7 +366,11 @@ public class SolrConfigHandler extends RequestHandlerBase
         for (String param : params) {
           RequestParams.ParamSet p =
               this.req.getCore().getSolrConfig().getRequestParams().getParams(param);
-          m.put(param, Objects.requireNonNullElse(p, "[NOT AVAILABLE]"));
+          if (p != null) {
+            m.put(param, p);
+          } else {
+            m.put(param, "[NOT AVAILABLE]");
+          }
         }
 
         LocalSolrQueryRequest r = new LocalSolrQueryRequest(req.getCore(), req.getOriginalParams());

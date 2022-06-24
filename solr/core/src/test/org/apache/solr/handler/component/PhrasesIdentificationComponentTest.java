@@ -370,12 +370,28 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
           final Phrase bfld = phrases.get(3);
           assertEquals("BROWN fox lAzY  dog", bfld.getSubSequence());
 
-          expectThrows(SolrException.class, () -> bfld.getTTF("multigrams_title"));
-          expectThrows(SolrException.class, () -> bfld.getDocFreq("multigrams_title"));
+          expectThrows(
+              SolrException.class,
+              () -> {
+                bfld.getTTF("multigrams_title");
+              });
+          expectThrows(
+              SolrException.class,
+              () -> {
+                bfld.getDocFreq("multigrams_title");
+              });
           assertEquals(mult * 0, bfld.getConjunctionDocCount("multigrams_title"));
 
-          expectThrows(SolrException.class, () -> bfld.getTTF("multigrams_body"));
-          expectThrows(SolrException.class, () -> bfld.getDocFreq("multigrams_body"));
+          expectThrows(
+              SolrException.class,
+              () -> {
+                bfld.getTTF("multigrams_body");
+              });
+          expectThrows(
+              SolrException.class,
+              () -> {
+                bfld.getDocFreq("multigrams_body");
+              });
           assertEquals(mult * 1, bfld.getConjunctionDocCount("multigrams_body"));
 
           final Phrase xyz = phrases.get(phrases.size() - 1);

@@ -198,14 +198,35 @@ public class TestCaffeineCache extends SolrTestCase {
     cache.init(params, null, new NoOpRegenerator());
 
     for (int i = 0; i < 5; i++) {
-      cache.put("foo-" + i, () -> 1024 * 1024);
+      cache.put(
+          "foo-" + i,
+          new Accountable() {
+            @Override
+            public long ramBytesUsed() {
+              return 1024 * 1024;
+            }
+          });
     }
     assertEquals(5, cache.size());
     // no evictions yet
     assertEquals(2, removed.get().getCount());
 
-    cache.put("abc1", () -> 1);
-    cache.put("abc2", () -> 2);
+    cache.put(
+        "abc1",
+        new Accountable() {
+          @Override
+          public long ramBytesUsed() {
+            return 1;
+          }
+        });
+    cache.put(
+        "abc2",
+        new Accountable() {
+          @Override
+          public long ramBytesUsed() {
+            return 2;
+          }
+        });
     boolean await = removed.get().await(30, TimeUnit.SECONDS);
     assertTrue("did not evict entries in in time", await);
     assertEquals(5, cache.size());
@@ -223,7 +244,14 @@ public class TestCaffeineCache extends SolrTestCase {
     removedKeys.clear();
     // trim down by item count
     cache.setMaxSize(3);
-    cache.put("abc3", () -> 3);
+    cache.put(
+        "abc3",
+        new Accountable() {
+          @Override
+          public long ramBytesUsed() {
+            return 3;
+          }
+        });
     await = removed.get().await(30, TimeUnit.SECONDS);
     assertTrue("did not evict entries in in time", await);
     assertEquals(3, cache.size());

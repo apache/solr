@@ -55,7 +55,7 @@ public class NotEvaluator extends RecursiveBooleanEvaluator implements OneValueW
     if (null == value) {
       return null;
     } else if (value instanceof List) {
-      return ((List<?>) value).stream().map(this::doWork);
+      return ((List<?>) value).stream().map(innerValue -> doWork(innerValue));
     } else {
       // we know it's a boolean
       return !((Boolean) value);

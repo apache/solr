@@ -63,7 +63,7 @@ public class ExportQParserPlugin extends QParserPlugin {
     }
   }
 
-  public static class ExportQuery extends RankQuery {
+  public class ExportQuery extends RankQuery {
     private Query mainQuery;
     private Object id;
 

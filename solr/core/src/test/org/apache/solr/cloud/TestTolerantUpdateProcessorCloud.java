@@ -712,7 +712,8 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
       // verify that the Exceptions metadata can tell us what failed.
       NamedList<String> remoteErrMetadata = e.getMetadata();
       assertNotNull("no metadata in: " + e.toString(), remoteErrMetadata);
-      Set<ToleratedUpdateError> actualKnownErrs = new LinkedHashSet<>(remoteErrMetadata.size());
+      Set<ToleratedUpdateError> actualKnownErrs =
+          new LinkedHashSet<ToleratedUpdateError>(remoteErrMetadata.size());
       int actualKnownErrsCount = 0;
       for (int i = 0; i < remoteErrMetadata.size(); i++) {
         ToleratedUpdateError err =
@@ -782,7 +783,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
             SolrException.class,
             "did not get a top level exception when more then 10 docs failed",
             () -> {
-              ArrayList<SolrInputDocument> docs = new ArrayList<>(30);
+              ArrayList<SolrInputDocument> docs = new ArrayList<SolrInputDocument>(30);
               docs.add(doc(f("id", S_ONE_PRE + "z")));
               docs.add(doc(f("id", S_TWO_PRE + "z")));
               docs.add(doc(f("id", S_ONE_PRE + "y")));
@@ -814,7 +815,8 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
       // verify that the Exceptions metadata can tell us what failed.
       NamedList<String> remoteErrMetadata = e.getMetadata();
       assertNotNull("no metadata in: " + e.toString(), remoteErrMetadata);
-      Set<ToleratedUpdateError> actualKnownErrs = new LinkedHashSet<>(remoteErrMetadata.size());
+      Set<ToleratedUpdateError> actualKnownErrs =
+          new LinkedHashSet<ToleratedUpdateError>(remoteErrMetadata.size());
       int actualKnownErrsCount = 0;
       for (int i = 0; i < remoteErrMetadata.size(); i++) {
         ToleratedUpdateError err =
@@ -891,7 +893,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
             SolrException.class,
             "did not get a top level exception when more then 10 docs mising uniqueKey",
             () -> {
-              ArrayList<SolrInputDocument> docs = new ArrayList<>(30);
+              ArrayList<SolrInputDocument> docs = new ArrayList<SolrInputDocument>(30);
               docs.add(doc(f("id", S_ONE_PRE + "z")));
               docs.add(doc(f("id", S_TWO_PRE + "z")));
               docs.add(doc(f("id", S_ONE_PRE + "y")));
@@ -956,8 +958,8 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     // many docs from diff shards, more then 10 from a single shard (two) should fail but
     // request should still succeed because of maxErrors=-1 param
 
-    ArrayList<SolrInputDocument> docs = new ArrayList<>(30);
-    ArrayList<ExpectedErr> expectedErrs = new ArrayList<>(30);
+    ArrayList<SolrInputDocument> docs = new ArrayList<SolrInputDocument>(30);
+    ArrayList<ExpectedErr> expectedErrs = new ArrayList<ExpectedErr>(30);
     docs.add(doc(f("id", S_ONE_PRE + "z")));
     docs.add(doc(f("id", S_TWO_PRE + "z")));
     docs.add(doc(f("id", S_ONE_PRE + "y")));
@@ -1116,7 +1118,8 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
       // verify that the Exceptions metadata can tell us what failed.
       NamedList<String> remoteErrMetadata = e.getMetadata();
       assertNotNull("no metadata in: " + e.toString(), remoteErrMetadata);
-      Set<ToleratedUpdateError> actualKnownErrs = new LinkedHashSet<>(remoteErrMetadata.size());
+      Set<ToleratedUpdateError> actualKnownErrs =
+          new LinkedHashSet<ToleratedUpdateError>(remoteErrMetadata.size());
       int actualKnownErrsCount = 0;
       for (int i = 0; i < remoteErrMetadata.size(); i++) {
         ToleratedUpdateError err =

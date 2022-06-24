@@ -309,7 +309,7 @@ public abstract class RoutedAlias {
 
   abstract CandidateCollection findCandidateGivenValue(AddUpdateCommand cmd);
 
-  static class CandidateCollection {
+  class CandidateCollection {
     private final CreationType creationType;
     private final String destinationCollection;
     private final String creationCollection;

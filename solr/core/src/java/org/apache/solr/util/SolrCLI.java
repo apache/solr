@@ -300,8 +300,8 @@ public class SolrCLI implements CLIO {
   public static CommandLine parseCmdLine(String toolName, String[] args, Option[] toolOptions)
       throws Exception {
     // the parser doesn't like -D props
-    List<String> toolArgList = new ArrayList<>();
-    List<String> dashDList = new ArrayList<>();
+    List<String> toolArgList = new ArrayList<String>();
+    List<String> dashDList = new ArrayList<String>();
     for (int a = 1; a < args.length; a++) {
       String arg = args[a];
       if (arg.startsWith("-D")) {
@@ -429,7 +429,7 @@ public class SolrCLI implements CLIO {
     options.addOption("help", false, "Print this message");
     options.addOption("verbose", false, "Generate verbose log messages");
     Option[] toolOpts = joinCommonAndToolOptions(tool.getOptions());
-    for (Option toolOpt : toolOpts) options.addOption(toolOpt);
+    for (int i = 0; i < toolOpts.length; i++) options.addOption(toolOpts[i]);
     return options;
   }
 
@@ -438,7 +438,7 @@ public class SolrCLI implements CLIO {
   }
 
   public static Option[] joinOptions(Option[] lhs, Option[] rhs) {
-    List<Option> options = new ArrayList<>();
+    List<Option> options = new ArrayList<Option>();
     if (lhs != null && lhs.length > 0) {
       for (Option opt : lhs) options.add(opt);
     }
@@ -467,7 +467,7 @@ public class SolrCLI implements CLIO {
     options.addOption("verbose", false, "Generate verbose log messages");
 
     if (customOptions != null) {
-      for (Option customOption : customOptions) options.addOption(customOption);
+      for (int i = 0; i < customOptions.length; i++) options.addOption(customOptions[i]);
     }
 
     CommandLine cli = null;
@@ -476,8 +476,8 @@ public class SolrCLI implements CLIO {
     } catch (ParseException exp) {
       boolean hasHelpArg = false;
       if (args != null && args.length > 0) {
-        for (String arg : args) {
-          if ("--help".equals(arg) || "-help".equals(arg)) {
+        for (int z = 0; z < args.length; z++) {
+          if ("--help".equals(args[z]) || "-help".equals(args[z])) {
             hasHelpArg = true;
             break;
           }
@@ -507,7 +507,7 @@ public class SolrCLI implements CLIO {
       ClassLoader classLoader = SolrCLI.class.getClassLoader();
       String path = packageName.replace('.', '/');
       Enumeration<URL> resources = classLoader.getResources(path);
-      Set<String> classes = new TreeSet<>();
+      Set<String> classes = new TreeSet<String>();
       while (resources.hasMoreElements()) {
         URL resource = resources.nextElement();
         classes.addAll(findClasses(resource.getFile(), packageName));
@@ -525,7 +525,7 @@ public class SolrCLI implements CLIO {
   }
 
   private static Set<String> findClasses(String path, String packageName) throws Exception {
-    Set<String> classes = new TreeSet<>();
+    Set<String> classes = new TreeSet<String>();
     if (path.startsWith("file:") && path.contains("!")) {
       String[] split = path.split("!");
       URL jar = new URL(split[0]);
@@ -729,7 +729,7 @@ public class SolrCLI implements CLIO {
         Object failureObj = json.get("failure");
         if (failureObj != null) {
           if (failureObj instanceof Map) {
-            Object err = ((Map<?, ?>) failureObj).get("");
+            Object err = ((Map) failureObj).get("");
             if (err != null) throw new SolrServerException(err.toString());
           }
           throw new SolrServerException(failureObj.toString());
@@ -953,7 +953,7 @@ public class SolrCLI implements CLIO {
 
     public Map<String, Object> reportStatus(
         String solrUrl, Map<String, Object> info, HttpClient httpClient) throws Exception {
-      Map<String, Object> status = new LinkedHashMap<>();
+      Map<String, Object> status = new LinkedHashMap<String, Object>();
 
       String solrHome = (String) info.get("solr_home");
       status.put("solr_home", solrHome != null ? solrHome : "?");
@@ -980,7 +980,7 @@ public class SolrCLI implements CLIO {
      */
     protected Map<String, String> getCloudStatus(
         HttpClient httpClient, String solrUrl, String zkHost) throws Exception {
-      Map<String, String> cloudStatus = new LinkedHashMap<>();
+      Map<String, String> cloudStatus = new LinkedHashMap<String, String>();
       cloudStatus.put("ZooKeeper", (zkHost != null) ? zkHost : "?");
 
       String clusterStatusUrl = solrUrl + "admin/collections?action=CLUSTERSTATUS";
@@ -1091,7 +1091,7 @@ public class SolrCLI implements CLIO {
     }
 
     public Map<String, Object> asMap() {
-      Map<String, Object> map = new LinkedHashMap<>();
+      Map<String, Object> map = new LinkedHashMap<String, Object>();
       map.put(NAME, name);
       map.put("url", url);
       map.put("numDocs", numDocs);
@@ -1178,7 +1178,7 @@ public class SolrCLI implements CLIO {
       Map<String, Object> map = new LinkedHashMap<>();
       map.put("shard", shard);
       map.put("status", getShardState().toString());
-      List<Object> replicaList = new ArrayList<>();
+      List<Object> replicaList = new ArrayList<Object>();
       for (ReplicaHealth replica : replicas) replicaList.add(replica.asMap());
       map.put("replicas", replicaList);
       return map;
@@ -1256,7 +1256,7 @@ public class SolrCLI implements CLIO {
           log.warn("Failed to get leader for shard {} due to: {}", shardName, exc);
         }
 
-        List<ReplicaHealth> replicaList = new ArrayList<>();
+        List<ReplicaHealth> replicaList = new ArrayList<ReplicaHealth>();
         for (Replica r : slice.getReplicas()) {
 
           String uptime = null;
@@ -1324,7 +1324,7 @@ public class SolrCLI implements CLIO {
         shardList.add(shardHealth.asMap());
       }
 
-      Map<String, Object> report = new LinkedHashMap<>();
+      Map<String, Object> report = new LinkedHashMap<String, Object>();
       report.put("collection", collection);
       report.put("status", collectionIsHealthy ? "healthy" : "degraded");
       if (collErr != null) {
@@ -2747,7 +2747,7 @@ public class SolrCLI implements CLIO {
 
       try (SolrClient solrClient = new HttpSolrClient.Builder(solrUrl).build()) {
         NamedList<Object> result = postJsonToSolr(solrClient, updatePath, jsonBody);
-        Integer statusCode = (Integer) ((NamedList<?>) result.get("responseHeader")).get("status");
+        Integer statusCode = (Integer) ((NamedList) result.get("responseHeader")).get("status");
         if (statusCode == 0) {
           if (value != null) {
             echo("Successfully " + action + " " + property + " to " + value);
@@ -4437,7 +4437,7 @@ public class SolrCLI implements CLIO {
             } while (password.length() == 0);
           }
 
-          boolean blockUnknown = Boolean.parseBoolean(cli.getOptionValue("blockUnknown", "true"));
+          boolean blockUnknown = Boolean.valueOf(cli.getOptionValue("blockUnknown", "true"));
 
           String securityJson =
               "{"

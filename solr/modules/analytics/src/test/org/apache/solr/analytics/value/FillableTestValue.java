@@ -112,8 +112,8 @@ public class FillableTestValue {
 
     @Override
     public void streamObjects(Consumer<Object> cons) {
-      for (Object value : values) {
-        cons.accept(value);
+      for (int i = 0; i < values.length; ++i) {
+        cons.accept(values[i]);
       }
     }
 
@@ -197,8 +197,8 @@ public class FillableTestValue {
 
     @Override
     public void streamInts(IntConsumer cons) {
-      for (int value : values) {
-        cons.accept(value);
+      for (int i = 0; i < values.length; ++i) {
+        cons.accept(values[i]);
       }
     }
 
@@ -282,8 +282,8 @@ public class FillableTestValue {
 
     @Override
     public void streamLongs(LongConsumer cons) {
-      for (long value : values) {
-        cons.accept(value);
+      for (int i = 0; i < values.length; ++i) {
+        cons.accept(values[i]);
       }
     }
 
@@ -367,8 +367,8 @@ public class FillableTestValue {
 
     @Override
     public void streamFloats(FloatConsumer cons) {
-      for (float value : values) {
-        cons.accept(value);
+      for (int i = 0; i < values.length; ++i) {
+        cons.accept(values[i]);
       }
     }
 
@@ -452,8 +452,8 @@ public class FillableTestValue {
 
     @Override
     public void streamDoubles(DoubleConsumer cons) {
-      for (double value : values) {
-        cons.accept(value);
+      for (int i = 0; i < values.length; ++i) {
+        cons.accept(values[i]);
       }
     }
 
@@ -537,8 +537,8 @@ public class FillableTestValue {
 
     @Override
     public void streamBooleans(BooleanConsumer cons) {
-      for (boolean value : values) {
-        cons.accept(value);
+      for (int i = 0; i < values.length; ++i) {
+        cons.accept(values[i]);
       }
     }
 
@@ -626,9 +626,9 @@ public class FillableTestValue {
 
     @Override
     public void streamLongs(LongConsumer cons) {
-      for (String value : values) {
+      for (int i = 0; i < values.length; ++i) {
         try {
-          cons.accept(Instant.parse(value).toEpochMilli());
+          cons.accept(Instant.parse(values[i]).toEpochMilli());
         } catch (DateTimeParseException e) {
         }
       }
@@ -714,8 +714,8 @@ public class FillableTestValue {
 
     @Override
     public void streamStrings(Consumer<String> cons) {
-      for (String value : values) {
-        cons.accept(value);
+      for (int i = 0; i < values.length; ++i) {
+        cons.accept(values[i]);
       }
     }
 

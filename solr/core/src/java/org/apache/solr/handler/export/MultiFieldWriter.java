@@ -127,13 +127,13 @@ class MultiFieldWriter extends FieldWriter {
       case LONG:
         return (bits) -> bits;
       case DATE:
-        return Date::new;
+        return (bits) -> new Date(bits);
       case INTEGER:
         return (bits) -> (int) bits;
       case FLOAT:
         return (bits) -> NumericUtils.sortableIntToFloat((int) bits);
       case DOUBLE:
-        return NumericUtils::sortableLongToDouble;
+        return (bits) -> NumericUtils.sortableLongToDouble(bits);
       default:
         throw new AssertionError("Unsupported NumberType: " + fieldType.getNumberType());
     }

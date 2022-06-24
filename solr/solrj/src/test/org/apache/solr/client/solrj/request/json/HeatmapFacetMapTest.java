@@ -27,7 +27,11 @@ public class HeatmapFacetMapTest extends SolrTestCaseJ4 {
   @Test
   public void testRejectsInvalidFieldName() {
     final Throwable thrown =
-        expectThrows(IllegalArgumentException.class, () -> new HeatmapFacetMap(null));
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new HeatmapFacetMap(null);
+            });
     assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
@@ -42,9 +46,10 @@ public class HeatmapFacetMapTest extends SolrTestCaseJ4 {
     final Throwable thrown =
         expectThrows(
             UnsupportedOperationException.class,
-            () ->
-                new HeatmapFacetMap("ANY_FIELD_NAME")
-                    .withSubFacet("ANY_NAME", new TermsFacetMap("ANY_OTHER_FIELD_NAME")));
+            () -> {
+              new HeatmapFacetMap("ANY_FIELD_NAME")
+                  .withSubFacet("ANY_NAME", new TermsFacetMap("ANY_OTHER_FIELD_NAME"));
+            });
     assertThat(thrown.getMessage(), containsString("doesn't currently support subfacets"));
   }
 
@@ -53,7 +58,9 @@ public class HeatmapFacetMapTest extends SolrTestCaseJ4 {
     final Throwable thrown =
         expectThrows(
             IllegalArgumentException.class,
-            () -> new HeatmapFacetMap("ANY_FIELD_NAME").setRegionQuery(null));
+            () -> {
+              new HeatmapFacetMap("ANY_FIELD_NAME").setRegionQuery(null);
+            });
     assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
@@ -69,7 +76,9 @@ public class HeatmapFacetMapTest extends SolrTestCaseJ4 {
     final Throwable thrown =
         expectThrows(
             IllegalArgumentException.class,
-            () -> new HeatmapFacetMap("ANY_FIELD_NAME").setGridLevel(0));
+            () -> {
+              new HeatmapFacetMap("ANY_FIELD_NAME").setGridLevel(0);
+            });
     assertThat(thrown.getMessage(), containsString("must be a positive integer"));
   }
 
@@ -84,7 +93,9 @@ public class HeatmapFacetMapTest extends SolrTestCaseJ4 {
     final Throwable thrown =
         expectThrows(
             IllegalArgumentException.class,
-            () -> new HeatmapFacetMap("ANY_FIELD_NAME").setDistErr(-1.0));
+            () -> {
+              new HeatmapFacetMap("ANY_FIELD_NAME").setDistErr(-1.0);
+            });
     assertThat(thrown.getMessage(), containsString("must be non-negative"));
   }
 
@@ -99,7 +110,9 @@ public class HeatmapFacetMapTest extends SolrTestCaseJ4 {
     final Throwable thrown =
         expectThrows(
             IllegalArgumentException.class,
-            () -> new HeatmapFacetMap("ANY_FIELD_NAME").setDistErrPct(2.0));
+            () -> {
+              new HeatmapFacetMap("ANY_FIELD_NAME").setDistErrPct(2.0);
+            });
     assertThat(thrown.getMessage(), containsString("must be between 0.0 and 1.0"));
   }
 
@@ -114,7 +127,9 @@ public class HeatmapFacetMapTest extends SolrTestCaseJ4 {
     final Throwable thrown =
         expectThrows(
             IllegalArgumentException.class,
-            () -> new HeatmapFacetMap("ANY_FIELD_NAME").setHeatmapFormat(null));
+            () -> {
+              new HeatmapFacetMap("ANY_FIELD_NAME").setHeatmapFormat(null);
+            });
     assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 

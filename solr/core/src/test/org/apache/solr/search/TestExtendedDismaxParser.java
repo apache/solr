@@ -2840,7 +2840,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
     @SuppressWarnings({"rawtypes"})
     Map all = (Map) Utils.fromJSONString(h.query(req("q", "*:*", "rows", "0", "wt", "json")));
-    int totalDocs = Integer.parseInt(((Map<?, ?>) all.get("response")).get("numFound").toString());
+    int totalDocs = Integer.parseInt(((Map) all.get("response")).get("numFound").toString());
     int allDocsExceptOne = totalDocs - 1;
 
     assertJQ(
@@ -3198,7 +3198,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
       return new MultilanguageDismaxConfiguration(localParams, params, req);
     }
 
-    static class MultilanguageDismaxConfiguration extends ExtendedDismaxConfiguration {
+    class MultilanguageDismaxConfiguration extends ExtendedDismaxConfiguration {
 
       public MultilanguageDismaxConfiguration(
           SolrParams localParams, SolrParams params, SolrQueryRequest req) {
@@ -3226,7 +3226,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
       return new FuzzyQueryParser(qParser, field);
     }
 
-    static class FuzzyQueryParser extends ExtendedSolrQueryParser {
+    class FuzzyQueryParser extends ExtendedSolrQueryParser {
 
       private Set<String> frequentlyMisspelledWords;
 
@@ -3315,17 +3315,18 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     SolrException exception =
         expectThrows(
             SolrException.class,
-            () ->
-                h.query(
-                    req(
-                        "defType",
-                        "edismax",
-                        "q",
-                        "*",
-                        "qq",
-                        "{!edismax v=something}",
-                        "bq",
-                        "{!edismax v=$qq}")));
+            () -> {
+              h.query(
+                  req(
+                      "defType",
+                      "edismax",
+                      "q",
+                      "*",
+                      "qq",
+                      "{!edismax v=something}",
+                      "bq",
+                      "{!edismax v=$qq}"));
+            });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
     assertTrue(exception.getMessage().contains("Infinite Recursion detected parsing query"));
   }

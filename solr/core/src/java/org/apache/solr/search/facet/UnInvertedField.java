@@ -467,7 +467,9 @@ public class UnInvertedField extends DocTermOrds {
             processor.collectFirstPhase(
                 intersection,
                 tt.termNum - startTermIndex,
-                slotNum -> new SlotContext(tt.termQuery));
+                slotNum -> {
+                  return new SlotContext(tt.termQuery);
+                });
         final int termOrd = tt.termNum - startTermIndex;
         countAcc.incrementCount(termOrd, collected);
         for (SweepCountAccStruct entry : others) {

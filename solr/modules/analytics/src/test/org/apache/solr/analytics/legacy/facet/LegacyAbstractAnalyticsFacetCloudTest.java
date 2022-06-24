@@ -203,6 +203,6 @@ public class LegacyAbstractAnalyticsFacetCloudTest extends LegacyAbstractAnalyti
         miss++;
       }
     }
-    return miss;
+    return Long.valueOf(miss);
   }
 }

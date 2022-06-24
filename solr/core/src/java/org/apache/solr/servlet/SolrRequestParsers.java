@@ -395,9 +395,9 @@ public class SolrRequestParsers {
               // we have no charset decoder until now, buffer the keys / values for later
               // processing:
               buffer.add(keyBytes);
-              buffer.add(keyPos);
+              buffer.add(Long.valueOf(keyPos));
               buffer.add(valueBytes);
-              buffer.add(valuePos);
+              buffer.add(Long.valueOf(valuePos));
             } else {
               // we already have a charsetDecoder, so we can directly decode without buffering:
               final String key = decodeChars(keyBytes, keyPos, charsetDecoder),
@@ -489,8 +489,8 @@ public class SolrRequestParsers {
       final Long valuePos = (Long) it.next();
       it.remove();
       MultiMapSolrParams.addParam(
-          decodeChars(keyBytes, keyPos, charsetDecoder).trim(),
-          decodeChars(valueBytes, valuePos, charsetDecoder),
+          decodeChars(keyBytes, keyPos.longValue(), charsetDecoder).trim(),
+          decodeChars(valueBytes, valuePos.longValue(), charsetDecoder),
           map);
     }
   }

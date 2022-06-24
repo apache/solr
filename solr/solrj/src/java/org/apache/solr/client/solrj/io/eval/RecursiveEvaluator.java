@@ -33,7 +33,6 @@ import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -46,7 +45,7 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
 
   protected StreamFactory constructingFactory;
 
-  protected List<StreamEvaluator> containedEvaluators = new ArrayList<>();
+  protected List<StreamEvaluator> containedEvaluators = new ArrayList<StreamEvaluator>();
 
   public RecursiveEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     this(expression, factory, new ArrayList<>());
@@ -89,7 +88,7 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
       }
 
       return ((Collection<?>) value)
-          .stream().map(this::normalizeInputType).collect(Collectors.toList());
+          .stream().map(innerValue -> normalizeInputType(innerValue)).collect(Collectors.toList());
     } else if (value.getClass().isArray()) {
       Stream<?> stream = Stream.empty();
       if (value instanceof double[]) {
@@ -101,7 +100,7 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
       } else if (value instanceof String[]) {
         stream = Arrays.stream((String[]) value);
       }
-      return stream.map(this::normalizeInputType).collect(Collectors.toList());
+      return stream.map(innerValue -> normalizeInputType(innerValue)).collect(Collectors.toList());
     } else {
       // anything else can just be returned as is
       return value;
@@ -124,7 +123,8 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
       return ((Number) value).doubleValue();
     } else if (value instanceof List) {
       // normalize each value in the list
-      return ((List<?>) value).stream().map(this::normalizeOutputType).collect(Collectors.toList());
+      return ((List<?>) value)
+          .stream().map(innerValue -> normalizeOutputType(innerValue)).collect(Collectors.toList());
     } else if (value instanceof Tuple && value.getClass().getEnclosingClass() == null) {
       // If its a tuple and not a inner class that has extended tuple, which is done in a number of
       // cases so that mathematical models can be contained within a tuple.
@@ -180,9 +180,10 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
 
     Set<String> namedParameters =
         factory.getNamedOperands(expression).stream()
-            .map(StreamExpressionNamedParameter::getName)
+            .map(param -> param.getName())
             .collect(Collectors.toSet());
-    long ignorableCount = ignoredNamedParameters.stream().filter(namedParameters::contains).count();
+    long ignorableCount =
+        ignoredNamedParameters.stream().filter(name -> namedParameters.contains(name)).count();
     /*
     if(0 != expression.getParameters().size() - containedEvaluators.size() - ignorableCount){
       if(namedParameters.isEmpty()){

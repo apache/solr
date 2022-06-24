@@ -44,19 +44,27 @@ public class CloudSolrClientBadInputTest extends SolrCloudTestCase {
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
           Lists.newArrayList("ids", "null"),
-          () -> client.deleteById(ANY_COLLECTION, NULL_STR_LIST));
+          () -> {
+            client.deleteById(ANY_COLLECTION, NULL_STR_LIST);
+          });
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
           Lists.newArrayList("ids", "empty"),
-          () -> client.deleteById(ANY_COLLECTION, EMPTY_STR_LIST));
+          () -> {
+            client.deleteById(ANY_COLLECTION, EMPTY_STR_LIST);
+          });
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
           Lists.newArrayList("ids", "null"),
-          () -> client.deleteById(ANY_COLLECTION, NULL_STR_LIST, ANY_COMMIT_WITHIN_TIME));
+          () -> {
+            client.deleteById(ANY_COLLECTION, NULL_STR_LIST, ANY_COMMIT_WITHIN_TIME);
+          });
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
           Lists.newArrayList("ids", "empty"),
-          () -> client.deleteById(ANY_COLLECTION, EMPTY_STR_LIST, ANY_COMMIT_WITHIN_TIME));
+          () -> {
+            client.deleteById(ANY_COLLECTION, EMPTY_STR_LIST, ANY_COMMIT_WITHIN_TIME);
+          });
     }
   }
 }

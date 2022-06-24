@@ -406,16 +406,16 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
         };
     StringBuilder expected = new StringBuilder("/termVectors/0/test_posofftv/anoth=={");
     boolean first = true;
-    for (String[] option : options) {
+    for (int i = 0; i < options.length; i++) {
       final boolean use = random().nextBoolean();
       if (use) {
         if (!first) {
           expected.append(", ");
         }
         first = false;
-        expected.append(option[1]);
+        expected.append(options[i][1]);
       }
-      list.add(option[0]);
+      list.add(options[i][0]);
       list.add(use ? "true" : "false");
     }
 

@@ -162,19 +162,49 @@ public class NeuralNetworkModel extends LTRScoringModel {
       this.activationStr = (String) activationStr;
       switch (this.activationStr) {
         case "relu":
-          this.activation = in -> in < 0 ? 0 : in;
+          this.activation =
+              new Activation() {
+                @Override
+                public float apply(float in) {
+                  return in < 0 ? 0 : in;
+                }
+              };
           break;
         case "leakyrelu":
-          this.activation = in -> in < 0 ? 0.01f * in : in;
+          this.activation =
+              new Activation() {
+                @Override
+                public float apply(float in) {
+                  return in < 0 ? 0.01f * in : in;
+                }
+              };
           break;
         case "tanh":
-          this.activation = in -> (float) Math.tanh(in);
+          this.activation =
+              new Activation() {
+                @Override
+                public float apply(float in) {
+                  return (float) Math.tanh(in);
+                }
+              };
           break;
         case "sigmoid":
-          this.activation = in -> (float) (1 / (1 + Math.exp(-in)));
+          this.activation =
+              new Activation() {
+                @Override
+                public float apply(float in) {
+                  return (float) (1 / (1 + Math.exp(-in)));
+                }
+              };
           break;
         case "identity":
-          this.activation = in -> in;
+          this.activation =
+              new Activation() {
+                @Override
+                public float apply(float in) {
+                  return in;
+                }
+              };
           break;
         default:
           this.activation = null;
@@ -273,7 +303,7 @@ public class NeuralNetworkModel extends LTRScoringModel {
 
   @SuppressWarnings({"unchecked"})
   public void setLayers(Object layers) {
-    this.layers = new ArrayList<>();
+    this.layers = new ArrayList<Layer>();
     for (final Object o : (List<Object>) layers) {
       final Layer layer = createLayer(o);
       this.layers.add(layer);

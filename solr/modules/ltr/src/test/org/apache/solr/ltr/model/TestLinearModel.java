@@ -60,8 +60,8 @@ public class TestLinearModel extends TestRerankBase {
   }
 
   public static Map<String, Object> makeFeatureWeights(List<Feature> features, Number weight) {
-    final Map<String, Object> nameParams = new HashMap<>();
-    final HashMap<String, Number> modelWeights = new HashMap<>();
+    final Map<String, Object> nameParams = new HashMap<String, Object>();
+    final HashMap<String, Number> modelWeights = new HashMap<String, Number>();
     for (final Feature feat : features) {
       modelWeights.put(feat.getName(), weight);
     }
@@ -93,10 +93,11 @@ public class TestLinearModel extends TestRerankBase {
     weights.put("constant1", 1d);
     weights.put("constant5", 1d);
 
-    Map<String, Object> params = new HashMap<>();
+    Map<String, Object> params = new HashMap<String, Object>();
     final List<Feature> features = getFeatures(new String[] {"constant1", "constant5"});
     final List<Normalizer> norms =
-        new ArrayList<>(Collections.nCopies(features.size(), IdentityNormalizer.INSTANCE));
+        new ArrayList<Normalizer>(
+            Collections.nCopies(features.size(), IdentityNormalizer.INSTANCE));
     params.put("weights", weights);
     final LTRScoringModel ltrScoringModel =
         createLinearModel("test1", features, norms, "test", fstore.getFeatures(), params);
@@ -117,7 +118,9 @@ public class TestLinearModel extends TestRerankBase {
     ModelException ex =
         expectThrows(
             ModelException.class,
-            () -> createLinearModel("test2", features, norms, "test", fstore.getFeatures(), null));
+            () -> {
+              createLinearModel("test2", features, norms, "test", fstore.getFeatures(), null);
+            });
     assertEquals(expectedException.toString(), ex.toString());
   }
 
@@ -193,8 +196,9 @@ public class TestLinearModel extends TestRerankBase {
     ModelException ex =
         expectThrows(
             ModelException.class,
-            () ->
-                createLinearModel("test5", features, norms, "test", fstore.getFeatures(), params));
+            () -> {
+              createLinearModel("test5", features, norms, "test", fstore.getFeatures(), params);
+            });
     assertEquals(expectedException.toString(), ex.toString());
   }
 
@@ -251,9 +255,10 @@ public class TestLinearModel extends TestRerankBase {
     ModelException ex =
         expectThrows(
             ModelException.class,
-            () ->
-                createModelFromFiles(
-                    "linear-model_notExistentStore.json", "features-store-test-model.json"));
+            () -> {
+              createModelFromFiles(
+                  "linear-model_notExistentStore.json", "features-store-test-model.json");
+            });
     assertEquals(expectedException.toString(), ex.toString());
   }
 
@@ -265,9 +270,10 @@ public class TestLinearModel extends TestRerankBase {
     ModelException ex =
         expectThrows(
             ModelException.class,
-            () ->
-                createModelFromFiles(
-                    "linear-model_notExistentFeature.json", "features-store-test-model.json"));
+            () -> {
+              createModelFromFiles(
+                  "linear-model_notExistentFeature.json", "features-store-test-model.json");
+            });
     assertEquals(expectedException.toString(), ex.toString());
   }
 }

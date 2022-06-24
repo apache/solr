@@ -123,10 +123,10 @@ public class TestSolrXml extends SolrTestCaseJ4 {
             .containsAll(
                 OS.isFamilyWindows()
                     ? Set.of("C:\\tmp", "C:\\home\\john").stream()
-                        .map(Path::of)
+                        .map(s -> Path.of(s))
                         .collect(Collectors.toSet())
                     : Set.of("/tmp", "/home/john").stream()
-                        .map(Path::of)
+                        .map(s -> Path.of(s))
                         .collect(Collectors.toSet())));
     System.clearProperty("solr.allowPaths");
   }

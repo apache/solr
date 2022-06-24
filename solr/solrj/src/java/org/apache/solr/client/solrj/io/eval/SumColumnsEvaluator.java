@@ -58,8 +58,8 @@ public class SumColumnsEvaluator extends RecursiveObjectEvaluator implements One
       for (int i = 0; i < data[0].length; i++) {
         double sum = 0;
         double[] col = realMatrix.getColumn(i);
-        for (double v : col) {
-          sum += v;
+        for (int j = 0; j < col.length; j++) {
+          sum += col[j];
         }
 
         sums.add(sum);

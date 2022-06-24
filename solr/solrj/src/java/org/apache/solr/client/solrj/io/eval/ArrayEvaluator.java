@@ -46,7 +46,9 @@ public class ArrayEvaluator extends RecursiveObjectEvaluator implements ManyValu
               .toLowerCase(Locale.ROOT);
       if ("asc".equals(sortOrder) || "desc".equals(sortOrder)) {
         sortComparator =
-            "asc".equals(sortOrder) ? Comparator.naturalOrder() : Comparator.reverseOrder();
+            "asc".equals(sortOrder)
+                ? (left, right) -> left.compareTo(right)
+                : (left, right) -> right.compareTo(left);
       } else {
         throw new IOException(
             String.format(

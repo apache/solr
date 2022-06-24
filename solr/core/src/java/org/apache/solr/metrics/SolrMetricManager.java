@@ -473,7 +473,11 @@ public class SolrMetricManager {
     if (existing == null) {
       final MetricRegistry created = new MetricRegistry();
       final MetricRegistry raced = map.putIfAbsent(registry, created);
-      return Objects.requireNonNullElse(raced, created);
+      if (raced == null) {
+        return created;
+      } else {
+        return raced;
+      }
     } else {
       return existing;
     }
@@ -625,7 +629,7 @@ public class SolrMetricManager {
     }
     return registry(registry).getMetrics().entrySet().stream()
         .filter(entry -> metricFilter.matches(entry.getKey(), entry.getValue()))
-        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        .collect(Collectors.toMap(entry -> entry.getKey(), entry -> entry.getValue()));
   }
 
   /**
@@ -1103,8 +1107,11 @@ public class SolrMetricManager {
           "Interrupted while trying to obtain lock to modify reporters registry: " + registry);
     }
     try {
-      Map<String, SolrMetricReporter> perRegistry =
-          reporters.computeIfAbsent(registry, k -> new HashMap<>());
+      Map<String, SolrMetricReporter> perRegistry = reporters.get(registry);
+      if (perRegistry == null) {
+        perRegistry = new HashMap<>();
+        reporters.put(registry, perRegistry);
+      }
       if (tag != null && !tag.isEmpty()) {
         name = name + "@" + tag;
       }

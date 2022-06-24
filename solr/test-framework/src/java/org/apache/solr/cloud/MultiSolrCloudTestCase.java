@@ -34,7 +34,8 @@ import org.junit.AfterClass;
  */
 public abstract class MultiSolrCloudTestCase extends SolrTestCaseJ4 {
 
-  protected static Map<String, MiniSolrCloudCluster> clusterId2cluster = new HashMap<>();
+  protected static Map<String, MiniSolrCloudCluster> clusterId2cluster =
+      new HashMap<String, MiniSolrCloudCluster>();
 
   protected abstract static class DefaultClusterCreateFunction
       implements Function<String, MiniSolrCloudCluster> {

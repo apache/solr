@@ -22,7 +22,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
@@ -119,7 +118,12 @@ public class FileExchangeRateProvider implements ExchangeRateProvider {
       String sourceCurrencyCode,
       String targetCurrencyCode,
       double rate) {
-    Map<String, Double> rhs = ratesMap.computeIfAbsent(sourceCurrencyCode, k -> new HashMap<>());
+    Map<String, Double> rhs = ratesMap.get(sourceCurrencyCode);
+
+    if (rhs == null) {
+      rhs = new HashMap<>();
+      ratesMap.put(sourceCurrencyCode, rhs);
+    }
 
     rhs.put(targetCurrencyCode, rate);
   }
@@ -131,7 +135,7 @@ public class FileExchangeRateProvider implements ExchangeRateProvider {
 
     FileExchangeRateProvider that = (FileExchangeRateProvider) o;
 
-    return !(!Objects.equals(rates, that.rates));
+    return !(rates != null ? !rates.equals(that.rates) : that.rates != null);
   }
 
   @Override

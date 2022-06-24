@@ -141,27 +141,41 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
     log.info("Indexing to FOLLOWER");
     long szFollower = indexDocs(followerClient, 1200, 1000);
 
-    IndexFetcher.usableDiskSpaceProvider = s -> szLeader;
+    IndexFetcher.usableDiskSpaceProvider =
+        new Function<String, Long>() {
+          @Override
+          public Long apply(String s) {
+            return szLeader;
+          }
+        };
 
     // we don't need/want the barrier to be cyclic, so we use a ref that our barrier action will
     // null out to prevent it from being triggered multiple times (which shouldn't happen anyway)
     final AtomicReference<CyclicBarrier> commonBarrier = new AtomicReference<>();
-    commonBarrier.set(new CyclicBarrier(2, () -> commonBarrier.set(null)));
+    commonBarrier.set(
+        new CyclicBarrier(
+            2,
+            () -> {
+              commonBarrier.set(null);
+            }));
 
     final List<Throwable> threadFailures = new ArrayList<>(7);
 
     IndexFetcher.testWait =
-        () -> {
-          try {
-            final CyclicBarrier barrier = commonBarrier.get();
-            if (null != barrier) {
-              barrier.await(60, TimeUnit.SECONDS);
+        new BooleanSupplier() {
+          @Override
+          public boolean getAsBoolean() {
+            try {
+              final CyclicBarrier barrier = commonBarrier.get();
+              if (null != barrier) {
+                barrier.await(60, TimeUnit.SECONDS);
+              }
+            } catch (Exception e) {
+              log.error("IndexFetcher Thread Failure", e);
+              threadFailures.add(e);
             }
-          } catch (Exception e) {
-            log.error("IndexFetcher Thread Failure", e);
-            threadFailures.add(e);
+            return true;
           }
-          return true;
         };
 
     new Thread(

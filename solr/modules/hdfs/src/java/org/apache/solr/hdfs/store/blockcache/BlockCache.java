@@ -74,7 +74,9 @@ public class BlockCache {
       lockCounters[i] = new AtomicInteger();
     }
 
-    RemovalListener<BlockCacheKey, BlockCacheLocation> listener = this::releaseLocation;
+    RemovalListener<BlockCacheKey, BlockCacheLocation> listener =
+        (blockCacheKey, blockCacheLocation, removalCause) ->
+            releaseLocation(blockCacheKey, blockCacheLocation, removalCause);
 
     cache = Caffeine.newBuilder().removalListener(listener).maximumSize(maxEntries).build();
     this.blockSize = blockSize;

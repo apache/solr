@@ -65,7 +65,7 @@ public class CountValsAgg extends SimpleAggValueSource {
     return new FacetModule.FacetLongMerger();
   }
 
-  static class CountValSlotAcc extends SlotAcc.LongFuncSlotAcc {
+  class CountValSlotAcc extends SlotAcc.LongFuncSlotAcc {
 
     public CountValSlotAcc(ValueSource values, FacetContext fcontext, int numSlots) {
       super(values, fcontext, numSlots, 0);
@@ -80,7 +80,7 @@ public class CountValsAgg extends SimpleAggValueSource {
     }
   }
 
-  static class CountSortedNumericDVAcc extends DocValuesAcc.LongSortedNumericDVAcc {
+  class CountSortedNumericDVAcc extends DocValuesAcc.LongSortedNumericDVAcc {
 
     public CountSortedNumericDVAcc(FacetContext fcontext, SchemaField sf, int numSlots)
         throws IOException {
@@ -93,7 +93,7 @@ public class CountValsAgg extends SimpleAggValueSource {
     }
   }
 
-  static class CountSortedSetDVAcc extends DocValuesAcc.LongSortedSetDVAcc {
+  class CountSortedSetDVAcc extends DocValuesAcc.LongSortedSetDVAcc {
 
     public CountSortedSetDVAcc(FacetContext fcontext, SchemaField sf, int numSlots)
         throws IOException {
@@ -108,7 +108,7 @@ public class CountValsAgg extends SimpleAggValueSource {
     }
   }
 
-  static class CountMultiValuedAcc extends UnInvertedFieldAcc {
+  class CountMultiValuedAcc extends UnInvertedFieldAcc {
     private int currentSlot;
     long[] result;
 

@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -254,7 +255,9 @@ public class SolrStream extends TupleStream {
 
   private <V> Map<String, V> mapFields(Map<String, V> fields, Map<String, String> mappings) {
 
-    for (Map.Entry<String, String> entry : mappings.entrySet()) {
+    Iterator<Map.Entry<String, String>> it = mappings.entrySet().iterator();
+    while (it.hasNext()) {
+      Map.Entry<String, String> entry = it.next();
       String mapFrom = entry.getKey();
       String mapTo = entry.getValue();
       V v = fields.get(mapFrom);

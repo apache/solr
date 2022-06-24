@@ -58,10 +58,11 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
     final Map<String, Map<SearchGroup<BytesRef>, Set<String>>> tempSearchGroupToShards =
         new HashMap<>(fields.length, 1.0f);
     for (String field : fields) {
-      commandSearchGroups.put(field, new ArrayList<>(shardRequest.responses.size()));
-      tempSearchGroupToShards.put(field, new HashMap<>());
+      commandSearchGroups.put(
+          field, new ArrayList<Collection<SearchGroup<BytesRef>>>(shardRequest.responses.size()));
+      tempSearchGroupToShards.put(field, new HashMap<SearchGroup<BytesRef>, Set<String>>());
       if (!rb.searchGroupToShards.containsKey(field)) {
-        rb.searchGroupToShards.put(field, new HashMap<>());
+        rb.searchGroupToShards.put(field, new HashMap<SearchGroup<BytesRef>, Set<String>>());
       }
     }
 
@@ -138,7 +139,11 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
         entry.getValue().add(searchGroups);
         for (SearchGroup<BytesRef> searchGroup : searchGroups) {
           Map<SearchGroup<BytesRef>, Set<String>> map = tempSearchGroupToShards.get(field);
-          Set<String> shards = map.computeIfAbsent(searchGroup, k -> new HashSet<>());
+          Set<String> shards = map.get(searchGroup);
+          if (shards == null) {
+            shards = new HashSet<>();
+            map.put(searchGroup, shards);
+          }
           shards.add(srsp.getShard());
         }
       }

@@ -33,7 +33,10 @@ public class CastingAnalyticsValueTest extends SolrTestCaseJ4 {
 
     // No values
     val.setExists(false);
-    casted.streamObjects(value -> assertTrue("There should be no values to stream", false));
+    casted.streamObjects(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple Values
     val.setValue("Object").setExists(true);

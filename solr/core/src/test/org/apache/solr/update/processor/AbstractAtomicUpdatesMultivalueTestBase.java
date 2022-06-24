@@ -220,7 +220,7 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
 
   private String[] toStringArray(final Object[] values) {
     return Arrays.stream(values)
-        .map(Object::toString)
+        .map(v -> v.toString())
         .collect(Collectors.toList())
         .toArray(new String[] {});
   }
@@ -482,7 +482,7 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
           new ByteArrayUtf8CharSequence("str3"),
           new ByteArrayUtf8CharSequence("str4")
         };
-    runTestForFieldWithQuery("stringRemove", values, toStringArray(values), Object::toString);
+    runTestForFieldWithQuery("stringRemove", values, toStringArray(values), o -> o.toString());
   }
 
   @Test

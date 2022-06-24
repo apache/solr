@@ -135,7 +135,7 @@ public final class LegacyDoubleField extends LegacyField {
    */
   public LegacyDoubleField(String name, double value, Store stored) {
     super(name, stored == Store.YES ? TYPE_STORED : TYPE_NOT_STORED);
-    fieldsData = value;
+    fieldsData = Double.valueOf(value);
   }
 
   /**
@@ -154,6 +154,6 @@ public final class LegacyDoubleField extends LegacyField {
       throw new IllegalArgumentException(
           "type.numericType() must be DOUBLE but got " + type.numericType());
     }
-    fieldsData = value;
+    fieldsData = Double.valueOf(value);
   }
 }

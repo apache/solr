@@ -432,11 +432,17 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     // No values
     val.setValues();
     remover.setExists(false);
-    func.streamBooleans(value -> assertTrue("There should be no values to stream", false));
+    func.streamBooleans(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     val.setValues();
     remover.setValue(true).setExists(true);
-    func.streamBooleans(value -> assertTrue("There should be no values to stream", false));
+    func.streamBooleans(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Values exist
     val.setValues(false, true, false, true, true);
@@ -471,7 +477,10 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
 
     val.setValues(false, false, false);
     remover.setValue(false).setExists(true);
-    func.streamBooleans(value -> assertTrue("There should be no values to stream", false));
+    func.streamBooleans(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
   }
 
   @Test
@@ -487,11 +496,17 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     // No values
     val.setValues();
     remover.setExists(false);
-    func.streamInts(value -> assertTrue("There should be no values to stream", false));
+    func.streamInts(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     val.setValues();
     remover.setValue(324).setExists(true);
-    func.streamInts(value -> assertTrue("There should be no values to stream", false));
+    func.streamInts(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Values exist
     val.setValues(1, 234, -234, 4439, -234, -3245);
@@ -526,7 +541,10 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
 
     val.setValues(1, 1);
     remover.setValue(1).setExists(true);
-    func.streamInts(value -> assertTrue("There should be no values to stream", false));
+    func.streamInts(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
   }
 
   @Test
@@ -542,11 +560,17 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     // No values
     val.setValues();
     remover.setExists(false);
-    func.streamLongs(value -> assertTrue("There should be no values to stream", false));
+    func.streamLongs(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     val.setValues();
     remover.setValue(2323L).setExists(true);
-    func.streamLongs(value -> assertTrue("There should be no values to stream", false));
+    func.streamLongs(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Values exist
     val.setValues(323L, -9423L, -1234L, 23423L, -1234L, -1234L);
@@ -581,7 +605,10 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
 
     val.setValues(10L);
     remover.setValue(10L).setExists(true);
-    func.streamLongs(value -> assertTrue("There should be no values to stream", false));
+    func.streamLongs(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
   }
 
   @Test
@@ -597,11 +624,17 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     // No values
     val.setValues();
     remover.setExists(false);
-    func.streamFloats(value -> assertTrue("There should be no values to stream", false));
+    func.streamFloats(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     val.setValues();
     remover.setValue(230.32F).setExists(true);
-    func.streamFloats(value -> assertTrue("There should be no values to stream", false));
+    func.streamFloats(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Values exist
     val.setValues(-1234.9478F, -9423.5F, -1234.9478F, 23423.324F, 942.0F);
@@ -638,7 +671,10 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
 
     val.setValues(23.56F, 23.56F, 23.56F);
     remover.setValue(23.56F).setExists(true);
-    func.streamFloats(value -> assertTrue("There should be no values to stream", false));
+    func.streamFloats(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
   }
 
   @Test
@@ -654,11 +690,17 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     // No values
     val.setValues();
     remover.setExists(false);
-    func.streamDoubles(value -> assertTrue("There should be no values to stream", false));
+    func.streamDoubles(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     val.setValues();
     remover.setValue(234237.67).setExists(true);
-    func.streamDoubles(value -> assertTrue("There should be no values to stream", false));
+    func.streamDoubles(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Values exist
     val.setValues(323.213, -9423.5, 124544.42);
@@ -693,7 +735,10 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
 
     val.setValues(3124.96, 3124.96);
     remover.setValue(3124.96).setExists(true);
-    func.streamDoubles(value -> assertTrue("There should be no values to stream", false));
+    func.streamDoubles(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
   }
 
   @Test
@@ -713,11 +758,17 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     // No values
     val.setValues();
     remover.setExists(false);
-    func.streamLongs(value -> assertTrue("There should be no values to stream", false));
+    func.streamLongs(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     val.setValues();
     remover.setValue("1700-12-14").setExists(true);
-    func.streamLongs(value -> assertTrue("There should be no values to stream", false));
+    func.streamLongs(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Values exist
     val.setValues(
@@ -768,7 +819,10 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
 
     val.setValues("1810-12-02T10:30:15Z");
     remover.setValue("1810-12-02T10:30:15Z").setExists(true);
-    func.streamLongs(value -> assertTrue("There should be no values to stream", false));
+    func.streamLongs(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
   }
 
   @Test
@@ -784,11 +838,17 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     // No values
     val.setValues();
     remover.setExists(false);
-    func.streamStrings(value -> assertTrue("There should be no values to stream", false));
+    func.streamStrings(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     val.setValues();
     remover.setValue("ads").setExists(true);
-    func.streamStrings(value -> assertTrue("There should be no values to stream", false));
+    func.streamStrings(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Values exist
     val.setValues("abc", "123", "456", "abc");
@@ -824,7 +884,10 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
 
     val.setValues("abc123", "abc123", "abc123", "abc123");
     remover.setValue("abc123").setExists(true);
-    func.streamStrings(value -> assertTrue("There should be no values to stream", false));
+    func.streamStrings(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
   }
 
   @Test
@@ -838,11 +901,17 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     // No values
     val.setValues();
     remover.setExists(false);
-    func.streamObjects(value -> assertTrue("There should be no values to stream", false));
+    func.streamObjects(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     val.setValues();
     remover.setValue("doesn't matter").setExists(true);
-    func.streamObjects(value -> assertTrue("There should be no values to stream", false));
+    func.streamObjects(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Values exist
     val.setValues("asdfs", new Date(12312), 213123L, new Date(12312));
@@ -878,6 +947,9 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
 
     val.setValues(new Date(4));
     remover.setValue(new Date(4)).setExists(true);
-    func.streamObjects(value -> assertTrue("There should be no values to stream", false));
+    func.streamObjects(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
   }
 }

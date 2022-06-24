@@ -209,7 +209,11 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     final QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
-    expectThrows(Exception.class, () -> cluster.getSolrClient().request(request));
+    expectThrows(
+        Exception.class,
+        () -> {
+          cluster.getSolrClient().request(request);
+        });
   }
 
   @Test
@@ -221,7 +225,11 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     final QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
-    expectThrows(Exception.class, () -> cluster.getSolrClient().request(request));
+    expectThrows(
+        Exception.class,
+        () -> {
+          cluster.getSolrClient().request(request);
+        });
   }
 
   @Test
@@ -236,7 +244,11 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     final QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
-    expectThrows(Exception.class, () -> cluster.getSolrClient().request(request));
+    expectThrows(
+        Exception.class,
+        () -> {
+          cluster.getSolrClient().request(request);
+        });
   }
 
   @Test
@@ -250,7 +262,11 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
 
     final QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
-    expectThrows(Exception.class, () -> cluster.getSolrClient().request(request));
+    expectThrows(
+        Exception.class,
+        () -> {
+          cluster.getSolrClient().request(request);
+        });
   }
 
   @Test
@@ -286,19 +302,21 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
 
     expectThrows(
         BaseHttpSolrClient.RemoteSolrException.class,
-        () ->
-            CollectionAdminRequest.createCollection("halfcollection", "conf", 1, 1)
-                .setCreateNodeSet(nn1 + "," + nn2)
-                .process(cluster.getSolrClient()));
+        () -> {
+          CollectionAdminRequest.createCollection("halfcollection", "conf", 1, 1)
+              .setCreateNodeSet(nn1 + "," + nn2)
+              .process(cluster.getSolrClient());
+        });
   }
 
   @Test
   public void testNoConfigSetExist() throws Exception {
     expectThrows(
         Exception.class,
-        () ->
-            CollectionAdminRequest.createCollection("noconfig", "conf123", 1, 1)
-                .process(cluster.getSolrClient()));
+        () -> {
+          CollectionAdminRequest.createCollection("noconfig", "conf123", 1, 1)
+              .process(cluster.getSolrClient());
+        });
 
     TimeUnit.MILLISECONDS.sleep(1000);
     // in both cases, the collection should have default to the core name
@@ -331,9 +349,10 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
 
     expectThrows(
         SolrException.class,
-        () ->
-            CollectionAdminRequest.deleteCollection("unknown_collection")
-                .process(cluster.getSolrClient()));
+        () -> {
+          CollectionAdminRequest.deleteCollection("unknown_collection")
+              .process(cluster.getSolrClient());
+        });
 
     // create another collection should still work
     CollectionAdminRequest.createCollection("acollectionafterbaddelete", "conf", 1, 2)

@@ -49,7 +49,7 @@ public class AddFunction {
         } else if (params.length == 1) {
           if (params[0] instanceof DoubleValueStream) {
             return LambdaFunction.createDoubleLambdaFunction(
-                name, Double::sum, (DoubleValueStream) params[0]);
+                name, (a, b) -> a + b, (DoubleValueStream) params[0]);
           }
           throw new SolrException(
               ErrorCode.BAD_REQUEST,
@@ -62,7 +62,7 @@ public class AddFunction {
           AnalyticsValueStream param2 = params[1];
           if (param1 instanceof DoubleValueStream && param2 instanceof DoubleValueStream) {
             return LambdaFunction.createDoubleLambdaFunction(
-                name, Double::sum, (DoubleValueStream) param1, (DoubleValueStream) param2);
+                name, (a, b) -> a + b, (DoubleValueStream) param1, (DoubleValueStream) param2);
           }
           throw new SolrException(
               ErrorCode.BAD_REQUEST, "The " + name + " function requires numeric parameters.");
@@ -79,6 +79,6 @@ public class AddFunction {
                     + " function requires that all parameters be single-valued if more than 2 are given.");
           }
         }
-        return LambdaFunction.createDoubleLambdaFunction(name, Double::sum, castedParams);
+        return LambdaFunction.createDoubleLambdaFunction(name, (a, b) -> a + b, castedParams);
       });
 }

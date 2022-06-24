@@ -182,7 +182,8 @@ public class SystemCollectionCompatTest extends SolrCloudTestCase {
     log.info("Overseer Status indicates that the overseer is: {}", leader);
     JettySolrRunner overseerNode = null;
     List<JettySolrRunner> jettySolrRunners = cluster.getJettySolrRunners();
-    for (JettySolrRunner runner : jettySolrRunners) {
+    for (int i = 0; i < jettySolrRunners.size(); i++) {
+      JettySolrRunner runner = jettySolrRunners.get(i);
       if (runner.getNodeName().equals(leader)) {
         overseerNode = runner;
         break;

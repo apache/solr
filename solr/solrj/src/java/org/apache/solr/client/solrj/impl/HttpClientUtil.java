@@ -23,6 +23,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 import org.apache.http.Header;
@@ -207,11 +208,15 @@ public class HttpClientUtil {
       // we also do not want to have to acquire the mutex when the list is empty or put a global
       // mutex around the process calls
       interceptors.forEach(
-          interceptor -> {
-            try {
-              interceptor.process(request, context);
-            } catch (Exception e) {
-              log.error("", e);
+          new Consumer<HttpRequestInterceptor>() {
+
+            @Override
+            public void accept(HttpRequestInterceptor interceptor) {
+              try {
+                interceptor.process(request, context);
+              } catch (Exception e) {
+                log.error("", e);
+              }
             }
           });
     }
@@ -330,9 +335,12 @@ public class HttpClientUtil {
     }
 
     ConnectionKeepAliveStrategy keepAliveStrat =
-        (response, context) -> {
-          // we only close connections based on idle time, not ttl expiration
-          return -1;
+        new ConnectionKeepAliveStrategy() {
+          @Override
+          public long getKeepAliveDuration(HttpResponse response, HttpContext context) {
+            // we only close connections based on idle time, not ttl expiration
+            return -1;
+          }
         };
 
     if (httpClientBuilder.getAuthSchemeRegistryProvider() != null) {
@@ -466,12 +474,12 @@ public class HttpClientUtil {
       Header ceheader = entity.getContentEncoding();
       if (ceheader != null) {
         HeaderElement[] codecs = ceheader.getElements();
-        for (HeaderElement codec : codecs) {
-          if (codec.getName().equalsIgnoreCase("gzip")) {
+        for (int i = 0; i < codecs.length; i++) {
+          if (codecs[i].getName().equalsIgnoreCase("gzip")) {
             response.setEntity(new GzipDecompressingEntity(response.getEntity()));
             return;
           }
-          if (codec.getName().equalsIgnoreCase("deflate")) {
+          if (codecs[i].getName().equalsIgnoreCase("deflate")) {
             response.setEntity(new DeflateDecompressingEntity(response.getEntity()));
             return;
           }
@@ -578,7 +586,7 @@ public class HttpClientUtil {
     if (bool == null) {
       return valueIfNull;
     }
-    return bool ? true : false;
+    return bool.booleanValue() ? true : false;
   }
 
   /**

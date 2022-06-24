@@ -120,7 +120,7 @@ public class InjectionDefense {
 
   String buildExpression() {
     Matcher anyParam = ANY_PARAM.matcher(exprString);
-    StringBuilder buff = new StringBuilder();
+    StringBuffer buff = new StringBuffer();
     int pIdx = 0;
     while (anyParam.find()) {
       String found = anyParam.group();
@@ -155,7 +155,7 @@ public class InjectionDefense {
     exprString = STRING_PARAM.matcher(exprString).replaceAll("foo");
     exprString = NUMBER_PARAM.matcher(exprString).replaceAll("0");
     Matcher eMatcher = EXPRESSION_PARAM.matcher(exprString);
-    StringBuilder temp = new StringBuilder();
+    StringBuffer temp = new StringBuffer();
     while (eMatcher.find()) {
       Matcher counter = EXPRESSION_COUNT.matcher(eMatcher.group());
       eMatcher.appendReplacement(temp, "noop()");

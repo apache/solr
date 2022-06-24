@@ -87,7 +87,10 @@ public class SolrExporterIntegrationTest extends SolrExporterTestBase {
         metricsWithName(allMetrics, "solr_collections_live_nodes");
 
     assertEquals(1, liveNodeMetrics.size());
-    liveNodeMetrics.forEach((metric, value) -> assertEquals((double) NUM_NODES, value, 0.001));
+    liveNodeMetrics.forEach(
+        (metric, value) -> {
+          assertEquals((double) NUM_NODES, value, 0.001);
+        });
 
     Map<String, Double> shardLeaderMetrics =
         metricsWithName(allMetrics, "solr_collections_shard_leader");

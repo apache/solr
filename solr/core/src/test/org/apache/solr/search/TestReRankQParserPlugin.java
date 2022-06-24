@@ -960,7 +960,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
               "id_p_i", String.valueOf(i),
               "field_t",
                   IntStream.range(0, numDocs)
-                      .mapToObj(Integer::toString)
+                      .mapToObj(val -> Integer.toString(val))
                       .collect(Collectors.joining(" "))));
     }
     assertU(commit());

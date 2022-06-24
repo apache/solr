@@ -63,8 +63,8 @@ public class IFFTEvaluator extends RecursiveObjectEvaluator implements OneValueW
       Complex[] result = fastFourierTransformer.transform(complex, TransformType.INVERSE);
 
       List<Number> realResult = new ArrayList<>();
-      for (Complex value : result) {
-        realResult.add(value.getReal());
+      for (int i = 0; i < result.length; ++i) {
+        realResult.add(result[i].getReal());
       }
 
       return realResult;

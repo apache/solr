@@ -668,7 +668,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
         .toArray(new String[list.size()]);
   }
 
-  private static class PosVal<T extends Comparable<T>> {
+  private class PosVal<T extends Comparable<T>> {
     int pos;
     T val;
 
@@ -3373,7 +3373,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
             ? toStringArray(getRandomLongs(numValues, false))
             : toStringArray(getRandomInts(numValues, false));
     for (int i = 0; i < numValues; i++) {
-      randCount.merge(rand[i], 1, Integer::sum); // count unique values
+      randCount.merge(rand[i], 1, (a, b) -> a + b); // count unique values
       assertU(adoc("id", String.valueOf(i), field, rand[i]));
     }
     assertU(commit());
@@ -4523,7 +4523,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
       }
     } catch (NumberFormatException e) {
       try {
-        if (Double.parseDouble(numbers[1]) < Double.parseDouble(numbers[2])) {
+        if (Double.valueOf(numbers[1]) < Double.valueOf(numbers[2])) {
           smaller = numbers[1];
           larger = numbers[2];
         } else {
@@ -4770,7 +4770,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
             ? toStringArray(getRandomDoubles(numValues, false))
             : toStringArray(getRandomFloats(numValues, false));
     for (int i = 0; i < numValues; i++) {
-      randCount.merge(rand[i], 1, Integer::sum); // count unique values
+      randCount.merge(rand[i], 1, (a, b) -> a + b); // count unique values
       assertU(adoc("id", String.valueOf(i), field, rand[i]));
     }
     assertU(commit());
@@ -5288,9 +5288,9 @@ public class TestPointFields extends SolrTestCaseJ4 {
     SchemaField sf = h.getCore().getLatestSchema().getField(fieldName);
     assertTrue(sf.getType() instanceof PointField);
 
-    for (String s : values) {
+    for (int i = 0; i < values.length; i++) {
       assertQ(
-          req("q", "{!term f='" + fieldName + "'}" + s, "fl", "id," + fieldName),
+          req("q", "{!term f='" + fieldName + "'}" + values[i], "fl", "id," + fieldName),
           "//*[@numFound='1']");
     }
 
@@ -5359,9 +5359,9 @@ public class TestPointFields extends SolrTestCaseJ4 {
                 values[(i + 1) % values.length]));
       }
       assertU(commit());
-      for (String value : values) {
+      for (int i = 0; i < values.length; i++) {
         assertQ(
-            req("q", "{!term f='" + fieldName + "'}" + value, "fl", "id," + fieldName),
+            req("q", "{!term f='" + fieldName + "'}" + values[i], "fl", "id," + fieldName),
             "//*[@numFound='2']");
       }
 

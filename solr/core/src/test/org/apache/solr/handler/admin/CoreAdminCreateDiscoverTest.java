@@ -192,22 +192,23 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
     SolrException e =
         expectThrows(
             SolrException.class,
-            () ->
-                admin.handleRequestBody(
-                    req(
-                        CoreAdminParams.ACTION,
-                        CoreAdminParams.CoreAdminAction.CREATE.toString(),
-                        CoreAdminParams.NAME,
-                        "different_name_core",
-                        CoreAdminParams.INSTANCE_DIR,
-                        workDir.getAbsolutePath(),
-                        CoreAdminParams.CONFIG,
-                        "solrconfig_ren.xml",
-                        CoreAdminParams.SCHEMA,
-                        "schema_ren.xml",
-                        CoreAdminParams.DATA_DIR,
-                        data.getAbsolutePath()),
-                    new SolrQueryResponse()));
+            () -> {
+              admin.handleRequestBody(
+                  req(
+                      CoreAdminParams.ACTION,
+                      CoreAdminParams.CoreAdminAction.CREATE.toString(),
+                      CoreAdminParams.NAME,
+                      "different_name_core",
+                      CoreAdminParams.INSTANCE_DIR,
+                      workDir.getAbsolutePath(),
+                      CoreAdminParams.CONFIG,
+                      "solrconfig_ren.xml",
+                      CoreAdminParams.SCHEMA,
+                      "schema_ren.xml",
+                      CoreAdminParams.DATA_DIR,
+                      data.getAbsolutePath()),
+                  new SolrQueryResponse());
+            });
     assertTrue(e.getMessage().contains("already defined there"));
   }
 

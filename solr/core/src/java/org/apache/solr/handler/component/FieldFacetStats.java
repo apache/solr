@@ -114,11 +114,16 @@ public class FieldFacetStats {
         key = topLevelSortedValues.lookupOrd(term).utf8ToString();
       }
       while (facetStatsTerms.size() <= statsTermNum) {
-        facetStatsTerms.add(new HashMap<>());
+        facetStatsTerms.add(new HashMap<String, Integer>());
       }
 
       final Map<String, Integer> statsTermCounts = facetStatsTerms.get(statsTermNum);
-      statsTermCounts.merge(key, 1, Integer::sum);
+      Integer statsTermCount = statsTermCounts.get(key);
+      if (statsTermCount == null) {
+        statsTermCounts.put(key, 1);
+      } else {
+        statsTermCounts.put(key, statsTermCount + 1);
+      }
       return true;
     }
 
@@ -129,7 +134,7 @@ public class FieldFacetStats {
   public boolean accumulateTermNum(int statsTermNum, BytesRef value) throws IOException {
     if (value == null) return false;
     while (facetStatsTerms.size() <= statsTermNum) {
-      facetStatsTerms.add(new HashMap<>());
+      facetStatsTerms.add(new HashMap<String, Integer>());
     }
     for (Map.Entry<String, Integer> pairs : facetStatsTerms.get(statsTermNum).entrySet()) {
       String key = pairs.getKey();
@@ -165,7 +170,12 @@ public class FieldFacetStats {
 
     if (docID == topLevelSortedValues.docID()) {
       int ord = topLevelSortedValues.ordValue();
-      missingStats.merge(ord, 1, Integer::sum);
+      Integer missingCount = missingStats.get(ord);
+      if (missingCount == null) {
+        missingStats.put(ord, 1);
+      } else {
+        missingStats.put(ord, missingCount + 1);
+      }
     }
   }
 

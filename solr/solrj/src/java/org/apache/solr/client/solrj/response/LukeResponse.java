@@ -149,9 +149,9 @@ public class LukeResponse extends SolrResponseBase {
     public static EnumSet<FieldFlag> parseFlags(String flagStr) {
       EnumSet<FieldFlag> result = EnumSet.noneOf(FieldFlag.class);
       char[] chars = flagStr.toCharArray();
-      for (char aChar : chars) {
-        if (aChar != '-') {
-          FieldFlag flag = FieldFlag.getFlag(aChar);
+      for (int i = 0; i < chars.length; i++) {
+        if (chars[i] != '-') {
+          FieldFlag flag = FieldFlag.getFlag(chars[i]);
           result.add(flag);
         }
       }

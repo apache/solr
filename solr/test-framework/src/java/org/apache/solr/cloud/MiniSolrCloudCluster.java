@@ -840,7 +840,7 @@ public class MiniSolrCloudCluster {
   }
 
   public static Overseer getOpenOverseer(List<Overseer> overseers) {
-    ArrayList<Overseer> shuffledOverseers = new ArrayList<>(overseers);
+    ArrayList<Overseer> shuffledOverseers = new ArrayList<Overseer>(overseers);
     Collections.shuffle(shuffledOverseers, LuceneTestCase.random());
     for (Overseer overseer : shuffledOverseers) {
       if (!overseer.isClosed()) {
@@ -1070,7 +1070,7 @@ public class MiniSolrCloudCluster {
     /** Read solr.xml from the provided path */
     public Builder withSolrXml(Path solrXml) {
       try {
-        this.solrxml = Files.readString(solrXml, Charset.defaultCharset());
+        this.solrxml = new String(Files.readAllBytes(solrXml), Charset.defaultCharset());
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -1085,7 +1085,8 @@ public class MiniSolrCloudCluster {
      */
     public Builder withSecurityJson(Path securityJson) {
       try {
-        this.securityJson = Optional.of(Files.readString(securityJson, Charset.defaultCharset()));
+        this.securityJson =
+            Optional.of(new String(Files.readAllBytes(securityJson), Charset.defaultCharset()));
       } catch (IOException e) {
         throw new RuntimeException(e);
       }

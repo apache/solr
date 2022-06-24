@@ -48,7 +48,7 @@ public interface LongValueStream extends AnalyticsValueStream {
   public abstract static class AbstractLongValueStream implements CastingLongValueStream {
     @Override
     public void streamDoubles(DoubleConsumer cons) {
-      streamLongs(cons::accept);
+      streamLongs((long val) -> cons.accept(val));
     }
 
     @Override
@@ -58,7 +58,7 @@ public interface LongValueStream extends AnalyticsValueStream {
 
     @Override
     public void streamObjects(Consumer<Object> cons) {
-      streamLongs(cons::accept);
+      streamLongs((long val) -> cons.accept(val));
     }
 
     @Override

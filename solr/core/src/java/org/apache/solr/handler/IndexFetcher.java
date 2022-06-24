@@ -572,7 +572,7 @@ public class IndexFetcher {
       fsyncService =
           ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("fsyncService"));
       // use a synchronized list because the list is read by other threads (to show details)
-      filesDownloaded = Collections.synchronizedList(new ArrayList<>());
+      filesDownloaded = Collections.synchronizedList(new ArrayList<Map<String, Object>>());
       // if the generation of leader is older than that of the follower, it means they are not
       // compatible to be copied then a new index directory to be created and all the files need to
       // be copied
@@ -670,7 +670,7 @@ public class IndexFetcher {
                   latestGeneration);
           final long timeTakenSeconds = getReplicationTimeElapsed();
           final Long bytesDownloadedPerSecond =
-              (timeTakenSeconds != 0 ? bytesDownloaded / timeTakenSeconds : null);
+              (timeTakenSeconds != 0 ? Long.valueOf(bytesDownloaded / timeTakenSeconds) : null);
           log.info(
               "Total time taken for download (fullCopy={},bytesDownloaded={}) : {} secs ({} bytes/sec) to {}",
               isFullCopyNeeded,
@@ -1197,7 +1197,7 @@ public class IndexFetcher {
   // only for testing purposes. do not use this anywhere else
   // -----------START----------------------
   static BooleanSupplier testWait = () -> true;
-  static Function<String, Long> usableDiskSpaceProvider = IndexFetcher::getUsableSpace;
+  static Function<String, Long> usableDiskSpaceProvider = dir -> getUsableSpace(dir);
   // ------------ END---------------------
 
   private static Long getUsableSpace(String dir) {

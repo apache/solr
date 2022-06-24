@@ -230,7 +230,11 @@ public class StatsValuesFactory {
       for (int i = 0; i < f.size(); i++) {
         String field = f.getName(i);
         NamedList<?> vals = (NamedList<?>) f.getVal(i);
-        Map<String, StatsValues> addTo = facets.computeIfAbsent(field, k -> new HashMap<>());
+        Map<String, StatsValues> addTo = facets.get(field);
+        if (addTo == null) {
+          addTo = new HashMap<>();
+          facets.put(field, addTo);
+        }
         for (int j = 0; j < vals.size(); j++) {
           String val = vals.getName(j);
           StatsValues vvals = addTo.get(val);
@@ -547,7 +551,7 @@ public class StatsValuesFactory {
           tdigest.asSmallBytes(buf);
           res.add("percentiles", Arrays.copyOf(buf.array(), buf.position()));
         } else {
-          NamedList<Object> percentileNameList = new NamedList<>();
+          NamedList<Object> percentileNameList = new NamedList<Object>();
           for (Double percentile : statsField.getPercentilesList()) {
             // Empty document set case
             if (tdigest.size() == 0) {
@@ -585,7 +589,7 @@ public class StatsValuesFactory {
 
     @Override
     public long hash(EnumFieldValue v) {
-      return hasher.hashInt(v.toInt()).asLong();
+      return hasher.hashInt(v.toInt().intValue()).asLong();
     }
 
     @Override

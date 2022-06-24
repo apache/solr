@@ -74,8 +74,8 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
     assertEquals(3, nl.size());
     assertTrue(nl.getName(1).endsWith("_solr"));
     assertTrue(nl.getName(2).endsWith("_solr"));
-    assertEquals("solrcloud", ((NamedList<?>) nl.get(nl.getName(1))).get("mode"));
-    assertEquals(nl.getName(2), ((NamedList<?>) nl.get(nl.getName(2))).get("node"));
+    assertEquals("solrcloud", ((NamedList) nl.get(nl.getName(1))).get("mode"));
+    assertEquals(nl.getName(2), ((NamedList) nl.get(nl.getName(2))).get("node"));
   }
 
   @Test
@@ -88,7 +88,7 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
     assertEquals(3, nl.size());
     assertTrue(nl.getName(1).endsWith("_solr"));
     assertTrue(nl.getName(2).endsWith("_solr"));
-    assertNotNull(((NamedList<?>) nl.get(nl.getName(1))).get("metrics"));
+    assertNotNull(((NamedList) nl.get(nl.getName(1))).get("metrics"));
   }
 
   @Test(expected = SolrException.class)
@@ -117,8 +117,8 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
           }
           NamedList<Object> nl = rsp.getResponse();
           assertEquals(2, nl.size());
-          assertEquals("solrcloud", ((NamedList<?>) nl.get(nl.getName(1))).get("mode"));
-          assertEquals(nl.getName(1), ((NamedList<?>) nl.get(nl.getName(1))).get("node"));
+          assertEquals("solrcloud", ((NamedList) nl.get(nl.getName(1))).get("mode"));
+          assertEquals(nl.getName(1), ((NamedList) nl.get(nl.getName(1))).get("node"));
         });
   }
 }

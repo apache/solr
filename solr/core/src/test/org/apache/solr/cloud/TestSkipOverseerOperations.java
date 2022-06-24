@@ -21,12 +21,14 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.SortedSet;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.common.cloud.LiveNodesPredicate;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.After;
 import org.junit.Before;
@@ -101,16 +103,20 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
     reader.waitForLiveNodes(
         30,
         TimeUnit.SECONDS,
-        (oldLiveNodes, newLiveNodes) -> {
-          boolean success = true;
-          for (String lostNodeName : nodes) {
-            if (newLiveNodes.contains(lostNodeName)) {
-              success = false;
-              break;
-            }
-          }
+        new LiveNodesPredicate() {
 
-          return success;
+          @Override
+          public boolean matches(SortedSet<String> oldLiveNodes, SortedSet<String> newLiveNodes) {
+            boolean success = true;
+            for (String lostNodeName : nodes) {
+              if (newLiveNodes.contains(lostNodeName)) {
+                success = false;
+                break;
+              }
+            }
+
+            return success;
+          }
         });
 
     waitForState(
@@ -182,16 +188,20 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
     reader.waitForLiveNodes(
         30,
         TimeUnit.SECONDS,
-        (oldLiveNodes, newLiveNodes) -> {
-          boolean success = true;
-          for (String lostNodeName : nodes) {
-            if (newLiveNodes.contains(lostNodeName)) {
-              success = false;
-              break;
-            }
-          }
+        new LiveNodesPredicate() {
 
-          return success;
+          @Override
+          public boolean matches(SortedSet<String> oldLiveNodes, SortedSet<String> newLiveNodes) {
+            boolean success = true;
+            for (String lostNodeName : nodes) {
+              if (newLiveNodes.contains(lostNodeName)) {
+                success = false;
+                break;
+              }
+            }
+
+            return success;
+          }
         });
 
     waitForState(

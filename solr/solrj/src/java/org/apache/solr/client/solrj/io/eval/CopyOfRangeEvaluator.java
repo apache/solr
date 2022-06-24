@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -44,7 +43,7 @@ public class CopyOfRangeEvaluator extends RecursiveNumericEvaluator implements M
 
   @Override
   public Object doWork(Object... values) throws IOException {
-    if (Arrays.stream(values).anyMatch(Objects::isNull)) {
+    if (Arrays.stream(values).anyMatch(item -> null == item)) {
       return null;
     }
 

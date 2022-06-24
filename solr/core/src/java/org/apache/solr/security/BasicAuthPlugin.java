@@ -286,7 +286,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
   }
 
   @Contract(threading = ThreadingBehavior.IMMUTABLE)
-  private static class BasicAuthUserPrincipal implements Principal, Serializable {
+  private class BasicAuthUserPrincipal implements Principal, Serializable {
     private String username;
     private final String password;
 

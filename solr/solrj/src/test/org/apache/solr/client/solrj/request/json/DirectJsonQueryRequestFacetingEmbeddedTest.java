@@ -625,7 +625,7 @@ public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServ
         new FacetBucket("currency", 4));
   }
 
-  private static class FacetBucket {
+  private class FacetBucket {
     private final Object val;
     private final int count;
 

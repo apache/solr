@@ -154,7 +154,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
     // System.err.println(coll);
     // TODO how do we assert the configSet ?
     assertEquals(ImplicitDocRouter.class, coll.getRouter().getClass());
-    assertEquals("foo_s", ((Map<?, ?>) coll.get("router")).get("field"));
+    assertEquals("foo_s", ((Map) coll.get("router")).get("field"));
     assertEquals(2, coll.getSlices().size()); // numShards
     assertEquals(
         4, coll.getSlices().stream().mapToInt(s -> s.getReplicas().size()).sum()); // num replicas
@@ -204,7 +204,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
         solrClient.getClusterStateProvider().getState(initialCollectionName).get();
     // TODO how do we assert the configSet ?
     assertEquals(CompositeIdRouter.class, coll.getRouter().getClass());
-    assertEquals("foo_s", ((Map<?, ?>) coll.get("router")).get("field"));
+    assertEquals("foo_s", ((Map) coll.get("router")).get("field"));
     assertEquals(1, coll.getSlices().size()); // numShards
     assertEquals(2, coll.getReplicationFactor().intValue()); // num replicas
 

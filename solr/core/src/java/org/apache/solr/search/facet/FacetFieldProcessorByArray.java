@@ -162,7 +162,7 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
             throw new RuntimeException(e);
           }
         },
-        FacetFieldProcessorByArray::valueObjToString);
+        obj -> valueObjToString(obj));
   }
 
   private static String valueObjToString(Object obj) {

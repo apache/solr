@@ -35,7 +35,8 @@ public abstract class RecursiveNumericListEvaluator extends RecursiveEvaluator {
     if (null == value) {
       return null;
     } else if (value instanceof List) {
-      return ((List<?>) value).stream().map(this::convertToNumber).collect(Collectors.toList());
+      return ((List<?>) value)
+          .stream().map(innerValue -> convertToNumber(innerValue)).collect(Collectors.toList());
     } else {
       throw new StreamEvaluatorException(
           "Numeric list value expected but found type %s for value %s",

@@ -134,15 +134,16 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
       Thread.sleep(80);
 
       Thread thread =
-          new Thread(
-              () -> {
-                try {
-                  zkClient.makePath("collections/collection2", false);
-                  // Assert.fail("Server should be down here");
-                } catch (KeeperException | InterruptedException e) {
+          new Thread() {
+            public void run() {
+              try {
+                zkClient.makePath("collections/collection2", false);
+                // Assert.fail("Server should be down here");
+              } catch (KeeperException | InterruptedException e) {
 
-                }
-              });
+              }
+            }
+          };
 
       thread.start();
 
@@ -155,16 +156,19 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
       Thread.sleep(600);
 
       Thread thread2 =
-          new Thread(
-              () -> {
-                try {
+          new Thread() {
+            public void run() {
+              try {
 
-                  zkClient.makePath("collections/collection3", true);
+                zkClient.makePath("collections/collection3", true);
 
-                } catch (KeeperException | InterruptedException e) {
-                  throw new RuntimeException(e);
-                }
-              });
+              } catch (KeeperException e) {
+                throw new RuntimeException(e);
+              } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+              }
+            }
+          };
 
       thread2.start();
 
@@ -224,15 +228,16 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
       final long start = System.nanoTime();
       expectThrows(
           KeeperException.SessionExpiredException.class,
-          () ->
-              zkCmdExecutor.retryOperation(
-                  () -> {
-                    if (System.nanoTime() - start
-                        > TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS)) {
-                      throw new KeeperException.SessionExpiredException();
-                    }
-                    throw new KeeperException.ConnectionLossException();
-                  }));
+          () -> {
+            zkCmdExecutor.retryOperation(
+                () -> {
+                  if (System.nanoTime() - start
+                      > TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS)) {
+                    throw new KeeperException.SessionExpiredException();
+                  }
+                  throw new KeeperException.ConnectionLossException();
+                });
+          });
     } finally {
       if (server != null) {
         server.shutdown();
@@ -258,22 +263,25 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
         zkClient.makePath(collPath, true);
         zkClient.getChildren(
             collPath,
-            event -> {
-              synchronized (collectionsInProgress) {
-                collectionsInProgress.add(
-                    event.getPath()); // Will be something like /collections/collection##
-                maxCollectionsInProgress.set(
-                    Math.max(maxCollectionsInProgress.get(), collectionsInProgress.size()));
+            new Watcher() {
+              @Override
+              public void process(WatchedEvent event) {
+                synchronized (collectionsInProgress) {
+                  collectionsInProgress.add(
+                      event.getPath()); // Will be something like /collections/collection##
+                  maxCollectionsInProgress.set(
+                      Math.max(maxCollectionsInProgress.get(), collectionsInProgress.size()));
+                }
+                latch.countDown();
+                try {
+                  latch.await(10000, TimeUnit.MILLISECONDS);
+                } catch (InterruptedException e) {
+                }
+                synchronized (collectionsInProgress) {
+                  collectionsInProgress.remove(event.getPath());
+                }
+                watchesDone.countDown();
               }
-              latch.countDown();
-              try {
-                latch.await(10000, TimeUnit.MILLISECONDS);
-              } catch (InterruptedException e) {
-              }
-              synchronized (collectionsInProgress) {
-                collectionsInProgress.remove(event.getPath());
-              }
-              watchesDone.countDown();
             },
             true);
       }

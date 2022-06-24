@@ -322,7 +322,7 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
       expectedVal++;
 
       QueryResponse rsp = client.query(params("qt", "/get", "id", "b!doc"));
-      Object val = ((Map<?, ?>) rsp.getResponse().get("doc")).get("foo_i");
+      Object val = ((Map) rsp.getResponse().get("doc")).get("foo_i");
       assertEquals((Integer) expectedVal, val);
     }
   }

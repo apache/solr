@@ -193,9 +193,10 @@ public class TestRestoreCore extends SolrJettyTestBase {
     Throwable t =
         expectThrows(
             IOException.class,
-            () ->
-                TestReplicationHandlerBackup.runBackupCommand(
-                    leaderJetty, ReplicationHandler.CMD_BACKUP, params));
+            () -> {
+              TestReplicationHandlerBackup.runBackupCommand(
+                  leaderJetty, ReplicationHandler.CMD_BACKUP, params);
+            });
     // The backup command will fail since the tmp dir is outside allowPaths
     assertTrue(t.getMessage().contains("Server returned HTTP response code: 400"));
   }

@@ -212,14 +212,14 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
     Set<String> requiredFieldNames =
         schema.getRequiredFields().stream()
             .filter(field -> field.getDefaultValue() == null)
-            .map(SchemaField::getName)
+            .map(field -> field.getName())
             .collect(Collectors.toSet());
     if (tombstoneConfig != null) {
       tombstoneConfig.forEach((k, v) -> requiredFieldNames.remove(k));
     }
     requiredFieldNames.remove(schema.getUniqueKeyField().getName());
     if (versionFields != null) {
-      versionFields.forEach(requiredFieldNames::remove);
+      versionFields.forEach(field -> requiredFieldNames.remove(field));
     }
     if (!requiredFieldNames.isEmpty()) {
       log.warn(

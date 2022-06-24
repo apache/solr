@@ -193,9 +193,10 @@ public class MetricsMap implements Gauge<Map<String, Object>>, MapWriter, Dynami
     }
     if (jmxAttributes != null) {
       jmxAttributes.forEach(
-          (k, v) ->
-              attrInfoList.add(
-                  new MBeanAttributeInfo(k, String.class.getName(), null, true, false, false)));
+          (k, v) -> {
+            attrInfoList.add(
+                new MBeanAttributeInfo(k, String.class.getName(), null, true, false, false));
+          });
     }
     try {
       stats.forEach(
@@ -243,7 +244,7 @@ public class MetricsMap implements Gauge<Map<String, Object>>, MapWriter, Dynami
   public void writeMap(EntryWriter ew) throws IOException {
     if (mapInitializer != null) {
       Map<String, Object> value = getValue();
-      value.forEach(ew::putNoEx);
+      value.forEach((k, v) -> ew.putNoEx(k, v));
     } else {
       initializer.writeMap(ew);
     }

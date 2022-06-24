@@ -46,38 +46,54 @@ public class LBHttpSolrClientBadInputTest extends SolrJettyTestBase {
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
           Lists.newArrayList("ids", "null"),
-          () -> client.deleteById(NULL_STR_LIST));
+          () -> {
+            client.deleteById(NULL_STR_LIST);
+          });
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
           Lists.newArrayList("ids", "empty"),
-          () -> client.deleteById(EMPTY_STR_LIST));
+          () -> {
+            client.deleteById(EMPTY_STR_LIST);
+          });
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
           Lists.newArrayList("ids", "null"),
-          () -> client.deleteById(NULL_STR_LIST, ANY_COMMIT_WITHIN_TIME));
+          () -> {
+            client.deleteById(NULL_STR_LIST, ANY_COMMIT_WITHIN_TIME);
+          });
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
           Lists.newArrayList("ids", "empty"),
-          () -> client.deleteById(EMPTY_STR_LIST, ANY_COMMIT_WITHIN_TIME));
+          () -> {
+            client.deleteById(EMPTY_STR_LIST, ANY_COMMIT_WITHIN_TIME);
+          });
     }
 
     try (SolrClient client = getLBHttpSolrClient(jetty.getBaseUrl().toString())) {
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
           Lists.newArrayList("ids", "null"),
-          () -> client.deleteById(ANY_COLLECTION, NULL_STR_LIST));
+          () -> {
+            client.deleteById(ANY_COLLECTION, NULL_STR_LIST);
+          });
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
           Lists.newArrayList("ids", "empty"),
-          () -> client.deleteById(ANY_COLLECTION, EMPTY_STR_LIST));
+          () -> {
+            client.deleteById(ANY_COLLECTION, EMPTY_STR_LIST);
+          });
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
           Lists.newArrayList("ids", "null"),
-          () -> client.deleteById(ANY_COLLECTION, NULL_STR_LIST, ANY_COMMIT_WITHIN_TIME));
+          () -> {
+            client.deleteById(ANY_COLLECTION, NULL_STR_LIST, ANY_COMMIT_WITHIN_TIME);
+          });
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
           Lists.newArrayList("ids", "empty"),
-          () -> client.deleteById(ANY_COLLECTION, EMPTY_STR_LIST, ANY_COMMIT_WITHIN_TIME));
+          () -> {
+            client.deleteById(ANY_COLLECTION, EMPTY_STR_LIST, ANY_COMMIT_WITHIN_TIME);
+          });
     }
   }
 }

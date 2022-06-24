@@ -42,7 +42,8 @@ public class ModelStore {
   }
 
   public List<LTRScoringModel> getModels() {
-    final List<LTRScoringModel> availableModelsValues = new ArrayList<>(availableModels.values());
+    final List<LTRScoringModel> availableModelsValues =
+        new ArrayList<LTRScoringModel>(availableModels.values());
     return Collections.unmodifiableList(availableModelsValues);
   }
 

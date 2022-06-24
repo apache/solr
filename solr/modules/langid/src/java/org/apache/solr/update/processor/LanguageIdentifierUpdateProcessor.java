@@ -437,7 +437,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
    * @return The new schema field name, based on pattern and replace, or null if illegal
    */
   protected String getMappedField(String currentField, String language) {
-    String lc = mapLcMap.getOrDefault(language, language);
+    String lc = mapLcMap.containsKey(language) ? mapLcMap.get(language) : language;
     String newFieldName =
         langPattern
             .matcher(mapPattern.matcher(currentField).replaceFirst(mapReplaceStr))

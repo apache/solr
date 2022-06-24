@@ -70,7 +70,7 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
 
     v = args.remove("storeSubFields");
     if (v != null) {
-      storeSubFields = Boolean.parseBoolean(v);
+      storeSubFields = Boolean.valueOf(v);
     }
   }
 

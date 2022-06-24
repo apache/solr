@@ -96,7 +96,10 @@ public class FloorFunctionTest extends SolrTestCaseJ4 {
 
     // No values
     val.setValues();
-    func.streamInts(value -> assertTrue("There should be no values to stream", false));
+    func.streamInts(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // One value
     val.setValues(-4F);
@@ -130,7 +133,10 @@ public class FloorFunctionTest extends SolrTestCaseJ4 {
 
     // No values
     val.setValues();
-    func.streamLongs(value -> assertTrue("There should be no values to stream", false));
+    func.streamLongs(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // One value
     val.setValues(-4);

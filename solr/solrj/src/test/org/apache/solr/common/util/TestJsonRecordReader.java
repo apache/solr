@@ -47,12 +47,12 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
 
     List<Map<String, Object>> records = streamer.getAllRecords(new StringReader(json));
     assertEquals(3, records.size());
-    assertEquals(3l, ((Map<?, ?>) records.get(0)).get("e_i"));
-    assertEquals("D2", ((Map<?, ?>) records.get(2)).get("d_s"));
-    assertNull(((Map<?, ?>) records.get(1)).get("e_s"));
-    assertNull(((Map<?, ?>) records.get(2)).get("e_s"));
-    assertNull(((Map<?, ?>) records.get(1)).get("e_i"));
-    assertNull(((Map<?, ?>) records.get(2)).get("e_i"));
+    assertEquals(3l, ((Map) records.get(0)).get("e_i"));
+    assertEquals("D2", ((Map) records.get(2)).get("d_s"));
+    assertNull(((Map) records.get(1)).get("e_s"));
+    assertNull(((Map) records.get(2)).get("e_s"));
+    assertNull(((Map) records.get(1)).get("e_i"));
+    assertNull(((Map) records.get(2)).get("e_i"));
 
     //    All parameters but /b/c is omitted
     streamer =
@@ -85,10 +85,10 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
         JsonRecordReader.getInst("/b", Arrays.asList("a_s:/a", "c_s:/b/c", "d_s:/b/d", "/b/e/*"));
     records = streamer.getAllRecords(new StringReader(json));
     assertEquals(3, records.size());
-    assertEquals(3l, ((Map<?, ?>) records.get(0)).get("t"));
-    assertEquals("S", ((Map<?, ?>) records.get(0)).get("s"));
-    assertNull(((Map<?, ?>) records.get(1)).get("s"));
-    assertNull(((Map<?, ?>) records.get(2)).get("s"));
+    assertEquals(3l, ((Map) records.get(0)).get("t"));
+    assertEquals("S", ((Map) records.get(0)).get("s"));
+    assertNull(((Map) records.get(1)).get("s"));
+    assertNull(((Map) records.get(2)).get("s"));
   }
 
   public void testSrcField() throws Exception {
@@ -145,19 +145,19 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
               assertEquals(m.get("id"), "123");
               assertEquals(m.get("description"), "Testing /json/docs srcField 1");
               assertEquals(
-                  ((Map<?, ?>) m.get("nested_data")).get("nested_inside"), "check check check 1");
+                  ((Map) m.get("nested_data")).get("nested_inside"), "check check check 1");
             }
             if (count++ == 2) {
               assertEquals(m.get("id"), "345");
               assertEquals(m.get("description"), "Testing /json/docs srcField 2");
               assertEquals(
-                  ((Map<?, ?>) m.get("nested_data")).get("nested_inside"), "check check check 2");
+                  ((Map) m.get("nested_data")).get("nested_inside"), "check check check 2");
             }
             if (count++ == 3) {
               assertEquals(m.get("id"), "678");
               assertEquals(m.get("description"), "Testing /json/docs srcField 3");
               assertEquals(
-                  ((Map<?, ?>) m.get("nested_data")).get("nested_inside"), "check check check 3");
+                  ((Map) m.get("nested_data")).get("nested_inside"), "check check check 3");
             }
           }
         });
@@ -181,10 +181,10 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
     streamer = JsonRecordReader.getInst("/b", Collections.singletonList("/b/**"));
     records = streamer.getAllRecords(new StringReader(json));
     assertEquals(3, records.size());
-    assertEquals("records " + records, 3l, ((Map<?, ?>) records.get(0)).get("t"));
-    assertEquals("records " + records, "S", ((Map<?, ?>) records.get(0)).get("s"));
-    assertEquals("records " + records, 3.1234, ((Map<?, ?>) records.get(0)).get("v"));
-    assertEquals("records " + records, false, ((Map<?, ?>) records.get(0)).get("w"));
+    assertEquals("records " + records, 3l, ((Map) records.get(0)).get("t"));
+    assertEquals("records " + records, "S", ((Map) records.get(0)).get("s"));
+    assertEquals("records " + records, 3.1234, ((Map) records.get(0)).get("v"));
+    assertEquals("records " + records, false, ((Map) records.get(0)).get("w"));
     for (Map<String, Object> record : records) {
       assertNotNull("records " + records, record.get("c"));
       assertNotNull("records " + records, record.get("d"));
@@ -193,12 +193,12 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
     streamer = JsonRecordReader.getInst("/", Collections.singletonList("/**"));
     records = streamer.getAllRecords(new StringReader(json));
     assertEquals(1, records.size());
-    assertEquals(3, ((List<?>) ((Map<?, ?>) records.get(0)).get("c")).size());
-    assertEquals(3, ((List<?>) ((Map<?, ?>) records.get(0)).get("d")).size());
-    assertEquals("records " + records, 3l, ((Map<?, ?>) records.get(0)).get("t"));
-    assertEquals("records " + records, "S", ((Map<?, ?>) records.get(0)).get("s"));
-    assertEquals("records " + records, "A", ((Map<?, ?>) records.get(0)).get("a"));
-    assertEquals("records " + records, false, ((Map<?, ?>) records.get(0)).get("w"));
+    assertEquals(3, ((List) ((Map) records.get(0)).get("c")).size());
+    assertEquals(3, ((List) ((Map) records.get(0)).get("d")).size());
+    assertEquals("records " + records, 3l, ((Map) records.get(0)).get("t"));
+    assertEquals("records " + records, "S", ((Map) records.get(0)).get("s"));
+    assertEquals("records " + records, "A", ((Map) records.get(0)).get("a"));
+    assertEquals("records " + records, false, ((Map) records.get(0)).get("w"));
   }
 
   public void testRecursiveWildcard2() throws Exception {
@@ -245,7 +245,7 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
     streamer = JsonRecordReader.getInst("/", Collections.singletonList("txt:/**"));
     records = streamer.getAllRecords(new StringReader(json));
     assertEquals(1, records.size());
-    assertEquals(9, ((List<?>) records.get(0).get("txt")).size());
+    assertEquals(9, ((List) records.get(0).get("txt")).size());
   }
 
   public void testNestedDocs() throws Exception {
@@ -255,7 +255,7 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
         new StringReader(json),
         (record, path) -> {
           assertEquals(record.get("x"), "y");
-          assertEquals(((Map<?, ?>) record.get("b")).get("c"), "d");
+          assertEquals(((Map) record.get("b")).get("c"), "d");
         });
     json = "{a:{" + "b:[{c:c1, e:e1},{c:c2, e :e2, d:{p:q}}]," + "x:y" + "}}";
     streamer.streamRecords(

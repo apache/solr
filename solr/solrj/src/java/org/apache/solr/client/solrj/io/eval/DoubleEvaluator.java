@@ -44,7 +44,8 @@ public class DoubleEvaluator extends RecursiveObjectEvaluator implements OneValu
     if (null == value) {
       return null;
     } else if (value instanceof List) {
-      return ((List<?>) value).stream().map(this::doWork).collect(Collectors.toList());
+      return ((List<?>) value)
+          .stream().map(innerValue -> doWork(innerValue)).collect(Collectors.toList());
     } else {
       if (value instanceof String) {
         return Double.valueOf(value.toString());

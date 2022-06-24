@@ -18,6 +18,7 @@ package org.apache.solr.logging;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.solr.common.SolrDocument;
@@ -82,7 +83,9 @@ public abstract class LogWatcher<E> {
     }
 
     SolrDocumentList docs = new SolrDocumentList();
-    for (E e : history) {
+    Iterator<E> iter = history.iterator();
+    while (iter.hasNext()) {
+      E e = iter.next();
       long ts = getTimestamp(e);
       if (ts == since) {
         if (found != null) {

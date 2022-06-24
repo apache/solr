@@ -95,7 +95,7 @@ public class BackupManager {
         repository,
         backupPath,
         stateReader,
-        lastBackupId.map(BackupFilePaths::getBackupPropsName).orElse(null),
+        lastBackupId.map(id -> BackupFilePaths.getBackupPropsName(id)).orElse(null),
         lastBackupId.map(BackupId::nextBackupId).orElse(BackupId.zero()));
   }
 

@@ -475,7 +475,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       // response
       if (null != knownDocs[docId]) {
         Integer filterVal = (Integer) knownDocs[docId].getFieldValue("aaa_i");
-        if (null == FQ_MAX || ((null != filterVal) && filterVal <= FQ_MAX)) {
+        if (null == FQ_MAX || ((null != filterVal) && filterVal.intValue() <= FQ_MAX.intValue())) {
           docsToExpect.add(knownDocs[docId]);
         }
       }
@@ -977,7 +977,8 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
         }
       }
       assertTrue(
-          USAGE + " must be >= " + minValidDocId + ": " + value, minValidDocId <= (Integer) value);
+          USAGE + " must be >= " + minValidDocId + ": " + value,
+          minValidDocId <= ((Integer) value).intValue());
       return Collections.<String>singleton(resultKey);
     }
   }

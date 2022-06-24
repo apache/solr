@@ -90,7 +90,7 @@ public class VarianceAgg extends SimpleAggValueSource {
     }
   }
 
-  static class VarianceSortedNumericAcc extends DocValuesAcc.SDVSortedNumericAcc {
+  class VarianceSortedNumericAcc extends DocValuesAcc.SDVSortedNumericAcc {
 
     public VarianceSortedNumericAcc(FacetContext fcontext, SchemaField sf, int numSlots)
         throws IOException {
@@ -104,7 +104,7 @@ public class VarianceAgg extends SimpleAggValueSource {
     }
   }
 
-  static class VarianceSortedSetAcc extends DocValuesAcc.SDVSortedSetAcc {
+  class VarianceSortedSetAcc extends DocValuesAcc.SDVSortedSetAcc {
 
     public VarianceSortedSetAcc(FacetContext fcontext, SchemaField sf, int numSlots)
         throws IOException {
@@ -118,7 +118,7 @@ public class VarianceAgg extends SimpleAggValueSource {
     }
   }
 
-  static class VarianceUnInvertedFieldAcc extends UnInvertedFieldAcc.SDVUnInvertedFieldAcc {
+  class VarianceUnInvertedFieldAcc extends UnInvertedFieldAcc.SDVUnInvertedFieldAcc {
 
     public VarianceUnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots)
         throws IOException {

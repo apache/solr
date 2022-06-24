@@ -102,6 +102,6 @@ public class IntMultiTrieField extends AnalyticsField implements CastingIntValue
 
   @Override
   public void streamObjects(Consumer<Object> cons) {
-    streamInts(cons::accept);
+    streamInts(value -> cons.accept(value));
   }
 }

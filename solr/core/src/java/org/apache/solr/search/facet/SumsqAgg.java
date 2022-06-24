@@ -68,7 +68,7 @@ public class SumsqAgg extends SimpleAggValueSource {
     return new SumAgg.Merger();
   }
 
-  static class SumSqSortedNumericAcc extends DocValuesAcc.DoubleSortedNumericDVAcc {
+  class SumSqSortedNumericAcc extends DocValuesAcc.DoubleSortedNumericDVAcc {
 
     public SumSqSortedNumericAcc(FacetContext fcontext, SchemaField sf, int numSlots)
         throws IOException {
@@ -84,7 +84,7 @@ public class SumsqAgg extends SimpleAggValueSource {
     }
   }
 
-  static class SumSqSortedSetAcc extends DocValuesAcc.DoubleSortedSetDVAcc {
+  class SumSqSortedSetAcc extends DocValuesAcc.DoubleSortedSetDVAcc {
 
     public SumSqSortedSetAcc(FacetContext fcontext, SchemaField sf, int numSlots)
         throws IOException {
@@ -103,7 +103,7 @@ public class SumsqAgg extends SimpleAggValueSource {
     }
   }
 
-  static class SumSqUnInvertedFieldAcc extends UnInvertedFieldAcc.DoubleUnInvertedFieldAcc {
+  class SumSqUnInvertedFieldAcc extends UnInvertedFieldAcc.DoubleUnInvertedFieldAcc {
 
     public SumSqUnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots)
         throws IOException {

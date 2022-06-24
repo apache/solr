@@ -27,7 +27,6 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -75,7 +74,7 @@ class Permission {
       p.params = new LinkedHashMap<>();
       for (Map.Entry<String, Object> e : paramRules.entrySet()) {
         if (e.getValue() == null) {
-          p.params.put(e.getKey(), Objects::isNull);
+          p.params.put(e.getKey(), (String[] val) -> val == null);
         } else {
           @SuppressWarnings("unchecked")
           List<String> patternStrs =

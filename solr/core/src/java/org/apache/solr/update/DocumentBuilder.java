@@ -198,7 +198,9 @@ public class DocumentBuilder {
             }
           }
         } else {
-          for (Object v : field) {
+          Iterator<?> it = field.iterator();
+          while (it.hasNext()) {
+            Object v = it.next();
             if (v == null) {
               continue;
             }

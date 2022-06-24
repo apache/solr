@@ -54,7 +54,7 @@ public class RankQParserPlugin extends QParserPlugin {
       public Query createQuery(String fieldName, SolrParams params) throws SyntaxError {
         Float weight = params.getFloat(WEIGHT);
         Float pivot = params.getFloat(PIVOT);
-        if (pivot == null && (weight == null || Float.compare(weight, 1f) == 0)) {
+        if (pivot == null && (weight == null || Float.compare(weight.floatValue(), 1f) == 0)) {
           // No IAE expected in this case
           return FeatureField.newSaturationQuery(RankField.INTERNAL_RANK_FIELD_NAME, fieldName);
         }
@@ -63,7 +63,7 @@ public class RankQParserPlugin extends QParserPlugin {
               "A pivot value needs to be provided if the weight is not 1 on \"satu\" function");
         }
         if (weight == null) {
-          weight = 1F;
+          weight = Float.valueOf(1);
         }
         try {
           return FeatureField.newSaturationQuery(

@@ -99,7 +99,7 @@ public class CompositeIdRouter extends HashBasedRouter {
             "No value for :" + shardFieldName + ". Unable to identify shard");
       id = o.toString();
     }
-    if (!id.contains(SEPARATOR)) {
+    if (id.indexOf(SEPARATOR) < 0) {
       return Hash.murmurhash3_x86_32(id, 0, id.length(), 0);
     }
 
@@ -132,7 +132,7 @@ public class CompositeIdRouter extends HashBasedRouter {
    * @return Range for given routeKey
    */
   public Range keyHashRange(String routeKey) {
-    if (!routeKey.contains(SEPARATOR)) {
+    if (routeKey.indexOf(SEPARATOR) < 0) {
       int hash = sliceHash(routeKey, null, null, null);
       return new Range(hash, hash);
     }
@@ -147,7 +147,7 @@ public class CompositeIdRouter extends HashBasedRouter {
       return fullRange();
     }
 
-    if (!shardKey.contains(SEPARATOR)) {
+    if (shardKey.indexOf(SEPARATOR) < 0) {
       // shardKey is a simple id, so don't do a range
       int hash = Hash.murmurhash3_x86_32(shardKey, 0, shardKey.length(), 0);
       return new Range(hash, hash);
@@ -166,7 +166,7 @@ public class CompositeIdRouter extends HashBasedRouter {
     }
     String id = shardKey;
 
-    if (!shardKey.contains(SEPARATOR)) {
+    if (shardKey.indexOf(SEPARATOR) < 0) {
       // shardKey is a simple id, so don't do a range
       return Collections.singletonList(
           hashToSlice(Hash.murmurhash3_x86_32(id, 0, id.length(), 0), collection));

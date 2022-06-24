@@ -166,7 +166,7 @@ public class LegacyFieldFacetExtrasTest extends LegacyAbstractAnalyticsFacetTest
 
     Collection<Double> flo = getDoubleList("sr", "fieldFacets", "float_fd", "double", "median");
     ArrayList<Double> floatTest = calculateNumberStat(intFloatTestStart, "median");
-    floatTest.sort(Collections.reverseOrder());
+    Collections.sort(floatTest, Collections.reverseOrder());
     assertEquals(getRawResponse(), floatTest, flo);
 
     Collection<Long> doub = getLongList("sr", "fieldFacets", "double_dd", "long", "count");
@@ -178,7 +178,7 @@ public class LegacyFieldFacetExtrasTest extends LegacyAbstractAnalyticsFacetTest
         getIntegerList("sr", "fieldFacets", "string_sd", "int", "percentile_20");
     ArrayList<Integer> stringTest =
         (ArrayList<Integer>) calculateStat(intStringTestStart, "perc_20");
-    stringTest.sort(Collections.reverseOrder());
+    Collections.sort(stringTest, Collections.reverseOrder());
     assertEquals(getRawResponse(), stringTest, string);
   }
 }

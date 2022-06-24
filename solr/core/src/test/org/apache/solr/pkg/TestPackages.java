@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -677,10 +678,13 @@ public class TestPackages extends SolrCloudTestCase {
           jetty.getBaseUrl().toString().replace("/solr", "/api") + "/cluster/package?wt=javabin";
       TestDistribPackageStore.assertResponseValues(
           10,
-          () -> {
-            try (HttpSolrClient solrClient = (HttpSolrClient) jetty.newClient()) {
-              return (NavigableObject)
-                  Utils.executeGET(solrClient.getHttpClient(), path, Utils.JAVABINCONSUMER);
+          new Callable<NavigableObject>() {
+            @Override
+            public NavigableObject call() throws Exception {
+              try (HttpSolrClient solrClient = (HttpSolrClient) jetty.newClient()) {
+                return (NavigableObject)
+                    Utils.executeGET(solrClient.getHttpClient(), path, Utils.JAVABINCONSUMER);
+              }
             }
           },
           Map.of(

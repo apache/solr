@@ -28,6 +28,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.ipc.RemoteException;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
@@ -277,7 +278,16 @@ public class HdfsUpdateLog extends UpdateLog {
     assert fs != null;
     FileStatus[] fileStatuses;
     try {
-      fileStatuses = fs.listStatus(tlogDir, path -> path.getName().startsWith(prefix));
+      fileStatuses =
+          fs.listStatus(
+              tlogDir,
+              new PathFilter() {
+
+                @Override
+                public boolean accept(Path path) {
+                  return path.getName().startsWith(prefix);
+                }
+              });
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -380,7 +390,16 @@ public class HdfsUpdateLog extends UpdateLog {
 
   public String[] getLogList(Path tlogDir) throws FileNotFoundException, IOException {
     final String prefix = TLOG_NAME + '.';
-    FileStatus[] files = fs.listStatus(tlogDir, name -> name.getName().startsWith(prefix));
+    FileStatus[] files =
+        fs.listStatus(
+            tlogDir,
+            new PathFilter() {
+
+              @Override
+              public boolean accept(Path name) {
+                return name.getName().startsWith(prefix);
+              }
+            });
     List<String> fileList = new ArrayList<>(files.length);
     for (FileStatus file : files) {
       fileList.add(file.getPath().getName());

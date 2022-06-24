@@ -23,6 +23,7 @@ import static org.apache.solr.bench.generators.SourceDSL.strings;
 
 import java.lang.invoke.MethodHandles;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.bench.generators.Distribution;
@@ -143,7 +144,9 @@ public class DockMakerTest extends SolrTestCaseJ4 {
     }
 
     Integer lastVal = null;
-    for (Integer val : values) {
+    Iterator<Integer> it = values.iterator();
+    while (it.hasNext()) {
+      Integer val = it.next();
       if (lastVal != null) {
         assertTrue(val > lastVal);
       }

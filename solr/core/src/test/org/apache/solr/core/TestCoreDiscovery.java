@@ -265,15 +265,16 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       thrown =
           expectThrows(
               SolrException.class,
-              () ->
-                  cc.create(
-                      "corep4",
-                      ImmutableMap.of(
-                          CoreDescriptor.CORE_NAME, "corep4",
-                          CoreDescriptor.CORE_SCHEMA, "not-there.xml",
-                          CoreDescriptor.CORE_CONFIG, "solrconfig-minimal.xml",
-                          CoreDescriptor.CORE_TRANSIENT, "false",
-                          CoreDescriptor.CORE_LOADONSTARTUP, "true")));
+              () -> {
+                cc.create(
+                    "corep4",
+                    ImmutableMap.of(
+                        CoreDescriptor.CORE_NAME, "corep4",
+                        CoreDescriptor.CORE_SCHEMA, "not-there.xml",
+                        CoreDescriptor.CORE_CONFIG, "solrconfig-minimal.xml",
+                        CoreDescriptor.CORE_TRANSIENT, "false",
+                        CoreDescriptor.CORE_LOADONSTARTUP, "true"));
+              });
       assertTrue(thrown.getMessage().contains("Can't find resource"));
       assertFalse(
           "Failed corep4 should not have left a core.properties file around",
@@ -380,13 +381,13 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     final String message = thrown.getMessage();
     assertTrue(
         "Wrong exception thrown on duplicate core names",
-        message.contains("Found multiple cores with the name [core1]"));
+        message.indexOf("Found multiple cores with the name [core1]") != -1);
     assertTrue(
         File.separator + "core1 should have been mentioned in the message: " + message,
-        message.contains(File.separator + "core1"));
+        message.indexOf(File.separator + "core1") != -1);
     assertTrue(
         File.separator + "core2 should have been mentioned in the message:" + message,
-        message.contains(File.separator + "core2"));
+        message.indexOf(File.separator + "core2") != -1);
   }
 
   @Test

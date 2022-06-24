@@ -21,6 +21,7 @@ import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalListener;
+import com.google.common.cache.RemovalNotification;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -39,6 +40,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Options;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -134,7 +136,12 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
           .maximumSize(1000)
           .expireAfterAccess(5, TimeUnit.MINUTES)
           .removalListener(
-              (RemovalListener<String, FileSystem>) rn -> IOUtils.closeQuietly(rn.getValue()))
+              new RemovalListener<String, FileSystem>() {
+                @Override
+                public void onRemoval(RemovalNotification<String, FileSystem> rn) {
+                  IOUtils.closeQuietly(rn.getValue());
+                }
+              })
           .build();
 
   private static final class MetricsHolder {
@@ -610,22 +617,25 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
       oldIndexDirs =
           fileSystem.listStatus(
               dataDirPath,
-              path -> {
-                boolean accept = false;
-                String pathName = path.getName();
-                try {
-                  accept =
-                      fs.getFileStatus(path).isDirectory()
-                          && !path.equals(currentIndexDirPath)
-                          && (pathName.equals("index")
-                              || pathName.matches(INDEX_W_TIMESTAMP_REGEX));
-                } catch (IOException e) {
-                  log.error(
-                      "Error checking if path {} is an old index directory, caused by: {}",
-                      path,
-                      e);
+              new PathFilter() {
+                @Override
+                public boolean accept(Path path) {
+                  boolean accept = false;
+                  String pathName = path.getName();
+                  try {
+                    accept =
+                        fs.getFileStatus(path).isDirectory()
+                            && !path.equals(currentIndexDirPath)
+                            && (pathName.equals("index")
+                                || pathName.matches(INDEX_W_TIMESTAMP_REGEX));
+                  } catch (IOException e) {
+                    log.error(
+                        "Error checking if path {} is an old index directory, caused by: {}",
+                        path,
+                        e);
+                  }
+                  return accept;
                 }
-                return accept;
               });
     } catch (FileNotFoundException fnfe) {
       // already deleted - ignore
@@ -641,7 +651,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
       oldIndexPaths.add(ofs.getPath());
     }
 
-    oldIndexPaths.sort(Collections.reverseOrder());
+    Collections.sort(oldIndexPaths, Collections.reverseOrder());
 
     Set<String> livePaths = getLivePaths();
 

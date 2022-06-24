@@ -372,47 +372,53 @@ public class TestFieldCache extends SolrTestCase {
     final CyclicBarrier restart =
         new CyclicBarrier(
             NUM_THREADS,
-            () -> {
-              cache.purgeAllCaches();
-              iters.incrementAndGet();
+            new Runnable() {
+              @Override
+              public void run() {
+                cache.purgeAllCaches();
+                iters.incrementAndGet();
+              }
             });
     for (int threadIDX = 0; threadIDX < NUM_THREADS; threadIDX++) {
       threads[threadIDX] =
-          new Thread(
-              () -> {
-                try {
-                  while (!failed.get()) {
-                    final int op = random().nextInt(3);
-                    if (op == 0) {
-                      // Purge all caches & resume, once all
-                      // threads get here:
-                      restart.await();
-                      if (iters.get() >= NUM_ITER) {
-                        break;
-                      }
-                    } else if (op == 1) {
-                      Bits docsWithField =
-                          cache.getDocsWithField(reader, "sparse", FieldCache.INT_POINT_PARSER);
-                      for (int i = 0; i < docsWithField.length(); i++) {
-                        assertEquals(i % 2 == 0, docsWithField.get(i));
-                      }
-                    } else {
-                      NumericDocValues ints =
-                          cache.getNumerics(reader, "sparse", FieldCache.INT_POINT_PARSER);
-                      for (int i = 0; i < reader.maxDoc(); i++) {
-                        if (i % 2 == 0) {
-                          assertEquals(i, ints.nextDoc());
-                          assertEquals(i, ints.longValue());
-                        }
+          new Thread() {
+            @Override
+            public void run() {
+
+              try {
+                while (!failed.get()) {
+                  final int op = random().nextInt(3);
+                  if (op == 0) {
+                    // Purge all caches & resume, once all
+                    // threads get here:
+                    restart.await();
+                    if (iters.get() >= NUM_ITER) {
+                      break;
+                    }
+                  } else if (op == 1) {
+                    Bits docsWithField =
+                        cache.getDocsWithField(reader, "sparse", FieldCache.INT_POINT_PARSER);
+                    for (int i = 0; i < docsWithField.length(); i++) {
+                      assertEquals(i % 2 == 0, docsWithField.get(i));
+                    }
+                  } else {
+                    NumericDocValues ints =
+                        cache.getNumerics(reader, "sparse", FieldCache.INT_POINT_PARSER);
+                    for (int i = 0; i < reader.maxDoc(); i++) {
+                      if (i % 2 == 0) {
+                        assertEquals(i, ints.nextDoc());
+                        assertEquals(i, ints.longValue());
                       }
                     }
                   }
-                } catch (Throwable t) {
-                  failed.set(true);
-                  restart.reset();
-                  throw new RuntimeException(t);
                 }
-              });
+              } catch (Throwable t) {
+                failed.set(true);
+                restart.reset();
+                throw new RuntimeException(t);
+              }
+            }
+          };
       threads[threadIDX].start();
     }
 
@@ -440,19 +446,32 @@ public class TestFieldCache extends SolrTestCase {
     // Binary type: can be retrieved via getTerms()
     expectThrows(
         IllegalStateException.class,
-        () -> FieldCache.DEFAULT.getNumerics(ar, "binary", FieldCache.INT_POINT_PARSER));
+        () -> {
+          FieldCache.DEFAULT.getNumerics(ar, "binary", FieldCache.INT_POINT_PARSER);
+        });
 
     BinaryDocValues binary = FieldCache.DEFAULT.getTerms(ar, "binary");
     assertEquals(0, binary.nextDoc());
     final BytesRef term = binary.binaryValue();
     assertEquals("binary value", term.utf8ToString());
 
-    expectThrows(IllegalStateException.class, () -> FieldCache.DEFAULT.getTermsIndex(ar, "binary"));
+    expectThrows(
+        IllegalStateException.class,
+        () -> {
+          FieldCache.DEFAULT.getTermsIndex(ar, "binary");
+        });
 
     expectThrows(
-        IllegalStateException.class, () -> FieldCache.DEFAULT.getDocTermOrds(ar, "binary", null));
+        IllegalStateException.class,
+        () -> {
+          FieldCache.DEFAULT.getDocTermOrds(ar, "binary", null);
+        });
 
-    expectThrows(IllegalStateException.class, () -> new DocTermOrds(ar, null, "binary"));
+    expectThrows(
+        IllegalStateException.class,
+        () -> {
+          new DocTermOrds(ar, null, "binary");
+        });
 
     Bits bits = FieldCache.DEFAULT.getDocsWithField(ar, "binary", null);
     assertTrue(bits.get(0));
@@ -460,9 +479,15 @@ public class TestFieldCache extends SolrTestCase {
     // Sorted type: can be retrieved via getTerms(), getTermsIndex(), getDocTermOrds()
     expectThrows(
         IllegalStateException.class,
-        () -> FieldCache.DEFAULT.getNumerics(ar, "sorted", FieldCache.INT_POINT_PARSER));
+        () -> {
+          FieldCache.DEFAULT.getNumerics(ar, "sorted", FieldCache.INT_POINT_PARSER);
+        });
 
-    expectThrows(IllegalStateException.class, () -> new DocTermOrds(ar, null, "sorted"));
+    expectThrows(
+        IllegalStateException.class,
+        () -> {
+          new DocTermOrds(ar, null, "sorted");
+        });
 
     SortedDocValues sorted = FieldCache.DEFAULT.getTermsIndex(ar, "sorted");
     assertEquals(0, sorted.nextDoc());
@@ -486,15 +511,29 @@ public class TestFieldCache extends SolrTestCase {
     assertEquals(0, numeric.nextDoc());
     assertEquals(42, numeric.longValue());
 
-    expectThrows(IllegalStateException.class, () -> FieldCache.DEFAULT.getTerms(ar, "numeric"));
+    expectThrows(
+        IllegalStateException.class,
+        () -> {
+          FieldCache.DEFAULT.getTerms(ar, "numeric");
+        });
 
     expectThrows(
-        IllegalStateException.class, () -> FieldCache.DEFAULT.getTermsIndex(ar, "numeric"));
+        IllegalStateException.class,
+        () -> {
+          FieldCache.DEFAULT.getTermsIndex(ar, "numeric");
+        });
 
     expectThrows(
-        IllegalStateException.class, () -> FieldCache.DEFAULT.getDocTermOrds(ar, "numeric", null));
+        IllegalStateException.class,
+        () -> {
+          FieldCache.DEFAULT.getDocTermOrds(ar, "numeric", null);
+        });
 
-    expectThrows(IllegalStateException.class, () -> new DocTermOrds(ar, null, "numeric"));
+    expectThrows(
+        IllegalStateException.class,
+        () -> {
+          new DocTermOrds(ar, null, "numeric");
+        });
 
     bits = FieldCache.DEFAULT.getDocsWithField(ar, "numeric", null);
     assertTrue(bits.get(0));
@@ -502,14 +541,27 @@ public class TestFieldCache extends SolrTestCase {
     // SortedSet type: can be retrieved via getDocTermOrds()
     expectThrows(
         IllegalStateException.class,
-        () -> FieldCache.DEFAULT.getNumerics(ar, "sortedset", FieldCache.INT_POINT_PARSER));
-
-    expectThrows(IllegalStateException.class, () -> FieldCache.DEFAULT.getTerms(ar, "sortedset"));
+        () -> {
+          FieldCache.DEFAULT.getNumerics(ar, "sortedset", FieldCache.INT_POINT_PARSER);
+        });
 
     expectThrows(
-        IllegalStateException.class, () -> FieldCache.DEFAULT.getTermsIndex(ar, "sortedset"));
+        IllegalStateException.class,
+        () -> {
+          FieldCache.DEFAULT.getTerms(ar, "sortedset");
+        });
 
-    expectThrows(IllegalStateException.class, () -> new DocTermOrds(ar, null, "sortedset"));
+    expectThrows(
+        IllegalStateException.class,
+        () -> {
+          FieldCache.DEFAULT.getTermsIndex(ar, "sortedset");
+        });
+
+    expectThrows(
+        IllegalStateException.class,
+        () -> {
+          new DocTermOrds(ar, null, "sortedset");
+        });
 
     sortedSet = FieldCache.DEFAULT.getDocTermOrds(ar, "sortedset", null);
     assertEquals(0, sortedSet.nextDoc());

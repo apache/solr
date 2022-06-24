@@ -547,8 +547,11 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
         if (fieldName != null) {
           if (selector.shouldMutate(fieldName)) {
             // returns false if the field already exists in the current schema
-            List<SolrInputField> solrInputFields =
-                unknownFields.computeIfAbsent(fieldName, k -> new ArrayList<>());
+            List<SolrInputField> solrInputFields = unknownFields.get(fieldName);
+            if (null == solrInputFields) {
+              solrInputFields = new ArrayList<>();
+              unknownFields.put(fieldName, solrInputFields);
+            }
             solrInputFields.add(doc.getField(fieldName));
           }
         }

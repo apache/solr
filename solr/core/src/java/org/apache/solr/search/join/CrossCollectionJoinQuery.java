@@ -112,7 +112,7 @@ public class CrossCollectionJoinQuery extends Query {
     DocSet getDocSet() throws IOException;
   }
 
-  private static class TermsJoinKeyCollector implements JoinKeyCollector {
+  private class TermsJoinKeyCollector implements JoinKeyCollector {
 
     FieldType fieldType;
     SolrIndexSearcher searcher;

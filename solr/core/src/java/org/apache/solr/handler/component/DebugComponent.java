@@ -27,7 +27,6 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import org.apache.lucene.search.Query;
@@ -337,7 +336,7 @@ public class DebugComponent extends SearchComponent {
         // optimize case where elements are in same position
         if (i < dl.size()) {
           String dkey = dl.getName(i);
-          if (Objects.equals(skey, dkey)) {
+          if (skey == dkey || (skey != null && skey.equals(dkey))) {
             didx = i;
           }
         }

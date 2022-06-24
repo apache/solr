@@ -251,8 +251,8 @@ public class TestStressVersions extends TestRTGBase {
                     // without further synchronization
                   } else {
                     assertEquals(1, doclist.size());
-                    long foundVal = (Long) (((Map<?, ?>) doclist.get(0)).get(FIELD));
-                    long foundVer = (Long) (((Map<?, ?>) doclist.get(0)).get("_version_"));
+                    long foundVal = (Long) (((Map) doclist.get(0)).get(FIELD));
+                    long foundVer = (Long) (((Map) doclist.get(0)).get("_version_"));
                     if (foundVer < Math.abs(info.version)
                         || (foundVer == info.version
                             && foundVal != info.val)) { // if the version matches, the val must

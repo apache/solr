@@ -68,7 +68,9 @@ public class ClusteringComponentDistributedTest extends BaseDistributedSearchTes
     compareToExpected(
         clusters(
             QUERY_TESTSET_SAMPLE_DOCUMENTS,
-            params -> params.add(ClusteringComponent.REQUEST_PARAM_ENGINE, "lingo")));
+            params -> {
+              params.add(ClusteringComponent.REQUEST_PARAM_ENGINE, "lingo");
+            }));
   }
 
   @LuceneTestCase.AwaitsFix(bugUrl = "https://github.com/carrot2/carrot2/issues/149")
@@ -78,7 +80,9 @@ public class ClusteringComponentDistributedTest extends BaseDistributedSearchTes
     compareToExpected(
         clusters(
             QUERY_TESTSET_SAMPLE_DOCUMENTS,
-            params -> params.add(ClusteringComponent.REQUEST_PARAM_ENGINE, "stc")));
+            params -> {
+              params.add(ClusteringComponent.REQUEST_PARAM_ENGINE, "stc");
+            }));
   }
 
   private void compareToExpected(List<Cluster> actual) throws IOException {

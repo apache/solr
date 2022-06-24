@@ -154,7 +154,7 @@ public interface MapWriter extends MapSerializable, NavigableObject {
     }
 
     default BiConsumer<CharSequence, Object> getBiConsumer() {
-      return this::putNoEx;
+      return (k, v) -> putNoEx(k, v);
     }
   }
 

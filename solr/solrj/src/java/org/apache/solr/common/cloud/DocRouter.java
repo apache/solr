@@ -64,7 +64,9 @@ public abstract class DocRouter {
         map.put(s.substring(7), props.get(s));
       }
     }
-    map.putIfAbsent("name", DEFAULT_NAME);
+    if (map.get("name") == null) {
+      map.put("name", DEFAULT_NAME);
+    }
     return map;
   }
 

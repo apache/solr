@@ -316,11 +316,13 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
             5);
     compareValues(
         result,
-        (Predicate<Object>)
-            o -> {
-              List<?> l = (List<?>) o;
-              return l.contains("first") && l.contains("second");
-            },
+        new Predicate<>() {
+          @Override
+          public boolean test(Object o) {
+            List<?> l = (List<?>) o;
+            return l.contains("first") && l.contains("second");
+          }
+        },
         asList("params", "add"));
 
     payload = " {'delete' : 'y'}";

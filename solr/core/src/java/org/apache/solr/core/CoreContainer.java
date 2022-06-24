@@ -252,7 +252,7 @@ public class CoreContainer {
               getZkController() != null
                   && getZkController().getOverseer() != null
                   && !getZkController().getOverseer().isClosed(),
-          this::runAsync);
+          (r) -> this.runAsync(r));
 
   private volatile ClusterEventProducer clusterEventProducer;
   private final DelegatingPlacementPluginFactory placementPluginFactory =
@@ -1168,7 +1168,10 @@ public class CoreContainer {
         solrCores.getModifyLock().notifyAll(); // wake up the thread
       }
 
-      customThreadPool.submit(replayUpdatesExecutor::shutdownAndAwaitTermination);
+      customThreadPool.submit(
+          () -> {
+            replayUpdatesExecutor.shutdownAndAwaitTermination();
+          });
 
       if (metricManager != null) {
         metricManager.closeReporters(SolrMetricManager.getRegistryName(SolrInfoBean.Group.node));
@@ -1194,7 +1197,10 @@ public class CoreContainer {
 
       try {
         if (coreAdminHandler != null) {
-          customThreadPool.submit(() -> coreAdminHandler.shutdown());
+          customThreadPool.submit(
+              () -> {
+                coreAdminHandler.shutdown();
+              });
         }
       } catch (Exception e) {
         log.warn("Error shutting down CoreAdminHandler. Continuing to close CoreContainer.", e);
@@ -1209,7 +1215,10 @@ public class CoreContainer {
     } finally {
       try {
         if (shardHandlerFactory != null) {
-          customThreadPool.submit(() -> shardHandlerFactory.close());
+          customThreadPool.submit(
+              () -> {
+                shardHandlerFactory.close();
+              });
         }
       } finally {
         try {
@@ -1434,6 +1443,8 @@ public class CoreContainer {
             getZkController().unregister(coreName, cd);
           } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            SolrException.log(log, null, e);
+          } catch (KeeperException e) {
             SolrException.log(log, null, e);
           } catch (Exception e) {
             SolrException.log(log, null, e);
@@ -2010,6 +2021,9 @@ public class CoreContainer {
         throw new SolrException(
             ErrorCode.SERVER_ERROR,
             "Interrupted while unregistering core [" + name + "] from cloud state");
+      } catch (KeeperException e) {
+        throw new SolrException(
+            ErrorCode.SERVER_ERROR, "Error unregistering core [" + name + "] from cloud state", e);
       } catch (Exception e) {
         throw new SolrException(
             ErrorCode.SERVER_ERROR, "Error unregistering core [" + name + "] from cloud state", e);

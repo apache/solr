@@ -205,7 +205,7 @@ public class RealTimeGetComponent extends SearchComponent {
       if (fqs != null && fqs.length != 0) {
         List<Query> filters = rb.getFilters();
         // if filters already exists, make a copy instead of modifying the original
-        filters = filters == null ? new ArrayList<>(fqs.length) : new ArrayList<>(filters);
+        filters = filters == null ? new ArrayList<Query>(fqs.length) : new ArrayList<>(filters);
         for (String fq : fqs) {
           if (fq != null && fq.trim().length() != 0) {
             QParser fqp = QParser.getParser(fq, req);
@@ -1079,8 +1079,11 @@ public class RealTimeGetComponent extends SearchComponent {
             coll.getRouter()
                 .getTargetSlice(params.get(ShardParams._ROUTE_, id), null, null, params, coll);
 
-        List<String> idsForShard =
-            sliceToId.computeIfAbsent(slice.getName(), k -> new ArrayList<>(2));
+        List<String> idsForShard = sliceToId.get(slice.getName());
+        if (idsForShard == null) {
+          idsForShard = new ArrayList<>(2);
+          sliceToId.put(slice.getName(), idsForShard);
+        }
         idsForShard.add(id);
       }
 
@@ -1328,7 +1331,7 @@ public class RealTimeGetComponent extends SearchComponent {
 
     // handle version ranges
     List<Long> versions = null;
-    if (versionsStr.contains("...")) {
+    if (versionsStr.indexOf("...") != -1) {
       versions = resolveVersionRanges(versionsStr, ulog);
     } else {
       versions =
@@ -1396,7 +1399,7 @@ public class RealTimeGetComponent extends SearchComponent {
       versionAvailable = recentUpdates.getVersions(ulog.getNumRecordsToKeep());
     }
     // sort versions
-    versionAvailable.sort(PeerSync.absComparator);
+    Collections.sort(versionAvailable, PeerSync.absComparator);
 
     // This can be done with single pass over both ranges and versionsAvailable, that would require
     // merging ranges. We currently use Set to ensure there are no duplicates.

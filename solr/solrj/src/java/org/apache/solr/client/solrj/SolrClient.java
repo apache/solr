@@ -368,7 +368,7 @@ public abstract class SolrClient implements Serializable, Closeable {
       throws SolrServerException, IOException {
     UpdateRequest req = new UpdateRequest();
     req.setDocIterator(
-        new Iterator<>() {
+        new Iterator<SolrInputDocument>() {
 
           @Override
           public boolean hasNext() {
@@ -378,9 +378,7 @@ public abstract class SolrClient implements Serializable, Closeable {
           @Override
           public SolrInputDocument next() {
             Object o = beanIterator.next();
-            if (o == null) {
-              return null;
-            }
+            if (o == null) return null;
             return getBinder().toSolrInputDocument(o);
           }
 

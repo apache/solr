@@ -52,8 +52,11 @@ public class SpellingResult {
    * @param suggestions The suggestions
    */
   public void add(Token token, List<String> suggestions) {
-    LinkedHashMap<String, Integer> map =
-        this.suggestions.computeIfAbsent(token, k -> new LinkedHashMap<>());
+    LinkedHashMap<String, Integer> map = this.suggestions.get(token);
+    if (map == null) {
+      map = new LinkedHashMap<>();
+      this.suggestions.put(token, map);
+    }
     for (String suggestion : suggestions) {
       map.put(suggestion, NO_FREQUENCY_INFO);
     }
@@ -80,9 +83,12 @@ public class SpellingResult {
    * @param docFreq The document frequency
    */
   public void add(Token token, String suggestion, int docFreq) {
-    LinkedHashMap<String, Integer> map =
-        this.suggestions.computeIfAbsent(token, k -> new LinkedHashMap<>());
+    LinkedHashMap<String, Integer> map = this.suggestions.get(token);
     // Don't bother adding if we already have this token
+    if (map == null) {
+      map = new LinkedHashMap<>();
+      this.suggestions.put(token, map);
+    }
     map.put(suggestion, docFreq);
   }
 

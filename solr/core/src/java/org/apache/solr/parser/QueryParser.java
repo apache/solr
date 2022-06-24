@@ -48,7 +48,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
 
   private boolean splitOnWhitespace = DEFAULT_SPLIT_ON_WHITESPACE;
   private static Set<Integer> disallowedPostMultiTerm
-    = new HashSet<>(Arrays.asList(COLON, STAR, FUZZY_SLOP, CARAT, AND, OR));
+    = new HashSet<Integer>(Arrays.asList(COLON, STAR, FUZZY_SLOP, CARAT, AND, OR));
   private static boolean allowedPostMultiTerm(int tokenKind) {
     return disallowedPostMultiTerm.contains(tokenKind) == false;
   }
@@ -144,7 +144,7 @@ ret = MOD_NOT;
     throw new Error("Missing return statement in function");
 }
 
-  final public Query Query(String field) throws ParseException, SyntaxError {List<BooleanClause> clauses = new ArrayList<>();
+  final public Query Query(String field) throws ParseException, SyntaxError {List<BooleanClause> clauses = new ArrayList<BooleanClause>();
   Query q;
   int conj, mods;
     if (jj_2_1(2)) {
@@ -614,7 +614,7 @@ if (splitOnWhitespace) {
       Query q = getFieldQuery(getField(field), discardEscapeChar(text.image), false, true);
       addClause(clauses, CONJ_NONE, MOD_NONE, q);
     } else {
-      terms = new ArrayList<>();
+      terms = new ArrayList<String>();
       terms.add(discardEscapeChar(text.image));
     }
     if (getToken(1).kind == TERM && allowedPostMultiTerm(getToken(2).kind)) {
@@ -812,8 +812,8 @@ if (splitOnWhitespace == false) {
        jj_gen++;
        if (++jj_gc > 100) {
          jj_gc = 0;
-         for (JJCalls jj_2_rtn : jj_2_rtns) {
-           JJCalls c = jj_2_rtn;
+         for (int i = 0; i < jj_2_rtns.length; i++) {
+           JJCalls c = jj_2_rtns[i];
            while (c != null) {
              if (c.gen < jj_gen) c.first = null;
              c = c.next;
@@ -883,7 +883,7 @@ if (splitOnWhitespace == false) {
        return (jj_ntk = jj_nt.kind);
   }
 
-  private java.util.List<int[]> jj_expentries = new java.util.ArrayList<>();
+  private java.util.List<int[]> jj_expentries = new java.util.ArrayList<int[]>();
   private int[] jj_expentry;
   private int jj_kind = -1;
   private int[] jj_lasttokens = new int[100];

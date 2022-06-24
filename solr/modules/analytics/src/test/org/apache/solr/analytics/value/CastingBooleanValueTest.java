@@ -67,7 +67,10 @@ public class CastingBooleanValueTest extends SolrTestCaseJ4 {
 
     // No values
     val.setExists(false);
-    casted.streamBooleans(value -> assertTrue("There should be no values to stream", false));
+    casted.streamBooleans(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple Values
     val.setValue(false).setExists(true);
@@ -89,7 +92,10 @@ public class CastingBooleanValueTest extends SolrTestCaseJ4 {
 
     // No values
     val.setExists(false);
-    casted.streamStrings(value -> assertTrue("There should be no values to stream", false));
+    casted.streamStrings(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple Values
     val.setValue(false).setExists(true);
@@ -111,7 +117,10 @@ public class CastingBooleanValueTest extends SolrTestCaseJ4 {
 
     // No values
     val.setExists(false);
-    casted.streamObjects(value -> assertTrue("There should be no values to stream", false));
+    casted.streamObjects(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple Values
     val.setValue(false).setExists(true);

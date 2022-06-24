@@ -161,19 +161,19 @@ public class LegacyAbstractAnalyticsTest extends SolrTestCaseJ4 {
       for (T element : list) {
         d += element.doubleValue();
       }
-      result = d / list.size();
+      result = Double.valueOf(d / list.size());
     } else if (stat.equals("sum")) {
       double d = 0;
       for (T element : list) {
         d += element.doubleValue();
       }
-      result = d;
+      result = Double.valueOf(d);
     } else if (stat.equals("sumOfSquares")) {
       double d = 0;
       for (T element : list) {
         d += element.doubleValue() * element.doubleValue();
       }
-      result = d;
+      result = Double.valueOf(d);
     } else if (stat.equals("stddev")) {
       double sum = 0;
       double sumSquares = 0;
@@ -197,11 +197,11 @@ public class LegacyAbstractAnalyticsTest extends SolrTestCaseJ4 {
       OrdinalCalculator.putOrdinalsInPosition(list, percs);
       result = list.get(percs.get(0));
     } else if (stat.equals("count")) {
-      result = (long) list.size();
+      result = Long.valueOf(list.size());
     } else if (stat.equals("unique")) {
       HashSet<T> set = new HashSet<>();
       set.addAll(list);
-      result = (long) set.size();
+      result = Long.valueOf((long) set.size());
     } else if (stat.equals("max")) {
       Collections.sort(list);
       result = list.get(list.size() - 1);
@@ -223,7 +223,7 @@ public class LegacyAbstractAnalyticsTest extends SolrTestCaseJ4 {
         miss++;
       }
     }
-    return miss;
+    return Long.valueOf(miss);
   }
 
   public static SolrQueryRequest request(String... args) {

@@ -99,7 +99,7 @@ public class ZkMaintenanceUtils {
           if (znode.startsWith("/zookeeper")) return; // can't do anything with this node!
           int iPos = znode.lastIndexOf("/");
           if (iPos > 0) {
-            sb.append(" ".repeat(iPos));
+            for (int idx = 0; idx < iPos; ++idx) sb.append(" ");
             sb.append(znode.substring(iPos + 1)).append(System.lineSeparator());
           } else {
             sb.append(znode).append(System.lineSeparator());
@@ -323,7 +323,7 @@ public class ZkMaintenanceUtils {
         Path.of(zkPath).getNameCount() - rootPath.getNameCount() - 1; // will be negative
     Files.walkFileTree(
         rootPath,
-        new SimpleFileVisitor<>() {
+        new SimpleFileVisitor<Path>() {
           @Override
           public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
               throws IOException {
@@ -368,9 +368,7 @@ public class ZkMaintenanceUtils {
           @Override
           public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
               throws IOException {
-            if (dir.getFileName().toString().startsWith(".")) {
-              return FileVisitResult.SKIP_SUBTREE;
-            }
+            if (dir.getFileName().toString().startsWith(".")) return FileVisitResult.SKIP_SUBTREE;
 
             String zkNode = createZkNodeName(zkPath, rootPath, dir);
             try {

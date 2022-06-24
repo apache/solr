@@ -236,10 +236,10 @@ public class SolrParamTest extends SolrTestCase {
     assertEquals(pstr, params.get("xxx", pstr));
     assertEquals(pbool, params.getBool("xxx", pbool));
     assertEquals(pint.intValue(), params.getInt("xxx", pint));
-    assertEquals(pfloat, params.getFloat("xxx", pfloat), 0.1);
+    assertEquals(pfloat.floatValue(), params.getFloat("xxx", pfloat), 0.1);
     assertEquals(pbool, params.getFieldBool("xxx", "bool", pbool));
     assertEquals(pint.intValue(), params.getFieldInt("xxx", "int", pint));
-    assertEquals(pfloat, params.getFieldFloat("xxx", "float", pfloat), 0.1);
+    assertEquals(pfloat.floatValue(), params.getFieldFloat("xxx", "float", pfloat), 0.1);
     assertEquals(pstr, params.getFieldParam("xxx", "str", pstr));
 
     // Required params testing uses decorator

@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -266,7 +268,17 @@ public class RankQueryTestPlugin extends QParserPlugin {
         } // end for-each-doc-in-response
       } // end for-each-response
 
-      shardDocs.sort((o1, o2) -> Float.compare(o2.score, o1.score));
+      Collections.sort(
+          shardDocs,
+          (o1, o2) -> {
+            if (o1.score < o2.score) {
+              return 1;
+            } else if (o1.score > o2.score) {
+              return -1;
+            } else {
+              return 0;
+            }
+          });
 
       int resultSize = shardDocs.size();
 
@@ -565,7 +577,17 @@ public class RankQueryTestPlugin extends QParserPlugin {
         } // end for-each-doc-in-response
       } // end for-each-response
 
-      shardDocs.sort((o1, o2) -> Float.compare(o2.score, o1.score));
+      Collections.sort(
+          shardDocs,
+          (o1, o2) -> {
+            if (o1.score < o2.score) {
+              return 1;
+            } else if (o1.score > o2.score) {
+              return -1;
+            } else {
+              return 0;
+            }
+          });
 
       int resultSize = shardDocs.size();
 
@@ -678,8 +700,20 @@ public class RankQueryTestPlugin extends QParserPlugin {
     }
 
     public TopDocs topDocs() {
-      list.sort((s1, s2) -> Float.compare(s2.score, s1.score));
-      ScoreDoc[] scoreDocs = list.toArray(new ScoreDoc[0]);
+      Collections.sort(
+          list,
+          new Comparator<>() {
+            public int compare(ScoreDoc s1, ScoreDoc s2) {
+              if (s1.score == s2.score) {
+                return 0;
+              } else if (s1.score < s2.score) {
+                return 1;
+              } else {
+                return -1;
+              }
+            }
+          });
+      ScoreDoc[] scoreDocs = list.toArray(new ScoreDoc[list.size()]);
       return new TopDocs(new TotalHits(list.size(), TotalHits.Relation.EQUAL_TO), scoreDocs);
     }
 
@@ -728,8 +762,20 @@ public class RankQueryTestPlugin extends QParserPlugin {
     }
 
     public TopDocs topDocs() {
-      list.sort((s1, s2) -> Float.compare(s1.score, s2.score));
-      ScoreDoc[] scoreDocs = list.toArray(new ScoreDoc[0]);
+      Collections.sort(
+          list,
+          new Comparator<>() {
+            public int compare(ScoreDoc s1, ScoreDoc s2) {
+              if (s1.score == s2.score) {
+                return 0;
+              } else if (s1.score > s2.score) {
+                return 1;
+              } else {
+                return -1;
+              }
+            }
+          });
+      ScoreDoc[] scoreDocs = list.toArray(new ScoreDoc[list.size()]);
       return new TopDocs(new TotalHits(list.size(), TotalHits.Relation.EQUAL_TO), scoreDocs);
     }
 

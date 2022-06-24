@@ -19,6 +19,7 @@ package org.apache.solr;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -255,26 +256,28 @@ public class TestJoin extends SolrTestCaseJ4 {
     // "from" field missing docValues
     expectThrows(
         SolrException.class,
-        () ->
-            h.query(
-                req(
-                    p,
-                    "q",
-                    "{!join from=nodocvalues_s to=dept_ss_dv method=topLevelDV}*:*",
-                    "fl",
-                    "id")));
+        () -> {
+          h.query(
+              req(
+                  p,
+                  "q",
+                  "{!join from=nodocvalues_s to=dept_ss_dv method=topLevelDV}*:*",
+                  "fl",
+                  "id"));
+        });
 
     // "to" field missing docValues
     expectThrows(
         SolrException.class,
-        () ->
-            h.query(
-                req(
-                    p,
-                    "q",
-                    "{!join from=dept_ss_dv to=nodocvalues_s method=topLevelDV}*:*",
-                    "fl",
-                    "id")));
+        () -> {
+          h.query(
+              req(
+                  p,
+                  "q",
+                  "{!join from=dept_ss_dv to=nodocvalues_s method=topLevelDV}*:*",
+                  "fl",
+                  "id"));
+        });
   }
 
   @Test
@@ -371,7 +374,7 @@ public class TestJoin extends SolrTestCaseJ4 {
         Set<Comparable> docs = join(fromDocs, pivot);
         List<Doc> docList = new ArrayList<>(docs.size());
         for (@SuppressWarnings({"rawtypes"}) Comparable id : docs) docList.add(model.get(id));
-        docList.sort(createComparator("_docid_", true, false, false, false));
+        Collections.sort(docList, createComparator("_docid_", true, false, false, false));
         List<Object> sortedDocs = new ArrayList<>();
         for (Doc doc : docList) {
           if (sortedDocs.size() >= 10) break;
@@ -438,7 +441,11 @@ public class TestJoin extends SolrTestCaseJ4 {
       for (Comparable val : vals) {
         List<Comparable> toIds = value_to_id.get(val);
         if (toIds == null) continue;
-        Set<Comparable> ids = id_to_id.computeIfAbsent(fromId, k -> new HashSet<>());
+        Set<Comparable> ids = id_to_id.get(fromId);
+        if (ids == null) {
+          ids = new HashSet<>();
+          id_to_id.put(fromId, ids);
+        }
         for (Comparable toId : toIds) ids.add(toId);
       }
     }

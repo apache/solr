@@ -89,12 +89,12 @@ public class AnalyzingLookupFactory extends LookupFactory {
 
     boolean exactMatchFirst =
         params.get(EXACT_MATCH_FIRST) != null
-            ? Boolean.parseBoolean(params.get(EXACT_MATCH_FIRST).toString())
+            ? Boolean.valueOf(params.get(EXACT_MATCH_FIRST).toString())
             : true;
 
     boolean preserveSep =
         params.get(PRESERVE_SEP) != null
-            ? Boolean.parseBoolean(params.get(PRESERVE_SEP).toString())
+            ? Boolean.valueOf(params.get(PRESERVE_SEP).toString())
             : true;
 
     int flags = 0;
@@ -117,7 +117,7 @@ public class AnalyzingLookupFactory extends LookupFactory {
 
     boolean preservePositionIncrements =
         params.get(PRESERVE_POSITION_INCREMENTS) != null
-            ? Boolean.parseBoolean(params.get(PRESERVE_POSITION_INCREMENTS).toString())
+            ? Boolean.valueOf(params.get(PRESERVE_POSITION_INCREMENTS).toString())
             : false;
 
     return new AnalyzingSuggester(

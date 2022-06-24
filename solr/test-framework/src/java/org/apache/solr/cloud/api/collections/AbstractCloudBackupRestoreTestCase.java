@@ -419,21 +419,23 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     restoreCollection
         .getReplicas()
         .forEach(
-            x ->
-                numReplicasByNodeName.put(
-                    x.getNodeName(), numReplicasByNodeName.getOrDefault(x.getNodeName(), 0) + 1));
+            x -> {
+              numReplicasByNodeName.put(
+                  x.getNodeName(), numReplicasByNodeName.getOrDefault(x.getNodeName(), 0) + 1);
+            });
     numReplicasByNodeName.forEach(
-        (k, v) ->
-            assertTrue(
-                "Node "
-                    + k
-                    + " has "
-                    + v
-                    + " replicas. Expected num replicas : "
-                    + restoreMaxShardsPerNode
-                    + ". state: \n"
-                    + restoreCollection,
-                v <= restoreMaxShardsPerNode));
+        (k, v) -> {
+          assertTrue(
+              "Node "
+                  + k
+                  + " has "
+                  + v
+                  + " replicas. Expected num replicas : "
+                  + restoreMaxShardsPerNode
+                  + ". state: \n"
+                  + restoreCollection,
+              v <= restoreMaxShardsPerNode);
+        });
 
     assertEquals(
         restoreCollection.toString(),

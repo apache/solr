@@ -75,7 +75,10 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
 
     SolrException e =
         expectThrows(
-            SolrException.class, () -> CollectionsHandler.copy(params.required(), null, "z"));
+            SolrException.class,
+            () -> {
+              CollectionsHandler.copy(params.required(), null, "z");
+            });
     assertEquals(e.code(), SolrException.ErrorCode.BAD_REQUEST.code);
   }
 

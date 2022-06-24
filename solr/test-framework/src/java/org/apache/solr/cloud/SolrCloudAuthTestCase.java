@@ -74,7 +74,7 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
   private static final String METRICS_PREFIX = "SECURITY./authentication.";
 
   @SuppressWarnings({"rawtypes"})
-  public static final Predicate NOT_NULL_PREDICATE = Objects::nonNull;
+  public static final Predicate NOT_NULL_PREDICATE = o -> o != null;
 
   private static final List<String> AUDIT_METRICS_KEYS = Arrays.asList("count");
   private static final List<String> AUTH_METRICS_TO_COMPARE =
@@ -161,7 +161,10 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
             });
 
     Map<String, Long> counts = new HashMap<>();
-    keys.forEach(k -> counts.put(k, sumCount(prefix, k, metrics)));
+    keys.forEach(
+        k -> {
+          counts.put(k, sumCount(prefix, k, metrics));
+        });
     return counts;
   }
 

@@ -138,7 +138,9 @@ public class TestManagedSchemaAPI extends SolrCloudTestCase {
     Exception e =
         expectThrows(
             Exception.class,
-            () -> cloudClient.query(collection, params("q", "*:*", "sort", "id asc")));
+            () -> {
+              cloudClient.query(collection, params("q", "*:*", "sort", "id asc"));
+            });
     assertTrue("Should fail because needs docValues", e.getMessage().contains("docValues"));
   }
 }

@@ -70,10 +70,11 @@ public class TestAtomicUpdateErrorCases extends SolrTestCaseJ4 {
       SolrException ex =
           expectThrows(
               SolrException.class,
-              () ->
-                  addAndGetVersion(
-                      sdoc("id", "1", "val_i", map("inc", -666)),
-                      params("update.chain", "nodistrib")));
+              () -> {
+                addAndGetVersion(
+                    sdoc("id", "1", "val_i", map("inc", -666)),
+                    params("update.chain", "nodistrib"));
+              });
       assertEquals(400, ex.code());
       assertTrue(ex.getMessage().contains("DistributedUpdateProcessorFactory"));
       resetExceptionIgnores();

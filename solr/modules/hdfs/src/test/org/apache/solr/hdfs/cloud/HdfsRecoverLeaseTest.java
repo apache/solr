@@ -32,6 +32,7 @@ import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.hdfs.util.BadHdfsThreadsFilter;
 import org.apache.solr.hdfs.util.HdfsRecoverLeaseFileSystemUtils;
+import org.apache.solr.hdfs.util.HdfsRecoverLeaseFileSystemUtils.CallerInfo;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -91,7 +92,17 @@ public class HdfsRecoverLeaseTest extends SolrTestCaseJ4 {
     out.hflush();
     out.close();
 
-    HdfsRecoverLeaseFileSystemUtils.recoverFileLease(fs1, testFile, conf, () -> false);
+    HdfsRecoverLeaseFileSystemUtils.recoverFileLease(
+        fs1,
+        testFile,
+        conf,
+        new CallerInfo() {
+
+          @Override
+          public boolean isCallerClosed() {
+            return false;
+          }
+        });
     assertEquals(
         0,
         HdfsRecoverLeaseFileSystemUtils.RECOVER_LEASE_SUCCESS_COUNT.get()
@@ -116,7 +127,17 @@ public class HdfsRecoverLeaseTest extends SolrTestCaseJ4 {
 
     FileSystem fs3 = FileSystem.get(path.toUri(), conf);
 
-    HdfsRecoverLeaseFileSystemUtils.recoverFileLease(fs3, testFile2, conf, () -> false);
+    HdfsRecoverLeaseFileSystemUtils.recoverFileLease(
+        fs3,
+        testFile2,
+        conf,
+        new CallerInfo() {
+
+          @Override
+          public boolean isCallerClosed() {
+            return false;
+          }
+        });
     assertEquals(
         1,
         HdfsRecoverLeaseFileSystemUtils.RECOVER_LEASE_SUCCESS_COUNT.get()
@@ -194,7 +215,17 @@ public class HdfsRecoverLeaseTest extends SolrTestCaseJ4 {
       public void run() {
         Path testFile = new Path(uri.toString() + "/file-" + id);
         try {
-          HdfsRecoverLeaseFileSystemUtils.recoverFileLease(fs, testFile, conf, () -> false);
+          HdfsRecoverLeaseFileSystemUtils.recoverFileLease(
+              fs,
+              testFile,
+              conf,
+              new CallerInfo() {
+
+                @Override
+                public boolean isCallerClosed() {
+                  return false;
+                }
+              });
         } catch (IOException e) {
           throw new RuntimeException(e);
         }
@@ -205,8 +236,8 @@ public class HdfsRecoverLeaseTest extends SolrTestCaseJ4 {
       }
     }
 
-    Set<WriterThread> writerThreads = new HashSet<>();
-    Set<RecoverThread> recoverThreads = new HashSet<>();
+    Set<WriterThread> writerThreads = new HashSet<WriterThread>();
+    Set<RecoverThread> recoverThreads = new HashSet<RecoverThread>();
 
     int threadCount = 3;
     for (int i = 0; i < threadCount; i++) {

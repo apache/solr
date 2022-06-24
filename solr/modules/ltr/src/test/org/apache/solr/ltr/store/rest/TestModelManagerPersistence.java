@@ -89,9 +89,9 @@ public class TestModelManagerPersistence extends TestRerankBase {
     final ArrayList<Object> fStore =
         (ArrayList<Object>)
             ((Map<String, Object>) Utils.fromJSONString(fstorecontent)).get("managedList");
-    for (Object value : fStore) {
+    for (int idx = 0; idx < fStore.size(); ++idx) {
       @SuppressWarnings({"unchecked"})
-      String store = (String) ((Map<String, Object>) value).get("store");
+      String store = (String) ((Map<String, Object>) fStore.get(idx)).get("store");
       assertTrue(store.equals("test") || store.equals("test2") || store.equals("test1"));
     }
 
@@ -99,9 +99,9 @@ public class TestModelManagerPersistence extends TestRerankBase {
     final ArrayList<Object> mStore =
         (ArrayList<Object>)
             ((Map<String, Object>) Utils.fromJSONString(mstorecontent)).get("managedList");
-    for (Object o : mStore) {
+    for (int idx = 0; idx < mStore.size(); ++idx) {
       @SuppressWarnings({"unchecked"})
-      String store = (String) ((Map<String, Object>) o).get("store");
+      String store = (String) ((Map<String, Object>) mStore.get(idx)).get("store");
       assertTrue(store.equals("test") || store.equals("test1"));
     }
 

@@ -21,6 +21,7 @@ import static org.apache.solr.client.solrj.io.stream.StreamAssert.assertMaps;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -1232,7 +1233,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
         // System.out.println("#################################### Bucket 1:"+bucket);
         assertTrue(bucket.equals("hello0"));
-        assertTrue(sumi == 17.0D);
+        assertTrue(sumi.doubleValue() == 17.0D);
 
         tuple = daemonStream.read();
         bucket = tuple.getString("a_s");
@@ -1240,7 +1241,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
         // System.out.println("#################################### Bucket 2:"+bucket);
         assertTrue(bucket.equals("hello3"));
-        assertTrue(sumi == 38.0D);
+        assertTrue(sumi.doubleValue() == 38.0D);
 
         tuple = daemonStream.read();
         bucket = tuple.getString("a_s");
@@ -1280,14 +1281,14 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         Double sumi = tuple.getDouble("sum(a_i)");
 
         assertTrue(bucket.equals("hello0"));
-        assertTrue(sumi == 18.0D);
+        assertTrue(sumi.doubleValue() == 18.0D);
 
         tuple = daemonStream.read();
         bucket = tuple.getString("a_s");
         sumi = tuple.getDouble("sum(a_i)");
 
         assertTrue(bucket.equals("hello3"));
-        assertTrue(sumi == 38.0D);
+        assertTrue(sumi.doubleValue() == 38.0D);
 
         tuple = daemonStream.read();
         bucket = tuple.getString("a_s");
@@ -1418,15 +1419,15 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       Double count = tuple.getDouble("count(*)");
 
       assertTrue(bucket.equals("hello0"));
-      assertTrue(sumi == 17.0D);
-      assertTrue(sumf == 18.0D);
-      assertTrue(mini == 0.0D);
-      assertTrue(minf == 1.0D);
-      assertTrue(maxi == 14.0D);
-      assertTrue(maxf == 10.0D);
-      assertTrue(avgi == 4.25D);
-      assertTrue(avgf == 4.5D);
-      assertTrue(count == 4);
+      assertTrue(sumi.doubleValue() == 17.0D);
+      assertTrue(sumf.doubleValue() == 18.0D);
+      assertTrue(mini.doubleValue() == 0.0D);
+      assertTrue(minf.doubleValue() == 1.0D);
+      assertTrue(maxi.doubleValue() == 14.0D);
+      assertTrue(maxf.doubleValue() == 10.0D);
+      assertTrue(avgi.doubleValue() == 4.25D);
+      assertTrue(avgf.doubleValue() == 4.5D);
+      assertTrue(count.doubleValue() == 4);
 
       tuple = tuples.get(1);
       bucket = tuple.getString("a_s");
@@ -1441,15 +1442,15 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       count = tuple.getDouble("count(*)");
 
       assertTrue(bucket.equals("hello3"));
-      assertTrue(sumi == 38.0D);
-      assertTrue(sumf == 26.0D);
-      assertTrue(mini == 3.0D);
-      assertTrue(minf == 3.0D);
-      assertTrue(maxi == 13.0D);
-      assertTrue(maxf == 9.0D);
-      assertTrue(avgi == 9.5D);
-      assertTrue(avgf == 6.5D);
-      assertTrue(count == 4);
+      assertTrue(sumi.doubleValue() == 38.0D);
+      assertTrue(sumf.doubleValue() == 26.0D);
+      assertTrue(mini.doubleValue() == 3.0D);
+      assertTrue(minf.doubleValue() == 3.0D);
+      assertTrue(maxi.doubleValue() == 13.0D);
+      assertTrue(maxf.doubleValue() == 9.0D);
+      assertTrue(avgi.doubleValue() == 9.5D);
+      assertTrue(avgf.doubleValue() == 6.5D);
+      assertTrue(count.doubleValue() == 4);
 
       tuple = tuples.get(2);
       bucket = tuple.getString("a_s");
@@ -1465,14 +1466,14 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
       assertTrue(bucket.equals("hello4"));
       assertTrue(sumi.longValue() == 15);
-      assertTrue(sumf == 11.0D);
-      assertTrue(mini == 4.0D);
-      assertTrue(minf == 4.0D);
-      assertTrue(maxi == 11.0D);
-      assertTrue(maxf == 7.0D);
-      assertTrue(avgi == 7.5D);
-      assertTrue(avgf == 5.5D);
-      assertTrue(count == 2);
+      assertTrue(sumf.doubleValue() == 11.0D);
+      assertTrue(mini.doubleValue() == 4.0D);
+      assertTrue(minf.doubleValue() == 4.0D);
+      assertTrue(maxi.doubleValue() == 11.0D);
+      assertTrue(maxf.doubleValue() == 7.0D);
+      assertTrue(avgi.doubleValue() == 7.5D);
+      assertTrue(avgf.doubleValue() == 5.5D);
+      assertTrue(count.doubleValue() == 2);
 
     } finally {
       solrClientCache.close();
@@ -1552,15 +1553,15 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       Double count = tuple.getDouble("count(*)");
 
       assertTrue(bucket.equals("hello0"));
-      assertTrue(sumi == 17.0D);
-      assertTrue(sumf == 18.0D);
-      assertTrue(mini == 0.0D);
-      assertTrue(minf == 1.0D);
-      assertTrue(maxi == 14.0D);
-      assertTrue(maxf == 10.0D);
-      assertTrue(avgi == 4.25D);
-      assertTrue(avgf == 4.5D);
-      assertTrue(count == 4);
+      assertTrue(sumi.doubleValue() == 17.0D);
+      assertTrue(sumf.doubleValue() == 18.0D);
+      assertTrue(mini.doubleValue() == 0.0D);
+      assertTrue(minf.doubleValue() == 1.0D);
+      assertTrue(maxi.doubleValue() == 14.0D);
+      assertTrue(maxf.doubleValue() == 10.0D);
+      assertTrue(avgi.doubleValue() == 4.25D);
+      assertTrue(avgf.doubleValue() == 4.5D);
+      assertTrue(count.doubleValue() == 4);
 
       tuple = tuples.get(1);
       bucket = tuple.getString("a_s");
@@ -1578,14 +1579,14 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
       assertTrue(bucket.equals("hello4"));
       assertTrue(sumi.longValue() == 15);
-      assertTrue(sumf == 11.0D);
-      assertTrue(mini == 4.0D);
-      assertTrue(minf == 4.0D);
-      assertTrue(maxi == 11.0D);
-      assertTrue(maxf == 7.0D);
-      assertTrue(avgi == 7.5D);
-      assertTrue(avgf == 5.5D);
-      assertTrue(count == 2);
+      assertTrue(sumf.doubleValue() == 11.0D);
+      assertTrue(mini.doubleValue() == 4.0D);
+      assertTrue(minf.doubleValue() == 4.0D);
+      assertTrue(maxi.doubleValue() == 11.0D);
+      assertTrue(maxf.doubleValue() == 7.0D);
+      assertTrue(avgi.doubleValue() == 7.5D);
+      assertTrue(avgf.doubleValue() == 5.5D);
+      assertTrue(count.doubleValue() == 2);
 
       tuple = tuples.get(2);
       bucket = tuple.getString("a_s");
@@ -1600,15 +1601,15 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       count = tuple.getDouble("count(*)");
 
       assertTrue(bucket.equals("hello3"));
-      assertTrue(sumi == 38.0D);
-      assertTrue(sumf == 26.0D);
-      assertTrue(mini == 3.0D);
-      assertTrue(minf == 3.0D);
-      assertTrue(maxi == 13.0D);
-      assertTrue(maxf == 9.0D);
-      assertTrue(avgi == 9.5D);
-      assertTrue(avgf == 6.5D);
-      assertTrue(count == 4);
+      assertTrue(sumi.doubleValue() == 38.0D);
+      assertTrue(sumf.doubleValue() == 26.0D);
+      assertTrue(mini.doubleValue() == 3.0D);
+      assertTrue(minf.doubleValue() == 3.0D);
+      assertTrue(maxi.doubleValue() == 13.0D);
+      assertTrue(maxf.doubleValue() == 9.0D);
+      assertTrue(avgi.doubleValue() == 9.5D);
+      assertTrue(avgf.doubleValue() == 6.5D);
+      assertTrue(count.doubleValue() == 4);
 
     } finally {
       solrClientCache.close();
@@ -2078,15 +2079,15 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       Double count = tuple.getDouble("count(*)");
 
       assertTrue(bucket.equals("hello0"));
-      assertTrue(sumi == 17.0D);
-      assertTrue(sumf == 18.0D);
-      assertTrue(mini == 0.0D);
-      assertTrue(minf == 1.0D);
-      assertTrue(maxi == 14.0D);
-      assertTrue(maxf == 10.0D);
-      assertTrue(avgi == 4.25D);
-      assertTrue(avgf == 4.5D);
-      assertTrue(count == 4);
+      assertTrue(sumi.doubleValue() == 17.0D);
+      assertTrue(sumf.doubleValue() == 18.0D);
+      assertTrue(mini.doubleValue() == 0.0D);
+      assertTrue(minf.doubleValue() == 1.0D);
+      assertTrue(maxi.doubleValue() == 14.0D);
+      assertTrue(maxf.doubleValue() == 10.0D);
+      assertTrue(avgi.doubleValue() == 4.25D);
+      assertTrue(avgf.doubleValue() == 4.5D);
+      assertTrue(count.doubleValue() == 4);
 
       tuple = tuples.get(1);
       bucket = tuple.getString("a_s");
@@ -2101,15 +2102,15 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       count = tuple.getDouble("count(*)");
 
       assertTrue(bucket.equals("hello3"));
-      assertTrue(sumi == 38.0D);
-      assertTrue(sumf == 26.0D);
-      assertTrue(mini == 3.0D);
-      assertTrue(minf == 3.0D);
-      assertTrue(maxi == 13.0D);
-      assertTrue(maxf == 9.0D);
-      assertTrue(avgi == 9.5D);
-      assertTrue(avgf == 6.5D);
-      assertTrue(count == 4);
+      assertTrue(sumi.doubleValue() == 38.0D);
+      assertTrue(sumf.doubleValue() == 26.0D);
+      assertTrue(mini.doubleValue() == 3.0D);
+      assertTrue(minf.doubleValue() == 3.0D);
+      assertTrue(maxi.doubleValue() == 13.0D);
+      assertTrue(maxf.doubleValue() == 9.0D);
+      assertTrue(avgi.doubleValue() == 9.5D);
+      assertTrue(avgf.doubleValue() == 6.5D);
+      assertTrue(count.doubleValue() == 4);
 
       tuple = tuples.get(2);
       bucket = tuple.getString("a_s");
@@ -2125,14 +2126,14 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
       assertTrue(bucket.equals("hello4"));
       assertTrue(sumi.longValue() == 15);
-      assertTrue(sumf == 11.0D);
-      assertTrue(mini == 4.0D);
-      assertTrue(minf == 4.0D);
-      assertTrue(maxi == 11.0D);
-      assertTrue(maxf == 7.0D);
-      assertTrue(avgi == 7.5D);
-      assertTrue(avgf == 5.5D);
-      assertTrue(count == 2);
+      assertTrue(sumf.doubleValue() == 11.0D);
+      assertTrue(mini.doubleValue() == 4.0D);
+      assertTrue(minf.doubleValue() == 4.0D);
+      assertTrue(maxi.doubleValue() == 11.0D);
+      assertTrue(maxf.doubleValue() == 7.0D);
+      assertTrue(avgi.doubleValue() == 7.5D);
+      assertTrue(avgf.doubleValue() == 5.5D);
+      assertTrue(count.doubleValue() == 2);
     } finally {
       solrClientCache.close();
     }
@@ -2221,15 +2222,15 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       Double count = tuple.getDouble("count(*)");
 
       assertTrue(bucket.equals("hello0"));
-      assertTrue(sumi == 17.0D);
-      assertTrue(sumf == 18.0D);
-      assertTrue(mini == 0.0D);
-      assertTrue(minf == 1.0D);
-      assertTrue(maxi == 14.0D);
-      assertTrue(maxf == 10.0D);
-      assertTrue(avgi == 4.25D);
-      assertTrue(avgf == 4.5D);
-      assertTrue(count == 4);
+      assertTrue(sumi.doubleValue() == 17.0D);
+      assertTrue(sumf.doubleValue() == 18.0D);
+      assertTrue(mini.doubleValue() == 0.0D);
+      assertTrue(minf.doubleValue() == 1.0D);
+      assertTrue(maxi.doubleValue() == 14.0D);
+      assertTrue(maxf.doubleValue() == 10.0D);
+      assertTrue(avgi.doubleValue() == 4.25D);
+      assertTrue(avgf.doubleValue() == 4.5D);
+      assertTrue(count.doubleValue() == 4);
 
       tuple = tuples.get(1);
       bucket = tuple.getString("a_s");
@@ -2245,14 +2246,14 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
       assertTrue(bucket.equals("hello4"));
       assertTrue(sumi.longValue() == 15);
-      assertTrue(sumf == 11.0D);
-      assertTrue(mini == 4.0D);
-      assertTrue(minf == 4.0D);
-      assertTrue(maxi == 11.0D);
-      assertTrue(maxf == 7.0D);
-      assertTrue(avgi == 7.5D);
-      assertTrue(avgf == 5.5D);
-      assertTrue(count == 2);
+      assertTrue(sumf.doubleValue() == 11.0D);
+      assertTrue(mini.doubleValue() == 4.0D);
+      assertTrue(minf.doubleValue() == 4.0D);
+      assertTrue(maxi.doubleValue() == 11.0D);
+      assertTrue(maxf.doubleValue() == 7.0D);
+      assertTrue(avgi.doubleValue() == 7.5D);
+      assertTrue(avgf.doubleValue() == 5.5D);
+      assertTrue(count.doubleValue() == 2);
 
       tuple = tuples.get(2);
       bucket = tuple.getString("a_s");
@@ -2267,15 +2268,15 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       count = tuple.getDouble("count(*)");
 
       assertTrue(bucket.equals("hello3"));
-      assertTrue(sumi == 38.0D);
-      assertTrue(sumf == 26.0D);
-      assertTrue(mini == 3.0D);
-      assertTrue(minf == 3.0D);
-      assertTrue(maxi == 13.0D);
-      assertTrue(maxf == 9.0D);
-      assertTrue(avgi == 9.5D);
-      assertTrue(avgf == 6.5D);
-      assertTrue(count == 4);
+      assertTrue(sumi.doubleValue() == 38.0D);
+      assertTrue(sumf.doubleValue() == 26.0D);
+      assertTrue(mini.doubleValue() == 3.0D);
+      assertTrue(minf.doubleValue() == 3.0D);
+      assertTrue(maxi.doubleValue() == 13.0D);
+      assertTrue(maxf.doubleValue() == 9.0D);
+      assertTrue(avgi.doubleValue() == 9.5D);
+      assertTrue(avgf.doubleValue() == 6.5D);
+      assertTrue(count.doubleValue() == 4);
     } finally {
       solrClientCache.close();
     }
@@ -3023,7 +3024,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream.setStreamContext(context);
       tuples = getTuples(stream);
 
-      tuples.sort(comp);
+      Collections.sort(tuples, comp);
       // The tuples from the first topic (high priority) should be returned.
 
       assertEquals(tuples.size(), 4);
@@ -3038,7 +3039,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       context.setSolrClientCache(cache);
       stream.setStreamContext(context);
       tuples = getTuples(stream);
-      tuples.sort(comp);
+      Collections.sort(tuples, comp);
 
       // The Tuples from the second topic (Low priority) should be returned.
       assertEquals(tuples.size(), 6);
@@ -3105,7 +3106,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream.setStreamContext(context);
       tuples = getTuples(stream);
 
-      tuples.sort(comp);
+      Collections.sort(tuples, comp);
       // The tuples from the first topic (high priority) should be returned.
 
       assertEquals(tuples.size(), 4);
@@ -3120,7 +3121,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       context.setSolrClientCache(cache);
       stream.setStreamContext(context);
       tuples = getTuples(stream);
-      tuples.sort(comp);
+      Collections.sort(tuples, comp);
 
       // The Tuples from the second topic (Low priority) should be returned.
       assertEquals(tuples.size(), 6);
@@ -5088,8 +5089,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       // to ensure that even if one "batch" fails it continues with other batches.
       // See TODO in UpdateStream
 
-      final long v13_ok = versions.get("doc_13");
-      final long v10_bad = versions.get("doc_10") - 42L;
+      final long v13_ok = versions.get("doc_13").longValue();
+      final long v10_bad = versions.get("doc_10").longValue() - 42L;
       final String expr =
           "commit("
               + COLLECTIONORALIAS
@@ -5129,7 +5130,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       // constraints,
       // and delete docs even if the stream we are wrapping returns _version_ values that are no
       // longer valid...
-      final long v10_bad = versions.get("doc_10") - 42L;
+      final long v10_bad = versions.get("doc_10").longValue() - 42L;
       final String expr =
           "commit("
               + COLLECTIONORALIAS
@@ -5191,7 +5192,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
-    List<Tuple> tuples = new ArrayList<>();
+    List<Tuple> tuples = new ArrayList<Tuple>();
 
     try {
       tupleStream.open();

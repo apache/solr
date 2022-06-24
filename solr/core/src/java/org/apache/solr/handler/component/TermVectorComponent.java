@@ -397,9 +397,9 @@ public class TermVectorComponent extends SearchComponent {
     List<Integer> result = null;
     if (vals != null && vals.length > 0) {
       result = new ArrayList<>(vals.length);
-      for (String val : vals) {
+      for (int i = 0; i < vals.length; i++) {
         try {
-          result.add(Integer.valueOf(val));
+          result.add(Integer.valueOf(vals[i]));
         } catch (NumberFormatException e) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
         }

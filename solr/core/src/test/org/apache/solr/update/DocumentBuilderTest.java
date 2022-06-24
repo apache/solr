@@ -388,7 +388,9 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
         Assert.assertThrows(
             "Incorrect destination field type should raise exception",
             SolrException.class,
-            () -> DocumentBuilder.toDocument(doc, core.getLatestSchema()));
+            () -> {
+              DocumentBuilder.toDocument(doc, core.getLatestSchema());
+            });
     MatcherAssert.assertThat(
         thrown.getMessage(),
         is(
@@ -407,7 +409,9 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
         Assert.assertThrows(
             "Incorrect destination dimension should raise exception",
             SolrException.class,
-            () -> DocumentBuilder.toDocument(doc, core.getLatestSchema()));
+            () -> {
+              DocumentBuilder.toDocument(doc, core.getLatestSchema());
+            });
     MatcherAssert.assertThat(
         thrown.getMessage(),
         is(

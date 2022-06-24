@@ -1205,7 +1205,11 @@ public class QueryComponent extends SearchComponent {
     // for each shard, collect the documents for that shard.
     HashMap<String, Collection<ShardDoc>> shardMap = new HashMap<>();
     for (ShardDoc sdoc : rb.resultIds.values()) {
-      Collection<ShardDoc> shardDocs = shardMap.computeIfAbsent(sdoc.shard, k -> new ArrayList<>());
+      Collection<ShardDoc> shardDocs = shardMap.get(sdoc.shard);
+      if (shardDocs == null) {
+        shardDocs = new ArrayList<>();
+        shardMap.put(sdoc.shard, shardDocs);
+      }
       shardDocs.add(sdoc);
     }
 
@@ -1354,17 +1358,20 @@ public class QueryComponent extends SearchComponent {
     int[] luceneIds = new int[idArr.size()];
     int docs = 0;
     if (idField.getType().isPointField()) {
-      for (String s : idArr) {
+      for (int i = 0; i < idArr.size(); i++) {
         int id =
-            searcher.search(idField.getType().getFieldQuery(null, idField, s), 1).scoreDocs[0].doc;
+            searcher.search(idField.getType().getFieldQuery(null, idField, idArr.get(i)), 1)
+                .scoreDocs[0]
+                .doc;
         if (id >= 0) {
           luceneIds[docs++] = id;
         }
       }
     } else {
-      for (String s : idArr) {
+      for (int i = 0; i < idArr.size(); i++) {
         int id =
-            searcher.getFirstMatch(new Term(idField.getName(), idField.getType().toInternal(s)));
+            searcher.getFirstMatch(
+                new Term(idField.getName(), idField.getType().toInternal(idArr.get(i))));
         if (id >= 0) luceneIds[docs++] = id;
       }
     }

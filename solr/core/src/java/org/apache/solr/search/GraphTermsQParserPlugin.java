@@ -157,7 +157,7 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
   }
 
   /** Similar to {@code TermsQuery} but adds a {@code maxDocFreq}. */
-  private static class GraphTermsQuery extends Query implements ExtendedQuery {
+  private class GraphTermsQuery extends Query implements ExtendedQuery {
     // Not a post filter. This will typically be used as the main query.
 
     private Term[] queryTerms;

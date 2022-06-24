@@ -210,7 +210,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
     for (int i = 0; i < honda_model_counts.length - 1; i++) {
       idx.add(i);
     }
-    idx.sort(
+    Collections.sort(
+        idx,
         (o1, o2) -> {
           int cmp = honda_model_counts[o2] - honda_model_counts[o1];
           return cmp == 0 ? o1 - o2 : cmp;
@@ -385,7 +386,11 @@ public class TestJsonFacets extends SolrTestCaseHS {
         //
         // Which means that unlike most other facet method:xxx options, it fails hard if you try to
         // use it on a field where no docs have been indexed (yet).
-        expectThrows(SolrException.class, () -> assertJQ(request));
+        expectThrows(
+            SolrException.class,
+            () -> {
+              assertJQ(request);
+            });
 
       } else {
         // In most cases, we should just get no buckets back...
@@ -520,18 +525,19 @@ public class TestJsonFacets extends SolrTestCaseHS {
       for (String raw : Arrays.asList("null", "[ ]", "{param:bogus}")) {
         expectThrows(
             SolrException.class,
-            () ->
-                assertJQ(
-                    req(
-                        "rows",
-                        "0",
-                        "q",
-                        "num_i:[0 TO *]",
-                        "json.facet",
-                        "{w: {type:terms, field:'where_s', "
-                            + "     facet: { c: { type:terms, field:'cat_s', domain: { query: "
-                            + raw
-                            + " }}}}}")));
+            () -> {
+              assertJQ(
+                  req(
+                      "rows",
+                      "0",
+                      "q",
+                      "num_i:[0 TO *]",
+                      "json.facet",
+                      "{w: {type:terms, field:'where_s', "
+                          + "     facet: { c: { type:terms, field:'cat_s', domain: { query: "
+                          + raw
+                          + " }}}}}"));
+            });
       }
     }
   }
@@ -4251,7 +4257,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
       // here we'll prelim_sort & sort on things that are both "not x" and using the debug()
       // counters (wrapping x) to assert that 'x' is correctly defered and only collected for the
       // final top buckets
-      final List<String> sorts = new ArrayList<>(Arrays.asList("index asc", "count asc"));
+      final List<String> sorts = new ArrayList<String>(Arrays.asList("index asc", "count asc"));
       if (extraAgg) {
         sorts.add("y asc"); // same for every bucket, but index order tie breaker should kick in
       }
@@ -4383,8 +4389,16 @@ public class TestJsonFacets extends SolrTestCaseHS {
       Integer cat = r.nextInt(numCat);
       Integer where = r.nextInt(numWhere);
       client.add(sdoc("id", getId(i), cat_s, cat, where_s, where), null);
-      Map<Integer, List<Integer>> sub = model.computeIfAbsent(cat, k -> new HashMap<>());
-      List<Integer> ids = sub.computeIfAbsent(where, k -> new ArrayList<>());
+      Map<Integer, List<Integer>> sub = model.get(cat);
+      if (sub == null) {
+        sub = new HashMap<>();
+        model.put(cat, sub);
+      }
+      List<Integer> ids = sub.get(where);
+      if (ids == null) {
+        ids = new ArrayList<>();
+        sub.put(where, ids);
+      }
       ids.add(i);
 
       if (r.nextInt(100) < commitPercent) {

@@ -229,46 +229,52 @@ public class TestLegacyFieldCache extends SolrTestCase {
     final CyclicBarrier restart =
         new CyclicBarrier(
             NUM_THREADS,
-            () -> {
-              cache.purgeAllCaches();
-              iters.incrementAndGet();
+            new Runnable() {
+              @Override
+              public void run() {
+                cache.purgeAllCaches();
+                iters.incrementAndGet();
+              }
             });
     for (int threadIDX = 0; threadIDX < NUM_THREADS; threadIDX++) {
       threads[threadIDX] =
-          new Thread(
-              () -> {
-                try {
-                  while (!failed.get()) {
-                    final int op = random().nextInt(3);
-                    if (op == 0) {
-                      // Purge all caches & resume, once all
-                      // threads get here:
-                      restart.await();
-                      if (iters.get() >= NUM_ITER) {
-                        break;
-                      }
-                    } else if (op == 1) {
-                      Bits docsWithField = cache.getDocsWithField(reader, "sparse", null);
-                      for (int i = 0; i < docsWithField.length(); i++) {
-                        assertEquals(i % 2 == 0, docsWithField.get(i));
-                      }
-                    } else {
-                      NumericDocValues ints =
-                          cache.getNumerics(reader, "sparse", FieldCache.LEGACY_INT_PARSER);
-                      for (int i = 0; i < reader.maxDoc(); i++) {
-                        if (i % 2 == 0) {
-                          assertEquals(i, ints.nextDoc());
-                          assertEquals(i, ints.longValue());
-                        }
+          new Thread() {
+            @Override
+            public void run() {
+
+              try {
+                while (!failed.get()) {
+                  final int op = random().nextInt(3);
+                  if (op == 0) {
+                    // Purge all caches & resume, once all
+                    // threads get here:
+                    restart.await();
+                    if (iters.get() >= NUM_ITER) {
+                      break;
+                    }
+                  } else if (op == 1) {
+                    Bits docsWithField = cache.getDocsWithField(reader, "sparse", null);
+                    for (int i = 0; i < docsWithField.length(); i++) {
+                      assertEquals(i % 2 == 0, docsWithField.get(i));
+                    }
+                  } else {
+                    NumericDocValues ints =
+                        cache.getNumerics(reader, "sparse", FieldCache.LEGACY_INT_PARSER);
+                    for (int i = 0; i < reader.maxDoc(); i++) {
+                      if (i % 2 == 0) {
+                        assertEquals(i, ints.nextDoc());
+                        assertEquals(i, ints.longValue());
                       }
                     }
                   }
-                } catch (Throwable t) {
-                  failed.set(true);
-                  restart.reset();
-                  throw new RuntimeException(t);
                 }
-              });
+              } catch (Throwable t) {
+                failed.set(true);
+                restart.reset();
+                throw new RuntimeException(t);
+              }
+            }
+          };
       threads[threadIDX].start();
     }
 
@@ -296,12 +302,16 @@ public class TestLegacyFieldCache extends SolrTestCase {
     // Binary type: can be retrieved via getTerms()
     expectThrows(
         IllegalStateException.class,
-        () -> FieldCache.DEFAULT.getNumerics(ar, "binary", FieldCache.LEGACY_INT_PARSER));
+        () -> {
+          FieldCache.DEFAULT.getNumerics(ar, "binary", FieldCache.LEGACY_INT_PARSER);
+        });
 
     // Sorted type: can be retrieved via getTerms(), getTermsIndex(), getDocTermOrds()
     expectThrows(
         IllegalStateException.class,
-        () -> FieldCache.DEFAULT.getNumerics(ar, "sorted", FieldCache.LEGACY_INT_PARSER));
+        () -> {
+          FieldCache.DEFAULT.getNumerics(ar, "sorted", FieldCache.LEGACY_INT_PARSER);
+        });
 
     // Numeric type: can be retrieved via getInts() and so on
     NumericDocValues numeric =
@@ -312,7 +322,9 @@ public class TestLegacyFieldCache extends SolrTestCase {
     // SortedSet type: can be retrieved via getDocTermOrds()
     expectThrows(
         IllegalStateException.class,
-        () -> FieldCache.DEFAULT.getNumerics(ar, "sortedset", FieldCache.LEGACY_INT_PARSER));
+        () -> {
+          FieldCache.DEFAULT.getNumerics(ar, "sortedset", FieldCache.LEGACY_INT_PARSER);
+        });
 
     ir.close();
     dir.close();

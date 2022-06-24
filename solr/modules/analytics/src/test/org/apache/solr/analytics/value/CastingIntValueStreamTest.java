@@ -33,7 +33,10 @@ public class CastingIntValueStreamTest extends SolrTestCaseJ4 {
 
     // No values
     val.setValues();
-    casted.streamLongs(value -> assertTrue("There should be no values to stream", false));
+    casted.streamLongs(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple Values
     val.setValues(20, -3, 42);
@@ -55,7 +58,10 @@ public class CastingIntValueStreamTest extends SolrTestCaseJ4 {
 
     // No values
     val.setValues();
-    casted.streamFloats(value -> assertTrue("There should be no values to stream", false));
+    casted.streamFloats(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple Values
     val.setValues(20, -3, 42);
@@ -77,7 +83,10 @@ public class CastingIntValueStreamTest extends SolrTestCaseJ4 {
 
     // No values
     val.setValues();
-    casted.streamDoubles(value -> assertTrue("There should be no values to stream", false));
+    casted.streamDoubles(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple Values
     val.setValues(20, -3, 42);
@@ -99,7 +108,10 @@ public class CastingIntValueStreamTest extends SolrTestCaseJ4 {
 
     // No values
     val.setValues();
-    casted.streamStrings(value -> assertTrue("There should be no values to stream", false));
+    casted.streamStrings(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple Values
     val.setValues(20, -3, 42);
@@ -121,7 +133,10 @@ public class CastingIntValueStreamTest extends SolrTestCaseJ4 {
 
     // No values
     val.setValues();
-    casted.streamObjects(value -> assertTrue("There should be no values to stream", false));
+    casted.streamObjects(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple Values
     val.setValues(20, -3, 42);

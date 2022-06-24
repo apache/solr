@@ -58,7 +58,11 @@ public class TestConfigSetsAPIShareSchema extends SolrCloudTestCase {
     // TODO - check exception response!
     ConfigSetAdminRequest.Delete deleteConfigRequest = new ConfigSetAdminRequest.Delete();
     deleteConfigRequest.setConfigSetName("conf1");
-    expectThrows(SolrException.class, () -> deleteConfigRequest.process(cluster.getSolrClient()));
+    expectThrows(
+        SolrException.class,
+        () -> {
+          deleteConfigRequest.process(cluster.getSolrClient());
+        });
   }
 
   @Test

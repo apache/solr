@@ -113,7 +113,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
         client.close();
       }
     }
-    NODE_CLIENTS = new ArrayList<>(numServers);
+    NODE_CLIENTS = new ArrayList<HttpSolrClient>(numServers);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       URL jettyURL = jetty.getBaseUrl();
@@ -158,7 +158,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
                   "maxErrors", "-1",
                   "update.chain", "tolerant-chain-max-errors-10"));
       final int numCmds = TestUtil.nextInt(random(), 1, 20);
-      final List<ExpectedErr> expectedErrors = new ArrayList<>(numCmds);
+      final List<ExpectedErr> expectedErrors = new ArrayList<ExpectedErr>(numCmds);
       int expectedErrorsCount = 0;
       // it's ambigious/confusing which order mixed DELQ + ADD  (or ADD and DELI for the same ID)
       // in the same request wll be processed by various clients, so we keep things simple
@@ -407,7 +407,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
       docsOnThisPage = 0;
       for (SolrDocument doc : rsp.getResults()) {
         docsOnThisPage++;
-        int id_i = (Integer) doc.get("id_i");
+        int id_i = ((Integer) doc.get("id_i")).intValue();
         assertTrue(
             "found id_i bigger then expected " + maxDocIdExpected + ": " + id_i,
             id_i <= maxDocIdExpected);

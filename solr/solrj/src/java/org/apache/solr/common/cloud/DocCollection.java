@@ -112,7 +112,10 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     Boolean readOnly = (Boolean) verifyProp(props, READ_ONLY);
     this.readOnly = readOnly == null ? Boolean.FALSE : readOnly;
 
-    for (Map.Entry<String, Slice> slice : slices.entrySet()) {
+    Iterator<Map.Entry<String, Slice>> iter = slices.entrySet().iterator();
+
+    while (iter.hasNext()) {
+      Map.Entry<String, Slice> slice = iter.next();
       if (slice.getValue().getState() == Slice.State.ACTIVE) {
         this.activeSlices.put(slice.getKey(), slice.getValue());
       }
@@ -161,13 +164,19 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   }
 
   private void addNodeNameReplica(Replica replica) {
-    List<Replica> replicas =
-        nodeNameReplicas.computeIfAbsent(replica.getNodeName(), k -> new ArrayList<>());
+    List<Replica> replicas = nodeNameReplicas.get(replica.getNodeName());
+    if (replicas == null) {
+      replicas = new ArrayList<>();
+      nodeNameReplicas.put(replica.getNodeName(), replicas);
+    }
     replicas.add(replica);
 
     if (replica.getStr(Slice.LEADER) != null) {
-      List<Replica> leaderReplicas =
-          nodeNameLeaderReplicas.computeIfAbsent(replica.getNodeName(), k -> new ArrayList<>());
+      List<Replica> leaderReplicas = nodeNameLeaderReplicas.get(replica.getNodeName());
+      if (leaderReplicas == null) {
+        leaderReplicas = new ArrayList<>();
+        nodeNameLeaderReplicas.put(replica.getNodeName(), leaderReplicas);
+      }
       leaderReplicas.add(replica);
     }
   }

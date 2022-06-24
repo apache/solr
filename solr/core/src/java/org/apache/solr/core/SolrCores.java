@@ -39,7 +39,8 @@ class SolrCores {
 
   private final CoreContainer container;
 
-  private Set<String> currentlyLoadingCores = Collections.newSetFromMap(new ConcurrentHashMap<>());
+  private Set<String> currentlyLoadingCores =
+      Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

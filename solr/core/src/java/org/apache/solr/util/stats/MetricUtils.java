@@ -373,7 +373,7 @@ public class MetricUtils {
   public static Map<String, Object> convertMetrics(
       MetricRegistry registry, Collection<String> names) {
     final Map<String, Object> metrics = new HashMap<>();
-    convertMetrics(registry, names, false, true, true, true, metrics::put);
+    convertMetrics(registry, names, false, true, true, true, (k, v) -> metrics.put(k, v));
     return metrics;
   }
 
@@ -565,18 +565,20 @@ public class MetricUtils {
               ew.putNoEx(
                   VALUES,
                   (MapWriter)
-                      ew1 ->
-                          metric
-                              .getValues()
-                              .forEach(
-                                  (k, v) ->
-                                      ew1.putNoEx(
-                                          k,
-                                          (MapWriter)
-                                              ew2 -> {
-                                                ew2.putNoEx("value", v.value);
-                                                ew2.putNoEx("updateCount", v.updateCount.get());
-                                              })));
+                      ew1 -> {
+                        metric
+                            .getValues()
+                            .forEach(
+                                (k, v) -> {
+                                  ew1.putNoEx(
+                                      k,
+                                      (MapWriter)
+                                          ew2 -> {
+                                            ew2.putNoEx("value", v.value);
+                                            ew2.putNoEx("updateCount", v.updateCount.get());
+                                          });
+                                });
+                      });
             }
           };
       if (writer._size() > 0) {
@@ -861,18 +863,19 @@ public class MetricUtils {
           consumer.accept(
               name,
               (MapWriter)
-                  ew ->
-                      ew.putNoEx(
-                          "value",
-                          (MapWriter)
-                              ew1 -> {
-                                for (Map.Entry<?, ?> entry : ((Map<?, ?>) o).entrySet()) {
-                                  String prop = entry.getKey().toString();
-                                  if (propertyFilter.test(prop)) {
-                                    ew1.put(prop, entry.getValue());
-                                  }
+                  ew -> {
+                    ew.putNoEx(
+                        "value",
+                        (MapWriter)
+                            ew1 -> {
+                              for (Map.Entry<?, ?> entry : ((Map<?, ?>) o).entrySet()) {
+                                String prop = entry.getKey().toString();
+                                if (propertyFilter.test(prop)) {
+                                  ew1.put(prop, entry.getValue());
                                 }
-                              }));
+                              }
+                            });
+                  });
         }
       } else {
         if (propertyFilter.test("value")) {

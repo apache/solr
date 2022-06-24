@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Currency;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReaderContext;
@@ -185,7 +184,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
 
     if (field.stored()) {
       String storedValue = externalVal.toString().trim();
-      if (!storedValue.contains(",")) {
+      if (storedValue.indexOf(",") < 0) {
         storedValue += "," + defaultCurrency;
       }
       f.add(createField(field.getName(), storedValue, StoredField.TYPE));
@@ -518,9 +517,11 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
 
       ConvertedCurrencyValueSource that = (ConvertedCurrencyValueSource) o;
 
-      return !(!Objects.equals(source, that.source))
+      return !(source != null ? !source.equals(that.source) : that.source != null)
           && (rate == that.rate)
-          && !(!Objects.equals(targetCurrency, that.targetCurrency));
+          && !(targetCurrency != null
+              ? !targetCurrency.equals(that.targetCurrency)
+              : that.targetCurrency != null);
     }
 
     @Override
@@ -730,9 +731,15 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
 
       RawCurrencyValueSource that = (RawCurrencyValueSource) o;
 
-      return !(!Objects.equals(amountValues, that.amountValues))
-          && !(!Objects.equals(currencyValues, that.currencyValues))
-          && !(!Objects.equals(targetCurrency, that.targetCurrency));
+      return !(amountValues != null
+              ? !amountValues.equals(that.amountValues)
+              : that.amountValues != null)
+          && !(currencyValues != null
+              ? !currencyValues.equals(that.currencyValues)
+              : that.currencyValues != null)
+          && !(targetCurrency != null
+              ? !targetCurrency.equals(that.targetCurrency)
+              : that.targetCurrency != null);
     }
 
     @Override

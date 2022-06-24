@@ -974,7 +974,8 @@ public class SolrConfig implements MapSerializable {
                 + " after enabling authentication and authorization.");
       }
 
-      for (ConfigNode node : nodes) {
+      for (int i = 0; i < nodes.size(); i++) {
+        ConfigNode node = nodes.get(i);
         String baseDir = node.attr("dir");
         String path = node.attr(PATH);
         if (null != baseDir) {

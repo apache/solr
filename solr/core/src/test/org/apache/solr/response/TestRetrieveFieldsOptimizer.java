@@ -217,16 +217,18 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
     Thread threads[] = new Thread[numThreads];
     for (int idx = 0; idx < numThreads; idx++) {
       threads[idx] =
-          new Thread(
-              () -> {
-                try {
-                  checkFetchSources(ALL_FROM_DV);
-                  checkFetchSources(ALL_FROM_STORED);
-                  checkFetchSources(MIXED_SOURCES);
-                } catch (Exception e) {
-                  fail("Failed with exception " + e.getMessage());
-                }
-              });
+          new Thread() {
+            @Override
+            public void run() {
+              try {
+                checkFetchSources(ALL_FROM_DV);
+                checkFetchSources(ALL_FROM_STORED);
+                checkFetchSources(MIXED_SOURCES);
+              } catch (Exception e) {
+                fail("Failed with exception " + e.getMessage());
+              }
+            }
+          };
       threads[idx].start();
     }
     for (int idx = 0; idx < numThreads; idx++) {
@@ -653,18 +655,18 @@ class RetrieveField {
     switch (testFieldType.getSolrTypeClass()) {
       case "solr.TrieIntField":
       case "solr.TrieLongField":
-        valsAsStrings.sort(Comparator.comparingInt(Integer::parseInt));
+        Collections.sort(valsAsStrings, Comparator.comparingInt(Integer::parseInt));
         break;
       case "solr.IntPointField":
       case "solr.LongPointField":
-        valsAsStrings.sort(Comparator.comparingLong(Long::parseLong));
+        Collections.sort(valsAsStrings, Comparator.comparingLong(Long::parseLong));
         break;
 
       case "solr.TrieFloatField":
       case "solr.FloatPointField":
       case "solr.TrieDoubleField":
       case "solr.DoublePointField":
-        valsAsStrings.sort(Comparator.comparingDouble(Double::parseDouble));
+        Collections.sort(valsAsStrings, Comparator.comparingDouble(Double::parseDouble));
         break;
 
       case "solr.TrieDateField":

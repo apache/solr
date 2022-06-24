@@ -54,7 +54,7 @@ public class FSTLookupFactory extends LookupFactory {
 
     boolean exactMatchFirst =
         params.get(EXACT_MATCH_FIRST) != null
-            ? Boolean.parseBoolean(params.get(EXACT_MATCH_FIRST).toString())
+            ? Boolean.valueOf(params.get(EXACT_MATCH_FIRST).toString())
             : true;
 
     return new FSTCompletionLookup(getTempDir(), "suggester", buckets, exactMatchFirst);

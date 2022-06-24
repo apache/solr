@@ -75,8 +75,8 @@ public class StreamExpressionParser {
     working = working.substring(firstOpenParen + 1, working.length() - 1).trim();
     List<String> parts = splitOn(working, ',');
 
-    for (String s : parts) {
-      String part = s.trim();
+    for (int idx = 0; idx < parts.size(); ++idx) {
+      String part = parts.get(idx).trim();
       if (isExpressionClause(part)) {
         StreamExpressionParameter parameter = generateStreamExpression(part);
         if (null != parameter) {
@@ -262,7 +262,7 @@ public class StreamExpressionParser {
   private static List<String> splitOn(String clause, char splitOnThis) {
     String working = clause.trim();
 
-    List<String> parts = new ArrayList<>();
+    List<String> parts = new ArrayList<String>();
 
     while (true) { // will break when next splitOnThis isn't found
       int nextIdx = findNextClear(working, 0, splitOnThis);

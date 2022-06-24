@@ -203,8 +203,9 @@ public class ClusterEventProducerFactory extends ClusterEventProducerBase {
       plugins.unregisterListener(initialPluginListener);
       // transfer listeners that are already registered
       listeners.forEach(
-          (type, listenersSet) ->
-              listenersSet.forEach(listener -> target.registerListener(listener, type)));
+          (type, listenersSet) -> {
+            listenersSet.forEach(listener -> target.registerListener(listener, type));
+          });
       listeners.clear();
     }
   }

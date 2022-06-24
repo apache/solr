@@ -97,8 +97,8 @@ public class AnalyticsMergeStrategyTest extends BaseDistributedSearchTestCase {
     @SuppressWarnings({"rawtypes"})
     NamedList analytics = (NamedList) response.get("analytics");
     Integer c = (Integer) analytics.get("mycount");
-    if (c != count) {
-      throw new Exception("Count is not correct:" + count + ":" + c);
+    if (c.intValue() != count) {
+      throw new Exception("Count is not correct:" + count + ":" + c.intValue());
     }
   }
 
@@ -108,13 +108,13 @@ public class AnalyticsMergeStrategyTest extends BaseDistributedSearchTestCase {
     @SuppressWarnings({"rawtypes"})
     NamedList analytics = (NamedList) response.get("analytics");
     Integer c = (Integer) analytics.get("mycount");
-    if (c != count) {
-      throw new Exception("Count is not correct:" + count + ":" + c);
+    if (c.intValue() != count) {
+      throw new Exception("Count is not correct:" + count + ":" + c.intValue());
     }
 
     long numFound = rsp.getResults().getNumFound();
-    if (c != numFound) {
-      throw new Exception("Count does not equal numFound:" + c + ":" + numFound);
+    if (c.intValue() != numFound) {
+      throw new Exception("Count does not equal numFound:" + c.intValue() + ":" + numFound);
     }
   }
 }

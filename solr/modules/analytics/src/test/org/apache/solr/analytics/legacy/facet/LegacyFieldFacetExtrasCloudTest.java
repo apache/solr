@@ -244,7 +244,7 @@ public class LegacyFieldFacetExtrasCloudTest extends LegacyAbstractAnalyticsFace
     Collection<Double> flo =
         getValueList(response, "sr", "fieldFacets", "float_fd", "median", false);
     ArrayList<Double> floatTest = calculateFacetedNumberStat(intFloatTestStart, "median");
-    floatTest.sort(Collections.reverseOrder());
+    Collections.sort(floatTest, Collections.reverseOrder());
     assertEquals(responseStr, floatTest, flo);
 
     Collection<Long> doub =
@@ -258,7 +258,7 @@ public class LegacyFieldFacetExtrasCloudTest extends LegacyAbstractAnalyticsFace
         getValueList(response, "sr", "fieldFacets", "string_sd", "percentile_20", false);
     ArrayList<Integer> stringTest =
         (ArrayList<Integer>) calculateFacetedStat(intStringTestStart, "perc_20");
-    stringTest.sort(Collections.reverseOrder());
+    Collections.sort(stringTest, Collections.reverseOrder());
     assertEquals(responseStr, stringTest, string);
   }
 }

@@ -95,7 +95,8 @@ public abstract class RecursiveTemporalEvaluator extends RecursiveEvaluator
       }
     } else if (value instanceof List) {
       // for each list value, recurse in
-      return ((List<?>) value).stream().map(this::normalizeInputType).collect(Collectors.toList());
+      return ((List<?>) value)
+          .stream().map(innerValue -> normalizeInputType(innerValue)).collect(Collectors.toList());
     }
 
     throw new UncheckedIOException(
@@ -110,7 +111,8 @@ public abstract class RecursiveTemporalEvaluator extends RecursiveEvaluator
     if (null == value) {
       return null;
     } else if (value instanceof List<?>) {
-      return ((List<?>) value).stream().map(this::doWork).collect(Collectors.toList());
+      return ((List<?>) value)
+          .stream().map(innerValue -> doWork(innerValue)).collect(Collectors.toList());
     } else {
       // We know it's an Instant
       try {

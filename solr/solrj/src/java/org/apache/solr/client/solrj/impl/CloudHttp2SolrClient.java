@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
@@ -54,9 +53,11 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     super(builder.shardLeadersOnly, builder.parallelUpdates, builder.directUpdatesToLeadersOnly);
     if (builder.httpClient == null) {
       this.clientIsInternal = true;
-      this.myClient =
-          Objects.requireNonNullElseGet(builder.internalClientBuilder, Http2SolrClient.Builder::new)
-              .build();
+      if (builder.internalClientBuilder == null) {
+        this.myClient = new Http2SolrClient.Builder().build();
+      } else {
+        this.myClient = builder.internalClientBuilder.build();
+      }
     } else {
       this.clientIsInternal = false;
       this.myClient = builder.httpClient;

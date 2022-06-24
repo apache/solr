@@ -83,7 +83,10 @@ public class IntFieldsTest extends AbstractAnalyticsFieldTest {
             valueField,
             id -> {
               Map<Integer, Integer> doc = new HashMap<>();
-              valueField.streamInts(value -> doc.put(value, doc.getOrDefault(value, 0) + 1));
+              valueField.streamInts(
+                  value -> {
+                    doc.put(value, doc.getOrDefault(value, 0) + 1);
+                  });
               if (doc.size() > 0) {
                 values.put(id, doc);
               }
@@ -103,7 +106,10 @@ public class IntFieldsTest extends AbstractAnalyticsFieldTest {
             valueField,
             id -> {
               Map<Integer, Integer> doc = new HashMap<>();
-              valueField.streamInts(value -> doc.put(value, doc.getOrDefault(value, 0) + 1));
+              valueField.streamInts(
+                  value -> {
+                    doc.put(value, doc.getOrDefault(value, 0) + 1);
+                  });
               if (doc.size() > 0) {
                 values.put(id, doc);
               }

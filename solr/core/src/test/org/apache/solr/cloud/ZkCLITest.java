@@ -203,7 +203,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     FileNotFoundException e = expectThrows(FileNotFoundException.class, () -> ZkCLI.main(args));
     assertTrue(
         "Didn't find expected error message containing 'not-there.xml' in " + e.getMessage(),
-        e.getMessage().contains("not-there.xml"));
+        e.getMessage().indexOf("not-there.xml") != -1);
   }
 
   @Test
@@ -410,7 +410,11 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
   public void testInvalidZKAddress() throws SolrException {
     SolrException ex =
-        expectThrows(SolrException.class, () -> new SolrZkClient("----------:33332", 100));
+        expectThrows(
+            SolrException.class,
+            () -> {
+              new SolrZkClient("----------:33332", 100);
+            });
     zkClient.close();
   }
 

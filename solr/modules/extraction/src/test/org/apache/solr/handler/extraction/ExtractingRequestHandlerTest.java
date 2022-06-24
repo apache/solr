@@ -340,19 +340,20 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
       ignoreException("unknown field 'meta'"); // TODO: should this exception be happening?
       expectThrows(
           SolrException.class,
-          () ->
-              loadLocal(
-                  "extraction/simple.html",
-                  "literal.id",
-                  "simple2",
-                  "lowernames",
-                  "true",
-                  "captureAttr",
-                  "true",
-                  // "fmap.content_type", "abcxyz",
-                  "commit",
-                  "true" // test immediate commit
-                  ));
+          () -> {
+            loadLocal(
+                "extraction/simple.html",
+                "literal.id",
+                "simple2",
+                "lowernames",
+                "true",
+                "captureAttr",
+                "true",
+                // "fmap.content_type", "abcxyz",
+                "commit",
+                "true" // test immediate commit
+                );
+          });
     } finally {
       resetExceptionIgnores();
     }
@@ -686,13 +687,14 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
 
     String extraction = (String) list.get("solr-word.pdf");
     assertTrue("extraction is null and it shouldn't be", extraction != null);
-    assertTrue(extraction + " does not contain " + "solr-word", extraction.contains("solr-word"));
+    assertTrue(
+        extraction + " does not contain " + "solr-word", extraction.indexOf("solr-word") != -1);
 
     NamedList<?> nl = (NamedList<?>) list.get("solr-word.pdf_metadata");
     assertTrue("nl is null and it shouldn't be", nl != null);
     Object title = nl.get("title");
     assertTrue("title is null and it shouldn't be", title != null);
-    assertTrue(extraction.contains("<?xml"));
+    assertTrue(extraction.indexOf("<?xml") != -1);
 
     rsp =
         loadLocal(
@@ -706,8 +708,9 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
 
     extraction = (String) list.get("solr-word.pdf");
     assertTrue("extraction is null and it shouldn't be", extraction != null);
-    assertTrue(extraction + " does not contain " + "solr-word", extraction.contains("solr-word"));
-    assertTrue(!extraction.contains("<?xml"));
+    assertTrue(
+        extraction + " does not contain " + "solr-word", extraction.indexOf("solr-word") != -1);
+    assertTrue(extraction.indexOf("<?xml") == -1);
 
     nl = (NamedList<?>) list.get("solr-word.pdf_metadata");
     assertTrue("nl is null and it shouldn't be", nl != null);
@@ -795,7 +798,9 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
 
     expectThrows(
         Exception.class,
-        () -> loadLocal("extraction/password-is-solrcell.docx", "literal.id", "one"));
+        () -> {
+          loadLocal("extraction/password-is-solrcell.docx", "literal.id", "one");
+        });
     assertU(commit());
     assertQ(req("*:*"), "//result[@numFound=0]");
 

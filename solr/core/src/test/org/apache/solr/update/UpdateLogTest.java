@@ -70,9 +70,9 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
     Object partialUpdate = ulog.lookup(DOC_1_INDEXED_ID);
     SolrDocument partialDoc =
         RealTimeGetComponent.toSolrDoc(
-            (SolrInputDocument) ((List<?>) partialUpdate).get(4), h.getCore().getLatestSchema());
-    long prevVersion = (Long) ((List<?>) partialUpdate).get(3);
-    long prevPointer = (Long) ((List<?>) partialUpdate).get(2);
+            (SolrInputDocument) ((List) partialUpdate).get(4), h.getCore().getLatestSchema());
+    long prevVersion = (Long) ((List) partialUpdate).get(3);
+    long prevPointer = (Long) ((List) partialUpdate).get(2);
 
     assertEquals(
         3L, ((NumericDocValuesField) partialDoc.getFieldValue("val1_i_dvo")).numericValue());
@@ -99,9 +99,9 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
     partialUpdate = ulog.lookup(DOC_1_INDEXED_ID);
     partialDoc =
         RealTimeGetComponent.toSolrDoc(
-            (SolrInputDocument) ((List<?>) partialUpdate).get(4), h.getCore().getLatestSchema());
-    prevVersion = (Long) ((List<?>) partialUpdate).get(3);
-    prevPointer = (Long) ((List<?>) partialUpdate).get(2);
+            (SolrInputDocument) ((List) partialUpdate).get(4), h.getCore().getLatestSchema());
+    prevVersion = (Long) ((List) partialUpdate).get(3);
+    prevPointer = (Long) ((List) partialUpdate).get(2);
 
     assertEquals(
         5L, ((NumericDocValuesField) partialDoc.getFieldValue("val1_i_dvo")).numericValue());
@@ -132,9 +132,9 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
     Object partialUpdate = ulog.lookup(DOC_1_INDEXED_ID);
     SolrDocument partialDoc =
         RealTimeGetComponent.toSolrDoc(
-            (SolrInputDocument) ((List<?>) partialUpdate).get(4), h.getCore().getLatestSchema());
-    long prevVersion = (Long) ((List<?>) partialUpdate).get(3);
-    long prevPointer = (Long) ((List<?>) partialUpdate).get(2);
+            (SolrInputDocument) ((List) partialUpdate).get(4), h.getCore().getLatestSchema());
+    long prevVersion = (Long) ((List) partialUpdate).get(3);
+    long prevPointer = (Long) ((List) partialUpdate).get(2);
 
     assertEquals(
         6L, ((NumericDocValuesField) partialDoc.getFieldValue("val1_i_dvo")).numericValue());
@@ -157,9 +157,9 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
     Object partialUpdate = ulog.lookup(DOC_1_INDEXED_ID);
     SolrDocument partialDoc =
         RealTimeGetComponent.toSolrDoc(
-            (SolrInputDocument) ((List<?>) partialUpdate).get(4), h.getCore().getLatestSchema());
-    long prevVersion = (Long) ((List<?>) partialUpdate).get(3);
-    long prevPointer = (Long) ((List<?>) partialUpdate).get(2);
+            (SolrInputDocument) ((List) partialUpdate).get(4), h.getCore().getLatestSchema());
+    long prevVersion = (Long) ((List) partialUpdate).get(3);
+    long prevPointer = (Long) ((List) partialUpdate).get(2);
 
     assertEquals(
         3L, ((NumericDocValuesField) partialDoc.getFieldValue("val1_i_dvo")).numericValue());

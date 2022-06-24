@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.io.stream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -79,7 +80,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
   private boolean refine;
   private String method;
   private FieldComparator[] bucketSorts;
-  private List<Tuple> tuples = new ArrayList<>();
+  private List<Tuple> tuples = new ArrayList<Tuple>();
   private int index;
   private String zkHost;
   private ModifiableSolrParams params;
@@ -705,7 +706,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
       getTuples(response, buckets, metrics);
 
       if (resortNeeded) {
-        tuples.sort(getStreamSort());
+        Collections.sort(tuples, getStreamSort());
       }
 
       index = this.offset;
@@ -958,8 +959,8 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
       return;
     }
     List<?> allBuckets = (List<?>) nl.get("buckets");
-    for (Object allBucket : allBuckets) {
-      NamedList<?> bucket = (NamedList<?>) allBucket;
+    for (int b = 0; b < allBuckets.size(); b++) {
+      NamedList<?> bucket = (NamedList<?>) allBuckets.get(b);
       Object val = bucket.get("val");
       if (val instanceof Integer) {
         val = ((Integer) val).longValue(); // calcite currently expects Long values here

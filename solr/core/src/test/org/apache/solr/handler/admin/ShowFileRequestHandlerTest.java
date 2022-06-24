@@ -82,7 +82,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
     request.setPath("/admin/file");
     QueryResponse resp = request.process(client);
     assertEquals(0, resp.getStatus());
-    assertTrue(((NamedList<?>) resp.getResponse().get("files")).size() > 0); // some files
+    assertTrue(((NamedList) resp.getResponse().get("files")).size() > 0); // some files
   }
 
   public void testGetRawFile() throws SolrServerException, IOException {

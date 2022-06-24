@@ -161,7 +161,9 @@ public class AnalyticsShardRequestManager {
           }
         }
       }
-    } catch (InterruptedException | ExecutionException e1) {
+    } catch (InterruptedException e1) {
+      throw new RuntimeException(e1);
+    } catch (ExecutionException e1) {
       throw new RuntimeException(e1);
     } finally {
       service.shutdown();

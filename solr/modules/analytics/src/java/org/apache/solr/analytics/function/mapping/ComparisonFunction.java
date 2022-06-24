@@ -107,7 +107,14 @@ public class ComparisonFunction {
   public static class GTFunction {
     public static final String name = "gt";
     public static final CreatorFunction creatorFunction =
-        (params -> ComparisonFunction.createComparisonFunction(name, val -> val > 0, params));
+        (params -> {
+          return ComparisonFunction.createComparisonFunction(
+              name,
+              val -> {
+                return val > 0;
+              },
+              params);
+        });
   }
 
   /**
@@ -117,7 +124,14 @@ public class ComparisonFunction {
   public static class GTEFunction {
     public static final String name = "gte";
     public static final CreatorFunction creatorFunction =
-        (params -> ComparisonFunction.createComparisonFunction(name, val -> val >= 0, params));
+        (params -> {
+          return ComparisonFunction.createComparisonFunction(
+              name,
+              val -> {
+                return val >= 0;
+              },
+              params);
+        });
   }
 
   /**
@@ -126,7 +140,14 @@ public class ComparisonFunction {
   public static class LTFunction {
     public static final String name = "lt";
     public static final CreatorFunction creatorFunction =
-        (params -> ComparisonFunction.createComparisonFunction(name, val -> val < 0, params));
+        (params -> {
+          return ComparisonFunction.createComparisonFunction(
+              name,
+              val -> {
+                return val < 0;
+              },
+              params);
+        });
   }
 
   /**
@@ -136,7 +157,14 @@ public class ComparisonFunction {
   public static class LTEFunction {
     public static final String name = "lte";
     public static final CreatorFunction creatorFunction =
-        (params -> ComparisonFunction.createComparisonFunction(name, val -> val <= 0, params));
+        (params -> {
+          return ComparisonFunction.createComparisonFunction(
+              name,
+              val -> {
+                return val <= 0;
+              },
+              params);
+        });
   }
 
   @FunctionalInterface

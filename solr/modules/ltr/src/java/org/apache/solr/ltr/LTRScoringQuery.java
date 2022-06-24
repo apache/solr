@@ -411,10 +411,10 @@ public class LTRScoringQuery extends Query implements Accountable {
     }
 
     private void setFeaturesInfo() {
-      for (Feature.FeatureWeight extractedFeatureWeight : extractedFeatureWeights) {
-        String featName = extractedFeatureWeight.getName();
-        int featId = extractedFeatureWeight.getIndex();
-        float value = extractedFeatureWeight.getDefaultValue();
+      for (int i = 0; i < extractedFeatureWeights.length; ++i) {
+        String featName = extractedFeatureWeights[i].getName();
+        int featId = extractedFeatureWeights[i].getIndex();
+        float value = extractedFeatureWeights[i].getDefaultValue();
         featuresInfo[featId] = new FeatureInfo(featName, value, false);
       }
     }
@@ -481,9 +481,9 @@ public class LTRScoringQuery extends Query implements Accountable {
     }
 
     protected void reset() {
-      for (Feature.FeatureWeight extractedFeatureWeight : extractedFeatureWeights) {
-        int featId = extractedFeatureWeight.getIndex();
-        float value = extractedFeatureWeight.getDefaultValue();
+      for (int i = 0; i < extractedFeatureWeights.length; ++i) {
+        int featId = extractedFeatureWeights[i].getIndex();
+        float value = extractedFeatureWeights[i].getDefaultValue();
         // need to set default value everytime as the default value is used in 'dense'
         // mode even if used=false
         featuresInfo[featId].setValue(value);
@@ -495,7 +495,7 @@ public class LTRScoringQuery extends Query implements Accountable {
     public ModelScorer scorer(LeafReaderContext context) throws IOException {
 
       final List<Feature.FeatureWeight.FeatureScorer> featureScorers =
-          new ArrayList<>(extractedFeatureWeights.length);
+          new ArrayList<Feature.FeatureWeight.FeatureScorer>(extractedFeatureWeights.length);
       for (final Feature.FeatureWeight featureWeight : extractedFeatureWeights) {
         final Feature.FeatureWeight.FeatureScorer scorer = featureWeight.scorer(context);
         if (scorer != null) {
@@ -753,8 +753,8 @@ public class LTRScoringQuery extends Query implements Accountable {
           @Override
           public long cost() {
             long sum = 0;
-            for (Feature.FeatureWeight.FeatureScorer featureScorer : featureScorers) {
-              sum += featureScorer.iterator().cost();
+            for (int i = 0; i < featureScorers.size(); i++) {
+              sum += featureScorers.get(i).iterator().cost();
             }
             return sum;
           }

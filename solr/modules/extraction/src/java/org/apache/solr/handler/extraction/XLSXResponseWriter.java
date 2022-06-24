@@ -158,7 +158,7 @@ class XLSXWriter extends TabularResponseWriter {
     SchemaField sf;
   }
 
-  private Map<String, XLField> xlFields = new LinkedHashMap<>();
+  private Map<String, XLField> xlFields = new LinkedHashMap<String, XLField>();
 
   public XLSXWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
     super(writer, req, rsp);
@@ -210,7 +210,7 @@ class XLSXWriter extends TabularResponseWriter {
 
       Integer niceWidth = colWidthsMap.get(xlField.name);
       if (niceWidth != null) {
-        colWidth = niceWidth;
+        colWidth = niceWidth.intValue();
       }
 
       writeStr(xlField.name, printName, false);
@@ -244,7 +244,7 @@ class XLSXWriter extends TabularResponseWriter {
 
     for (XLField xlField : xlFields.values()) {
       Object val = doc.getFieldValue(xlField.name);
-      int nVals = val instanceof Collection ? ((Collection<?>) val).size() : (val == null ? 0 : 1);
+      int nVals = val instanceof Collection ? ((Collection) val).size() : (val == null ? 0 : 1);
       if (nVals == 0) {
         writeNull(xlField.name);
         continue;
@@ -282,7 +282,7 @@ class XLSXWriter extends TabularResponseWriter {
   @Override
   public void writeArray(String name, Iterator<?> val, boolean raw) throws IOException {
     assert !raw;
-    StringBuilder output = new StringBuilder();
+    StringBuffer output = new StringBuffer();
     while (val.hasNext()) {
       Object v = val.next();
       if (v instanceof IndexableField) {

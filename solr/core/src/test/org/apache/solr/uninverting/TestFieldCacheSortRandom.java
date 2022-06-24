@@ -19,6 +19,7 @@ package org.apache.solr.uninverting;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -195,25 +196,29 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
       }
 
       // Compute expected results:
-      f.matchValues.sort(
-          (a, b) -> {
-            if (a == null) {
-              if (b == null) {
-                return 0;
-              }
-              if (sortMissingLast) {
-                return 1;
+      Collections.sort(
+          f.matchValues,
+          new Comparator<BytesRef>() {
+            @Override
+            public int compare(BytesRef a, BytesRef b) {
+              if (a == null) {
+                if (b == null) {
+                  return 0;
+                }
+                if (sortMissingLast) {
+                  return 1;
+                } else {
+                  return -1;
+                }
+              } else if (b == null) {
+                if (sortMissingLast) {
+                  return -1;
+                } else {
+                  return 1;
+                }
               } else {
-                return -1;
+                return a.compareTo(b);
               }
-            } else if (b == null) {
-              if (sortMissingLast) {
-                return -1;
-              } else {
-                return 1;
-              }
-            } else {
-              return a.compareTo(b);
             }
           });
 
@@ -280,7 +285,8 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
     private final long seed;
     private float density;
     private final List<BytesRef> docValues;
-    public final List<BytesRef> matchValues = Collections.synchronizedList(new ArrayList<>());
+    public final List<BytesRef> matchValues =
+        Collections.synchronizedList(new ArrayList<BytesRef>());
 
     // density should be 0.0 ... 1.0
     public RandomQuery(long seed, float density, List<BytesRef> docValues) {

@@ -277,7 +277,7 @@ public class AtomicUpdateDocumentMerger {
           // not a supported in-place update op
           return Collections.emptySet();
         } else if (op.equals("set")
-            && (obj == null || (obj instanceof Collection && ((Collection<?>) obj).isEmpty()))) {
+            && (obj == null || (obj instanceof Collection && ((Collection) obj).isEmpty()))) {
           // when operation is set and value is either null or empty list
           // treat the update as atomic instead of inplace
           return Collections.emptySet();
@@ -593,14 +593,14 @@ public class AtomicUpdateDocumentMerger {
       }
       Number result = (Number) resObj;
       if (oldVal instanceof Long) {
-        result = (Long) oldVal + result.longValue();
+        result = ((Long) oldVal).longValue() + result.longValue();
       } else if (oldVal instanceof Float) {
-        result = (Float) oldVal + result.floatValue();
+        result = ((Float) oldVal).floatValue() + result.floatValue();
       } else if (oldVal instanceof Double) {
-        result = (Double) oldVal + result.doubleValue();
+        result = ((Double) oldVal).doubleValue() + result.doubleValue();
       } else {
         // int, short, byte
-        result = (Integer) oldVal + result.intValue();
+        result = ((Integer) oldVal).intValue() + result.intValue();
       }
       toDoc.setField(sif.getName(), result);
     } else {
@@ -726,12 +726,14 @@ public class AtomicUpdateDocumentMerger {
       return;
     }
 
-    final BiConsumer<Collection<Object>, Object> removePredicate = Collection::remove;
+    final BiConsumer<Collection<Object>, Object> removePredicate =
+        (coll, existingElement) -> coll.remove(existingElement);
     modifyCollectionBasedOnFuzzyPresence(fieldName, original, toRemove, removePredicate, null);
   }
 
   private void addValueIfDistinct(String fieldName, Collection<Object> original, Object toAdd) {
-    final BiConsumer<Collection<Object>, Object> addPredicate = Collection::add;
+    final BiConsumer<Collection<Object>, Object> addPredicate =
+        (coll, newElement) -> coll.add(newElement);
     modifyCollectionBasedOnFuzzyPresence(fieldName, original, toAdd, null, addPredicate);
   }
 

@@ -135,7 +135,10 @@ public class TimeDifferencingEvaluator extends RecursiveObjectEvaluator implemen
 
         List<Number> diffedList =
             IntStream.range(lag, timeseriesValues.size())
-                .mapToObj(n -> (timeseriesValues.get(n) - timeseriesValues.get(n - lag)))
+                .mapToObj(
+                    n ->
+                        (timeseriesValues.get(n).doubleValue()
+                            - timeseriesValues.get(n - lag).doubleValue()))
                 .collect(Collectors.toList());
         double[] diffedRow = new double[diffedList.size()];
         for (int r = 0; r < diffedList.size(); r++) {

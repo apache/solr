@@ -27,7 +27,11 @@ public class RangeFacetMapTest extends SolrTestCaseJ4 {
   @Test
   public void testRejectsInvalidFieldName() {
     final Throwable thrown =
-        expectThrows(IllegalArgumentException.class, () -> new RangeFacetMap(null, 1, 2, 3));
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new RangeFacetMap(null, 1, 2, 3);
+            });
     assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
@@ -35,7 +39,10 @@ public class RangeFacetMapTest extends SolrTestCaseJ4 {
   public void testRejectsInvalidStartEndBounds() {
     final Throwable thrown =
         expectThrows(
-            IllegalArgumentException.class, () -> new RangeFacetMap("ANY_FIELD_NAME", 1, -1, 3));
+            IllegalArgumentException.class,
+            () -> {
+              new RangeFacetMap("ANY_FIELD_NAME", 1, -1, 3);
+            });
     assertThat(thrown.getMessage(), containsString("'end' must be greater than parameter 'start'"));
   }
 
@@ -43,7 +50,10 @@ public class RangeFacetMapTest extends SolrTestCaseJ4 {
   public void testRejectsInvalidGap() {
     final Throwable thrown =
         expectThrows(
-            IllegalArgumentException.class, () -> new RangeFacetMap("ANY_FIELD_NAME", 1, 2, -1));
+            IllegalArgumentException.class,
+            () -> {
+              new RangeFacetMap("ANY_FIELD_NAME", 1, 2, -1);
+            });
     assertThat(thrown.getMessage(), containsString("must be a positive integer"));
   }
 
@@ -67,7 +77,9 @@ public class RangeFacetMapTest extends SolrTestCaseJ4 {
     final Throwable thrown =
         expectThrows(
             IllegalArgumentException.class,
-            () -> new RangeFacetMap("ANY_FIELD_NAME", 1, 2, 3).setOtherBuckets(null));
+            () -> {
+              new RangeFacetMap("ANY_FIELD_NAME", 1, 2, 3).setOtherBuckets(null);
+            });
     assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 

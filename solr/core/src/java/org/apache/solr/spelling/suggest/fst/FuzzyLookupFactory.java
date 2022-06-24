@@ -90,12 +90,12 @@ public class FuzzyLookupFactory extends LookupFactory {
     // optional parameters
     boolean exactMatchFirst =
         (params.get(AnalyzingLookupFactory.EXACT_MATCH_FIRST) != null)
-            ? Boolean.parseBoolean(params.get(AnalyzingLookupFactory.EXACT_MATCH_FIRST).toString())
+            ? Boolean.valueOf(params.get(AnalyzingLookupFactory.EXACT_MATCH_FIRST).toString())
             : true;
 
     boolean preserveSep =
         (params.get(AnalyzingLookupFactory.PRESERVE_SEP) != null)
-            ? Boolean.parseBoolean(params.get(AnalyzingLookupFactory.PRESERVE_SEP).toString())
+            ? Boolean.valueOf(params.get(AnalyzingLookupFactory.PRESERVE_SEP).toString())
             : true;
 
     int options = 0;
@@ -118,7 +118,7 @@ public class FuzzyLookupFactory extends LookupFactory {
 
     boolean preservePositionIncrements =
         params.get(AnalyzingLookupFactory.PRESERVE_POSITION_INCREMENTS) != null
-            ? Boolean.parseBoolean(
+            ? Boolean.valueOf(
                 params.get(AnalyzingLookupFactory.PRESERVE_POSITION_INCREMENTS).toString())
             : false;
 
@@ -144,7 +144,7 @@ public class FuzzyLookupFactory extends LookupFactory {
 
     boolean unicodeAware =
         (params.get(UNICODE_AWARE) != null)
-            ? Boolean.parseBoolean(params.get(UNICODE_AWARE).toString())
+            ? Boolean.valueOf(params.get(UNICODE_AWARE).toString())
             : FuzzySuggester.DEFAULT_UNICODE_AWARE;
 
     return new FuzzySuggester(

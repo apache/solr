@@ -44,6 +44,7 @@ import org.apache.solr.schema.AbstractSpatialPrefixTreeFieldType;
 import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.search.similarities.SchemaSimilarityFactory;
 import org.apache.solr.util.LogListener;
+import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestBase;
 import org.apache.solr.util.RestTestHarness;
 import org.junit.After;
@@ -75,7 +76,12 @@ public class TestBulkSchemaAPI extends RestTestBase {
     if (random().nextBoolean()) {
       log.info("These tests are run with V2 API");
       restTestHarness.setServerProvider(
-          () -> jetty.getBaseUrl().toString() + "/____v2/cores/" + DEFAULT_TEST_CORENAME);
+          new RESTfulServerProvider() {
+            @Override
+            public String getBaseURL() {
+              return jetty.getBaseUrl().toString() + "/____v2/cores/" + DEFAULT_TEST_CORENAME;
+            }
+          });
     }
   }
 
@@ -178,7 +184,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     details = (List) error.get("details");
     assertNotNull("No details", details);
     assertEquals("Wrong number of details", 1, details.size());
-    errorList = (List) ((Map<?, ?>) details.get(0)).get("errorMessages");
+    errorList = (List) ((Map) details.get(0)).get("errorMessages");
     assertEquals(1, errorList.size());
     assertTrue(
         ((String) errorList.get(0))
@@ -193,7 +199,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     details = (List) error.get("details");
     assertNotNull("No details", details);
     assertEquals("Wrong number of details", 1, details.size());
-    errorList = (List) ((Map<?, ?>) details.get(0)).get("errorMessages");
+    errorList = (List) ((Map) details.get(0)).get("errorMessages");
     assertEquals(1, errorList.size());
     assertTrue(
         ((String) errorList.get(0))
@@ -246,8 +252,8 @@ public class TestBulkSchemaAPI extends RestTestBase {
     @SuppressWarnings({"rawtypes"})
     List tokenFilters = (List) analyzer.get("filters");
     assertEquals("whitespace", String.valueOf(tokenizer.get("name")));
-    assertEquals("patternReplace", String.valueOf(((Map<?, ?>) charFilters.get(0)).get("name")));
-    assertEquals("asciiFolding", String.valueOf(((Map<?, ?>) tokenFilters.get(0)).get("name")));
+    assertEquals("patternReplace", String.valueOf(((Map) charFilters.get(0)).get("name")));
+    assertEquals("asciiFolding", String.valueOf(((Map) tokenFilters.get(0)).get("name")));
   }
 
   public void testAnalyzerByBogusName() throws Exception {
@@ -758,8 +764,8 @@ public class TestBulkSchemaAPI extends RestTestBase {
 
     l = getSourceCopyFields(harness, "bleh_s");
     assertFalse("'bleh_s' copyField rule doesn't exist", l.isEmpty());
-    assertEquals("bleh_s", ((Map<?, ?>) l.get(0)).get("source"));
-    assertEquals("name", ((Map<?, ?>) l.get(0)).get("dest"));
+    assertEquals("bleh_s", ((Map) l.get(0)).get("source"));
+    assertEquals("name", ((Map) l.get(0)).get("dest"));
 
     // delete copy field rule
     payload =

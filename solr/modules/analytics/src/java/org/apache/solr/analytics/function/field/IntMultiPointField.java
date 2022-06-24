@@ -93,6 +93,6 @@ public class IntMultiPointField extends AnalyticsField implements CastingIntValu
 
   @Override
   public void streamObjects(Consumer<Object> cons) {
-    streamInts(cons::accept);
+    streamInts(value -> cons.accept(value));
   }
 }
