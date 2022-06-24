@@ -75,8 +75,6 @@ public class NodesSysPropsCacher implements AutoCloseable {
   }
 
   private Map<String, Object> fetchProps(String nodeName, Collection<String> tags) {
-    StringBuilder sb = new StringBuilder(zkStateReader.getBaseUrlForNodeName(nodeName));
-    sb.append("/admin/metrics?omitHeader=true&wt=javabin");
     ModifiableSolrParams msp = new ModifiableSolrParams();
     msp.add(CommonParams.OMIT_HEADER, "true");
     LinkedHashMap<String, String> keys = new LinkedHashMap<>();

@@ -229,7 +229,7 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
     assertEquals(0, CLOUD_CLIENT.commit().getStatus());
   }
 
-  public void testMalformedDBQ(SolrClient client) throws Exception {
+  public void testMalformedDBQ(SolrClient client) {
     assertNotNull("client not initialized", client);
     SolrException e =
         expectThrows(
@@ -240,27 +240,27 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
   }
 
   //
-  public void testMalformedDBQViaCloudClient() throws Exception {
+  public void testMalformedDBQViaCloudClient() {
     testMalformedDBQ(CLOUD_CLIENT);
   }
 
-  public void testMalformedDBQViaShard1LeaderClient() throws Exception {
+  public void testMalformedDBQViaShard1LeaderClient() {
     testMalformedDBQ(S_ONE_LEADER_CLIENT);
   }
 
-  public void testMalformedDBQViaShard2LeaderClient() throws Exception {
+  public void testMalformedDBQViaShard2LeaderClient() {
     testMalformedDBQ(S_TWO_LEADER_CLIENT);
   }
 
-  public void testMalformedDBQViaShard1NonLeaderClient() throws Exception {
+  public void testMalformedDBQViaShard1NonLeaderClient() {
     testMalformedDBQ(S_ONE_NON_LEADER_CLIENT);
   }
 
-  public void testMalformedDBQViaShard2NonLeaderClient() throws Exception {
+  public void testMalformedDBQViaShard2NonLeaderClient() {
     testMalformedDBQ(S_TWO_NON_LEADER_CLIENT);
   }
 
-  public void testMalformedDBQViaNoCollectionClient() throws Exception {
+  public void testMalformedDBQViaNoCollectionClient() {
     testMalformedDBQ(NO_COLLECTION_CLIENT);
   }
 

@@ -58,7 +58,7 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
     super.setUp();
   }
 
-  private void setupAuthenticationPlugin() throws Exception {
+  private void setupAuthenticationPlugin() {
     System.setProperty(
         "authenticationPlugin",
         "org.apache.solr.cloud.TestAuthenticationFramework$MockAuthenticationPlugin");

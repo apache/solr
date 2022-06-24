@@ -50,7 +50,7 @@ public class JvmMetricsTest extends SolrJettyTestBase {
   }
 
   @Test
-  public void testOperatingSystemMetricSet() throws Exception {
+  public void testOperatingSystemMetricSet() {
     OperatingSystemMetricSet set = new OperatingSystemMetricSet();
     Map<String, Metric> metrics = set.getMetrics();
     assertTrue(metrics.size() > 0);
@@ -71,7 +71,7 @@ public class JvmMetricsTest extends SolrJettyTestBase {
   }
 
   @Test
-  public void testAltBufferPoolMetricSet() throws Exception {
+  public void testAltBufferPoolMetricSet() {
     AltBufferPoolMetricSet set = new AltBufferPoolMetricSet();
     Map<String, Metric> metrics = set.getMetrics();
     assertTrue(metrics.size() > 0);
@@ -85,7 +85,7 @@ public class JvmMetricsTest extends SolrJettyTestBase {
   }
 
   @Test
-  public void testSystemProperties() throws Exception {
+  public void testSystemProperties() {
     if (System.getProperty("basicauth") == null) {
       // make sure it's set
       System.setProperty("basicauth", "foo:bar");
@@ -130,7 +130,7 @@ public class JvmMetricsTest extends SolrJettyTestBase {
   }
 
   @Test
-  public void testSetupJvmMetrics() throws Exception {
+  public void testSetupJvmMetrics() {
     SolrMetricManager metricManager = jetty.getCoreContainer().getMetricManager();
     Map<String, Metric> metrics = metricManager.registry("solr.jvm").getMetrics();
     assertTrue(metrics.size() > 0);

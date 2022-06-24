@@ -82,7 +82,7 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
     }
   }
 
-  private void requestCoreStatus() throws Exception {
+  private void requestCoreStatus() {
     SolrQueryResponse rsp = new SolrQueryResponse();
     h.getCoreContainer()
         .getMultiCoreHandler()

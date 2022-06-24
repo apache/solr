@@ -81,7 +81,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testComparator() throws Exception {
+  public void testComparator() {
     SpellCheckComponent component =
         (SpellCheckComponent) h.getCore().getSearchComponent("spellcheck");
     assertNotNull(component);

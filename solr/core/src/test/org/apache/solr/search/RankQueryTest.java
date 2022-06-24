@@ -40,7 +40,7 @@ public class RankQueryTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testPluggableCollector() throws Exception {
+  public void testPluggableCollector() {
 
     String[] doc = {"id", "1", "sort_i", "100"};
     assertU(adoc(doc));

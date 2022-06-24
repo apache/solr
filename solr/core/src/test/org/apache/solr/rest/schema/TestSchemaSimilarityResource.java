@@ -26,7 +26,7 @@ public class TestSchemaSimilarityResource extends SolrRestletTestBase {
    * which causes the FQN of the class to be returned
    */
   @Test
-  public void testGetSchemaSimilarity() throws Exception {
+  public void testGetSchemaSimilarity() {
     assertQ(
         "/schema/similarity?wt=xml",
         "count(/response/lst[@name='similarity']) = 1",

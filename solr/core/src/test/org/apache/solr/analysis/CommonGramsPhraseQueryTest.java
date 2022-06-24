@@ -76,7 +76,7 @@ public class CommonGramsPhraseQueryTest extends SolrTestCaseJ4 {
     }
   }
 
-  protected void testCommonQueries(final String f) throws Exception {
+  protected void testCommonQueries(final String f) {
     // match 2...
     for (String phrase :
         Arrays.asList(

@@ -40,7 +40,7 @@ public class AnalyticsQueryTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testAnalyticsQuery() throws Exception {
+  public void testAnalyticsQuery() {
 
     String[] doc = {"id", "1", "sort_i", "100"};
     assertU(adoc(doc));

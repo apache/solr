@@ -69,7 +69,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testDocumentBased() throws Exception {
+  public void testDocumentBased() {
     assertQ(
         req(
             "qt",
@@ -108,7 +108,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testExpressionBased() throws Exception {
+  public void testExpressionBased() {
     assertQ(
         req(
             "qt",
@@ -129,7 +129,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testFileBased() throws Exception {
+  public void testFileBased() {
     assertQ(
         req(
             "qt",
@@ -150,7 +150,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testMultiSuggester() throws Exception {
+  public void testMultiSuggester() {
     assertQ(
         req(
             "qt",
@@ -178,7 +178,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testBuildAllSuggester() throws Exception {
+  public void testBuildAllSuggester() {
     assertQ(
         req(
             "qt",
@@ -197,7 +197,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testReloadAllSuggester() throws Exception {
+  public void testReloadAllSuggester() {
     assertQ(
         req(
             "qt",
@@ -216,7 +216,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testBadSuggesterName() throws Exception {
+  public void testBadSuggesterName() {
     String fakeSuggesterName = "does-not-exist";
     assertQEx(
         "No suggester named " + fakeSuggesterName + " was configured",

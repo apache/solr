@@ -71,7 +71,7 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
   }
 
   @Override
-  public void validateControlData(QueryResponse control) throws Exception {
+  public void validateControlData(QueryResponse control) {
     NamedList<Object> nl = control.getResponse();
     @SuppressWarnings("unchecked")
     NamedList<Object> sc = (NamedList<Object>) nl.get("spellcheck");

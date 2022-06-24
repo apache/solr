@@ -39,7 +39,7 @@ public class TestSolrFieldCacheBean extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testEntryList() throws Exception {
+  public void testEntryList() {
     // ensure entries to FieldCache
     assertU(adoc("id", "id0"));
     assertU(commit());

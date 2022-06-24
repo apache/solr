@@ -215,7 +215,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
   }
 
   @Test
-  public void testMaxErrorsThrowsException() throws IOException {
+  public void testMaxErrorsThrowsException() {
     ModifiableSolrParams requestParams = new ModifiableSolrParams();
     requestParams.add("maxErrors", "5");
 
@@ -246,7 +246,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
   }
 
   @Test
-  public void testMaxErrors0() throws IOException {
+  public void testMaxErrors0() {
     // make the TolerantUpdateProcessor intolerant
     List<SolrInputDocument> smallBatch = docs.subList(0, 2);
     ModifiableSolrParams requestParams = new ModifiableSolrParams();

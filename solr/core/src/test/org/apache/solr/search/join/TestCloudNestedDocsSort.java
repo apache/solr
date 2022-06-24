@@ -130,7 +130,7 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
   }
 
   @AfterClass
-  public static void cleanUpAfterClass() throws Exception {
+  public static void cleanUpAfterClass() {
     client = null;
   }
 

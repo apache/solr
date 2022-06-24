@@ -112,7 +112,7 @@ public class TestRestManager extends SolrRestletTestBase {
   }
 
   @Test
-  public void testReloadFromPersistentStorage() throws Exception {
+  public void testReloadFromPersistentStorage() {
     SolrResourceLoader loader = new SolrResourceLoader(Paths.get("./"));
     File unitTestStorageDir = createTempDir("testRestManager").toFile();
     assertTrue(
@@ -138,14 +138,14 @@ public class TestRestManager extends SolrRestletTestBase {
   }
 
   @Test
-  public void testResolveResourceId() throws Exception {
+  public void testResolveResourceId() {
     String path = "http://solr.apache.org/schema/analysis/synonyms/de";
     String resourceId = RestManager.ManagedEndpoint.resolveResourceId(path);
     assertEquals(resourceId, "/schema/analysis/synonyms/de");
   }
 
   @Test
-  public void testResolveResourceIdDecodeUrlEntities() throws Exception {
+  public void testResolveResourceIdDecodeUrlEntities() {
     String path = "http://solr.apache.org/schema/analysis/synonyms/de/%C3%84ndern";
     String resourceId = RestManager.ManagedEndpoint.resolveResourceId(path);
     assertEquals(resourceId, "/schema/analysis/synonyms/de/Ändern");

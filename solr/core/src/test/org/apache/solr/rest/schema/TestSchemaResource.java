@@ -21,7 +21,7 @@ import org.junit.Test;
 
 public class TestSchemaResource extends SolrRestletTestBase {
   @Test
-  public void testXMLResponse() throws Exception {
+  public void testXMLResponse() {
     // should work with or without trailing slash on '/schema/' path
     assertQ(
         "/schema/?indent=on&wt=xml",

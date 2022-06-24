@@ -282,7 +282,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
    *
    * @see <a href="https://issues.apache.org/jira/browse/SOLR-14687">SOLR-14687</a>
    */
-  public void testRandomNestPathQueryFiltering() throws Exception {
+  public void testRandomNestPathQueryFiltering() {
 
     // First: build a bunch of complex randomly nested documents, with random "nest paths"
     // re-use the same "path segments" at various levels of nested, so as to confuse things even

@@ -72,7 +72,7 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
     testChildReturnFields();
   }
 
-  private void testChildDoctransformerXML() throws Exception {
+  private void testChildDoctransformerXML() {
     String test1[] =
         new String[] {
           "//*[@numFound='1']",

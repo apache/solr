@@ -293,7 +293,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
    * on those constraints. Returns the recursive depth reached (for sanity checking)
    */
   private int assertPivotCountsAreCorrect(
-      String pivotName, SolrParams baseParams, PivotField constraint) throws SolrServerException {
+      String pivotName, SolrParams baseParams, PivotField constraint) {
 
     SolrParams p = SolrParams.wrapAppended(baseParams, params("fq", buildFilter(constraint)));
     List<PivotField> subPivots = null;

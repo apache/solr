@@ -52,7 +52,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testCopyRename() throws Exception {
+  public void testCopyRename() {
 
     // original
     assertQ(

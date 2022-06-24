@@ -26,7 +26,6 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.zookeeper.KeeperException;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -260,8 +259,7 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
     }
   }
 
-  private List<String> getAllNodeNames(String collectionName)
-      throws KeeperException, InterruptedException {
+  private List<String> getAllNodeNames(String collectionName) {
     DocCollection state = getCollectionState(collectionName);
     return state.getReplicas().stream()
         .map(Replica::getNodeName)

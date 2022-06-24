@@ -350,7 +350,7 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
   }
 
   @After
-  private void deleteCoreAndTempSolrHomeDirectory() throws Exception {
+  private void deleteCoreAndTempSolrHomeDirectory() {
     deleteCore();
   }
 }

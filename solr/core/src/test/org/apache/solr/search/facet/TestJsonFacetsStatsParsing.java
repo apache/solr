@@ -38,7 +38,7 @@ public class TestJsonFacetsStatsParsing extends SolrTestCaseJ4 {
     initCore("solrconfig-tlog.xml", "schema15.xml");
   }
 
-  public void testSortEquality() throws Exception {
+  public void testSortEquality() {
     assertEquals(
         new FacetRequest.FacetSort("count", FacetRequest.SortDirection.desc),
         FacetRequest.FacetSort.COUNT_DESC);

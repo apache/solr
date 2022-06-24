@@ -104,11 +104,11 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSomeStuff() throws Exception {
+  public void testSomeStuff() {
     doTestSomeStuff("/dismax");
   }
 
-  public void doTestSomeStuff(final String qt) throws Exception {
+  public void doTestSomeStuff(final String qt) {
 
     assertQ(
         "basic match",

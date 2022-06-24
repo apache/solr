@@ -16,7 +16,6 @@
  */
 package org.apache.solr.security;
 
-import com.google.common.collect.ImmutableSet;
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
@@ -274,7 +273,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
   public static final String PROPERTY_REALM = "realm";
   public static final String FORWARD_CREDENTIALS = "forwardCredentials";
   private static final Set<String> PROPS =
-      ImmutableSet.of(PROPERTY_BLOCK_UNKNOWN, PROPERTY_REALM, FORWARD_CREDENTIALS);
+      Set.of(PROPERTY_BLOCK_UNKNOWN, PROPERTY_REALM, FORWARD_CREDENTIALS);
 
   /**
    * Check if the request is an AJAX request, i.e. from the Admin UI or other SPA front

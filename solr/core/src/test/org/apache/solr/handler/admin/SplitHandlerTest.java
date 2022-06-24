@@ -84,14 +84,14 @@ public class SplitHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRandomSplitRecommendations() throws Exception {
+  public void testRandomSplitRecommendations() {
     Random rand = random();
     for (int i = 0; i < 10000; i++) { // 1M takes ~ 1 sec
       doRandomSplitRecommendation(rand);
     }
   }
 
-  public void doRandomSplitRecommendation(Random rand) throws Exception {
+  public void doRandomSplitRecommendation(Random rand) {
     int low = 0;
     int high = 0;
 

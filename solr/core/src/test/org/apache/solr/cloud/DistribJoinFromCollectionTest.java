@@ -133,7 +133,7 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase {
   }
 
   private void testJoins(String toColl, String fromColl, String toDocId, boolean isScoresTest)
-      throws SolrServerException, IOException, InterruptedException {
+      throws SolrServerException, IOException {
     // verify the join with fromIndex works
     final String fromQ = "match_s:c^2";
     CloudSolrClient client = cluster.getSolrClient();
@@ -214,8 +214,7 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase {
     return isScoresTest ? "score=" + (scoreModes[random().nextInt(scoreModes.length)]) + " " : "";
   }
 
-  private void checkAbsentFromIndex(String fromColl, String toColl, boolean isScoresTest)
-      throws SolrServerException, IOException {
+  private void checkAbsentFromIndex(String fromColl, String toColl, boolean isScoresTest) {
     final String wrongName = fromColl + "WrongName";
     final String joinQ =
         "{!join "

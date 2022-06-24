@@ -84,7 +84,7 @@ public class RandomTestDictionaryFactory extends DictionaryFactory {
     }
 
     @Override
-    public InputIterator getEntryIterator() throws IOException {
+    public InputIterator getEntryIterator() {
       return new InputIterator.InputIteratorWrapper(new RandomByteRefIterator());
     }
 

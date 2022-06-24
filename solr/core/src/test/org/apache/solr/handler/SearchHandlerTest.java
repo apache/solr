@@ -30,7 +30,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
     initCore("solrconfig.xml", "schema.xml");
   }
 
-  public void testSorting() throws Exception {
+  public void testSorting() {
     assertU(adoc("id", "10", "title", "test", "val_s1", "aaa"));
     assertU(adoc("id", "11", "title", "test", "val_s1", "bbb"));
     assertU(adoc("id", "12", "title", "test", "val_s1", "ccc"));

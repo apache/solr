@@ -21,7 +21,6 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.core.ConfigSetProperties.DEFAULT_FILENAME;
 import static org.junit.matchers.JUnitMatchers.containsString;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -67,6 +66,7 @@ import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
@@ -95,6 +95,7 @@ import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.ConfigSetProperties;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.TestSolrConfigHandler;
+import org.apache.solr.handler.admin.api.ModifyBasicAuthConfigAPI;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.AuthorizationResponse;
@@ -181,14 +182,14 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
         "baseConfigSet2",
         "configSet2",
         null,
-        ImmutableMap.<String, String>of("immutable", "true", "key1", "value1"),
+        Map.of("immutable", "true", "key1", "value1"),
         "solr");
 
     // old, no new
     verifyCreate(
         "baseConfigSet3",
         "configSet3",
-        ImmutableMap.<String, String>of("immutable", "false", "key2", "value2"),
+        Map.of("immutable", "false", "key2", "value2"),
         null,
         "solr");
 
@@ -196,8 +197,8 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     verifyCreate(
         "baseConfigSet4",
         "configSet4",
-        ImmutableMap.<String, String>of("immutable", "true", "onlyOld", "onlyOldValue"),
-        ImmutableMap.<String, String>of("immutable", "false", "onlyNew", "onlyNewValue"),
+        Map.of("immutable", "true", "onlyOld", "onlyOldValue"),
+        Map.of("immutable", "false", "onlyNew", "onlyNewValue"),
         "solr");
   }
 
@@ -1717,7 +1718,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     FileUtils.copyDirectory(configDir, tmpConfigDir);
     FileUtils.write(
         new File(tmpConfigDir, "configsetprops.json"),
-        getConfigSetProps(ImmutableMap.<String, String>of("immutable", "true")),
+        getConfigSetProps(Map.of("immutable", "true")),
         UTF_8);
     getConfigSetService().uploadConfig("configSet", tmpConfigDir.toPath());
 
@@ -1881,7 +1882,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
         @Override
         public ValidatingJsonMap getSpec() {
-          return Utils.getSpec("cluster.security.BasicAuth.Commands").getSpec();
+          return AnnotatedApi.getApis(new ModifyBasicAuthConfigAPI()).get(0).getSpec();
         }
 
         @Override
