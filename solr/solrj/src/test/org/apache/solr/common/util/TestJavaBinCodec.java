@@ -23,10 +23,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -455,21 +452,31 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
   }
 
   public void testJsr310Classes() throws Exception {
-    Instant instant = Instant.EPOCH;
-    LocalDate localDate = LocalDate.EPOCH;
-    ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(instant, ZoneOffset.UTC);
+    Instant instant = Instant.ofEpochSecond(1656102189L);
+    LocalDate localDate = LocalDate.of(2222, 6, 24);
+    LocalDateTime localDateTime = LocalDateTime.ofEpochSecond(1656102189L, 0, ZoneOffset.UTC);
+    ZonedDateTime zonedDateTime = ZonedDateTime.of(2222, 6, 24, 0, 0, 0, 0, ZoneOffset.UTC);
+    OffsetDateTime offsetDateTime = OffsetDateTime.of(2222, 6, 24, 0, 0, 0, 0, ZoneOffset.UTC);
 
     Object instantResult = serializeAndDeserialize(instant);
-    assertTrue(instantResult instanceof Date);
-    assertEquals(instant.toEpochMilli(), ((Date) instantResult).getTime());
+    assertTrue(instantResult instanceof String);
+    assertEquals(instant, Instant.parse(instantResult.toString()));
 
     Object localDateResult = serializeAndDeserialize(localDate);
-    assertTrue(localDateResult instanceof Date);
-    assertEquals(localDate.toEpochDay(), ((Date) localDateResult).getTime());
+    assertTrue(localDateResult instanceof String);
+    assertEquals(localDate, LocalDate.parse(localDateResult.toString()));
+
+    Object localDateTimeResult = serializeAndDeserialize(localDateTime);
+    assertTrue(localDateTimeResult instanceof String);
+    assertEquals(localDateTime, LocalDateTime.parse(localDateTimeResult.toString()));
 
     Object zonedDateTimeResult = serializeAndDeserialize(zonedDateTime);
-    assertTrue(zonedDateTimeResult instanceof Date);
-    assertEquals(zonedDateTime.toInstant().toEpochMilli(), ((Date) zonedDateTimeResult).getTime());
+    assertTrue(zonedDateTimeResult instanceof String);
+    assertEquals(zonedDateTime, ZonedDateTime.parse(zonedDateTimeResult.toString()));
+
+    Object offsetDateTimeResult = serializeAndDeserialize(offsetDateTime);
+    assertTrue(offsetDateTimeResult instanceof String);
+    assertEquals(offsetDateTime, OffsetDateTime.parse(offsetDateTimeResult.toString()));
   }
 
   public void genBinaryFiles() throws IOException {
