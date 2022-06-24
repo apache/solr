@@ -18,7 +18,8 @@
 /**
  * APIs and classes for implementing result grouping
  *
- * <p>See the <a href="https://solr.apache.org/guide/result-grouping.html">Solr Ref Guide</a> for
- * more information
+ * <p>See the <a
+ * href="https://solr.apache.org/guide/solr/latest/query-guide/result-grouping.html">Solr Ref
+ * Guide</a> for more information
  */
 package org.apache.solr.search.grouping;

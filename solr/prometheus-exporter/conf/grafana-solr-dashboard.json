@@ -73,7 +73,7 @@
       "tags": [],
       "title": "Solr Prometheus documentation",
       "type": "link",
-      "url": "https://solr.apache.org/guide/monitoring-solr-with-prometheus-and-grafana.html"
+      "url": "https://solr.apache.org/guide/solr/latest/deployment-guide/monitoring-with-prometheus-and-grafana.html"
     }
   ],
   "panels": [

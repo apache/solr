@@ -262,7 +262,7 @@ public class SolrXmlConfig {
           SolrException.ErrorCode.SERVER_ERROR,
           "Should not have found "
               + xPath
-              + "\n. Please upgrade your solr.xml: https://solr.apache.org/guide/format-of-solr-xml.html");
+              + "\n. Please upgrade your solr.xml: https://solr.apache.org/guide/solr/latest/configuration-guide/configuring-solr-xml.html");
     }
   }
 

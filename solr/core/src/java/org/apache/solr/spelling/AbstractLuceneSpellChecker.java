@@ -44,7 +44,7 @@ import org.apache.solr.search.SolrIndexSearcher;
  * Abstract base class for all Lucene-based spell checking implementations.
  *
  * <p>Refer to <a
- * href="https://solr.apache.org/guide/spell-checking.html">https://solr.apache.org/guide/spell-checking.html</a>
+ * href="https://solr.apache.org/guide/solr/latest/query-guide/spell-checking.html">https://solr.apache.org/guide/solr/latest/query-guide/spell-checking.html</a>
  * for more details.
  *
  * @since solr 1.3
