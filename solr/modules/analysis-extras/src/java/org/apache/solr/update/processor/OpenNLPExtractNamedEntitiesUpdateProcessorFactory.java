@@ -75,8 +75,8 @@ import org.slf4j.LoggerFactory;
  * <p>See the <a href="https://opennlp.apache.org/models.html">OpenNLP website</a> for information
  * on downloading pre-trained models. Note that in order to use model files larger than 1MB on
  * SolrCloud, <a
- * href="https://solr.apache.org/guide/setting-up-an-external-zookeeper-ensemble.html#increasing-the-file-size-limit"
- * >ZooKeeper server and client configuration is required</a>.
+ * href="https://solr.apache.org/guide/solr/latest/deployment-guide/zookeeper-ensemble.html#increasing-the-file-size-limit">ZooKeeper
+ * server and client configuration is required</a>.
  *
  * <p>The <code>source</code> field(s) can be configured as either:
  *
