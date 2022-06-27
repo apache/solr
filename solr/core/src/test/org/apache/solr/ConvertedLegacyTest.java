@@ -24,7 +24,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * This tests was converted from a legacy testing system.
+ * These tests were converted from a legacy testing system.
  *
  * <p>it does not represent the best practices that should be used when writing Solr JUnit tests
  */

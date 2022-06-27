@@ -61,7 +61,7 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
 
   // http://www.w3.org/TR/2006/REC-xml-20060816/#charsets
   private static final String NON_XML_CHARS = "\u0000-\u0008\u000B-\u000C\u000E-\u001F\uFFFE\uFFFF";
-  // Avoid single quotes (problematic in XPath literals) and carriage returns (XML roundtripping
+  // Avoid single quotes (problematic in XPath literals) and carriage returns (XML round tripping
   // fails)
   private static final Pattern BAD_CHAR_PATTERN = Pattern.compile("[\'\r" + NON_XML_CHARS + "]");
   private static final Pattern STORED_FIELD_NAME_PATTERN = Pattern.compile("_dv$");

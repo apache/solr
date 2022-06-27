@@ -220,7 +220,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
     createIndex(null, ids);
 
-    // Unsorted field, largest first
+    // Unsorted field, the largest first
     makeExternalFile(field, "54321=543210\n0=-999\n25=250");
     // test identity (straight field value)
     singleTest(field, "\0", 54321, 543210, 0, 0, 25, 250, 100, 1);
@@ -942,7 +942,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
         "//float[@name='score']='0.875'");
 
     // strdist on a missing valuesource should itself by missing, so the ValueSourceAugmenter
-    // should supress it...
+    // should suppress it...
     assertQ(
         req(
             "q", "id:1",
@@ -1037,7 +1037,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
     createIndex(null, ids);
 
-    // Unsorted field, largest first
+    // Unsorted field, the largest first
     makeExternalFile(field, "54321=543210\n0=-999\n25=250");
     // test identity (straight field value)
     singleTest(fieldAsFunc, "\0", 54321, 543210, 0, 0, 25, 250, 100, 1);

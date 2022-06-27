@@ -21,7 +21,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/** A test of basic features using the minial legal solr schema. */
+/** A test of basic features using the minimal viable solr schema. */
 public class MinimalSchemaTest extends SolrTestCaseJ4 {
   /**
    * NOTE: we explicitly use the general 'solrconfig.xml' file here, in an attempt to test as many

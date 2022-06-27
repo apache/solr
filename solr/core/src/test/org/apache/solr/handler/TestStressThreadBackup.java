@@ -125,7 +125,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
 
   @Test
   public void testReplicationHandler() throws Exception {
-    // Create a custom BackupAPIImpl which uses ReplicatoinHandler for the backups
+    // Create a custom BackupAPIImpl which uses ReplicationHandler for the backups
     // but still defaults to CoreAdmin for making named snapshots (since that's what's documented)
     testSnapshotsAndBackupsDuringConcurrentCommitsAndOptimizes(
         new BackupAPIImpl() {
@@ -158,7 +158,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
         });
   }
 
-  @SuppressWarnings("AssertionFailureIgnored") // failure happens inside of a thread
+  @SuppressWarnings("AssertionFailureIgnored") // failure happens inside a thread
   public void testSnapshotsAndBackupsDuringConcurrentCommitsAndOptimizes(final BackupAPIImpl impl)
       throws Exception {
     final int numBackupIters = 20; // don't use 'atLeast', we don't want to blow up on nightly
@@ -203,13 +203,13 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
 
     heavyCommitting.start();
     try {
-      // now have the "main" test thread try to take a serious of backups/snapshots
+      // now have the "main" test thread try to take a series of backups/snapshots
       // while adding other "real" docs
 
       final Queue<String> namedSnapshots = new LinkedList<>();
 
       // NOTE #1: start at i=1 for 'id' & doc counting purposes...
-      // NOTE #2: abort quickly if the oher thread reports a heavyCommitFailure...
+      // NOTE #2: abort quickly if the other thread reports a heavyCommitFailure...
       for (int i = 1; (i <= numBackupIters && null == heavyCommitFailure.get()); i++) {
 
         // in each iteration '#i', the commit we create should have exactly 'i' documents in
@@ -246,7 +246,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
         if (3 < namedSnapshots.size()
             && random().nextInt(3 + numBackupIters - i) < random().nextInt(namedSnapshots.size())) {
 
-          assert 0 < namedSnapshots.size() : "Someone broke the conditionl";
+          assert 0 < namedSnapshots.size() : "Something broke the conditional";
           final String snapshotName = namedSnapshots.poll();
           final String backupName = "backup_as_of_" + snapshotName;
           log.info("Creating {} from {} in iter={}", backupName, snapshotName, i);
@@ -298,7 +298,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
   }
 
   /**
-   * Given a backup name, extrats the numberic suffix identifying how many "real" docs should be in
+   * Given a backup name, extracts the numeric suffix identifying how many "real" docs should be in
    * it
    *
    * @see #ENDS_WITH_INT_DIGITS
@@ -311,7 +311,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
 
   /**
    * Validates a backup exists, passes check index, and contains a number of "real" documents that
-   * match it's name
+   * match its name
    *
    * @see #validateBackup(File)
    */
@@ -322,7 +322,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
 
   /**
    * Validates a backup dir exists, passes check index, and contains a number of "real" documents
-   * that match it's name
+   * that match its name
    *
    * @see #getNumRealDocsFromBackupName
    */

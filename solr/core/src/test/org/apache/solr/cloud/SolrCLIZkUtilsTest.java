@@ -158,7 +158,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     verifyZkLocalPathsMatch(
         Paths.get(tmp.toAbsolutePath().toString(), "conf"), "/configs/downconfig1");
 
-    // Insure that empty files don't become directories (SOLR-11198)
+    // Ensure that empty files don't become directories (SOLR-11198)
 
     Path emptyFile = Paths.get(tmp.toAbsolutePath().toString(), "conf", "stopwords", "emptyfile");
     Files.createFile(emptyFile);
@@ -815,7 +815,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     assertTrue("Return should contain the conf directory", content.contains("lister"));
     assertTrue("Return should contain a child node", content.contains("solrconfig.xml"));
 
-    // Saw a case where going from root foo'd, so test it.
+    // Saw a case where going from root didn't work, so test it.
     args =
         new String[] {
           "-path", "/",
@@ -846,7 +846,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     assertEquals("List should have succeeded", res, 0);
     assertFalse("Return should not contain /zookeeper", content.contains("/zookeeper"));
 
-    // Saw a case where ending in slash foo'd, so test it.
+    // Saw a case where ending in slash didn't work, so test it.
     args =
         new String[] {
           "-path", "/configs/",
@@ -992,7 +992,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
         new SimpleFileVisitor<Path>() {
           void checkPathOnZk(Path path) {
             String znode = ZkMaintenanceUtils.createZkNodeName(zkRoot, fileRoot, path);
-            try { // It's easier to catch this exception and fail than catch it everywher eles.
+            try { // It's easier to catch this exception and fail than catch it everywhere else.
               assertTrue(
                   "Should have found " + znode + " on Zookeeper", zkClient.exists(znode, true));
             } catch (Exception e) {
@@ -1020,14 +1020,14 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
         });
   }
 
-  // Insure that all znodes in first are in second and vice-versa
+  // Ensure that all znodes in first are in second and vice-versa
   private void verifyZnodesMatch(String first, String second)
       throws KeeperException, InterruptedException {
     verifyFirstZNodesInSecond(first, second);
     verifyFirstZNodesInSecond(second, first);
   }
 
-  // Note, no folderol here with Windows path names.
+  // Note, no fuss here with Windows path names.
   private void verifyFirstZNodesInSecond(String first, String second)
       throws KeeperException, InterruptedException {
     for (String node : zkClient.getChildren(first, null, true)) {

@@ -161,7 +161,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
     // sort=index + offset + limit w/ some variables
     for (SolrParams variableParams :
         new SolrParams[] { // bother variations should kwrk just as well
-          // defauts
+          // defaults
           params(),
           // force refinement
           params(
@@ -347,7 +347,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
         rsp = query(p);
         assertPivot("place_s", "cardiff", 107, rsp.getFacetPivot().get("place_s").get(0));
         // - zeroShard  = 50 ... above per-shard min of 50/(numShards=4)
-        // - oneShard   =  5 ... below per-shard min of 50/(numShards=4) .. should be refined
+        // - oneShard   =  5 ... below per-shard min of 50/(numShards=4)... should be refined
         // - twoShard   = 52 ... above per-shard min of 50/(numShards=4)
         // = threeShard =  0 ... should be refined and still match nothing
       } catch (AssertionError ae) {
@@ -1558,7 +1558,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
         SPECIAL);
 
     // two really trivial documents, unrelated to the rest of the tests,
-    // for the purpose of demoing the porblem with mincount=0
+    // to demonstrate the problem with mincount=0
     addPivotDoc(oneShard, "id", getDocNum(), "top_s", "aaa", "sub_s", "bbb");
     addPivotDoc(twoShard, "id", getDocNum(), "top_s", "xxx", "sub_s", "yyy");
 

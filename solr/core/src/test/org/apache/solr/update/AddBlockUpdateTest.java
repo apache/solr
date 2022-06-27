@@ -852,7 +852,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   }
 
   /**
-   * on the given abcD it generates one parent doc, taking D from the tail and two subdocs relaitons
+   * on the given abcD it generates one parent doc, taking D from the tail and two subdocs relations
    * ab and c uniq ids are supplied also
    *
    * <pre>{@code
