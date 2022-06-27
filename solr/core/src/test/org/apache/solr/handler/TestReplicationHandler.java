@@ -1084,9 +1084,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         int cnt = indexDirCount(ddir);
         // if after reload, there may be 2 index dirs while the reloaded SolrCore closes.
         if (afterReload) {
-          assertTrue(
-              "found:" + cnt + Arrays.asList(new File(ddir).list()),
-              1 == cnt || 2 == cnt);
+          assertTrue("found:" + cnt + Arrays.asList(new File(ddir).list()), 1 == cnt || 2 == cnt);
         } else {
           assertTrue("found:" + cnt + Arrays.asList(new File(ddir).list()), 1 == cnt);
         }

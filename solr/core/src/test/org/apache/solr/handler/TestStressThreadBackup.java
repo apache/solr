@@ -191,9 +191,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
                 log.info("Heavy Committing #{}: {}", docIdCounter, req);
                 final UpdateResponse rsp = req.process(coreClient);
                 assertEquals(
-                    "Dummy Doc#" + docIdCounter + " add status: " + rsp,
-                    0,
-                    rsp.getStatus());
+                    "Dummy Doc#" + docIdCounter + " add status: " + rsp, 0, rsp.getStatus());
               }
             } catch (Throwable t) {
               heavyCommitFailure.set(t);

@@ -301,12 +301,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     // try with recurse not specified
     args =
         new String[] {
-          "-src",
-          "file:" + srcPathCheck.toAbsolutePath(),
-          "-dst",
-          "zk:/cp5Fail",
-          "-zkHost",
-          zkAddr,
+          "-src", "file:" + srcPathCheck.toAbsolutePath(), "-dst", "zk:/cp5Fail", "-zkHost", zkAddr,
         };
 
     res =
@@ -359,10 +354,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     args =
         new String[] {
           "-src",
-          "file:"
-              + srcPathCheck.normalize().toAbsolutePath()
-              + File.separator
-              + "solrconfig.xml",
+          "file:" + srcPathCheck.normalize().toAbsolutePath() + File.separator + "solrconfig.xml",
           "-dst",
           "zk:/powerup/",
           "-recurse",
@@ -385,10 +377,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     args =
         new String[] {
           "-src",
-          "file:"
-              + srcPathCheck.normalize().toAbsolutePath()
-              + File.separator
-              + "solrconfig.xml",
+          "file:" + srcPathCheck.normalize().toAbsolutePath() + File.separator + "solrconfig.xml",
           "-dst",
           "zk:/copyUpFile.xml",
           "-recurse",
@@ -977,10 +966,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
       Path thisPath = Paths.get(fileRoot.toAbsolutePath().toString(), child);
       assertTrue(
-          "Znode "
-              + child
-              + " should have been found on disk at "
-              + fileRoot.toAbsolutePath(),
+          "Znode " + child + " should have been found on disk at " + fileRoot.toAbsolutePath(),
           Files.exists(thisPath));
       verifyAllZNodesAreFiles(thisPath, zkRoot + child);
     }

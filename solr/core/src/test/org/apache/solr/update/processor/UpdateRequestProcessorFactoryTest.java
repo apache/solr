@@ -187,9 +187,7 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
         expectedProcLen++; // NestedUpdate sneaks in via RunUpdate's Factory.
       }
       assertEquals(
-          name + " (distrib) chain has wrong length: " + procs,
-          expectedProcLen,
-          procs.size());
+          name + " (distrib) chain has wrong length: " + procs, expectedProcLen, procs.size());
     }
   }
 

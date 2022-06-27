@@ -269,9 +269,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
                           doc(f("id", S_TWO_PRE + "Y"), f("foo_i", "bogus_val_Y")))
                       .process(c));
       assertEquals(
-          "not the type of error we were expecting (" + e.code() + "): " + e,
-          400,
-          e.code());
+          "not the type of error we were expecting (" + e.code() + "): " + e, 400, e.code());
 
       // verify malformed deleteByQuery's fail
       e =
@@ -727,9 +725,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
         actualKnownErrs.add(err);
       }
       assertEquals(
-          "wrong number of errors in metadata: " + remoteErrMetadata,
-          11,
-          actualKnownErrsCount);
+          "wrong number of errors in metadata: " + remoteErrMetadata, 11, actualKnownErrsCount);
       assertEquals(
           "at least one dup error in metadata: " + remoteErrMetadata,
           actualKnownErrsCount,
@@ -830,9 +826,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
         actualKnownErrs.add(err);
       }
       assertEquals(
-          "wrong number of errors in metadata: " + remoteErrMetadata,
-          11,
-          actualKnownErrsCount);
+          "wrong number of errors in metadata: " + remoteErrMetadata, 11, actualKnownErrsCount);
       assertEquals(
           "at least one dup error in metadata: " + remoteErrMetadata,
           actualKnownErrsCount,
@@ -939,9 +933,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
         assertTrue("failed id didn't match 'unknown': " + err, err.getId().contains("unknown"));
       }
       assertEquals(
-          "wrong number of errors in metadata: " + remoteErrMetadata,
-          11,
-          actualKnownErrsCount);
+          "wrong number of errors in metadata: " + remoteErrMetadata, 11, actualKnownErrsCount);
     }
 
     assertEquals(0, client.commit().getStatus()); // need to force since update didn't finish
@@ -1133,9 +1125,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
         actualKnownErrs.add(err);
       }
       assertEquals(
-          "wrong number of errors in metadata: " + remoteErrMetadata,
-          4,
-          actualKnownErrsCount);
+          "wrong number of errors in metadata: " + remoteErrMetadata, 4, actualKnownErrsCount);
       assertEquals(
           "at least one dup error in metadata: " + remoteErrMetadata,
           actualKnownErrsCount,
@@ -1178,9 +1168,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
 
     assertNotNull(assertionMsgPrefix + ": Null errors: " + response, errors);
     assertEquals(
-        assertionMsgPrefix + ": Num error ids: " + errors,
-        expectedErrs.length,
-        errors.size());
+        assertionMsgPrefix + ": Num error ids: " + errors, expectedErrs.length, errors.size());
 
     for (SimpleOrderedMap<String> err : errors) {
       String assertErrPre = assertionMsgPrefix + ": " + err.toString();

@@ -36,8 +36,7 @@ public class TimeZoneUtilsTest extends SolrTestCase {
 
     final boolean same = expected.hasSameRules(actual);
 
-    assertTrue(
-        label + ": " + expected + " [[NOT SAME RULES]] " + actual, same);
+    assertTrue(label + ": " + expected + " [[NOT SAME RULES]] " + actual, same);
   }
 
   public void testValidIds() {

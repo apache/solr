@@ -694,9 +694,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
         }
       }
       if (livePos == Integer.MAX_VALUE) {
-        fail(
-            "Invalid state! We should have a replica to add the property to! "
-                + docCollection);
+        fail("Invalid state! We should have a replica to add the property to! " + docCollection);
       }
 
       uniquePropMap.put(slice.getName(), changedRep.getName());

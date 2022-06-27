@@ -262,9 +262,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
         }
       }
       assertEquals(
-          "expected error count sanity check: " + req,
-          expectedErrorsCount,
-          expectedErrors.size());
+          "expected error count sanity check: " + req, expectedErrorsCount, expectedErrors.size());
 
       final SolrClient client =
           random().nextBoolean()

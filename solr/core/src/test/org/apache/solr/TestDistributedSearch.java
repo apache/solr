@@ -878,8 +878,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
         assertTrue(
             "Ran out of actual keys as of : " + i + "->" + expectedKey, actualKeys.hasNext());
         assertEquals(expectedKey, actualKeys.next());
-        assertEquals(
-            "percentiles are off: " + p, expectedVals[i], p.get(expectedKey), 1.0D);
+        assertEquals("percentiles are off: " + p, expectedVals[i], p.get(expectedKey), 1.0D);
       }
 
       //
@@ -2031,8 +2030,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
                   info.get("error") != null);
             } else {
               assertTrue(
-                  "Expected timeAllowedError or to find shardAddress in the up shard info: "
-                      + info,
+                  "Expected timeAllowedError or to find shardAddress in the up shard info: " + info,
                   info.get("shardAddress") != null);
             }
           } else {

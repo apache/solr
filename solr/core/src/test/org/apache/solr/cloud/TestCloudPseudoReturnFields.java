@@ -160,10 +160,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
         assertNotNull(
             "Test depends on a (dynamic) field matching '" + name + "', Null response", frsp);
         assertEquals(
-            "Test depends on a (dynamic) field matching '"
-                + name
-                + "', bad status: "
-                + frsp,
+            "Test depends on a (dynamic) field matching '" + name + "', bad status: " + frsp,
             0,
             frsp.getStatus());
         assertNotNull(
@@ -956,10 +953,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
         "does not match exactly one doc: " + p.toString() + " => " + docs.toString(),
         1,
         docs.getNumFound());
-    assertEquals(
-        "does not contain exactly one doc: " + p + " => " + docs,
-        1,
-        docs.size());
+    assertEquals("does not contain exactly one doc: " + p + " => " + docs, 1, docs.size());
     return docs.get(0);
   }
 
@@ -974,8 +968,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
         "does not match at least one doc: " + p + " => " + rsp,
         1 <= rsp.getResults().getNumFound());
     assertTrue(
-        "rsp does not contain at least one doc: " + p + " => " + rsp,
-        1 <= rsp.getResults().size());
+        "rsp does not contain at least one doc: " + p + " => " + rsp, 1 <= rsp.getResults().size());
     return rsp.getResults();
   }
 

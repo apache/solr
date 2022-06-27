@@ -99,8 +99,7 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     assertNotNull(schema.getFieldOrNull(fieldName));
     assertEquals("pfloats", schema.getFieldType(fieldName).getTypeName());
     assertU(commit());
-    assertQ(
-        req("id:2"), "//arr[@name='" + fieldName + "']/float[.='" + floatValue + "']");
+    assertQ(req("id:2"), "//arr[@name='" + fieldName + "']/float[.='" + floatValue + "']");
   }
 
   public void testSingleFieldMixedFieldTypesRoundTrip() throws Exception {

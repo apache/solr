@@ -5957,8 +5957,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
     final SchemaField sf = h.getCore().getLatestSchema().getField(fieldName);
     final List<IndexableField> results = sf.createFields(value);
     final Set<IndexableField> resultSet = new LinkedHashSet<>(results);
-    assertEquals(
-        "duplicates found in results? " + results, results.size(), resultSet.size());
+    assertEquals("duplicates found in results? " + results, results.size(), resultSet.size());
 
     final Set<Class<?>> resultClasses = new HashSet<>();
     for (IndexableField f : results) {
