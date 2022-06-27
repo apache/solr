@@ -24,26 +24,16 @@ import org.eclipse.jetty.servlet.ServletHolder;
 
 public class JettyConfig {
 
-  // by default jetty will start with http2 + http1 support
   public final boolean onlyHttp1;
-
   public final int port;
-
-  public final String context;
-
-  public final boolean enableV2;
-
-  public final boolean stopAtShutdown;
-
-  public final Long waitForLoadingCoresToFinishMs;
-
-  public final Map<ServletHolder, String> extraServlets;
-
-  public final Map<Class<? extends Filter>, String> extraFilters;
-
-  public final SSLConfig sslConfig;
-
   public final int portRetryTime;
+  public final String context;
+  public final boolean stopAtShutdown;
+  public final Long waitForLoadingCoresToFinishMs;
+  public final Map<ServletHolder, String> extraServlets;
+  public final Map<Class<? extends Filter>, String> extraFilters;
+  public final SSLConfig sslConfig;
+  public final boolean enableV2;
 
   private JettyConfig(
       boolean onlyHttp1,
@@ -58,13 +48,13 @@ public class JettyConfig {
       boolean enableV2) {
     this.onlyHttp1 = onlyHttp1;
     this.port = port;
+    this.portRetryTime = portRetryTime;
     this.context = context;
     this.stopAtShutdown = stopAtShutdown;
     this.waitForLoadingCoresToFinishMs = waitForLoadingCoresToFinishMs;
     this.extraServlets = extraServlets;
     this.extraFilters = extraFilters;
     this.sslConfig = sslConfig;
-    this.portRetryTime = portRetryTime;
     this.enableV2 = enableV2;
   }
 
@@ -74,12 +64,17 @@ public class JettyConfig {
 
   public static Builder builder(JettyConfig other) {
     Builder builder = new Builder();
+
+    builder.onlyHttp1 = other.onlyHttp1;
     builder.port = other.port;
+    builder.portRetryTime = other.portRetryTime;
     builder.context = other.context;
     builder.stopAtShutdown = other.stopAtShutdown;
+    builder.waitForLoadingCoresToFinishMs = other.waitForLoadingCoresToFinishMs;
     builder.extraServlets = other.extraServlets;
     builder.extraFilters = other.extraFilters;
     builder.sslConfig = other.sslConfig;
+    builder.enableV2 = other.enableV2;
     return builder;
   }
 
