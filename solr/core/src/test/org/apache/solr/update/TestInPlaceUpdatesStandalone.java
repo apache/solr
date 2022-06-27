@@ -1501,11 +1501,9 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
     assertTrue(inPlaceUpdatedFields.isEmpty());
   }
 
-
   /**
    * Test the @see {@link AtomicUpdateDocumentMerger#doInPlaceUpdateMerge(AddUpdateCommand,Set)}
    * method is working fine
-   *
    */
   @Test
   public void testDoInPlaceUpdateMerge() throws Exception {
