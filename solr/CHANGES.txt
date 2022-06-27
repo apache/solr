@@ -99,6 +99,8 @@ Build
 
 * Upgrade forbiddenapis to 3.3 (Uwe Schindler)
 
+* SOLR-16258: Gradle no longer uses "errorprone" by default (Dawid Weiss, Uwe Schindler, hossman)
+
 ==================  9.0.0 ==================
 
 New Features
