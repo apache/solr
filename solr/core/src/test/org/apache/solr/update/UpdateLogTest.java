@@ -59,7 +59,7 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
 
   /**
    * @see org.apache.solr.update.UpdateLog#applyPartialUpdates
-   * @return
+   *
    */
   @Test
   public void testApplyPartialUpdatesOnMultipleInPlaceUpdatesInSequence() {
