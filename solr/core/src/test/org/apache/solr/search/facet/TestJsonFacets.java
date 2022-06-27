@@ -5076,7 +5076,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   }
 
   /** atomically resets the actual AtomicLong value matches the expected and resets it to 0 */
-    private static void assertEqualsAndReset(String msg, long expected, AtomicLong actual) {
+  private static void assertEqualsAndReset(String msg, long expected, AtomicLong actual) {
     final long current = actual.getAndSet(0);
     assertEquals(msg, expected, current);
   }

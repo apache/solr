@@ -385,8 +385,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
   /**
    * uses a Cursor to iterate over every doc in the index, recording the 'id_i' value in a BitSet
    */
-  private static BitSet allDocs(final SolrClient c, final int maxDocIdExpected)
-      throws Exception {
+  private static BitSet allDocs(final SolrClient c, final int maxDocIdExpected) throws Exception {
     BitSet docs = new BitSet(maxDocIdExpected + 1);
     String cursorMark = CURSOR_MARK_START;
     int docsOnThisPage = Integer.MAX_VALUE;
