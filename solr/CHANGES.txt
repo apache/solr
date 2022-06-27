@@ -37,6 +37,8 @@ Optimizations
 
 * SOLR-16146: Avoid loading all collections during node startup (noble)
 
+* SOLR-16266: Eliminate unneccessary byte[] copy in Http2SolrClient (hossman)
+
 Bug Fixes
 ---------------------
 * SOLR-15918: Skip repetitive parent znode creation on config set upload (Mike Drob)

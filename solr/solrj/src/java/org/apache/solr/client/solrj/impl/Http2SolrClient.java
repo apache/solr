@@ -29,6 +29,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -77,7 +78,7 @@ import org.eclipse.jetty.client.ProtocolHandlers;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
-import org.eclipse.jetty.client.util.BytesContentProvider;
+import org.eclipse.jetty.client.util.ByteBufferContentProvider;
 import org.eclipse.jetty.client.util.FormContentProvider;
 import org.eclipse.jetty.client.util.InputStreamContentProvider;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
@@ -616,12 +617,14 @@ public class Http2SolrClient extends SolrClient {
 
       if (contentWriter != null) {
         Request req = httpClient.newRequest(url + wparams.toQueryString()).method(method);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
         contentWriter.write(baos);
 
-        // TODO reduce memory usage
+        // SOLR-16265: TODO reduce memory usage
         return req.content(
-            new BytesContentProvider(contentWriter.getContentType(), baos.toByteArray()));
+            // We're throwing this BAOS away, so no need to copy the byte[], just use the raw buf
+            new ByteBufferContentProvider(
+                contentWriter.getContentType(), ByteBuffer.wrap(baos.getbuf(), 0, baos.size())));
       } else if (streams == null || isMultipart) {
         // send server list and request list as query string params
         ModifiableSolrParams queryParams = calculateQueryParams(this.queryParams, wparams);
