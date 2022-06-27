@@ -91,6 +91,8 @@ Bug Fixes
 
 * SOLR-16259: Missing newline at the end of solr.in.sh breaks the installer. (John Gately via Shawn Heisey)
 
+* SOLR-16241: Fix JettyConfig.builder(JettyConfig) to correctly copy all attributes (hossman)
+
 Other Changes
 ---------------------
 * SOLR-15897: Remove <jmx/> from all unit test solrconfig.xml files. (Eric Pugh)
