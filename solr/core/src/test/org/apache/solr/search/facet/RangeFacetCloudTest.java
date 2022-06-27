@@ -173,7 +173,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
 
           } catch (AssertionError | RuntimeException ae) {
             throw new AssertionError(
-                solrQuery.toString() + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
+                solrQuery + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
           }
         }
       }
@@ -220,7 +220,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
 
           } catch (AssertionError | RuntimeException ae) {
             throw new AssertionError(
-                solrQuery.toString() + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
+                solrQuery + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
           }
         }
       }
@@ -267,7 +267,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
 
           } catch (AssertionError | RuntimeException ae) {
             throw new AssertionError(
-                solrQuery.toString() + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
+                solrQuery + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
           }
         }
       }
@@ -327,7 +327,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
 
         } catch (AssertionError | RuntimeException ae) {
           throw new AssertionError(
-              solrQuery.toString() + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
+              solrQuery + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
         }
       }
     }
@@ -371,7 +371,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
 
         } catch (AssertionError | RuntimeException ae) {
           throw new AssertionError(
-              solrQuery.toString() + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
+              solrQuery + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
         }
       }
     }
@@ -420,7 +420,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
 
         } catch (AssertionError | RuntimeException ae) {
           throw new AssertionError(
-              solrQuery.toString() + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
+              solrQuery + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
         }
       }
     }
@@ -469,7 +469,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
 
           } catch (AssertionError | RuntimeException ae) {
             throw new AssertionError(
-                solrQuery.toString() + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
+                solrQuery + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
           }
         }
       }
@@ -519,7 +519,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
 
           } catch (AssertionError | RuntimeException ae) {
             throw new AssertionError(
-                solrQuery.toString() + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
+                solrQuery + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
           }
         }
       }
@@ -569,7 +569,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
 
           } catch (AssertionError | RuntimeException ae) {
             throw new AssertionError(
-                solrQuery.toString() + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
+                solrQuery + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
           }
         }
       }
@@ -622,7 +622,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
 
           } catch (AssertionError | RuntimeException ae) {
             throw new AssertionError(
-                solrQuery.toString() + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
+                solrQuery + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
           }
         }
       }
@@ -697,7 +697,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
 
           } catch (AssertionError | RuntimeException ae) {
             throw new AssertionError(
-                solrQuery.toString() + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
+                solrQuery + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
           }
 
           // second query, using mincount...
@@ -746,7 +746,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
 
           } catch (AssertionError | RuntimeException ae) {
             throw new AssertionError(
-                solrQuery.toString() + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
+                solrQuery + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
           }
         }
       }
@@ -798,7 +798,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
 
           } catch (AssertionError | RuntimeException ae) {
             throw new AssertionError(
-                solrQuery.toString() + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
+                solrQuery + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
           }
         }
       }
@@ -849,7 +849,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
           }
         } catch (AssertionError | RuntimeException ae) {
           throw new AssertionError(
-              solrQuery.toString() + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
+              solrQuery + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
         }
       }
     }
@@ -899,7 +899,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
           }
         } catch (AssertionError | RuntimeException ae) {
           throw new AssertionError(
-              solrQuery.toString() + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
+              solrQuery + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
         }
       }
     }
@@ -955,7 +955,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
 
       } catch (AssertionError | RuntimeException ae) {
         throw new AssertionError(
-            solrQuery.toString() + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
+            solrQuery + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
       }
 
       // with mincount
@@ -995,7 +995,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
         }
       } catch (AssertionError | RuntimeException ae) {
         throw new AssertionError(
-            solrQuery.toString() + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
+            solrQuery + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
       }
     }
   }

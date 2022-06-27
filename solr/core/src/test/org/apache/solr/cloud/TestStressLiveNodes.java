@@ -141,7 +141,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
 
       // sanity check that ZK says there is in fact 1 live node
       List<String> actualLiveNodes = getTrueLiveNodesFromZk();
-      assertEquals("iter" + iter + ": " + actualLiveNodes.toString(), 1, actualLiveNodes.size());
+      assertEquals("iter" + iter + ": " + actualLiveNodes, 1, actualLiveNodes.size());
 
       // only here do we forcibly update the cached live nodes, so we don't have to wait for it to
       // catch up with all the ephemeral nodes that vanished after the last iteration

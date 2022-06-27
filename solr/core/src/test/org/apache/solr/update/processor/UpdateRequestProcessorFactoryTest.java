@@ -113,7 +113,7 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
 
       // either explicitly, or because of injection
       assertEquals(
-          name + " factory chain length: " + chain.toString(),
+          name + " factory chain length: " + chain,
           EXPECTED_CHAIN_LENGTH,
           chain.getProcessors().size());
 
@@ -131,11 +131,11 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
         expectedProcLen++; // NestedUpdate sneaks in via RunUpdate's Factory.
       }
 
-      assertEquals(name + " procs size: " + procs.toString(), expectedProcLen, procs.size());
+      assertEquals(name + " procs size: " + procs, expectedProcLen, procs.size());
 
       // Custom comes first in all three of our chains
       assertTrue(
-          name + " first processor isn't a CustomUpdateRequestProcessor: " + procs.toString(),
+          name + " first processor isn't a CustomUpdateRequestProcessor: " + procs,
           ( // compare them both just because I'm going insane and the more checks the better
           proc instanceof CustomUpdateRequestProcessor
               && procs.get(0) instanceof CustomUpdateRequestProcessor));
@@ -145,7 +145,7 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
       assertNotNull(name + " second proc is null", procs.get(1));
 
       assertTrue(
-          name + " second proc isn't LogUpdateProcessor: " + procs.toString(),
+          name + " second proc isn't LogUpdateProcessor: " + procs,
           ( // compare them both just because I'm going insane and the more checks the better
           proc.next instanceof LogUpdateProcessorFactory.LogUpdateProcessor
               && procs.get(1) instanceof LogUpdateProcessorFactory.LogUpdateProcessor));
@@ -163,14 +163,14 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
       assertTrue(
           name
               + " (distrib) first proc should be LogUpdateProcessor because of @RunAlways: "
-              + procs.toString(),
+              + procs,
           ( // compare them both just because I'm going insane and the more checks the better
           proc instanceof LogUpdateProcessorFactory.LogUpdateProcessor
               && procs.get(0) instanceof LogUpdateProcessorFactory.LogUpdateProcessor));
 
       // for these 3 (distrib) chains, the last proc should always be RunUpdateProcessor
       assertTrue(
-          name + " (distrib) last processor isn't a RunUpdateProcessor: " + procs.toString(),
+          name + " (distrib) last processor isn't a RunUpdateProcessor: " + procs,
           procs.get(procs.size() - 1) instanceof RunUpdateProcessorFactory.RunUpdateProcessor);
 
       // either 1 proc was droped in distrib mode, or 1 for the "implicit" chain
@@ -187,7 +187,7 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
         expectedProcLen++; // NestedUpdate sneaks in via RunUpdate's Factory.
       }
       assertEquals(
-          name + " (distrib) chain has wrong length: " + procs.toString(),
+          name + " (distrib) chain has wrong length: " + procs,
           expectedProcLen,
           procs.size());
     }

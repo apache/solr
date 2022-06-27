@@ -246,11 +246,11 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
         new BackupStatusChecker(leaderClient, "/" + DEFAULT_TEST_CORENAME + "/replication");
     for (int i = 0; i < 2; i++) {
       final Path p = Paths.get(leader.getDataDir(), "snapshot." + backupNames[i]);
-      assertTrue("WTF: Backup doesn't exist: " + p.toString(), Files.exists(p));
+      assertTrue("WTF: Backup doesn't exist: " + p, Files.exists(p));
       runBackupCommand(
           leaderJetty, ReplicationHandler.CMD_DELETE_BACKUP, "&name=" + backupNames[i]);
       backupStatus.waitForBackupDeletionSuccess(backupNames[i], 30);
-      assertFalse("backup still exists after deletion: " + p.toString(), Files.exists(p));
+      assertFalse("backup still exists after deletion: " + p, Files.exists(p));
     }
   }
 

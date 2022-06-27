@@ -191,7 +191,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
                 log.info("Heavy Committing #{}: {}", docIdCounter, req);
                 final UpdateResponse rsp = req.process(coreClient);
                 assertEquals(
-                    "Dummy Doc#" + docIdCounter + " add status: " + rsp.toString(),
+                    "Dummy Doc#" + docIdCounter + " add status: " + rsp,
                     0,
                     rsp.getStatus());
               }
@@ -221,7 +221,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
         req.setParam(UpdateParams.OPEN_SEARCHER, "false"); // we don't care about searching
 
         final UpdateResponse rsp = req.process(coreClient);
-        assertEquals("Real Doc#" + i + " add status: " + rsp.toString(), 0, rsp.getStatus());
+        assertEquals("Real Doc#" + i + " add status: " + rsp, 0, rsp.getStatus());
 
         // create a backup of the 'current' index
         impl.makeBackup("backup_currentAt_" + i);
@@ -278,7 +278,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
       delAll.setParam(UpdateParams.OPTIMIZE, "true");
       delAll.setParam(UpdateParams.MAX_OPTIMIZE_SEGMENTS, "1"); // purge as many files as possible
       final UpdateResponse delRsp = delAll.process(coreClient);
-      assertEquals("dellAll status: " + delRsp.toString(), 0, delRsp.getStatus());
+      assertEquals("dellAll status: " + delRsp, 0, delRsp.getStatus());
     }
 
     { // Validate some backups at random...
@@ -330,14 +330,14 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
     log.info("Checking Validity of {}", backup);
     assertTrue(backup.toString() + ": isDir?", backup.isDirectory());
     final Matcher m = ENDS_WITH_INT_DIGITS.matcher(backup.getName());
-    assertTrue("Backup dir name does not end with int digits: " + backup.toString(), m.find());
+    assertTrue("Backup dir name does not end with int digits: " + backup, m.find());
     final int numRealDocsExpected = Integer.parseInt(m.group());
 
     try (Directory dir = FSDirectory.open(backup.toPath())) {
       TestUtil.checkIndex(dir, true, true, true, null);
       try (DirectoryReader r = DirectoryReader.open(dir)) {
         assertEquals(
-            "num real docs in " + backup.toString(),
+            "num real docs in " + backup,
             numRealDocsExpected,
             r.docFreq(new Term("type_s", "real")));
       }

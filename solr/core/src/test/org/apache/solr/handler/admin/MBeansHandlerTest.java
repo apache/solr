@@ -204,7 +204,7 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
                 } catch (Exception e) {
                   runSnapshots = false;
                   e.printStackTrace();
-                  fail("Exception getting metrics snapshot: " + e.toString());
+                  fail("Exception getting metrics snapshot: " + e);
                 }
                 try {
                   Thread.sleep(53);

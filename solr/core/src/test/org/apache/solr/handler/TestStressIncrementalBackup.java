@@ -134,7 +134,7 @@ public class TestStressIncrementalBackup extends SolrCloudTestCase {
                 log.info("Heavy Committing #{}: {}", docIdCounter, req);
                 final UpdateResponse rsp = req.process(coreClient);
                 assertEquals(
-                    "Dummy Doc#" + docIdCounter + " add status: " + rsp.toString(),
+                    "Dummy Doc#" + docIdCounter + " add status: " + rsp,
                     0,
                     rsp.getStatus());
               }
@@ -162,7 +162,7 @@ public class TestStressIncrementalBackup extends SolrCloudTestCase {
         req.setParam(UpdateParams.OPEN_SEARCHER, "false"); // we don't care about searching
 
         final UpdateResponse rsp = req.process(coreClient);
-        assertEquals("Real Doc#" + i + " add status: " + rsp.toString(), 0, rsp.getStatus());
+        assertEquals("Real Doc#" + i + " add status: " + rsp, 0, rsp.getStatus());
 
         makeBackup();
       }

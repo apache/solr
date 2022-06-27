@@ -144,7 +144,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       assertNotNull("Cluster contains null jetty?", jetty);
       final URL baseUrl = jetty.getBaseUrl();
-      assertNotNull("Jetty has null baseUrl: " + jetty.toString(), baseUrl);
+      assertNotNull("Jetty has null baseUrl: " + jetty, baseUrl);
       CLIENTS.add(getHttpSolrClient(baseUrl + "/" + COLLECTION_NAME + "/"));
     }
 
@@ -305,7 +305,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
       final int initValue = random().nextInt();
       SolrInputDocument doc = doc(f("id", "" + id), f(numericFieldName, initValue));
       UpdateResponse rsp = update(doc).process(CLOUD_CLIENT);
-      assertEquals(doc.toString() + " => " + rsp.toString(), 0, rsp.getStatus());
+      assertEquals(doc + " => " + rsp, 0, rsp.getStatus());
       if (0 == id % DOC_ID_INCR) {
         expected[id / DOC_ID_INCR] = new AtomicLong(initValue);
       }
@@ -541,7 +541,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     assertNotNull("expected contains no name: " + expected, fieldName);
     FieldResponse rsp = new Field(fieldName).process(CLOUD_CLIENT);
     assertNotNull("Field Null Response: " + fieldName, rsp);
-    assertEquals("Field Status: " + fieldName + " => " + rsp.toString(), 0, rsp.getStatus());
+    assertEquals("Field Status: " + fieldName + " => " + rsp, 0, rsp.getStatus());
     assertEquals("Field: " + fieldName, expected, rsp.getField());
   }
 
@@ -557,7 +557,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     assertNotNull("expected contains no type: " + expected, typeName);
     FieldTypeResponse rsp = new FieldType(typeName).process(CLOUD_CLIENT);
     assertNotNull("FieldType Null Response: " + typeName, rsp);
-    assertEquals("FieldType Status: " + typeName + " => " + rsp.toString(), 0, rsp.getStatus());
+    assertEquals("FieldType Status: " + typeName + " => " + rsp, 0, rsp.getStatus());
     assertEquals("FieldType: " + typeName, expected, rsp.getFieldType().getAttributes());
   }
 }

@@ -3399,7 +3399,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
       builder.append(value);
     }
     assertQ(
-        req("debug", "true", "q", field + ":(" + builder.toString() + ")"),
+        req("debug", "true", "q", field + ":(" + builder + ")"),
         getTestString(searchable, numValues));
 
     assertU(
@@ -4797,7 +4797,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
       builder.append(value);
     }
     assertQ(
-        req("debug", "true", "q", field + ":(" + builder.toString() + ")"),
+        req("debug", "true", "q", field + ":(" + builder + ")"),
         getTestString(searchable, numValues));
 
     clearIndex();
@@ -5724,7 +5724,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
     assertQ(req("q", "id:1"), "//result/doc[1]/date[@name='" + field + "'][.='" + date1 + "']");
 
-    assertU(adoc(sdoc("id", "1", field, ImmutableMap.of("set", date1 + gap.toString()))));
+    assertU(adoc(sdoc("id", "1", field, ImmutableMap.of("set", date1 + gap))));
     assertU(commit());
 
     assertQ(req("q", "id:1"), "//result/doc[1]/date[@name='" + field + "'][.='" + date2 + "']");
@@ -5958,7 +5958,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
     final List<IndexableField> results = sf.createFields(value);
     final Set<IndexableField> resultSet = new LinkedHashSet<>(results);
     assertEquals(
-        "duplicates found in results? " + results.toString(), results.size(), resultSet.size());
+        "duplicates found in results? " + results, results.size(), resultSet.size());
 
     final Set<Class<?>> resultClasses = new HashSet<>();
     for (IndexableField f : results) {

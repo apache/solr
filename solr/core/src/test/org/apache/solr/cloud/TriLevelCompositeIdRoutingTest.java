@@ -159,7 +159,7 @@ public class TriLevelCompositeIdRoutingTest extends ShardRoutingTest {
     Set<String> uniqueKeys = new HashSet<>();
     for (SolrDocument doc : rsp.getResults()) {
       final String id = (String) doc.get("id");
-      assertNotNull("null id WTF? " + doc.toString(), id);
+      assertNotNull("null id WTF? " + doc, id);
       uniqueKeys.add(id);
     }
     return uniqueKeys;

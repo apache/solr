@@ -294,7 +294,7 @@ public class TestUninvertingReader extends SolrTestCase {
                 + " values per segment, got "
                 + valSetSize
                 + " from: "
-                + ar.toString(),
+                + ar,
             valSetSize <= EXPECTED_VALSET_SIZE);
 
         if (1 == NUM_LEAVES && MULTI_VALUES.contains(f)) {

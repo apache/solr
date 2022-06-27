@@ -105,7 +105,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
       assertEquals(
           "base class(es) has changed, TolerantUpdateProcessor needs updated to ensure it "
               + "overrides all solr update lifcycle methods with exception tracking: "
-              + method.toString(),
+              + method,
           TolerantUpdateProcessor.class,
           method.getDeclaringClass());
     }

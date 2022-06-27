@@ -614,7 +614,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       "<solr> "
           + "<int name=\"transientCacheSize\">2</int> "
           + "<str name=\"configSetBaseDir\">"
-          + Paths.get(TEST_HOME()).resolve("configsets").toString()
+          + Paths.get(TEST_HOME()).resolve("configsets")
           + "</str>"
           + "<solrcloud> "
           + "<str name=\"hostContext\">solrprop</str> "

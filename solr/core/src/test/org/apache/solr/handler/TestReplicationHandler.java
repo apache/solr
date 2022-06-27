@@ -340,7 +340,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         }
 
         assertNotNull(
-            "Expected to see that the follower has replicated" + i + ": " + details.toString(),
+            "Expected to see that the follower has replicated" + i + ": " + details,
             replicatedAtCount);
 
         // we can have more replications than we added docs because a replication can legally fail
@@ -1085,10 +1085,10 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         // if after reload, there may be 2 index dirs while the reloaded SolrCore closes.
         if (afterReload) {
           assertTrue(
-              "found:" + cnt + Arrays.asList(new File(ddir).list()).toString(),
+              "found:" + cnt + Arrays.asList(new File(ddir).list()),
               1 == cnt || 2 == cnt);
         } else {
-          assertTrue("found:" + cnt + Arrays.asList(new File(ddir).list()).toString(), 1 == cnt);
+          assertTrue("found:" + cnt + Arrays.asList(new File(ddir).list()), 1 == cnt);
         }
       }
     }
