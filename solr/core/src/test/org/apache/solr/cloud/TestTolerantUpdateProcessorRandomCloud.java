@@ -352,7 +352,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
    * Given a BitSet, returns a random bit that is currently false, or -1 if all bits are true. NOTE:
    * this method is not fair.
    */
-  public static final int randomUnsetBit(Random r, BitSet bits, final int max) {
+  public static int randomUnsetBit(Random r, BitSet bits, final int max) {
     // NOTE: don't forget, BitSet will grow automatically if not careful
     if (bits.cardinality() == max + 1) {
       return -1;
@@ -378,14 +378,14 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
   }
 
   /** returns the numFound from a *:* query */
-  public static final long countDocs(SolrClient c) throws Exception {
+  public static long countDocs(SolrClient c) throws Exception {
     return c.query(params("q", "*:*", "rows", "0")).getResults().getNumFound();
   }
 
   /**
    * uses a Cursor to iterate over every doc in the index, recording the 'id_i' value in a BitSet
    */
-  private static final BitSet allDocs(final SolrClient c, final int maxDocIdExpected)
+  private static BitSet allDocs(final SolrClient c, final int maxDocIdExpected)
       throws Exception {
     BitSet docs = new BitSet(maxDocIdExpected + 1);
     String cursorMark = CURSOR_MARK_START;

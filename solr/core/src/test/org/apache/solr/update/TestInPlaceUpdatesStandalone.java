@@ -1040,7 +1040,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
     }
 
     /** pick a random type of RandomUpdate */
-    public static final RandomUpdate pick(Random r) {
+    public static RandomUpdate pick(Random r) {
       final int target = TestUtil.nextInt(r, 1, 100);
       int cumulative_odds = 0;
       for (RandomUpdate candidate : RandomUpdate.values()) {

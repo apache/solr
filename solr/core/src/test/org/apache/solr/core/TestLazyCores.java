@@ -898,7 +898,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     return new LocalSolrQueryRequest(core, params(paramPairs));
   }
 
-  private static final String makePath(String... args) {
+  private static String makePath(String... args) {
     return String.join(File.separator, args);
   }
 
