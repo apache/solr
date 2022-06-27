@@ -117,7 +117,7 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
           0, client.query(collectionName, new SolrQuery("*:*")).getResults().getNumFound());
 
       // modify/query collection
-      // not everyone is up to date just because we waited to make sure one was - pause a moment
+      // not everyone is up-to-date just because we waited to make sure one was - pause a moment
       Thread.sleep(100);
       new UpdateRequest().add("id", "1").commit(client, collectionName);
       QueryResponse rsp = client.query(collectionName, new SolrQuery("*:*"));

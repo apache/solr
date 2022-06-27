@@ -88,7 +88,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
 
     final Replica leader = stateReader.getLeaderRetry(COLLECTION, shardId);
 
-    // start by reloading the empty collection so we try to calculate the max from an empty index
+    // start by reloading the empty collection, so we try to calculate the max from an empty index
     reloadCollection(leader, COLLECTION);
 
     sendDoc(1);
@@ -358,7 +358,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
 
   /**
    * Query the real-time get handler for a specific doc by ID to verify it exists in the provided
-   * server, using distrib=false so it doesn't route to another replica.
+   * server, using distrib=false, so it doesn't route to another replica.
    */
   protected Long assertDocExists(HttpSolrClient solr, String coll, String docId, Long expVers)
       throws Exception {

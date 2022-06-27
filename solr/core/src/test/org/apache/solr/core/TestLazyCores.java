@@ -215,7 +215,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
       checkSearch(core4);
 
-      // Now just insure that the normal searching on "collection1" finds _0_ on the same query that
+      // Now just ensure that the normal searching on "collection1" finds _0_ on the same query that
       // found _2_ above. Use of makeReq above and req below is tricky, very tricky.
       SolrCore collection1 = cc.getCore("collection1");
       assertQ(
@@ -572,9 +572,9 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
   // Test that transient cores
   // 1> produce errors as appropriate when the config or schema files are foo'd
-  // 2> "self heal". That is, if the problem is corrected can the core be reloaded and used?
+  // 2> "self-heal". That is, if the problem is corrected can the core be reloaded and used?
   // 3> that OK cores can be searched even when some cores failed to load.
-  // 4> that having no solr.xml entry for transient chache handler correctly uses the default.
+  // 4> that having no solr.xml entry for transient cache handler correctly uses the default.
   @Test
   public void testBadConfigsGenerateErrors() throws Exception {
     final CoreContainer cc =
@@ -617,7 +617,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       copyGoodConf("badSchema1", "schema-tiny.xml", "schema.xml");
       copyGoodConf("badSchema2", "schema-tiny.xml", "schema.xml");
 
-      // Reload the cores and insure that
+      // Reload the cores and ensure that
       // 1> they pick up the new configs
       // 2> they don't fail again b/c they still have entries in loadFailure in core container.
       cc.reload("badConfig1");
@@ -704,7 +704,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     FileUtils.writeStringToFile(new File(subHome, "schema.xml"), schema, StandardCharsets.UTF_8);
   }
 
-  // Write out the cores' config files, both bad schema files, bad config files as well as some good
+  // Write out the cores' config files, both bad schema files, bad config files and some good
   // cores.
   private CoreContainer initGoodAndBad(
       List<String> goodCores, List<String> badSchemaCores, List<String> badConfigCores)
@@ -778,7 +778,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
     if (ok) {
       if (failures.size() != 0) {
-        fail("Should have cleared the error, but there are failues " + failures.toString());
+        fail("Should have cleared the error, but there are failures " + failures.toString());
       }
     } else {
       if (failures.size() == 0) {
@@ -965,7 +965,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     }
   }
 
-  // Insure that when a core is evicted from the transient cache, any uncommitted docs are
+  // Ensure that when a core is evicted from the transient cache, any uncommitted docs are
   // preserved. Note, this needs FS-based indexes to persist! Cores 2, 3, 6, 7, 8, 9 are transient
   @Test
   public void testNoCommit() throws Exception {
@@ -996,8 +996,8 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       int notLoadedCoreCount = 0;
       List<SolrCore> openCores = new ArrayList<>();
       for (String coreName : transientCoreNames) {
-        // The point of this test is to insure that when cores are evicted and re-opened
-        // that the docs are there, so insure that the core we're testing is gone, gone, gone.
+        // The point of this test is to ensure that when cores are evicted and re-opened
+        // that the docs are there, so ensure that the core we're testing is gone, gone, gone.
         if (!loadedCoreNames.contains(coreName)) {
           notLoadedCoreCount++;
           checkCoresNotLoaded(cc, coreName);

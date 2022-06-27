@@ -104,7 +104,7 @@ public class AddReplicaTest extends SolrCloudTestCase {
             .setCreateNodeSet(String.join(",", createNodeSet));
     status = addReplica.processAndWait(collection + "_xyz1", cloudClient, 120);
     assertEquals(COMPLETED, status);
-    waitForState("Timedout wait for collection to be created", collection, clusterShape(1, 9));
+    waitForState("Timed out wait for collection to be created", collection, clusterShape(1, 9));
     docCollection = cloudClient.getClusterState().getCollectionOrNull(collection);
     assertNotNull(docCollection);
     // sanity check that everything is as before

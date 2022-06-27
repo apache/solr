@@ -44,7 +44,7 @@ public class TestDocTermOrdsUninvertLimit extends SolrTestCase {
     final boolean SHOULD_TRIGGER =
         false; // Set this to true to use the test with the old implementation
 
-    // Ensure enough terms inside of a single UnInvert-pass-structure to trigger the limit
+    // Ensure enough terms inside a single UnInvert-pass-structure to trigger the limit
     final int REF_LIMIT =
         (int) Math.pow(2, 24); // Maximum number of references within a single pass-structure
     final int DOCS = (1 << 16) - 1; // The number of documents within a single pass (simplified)
@@ -98,7 +98,7 @@ public class TestDocTermOrdsUninvertLimit extends SolrTestCase {
                 + " with message "
                 + e.getMessage());
       }
-      // This is (hopefully) "Too many values for UnInvertedField faceting on field field", so all
+      // This is (hopefully) "Too many values for UnInvertedField faceting on field", so all
       // is as expected
     } finally {
       r.close();

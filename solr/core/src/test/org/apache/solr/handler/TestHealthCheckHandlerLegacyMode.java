@@ -35,7 +35,7 @@ import org.junit.Test;
 
 /** Test for HealthCheckHandler in legacy mode */
 @Slow
-@SuppressSSL // Currently unknown why SSL does not work with this test
+@SuppressSSL // Currently, unknown why SSL does not work with this test
 public class TestHealthCheckHandlerLegacyMode extends SolrTestCaseJ4 {
   HttpSolrClient leaderClientHealthCheck, followerClientHealthCheck;
   JettySolrRunner leaderJetty, followerJetty;

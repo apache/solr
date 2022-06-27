@@ -50,7 +50,7 @@ public class ExplicitHLLTest extends SolrTestCase {
   /** Tests {@link HLL#union(HLL)}. */
   @Test
   public void unionTest() {
-    { // Unioning two distinct sets should work
+    { // Union of two distinct sets should work
       final HLL hllA = newHLL(128 /*arbitrary*/);
       final HLL hllB = newHLL(128 /*arbitrary*/);
       hllA.addRaw(1L);
@@ -60,7 +60,7 @@ public class ExplicitHLLTest extends SolrTestCase {
       hllA.union(hllB);
       assertEquals(hllA.cardinality(), 3);
     }
-    { // Unioning two sets whose union doesn't exceed the cardinality cap should not promote
+    { // Union of two sets whose union doesn't exceed the cardinality cap should not promote
       final HLL hllA = newHLL(128 /*arbitrary*/);
       final HLL hllB = newHLL(128 /*arbitrary*/);
       hllA.addRaw(1L);
@@ -70,7 +70,7 @@ public class ExplicitHLLTest extends SolrTestCase {
       hllA.union(hllB);
       assertEquals(hllA.cardinality(), 2);
     }
-    { // unioning two sets whose union exceeds the cardinality cap should promote
+    { // Union of two sets whose union exceeds the cardinality cap should promote
       final HLL hllA = newHLL(128 /*arbitrary*/);
       final HLL hllB = newHLL(128 /*arbitrary*/);
 

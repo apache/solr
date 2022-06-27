@@ -65,7 +65,7 @@ import org.slf4j.LoggerFactory;
  */
 // Backups do checksum validation against a footer value not present in 'SimpleText'
 @LuceneTestCase.SuppressCodecs({"SimpleText"})
-@SolrTestCaseJ4.SuppressSSL // Currently unknown why SSL does not work with this test
+@SolrTestCaseJ4.SuppressSSL // Currently, unknown why SSL does not work with this test
 @Slow
 public class TestSolrCoreSnapshots extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -158,8 +158,8 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
       }
 
       // Verify that the old index directory (before restore) contains only those index commits
-      // referred by snapshots. The IndexWriter (used to cleanup index files) creates an additional
-      // commit during closing. Hence we expect 2 commits (instead of 1).
+      // referred by snapshots. The IndexWriter (used to clean up index files) creates an additional
+      // commit during closing. Hence, we expect 2 commits (instead of 1).
       {
         List<IndexCommit> commits = listCommits(metaData.getIndexDirPath());
         assertEquals(2, commits.size());
@@ -178,7 +178,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
       // Verify that corresponding index files have been deleted. Ideally this directory should
       // be removed immediately. But the current DirectoryFactory impl waits until the
       // closing the core (or the directoryFactory) for actual removal. Since the IndexWriter
-      // (used to cleanup index files) creates an additional commit during closing, we expect a
+      // (used to clean up index files) creates an additional commit during closing, we expect a
       // single commit (instead of 0).
       assertEquals(1, listCommits(duplicateCommit.getIndexDirPath()).size());
     }

@@ -63,7 +63,7 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
     // Make sure it got 3 items (4 configured, 1 is enable=false)
     assertEquals("wrong number of (enabled) factories in chain", 3, chained.getProcessors().size());
 
-    // first one should be log, and it should be configured properly
+    // first one should be logged, and it should be configured properly
     UpdateRequestProcessorFactory first = chained.getProcessors().get(0);
     assertEquals(
         "wrong factory at front of chain", LogUpdateProcessorFactory.class, first.getClass());
@@ -92,7 +92,8 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
     // the log level is at least "INFO" otherwise the factory won't even produce a processor and all
     // our assertions are for nought.  (see LogUpdateProcessorFactory.getInstance)
     //
-    // TODO: maybe create a new mock Processor w/ @RunAlways annot if folks feel requiring INFO is
+    // TODO: maybe create a new mock Processor w/ @RunAlways annotation if folks feel requiring INFO
+    // is
     // evil.
     assertTrue(
         "Tests must be run with INFO level logging "
@@ -135,7 +136,7 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
       // Custom comes first in all three of our chains
       assertTrue(
           name + " first processor isn't a CustomUpdateRequestProcessor: " + procs.toString(),
-          ( // compare them both just because i'm going insane and the more checks the better
+          ( // compare them both just because I'm going insane and the more checks the better
           proc instanceof CustomUpdateRequestProcessor
               && procs.get(0) instanceof CustomUpdateRequestProcessor));
 
@@ -145,7 +146,7 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
 
       assertTrue(
           name + " second proc isn't LogUpdateProcessor: " + procs.toString(),
-          ( // compare them both just because i'm going insane and the more checks the better
+          ( // compare them both just because I'm going insane and the more checks the better
           proc.next instanceof LogUpdateProcessorFactory.LogUpdateProcessor
               && procs.get(1) instanceof LogUpdateProcessorFactory.LogUpdateProcessor));
 
@@ -163,7 +164,7 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
           name
               + " (distrib) first proc should be LogUpdateProcessor because of @RunAlways: "
               + procs.toString(),
-          ( // compare them both just because i'm going insane and the more checks the better
+          ( // compare them both just because I'm going insane and the more checks the better
           proc instanceof LogUpdateProcessorFactory.LogUpdateProcessor
               && procs.get(0) instanceof LogUpdateProcessorFactory.LogUpdateProcessor));
 

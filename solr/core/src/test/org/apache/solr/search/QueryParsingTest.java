@@ -53,7 +53,7 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
           parser = QParser.getParser(qstr, defType, req);
         } catch (Exception e) {
           throw new RuntimeException(
-              "getParser excep using defType=" + defType + " with qstr=" + qstr, e);
+              "getParser exception using defType=" + defType + " with qstr=" + qstr, e);
         }
 
         Query q = parser.parse();

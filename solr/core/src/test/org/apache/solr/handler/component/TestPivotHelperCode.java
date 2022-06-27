@@ -23,7 +23,7 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.SuppressForbidden;
 
-/** A light weight test of various helper methods used in pivot faceting */
+/** A lightweight test of various helper methods used in pivot faceting */
 public class TestPivotHelperCode extends SolrTestCaseJ4 {
 
   /**

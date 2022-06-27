@@ -95,7 +95,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
   /**
    * Used as an increment and multiplier when deciding how many docs should be in the test index. 1
    * means every doc in the index is a candidate for updates, bigger numbers mean a larger index is
-   * used (so tested docs are more likeely to be spread out in multiple segments)
+   * used (so tested docs are more likely to be spread out in multiple segments)
    */
   private static int DOC_ID_INCR;
 
@@ -111,8 +111,8 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
   @BeforeClass
   @SuppressWarnings({"unchecked"})
   private static void createMiniSolrCloudCluster() throws Exception {
-    // NOTE: numDocsToCheck uses atLeast, so nightly & multiplier are alreayd a factor in index size
-    // no need to redundently factor them in here as well
+    // NOTE: numDocsToCheck uses atLeast, so nightly & multiplier are already a factor in index size
+    // no need to redundantly factor them in here as well
     DOC_ID_INCR = TestUtil.nextInt(random(), 1, 7);
 
     NUM_THREADS = atLeast(3);
@@ -199,7 +199,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
   /**
    * Assigns {@link #testInjection} to various TestInjection variables. Calling this method multiple
    * times in the same method should always result in the same setting being applied (even if {@link
-   * TestInjection#reset} was called in between.
+   * TestInjection#reset}) was called in between.
    *
    * <p>NOTE: method is currently a No-Op pending SOLR-13189
    */
@@ -325,7 +325,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
       Worker worker =
           new Worker(
               workerId, expected, abortLatch, new Random(random().nextLong()), numericFieldName);
-      // ask for the Worker to be returned in the Future so we can inspect it
+      // ask for the Worker to be returned to the Future, so we can inspect it
       results.add(EXEC_SERVICE.submit(worker, worker));
     }
     // check the results of all our workers
@@ -368,7 +368,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
 
       final String docId = "" + id;
 
-      // sometimes include an fq on the expected value to ensure the updated values
+      // sometimes include a fq on the expected value to ensure the updated values
       // are "visible" for searching
       final SolrParams p =
           (0 != TestUtil.nextInt(random(), 0, 15))
@@ -506,7 +506,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
   public static SolrInputField f(String fieldName, Object... values) {
     SolrInputField f = new SolrInputField(fieldName);
     f.setValue(values);
-    // TODO: soooooooooo stupid (but currently neccessary because atomic updates freak out
+    // TODO: soooooooooo stupid (but currently necessary because atomic updates freak out
     // if the Map with the "inc" operation is inside of a collection - even if it's the only
     // "value") ...
     if (1 == values.length) {

@@ -63,7 +63,7 @@ public final class ReplicationTestHelper {
 
   public static HttpSolrClient createNewSolrClient(String baseUrl) {
     try {
-      // setup the client...
+      // set up the client...
       HttpSolrClient client = SolrTestCaseJ4.getHttpSolrClient(baseUrl, 15000, 90000);
       return client;
     } catch (Exception ex) {

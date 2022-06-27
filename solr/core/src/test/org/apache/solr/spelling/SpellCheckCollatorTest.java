@@ -581,7 +581,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
           "//lst[@name='spellcheck']/lst[@name='collations']/lst[@name='collation']/str[@name='collationQuery']='teststop:(jane AND customs)'",
           "//lst[@name='spellcheck']/lst[@name='collations']/lst[@name='collation']/long[@name='hits']=1",
           "//lst[@name='spellcheck']/lst[@name='collations']/lst[@name='collation']/lst[@name='misspellingsAndCorrections']/str[@name='june']='jane'");
-      // SOLR-5090, alternativeTermCount==0 was being evaluated, sometimes would throw NPE
+      // SOLR-5090, alternativeTermCount==0 was being evaluated, would sometimes throw NPE
       assertQ(
           req(
               "q",
@@ -634,8 +634,8 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
         xpathPrefix + "str[@name='collationQuery']='teststop:metanoia'",
         xpathPrefix + "long[@name='hits']=6");
 
-    // specifying 0 means "exact" same as default, but specifing a value greater
-    // then the total number of docs in the index should also result in it
+    // specifying 0 means "exact" same as default, but specifying a value greater
+    // than the total number of docs in the index should also result in it
     // "estimating" and getting exact number as well.
     for (String val : new String[] {"0", "30", "100", "10000"}) {
       assertQ(
@@ -650,7 +650,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     }
 
     // values between 0 and the num docs in the index should not error, and should
-    // produce an estimate no more then the total number of docs
+    // produce an estimate no more than the total number of docs
     final int iters = atLeast(10);
     for (int iter = 0; iter < iters; iter++) {
       final int val = TestUtil.nextInt(random(), 1, 17);
@@ -666,7 +666,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     }
 
     // "everYother" appears in every other doc in the index, so "everother"
-    // should produce a "decent" aproximation of the number of hits (8)
+    // should produce a "decent" approximation of the number of hits (8)
     // for any 5 <= SPELLCHECK_COLLATE_MAX_COLLECT_DOCS
     //
     // (we have to be kind of flexible with our definition of "decent"
@@ -675,10 +675,10 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
       String hitsXPath = xpathPrefix + "long[@name='hits']"; // we will append to this...
 
       if (val <= NUM_DOCS_WITH_TERM_EVERYOTHER) {
-        // strongest assertions we can make given an arbirary MergePolicy on such a small index
+        // strongest assertions we can make given an arbitrary MergePolicy on such a small index
         // is based on the idea that the docs may all come *first* or all come *last*
         // and then do the math on what estimate should come from that if we collected *exactly*
-        // 'val'..
+        // 'val'...
         //
         // if they are all "first" we will overestimate and assume everything is a match...
         int max = NUM_DOCS;
@@ -686,7 +686,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
         int min = (/* min collected */ val) / (/* max docs possibly scanned */ NUM_DOCS);
         hitsXPath += "[" + min + " <= . and . <= " + max + "]";
       } else {
-        // we've asked for a number greater then what can possibly be found in our tiny index, which
+        // we've asked for a number greater than what can possibly be found in our tiny index, which
         // should force it to scan all docs so our hits should be exact
         hitsXPath += "[.=" + NUM_DOCS_WITH_TERM_EVERYOTHER + "]";
       }

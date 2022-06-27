@@ -1469,7 +1469,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
       Similarity mainSim = core.getLatestSchema().getSimilarity();
       assertNotNull(mainSim);
 
-      // sanity check simfac vs sim in use - also verify infom called on simfac, otherwise exception
+      // check simfac vs sim in use - also verify inform called on simfac, otherwise exception
       assertEquals(mainSim, simfac.getSimilarity());
 
       assertTrue(

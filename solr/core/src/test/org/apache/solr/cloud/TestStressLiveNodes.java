@@ -143,7 +143,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
       List<String> actualLiveNodes = getTrueLiveNodesFromZk();
       assertEquals("iter" + iter + ": " + actualLiveNodes.toString(), 1, actualLiveNodes.size());
 
-      // only here do we forcibly update the cached live nodes so we don't have to wait for it to
+      // only here do we forcibly update the cached live nodes, so we don't have to wait for it to
       // catch up with all the ephemeral nodes that vanished after the last iteration
       cluster.getZkStateReader().updateLiveNodes();
 
@@ -158,13 +158,14 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
       // start spinning up some threads to add some live_node children in parallel
 
       // we don't need a lot of threads or nodes (we don't want to swamp the CPUs just bursts of
-      // concurrent adds) but we do want to randomize it a bit so we increase the odds of concurrent
+      // concurrent adds) but we do want to randomize it a bit, so we increase the odds of
+      // concurrent
       // watchers firing regardless of the num CPUs or load on the machine running the test (but we
       // deliberately don't look at availableProcessors() since we want randomization consistency
       // across all machines for a given seed)
       final int numThreads = TestUtil.nextInt(random(), 2, 5);
 
-      // use same num for all thrashers, to increase likely hood of them all competing
+      // use same num for all thrashers, to increase likelihood of them all competing
       // (diff random number would mean heavy concurrency only for ~ the first N=lowest num
       // requests)
       //
@@ -180,7 +181,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
           numNodesPerThrasher);
 
       // NOTE: using ephemeral nodes
-      // so we can't close any of these thrashers until we are done with our assertions
+      // means we can't close any of these thrashers until we are done with our assertions
       final List<LiveNodeTrasher> thrashers = new ArrayList<>(numThreads);
       for (int i = 0; i < numThreads; i++) {
         thrashers.add(new LiveNodeTrasher("T" + iter + "_" + i, numNodesPerThrasher));

@@ -114,7 +114,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
     assertSame(ErrorCode.BAD_REQUEST, ErrorCode.getErrorCode(se.code()));
   }
 
-  /** Compose a url that if you get it, it will delete all the data. */
+  /** Compose an url that if you get it, it will delete all the data. */
   private String makeDeleteAllUrl() throws UnsupportedEncodingException {
     HttpSolrClient client = (HttpSolrClient) getSolrClient();
     String deleteQuery = "<delete><query>*:*</query></delete>";

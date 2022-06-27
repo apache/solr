@@ -268,7 +268,7 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
     //       so here, in this test, we can't assert a hardcoded score ordering -- we trust
     //       the full walk testing (below)
 
-    // int sort with dups, id tie breaker ... and some faceting
+    // int sort with duplicates, id tiebreaker ... and some faceting
     cursorMark = CURSOR_MARK_START;
     params =
         params(

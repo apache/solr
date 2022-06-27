@@ -87,7 +87,7 @@ public class TestSSLRandomization extends SolrCloudTestCase {
   /** Used by {@link #testSSLRandomizer} */
   @RandomizeSSL(ssl = 0.42, clientAuth = 0.33, reason = "foo")
   public class InheritedSuppressedWithIgnoredAnnotation extends Suppressed {
-    // Even with direct annotation, supression at superclass overrules us.
+    // Even with direct annotation, suppression at superclass overrules us.
     //
     // (If it didn't work this way, it would be a pain in the ass to quickly disable SSL for a
     // broad hierarchy of tests)
@@ -104,12 +104,12 @@ public class TestSSLRandomization extends SolrCloudTestCase {
 
   /** Used by {@link #testSSLRandomizer} */
   @RandomizeSSL(0.5)
-  public class InheritedEmptyAnnotatationWithOverride extends EmptyAnnotated {}
+  public class InheritedEmptyAnnotationWithOverride extends EmptyAnnotated {}
   ;
 
   /** Used by {@link #testSSLRandomizer} */
   @RandomizeSSL(ssl = 0.42, clientAuth = 0.33, reason = "foo")
-  public class GrandchildInheritedEmptyAnnotatationWithOverride extends InheritedEmptyAnnotated {}
+  public class GrandchildInheritedEmptyAnnotationWithOverride extends InheritedEmptyAnnotated {}
   ;
 
   /** Used by {@link #testSSLRandomizer} */
@@ -160,7 +160,7 @@ public class TestSSLRandomization extends SolrCloudTestCase {
         Arrays.asList(
             FullyAnnotated.class,
             InheritedFullyAnnotated.class,
-            GrandchildInheritedEmptyAnnotatationWithOverride.class)) {
+            GrandchildInheritedEmptyAnnotationWithOverride.class)) {
       r = SSLRandomizer.getSSLRandomizerForClass(c);
       assertEquals(c.toString(), 0.42D, r.ssl, 0.0D);
       assertEquals(c.toString(), 0.33D, r.clientAuth, 0.0D);
@@ -200,7 +200,7 @@ public class TestSSLRandomization extends SolrCloudTestCase {
     }
 
     for (Class<?> c :
-        Arrays.asList(SimplyAnnotated.class, InheritedEmptyAnnotatationWithOverride.class)) {
+        Arrays.asList(SimplyAnnotated.class, InheritedEmptyAnnotationWithOverride.class)) {
       r = SSLRandomizer.getSSLRandomizerForClass(c);
       assertEquals(c.toString(), 0.5D, r.ssl, 0.0D);
       assertEquals(c.toString(), 0.5D, r.clientAuth, 0.0D);

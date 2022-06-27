@@ -83,7 +83,7 @@ import org.slf4j.LoggerFactory;
  * @since 1.4
  */
 @Slow
-@SuppressSSL // Currently unknown why SSL does not work with this test
+@SuppressSSL // Currently, unknown why SSL does not work with this test
 public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

@@ -58,7 +58,7 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
   public static void setupClusterAndCollection() throws Exception {
     RVAL_PRE = TestUtil.randomRealisticUnicodeString(random());
 
-    // sometimes use 2 replicas of every shard so we hit more interesting update code paths
+    // sometimes use 2 replicas of every shard, so we hit more interesting update code paths
     final int numReplicas = usually() ? 1 : 2;
 
     configureCluster(
@@ -289,7 +289,7 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
 
     final DocCollection docCol = cluster.getSolrClient().getClusterState().getCollection(COLL);
     // we don't need "real" urls for all replicas, just something we can use as lookup keys for
-    // verification so we'll use the shard names as "leader urls"
+    // verification, so we'll use the shard names as "leader urls"
     final Map<String, List<String>> urlMap =
         docCol.getActiveSlices().stream()
             .collect(

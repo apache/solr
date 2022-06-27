@@ -125,7 +125,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     super.tearDown();
   }
 
-  // 2 times to make sure cleanup is complete and we can create the same collection
+  // 2 times to make sure cleanup is complete, and we can create the same collection
   @Repeat(iterations = 2)
   public void testCreateDelete() throws Exception {
     try {
@@ -177,7 +177,7 @@ public class TestPullReplica extends SolrCloudTestCase {
       while (true) {
         DocCollection docCollection = getCollectionState(collectionName);
         assertNotNull(docCollection);
-        assertEquals("Expecting 4 relpicas per shard", 8, docCollection.getReplicas().size());
+        assertEquals("Expecting 4 replicas per shard", 8, docCollection.getReplicas().size());
         assertEquals(
             "Expecting 6 pull replicas, 3 per shard",
             6,
@@ -584,7 +584,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     // Queries should still work
     waitForNumDocsInAllReplicas(1, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)));
     // Add nrt replica back. Since there is no nrt now, new nrt will have no docs. There will be
-    // data loss, since the it will become the leader and pull replicas will replicate from it.
+    // data loss, since it will become the leader and pull replicas will replicate from it.
     // Maybe we want to change this. Replicate from pull replicas is not a good idea, since they are
     // by definition out of date.
     if (removeReplica) {

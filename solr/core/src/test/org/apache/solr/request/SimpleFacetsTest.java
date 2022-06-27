@@ -1128,7 +1128,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
 
     {
       // an "uninvertible=false" field is not be facetable using the "default" method,
-      // or any explicit method other then "enum".
+      // or any explicit method other than "enum".
       //
       // it should behave the same as any attempt (using any method) at faceting on
       // and "indexed=false docValues=false" field -- returning no buckets.
@@ -1170,7 +1170,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     {
       // the only way to facet on an "uninvertible=false" field is to explicitly request
       // facet.method=enum in which case it should behave consistently with it's copyField source &
-      // equivilent docValues field (using any method for either of them)
+      // equivalent docValues field (using any method for either of them)
 
       final List<SolrParams> paramSets = new ArrayList<>();
       for (String min : Arrays.asList("0", "1")) {

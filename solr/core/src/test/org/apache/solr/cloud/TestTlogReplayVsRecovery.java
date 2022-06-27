@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
 public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final String COLLECTION = "collecion_with_slow_tlog_recovery";
+  private static final String COLLECTION = "collection_with_slow_tlog_recovery";
 
   private JettySolrRunner NODE0;
   private JettySolrRunner NODE1;
@@ -195,7 +195,7 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
                       if (newLeader != null
                           && !newLeader.getName().equals(leader.getName())
                           && newLeader.getState() == Replica.State.ACTIVE) {
-                        // this is is the bad case, our "bad" state was found before timeout
+                        // this is the bad case, our "bad" state was found before timeout
                         log.error("WTF: New Leader={}", newLeader);
                         return true;
                       }
@@ -232,8 +232,8 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
   }
 
   /**
-   * Adds the specified number of docs directly to the leader, using increasing docIds begining with
-   * startId. Commits if and only if the boolean is true.
+   * Adds the specified number of docs directly to the leader, using increasing docIds beginning
+   * with startId. Commits if and only if the boolean is true.
    */
   private void addDocs(final boolean commit, final int numDocs, final int startId)
       throws SolrServerException, IOException {

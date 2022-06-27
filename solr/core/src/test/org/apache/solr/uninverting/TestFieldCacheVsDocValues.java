@@ -122,7 +122,7 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
   // LUCENE-4853
   public void testHugeBinaryValues() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
-    // FSDirectory because SimpleText will consume gobbs of
+    // FSDirectory because SimpleText will consume lots of
     // space when storing big binary values:
     try (Directory d = newFSDirectory(createTempDir("hugeBinaryValues"))) {
       boolean doFixed = random().nextBoolean();
@@ -143,7 +143,7 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
           // we don't use RandomIndexWriter because it might add
           // more docvalues than we expect !!!!
 
-          // Must be > 64KB in size to ensure more than 2 pages in
+          // Must be > 64 KB in size to ensure more than 2 pages in
           // PagedBytes would be needed:
           int numBytes;
           if (doFixed) {

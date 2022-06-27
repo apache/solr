@@ -190,7 +190,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     // Test that handling reorders work when applying docs retrieved from peer
     //
 
-    // this should cause us to retrieve the delete (but not the following add)
+    // this should cause us to retrieve the delete operation (but not the following add)
     // the reorder in application shouldn't affect anything
     add(client0, seenLeader, sdoc("id", "3000", "_version_", 3001));
     add(client1, seenLeader, sdoc("id", "3000", "_version_", 3001));
@@ -238,11 +238,11 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
       System.clearProperty("solr.disableFingerprint");
     }
 
-    // lets add the missing document and verify that order doesn't matter
+    // let's add the missing document and verify that order doesn't matter
     add(client1, seenLeader, sdoc("id", Integer.toString(v), "_version_", v));
     assertSync(client1, numVersions, true, shardsArr[0]);
 
-    // lets do some overwrites to ensure that repeated updates and maxDoc don't matter
+    // let's do some overwrites to ensure that repeated updates and maxDoc don't matter
     for (int i = 0; i < 10; i++) {
       // add individually instead of in batch to create more writes
       add(client0, seenLeader, sdoc("id", Integer.toString(v + i + 1), "_version_", v + i + 1));
@@ -251,7 +251,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
 
     validateDocs(docsAdded, client0, client1);
 
-    // lets add some in-place updates
+    // let's add some in-place updates
     add(
         client0,
         seenLeader,
@@ -395,7 +395,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     // sync should fail since there's not enough overlap to give us confidence
     assertSync(client1, numVersions, false, shardsArr[0]);
 
-    // add some of the docs that were missing... just enough to give enough overlap
+    // add some docs that were missing... just enough to give enough overlap
     int toAdd2 = (int) (numVersions * .25);
     for (int i = 0; i < toAdd2; i++) {
       add(client1, seenLeader, sdoc("id", Integer.toString(i + 11), "_version_", v + i + 1));
@@ -501,13 +501,13 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
         /*
          * request one update for the missing one, because
          * the missing one is the highest (i.e. latest) or because
-         * it's not the highest/latest but we need a complete list
+         * it's not the highest/latest, but we need a complete list
          */
         assertEquals(1L, mur.totalRequestedUpdates);
         assertEquals(missing + "..." + missing, mur.versionsAndRanges);
       } else {
         /*
-         * request no updates because we already have the highest/latest and
+         * request no updates because we already have the highest/latest, and
          * we don't need a complete list i.e. missing earlier-than-latest is okay
          */
         assertTrue(missing < ourLowThreshold);

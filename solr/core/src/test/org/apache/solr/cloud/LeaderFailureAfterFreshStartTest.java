@@ -110,7 +110,7 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
           initialLeaderJetty.url);
       for (CloudJettyRunner cloudJettyRunner : otherJetties) {
         log.info(
-            "Nonleader node_name: {},  url: {}",
+            "Non-leader node_name: {},  url: {}",
             cloudJettyRunner.coreNodeName,
             cloudJettyRunner.url);
       }

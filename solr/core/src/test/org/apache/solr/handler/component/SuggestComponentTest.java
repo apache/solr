@@ -502,7 +502,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testLoadOnStartup() throws Exception {
 
-    final String suggester = "suggest_fuzzy_doc_manal_build";
+    final String suggester = "suggest_fuzzy_doc_manual_build";
 
     // validate that this suggester is storing the lookup
 
@@ -671,7 +671,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
             + suggesterFuzzy
             + "']/lst[@name='exampel']/int[@name='numFound'][.='2']");
 
-    // reload the core and wait for for the listeners to finish
+    // reload the core and wait for the listeners to finish
     reloadCore(createNewCores);
     if (System.getProperty(SYSPROP_NIGHTLY) != null) {
       // wait some time here in nightly to make sure there are no race conditions in suggester build

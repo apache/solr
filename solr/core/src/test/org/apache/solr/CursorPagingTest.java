@@ -288,7 +288,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
             "/response/docs==[]",
             "/facet_counts/facet_fields/str=={'a':4,'b':3,'c':0}"));
 
-    // int sort with dups, id tie breaker ... and some faceting
+    // int sort with duplicates, id tiebreaker ... and some faceting
     cursorMark = CURSOR_MARK_START;
     params =
         params(
@@ -330,7 +330,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
             "/response/docs==[]",
             "/facet_counts/facet_fields/str=={'a':4,'b':1,'c':3}"));
 
-    // int missing first sort with dups, id tie breaker
+    // int missing first sort with duplicates, id tiebreaker
     cursorMark = CURSOR_MARK_START;
     params =
         params(
@@ -366,7 +366,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
             "/response/start==0",
             "/response/docs==[]"));
 
-    // int missing last sort with dups, id tie breaker
+    // int missing last sort with duplicates, id tiebreaker
     cursorMark = CURSOR_MARK_START;
     params =
         params(
@@ -402,7 +402,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
             "/response/start==0",
             "/response/docs==[]"));
 
-    // string sort with dups, id tie breaker
+    // string sort with duplicates, id tiebreaker
     cursorMark = CURSOR_MARK_START;
     params =
         params(
@@ -431,7 +431,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
             "/response/start==0",
             "/response/docs==[]"));
 
-    // tri-level sort with more dups of primary then fit on a page
+    // tri-level sort with more duplicates of primary then fit on a page
     cursorMark = CURSOR_MARK_START;
     params =
         params(
@@ -479,7 +479,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
             "/response/start==0",
             "/response/docs==[]"));
 
-    // trivial base case: rows bigger then number of matches
+    // trivial base case: rows bigger than number of matches
     cursorMark = CURSOR_MARK_START;
     params =
         params(
@@ -585,7 +585,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
             "/response/numFound==8",
             "/response/start==0",
             "/response/docs==[{'id':'2'},{'id':'5'}]");
-    // update the next doc we expect so it's now in the past
+    // update the next doc we expect, so it's now in the past
     assertU(adoc("id", "7", "str", "a"));
     assertU(commit());
     cursorMark =
@@ -904,9 +904,9 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
   /**
    * Given a set of params, executes a cursor query using {@link CursorMarkParams#CURSOR_MARK_START}
    * and then continuously walks the results using {@link CursorMarkParams#CURSOR_MARK_START} as
-   * long as a non-0 number of docs ar returned. This method records the the set of all id's (must
-   * be positive ints) encountered and throws an assertion failure if any id is encountered more
-   * than once, or if an id is encountered which is not expected, or if an id is <code>[elevated]
+   * long as a non-0 number of docs ar returned. This method records the set of all id's (must be
+   * positive ints) encountered and throws an assertion failure if any id is encountered more than
+   * once, or if an id is encountered which is not expected, or if an id is <code>[elevated]
    * </code> and comes "after" any ids which were not <code>[elevated]</code>
    *
    * @returns set of all elevated ids encountered in the walk
@@ -943,9 +943,9 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
   /**
    * Given a set of params, executes a cursor query using {@link CursorMarkParams#CURSOR_MARK_START}
    * and then continuously walks the results using {@link CursorMarkParams#CURSOR_MARK_START} as
-   * long as a non-0 number of docs ar returned. This method records the the set of all id's (must
-   * be positive ints) encountered and throws an assertion failure if any id is encountered more
-   * than once, or if the set grows above maxSize
+   * long as a non-0 number of docs ar returned. This method records the set of all id's (must be
+   * positive ints) encountered and throws an assertion failure if any id is encountered more than
+   * once, or if the set grows above maxSize
    *
    * @returns set of all ids encountered in the walk
    * @see #assertFullWalkNoDups(SolrParams,Consumer)
@@ -1054,9 +1054,9 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
   /**
    * Given a set of params, executes a cursor query using {@link CursorMarkParams#CURSOR_MARK_START}
    * and then continuously walks the results using {@link CursorMarkParams#CURSOR_MARK_START} as
-   * long as a non-0 number of docs ar returned. This method records the the set of all id's (must
-   * be positive ints) encountered and throws an assertion failure if any id is encountered more
-   * than once, or if the set grows above maxSize.
+   * long as a non-0 number of docs ar returned. This method records the set of all id's (must be
+   * positive ints) encountered and throws an assertion failure if any id is encountered more than
+   * once, or if the set grows above maxSize.
    *
    * <p>Also checks that facets are the same with each page, and that they are correct.
    */
@@ -1251,7 +1251,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
       // simple function query across one field.
       return "{!func}" + numericFields.get(0);
     } else {
-      // several SHOULD clauses on range queries
+      // several "SHOULD" clauses on range queries
       int low = TestUtil.nextInt(random(), -2379, 2);
       int high = TestUtil.nextInt(random(), 4, 5713);
       return numericFields.get(0)
@@ -1296,7 +1296,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
       // wrap in a function sometimes
       if (!"score".equals(field) && 0 == TestUtil.nextInt(random(), 0, 7)) {
         // specific function doesn't matter, just proving that we can handle the concept.
-        // but we do have to be careful with non numeric fields
+        // but we do have to be careful with non-numeric fields
         if (field.contains("float")
             || field.contains("double")
             || field.contains("int")
@@ -1326,7 +1326,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
           // once we've done enough (extra) iters, break out with what we've got
           break;
         } else {
-          // otherwise, pick a random slot to overwrite .. maybe
+          // otherwise, pick a random slot to overwrite... maybe
           if (random().nextBoolean()) {
             results[random().nextInt(results.length)] = key;
           }

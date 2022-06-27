@@ -102,7 +102,7 @@ public class TestStressIncrementalBackup extends SolrCloudTestCase {
     System.clearProperty("solr.allowPaths");
   }
 
-  @SuppressWarnings("AssertionFailureIgnored") // failure happens inside of a thread
+  @SuppressWarnings("AssertionFailureIgnored") // failure happens inside a thread
   public void testCoreAdminHandler() throws Exception {
     final int numBackupIters = 20; // don't use 'atLeast', we don't want to blow up on nightly
 
@@ -146,11 +146,11 @@ public class TestStressIncrementalBackup extends SolrCloudTestCase {
 
     heavyCommitting.start();
     try {
-      // now have the "main" test thread try to take a serious of backups/snapshots
+      // now have the "main" test thread try to take a series of backups/snapshots
       // while adding other "real" docs
 
       // NOTE #1: start at i=1 for 'id' & doc counting purposes...
-      // NOTE #2: abort quickly if the oher thread reports a heavyCommitFailure...
+      // NOTE #2: abort quickly if the other thread reports a heavyCommitFailure...
       for (int i = 1; (i <= numBackupIters && null == heavyCommitFailure.get()); i++) {
 
         // in each iteration '#i', the commit we create should have exactly 'i' documents in

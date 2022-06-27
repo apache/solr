@@ -221,7 +221,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
           // add a new replica for the sub-shard
           CollectionAdminRequest.AddReplica addReplica =
               CollectionAdminRequest.addReplicaToShard(collectionName, SHARD1_0);
-          // use control client because less chances of it being the node being restarted
+          // use control client because there are fewer chances of it being the node being restarted
           // this is to avoid flakiness of test because of NoHttpResponseExceptions
           String control_collection =
               client
@@ -362,7 +362,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     Slice shard11 = collection.getSlice(SHARD1_1);
     assertNull(shard11);
 
-    // lets retry the split
+    // let's retry the split
     TestInjection.reset(); // let the split succeed
     try {
       CollectionAdminRequest.SplitShard splitShard =
@@ -556,7 +556,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
             e);
       }
 
-      // we don't care if the split failed because we are injecting faults and it is likely
+      // we don't care if the split failed because we are injecting faults, and it is likely
       // that the split has failed but in any case we want to assert that all docs that got
       // indexed are available in SolrCloud and if the split succeeded then all replicas of the
       // sub-shard must be consistent (i.e. have same numdocs)

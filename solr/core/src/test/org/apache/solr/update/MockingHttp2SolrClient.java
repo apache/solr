@@ -38,7 +38,7 @@ public class MockingHttp2SolrClient extends Http2SolrClient {
     CONNECT_EXCEPTION,
     SOCKET_EXCEPTION,
     BAD_REQUEST
-  };
+  }
 
   private volatile Exp exp = null;
   private boolean oneExpPerReq;

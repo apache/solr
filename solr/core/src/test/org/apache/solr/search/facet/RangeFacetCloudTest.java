@@ -107,7 +107,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
 
     // clear the RANGE_MODEL
     Arrays.fill(RANGE_MODEL, 0);
-    // seed the TERM_MODEL Maps so we don't have null check later
+    // seed the TERM_MODEL Maps, so we don't have null check later
     for (int i = 0; i < NUM_RANGE_VALUES; i++) {
       TERM_MODEL[i] = new LinkedHashMap<>();
     }
@@ -410,7 +410,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
 
           assertBucket("bucket#0", 1, modelVals(1), subFacetLimit, buckets.get(0));
 
-          // middle bucket doesn't include lower or upper so it's empty
+          // middle bucket doesn't include lower or upper, so it's empty
           assertBucket("bucket#1", 2, emptyVals(), subFacetLimit, buckets.get(1));
 
           assertBucket("bucket#2", 3, modelVals(4), subFacetLimit, buckets.get(2));
@@ -1110,8 +1110,8 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
 
   /**
    * A little helper struct to make the method sig of {@link #assertBucket} more readable. If lower
-   * (or upper) is negative, then both must be negative and upper must be less then lower -- this
-   * indicate that the bucket should be empty.
+   * (or upper) is negative, then both must be negative and upper must be less than lower -- this
+   * indicates that the bucket should be empty.
    *
    * @see #modelVals
    * @see #emptyVals
@@ -1161,12 +1161,12 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
     }
     final StringBuilder result =
         new StringBuilder(", facet:{ bar:{ type:terms, refine:true, field:" + STR_FIELD);
-    // constrain overrequesting to stress refiement, but still test those codepaths
+    // constrain overrequesting to stress refinement, but still test those code paths
     final String overrequest = random().nextBoolean() ? "0" : "1";
 
     result.append(", overrequest:").append(overrequest).append(", limit:").append(subFacetLimit);
 
-    // order should have no affect on our testing
+    // order should have no effect on our testing
     if (random().nextBoolean()) {
       result.append(", sort:'").append(SORTS.get(random().nextInt(SORTS.size()))).append("'");
     }
@@ -1191,7 +1191,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
     // we're not overly concerned about testing *EVERY* permutation,
     // we just want to make sure we test multiple code paths (some, all, "ALL", none)
     //
-    // NOTE: Don't mix "ALL" or "NONE" with other options so we don't have to make
+    // NOTE: Don't mix "ALL" or "NONE" with other options, so we don't have to make
     // assertBeforeAfterBetween overly complicated
     ArrayList<EnumSet<FacetRangeOther>> results = new ArrayList<>(5);
     results.add(EnumSet.of(FacetRangeOther.ALL));

@@ -118,7 +118,7 @@ public class CloneFieldUpdateProcessorFactoryTest extends UpdateProcessorTestBas
     assertTrue(features.contains("valley"));
     assertTrue(features.contains("dune"));
 
-    // and the copied values shoul be added
+    // and the copied values should be added
     assertEquals("category_s should have a value", "test", doc.getFieldValue("category_s"));
 
     Collection<Object> contribs = doc.getFieldValues("contributors");

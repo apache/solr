@@ -76,7 +76,7 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
           requestCoreStatus();
         }
 
-        isCompleted = checkReloadComlpetion(asyncId);
+        isCompleted = checkReloadCompletion(asyncId);
       } while (!isCompleted);
       requestMetrics(false);
     }
@@ -96,7 +96,7 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
     assertNull("" + rsp.getException(), rsp.getException());
   }
 
-  private boolean checkReloadComlpetion(int asyncId) {
+  private boolean checkReloadCompletion(int asyncId) {
     boolean isCompleted;
     SolrQueryResponse rsp = new SolrQueryResponse();
     h.getCoreContainer()
@@ -132,7 +132,7 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
 
       NamedList<?> values = rsp.getValues();
       // this is not guaranteed to exist right away after core reload - there's a
-      // small window between core load and before searcher metrics are registered
+      // small window between core load and before searcher metrics are registered,
       // so we may have to check a few times, and then fail softly if reload is not complete yet
       NamedList<?> metrics = (NamedList<?>) values.get("metrics");
       if (metrics == null) {

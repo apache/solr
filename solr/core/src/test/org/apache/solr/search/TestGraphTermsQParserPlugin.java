@@ -24,7 +24,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-// We want codecs that support DocValues, and ones supporting blank/empty values.
+// We want codecs that support DocValues, and those supporting blank/empty values.
 @SuppressCodecs({"Appending", "Lucene3x", "Lucene40", "Lucene41", "Lucene42"})
 public class TestGraphTermsQParserPlugin extends SolrTestCaseJ4 {
 

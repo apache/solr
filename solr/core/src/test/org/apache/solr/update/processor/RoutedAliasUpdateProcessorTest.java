@@ -62,7 +62,7 @@ import org.junit.Ignore;
 
 @org.apache.lucene.util.LuceneTestCase.AwaitsFix(
     bugUrl = "https://issues.apache.org/jira/browse/SOLR-13696")
-@Ignore // don't try too run abstract base class
+@Ignore // don't try to run abstract base class
 public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
 
   private static final String intField = "integer_i";
@@ -123,7 +123,7 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
 
     // TODO: fix SOLR-13059, a where this wait isn't working ~0.3% of the time without the sleep.
     waitCol(1, configName);
-    Thread.sleep(500); // YUCK but works (beasts 2500x20 ok vs failing in ~500x20 every time)
+    Thread.sleep(500); // YUCK, but works (beasts 2500x20 ok vs failing in ~500x20 every time)
     // manipulate the config...
     checkNoError(
         getSolrClient()
@@ -304,7 +304,7 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     // we assume all docs will be added (none too old/new to cause exception)
     Collections.shuffle(Arrays.asList(solrInputDocuments), random());
 
-    // this is a list of the collections & the alias name.  Use to pick randomly where to send.
+    // this is a list of the collections & the alias name.  Used to pick randomly where to send.
     //   (it doesn't matter where we send docs since the alias is honored at the URP level)
     List<String> collections = new ArrayList<>();
     collections.add(getAlias());

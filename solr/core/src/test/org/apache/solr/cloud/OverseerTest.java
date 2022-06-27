@@ -189,7 +189,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
      * OverseerTest#createCollection(String, int)}.
      */
     public void createCollection(String collection, int numShards) throws Exception {
-      // Create collection znode before having ClusterStateUpdater create state.json below it or it
+      // Create collection znode before having ClusterStateUpdater create state.json below, or it
       // will fail.
       zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection, true);
 
@@ -447,7 +447,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
    * obtained.
    */
   private void createCollection(String collection, int numShards) throws Exception {
-    // Create collection znode before having ClusterStateUpdater create state.json below it or it
+    // Create collection znode before having ClusterStateUpdater create state.json below, or it
     // will fail.
     zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection, true);
 

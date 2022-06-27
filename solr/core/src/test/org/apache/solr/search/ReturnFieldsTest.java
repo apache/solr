@@ -185,7 +185,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testWilcards() {
+  public void testWildcards() {
     ReturnFields rf = new SolrReturnFields(req("fl", "*"));
     assertFalse(rf.wantsScore());
     assertTrue(rf.wantsField("xxx"));
@@ -390,7 +390,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
 
   /**
    * Whitebox verification that the conversion from lucene {@link Document} to {@link SolrDocument}
-   * respects the {@link ReturnFields} and doesn't unneccessarily convert Fields that aren't needed.
+   * respects the {@link ReturnFields} and doesn't unnecessarily convert Fields that aren't needed.
    *
    * <p>This is important because {@link SolrDocumentFetcher} may return additional fields (lazy or
    * otherwise) if the document has been cached.
@@ -450,7 +450,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
 
     // all source fields should be in the output
     // behavior should be ultimately be consistent for all of these ReturnField instances
-    // (globbing or requesting more fields then doc has)
+    // (globbing or requesting more fields than doc has)
     for (ReturnFields rf :
         Arrays.asList(
             new SolrReturnFields(),
@@ -543,8 +543,8 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
 
   static {
     // if the JVM/unicode can redefine whitespace once (LUCENE-6760), it might happen again
-    // in the future.  if that happens, fail early with a clera msg, even if java asserts
-    // (used in randomWhitespace) are disbled
+    // in the future.  if that happens, fail early with a clear msg, even if java asserts
+    // (used in randomWhitespace) are disabled
 
     for (int offset = 0; offset < WHITESPACE_CHARACTERS.length; offset++) {
       char c = WHITESPACE_CHARACTERS[offset];
