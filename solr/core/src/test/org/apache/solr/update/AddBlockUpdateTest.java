@@ -91,7 +91,6 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
 
   private static final AtomicInteger counter = new AtomicInteger();
   private static ExecutorService exe;
-  private static boolean cachedMode;
 
   private static XMLInputFactory inputFactory;
 
@@ -103,6 +102,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     String oldCacheNamePropValue = System.getProperty("blockJoinParentFilterCache");
+    boolean cachedMode;
     System.setProperty(
         "blockJoinParentFilterCache",
         (cachedMode = random().nextBoolean()) ? "blockJoinParentFilterCache" : "don't cache");

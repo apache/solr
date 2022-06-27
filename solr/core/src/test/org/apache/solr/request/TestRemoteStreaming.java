@@ -45,12 +45,11 @@ import org.junit.Test;
 /** See SOLR-2854. */
 @SuppressSSL // does not yet work with ssl yet - uses raw java.net.URL API rather than HttpClient
 public class TestRemoteStreaming extends SolrJettyTestBase {
-  private static File solrHomeDirectory;
 
   @BeforeClass
   public static void beforeTest() throws Exception {
     // this one has handleSelect=true which a test here needs
-    solrHomeDirectory = createTempDir(LuceneTestCase.getTestClass().getSimpleName()).toFile();
+    File solrHomeDirectory = createTempDir(LuceneTestCase.getTestClass().getSimpleName()).toFile();
     setupJettyTestHome(solrHomeDirectory, "collection1");
     createAndStartJetty(solrHomeDirectory.getAbsolutePath());
   }
