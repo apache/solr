@@ -65,7 +65,7 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
         "monitor checking not supported on this JVM",
         ManagementFactory.getThreadMXBean().isObjectMonitorUsageSupported());
 
-    /** unique class name to show up as a lock class name in output */
+    // unique class name to show up as a lock class name in output
     final class TestMonitorStruct {
       /* empty */
     }
@@ -190,7 +190,7 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
         "ownable sync checking not supported on this JVM",
         ManagementFactory.getThreadMXBean().isSynchronizerUsageSupported());
 
-    /** unique class name to show up as a lock class name in output */
+    // unique class name to show up as a lock class name in output
     final class TestReentrantLockStruct extends ReentrantLock {
       /* empty */
     }

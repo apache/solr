@@ -1501,11 +1501,13 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
     assertTrue(inPlaceUpdatedFields.isEmpty());
   }
 
-  @Test
+
   /**
    * Test the @see {@link AtomicUpdateDocumentMerger#doInPlaceUpdateMerge(AddUpdateCommand,Set)}
    * method is working fine
+   *
    */
+  @Test
   public void testDoInPlaceUpdateMerge() throws Exception {
     long version1 = addAndGetVersion(sdoc("id", "1", "title_s", "first"), null);
     long version2 = addAndGetVersion(sdoc("id", "2", "title_s", "second"), null);
