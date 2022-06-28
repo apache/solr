@@ -23,6 +23,16 @@ solrAdminApp.controller('ParamSetsController',
 
     $scope.resetMenu("paramsets", Constants.IS_COLLECTION_PAGE);
 
+    $scope.sampleCommand = {
+      "set": {
+        "myQueries": {
+          "defType": "edismax",
+          "rows": "5",
+          "df": "text_all"
+        }
+      }
+    }
+
     $scope.showHelp = function (id) {
       if ($scope.helpId && ($scope.helpId === id || id === '')) {
         delete $scope.helpId;
@@ -62,15 +72,7 @@ solrAdminApp.controller('ParamSetsController',
     $scope.getParamsets();
     $scope.refresh = function () {
       $scope.paramsetContent = "";
-      $scope.placeholder = {
-        "set": {
-          "myQueries": {
-            "defType": "edismax",
-            "rows": "5",
-            "df": "text_all"
-          }
-        }
-      }
+      $scope.placeholder = JSON.stringify($scope.sampleCommand, null, '  ');
     };
     $scope.refresh();
 

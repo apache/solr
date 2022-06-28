@@ -46,10 +46,7 @@
                 </form>
                 <div ng-switch="switch.showSample">
                     <div ng-switch-when="true">
-                      <pre>
-                        
-{{ placeholder | json }}
-                      </pre>
+                      <pre class="syntax language-json"><code ng-bind-html="placeholder | highlight:'json' | unsafe"></code></pre>                      
                     </div>
                 </div>
 
