@@ -63,10 +63,15 @@
                     <div id="advanced">
                         <div id="attribs">
                             <div id="general-attribs">
-                                <label for="overwrite">
-                                    <a rel="help">Overwrite</a>
-                                </label>
-                                <input ng-model="overwrite" type="text" id="overwrite" value="true" title="Overwrite">
+                              <label for="overwrite2" class="checkbox" title="Overwrite?">Overwrite?</label>
+                              <a ng-click="showHelp('overwriteHelp')"><img class="help-ico" src="img/ico/question-white.png"/></a>
+                              <div id="overwriteHelp" class="help" ng-show="helpId === 'overwriteHelp'">
+                                <div class="help-wide">
+                                  <p>Enabling overwriting allows you to update an existing Paramset.
+                                  <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/dynamic-fields.html">Dynamic Fields</a></div>
+                                  </p>
+                                </div>
+                              </div>
                             </div>
                         </div>
                     </div>

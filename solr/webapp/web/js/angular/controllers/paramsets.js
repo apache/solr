@@ -22,6 +22,15 @@ solrAdminApp.controller('ParamSetsController',
     $scope.paramsetList = [];
 
     $scope.resetMenu("paramsets", Constants.IS_COLLECTION_PAGE);
+
+    $scope.showHelp = function (id) {
+      if ($scope.helpId && ($scope.helpId === id || id === '')) {
+        delete $scope.helpId;
+      } else {
+        $scope.helpId = id;
+      }
+    };
+
     $scope.getParamsets = function (isSelected) {
       $scope.refresh();
 
@@ -52,7 +61,6 @@ solrAdminApp.controller('ParamSetsController',
     }
     $scope.getParamsets();
     $scope.refresh = function () {
-      $scope.overwrite = true;
       $scope.paramsetContent = "";
       $scope.placeholder = "{\n" +
         "  \"set\": {\n" +
@@ -69,7 +77,6 @@ solrAdminApp.controller('ParamSetsController',
     $scope.submit = function () {
       var params = {};
 
-      params.overwrite = $scope.overwrite;
       params.core = $routeParams.core;
       params.wt = "json";
 
@@ -88,4 +95,3 @@ solrAdminApp.controller('ParamSetsController',
       }
     }
   });
-
