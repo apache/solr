@@ -52,32 +52,29 @@
                     </div>
                 </div>
 
+                <div>
                 <fieldset class="Update Paramset">
-                    <legend>Update Paramset</legend>
+                    <legend>Update Paramset(s)</legend>
                     <div class="fieldset" id="paramsetContent-container">
                         <label for="paramset">
-                            <a rel="help">Paramset(s)</a>
+                            Paramset(s) JSON
                         </label>
                         <textarea ng-model="paramsetContent" name="paramsets" id="paramset" title="The Paramset" rows="10"
                                   cols="65"></textarea>
+                        <p>
+                          <a href="https://solr.apache.org/guide/solr/latest/configuration-guide/request-parameters-api.html" target="_out">syntax help</a>
+                        </p>
                     </div>
 
                     <div id="advanced">
                         <div id="attribs">
                             <div id="general-attribs">
-                              <label for="overwrite2" class="checkbox" title="Overwrite?">Overwrite?</label>
-                              <a ng-click="showHelp('overwriteHelp')"><img class="help-ico" src="img/ico/question-white.png"/></a>
-                              <div id="overwriteHelp" class="help" ng-show="helpId === 'overwriteHelp'">
-                                <div class="help-wide">
-                                  <p>Enabling overwriting allows you to update an existing Paramset.
-                                  <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/dynamic-fields.html">Dynamic Fields</a></div>
-                                  </p>
-                                </div>
-                              </div>
+                            
                             </div>
                         </div>
                     </div>
                 </fieldset>
+
             </div>
 
             <button type="submit" ng-click="submit()" id="submit">Submit Paramset</button>
