@@ -124,7 +124,7 @@ public class ResourceSharingTestComponent extends SearchComponent implements Sol
       }
 
       // if we get here we have seen the data from the blob and all we need is to test that two
-      // collections are able to see the same object..
+      // collections are able to see the same object...
       return new TestObject();
     }
   }

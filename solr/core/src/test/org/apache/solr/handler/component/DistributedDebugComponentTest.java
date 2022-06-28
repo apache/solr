@@ -372,7 +372,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     query.setQuery("id:1 OR id:2");
     query.setFilterQueries("id:[0 TO 10]", "id:[0 TO 5]");
     query.setRows(1);
-    query.setSort("id", SolrQuery.ORDER.asc); // thus only return id:1 since rows 1
+    query.setSort("id", SolrQuery.ORDER.asc); // thus, only return id:1 since rows 1
     query.set("debug", "true");
     query.set("distrib", "true");
     query.setFields("id");

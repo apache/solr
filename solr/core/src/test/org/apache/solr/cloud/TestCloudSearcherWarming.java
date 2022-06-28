@@ -263,7 +263,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     log.info("Starting old node 2");
     cluster.startJettySolrRunner(oldNode);
     waitForState("", collectionName, clusterShape(1, 2));
-    // invoke statewatcher explicitly to avoid race condition where the assert happens before the
+    // invoke statewatcher explicitly to avoid race condition when the assert happens before the
     // state watcher is invoked by ZkStateReader
     ZkStateReader.from(solrClient).registerCollectionStateWatcher(collectionName, stateWatcher);
     assertNull(

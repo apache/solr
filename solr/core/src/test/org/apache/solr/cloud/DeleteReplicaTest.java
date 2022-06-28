@@ -71,7 +71,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     System.setProperty("solr.zkclienttimeout", "45000");
     System.setProperty("distribUpdateSoTimeout", "15000");
 
-    // these tests need to be isolated, so we dont share the minicluster
+    // these tests need to be isolated, so we don't share the minicluster
     configureCluster(4)
         .addConfig("conf", configset("cloud-minimal"))
         .useOtherCollectionConfigSetExecution()
@@ -100,7 +100,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     DocCollection state = getCollectionState(collectionName);
     Slice shard = getRandomShard(state);
 
-    // don't choose the leader to shutdown, it just complicates things unneccessarily
+    // don't choose the leader to shutdown, it just complicates things unnecessarily
     Replica replica =
         getRandomReplica(
             shard, (r) -> (r.getState() == Replica.State.ACTIVE && !r.equals(shard.getLeader())));

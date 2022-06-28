@@ -112,7 +112,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
             + "}";
 
     Set<String> errmessages = new HashSet<>();
-    for (int i = 1; i < 2; i++) { // make it  ahigher number
+    for (int i = 1; i < 2; i++) { // make it a higher number
       RestTestHarness publisher = randomRestTestHarness(r);
       String response;
       String val1;

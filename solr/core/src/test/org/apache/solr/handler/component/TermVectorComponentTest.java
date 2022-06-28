@@ -51,7 +51,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
         System.setProperty("solr.tests.id.docValues", "true");
         break;
       default:
-        fail("Bad random number generatged not between 0-2 iunclusive");
+        fail("Bad random number generated not between 0-2 inclusive");
         break;
     }
     initCore("solrconfig.xml", "schema.xml");

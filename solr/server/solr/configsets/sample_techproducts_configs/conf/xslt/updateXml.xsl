@@ -23,7 +23,7 @@
 
   This is part of the Scripting module.
 
-  See more about this response writer at https://solr.apache.org/guide/response-writers.html#xslt-response-writer
+  See more about this response writer at https://solr.apache.org/guide/solr/latest/query-guide/response-writers.html#xslt-response-writer
 
  -->
 <xsl:stylesheet version='1.0' xmlns:xsl='http://www.w3.org/1999/XSL/Transform'>

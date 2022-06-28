@@ -32,7 +32,7 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  * SpellingQueryConverter and registering it in the solrconfig.xml
  *
  * <p>Refer to <a
- * href="https://solr.apache.org/guide/spell-checking.html">https://solr.apache.org/guide/spell-checking.html</a>
+ * href="https://solr.apache.org/guide/solr/latest/query-guide/spell-checking.html">https://solr.apache.org/guide/solr/latest/query-guide/spell-checking.html</a>
  * for more details
  *
  * @since solr 1.3

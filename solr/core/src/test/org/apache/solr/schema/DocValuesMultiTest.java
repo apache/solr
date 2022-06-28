@@ -682,7 +682,7 @@ public class DocValuesMultiTest extends SolrTestCaseJ4 {
         "//lst[@name='stringdv']/int[@name='abc19'][.='1']",
         "//lst[@name='stringdv']/int[@name='abc49'][.='1']");
 
-    // Even though offseting by 33, the sort order is abc1 abc11....abc2 so it throws the position
+    // Even though offsetting by 33, the sort order is abc1 abc11....abc2, so it throws the position
     // in the return list off.
     assertQ(
         req(

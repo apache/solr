@@ -24,7 +24,7 @@ import org.w3c.dom.Node;
 
 /**
  * TestCase for PluginInfo. Extends DOMUtilTestBase because PluginInfo heavily depends on DOMUtil
- * and the convinient {@link #getNode(String, String)} method.
+ * and the convenient {@link #getNode(String, String)} method.
  */
 public class PluginInfoTest extends DOMUtilTestBase {
 

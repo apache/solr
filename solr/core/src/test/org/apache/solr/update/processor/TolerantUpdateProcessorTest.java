@@ -93,7 +93,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
   }
 
   /**
-   * future proof TolerantUpdateProcessor against new default method impls being added to
+   * future-proof TolerantUpdateProcessor against new default method impls being added to
    * UpdateProcessor to ensure that every method involved in a processor chain life cycle is
    * overridden with exception catching/tracking.
    */

@@ -252,7 +252,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
       doTestPointFieldSort(field, sequential);
       doTestPointFieldSort(field, randomInts);
 
-      // value source (w/o field(...,min|max)) usuage should still error...
+      // value source (w/o field(...,min|max)) usage should still error...
       int numValues = 2 * RANDOM_MULTIPLIER;
       doTestPointFieldFunctionQueryError(
           field, "multivalued", toStringArray(getRandomInts(1, false)));
@@ -1488,7 +1488,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
       doTestPointFieldSort(field, sequential);
       doTestPointFieldSort(field, randomFloats);
 
-      // value source (w/o field(...,min|max)) usuage should still error...
+      // value source (w/o field(...,min|max)) usage should still error...
       doTestPointFieldFunctionQueryError(field, "multivalued", "42.34");
       doTestPointFieldFunctionQueryError(field, "multivalued", "42.34", "66.6");
     }
@@ -2065,7 +2065,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
       doTestPointFieldSort(field, vals);
       doTestPointFieldSort(field, randomLongs);
 
-      // value source (w/o field(...,min|max)) usuage should still error...
+      // value source (w/o field(...,min|max)) usage should still error...
       int numValues = 2 * RANDOM_MULTIPLIER;
       doTestPointFieldFunctionQueryError(
           field, "multivalued", toStringArray(getRandomLongs(1, false)));
@@ -2625,7 +2625,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
       doTestPointFieldSort(field, sequential);
       doTestPointFieldSort(field, randomDates);
 
-      // value source (w/o field(...,min|max)) usuage should still error...
+      // value source (w/o field(...,min|max)) usage should still error...
       doTestPointFieldFunctionQueryError(field, "multivalued", "1995-12-31T23:59:59Z");
       doTestPointFieldFunctionQueryError(
           field, "multivalued", "1995-12-31T23:59:59Z", "2000-12-31T23:59:59Z");
@@ -3904,7 +3904,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
    *
    * @param field the field name to try and sort on
    * @param errSubStr substring to look for in the error msg
-   * @param values one or more values to put into the doc(s) in the index - may be more then one for
+   * @param values one or more values to put into the doc(s) in the index - may be more than one for
    *     multivalued fields
    */
   private void doTestPointFieldFunctionQueryError(String field, String errSubStr, String... values)
@@ -4094,7 +4094,8 @@ public class TestPointFields extends SolrTestCaseJ4 {
     String[] expected = new String[21];
     expected[0] = "//*[@numFound='10']";
     for (int i = 1; i <= 10; i++) {
-      // checks for each doc's two values aren't next to eachother in array, but that doesn't matter
+      // checks for each doc's two values aren't next to each other in array, but that doesn't
+      // matter
       // for correctness
       expected[i] =
           "//result/doc["
@@ -4862,7 +4863,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
    *
    * @param field the field name to try and sort on
    * @param errSubStr substring to look for in the error msg
-   * @param values one or more values to put into the doc(s) in the index - may be more then one for
+   * @param values one or more values to put into the doc(s) in the index - may be more than one for
    *     multivalued fields
    */
   private void doTestPointFieldSortError(String field, String errSubStr, String... values)
@@ -5872,19 +5873,19 @@ public class TestPointFields extends SolrTestCaseJ4 {
         "count(//doc)=10", // exactly 10 docs in response
         (shouldReturnFieldIfRequested
             ? RETURN_FIELD
-            : DONT_RETURN_FIELD)); // no field in any doc other then 'id'
+            : DONT_RETURN_FIELD)); // no field in any doc other than 'id'
 
     assertQ(
         req("q", "*:*", "rows", "100", "fl", "*"),
         "//*[@numFound='10']",
         "count(//doc)=10", // exactly 10 docs in response
-        DONT_RETURN_FIELD); // no field in any doc other then 'id'
+        DONT_RETURN_FIELD); // no field in any doc other than 'id'
 
     assertQ(
         req("q", "*:*", "rows", "100"),
         "//*[@numFound='10']",
         "count(//doc)=10", // exactly 10 docs in response
-        DONT_RETURN_FIELD); // no field in any doc other then 'id'
+        DONT_RETURN_FIELD); // no field in any doc other than 'id'
     clearIndex();
     assertU(commit());
   }
@@ -5928,7 +5929,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
   }
 
   /**
-   * Calls {@link #callAndCheckCreateFields} on each of the specified values. This is a convinience
+   * Calls {@link #callAndCheckCreateFields} on each of the specified values. This is a convenience
    * method for testing the same fieldname with multiple inputs.
    *
    * @see #callAndCheckCreateFields
@@ -5948,7 +5949,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   /**
    * Calls {@link SchemaField#createFields} on the specified value for the specified field name, and
-   * asserts that the results match the SchemaField propeties, with an additional check that the
+   * asserts that the results match the SchemaField properties, with an additional check that the
    * <code>pointType</code> is included if and only if the SchemaField is "indexed"
    */
   private List<IndexableField> callAndCheckCreateFields(

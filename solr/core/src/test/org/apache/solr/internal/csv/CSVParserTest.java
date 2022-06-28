@@ -147,7 +147,7 @@ public class CSVParserTest extends TestCase {
     assertEquals(CSVParser.TT_EOF + ";;", parser.testNextToken());
   }
 
-  // encapsulator tokenizer (sinle line)
+  // encapsulator tokenizer (single line)
   public void testNextToken4() throws IOException {
     /* file:  a,"foo",b
      *        a,   " foo",b
@@ -182,7 +182,7 @@ public class CSVParserTest extends TestCase {
     assertEquals(CSVParser.TT_EOF + ";\n\t \n;", parser.testNextToken());
   }
 
-  // change delimiters, comment, encapsulater
+  // change delimiters, comment, encapsulator
   public void testNextToken6() throws IOException {
     /* file: a;'b and \' more
      *       '
@@ -403,7 +403,7 @@ public class CSVParserTest extends TestCase {
       {"one", "t\\,wo"}, // backslash in quotes only escapes a delimiter (",")
       {"one", "two", "th,ree"},
       {"a\\\\"}, // backslash in quotes only escapes a delimiter (",")
-      {"a\\", "b"}, // a backslash must be returnd
+      {"a\\", "b"}, // a backslash must be returned
       {"a\\\\,b"} // backslash in quotes only escapes a delimiter (",")
     };
     CSVParser parser = new CSVParser(new StringReader(code));

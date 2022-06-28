@@ -47,7 +47,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
   private static String FIELD = null; // randomized
 
   private static final List<String> STR_VALS = Arrays.asList("x0", "x1", "x2");
-  // NOTE: in our test conversions EUR uses an asynetric exchange rate
+  // NOTE: in our test conversions EUR uses an asymmetric exchange rate
   // these are the equivalent values relative to: USD EUR GBP
   private static final List<String> VALUES =
       Arrays.asList(
@@ -96,13 +96,14 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
     assertEquals(0, cluster.getSolrClient().commit().getStatus());
   }
 
-  public void testSimpleRangeFacetsOfSymetricRates() throws Exception {
+  public void testSimpleRangeFacetsOfSymmetricRates() throws Exception {
     for (boolean use_mincount : Arrays.asList(true, false)) {
 
       // exchange rates relative to USD...
       //
       // for all of these permutations, the numDocs in each bucket that we get back should be the
-      // same (regardless of the any asymetric echanges ranges, or the currency used for the 'gap')
+      // same (regardless of any asymmetric exchanges ranges, or the currency used for the
+      // 'gap')
       // because the start & end are always in USD.
       //
       // NOTE:
@@ -244,11 +245,11 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
     }
   }
 
-  public void testFacetRangeOfAsymetricRates() throws Exception {
+  public void testFacetRangeOfAsymmetricRates() throws Exception {
     // facet.range: exchange rates relative to EUR...
     //
-    // because of the asymetric echange rate, the counts for these buckets will be different
-    // then if we just converted the EUR values to USD
+    // because of the asymmetric exchange rate, the counts for these buckets will be different
+    // from if we just converted the EUR values to USD
     for (boolean use_mincount : Arrays.asList(true, false)) {
       final SolrQuery solrQuery =
           new SolrQuery(
@@ -310,11 +311,11 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
     }
   }
 
-  public void testJsonFacetRangeOfAsymetricRates() throws Exception {
-    // json.facet: exchange rates relative to EUR (same as testFacetRangeOfAsymetricRates)
+  public void testJsonFacetRangeOfAsymmetricRates() throws Exception {
+    // json.facet: exchange rates relative to EUR (same as testFacetRangeOfAsymmetricRates)
     //
-    // because of the asymetric echange rate, the counts for these buckets will be different
-    // then if we just converted the EUR values to USD
+    // because of the asymmetric exchange rate, the counts for these buckets will be different
+    // from if we just converted the EUR values to USD
     for (boolean use_mincount : Arrays.asList(true, false)) {
       final SolrQuery solrQuery =
           new SolrQuery(
@@ -437,7 +438,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
     // backfill the top terms
     final String filter = "id_i1:[" + VALUES.size() + " TO *]";
 
-    // the *facet* results should be the same regardless of wether we filter via fq, or using a
+    // the *facet* results should be the same regardless of whether we filter via fq, or using a
     // domain filter on the top facet
     for (boolean use_domain : Arrays.asList(true, false)) {
       final String domain = use_domain ? "domain: { filter:'" + filter + "'}," : "";
@@ -505,7 +506,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
               (0 == i ? "x2" : "x0"),
               foo_buckets.get(0).get("val"));
           assertEquals("bucket #" + i + " foo top count", 2L, foo_buckets.get(0).get("count"));
-          // NOTE: we can't make any assertions about the 2nd val..
+          // NOTE: we can't make any assertions about the 2nd val...
           // our limit + randomized sharding could result in either remaining term being picked.
           // but for either term, the count should be exactly the same...
           assertEquals("bucket #" + i + " foo 2nd count", 1L, foo_buckets.get(1).get("count"));
@@ -552,12 +553,12 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
     //
     // So the filter also explicitly accepts all 'x2' docs -- ensuring we have enough matches
     // containing that term for it to be enough of a candidate in phase#1, but for many shard
-    // arrangements it won't be returned by all shards resulting in refinement being neccessary to
+    // arrangements it won't be returned by all shards resulting in refinement being necessary to
     // get the x_s:x2 sub-shard ranges from shard(s) where x_s:x2 is only tied for the (shard local)
-    // top term count and would lose the (index order) tie breaker with x_s:x0 or x_s:x1
+    // top term count and would lose the (index order) tiebreaker with x_s:x0 or x_s:x1
     final String filter = "id_i1:[" + VALUES.size() + " TO *] OR x_s:x2";
 
-    // the *facet* results should be the same regardless of wether we filter via fq, or using a
+    // the *facet* results should be the same regardless of whether we filter via fq, or using a
     // domain filter on the top facet
     for (boolean use_domain : Arrays.asList(true, false)) {
       final String domain = use_domain ? "domain: { filter:'" + filter + "'}," : "";
