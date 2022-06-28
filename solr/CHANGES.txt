@@ -93,6 +93,8 @@ Bug Fixes
 
 * SOLR-16241: Fix JettyConfig.builder(JettyConfig) to correctly copy all attributes (hossman)
 
+* SOLR-16142: Fix Admin UI's spatial parameter generation. (Arsal Jalib, Christine Poerschke)
+
 Other Changes
 ---------------------
 * SOLR-15897: Remove <jmx/> from all unit test solrconfig.xml files. (Eric Pugh)
