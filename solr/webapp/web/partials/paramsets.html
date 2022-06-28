@@ -39,19 +39,19 @@
             <div>
                 <form>
                     <label>
-                        <input type="radio"
-                               value="sample"
-                               ng-model="switch.Data">
+                        <input type="checkbox"
+                               ng-model="switch.showSample">
                         Sample Paramset
                     </label>
                 </form>
-                <div ng-switch="switch.Data">
-                    <div ng-switch-when="sample" id="just-line-break">
+                <div ng-switch="switch.showSample">
+                    <div ng-switch-when="true">
                       <pre>
 {{ placeholder | json }}
                       </pre>
                     </div>
                 </div>
+
                 <fieldset class="Update Paramset">
                     <legend>Update Paramset</legend>
                     <div class="fieldset" id="paramsetContent-container">
