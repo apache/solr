@@ -17,10 +17,6 @@ limitations under the License.
 
 */
 
-#just-line-break {
-    white-space: pre-line;
-}
-
 #content #paramsets
 {
     background-image: url( ../../img/div.gif );
@@ -36,6 +32,7 @@ limitations under the License.
 #content #paramsets #form fieldset legend, #content #paramsets #form .optional.expanded legend {
     display: block;
     margin-left: 10px;
+    margin-top: 15px;
     padding: 0px 5px;
 }
 
