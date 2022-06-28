@@ -27,7 +27,6 @@ limitations under the License.
 #content #paramsets #form
 {
     float: left;
-    /*width: 21%;*/
 }
 #content #paramsets #form fieldset legend, #content #paramsets #form .optional.expanded legend {
     display: block;
@@ -58,26 +57,22 @@ legend {
 #content #paramsets #form textarea
 {
     margin-bottom: 2px;
-    /*width: 100%;*/
 }
 
 #content #paramsets #form input,
 #content #paramsets #form textarea
 {
     margin-bottom: 2px;
-    /*width: 98%;*/
 }
 
 #content #paramsets #form #start
 {
     float: left;
-    /*width: 45%;*/
 }
 
 #content #paramsets #form #rows
 {
     float: right;
-    /* width: 45%;*/
 }
 
 #content #paramsets #form .checkbox input
