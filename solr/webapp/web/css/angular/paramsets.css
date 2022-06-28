@@ -148,3 +148,17 @@ legend {
 .description{
     font-weight: bold;
 }
+
+#content #paramsets .chosen-container
+{
+  width: 71% !important;
+}
+
+#content #paramsets .chosen-container {
+  margin-left: 6px;
+  width: 100%;
+}
+#content #paramsets .chosen-drop input,
+#content #paramsets .chosen-results {
+  width: 100% !important;
+}
