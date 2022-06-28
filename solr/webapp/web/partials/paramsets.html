@@ -42,12 +42,14 @@
                         <input type="radio"
                                value="sample"
                                ng-model="switch.Data">
-                        Show sample json!
+                        Sample Paramset
                     </label>
                 </form>
                 <div ng-switch="switch.Data">
                     <div ng-switch-when="sample" id="just-line-break">
-                        {{placeholder}}
+                      <pre>
+{{ placeholder | json }}
+                      </pre>
                     </div>
                 </div>
                 <fieldset class="Update Paramset">

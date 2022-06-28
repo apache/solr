@@ -62,15 +62,15 @@ solrAdminApp.controller('ParamSetsController',
     $scope.getParamsets();
     $scope.refresh = function () {
       $scope.paramsetContent = "";
-      $scope.placeholder = "{\n" +
-        "  \"set\": {\n" +
-        "    \"myQueries\": {\n" +
-        "      \"defType\": \"edismax\",\n" +
-        "      \"rows\": \"5\",\n" +
-        "      \"df\": \"text_all\"\n" +
-        "    }\n" +
-        "  }\n" +
-        "}"
+      $scope.placeholder = {
+        "set": {
+          "myQueries": {
+            "defType": "edismax",
+            "rows": "5",
+            "df": "text_all"
+          }
+        }
+      }
     };
     $scope.refresh();
 
