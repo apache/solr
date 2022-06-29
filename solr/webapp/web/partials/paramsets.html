@@ -21,7 +21,7 @@
     <div id="form">
         <form>
 
-          <fieldset class="Select Paramset">
+          <fieldset>
               <legend>Select Paramset</legend>
             <div id="paramset-name-container">
 
@@ -56,13 +56,17 @@
                     </div>
                 </div>
 
-                <fieldset class="Update Paramset">
+                <fieldset>
                     <legend>Update Paramset(s)</legend>
                     <div class="fieldset" id="paramsetContent-container">
                         <label for="paramset">
                             Paramset(s) JSON
                         </label>
-                        <textarea ng-model="paramsetContent" name="paramsets" id="paramset" title="Request Parameters API Payload" rows="10"
+                        <textarea ng-model="paramsetContent"
+                                  name="paramsetContent"
+                                  id="paramsetContent"
+                                  title="Request Parameters API Payload"
+                                  rows="10"
                                   cols="65"></textarea>
                         <p>
                           <a href="https://solr.apache.org/guide/solr/latest/configuration-guide/request-parameters-api.html" target="_out">syntax help</a>
@@ -80,7 +84,7 @@
 
             </div>
 
-            <button type="submit" ng-click="submit()" id="submit">Submit Paramset Updates</button>
+            <button type="submit" ng-click="submit()" id="submit">Submit Updates</button>
         </form>
     </div>
     <div id="result">
