@@ -28,6 +28,12 @@ limitations under the License.
 {
     float: left;
 }
+
+#content #paramsets #sample-paramset
+{
+    margin-top: 15px;
+}
+
 #content #paramsets #form fieldset legend, #content #paramsets #form .optional.expanded legend {
     display: block;
     margin-left: 10px;
