@@ -20,21 +20,21 @@
 <div id="paramsets" class="clearfix">
     <div id="form">
         <form>
+
             <div id="paramset-name-container">
-                <label for="paramsetName">
-                    <a rel="help">Paramset Name</a>
-                </label>
-                <select ng-model="name"
-                        ng-options="item for item in paramsetList"
-                        name="paramsetName"
-                        chosen
-                        style="width:100%"
-                        id="paramsetName"
-                        title="ParamSetName"
-                        data-placeholder="Please select paramset"></select>
+
+              <label for="paramsetName">
+                  <a rel="help">Paramsets</a>
+              </label>
+              <select id="paramsetName"
+                      ng-model="name"
+                      chosen
+                      data-placeholder="Please select ..."
+                      ng-change="selectParamset()"
+                      ng-options="item for item in paramsetList"><option value=""></option></select>
+
             </div>
 
-            <button type="submit" ng-click="getParamsets(true)" id="get-paramset">Get Paramset</button>
 
             <div>
                 <form>
@@ -45,8 +45,8 @@
                     </label>
                 </form>
                 <div ng-switch="switch.showSample">
-                    <div ng-switch-when="true">
-                      <pre class="syntax language-json"><code ng-bind-html="placeholder | highlight:'json' | unsafe"></code></pre>                      
+                    <div id="sample-paramset" ng-switch-when="true">
+                      <pre class="syntax language-json"><code ng-bind-html="placeholder | highlight:'json' | unsafe"></code></pre>
                     </div>
                 </div>
 
@@ -56,7 +56,7 @@
                         <label for="paramset">
                             Paramset(s) JSON
                         </label>
-                        <textarea ng-model="paramsetContent" name="paramsets" id="paramset" title="The Paramset" rows="10"
+                        <textarea ng-model="paramsetContent" name="paramsets" id="paramset" title="Request Parameters API Payload" rows="10"
                                   cols="65"></textarea>
                         <p>
                           <a href="https://solr.apache.org/guide/solr/latest/configuration-guide/request-parameters-api.html" target="_out">syntax help</a>

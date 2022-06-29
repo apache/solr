@@ -23,7 +23,7 @@ solrAdminApp.controller('ParamSetsController',
 
     $scope.resetMenu("paramsets", Constants.IS_COLLECTION_PAGE);
 
-    $scope.sampleCommand = {
+    $scope.sampleAPICommand = {
       "set": {
         "myQueries": {
           "defType": "edismax",
@@ -33,13 +33,9 @@ solrAdminApp.controller('ParamSetsController',
       }
     }
 
-    $scope.showHelp = function (id) {
-      if ($scope.helpId && ($scope.helpId === id || id === '')) {
-        delete $scope.helpId;
-      } else {
-        $scope.helpId = id;
-      }
-    };
+    $scope.selectParamset = function() {
+      $scope.getParamsets(true);
+    }
 
     $scope.getParamsets = function (isSelected) {
       $scope.refresh();
@@ -59,7 +55,14 @@ solrAdminApp.controller('ParamSetsController',
         delete success.$resolved;
         $scope.response = JSON.stringify(success, null, '  ');
         if (isSelected) {
-          $scope.selectedParamsetList = success.response.params ? Object.keys(success.response.params) : [];
+          var apiPayload = {
+            "set": success.response.params
+          };
+          // remove json key that is defined as "", it can't be submitted via the API.
+          var paramsetName = Object.keys(apiPayload.set)[0];
+          delete apiPayload.set[paramsetName][""]
+
+          $scope.paramsetContent = JSON.stringify(apiPayload, null, '  ');
         } else {
           $scope.paramsetList = success.response.params ? Object.keys(success.response.params) : [];
         }
@@ -70,9 +73,10 @@ solrAdminApp.controller('ParamSetsController',
       }
     }
     $scope.getParamsets();
+    
     $scope.refresh = function () {
       $scope.paramsetContent = "";
-      $scope.placeholder = JSON.stringify($scope.sampleCommand, null, '  ');
+      $scope.placeholder = JSON.stringify($scope.sampleAPICommand, null, '  ');
     };
     $scope.refresh();
 
