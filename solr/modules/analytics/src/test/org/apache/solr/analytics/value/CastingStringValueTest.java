@@ -18,7 +18,6 @@ package org.apache.solr.analytics.value;
 
 import java.util.Arrays;
 import java.util.Iterator;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.value.AnalyticsValueStream.ExpressionType;
 import org.apache.solr.analytics.value.FillableTestValue.TestStringValue;
@@ -32,7 +31,7 @@ public class CastingStringValueTest extends SolrTestCaseJ4 {
     TestStringValue val = new TestStringValue();
 
     assertTrue(val instanceof AnalyticsValue);
-    AnalyticsValue casted = (AnalyticsValue)val;
+    AnalyticsValue casted = (AnalyticsValue) val;
 
     val.setValue("string 1").setExists(true);
     assertEquals("string 1", casted.getObject());
@@ -48,21 +47,23 @@ public class CastingStringValueTest extends SolrTestCaseJ4 {
     TestStringValue val = new TestStringValue();
 
     assertTrue(val instanceof StringValueStream);
-    StringValueStream casted = (StringValueStream)val;
+    StringValueStream casted = (StringValueStream) val;
 
     // No values
     val.setExists(false);
-    casted.streamStrings( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    casted.streamStrings(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple Values
     val.setValue("abcd").setExists(true);
     Iterator<String> values = Arrays.asList("abcd").iterator();
-    casted.streamStrings( value -> {
-      assertTrue(values.hasNext());
-      assertEquals(values.next(), value);
-    });
+    casted.streamStrings(
+        value -> {
+          assertTrue(values.hasNext());
+          assertEquals(values.next(), value);
+        });
     assertFalse(values.hasNext());
   }
 
@@ -71,21 +72,23 @@ public class CastingStringValueTest extends SolrTestCaseJ4 {
     TestStringValue val = new TestStringValue();
 
     assertTrue(val instanceof AnalyticsValueStream);
-    AnalyticsValueStream casted = (AnalyticsValueStream)val;
+    AnalyticsValueStream casted = (AnalyticsValueStream) val;
 
     // No values
     val.setExists(false);
-    casted.streamObjects( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    casted.streamObjects(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple Values
     val.setValue("abcd").setExists(true);
     Iterator<Object> values = Arrays.<Object>asList("abcd").iterator();
-    casted.streamObjects( value -> {
-      assertTrue(values.hasNext());
-      assertEquals(values.next(), value);
-    });
+    casted.streamObjects(
+        value -> {
+          assertTrue(values.hasNext());
+          assertEquals(values.next(), value);
+        });
     assertFalse(values.hasNext());
   }
 
@@ -95,7 +98,7 @@ public class CastingStringValueTest extends SolrTestCaseJ4 {
     val.setValue("asd23n23").setExists(true);
     AnalyticsValueStream conv = val.convertToConstant();
     assertTrue(conv instanceof ConstantStringValue);
-    assertEquals("asd23n23", ((ConstantStringValue)conv).getString());
+    assertEquals("asd23n23", ((ConstantStringValue) conv).getString());
 
     val = new TestStringValue(ExpressionType.FIELD);
     val.setValue("asd23n23").setExists(true);

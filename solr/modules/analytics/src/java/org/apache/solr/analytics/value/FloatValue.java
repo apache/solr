@@ -18,22 +18,22 @@ package org.apache.solr.analytics.value;
 
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
-
 import org.apache.solr.analytics.facet.compare.ExpressionComparator;
 import org.apache.solr.analytics.util.function.FloatConsumer;
 import org.apache.solr.analytics.value.constant.ConstantFloatValue;
 
 /**
  * A single-valued analytics value that can be represented as a float.
- * <p>
- * The back-end production of the value can change inbetween calls to {@link #getFloat()} and {@link #exists()},
- * resulting in different values on each call.
+ *
+ * <p>The back-end production of the value can change inbetween calls to {@link #getFloat()} and
+ * {@link #exists()}, resulting in different values on each call.
  */
 public interface FloatValue extends FloatValueStream, AnalyticsValue {
   /**
    * Get the float representation of the current value.
-   * <p>
-   * NOTE: The value returned is not valid unless calling {@link #exists()} afterwards returns {@code TRUE}.
+   *
+   * <p>NOTE: The value returned is not valid unless calling {@link #exists()} afterwards returns
+   * {@code TRUE}.
    *
    * @return the current value
    */
@@ -42,26 +42,31 @@ public interface FloatValue extends FloatValueStream, AnalyticsValue {
   /**
    * An interface that represents all of the types a {@link FloatValue} should be able to cast to.
    */
-  public static interface CastingFloatValue extends FloatValue, DoubleValue, StringValue, ComparableValue {}
+  public static interface CastingFloatValue
+      extends FloatValue, DoubleValue, StringValue, ComparableValue {}
 
   /**
-   * An abstract base for {@link CastingFloatValue} that automatically casts to all types if {@link #getFloat()} and {@link #exists()} are implemented.
+   * An abstract base for {@link CastingFloatValue} that automatically casts to all types if {@link
+   * #getFloat()} and {@link #exists()} are implemented.
    */
-  public static abstract class AbstractFloatValue implements CastingFloatValue {
+  public abstract static class AbstractFloatValue implements CastingFloatValue {
     @Override
     public double getDouble() {
       return getFloat();
     }
+
     @Override
     public String getString() {
       float val = getFloat();
       return exists() ? Float.toString(val) : null;
     }
+
     @Override
     public Object getObject() {
       float val = getFloat();
       return exists() ? val : null;
     }
+
     @Override
     public void streamFloats(FloatConsumer cons) {
       float val = getFloat();
@@ -69,6 +74,7 @@ public interface FloatValue extends FloatValueStream, AnalyticsValue {
         cons.accept(val);
       }
     }
+
     @Override
     public void streamDoubles(DoubleConsumer cons) {
       double val = getDouble();
@@ -76,6 +82,7 @@ public interface FloatValue extends FloatValueStream, AnalyticsValue {
         cons.accept(val);
       }
     }
+
     @Override
     public void streamStrings(Consumer<String> cons) {
       String val = getString();
@@ -83,6 +90,7 @@ public interface FloatValue extends FloatValueStream, AnalyticsValue {
         cons.accept(val);
       }
     }
+
     @Override
     public void streamObjects(Consumer<Object> cons) {
       Object val = getObject();
@@ -90,6 +98,7 @@ public interface FloatValue extends FloatValueStream, AnalyticsValue {
         cons.accept(val);
       }
     }
+
     @Override
     public AnalyticsValue convertToConstant() {
       if (getExpressionType().equals(ExpressionType.CONST)) {
@@ -97,6 +106,7 @@ public interface FloatValue extends FloatValueStream, AnalyticsValue {
       }
       return this;
     }
+
     @Override
     public ExpressionComparator<Float> getObjectComparator(String expression) {
       return new ExpressionComparator<>(expression);

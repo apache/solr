@@ -16,14 +16,6 @@
  */
 package org.apache.solr.handler.clustering;
 
-import org.carrot2.attrs.AttrComposite;
-import org.carrot2.attrs.AttrString;
-import org.carrot2.clustering.Cluster;
-import org.carrot2.clustering.ClusteringAlgorithm;
-import org.carrot2.clustering.Document;
-import org.carrot2.language.LanguageComponents;
-import org.carrot2.language.LexicalData;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -31,26 +23,32 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.carrot2.attrs.AttrComposite;
+import org.carrot2.attrs.AttrString;
+import org.carrot2.clustering.Cluster;
+import org.carrot2.clustering.ClusteringAlgorithm;
+import org.carrot2.clustering.Document;
+import org.carrot2.language.LabelFilter;
+import org.carrot2.language.LanguageComponents;
+import org.carrot2.language.StopwordFilter;
 
 /**
- * Creates synthetic clusters with diagnostics of
- * {@link LanguageComponents} passed to the clustering method.
+ * Creates synthetic clusters with diagnostics of {@link LanguageComponents} passed to the
+ * clustering method.
  */
 class ResourceCheckAlgorithm extends AttrComposite implements ClusteringAlgorithm {
   public AttrString text =
       attributes.register(
-          "text",
-          AttrString.builder().label("Input text to analyze.")
-              .defaultValue(null));
+          "text", AttrString.builder().label("Input text to analyze.").defaultValue(null));
 
   @Override
   public Set<Class<?>> requiredLanguageComponents() {
-    return Set.of(LexicalData.class);
+    return Set.of(StopwordFilter.class, LabelFilter.class);
   }
 
   @Override
-  public <T extends Document> List<Cluster<T>> cluster(Stream<? extends T> documentStream,
-                                                       LanguageComponents languageComponents) {
+  public <T extends Document> List<Cluster<T>> cluster(
+      Stream<? extends T> documentStream, LanguageComponents languageComponents) {
     ArrayList<Cluster<T>> clusters = new ArrayList<>();
 
     Cluster<T> cluster = new Cluster<>();
@@ -60,14 +58,19 @@ class ResourceCheckAlgorithm extends AttrComposite implements ClusteringAlgorith
     cluster = new Cluster<>();
     clusters.add(cluster);
 
-    LexicalData lexicalData = languageComponents.get(LexicalData.class);
-    cluster.addLabel(Arrays.stream(text.get().trim().split("[\\s]+"))
-        .map(term -> String.format(Locale.ROOT,
-            "%s[%s, %s]",
-            term,
-            lexicalData.ignoreWord(term) ? "ignoredWord" : "-",
-            lexicalData.ignoreLabel(term) ? "ignoredLabel" : "-"))
-        .collect(Collectors.joining(" ")));
+    StopwordFilter stopwordFilter = languageComponents.get(StopwordFilter.class);
+    LabelFilter labelFilter = languageComponents.get(LabelFilter.class);
+    cluster.addLabel(
+        Arrays.stream(text.get().trim().split("[\\s]+"))
+            .map(
+                term ->
+                    String.format(
+                        Locale.ROOT,
+                        "%s[%s, %s]",
+                        term,
+                        stopwordFilter.test(term) ? "-" : "ignoredWord",
+                        labelFilter.test(term) ? "-" : "ignoredLabel"))
+            .collect(Collectors.joining(" ")));
 
     return clusters;
   }

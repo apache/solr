@@ -17,7 +17,6 @@
 package org.apache.solr.analytics.function.reduction;
 
 import java.util.function.UnaryOperator;
-
 import org.apache.solr.analytics.ExpressionFactory.CreatorFunction;
 import org.apache.solr.analytics.function.ReductionFunction;
 import org.apache.solr.analytics.function.reduction.data.ReductionDataCollector;
@@ -27,48 +26,52 @@ import org.apache.solr.analytics.function.reduction.data.SortedListCollector.Sor
 import org.apache.solr.analytics.function.reduction.data.SortedListCollector.SortedIntListCollector;
 import org.apache.solr.analytics.function.reduction.data.SortedListCollector.SortedLongListCollector;
 import org.apache.solr.analytics.value.AnalyticsValueStream;
+import org.apache.solr.analytics.value.DateValue.AbstractDateValue;
 import org.apache.solr.analytics.value.DateValueStream;
+import org.apache.solr.analytics.value.DoubleValue.AbstractDoubleValue;
 import org.apache.solr.analytics.value.DoubleValueStream;
 import org.apache.solr.analytics.value.FloatValueStream;
 import org.apache.solr.analytics.value.IntValueStream;
 import org.apache.solr.analytics.value.LongValueStream;
-import org.apache.solr.analytics.value.DateValue.AbstractDateValue;
-import org.apache.solr.analytics.value.DoubleValue.AbstractDoubleValue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 
-/**
- * A reduction function which returns the median value of the given expression.
- */
+/** A reduction function which returns the median value of the given expression. */
 public class MedianFunction {
   public static final String name = "median";
-  public static final CreatorFunction creatorFunction = (params -> {
-    if (params.length != 1) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires 1 paramater, " + params.length + " found.");
-    }
-    AnalyticsValueStream param = params[0];
-    if (param instanceof DateValueStream) {
-      return new DateMedianFunction((DateValueStream)param);
-    } else if (param instanceof IntValueStream) {
-      return new IntMedianFunction((IntValueStream)param);
-    } else if (param instanceof LongValueStream) {
-      return new LongMedianFunction((LongValueStream)param);
-    } else if (param instanceof FloatValueStream) {
-      return new FloatMedianFunction((FloatValueStream)param);
-    } else if (param instanceof DoubleValueStream) {
-      return new DoubleMedianFunction((DoubleValueStream)param);
-    }
-    throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires a date or numeric parameter.");
-  });
+  public static final CreatorFunction creatorFunction =
+      (params -> {
+        if (params.length != 1) {
+          throw new SolrException(
+              ErrorCode.BAD_REQUEST,
+              "The " + name + " function requires 1 paramater, " + params.length + " found.");
+        }
+        AnalyticsValueStream param = params[0];
+        if (param instanceof DateValueStream) {
+          return new DateMedianFunction((DateValueStream) param);
+        } else if (param instanceof IntValueStream) {
+          return new IntMedianFunction((IntValueStream) param);
+        } else if (param instanceof LongValueStream) {
+          return new LongMedianFunction((LongValueStream) param);
+        } else if (param instanceof FloatValueStream) {
+          return new FloatMedianFunction((FloatValueStream) param);
+        } else if (param instanceof DoubleValueStream) {
+          return new DoubleMedianFunction((DoubleValueStream) param);
+        }
+        throw new SolrException(
+            ErrorCode.BAD_REQUEST,
+            "The " + name + " function requires a date or numeric parameter.");
+      });
 
-  abstract static class NumericMedianFunction<T extends Comparable<T>> extends AbstractDoubleValue implements ReductionFunction {
+  abstract static class NumericMedianFunction<T extends Comparable<T>> extends AbstractDoubleValue
+      implements ReductionFunction {
     protected SortedListCollector<T> collector;
     public static final String name = MedianFunction.name;
     private final String exprStr;
 
     public NumericMedianFunction(DoubleValueStream param, SortedListCollector<T> collector) {
       this.collector = collector;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, param);
     }
 
     protected abstract double collectOrd(int ord);
@@ -80,11 +83,12 @@ public class MedianFunction {
         return 0;
       }
       if (size % 2 == 0) {
-        return (collectOrd(size/2) + collectOrd(size/2 - 1))/2;
+        return (collectOrd(size / 2) + collectOrd(size / 2 - 1)) / 2;
       } else {
-        return collectOrd(size/2);
+        return collectOrd(size / 2);
       }
     }
+
     @Override
     public boolean exists() {
       return collector.size() > 0;
@@ -93,7 +97,7 @@ public class MedianFunction {
     @SuppressWarnings("unchecked")
     @Override
     public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
-      collector = (SortedListCollector<T>)sync.apply(collector);
+      collector = (SortedListCollector<T>) sync.apply(collector);
       collector.calcMedian();
     }
 
@@ -101,6 +105,7 @@ public class MedianFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
@@ -163,7 +168,7 @@ public class MedianFunction {
 
     public DateMedianFunction(DateValueStream param) {
       this.collector = new SortedLongListCollector(param);
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, param);
     }
 
     @Override
@@ -173,11 +178,12 @@ public class MedianFunction {
         return 0;
       }
       if (size % 2 == 0) {
-        return (collector.get(size/2) + collector.get(size/2 - 1))/2;
+        return (collector.get(size / 2) + collector.get(size / 2 - 1)) / 2;
       } else {
-        return collector.get(size/2);
+        return collector.get(size / 2);
       }
     }
+
     @Override
     public boolean exists() {
       return collector.size() > 0;
@@ -185,7 +191,7 @@ public class MedianFunction {
 
     @Override
     public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
-      collector = (SortedLongListCollector)sync.apply(collector);
+      collector = (SortedLongListCollector) sync.apply(collector);
       collector.calcMedian();
     }
 
@@ -193,6 +199,7 @@ public class MedianFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
@@ -204,4 +211,3 @@ public class MedianFunction {
     }
   }
 }
-

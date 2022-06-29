@@ -16,33 +16,29 @@
  */
 package org.apache.solr.core;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import com.google.common.collect.ImmutableSet;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.StrUtils;
-
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.apache.solr.core.PluginInfo.APPENDS;
 import static org.apache.solr.core.PluginInfo.DEFAULTS;
 import static org.apache.solr.core.PluginInfo.INVARIANTS;
 
-/**
- * An Object which represents a {@code <initParams>} tag
- */
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
+
+/** An Object which represents a {@code <initParams>} tag */
 public class InitParams {
   public static final String TYPE = "initParams";
   public final String name;
   public final Set<String> paths;
   public final NamedList<?> defaults;
   public final NamedList<?> invariants;
-  public final NamedList<?>  appends;
-  final private PluginInfo pluginInfo;
-  private final Set<String> KNOWN_KEYS = ImmutableSet.of(DEFAULTS, INVARIANTS, APPENDS);
+  public final NamedList<?> appends;
+  private final PluginInfo pluginInfo;
+  private static final Set<String> KNOWN_KEYS = Set.of(DEFAULTS, INVARIANTS, APPENDS);
 
   public InitParams(PluginInfo p) {
     this.pluginInfo = p;
@@ -87,33 +83,39 @@ public class InitParams {
     }
     String ps = pathSplit.size() > i ? pathSplit.get(i) : null;
     return "*".equals(ps) || "**".equals(ps);
-
   }
 
   public void apply(PluginInfo info) {
     if (!info.isFromSolrConfig()) {
-      //if this is a component implicitly defined in code it should be overridden by initPrams
+      // if this is a component implicitly defined in code it should be overridden by initPrams
       merge(defaults, (NamedList<?>) info.initArgs.get(DEFAULTS), info.initArgs, DEFAULTS, false);
     } else {
-      //if the args is initialized from solrconfig.xml inside the requestHandler it should be taking precedence over  initParams
+      // if the args is initialized from solrconfig.xml inside the requestHandler it should be
+      // taking precedence over  initParams
       merge((NamedList<?>) info.initArgs.get(DEFAULTS), defaults, info.initArgs, DEFAULTS, false);
     }
-    merge((NamedList<?>) info.initArgs.get(INVARIANTS), invariants, info.initArgs, INVARIANTS, false);
+    merge(
+        (NamedList<?>) info.initArgs.get(INVARIANTS), invariants, info.initArgs, INVARIANTS, false);
     merge((NamedList<?>) info.initArgs.get(APPENDS), appends, info.initArgs, APPENDS, true);
 
     if (pluginInfo.initArgs != null) {
       for (int i = 0; i < pluginInfo.initArgs.size(); i++) {
         String name = pluginInfo.initArgs.getName(i);
-        if (KNOWN_KEYS.contains(name)) continue;//already taken care of
+        if (KNOWN_KEYS.contains(name)) continue; // already taken care of
         Object val = info.initArgs.get(name);
-        if (val != null) continue; //this is explicitly specified in the reqhandler , ignore
+        if (val != null) continue; // this is explicitly specified in the reqhandler , ignore
         info.initArgs.add(name, pluginInfo.initArgs.getVal(i));
       }
     }
   }
 
   @SuppressWarnings("unchecked")
-  private static void merge(NamedList<?> first, NamedList<?> second, NamedList<Object> sink, String name, boolean appends) {
+  private static void merge(
+      NamedList<?> first,
+      NamedList<?> second,
+      NamedList<Object> sink,
+      String name,
+      boolean appends) {
     if (first == null && second == null) return;
     if (first == null) first = new NamedList<>();
     NamedList<Object> nl = (NamedList<Object>) first.clone();

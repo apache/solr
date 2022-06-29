@@ -31,7 +31,7 @@ public abstract class StrAggValueSource extends AggValueSource {
   @Override
   public boolean equals(Object o) {
     if (!super.equals(o)) return false;
-    String otherArg = ((StrAggValueSource)o).arg;
+    String otherArg = ((StrAggValueSource) o).arg;
     if (arg == otherArg) return true;
     return (arg != null && arg.equals(otherArg));
   }
@@ -46,5 +46,3 @@ public abstract class StrAggValueSource extends AggValueSource {
     return name() + "(" + arg + ")";
   }
 }
-
-

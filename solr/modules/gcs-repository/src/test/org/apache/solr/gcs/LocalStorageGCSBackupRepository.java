@@ -17,12 +17,13 @@
 
 package org.apache.solr.gcs;
 
+import static org.apache.lucene.tests.util.LuceneTestCase.assumeFalse;
+
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageException;
 import com.google.cloud.storage.contrib.nio.testing.LocalStorageHelper;
 import com.google.common.collect.Lists;
-
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.NoSuchFileException;
@@ -30,16 +31,16 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.apache.lucene.util.LuceneTestCase.assumeFalse;
-
 public class LocalStorageGCSBackupRepository extends GCSBackupRepository {
 
   protected static Storage stashedStorage = null;
 
   @Override
   public Storage initStorage() {
-    // LocalStorageHelper produces 'Storage' objects that track blob store state in non-static memory unique to each
-    // Storage instance.  For various components in Solr to have a coherent view of the blob-space then, they need to
+    // LocalStorageHelper produces 'Storage' objects that track blob store state in non-static
+    // memory unique to each
+    // Storage instance.  For various components in Solr to have a coherent view of the blob-space
+    // then, they need to
     // share a single 'Storage' object.
     synchronized (LocalStorageGCSBackupRepository.class) {
       storage = getSingletonStorage();
@@ -54,10 +55,12 @@ public class LocalStorageGCSBackupRepository extends GCSBackupRepository {
     }
   }
 
-  // A reimplementation of delete functionality that avoids batching.  Batching is ideal in production use cases, but
+  // A reimplementation of delete functionality that avoids batching.  Batching is ideal in
+  // production use cases, but
   // isn't supported by the in-memory Storage implementation provided by LocalStorageHelper
   @Override
-  public void delete(URI path, Collection<String> files, boolean ignoreNoSuchFileException) throws IOException {
+  public void delete(URI path, Collection<String> files, boolean ignoreNoSuchFileException)
+      throws IOException {
     final List<Boolean> results = Lists.newArrayList();
 
     final List<String> filesOrdered = files.stream().collect(Collectors.toList());
@@ -89,9 +92,12 @@ public class LocalStorageGCSBackupRepository extends GCSBackupRepository {
       return stashedStorage;
     }
 
-    // FakeStorageRpc isn't thread-safe, which causes flaky test failures when multiple cores attempt to backup files
-    // simultaneously.  We work around this here by wrapping it in a delegating instance that adds a measure of thread safety.
-    stashedStorage = new ConcurrentDelegatingStorage(LocalStorageHelper.customOptions(false).getService());
+    // FakeStorageRpc isn't thread-safe, which causes flaky test failures when multiple cores
+    // attempt to backup files
+    // simultaneously.  We work around this here by wrapping it in a delegating instance that adds a
+    // measure of thread safety.
+    stashedStorage =
+        new ConcurrentDelegatingStorage(LocalStorageHelper.customOptions(false).getService());
     return stashedStorage;
   }
 
@@ -103,10 +109,11 @@ public class LocalStorageGCSBackupRepository extends GCSBackupRepository {
     } catch (Exception e) {
       final Throwable cause = e.getCause();
       if (cause != null) {
-        assumeFalse("This test uses a GCS mock library that is incompatible with the current default locale",
-                e instanceof StorageException &&
-                        cause.getMessage().contains("Invalid date/time format") &&
-                        cause instanceof NumberFormatException);
+        assumeFalse(
+            "This test uses a GCS mock library that is incompatible with the current default locale",
+            e instanceof StorageException
+                && cause.getMessage().contains("Invalid date/time format")
+                && cause instanceof NumberFormatException);
       }
     }
   }

@@ -22,12 +22,12 @@ import java.util.function.Consumer;
 
 /**
  * A multi-valued analytics value that can be represented as a date.
- * <p>
- * The back-end production of the value can change inbetween calls to {@link #streamDates},
+ *
+ * <p>The back-end production of the value can change inbetween calls to {@link #streamDates},
  * resulting in different values on each call.
- * <p>
- * NOTE: Most date expressions work with the {@code long} representation of the date, so that less
- * objects need to be created during execution.
+ *
+ * <p>NOTE: Most date expressions work with the {@code long} representation of the date, so that
+ * less objects need to be created during execution.
  */
 public interface DateValueStream extends LongValueStream {
   /**
@@ -38,26 +38,32 @@ public interface DateValueStream extends LongValueStream {
   void streamDates(Consumer<Date> cons);
 
   /**
-   * An interface that represents all of the types a {@link DateValueStream} should be able to cast to.
+   * An interface that represents all of the types a {@link DateValueStream} should be able to cast
+   * to.
    */
-  public static interface CastingDateValueStream extends DateValueStream, LongValueStream, StringValueStream {}
+  public static interface CastingDateValueStream
+      extends DateValueStream, LongValueStream, StringValueStream {}
 
   /**
-   * An abstract base for {@link CastingDateValueStream} that automatically casts to all types if {@link #streamLongs} is implemented.
+   * An abstract base for {@link CastingDateValueStream} that automatically casts to all types if
+   * {@link #streamLongs} is implemented.
    */
-  public static abstract class AbstractDateValueStream implements CastingDateValueStream {
+  public abstract static class AbstractDateValueStream implements CastingDateValueStream {
     @Override
     public void streamDates(Consumer<Date> cons) {
       streamLongs((long val) -> cons.accept(new Date(val)));
     }
+
     @Override
     public void streamStrings(Consumer<String> cons) {
       streamLongs((long val) -> cons.accept(Instant.ofEpochMilli(val).toString()));
     }
+
     @Override
     public void streamObjects(Consumer<Object> cons) {
       streamDates((Date val) -> cons.accept(val));
     }
+
     @Override
     public AnalyticsValueStream convertToConstant() {
       return this;

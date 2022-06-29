@@ -18,15 +18,14 @@ package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-
-import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -34,15 +33,15 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-/** 
- * A very simple sanity check that Phrase Identification works across a cloud cluster
- * using distributed term stat collection.
+/**
+ * A very simple sanity check that Phrase Identification works across a cloud cluster using
+ * distributed term stat collection.
  *
  * @see org.apache.solr.handler.component.PhrasesIdentificationComponentTest
  */
@@ -59,18 +58,18 @@ public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
 
   @BeforeClass
   private static void createMiniSolrCloudCluster() throws Exception {
-    
+
     // multi replicas should not matter...
     final int repFactor = usually() ? 1 : 2;
     // ... but we definitely want to test multiple shards
-    final int numShards = TestUtil.nextInt(random(), 1, (usually() ? 2 :3));
+    final int numShards = TestUtil.nextInt(random(), 1, (usually() ? 2 : 3));
     final int numNodes = (numShards * repFactor);
-   
+
     final String configName = DEBUG_LABEL + "_config-set";
     final Path configDir = TEST_COLL1_CONF();
 
     configureCluster(numNodes).addConfig(configName, configDir).configure();
-    
+
     Map<String, String> collectionProperties = new LinkedHashMap<>();
     collectionProperties.put("config", "solrconfig-phrases-identification.xml");
     collectionProperties.put("schema", "schema-phrases-identification.xml");
@@ -88,21 +87,26 @@ public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
     }
 
     // index some docs...
-    CLOUD_CLIENT.add
-      (sdoc("id", "42",
-            "title","Tale of the Brown Fox: was he lazy?",
+    CLOUD_CLIENT.add(
+        sdoc(
+            "id", "42",
+            "title", "Tale of the Brown Fox: was he lazy?",
             "body", "No. The quick brown fox was a very brown fox who liked to get into trouble."));
-    CLOUD_CLIENT.add
-      (sdoc("id", "43",
-            "title","A fable in two acts",
+    CLOUD_CLIENT.add(
+        sdoc(
+            "id", "43",
+            "title", "A fable in two acts",
             "body", "The brOwn fOx jumped. The lazy dog did not"));
-    CLOUD_CLIENT.add
-      (sdoc("id", "44",
-            "title","Why the LazY dog was lazy",
-            "body", "News flash: Lazy Dog was not actually lazy, it just seemd so compared to Fox"));
-    CLOUD_CLIENT.add
-      (sdoc("id", "45",
-            "title","Why Are We Lazy?",
+    CLOUD_CLIENT.add(
+        sdoc(
+            "id", "44",
+            "title", "Why the LazY dog was lazy",
+            "body",
+                "News flash: Lazy Dog was not actually lazy, it just seemed so compared to Fox"));
+    CLOUD_CLIENT.add(
+        sdoc(
+            "id", "45",
+            "title", "Why Are We Lazy?",
             "body", "Because we are. that's why"));
     CLOUD_CLIENT.commit();
   }
@@ -122,14 +126,16 @@ public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
   public void testBasicPhrases() throws Exception {
     final String input = " did  a Quick    brown FOX perniciously jump over the lazy dog";
     final String expected = " did  a Quick    {brown FOX} perniciously jump over {the lazy dog}";
-    
+
     // based on the documents indexed, these assertions should all pass regardless of
-    // how many shards we have, or wether the request is done via /phrases or /select...
+    // how many shards we have, or whether the request is done via /phrases or /select...
     for (String path : Arrays.asList("/select", "/phrases")) {
       // ... or if we muck with "q" and use the alternative phrases.q for the bits we care about...
-      for (SolrParams p : Arrays.asList(params("q", input, "phrases", "true"),
-                                        params("q", "*:*", "phrases.q", input, "phrases", "true"),
-                                        params("q", "-*:*", "phrases.q", input, "phrases", "true"))) {
+      for (SolrParams p :
+          Arrays.asList(
+              params("q", input, "phrases", "true"),
+              params("q", "*:*", "phrases.q", input, "phrases", "true"),
+              params("q", "-*:*", "phrases.q", input, "phrases", "true"))) {
         final QueryRequest req = new QueryRequest(p);
         req.setPath(path);
         final QueryResponse rsp = req.process(getRandClient(random()));
@@ -138,20 +144,22 @@ public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
           NamedList<Object> phrases = (NamedList<Object>) rsp.getResponse().get("phrases");
           assertEquals("input", input, phrases.get("input"));
           assertEquals("summary", expected, phrases.get("summary"));
-          
+
           @SuppressWarnings({"unchecked"})
           final List<NamedList<Object>> details = (List<NamedList<Object>>) phrases.get("details");
           assertNotNull("null details", details);
           assertEquals("num phrases found", 2, details.size());
-          
+
           final NamedList<Object> lazy_dog = details.get(0);
           assertEquals("dog text", "the lazy dog", lazy_dog.get("text"));
-          assertEquals("dog score", 0.166666D, ((Double)lazy_dog.get("score")).doubleValue(), 0.000001D);
-          
+          assertEquals(
+              "dog score", 0.166666D, ((Double) lazy_dog.get("score")).doubleValue(), 0.000001D);
+
           final NamedList<Object> brown_fox = details.get(1);
           assertEquals("fox text", "brown FOX", brown_fox.get("text"));
-          assertEquals("fox score", 0.083333D, ((Double)brown_fox.get("score")).doubleValue(), 0.000001D);
-          
+          assertEquals(
+              "fox score", 0.083333D, ((Double) brown_fox.get("score")).doubleValue(), 0.000001D);
+
         } catch (AssertionError e) {
           throw new AssertionError(e.getMessage() + " ::: " + path + " ==> " + rsp, e);
         }
@@ -162,8 +170,10 @@ public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
   public void testEmptyInput() throws Exception {
     // empty input shouldn't error, just produce empty results...
     for (String input : Arrays.asList("", "  ")) {
-      for (SolrParams p : Arrays.asList(params("q", "*:*", "phrases.q", input, "phrases", "true"),
-                                        params("q", "-*:*", "phrases.q", input, "phrases", "true"))) {
+      for (SolrParams p :
+          Arrays.asList(
+              params("q", "*:*", "phrases.q", input, "phrases", "true"),
+              params("q", "-*:*", "phrases.q", input, "phrases", "true"))) {
         final QueryRequest req = new QueryRequest(p);
         req.setPath("/phrases");
         final QueryResponse rsp = req.process(getRandClient(random()));
@@ -172,12 +182,12 @@ public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
           NamedList<Object> phrases = (NamedList<Object>) rsp.getResponse().get("phrases");
           assertEquals("input", input, phrases.get("input"));
           assertEquals("summary", input, phrases.get("summary"));
-          
+
           @SuppressWarnings({"unchecked"})
           final List<NamedList<Object>> details = (List<NamedList<Object>>) phrases.get("details");
           assertNotNull("null details", details);
           assertEquals("num phrases found", 0, details.size());
-          
+
         } catch (AssertionError e) {
           throw new AssertionError(e.getMessage() + " ==> " + rsp, e);
         }
@@ -185,9 +195,9 @@ public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
     }
   }
 
-  /** 
-   * returns a random SolrClient -- either a CloudSolrClient, or an HttpSolrClient pointed 
-   * at a node in our cluster 
+  /**
+   * returns a random SolrClient -- either a CloudSolrClient, or an HttpSolrClient pointed at a node
+   * in our cluster
    */
   public static SolrClient getRandClient(Random rand) {
     int numClients = CLIENTS.size();
@@ -198,9 +208,7 @@ public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
 
   public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
     assert null != client.getDefaultCollection();
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(client.getDefaultCollection(),
-                                                        client.getZkStateReader(),
-                                                        true, true, 330);
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+        client.getDefaultCollection(), ZkStateReader.from(client), true, true, 330);
   }
-
 }

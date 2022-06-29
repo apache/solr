@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 import java.util.function.LongConsumer;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
@@ -30,7 +29,8 @@ import org.apache.solr.schema.LongPointField;
 import org.apache.solr.schema.TrieLongField;
 
 /**
- * An analytics wrapper for a single-valued {@link TrieLongField} or {@link LongPointField} with DocValues enabled.
+ * An analytics wrapper for a single-valued {@link TrieLongField} or {@link LongPointField} with
+ * DocValues enabled.
  */
 public class LongField extends AnalyticsField implements CastingLongValue {
   private NumericDocValues docValues;
@@ -58,18 +58,22 @@ public class LongField extends AnalyticsField implements CastingLongValue {
   public long getLong() {
     return value;
   }
+
   @Override
   public double getDouble() {
-    return (double)value;
+    return (double) value;
   }
+
   @Override
   public String getString() {
     return exists ? Long.toString(value) : null;
   }
+
   @Override
   public Object getObject() {
     return exists ? value : null;
   }
+
   @Override
   public boolean exists() {
     return exists;
@@ -81,18 +85,21 @@ public class LongField extends AnalyticsField implements CastingLongValue {
       cons.accept(value);
     }
   }
+
   @Override
   public void streamDoubles(DoubleConsumer cons) {
     if (exists) {
-      cons.accept((double)value);
+      cons.accept((double) value);
     }
   }
+
   @Override
   public void streamStrings(Consumer<String> cons) {
     if (exists) {
       cons.accept(Long.toString(value));
     }
   }
+
   @Override
   public void streamObjects(Consumer<Object> cons) {
     if (exists) {

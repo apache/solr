@@ -19,7 +19,7 @@ package org.apache.solr.client.solrj.io.stream.eval;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
+import junit.framework.Assert;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -27,37 +27,33 @@ import org.apache.solr.client.solrj.io.eval.RegressionEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
 
-import junit.framework.Assert;
-
 public class RegressionEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
-  Map<String,Object> values;
+  Map<String, Object> values;
 
   public RegressionEvaluatorTest() {
     super();
     factory = new StreamFactory().withFunctionName("regress", RegressionEvaluator.class);
-    values = new HashMap<String,Object>();
+    values = new HashMap<String, Object>();
   }
 
   @Test
   public void test() throws IOException {
     double[] l1 = new double[] {3.4, 4.5, 6.7};
     double[] l2 = new double[] {1.2, 3.2, 3};
-    
+
     values.clear();
     values.put("l1", l1);
     values.put("l2", l2);
 
-    Tuple result = (Tuple)factory.constructEvaluator("regress(l1,l2)").evaluate(new Tuple(values));
-    
-    SimpleRegression regression = new SimpleRegression();
-    regression.addData(l1[0],l2[0]);
-    regression.addData(l1[1],l2[1]);
-    regression.addData(l1[2],l2[2]);
-    
-    Assert.assertEquals(result.getDouble("slope"), regression.getSlope());
-    
-  }
+    Tuple result = (Tuple) factory.constructEvaluator("regress(l1,l2)").evaluate(new Tuple(values));
 
+    SimpleRegression regression = new SimpleRegression();
+    regression.addData(l1[0], l2[0]);
+    regression.addData(l1[1], l2[1]);
+    regression.addData(l1[2], l2[2]);
+
+    Assert.assertEquals(result.getDouble("slope"), regression.getSlope());
+  }
 }

@@ -17,20 +17,21 @@
 package org.apache.solr.analytics.facet.compare;
 
 import java.util.Collection;
-
 import org.apache.solr.analytics.facet.SortableFacet.FacetBucket;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 
 /**
- * A comparator used to sort the facet-value buckets of facet, using the delegate comparator if two values are equal.
+ * A comparator used to sort the facet-value buckets of facet, using the delegate comparator if two
+ * values are equal.
  */
 public class DelegatingComparator extends FacetResultsComparator {
   private final Iterable<FacetResultsComparator> comparators;
 
   /**
-   * Create a delegating results comparator. This comparator will in succession use the given comparators, continuing if the values are equal.
-   * Two buckets are considered equal if and only if all comparators find them equal
+   * Create a delegating results comparator. This comparator will in succession use the given
+   * comparators, continuing if the values are equal. Two buckets are considered equal if and only
+   * if all comparators find them equal
    *
    * @param comparators the comparators to use in succession
    */
@@ -38,9 +39,11 @@ public class DelegatingComparator extends FacetResultsComparator {
     this.comparators = comparators;
   }
 
-  public static FacetResultsComparator joinComparators(Collection<FacetResultsComparator> comparators) throws SolrException {
+  public static FacetResultsComparator joinComparators(
+      Collection<FacetResultsComparator> comparators) throws SolrException {
     if (comparators.size() == 0) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,"A sort must have at least 1 comparator criteria.");
+      throw new SolrException(
+          ErrorCode.BAD_REQUEST, "A sort must have at least 1 comparator criteria.");
     } else if (comparators.size() == 1) {
       return comparators.iterator().next();
     } else {

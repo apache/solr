@@ -16,29 +16,25 @@
  */
 package org.apache.solr.util;
 
-import java.io.IOException;
-
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.logging.CircularList;
 import org.junit.Test;
 
-/** 
- * Test circular list
- */
-public class CircularListTest  extends SolrTestCase {
+/** Test circular list */
+public class CircularListTest extends SolrTestCase {
 
   @Test
-  public void testCircularList() throws IOException {
+  public void testCircularList() {
     CircularList<Integer> list = new CircularList<>(10);
-    for(int i=0;i<10; i++) {
+    for (int i = 0; i < 10; i++) {
       list.add(i);
     }
     assertEquals("within list", Integer.valueOf(0), list.get(0));
-    for(int i=10;i<20; i++) {
+    for (int i = 10; i < 20; i++) {
       list.add(i);
       assertEquals("within list", Integer.valueOf(i - 9), list.get(0));
     }
-    
+
     // now try the resize
     list.resize(5);
     assertEquals(Integer.valueOf(15), list.get(0));

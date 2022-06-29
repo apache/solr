@@ -19,7 +19,6 @@ package org.apache.solr.analytics.function.field;
 import java.io.IOException;
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedNumericDocValues;
@@ -27,9 +26,7 @@ import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.analytics.value.DoubleValueStream.CastingDoubleValueStream;
 import org.apache.solr.schema.DoublePointField;
 
-/**
- * An analytics wrapper for a multi-valued {@link DoublePointField} with DocValues enabled.
- */
+/** An analytics wrapper for a multi-valued {@link DoublePointField} with DocValues enabled. */
 public class DoubleMultiPointField extends AnalyticsField implements CastingDoubleValueStream {
   private SortedNumericDocValues docValues;
   private int count;
@@ -45,6 +42,7 @@ public class DoubleMultiPointField extends AnalyticsField implements CastingDoub
   public void doSetNextReader(LeafReaderContext context) throws IOException {
     docValues = DocValues.getSortedNumeric(context.reader(), fieldName);
   }
+
   @Override
   public void collect(int doc) throws IOException {
     if (docValues.advanceExact(doc)) {
@@ -70,10 +68,12 @@ public class DoubleMultiPointField extends AnalyticsField implements CastingDoub
       cons.accept(values[i]);
     }
   }
+
   @Override
   public void streamStrings(Consumer<String> cons) {
     streamDoubles(value -> cons.accept(Double.toString(value)));
   }
+
   @Override
   public void streamObjects(Consumer<Object> cons) {
     streamDoubles(value -> cons.accept(value));

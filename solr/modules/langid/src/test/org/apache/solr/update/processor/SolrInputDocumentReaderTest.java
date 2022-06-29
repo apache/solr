@@ -16,15 +16,14 @@
  */
 package org.apache.solr.update.processor;
 
-import java.util.Arrays;
-
-import org.apache.solr.common.SolrInputDocument;
-import org.junit.Before;
-import org.junit.Test;
-
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
+import java.util.Arrays;
+import org.apache.solr.common.SolrInputDocument;
+import org.junit.Before;
+import org.junit.Test;
 
 public class SolrInputDocumentReaderTest {
   private SolrInputDocument doc;
@@ -41,19 +40,14 @@ public class SolrInputDocumentReaderTest {
     doc.addField("f4", "12345678901234567890");
     allFields = new String[] {"f1", "f2", "f3", "f4"};
   }
-  
+
   @Test
   public void readChunked() throws Exception {
-    SolrInputDocumentReader reader = new SolrInputDocumentReader(
-        doc,
-        allFields,
-        20,
-        18,
-        " - ");
+    SolrInputDocumentReader reader = new SolrInputDocumentReader(doc, allFields, 20, 18, " - ");
     assertTrue(reader.ready());
     char[] chars = new char[1000];
     int len;
-    assertEquals(9, len=reader.read(chars, 0, 9));
+    assertEquals(9, len = reader.read(chars, 0, 9));
     assertArrEqu("a b c - m", chars, len);
     len += reader.read(chars, 9, 2);
     assertArrEqu("a b c - mul", chars, len);
@@ -66,13 +60,7 @@ public class SolrInputDocumentReaderTest {
 
   @Test
   public void maxFieldValueLength() throws Exception {
-    SolrInputDocumentReader reader = new SolrInputDocumentReader(
-        doc,
-        allFields,
-        21,
-        2,
-        " - "
-    );
+    SolrInputDocumentReader reader = new SolrInputDocumentReader(doc, allFields, 21, 2, " - ");
     assertTrue(reader.ready());
     char[] chars = new char[1000];
     int len = reader.read(chars, 0, 22);
@@ -82,18 +70,14 @@ public class SolrInputDocumentReaderTest {
 
   @Test
   public void allStrFields() throws Exception {
-    SolrInputDocumentReader reader = new SolrInputDocumentReader(
-        doc,
-        20000,
-        10000
-    );
+    SolrInputDocumentReader reader = new SolrInputDocumentReader(doc, 20000, 10000);
     assertTrue(reader.ready());
     char[] chars = new char[1000];
     int len = reader.read(chars, 0, 1000);
     assertEquals(45, len);
     assertArrEqu("a b c multi valued field 12345678901234567890", chars, len);
   }
-  
+
   @Test
   public void testGetStringFields() throws Exception {
     String[] expected = new String[] {"f1", "f2", "f4"};
@@ -104,5 +88,4 @@ public class SolrInputDocumentReaderTest {
     String str = new String(Arrays.copyOf(chars, len));
     assertEquals(expected, str);
   }
-
 }

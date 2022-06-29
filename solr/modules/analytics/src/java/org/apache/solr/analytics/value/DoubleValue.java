@@ -18,21 +18,21 @@ package org.apache.solr.analytics.value;
 
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
-
 import org.apache.solr.analytics.facet.compare.ExpressionComparator;
 import org.apache.solr.analytics.value.constant.ConstantDoubleValue;
 
 /**
  * A single-valued analytics value that can be represented as a date.
- * <p>
- * The back-end production of the value can change inbetween calls to {@link #getDouble()} and {@link #exists()},
- * resulting in different values on each call.
+ *
+ * <p>The back-end production of the value can change inbetween calls to {@link #getDouble()} and
+ * {@link #exists()}, resulting in different values on each call.
  */
 public interface DoubleValue extends DoubleValueStream, AnalyticsValue {
   /**
    * Get the double representation of the current value.
-   * <p>
-   * NOTE: The value returned is not valid unless calling {@link #exists()} afterwards returns {@code TRUE}.
+   *
+   * <p>NOTE: The value returned is not valid unless calling {@link #exists()} afterwards returns
+   * {@code TRUE}.
    *
    * @return the current value
    */
@@ -43,21 +43,23 @@ public interface DoubleValue extends DoubleValueStream, AnalyticsValue {
    */
   public static interface CastingDoubleValue extends DoubleValue, StringValue, ComparableValue {}
 
-
   /**
-   * An abstract base for {@link CastingDoubleValue} that automatically casts to all types if {@link #getDouble()} and {@link #exists()} are implemented.
+   * An abstract base for {@link CastingDoubleValue} that automatically casts to all types if {@link
+   * #getDouble()} and {@link #exists()} are implemented.
    */
-  public static abstract class AbstractDoubleValue implements CastingDoubleValue {
+  public abstract static class AbstractDoubleValue implements CastingDoubleValue {
     @Override
     public String getString() {
       double val = getDouble();
       return exists() ? Double.toString(val) : null;
     }
+
     @Override
     public Object getObject() {
       double val = getDouble();
       return exists() ? val : null;
     }
+
     @Override
     public void streamDoubles(DoubleConsumer cons) {
       double val = getDouble();
@@ -65,6 +67,7 @@ public interface DoubleValue extends DoubleValueStream, AnalyticsValue {
         cons.accept(val);
       }
     }
+
     @Override
     public void streamStrings(Consumer<String> cons) {
       String val = getString();
@@ -72,6 +75,7 @@ public interface DoubleValue extends DoubleValueStream, AnalyticsValue {
         cons.accept(val);
       }
     }
+
     @Override
     public void streamObjects(Consumer<Object> cons) {
       Object val = getObject();
@@ -79,6 +83,7 @@ public interface DoubleValue extends DoubleValueStream, AnalyticsValue {
         cons.accept(val);
       }
     }
+
     @Override
     public AnalyticsValue convertToConstant() {
       if (getExpressionType().equals(ExpressionType.CONST)) {
@@ -86,6 +91,7 @@ public interface DoubleValue extends DoubleValueStream, AnalyticsValue {
       }
       return this;
     }
+
     @Override
     public ExpressionComparator<Double> getObjectComparator(String expression) {
       return new ExpressionComparator<>(expression);

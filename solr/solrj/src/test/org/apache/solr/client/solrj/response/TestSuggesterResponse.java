@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.response;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
@@ -35,10 +34,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/**
- * Test for SuggesterComponent's response in Solrj
- *
- */
+/** Test for SuggesterComponent's response in Solrj */
 public class TestSuggesterResponse extends SolrJettyTestBase {
 
   @BeforeClass
@@ -77,7 +73,6 @@ public class TestSuggesterResponse extends SolrJettyTestBase {
       assertEquals(0, mySuggester.get(1).getWeight());
       assertEquals("", mySuggester.get(1).getPayload());
     }
-
   }
 
   @Test
@@ -145,10 +140,11 @@ public class TestSuggesterResponse extends SolrJettyTestBase {
    * Randomizes the ResponseParser to test that both javabin and xml responses parse correctly.  See SOLR-15070
    */
   private SolrClient createSuggestSolrClient() {
-    final ResponseParser randomParser = random().nextBoolean() ? new BinaryResponseParser() : new XMLResponseParser();
+    final ResponseParser randomParser =
+        random().nextBoolean() ? new BinaryResponseParser() : new XMLResponseParser();
     return new HttpSolrClient.Builder()
-            .withBaseSolrUrl(jetty.getBaseUrl().toString() + "/collection1")
-            .withResponseParser(randomParser)
-            .build();
+        .withBaseSolrUrl(jetty.getBaseUrl().toString() + "/collection1")
+        .withResponseParser(randomParser)
+        .build();
   }
 }

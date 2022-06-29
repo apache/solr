@@ -38,12 +38,11 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.XMLWriter;
 
 /**
- *  Customize the format of your search results via XSL stylesheet applied to the default
- *  XML response format.
+ * Customize the format of your search results via XSL stylesheet applied to the default XML
+ * response format.
  *
- *  QueryResponseWriter captures the output of the XMLWriter
- *  (in memory for now, not optimal performance-wise), and applies an XSLT transform
- *  to it.
+ * <p>QueryResponseWriter captures the output of the XMLWriter (in memory for now, not optimal
+ * performance-wise), and applies an XSLT transform to it.
  */
 public class XSLTResponseWriter implements QueryResponseWriter {
   public static final String DEFAULT_CONTENT_TYPE = "application/xml";
@@ -61,13 +60,13 @@ public class XSLTResponseWriter implements QueryResponseWriter {
     Transformer t = null;
     try {
       t = getTransformer(request);
-    } catch(Exception e) {
+    } catch (Exception e) {
       // TODO should our parent interface throw (IO)Exception?
-      throw new RuntimeException("getTransformer fails in getContentType",e);
+      throw new RuntimeException("getTransformer fails in getContentType", e);
     }
 
     String mediaType = t.getOutputProperty("media-type");
-    if (mediaType == null || mediaType.length()==0) {
+    if (mediaType == null || mediaType.length() == 0) {
       // This did not happen in my tests, mediaTypeFromXslt is set to "text/xml"
       // if the XSLT transform does not contain an xsl:output element. Not sure
       // if this is standard behavior or if it's just my JVM/libraries
@@ -76,7 +75,7 @@ public class XSLTResponseWriter implements QueryResponseWriter {
 
     if (!mediaType.contains("charset")) {
       String encoding = t.getOutputProperty("encoding");
-      if (encoding == null || encoding.length()==0) {
+      if (encoding == null || encoding.length() == 0) {
         encoding = "UTF-8";
       }
       mediaType = mediaType + "; charset=" + encoding;
@@ -86,12 +85,13 @@ public class XSLTResponseWriter implements QueryResponseWriter {
   }
 
   @Override
-  public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response) throws IOException {
+  public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response)
+      throws IOException {
     final Transformer t = getTransformer(request);
 
     // capture the output of the XMLWriter
     final CharArrayWriter w = new CharArrayWriter();
-    XMLWriter.writeResponse(w,request,response);
+    XMLWriter.writeResponse(w, request, response);
 
     // and write transformed result to our writer
     final Reader r = new BufferedReader(new CharArrayReader(w.toCharArray()));
@@ -99,7 +99,7 @@ public class XSLTResponseWriter implements QueryResponseWriter {
     final StreamResult result = new StreamResult(writer);
     try {
       t.transform(source, result);
-    } catch(TransformerException te) {
+    } catch (TransformerException te) {
       throw new IOException("XSLT transformation error", te);
     }
   }
@@ -108,5 +108,4 @@ public class XSLTResponseWriter implements QueryResponseWriter {
     final String xslt = request.getParams().required().get(TR);
     return TransformerProvider.getTransformer(request, xslt, xsltCacheLifetimeSeconds);
   }
-
 }

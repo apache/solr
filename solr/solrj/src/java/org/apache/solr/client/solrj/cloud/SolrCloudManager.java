@@ -19,22 +19,28 @@ package org.apache.solr.client.solrj.cloud;
 
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.SolrCloseable;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.TimeSource;
 
 /**
- * This interface abstracts the access to a SolrCloud cluster, including interactions with Zookeeper, Solr
- * and generic HTTP calls.
- * <p>This abstraction should be used when possible instead of directly referencing ZK, Solr and HTTP.</p>
+ * This interface abstracts the access to a SolrCloud cluster, including interactions with
+ * Zookeeper, Solr and generic HTTP calls.
+ *
+ * <p>This abstraction should be used when possible instead of directly referencing ZK, Solr and
+ * HTTP.
  */
 public interface SolrCloudManager extends SolrCloseable {
 
   ClusterStateProvider getClusterStateProvider();
+
+  default ClusterState getClusterState() throws IOException {
+    return getClusterStateProvider().getClusterState();
+  }
 
   NodeStateProvider getNodeStateProvider();
 
@@ -50,5 +56,12 @@ public interface SolrCloudManager extends SolrCloseable {
 
   <T extends SolrResponse> T request(SolrRequest<T> req) throws IOException;
 
-  byte[] httpRequest(String url, SolrRequest.METHOD method, Map<String, String> headers, String payload, int timeout, boolean followRedirects) throws IOException;
+  byte[] httpRequest(
+      String url,
+      SolrRequest.METHOD method,
+      Map<String, String> headers,
+      String payload,
+      int timeout,
+      boolean followRedirects)
+      throws IOException;
 }

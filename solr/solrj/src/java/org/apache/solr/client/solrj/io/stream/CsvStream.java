@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -39,45 +38,53 @@ public class CsvStream extends TupleStream implements Expressible {
 
   protected TupleStream originalStream;
 
-  public CsvStream(StreamExpression expression,StreamFactory factory) throws IOException {
+  public CsvStream(StreamExpression expression, StreamFactory factory) throws IOException {
     // grab all parameters out
-    List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
+    List<StreamExpression> streamExpressions =
+        factory.getExpressionOperandsRepresentingTypes(
+            expression, Expressible.class, TupleStream.class);
 
     // validate expression contains only what we want.
-    if(expression.getParameters().size() != streamExpressions.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - unknown operands found", expression));
+    if (expression.getParameters().size() != streamExpressions.size()) {
+      throw new IOException(
+          String.format(Locale.ROOT, "Invalid expression %s - unknown operands found", expression));
     }
 
-    if(1 != streamExpressions.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting a single stream but found %d",expression, streamExpressions.size()));
+    if (1 != streamExpressions.size()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting a single stream but found %d",
+              expression,
+              streamExpressions.size()));
     }
 
     init(factory.constructStream(streamExpressions.get(0)));
   }
 
-  private void init(TupleStream stream) throws IOException{
+  private void init(TupleStream stream) throws IOException {
     this.originalStream = stream;
   }
 
   @Override
-  public StreamExpression toExpression(StreamFactory factory) throws IOException{
+  public StreamExpression toExpression(StreamFactory factory) throws IOException {
     return toExpression(factory, true);
   }
 
-  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams) throws IOException {
+  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams)
+      throws IOException {
     // function name
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
 
-    if(includeStreams){
+    if (includeStreams) {
       // streams
-      if(originalStream instanceof Expressible){
-        expression.addParameter(((Expressible)originalStream).toExpression(factory));
+      if (originalStream instanceof Expressible) {
+        expression.addParameter(((Expressible) originalStream).toExpression(factory));
+      } else {
+        throw new IOException(
+            "This CsvStream contains a non-expressible TupleStream - it cannot be converted to an expression");
       }
-      else{
-        throw new IOException("This CsvStream contains a non-expressible TupleStream - it cannot be converted to an expression");
-      }
-    }
-    else{
+    } else {
       expression.addParameter("<stream>");
     }
 
@@ -88,10 +95,11 @@ public class CsvStream extends TupleStream implements Expressible {
   public Explanation toExplanation(StreamFactory factory) throws IOException {
 
     return new StreamExplanation(getStreamNodeId().toString())
-        .withChildren(new Explanation[] {
-            originalStream.toExplanation(factory)
-            // we're not including that this is wrapped with a ReducerStream stream because that's just an implementation detail
-        })
+        .withChildren(
+            new Explanation[] {originalStream.toExplanation(factory)
+              // we're not including that this is wrapped with a ReducerStream stream because that's
+              // just an implementation detail
+            })
         .withFunctionName(factory.getFunctionName(this.getClass()))
         .withImplementingClass(this.getClass().getName())
         .withExpressionType(ExpressionType.STREAM_DECORATOR)
@@ -103,7 +111,7 @@ public class CsvStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList<TupleStream>();
+    List<TupleStream> l = new ArrayList<TupleStream>();
     l.add(originalStream);
     return l;
   }
@@ -119,20 +127,25 @@ public class CsvStream extends TupleStream implements Expressible {
   public Tuple read() throws IOException {
     Tuple tuple = originalStream.read();
     ++lineNumber;
-    if(tuple.EOF) {
+    if (tuple.EOF) {
       return tuple;
     } else {
       String file = formatFile(tuple.getString("file"));
       String line = tuple.getString("line");
       if (file.equals(currentFile)) {
         String[] fields = split(line);
-        if(fields.length != headers.length) {
-          throw new IOException("Headers and lines must have the same number of fields [file:"+file+" line number:"+lineNumber+"]");
+        if (fields.length != headers.length) {
+          throw new IOException(
+              "Headers and lines must have the same number of fields [file:"
+                  + file
+                  + " line number:"
+                  + lineNumber
+                  + "]");
         }
         Tuple out = new Tuple();
-        out.put("id", file+"_"+lineNumber);
-        for(int i=0; i<headers.length; i++) {
-          if(fields[i] != null && fields[i].length() > 0) {
+        out.put("id", file + "_" + lineNumber);
+        for (int i = 0; i < headers.length; i++) {
+          if (fields[i] != null && fields[i].length() > 0) {
             out.put(headers[i], fields[i]);
           }
         }
@@ -140,15 +153,16 @@ public class CsvStream extends TupleStream implements Expressible {
       } else {
         this.currentFile = file;
         this.headers = split(line);
-        this.lineNumber = 1; //New file so reset the lineNumber
+        this.lineNumber = 1; // New file so reset the lineNumber
         return read();
       }
     }
   }
 
   private String formatFile(String file) {
-    //We don't want the ./ which carries no information but can lead to problems in creating the id for the field.
-    if(file.startsWith("./")) {
+    // We don't want the ./ which carries no information but can lead to problems in creating the id
+    // for the field.
+    if (file.startsWith("./")) {
       return file.substring(2);
     } else {
       return file;
@@ -156,11 +170,11 @@ public class CsvStream extends TupleStream implements Expressible {
   }
 
   protected String[] split(String line) {
-    String[] fields = line.split(",(?=(?:[^\\\"]*\\\"[^\\\"]*\\\")*[^\\\"]*$)",-1);
-    for(int i=0; i<fields.length; i++) {
+    String[] fields = line.split(",(?=(?:[^\\\"]*\\\"[^\\\"]*\\\")*[^\\\"]*$)", -1);
+    for (int i = 0; i < fields.length; i++) {
       String f = fields[i];
-      if(f.startsWith("\"") && f.endsWith("\"")) {
-        f = f.substring(1, f.length()-1);
+      if (f.startsWith("\"") && f.endsWith("\"")) {
+        f = f.substring(1, f.length() - 1);
         fields[i] = f;
       }
     }
@@ -169,12 +183,11 @@ public class CsvStream extends TupleStream implements Expressible {
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
-  public StreamComparator getStreamSort(){
+  public StreamComparator getStreamSort() {
     return originalStream.getStreamSort();
   }
 
   public int getCost() {
     return 0;
   }
-
 }

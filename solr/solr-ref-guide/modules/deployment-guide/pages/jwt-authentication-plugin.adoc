@@ -23,8 +23,7 @@ The typical use case is to integrate Solr with an https://en.wikipedia.org/wiki/
 
 == Module
 
-This is provided via a xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be added to the classpath before use. Since this is a node-level
-plugin it must go in `sharedLib`, see xref:configuration-guide:configuring-solr-xml.adoc[] for details.
+This is provided via the `jwt-auth` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
 
 == Enable JWT Authentication
 
@@ -222,7 +221,14 @@ Example:
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/admin/authentication -H 'Content-type:application/json' -H 'Authorization: Bearer xxx.yyy.zzz' -d '{"set-property": {"blockUnknown":true, "wellKnownUrl": "https://example.com/.well-knwon/openid-configuration", "scope": "solr:read solr:write"}}'
+curl http://localhost:8983/solr/admin/authentication -H 'Content-type:application/json' -H 'Authorization: Bearer xxx.yyy.zzz' -d '{
+  "set-property": {
+    "blockUnknown":true,
+    "wellKnownUrl": "https://example.com/.well-known/openid-configuration",
+    "scope": "solr:read solr:write"
+  }
+}
+'
 ----
 ====
 
@@ -232,14 +238,21 @@ curl http://localhost:8983/solr/admin/authentication -H 'Content-type:applicatio
 
 [source,bash]
 ----
-curl http://localhost:8983/api/cluster/security/authentication -H 'Content-type:application/json' -H 'Authorization: Bearer xxx.yyy.zzz' -d -d '{"set-property": {"blockUnknown":true, "wellKnownUrl": "https://example.com/.well-knwon/openid-configuration", "scope": "solr:read solr:write"}}'
+curl http://localhost:8983/api/cluster/security/authentication -H 'Content-type:application/json' -H 'Authorization: Bearer xxx.yyy.zzz' -d '{
+  "set-property": {
+    "blockUnknown":true,
+    "wellKnownUrl": "https://example.com/.well-known/openid-configuration",
+    "scope": "solr:read solr:write"
+  }
+}
+'
 ----
 ====
 --
 
 Insert a valid JWT access token in compact serialization format (`xxx.yyy.zzz` above) to authenticate with Solr once the plugin is active, or leave `blockUnknown=false` until configuration is complete and then switch it to `true` to start enforcing.
 
-NOTE: There is currently no support for adding multiple token issuers though REST API, but you can configure one issuer through the API by using the 'issuer' properties as top-level properties.
+NOTE: There is currently no support for adding multiple token issuers though REST API, however you can work around this by configuring a single issuer through the API by using the 'issuer' properties as top-level properties.
 
 == Using Clients with JWT Auth
 

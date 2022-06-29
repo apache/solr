@@ -17,21 +17,21 @@
 package org.apache.solr.analytics.value;
 
 import java.util.function.Consumer;
-
 import org.apache.solr.analytics.facet.compare.ExpressionComparator;
 import org.apache.solr.analytics.value.constant.ConstantStringValue;
 
 /**
  * A single-valued analytics value that can be represented as a string.
- * <p>
- * The back-end production of the value can change inbetween calls to {@link #getString()} and {@link #exists()},
- * resulting in different values on each call.
+ *
+ * <p>The back-end production of the value can change inbetween calls to {@link #getString()} and
+ * {@link #exists()}, resulting in different values on each call.
  */
 public interface StringValue extends StringValueStream, AnalyticsValue {
   /**
    * Get the String representation of the current value.
-   * <p>
-   * NOTE: The value returned is not valid unless calling {@link #exists()} afterwards returns {@code TRUE}.
+   *
+   * <p>NOTE: The value returned is not valid unless calling {@link #exists()} afterwards returns
+   * {@code TRUE}.
    *
    * @return the current value
    */
@@ -43,13 +43,15 @@ public interface StringValue extends StringValueStream, AnalyticsValue {
   public static interface CastingStringValue extends StringValue, ComparableValue {}
 
   /**
-   * An abstract base for {@link CastingStringValue} that automatically casts to all types if {@link #getString()} and {@link #exists()} are implemented.
+   * An abstract base for {@link CastingStringValue} that automatically casts to all types if {@link
+   * #getString()} and {@link #exists()} are implemented.
    */
-  public static abstract class AbstractStringValue implements CastingStringValue {
+  public abstract static class AbstractStringValue implements CastingStringValue {
     @Override
     public String getObject() {
       return getString();
     }
+
     @Override
     public void streamStrings(Consumer<String> func) {
       String val = getString();
@@ -57,6 +59,7 @@ public interface StringValue extends StringValueStream, AnalyticsValue {
         func.accept(val);
       }
     }
+
     @Override
     public void streamObjects(Consumer<Object> func) {
       Object val = getObject();
@@ -64,6 +67,7 @@ public interface StringValue extends StringValueStream, AnalyticsValue {
         func.accept(val);
       }
     }
+
     @Override
     public AnalyticsValue convertToConstant() {
       if (getExpressionType().equals(ExpressionType.CONST)) {
@@ -71,6 +75,7 @@ public interface StringValue extends StringValueStream, AnalyticsValue {
       }
       return this;
     }
+
     @Override
     public ExpressionComparator<String> getObjectComparator(String expression) {
       return new ExpressionComparator<>(expression);

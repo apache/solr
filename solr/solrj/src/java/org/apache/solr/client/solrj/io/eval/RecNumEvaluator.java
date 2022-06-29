@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
@@ -30,9 +29,7 @@ public class RecNumEvaluator extends SourceEvaluator {
 
   private int index = -1;
 
-  public RecNumEvaluator(StreamExpression expression, StreamFactory factory) {
-
-  }
+  public RecNumEvaluator(StreamExpression expression, StreamFactory factory) {}
 
   @Override
   public Object evaluate(Tuple tuple) throws IOException {
@@ -51,5 +48,4 @@ public class RecNumEvaluator extends SourceEvaluator {
         .withImplementingClass(getClass().getName())
         .withExpression(toExpression(factory).toString());
   }
-
 }

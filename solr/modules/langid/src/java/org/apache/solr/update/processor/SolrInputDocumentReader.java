@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -33,7 +32,9 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Reader on top of SolrInputDocument that can "stream" a document as a character stream in a memory
- * efficient way, to avoid potentially large intermediate string buffers containing whole document content.
+ * efficient way, to avoid potentially large intermediate string buffers containing whole document
+ * content.
+ *
  * @lucene.experimental
  */
 public class SolrInputDocumentReader extends Reader {
@@ -51,23 +52,26 @@ public class SolrInputDocumentReader extends Reader {
   private int currentFieldValueIdx = 0;
   private int currentFieldValueOffset = 0;
   private boolean eod = false;
-  // Normally a Reader will return -1 at end of document, but to work around LangDetect's bug, we allow another value
+  // Normally a Reader will return -1 at end of document, but to work around LangDetect's bug, we
+  // allow another value
   private int eodReturnValue = -1;
 
   /**
-   * Creates a character-stream reader that streams all String fields in the document with space as separator 
+   * Creates a character-stream reader that streams all String fields in the document with space as
+   * separator
    *
    * @param doc Solr input document
    * @param maxCharsPerFieldValue max chars to consume per field value
    * @param maxTotalChars max chars to consume total
    */
-  public SolrInputDocumentReader(SolrInputDocument doc, int maxTotalChars, int maxCharsPerFieldValue) {
+  public SolrInputDocumentReader(
+      SolrInputDocument doc, int maxTotalChars, int maxCharsPerFieldValue) {
     this(doc, getStringFields(doc), maxTotalChars, maxCharsPerFieldValue, " ");
   }
-  
+
   /**
-   * Creates a character-stream reader that reads the listed fields in order, with
-   * max lengths as specified.
+   * Creates a character-stream reader that reads the listed fields in order, with max lengths as
+   * specified.
    *
    * @param doc Solr input document
    * @param fields list of field names to include
@@ -75,12 +79,17 @@ public class SolrInputDocumentReader extends Reader {
    * @param maxCharsPerFieldValue max chars to consume per field value
    * @param maxTotalChars max chars to consume total
    */
-  public SolrInputDocumentReader(SolrInputDocument doc, String[] fields, int maxTotalChars,
-                                 int maxCharsPerFieldValue, String fieldValueSep) {
+  public SolrInputDocumentReader(
+      SolrInputDocument doc,
+      String[] fields,
+      int maxTotalChars,
+      int maxCharsPerFieldValue,
+      String fieldValueSep) {
     this.doc = doc;
     this.fields = fields;
     this.fieldValueSep = fieldValueSep;
-    if (fields == null || fields.length == 0) throw new IllegalArgumentException("fields cannot be empty");
+    if (fields == null || fields.length == 0)
+      throw new IllegalArgumentException("fields cannot be empty");
     this.maxTotalChars = maxTotalChars;
     this.maxCharsPerFieldValue = maxCharsPerFieldValue;
   }
@@ -116,13 +125,13 @@ public class SolrInputDocumentReader extends Reader {
   }
 
   private int nextDocChunk(StringBuilder sb, int maxChunkLength) {
-    if (currentFieldIdx > fields.length-1) {
+    if (currentFieldIdx > fields.length - 1) {
       return returnEod();
     }
 
     int startFieldValueIdx = currentFieldValueIdx;
     int startFieldValueOffset = currentFieldValueOffset;
-    
+
     do {
       SolrInputField f = doc.getField(fields[currentFieldIdx]);
       if (f == null) {
@@ -139,7 +148,7 @@ public class SolrInputDocumentReader extends Reader {
         startFieldValueIdx = 0;
         if (sb.length() > 0) {
           if (maxChunkLength - sb.length() < fieldValueSep.length()) {
-            sb.append(fieldValueSep.substring(0,maxChunkLength - sb.length()));
+            sb.append(fieldValueSep.substring(0, maxChunkLength - sb.length()));
           } else {
             sb.append(fieldValueSep);
           }
@@ -162,7 +171,7 @@ public class SolrInputDocumentReader extends Reader {
       } else {
         incField(sb);
       }
-    } while (currentFieldIdx <= fields.length-1 && sb.length() < maxChunkLength);
+    } while (currentFieldIdx <= fields.length - 1 && sb.length() < maxChunkLength);
     return sb.length() == 0 ? eodReturnValue : sb.length();
   }
 
@@ -186,7 +195,9 @@ public class SolrInputDocumentReader extends Reader {
   }
 
   @Override
-  public void close() throws IOException { /* ignored */ }
+  public void close() throws IOException {
+    /* ignored */
+  }
 
   @Override
   public boolean ready() throws IOException {
@@ -194,8 +205,9 @@ public class SolrInputDocumentReader extends Reader {
   }
 
   /**
-   * Choose another return value than -1 for end of document reached.
-   * <b>Warning: Only to work around buggy consumers such as LangDetect 1.1</b>
+   * Choose another return value than -1 for end of document reached. <b>Warning: Only to work
+   * around buggy consumers such as LangDetect 1.1</b>
+   *
    * @param eodReturnValue integer which defaults to -1
    */
   public void setEodReturnValue(int eodReturnValue) {
@@ -203,22 +215,26 @@ public class SolrInputDocumentReader extends Reader {
   }
 
   /**
-   * Gets the whole reader as a String 
+   * Gets the whole reader as a String
+   *
    * @return string of concatenated fields
    */
   public static String asString(Reader reader) {
     try {
       return IOUtils.toString(reader);
     } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed reading doc content from reader", e);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Failed reading doc content from reader", e);
     }
   }
-  
+
   protected static String[] getStringFields(SolrInputDocument doc) {
     Iterable<SolrInputField> iterable = () -> doc.iterator();
-        List<String> strFields = StreamSupport.stream(iterable.spliterator(), false)
+    List<String> strFields =
+        StreamSupport.stream(iterable.spliterator(), false)
             .filter(f -> f.getFirstValue() instanceof String)
-            .map(SolrInputField::getName).collect(Collectors.toList());
-        return strFields.toArray(new String[0]);
+            .map(SolrInputField::getName)
+            .collect(Collectors.toList());
+    return strFields.toArray(new String[0]);
   }
 }

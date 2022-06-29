@@ -30,39 +30,35 @@ public class TestLTRWithFacet extends TestRerankBase {
   public void before() throws Exception {
     setuptest(false);
 
-    assertU(adoc("id", "1", "title", "a1", "description", "E", "popularity",
-        "1"));
-    assertU(adoc("id", "2", "title", "a1 b1", "description",
-        "B", "popularity", "2"));
-    assertU(adoc("id", "3", "title", "a1 b1 c1", "description", "B", "popularity",
-        "3"));
-    assertU(adoc("id", "4", "title", "a1 b1 c1 d1", "description", "B", "popularity",
-        "4"));
-    assertU(adoc("id", "5", "title", "a1 b1 c1 d1 e1", "description", "E", "popularity",
-        "5"));
-    assertU(adoc("id", "6", "title", "a1 b1 c1 d1 e1 f1", "description", "B",
-        "popularity", "6"));
-    assertU(adoc("id", "7", "title", "a1 b1 c1 d1 e1 f1 g1", "description",
-        "C", "popularity", "7"));
-    assertU(adoc("id", "8", "title", "a1 b1 c1 d1 e1 f1 g1 h1", "description",
-        "D", "popularity", "8"));
+    assertU(adoc("id", "1", "title", "a1", "description", "E", "popularity", "1"));
+    assertU(adoc("id", "2", "title", "a1 b1", "description", "B", "popularity", "2"));
+    assertU(adoc("id", "3", "title", "a1 b1 c1", "description", "B", "popularity", "3"));
+    assertU(adoc("id", "4", "title", "a1 b1 c1 d1", "description", "B", "popularity", "4"));
+    assertU(adoc("id", "5", "title", "a1 b1 c1 d1 e1", "description", "E", "popularity", "5"));
+    assertU(adoc("id", "6", "title", "a1 b1 c1 d1 e1 f1", "description", "B", "popularity", "6"));
+    assertU(
+        adoc("id", "7", "title", "a1 b1 c1 d1 e1 f1 g1", "description", "C", "popularity", "7"));
+    assertU(
+        adoc("id", "8", "title", "a1 b1 c1 d1 e1 f1 g1 h1", "description", "D", "popularity", "8"));
     assertU(commit());
   }
-  
+
   @After
   public void after() throws Exception {
     aftertest();
   }
 
-
   @Test
   public void testRankingSolrFacet() throws Exception {
     // before();
-    loadFeature("powpularityS", SolrFeature.class.getName(),
-        "{\"q\":\"{!func}pow(popularity,2)\"}");
+    loadFeature(
+        "powpularityS", SolrFeature.class.getName(), "{\"q\":\"{!func}pow(popularity,2)\"}");
 
-    loadModel("powpularityS-model", LinearModel.class.getName(),
-        new String[] {"powpularityS"}, "{\"weights\":{\"powpularityS\":1.0}}");
+    loadModel(
+        "powpularityS-model",
+        LinearModel.class.getName(),
+        new String[] {"powpularityS"},
+        "{\"weights\":{\"powpularityS\":1.0}}");
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("title:a1");
@@ -77,9 +73,9 @@ public class TestLTRWithFacet extends TestRerankBase {
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='3'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='4'");
     // Normal term match
-    assertJQ("/query" + query.toQueryString(), ""
-        + "/facet_counts/facet_fields/description=="
-        + "['b', 4, 'e', 2, 'c', 1, 'd', 1]");
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "" + "/facet_counts/facet_fields/description==" + "['b', 4, 'e', 2, 'c', 1, 'd', 1]");
 
     query.add("rq", "{!ltr model=powpularityS-model reRankDocs=4}");
     query.set("debugQuery", "on");
@@ -94,9 +90,8 @@ public class TestLTRWithFacet extends TestRerankBase {
     assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='1'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/score==1.0");
 
-    assertJQ("/query" + query.toQueryString(), ""
-        + "/facet_counts/facet_fields/description=="
-        + "['b', 4, 'e', 2, 'c', 1, 'd', 1]");
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "" + "/facet_counts/facet_fields/description==" + "['b', 4, 'e', 2, 'c', 1, 'd', 1]");
   }
-
 }

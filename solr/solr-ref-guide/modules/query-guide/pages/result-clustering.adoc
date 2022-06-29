@@ -36,6 +36,10 @@ The query issued to the system was _Apache Solr_.
 It seems clear that faceting could not yield a similar set of groups, although the goals of both techniques are similar -- to let the user explore the set of search results and either rephrase the query or narrow the focus to a subset of current documents.
 Clustering is also similar to xref:result-grouping.adoc[] in that it can help to look deeper into search results, beyond the top few hits.
 
+== Module
+
+This is provided via the `clustering` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
+
 == Configuration Quick Starter
 
 The clustering extension works as a search component.
@@ -211,17 +215,6 @@ Sometimes cluster labels may not make much sense (this depends on many factors -
 Also, some documents may be left out and not be clustered at all; these will be assigned to the synthetic _Other Topics_ group, marked with the `other-topics` property set to `true` (see the XML dump above for an example).
 The score of the other topics group is zero.
 
-== Installation
-
-The clustering module extension requires all JARs under `modules/clustering/lib`.
-
-You can include the required modules JARs in `solrconfig.xml` as shown below (by default paths are relative to the Solr core so they may need adjustments to your configuration, or an explicit specification of the `$solr.install.dir`):
-
-[source,xml]
-----
-<lib dir="${solr.install.dir:../../..}/modules/clustering/lib/" regex=".*\.jar" />
-----
-
 == Configuration
 
 === Component Configuration
@@ -377,7 +370,7 @@ If there is no need for this synthetic cluster, it can be set to `false`.
 Location of algorithm-specific resources and configuration files (stop words, other lexical resources, default settings).
 This property is `null` by default and all resources are read from their respective algorithm default resource pool (JARs).
 If this property is not empty, it resolves relative to Solr core's configuration directory.
-This parameter can be applied during Solr startup _only_, it can't be overriden per-request.
+This parameter can be applied during Solr startup _only_, it can't be overridden per-request.
 
 There are more properties applying to engine configuration.
 We describe these in functional sections that follow.

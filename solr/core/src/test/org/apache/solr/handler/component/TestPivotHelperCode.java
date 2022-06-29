@@ -16,32 +16,28 @@
  */
 package org.apache.solr.handler.component;
 
-
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.common.util.SuppressForbidden;
 
-import java.util.List;
-import java.util.Arrays;
-import java.util.ArrayList;
-
-/**
- * A light weight test of various helper methods used in pivot faceting
- *
- **/
-public class TestPivotHelperCode extends SolrTestCaseJ4{
+/** A lightweight test of various helper methods used in pivot faceting */
+public class TestPivotHelperCode extends SolrTestCaseJ4 {
 
   /**
-   * test refinement encoding/decoding matches specific expected encoded values 
+   * test refinement encoding/decoding matches specific expected encoded values
+   *
    * @see PivotFacetHelper#encodeRefinementValuePath
    * @see PivotFacetHelper#decodeRefinementValuePath
    */
   public void testRefinementStringEncodingWhiteBox() {
     // trivial example with some basci escaping of an embedded comma
-    assertBiDirectionalEncoding(strs("foo,bar","yak","zat"), "~foo\\,bar,~yak,~zat");
+    assertBiDirectionalEncoding(strs("foo,bar", "yak", "zat"), "~foo\\,bar,~yak,~zat");
 
     // simple single valued case
-    assertBiDirectionalEncoding( strs("foo"), "~foo");
+    assertBiDirectionalEncoding(strs("foo"), "~foo");
 
     // special case: empty list
     assertBiDirectionalEncoding(strs(), "");
@@ -50,16 +46,15 @@ public class TestPivotHelperCode extends SolrTestCaseJ4{
     assertBiDirectionalEncoding(strs(""), "~");
 
     // special case: single element list containing null
-    assertBiDirectionalEncoding(strs((String)null), "^");
+    assertBiDirectionalEncoding(strs((String) null), "^");
 
     // mix of empty strings & null with other values
-    assertBiDirectionalEncoding(strs("", "foo", "", "", null, "bar"),
-                                "~,~foo,~,~,^,~bar");
+    assertBiDirectionalEncoding(strs("", "foo", "", "", null, "bar"), "~,~foo,~,~,^,~bar");
   }
 
   /**
-   * test refinement encoding/decoding of random sets of values can be round tripped, 
-   * w/o worrying about what the actual encoding looks like
+   * test refinement encoding/decoding of random sets of values can be round tripped, w/o worrying
+   * about what the actual encoding looks like
    *
    * @see PivotFacetHelper#encodeRefinementValuePath
    * @see PivotFacetHelper#decodeRefinementValuePath
@@ -78,7 +73,6 @@ public class TestPivotHelperCode extends SolrTestCaseJ4{
       List<String> decoded = PivotFacetHelper.decodeRefinementValuePath(encoded);
       assertEquals(data, decoded);
     }
-
   }
 
   private void assertBiDirectionalEncoding(List<String> data, String encoded) {
@@ -86,10 +80,9 @@ public class TestPivotHelperCode extends SolrTestCaseJ4{
     assertEquals(encoded, PivotFacetHelper.encodeRefinementValuePath(data));
   }
 
-
   @SuppressForbidden(reason = "Checking object equality for Long instance")
   @SuppressWarnings("BoxedPrimitiveConstructor")
-  public void testCompareWithNullLast() throws Exception {
+  public void testCompareWithNullLast() {
     Long a = random().nextLong();
     Long b = random().nextLong();
 
@@ -101,17 +94,14 @@ public class TestPivotHelperCode extends SolrTestCaseJ4{
 
     assertEquals(0, PivotFacetFieldValueCollection.compareWithNullLast(null, null));
 
-    assertTrue( PivotFacetFieldValueCollection.compareWithNullLast(a, null) < 0 );
-    assertTrue( PivotFacetFieldValueCollection.compareWithNullLast(b, null) < 0 );
+    assertTrue(PivotFacetFieldValueCollection.compareWithNullLast(a, null) < 0);
+    assertTrue(PivotFacetFieldValueCollection.compareWithNullLast(b, null) < 0);
 
-    assertTrue( 0 < PivotFacetFieldValueCollection.compareWithNullLast(null, a) );
-    assertTrue( 0 < PivotFacetFieldValueCollection.compareWithNullLast(null, b) );
-
+    assertTrue(0 < PivotFacetFieldValueCollection.compareWithNullLast(null, a));
+    assertTrue(0 < PivotFacetFieldValueCollection.compareWithNullLast(null, b));
   }
-
 
   private List<String> strs(String... strs) {
     return Arrays.<String>asList(strs);
   }
-
 }

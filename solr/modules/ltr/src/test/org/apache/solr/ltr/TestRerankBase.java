@@ -16,19 +16,19 @@
  */
 package org.apache.solr.ltr;
 
-import java.io.File;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
@@ -48,10 +48,11 @@ public class TestRerankBase extends RestTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  protected static final SolrResourceLoader solrResourceLoader = new SolrResourceLoader(Paths.get("").toAbsolutePath());
+  protected static final SolrResourceLoader solrResourceLoader =
+      new SolrResourceLoader(Path.of("").toAbsolutePath());
 
-  protected static File tmpSolrHome;
-  protected static File tmpConfDir;
+  protected static Path tmpSolrHome;
+  protected static Path tmpConfDir;
 
   public static final String FEATURE_FILE_NAME = "_schema_feature-store.json";
   public static final String MODEL_FILE_NAME = "_schema_model-store.json";
@@ -60,22 +61,24 @@ public class TestRerankBase extends RestTestBase {
   protected static final String COLLECTION = "collection1";
   protected static final String CONF_DIR = COLLECTION + "/conf";
 
-  protected static File fstorefile = null;
-  protected static File mstorefile = null;
+  protected static Path fstorefile = null;
+  protected static Path mstorefile = null;
 
-  final private static String SYSTEM_PROPERTY_SOLR_LTR_TRANSFORMER_FV_DEFAULTFORMAT = "solr.ltr.transformer.fv.defaultFormat";
+  private static final String SYSTEM_PROPERTY_SOLR_LTR_TRANSFORMER_FV_DEFAULTFORMAT =
+      "solr.ltr.transformer.fv.defaultFormat";
   private static String defaultFeatureFormat;
 
   protected String chooseDefaultFeatureVector(String dense, String sparse) {
     if (defaultFeatureFormat == null) {
-      // to match <code><str name="defaultFormat">${solr.ltr.transformer.fv.defaultFormat:dense}</str></code> snippet
+      // to match <code><str
+      // name="defaultFormat">${solr.ltr.transformer.fv.defaultFormat:dense}</str></code> snippet
       return dense;
-    } else  if ("dense".equals(defaultFeatureFormat)) {
+    } else if ("dense".equals(defaultFeatureFormat)) {
       return dense;
-    } else  if ("sparse".equals(defaultFeatureFormat)) {
+    } else if ("sparse".equals(defaultFeatureFormat)) {
       return sparse;
     } else {
-      fail("unexpected feature format choice: "+defaultFeatureFormat);
+      fail("unexpected feature format choice: " + defaultFeatureFormat);
       return null;
     }
   }
@@ -96,7 +99,8 @@ public class TestRerankBase extends RestTestBase {
         break;
     }
     if (defaultFeatureFormat != null) {
-      System.setProperty(SYSTEM_PROPERTY_SOLR_LTR_TRANSFORMER_FV_DEFAULTFORMAT, defaultFeatureFormat);
+      System.setProperty(
+          SYSTEM_PROPERTY_SOLR_LTR_TRANSFORMER_FV_DEFAULTFORMAT, defaultFeatureFormat);
     }
   }
 
@@ -128,68 +132,62 @@ public class TestRerankBase extends RestTestBase {
     }
   }
 
-  protected static void setupTestInit(
-      String solrconfig, String schema,
-      boolean isPersistent) throws Exception {
-    tmpSolrHome = createTempDir().toFile();
-    tmpConfDir = new File(tmpSolrHome, CONF_DIR);
-    tmpConfDir.deleteOnExit();
-    FileUtils.copyDirectory(new File(TEST_HOME()),
-        tmpSolrHome.getAbsoluteFile());
+  protected static void setupTestInit(String solrconfig, String schema, boolean isPersistent)
+      throws Exception {
+    tmpSolrHome = createTempDir();
+    tmpConfDir = tmpSolrHome.resolve(CONF_DIR);
+    tmpConfDir.toFile().deleteOnExit();
+    PathUtils.copyDirectory(TEST_PATH(), tmpSolrHome.toAbsolutePath());
 
-    final File fstore = new File(tmpConfDir, FEATURE_FILE_NAME);
-    final File mstore = new File(tmpConfDir, MODEL_FILE_NAME);
+    final Path fstore = tmpConfDir.resolve(FEATURE_FILE_NAME);
+    final Path mstore = tmpConfDir.resolve(MODEL_FILE_NAME);
 
     if (isPersistent) {
       fstorefile = fstore;
       mstorefile = mstore;
     }
 
-    if (fstore.exists()) {
+    if (Files.exists(fstore)) {
       if (log.isInfoEnabled()) {
-        log.info("remove feature store config file in {}", fstore.getAbsolutePath());
+        log.info("remove feature store config file in {}", fstore.toAbsolutePath());
       }
-      Files.delete(fstore.toPath());
+      Files.delete(fstore);
     }
-    if (mstore.exists()) {
+    if (Files.exists(mstore)) {
       if (log.isInfoEnabled()) {
-        log.info("remove model store config file in {}", mstore.getAbsolutePath());
+        log.info("remove model store config file in {}", mstore.toAbsolutePath());
       }
-      Files.delete(mstore.toPath());
+      Files.delete(mstore);
     }
     if (!solrconfig.equals("solrconfig.xml")) {
-      FileUtils.copyFile(new File(tmpSolrHome.getAbsolutePath()
-          + "/collection1/conf/" + solrconfig),
-          new File(tmpSolrHome.getAbsolutePath()
-              + "/collection1/conf/solrconfig.xml"));
+      Files.copy(
+          tmpSolrHome.resolve(CONF_DIR).resolve(solrconfig),
+          tmpSolrHome.resolve(CONF_DIR).resolve("solrconfig.xml"));
     }
     if (!schema.equals("schema.xml")) {
-      FileUtils.copyFile(new File(tmpSolrHome.getAbsolutePath()
-          + "/collection1/conf/" + schema),
-          new File(tmpSolrHome.getAbsolutePath()
-              + "/collection1/conf/schema.xml"));
+      Files.copy(
+          tmpSolrHome.resolve(CONF_DIR).resolve(schema),
+          tmpSolrHome.resolve(CONF_DIR).resolve("schema.xml"));
     }
 
     System.setProperty("managed.schema.mutable", "true");
   }
 
-  public static void setuptest(String solrconfig, String schema)
-      throws Exception {
+  public static void setuptest(String solrconfig, String schema) throws Exception {
 
-    setupTestInit(solrconfig,schema,false);
+    setupTestInit(solrconfig, schema, false);
     System.setProperty("enable.update.log", "false");
 
-    createJettyAndHarness(tmpSolrHome.getAbsolutePath(), solrconfig, schema,
-        "/solr", true, null);
+    createJettyAndHarness(
+        tmpSolrHome.toAbsolutePath().toString(), solrconfig, schema, "/solr", true, null);
   }
 
-  public static void setupPersistentTest(String solrconfig, String schema)
-      throws Exception {
+  public static void setupPersistentTest(String solrconfig, String schema) throws Exception {
 
-    setupTestInit(solrconfig,schema,true);
+    setupTestInit(solrconfig, schema, true);
 
-    createJettyAndHarness(tmpSolrHome.getAbsolutePath(), solrconfig, schema,
-        "/solr", true, null);
+    createJettyAndHarness(
+        tmpSolrHome.toAbsolutePath().toString(), solrconfig, schema, "/solr", true, null);
   }
 
   protected static void aftertest() throws Exception {
@@ -202,7 +200,7 @@ public class TestRerankBase extends RestTestBase {
       jetty = null;
     }
     if (null != tmpSolrHome) {
-      FileUtils.deleteDirectory(tmpSolrHome);
+      PathUtils.deleteDirectory(tmpSolrHome);
       tmpSolrHome = null;
     }
     System.clearProperty("managed.schema.mutable");
@@ -214,21 +212,19 @@ public class TestRerankBase extends RestTestBase {
     restTestHarness = null;
   }
 
-  /** produces a model encoded in json **/
-  public static String getModelInJson(String name, String type,
-      String[] features, String fstore, String params) {
+  /** produces a model encoded in json * */
+  public static String getModelInJson(
+      String name, String type, String[] features, String fstore, String params) {
     final StringBuilder sb = new StringBuilder();
     sb.append("{\n");
     sb.append("\"name\":").append('"').append(name).append('"').append(",\n");
-    sb.append("\"store\":").append('"').append(fstore).append('"')
-        .append(",\n");
+    sb.append("\"store\":").append('"').append(fstore).append('"').append(",\n");
     sb.append("\"class\":").append('"').append(type).append('"').append(",\n");
     sb.append("\"features\":").append('[');
     if (features.length > 0) {
       for (final String feature : features) {
         sb.append("\n\t{ ");
-        sb.append("\"name\":").append('"').append(feature).append('"')
-        .append("},");
+        sb.append("\"name\":").append('"').append(feature).append('"').append("},");
       }
       sb.deleteCharAt(sb.length() - 1);
     }
@@ -241,14 +237,12 @@ public class TestRerankBase extends RestTestBase {
     return sb.toString();
   }
 
-  /** produces a model encoded in json **/
-  public static String getFeatureInJson(String name, String type,
-      String fstore, String params) {
+  /** produces a model encoded in json * */
+  public static String getFeatureInJson(String name, String type, String fstore, String params) {
     final StringBuilder sb = new StringBuilder();
     sb.append("{\n");
     sb.append("\"name\":").append('"').append(name).append('"').append(",\n");
-    sb.append("\"store\":").append('"').append(fstore).append('"')
-        .append(",\n");
+    sb.append("\"store\":").append('"').append(fstore).append('"').append(",\n");
     sb.append("\"class\":").append('"').append(type).append('"');
     if (params != null) {
       sb.append(",\n");
@@ -258,63 +252,68 @@ public class TestRerankBase extends RestTestBase {
     return sb.toString();
   }
 
-  protected static void loadFeature(String name, String type, String params)
-      throws Exception {
-    final String feature = getFeatureInJson(name, type, "test", params);
-    log.info("loading feauture \n{} ", feature);
-    assertJPut(ManagedFeatureStore.REST_END_POINT, feature,
-        "/responseHeader/status==0");
+  /** Load a feature from the test fstore and verify that it succeeded */
+  protected static void loadFeature(String name, String type, String params) throws IOException {
+    loadFeature(name, type, "test", params, 0);
   }
 
-  protected static void loadFeature(String name, String type, String fstore,
-      String params) throws Exception {
+  /** Load a feature and expect a given status code (i.e. testing for failure) */
+  protected static void loadFeature(String name, String type, String params, int responseCode)
+      throws IOException {
+    loadFeature(name, type, "test", params, responseCode);
+  }
+
+  /** Load a feature from a custom fstore and verify that it succeeded */
+  protected static void loadFeature(String name, String type, String fstore, String params)
+      throws Exception {
+    loadFeature(name, type, fstore, params, 0);
+  }
+
+  /**
+   * Load a feature from a custom fstore and expect a given status code (i.e. testing for failure)
+   */
+  protected static void loadFeature(
+      String name, String type, String fstore, String params, int responseCode) throws IOException {
     final String feature = getFeatureInJson(name, type, fstore, params);
     log.info("loading feauture \n{} ", feature);
-    assertJPut(ManagedFeatureStore.REST_END_POINT, feature,
-        "/responseHeader/status==0");
+    assertJPut(
+        ManagedFeatureStore.REST_END_POINT, feature, "/responseHeader/status==" + responseCode);
   }
 
-  protected static void loadModel(String name, String type, String[] features,
-      String params) throws Exception {
+  protected static void loadModel(String name, String type, String[] features, String params)
+      throws Exception {
     loadModel(name, type, features, "test", params);
   }
 
-  protected static void loadModel(String name, String type, String[] features,
-      String fstore, String params) throws Exception {
+  protected static void loadModel(
+      String name, String type, String[] features, String fstore, String params) throws Exception {
     final String model = getModelInJson(name, type, features, fstore, params);
     log.info("loading model \n{} ", model);
-    assertJPut(ManagedModelStore.REST_END_POINT, model,
-        "/responseHeader/status==0");
+    assertJPut(ManagedModelStore.REST_END_POINT, model, "/responseHeader/status==0");
   }
 
   public static void loadModels(String fileName) throws Exception {
-    final URL url = TestRerankBase.class.getResource("/modelExamples/"
-        + fileName);
-    final String multipleModels = FileUtils.readFileToString(
-        new File(url.toURI()), "UTF-8");
+    final URL url = TestRerankBase.class.getResource("/modelExamples/" + fileName);
+    final String multipleModels = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
 
-    assertJPut(ManagedModelStore.REST_END_POINT, multipleModels,
-        "/responseHeader/status==0");
+    assertJPut(ManagedModelStore.REST_END_POINT, multipleModels, "/responseHeader/status==0");
   }
 
-  public static LTRScoringModel createModelFromFiles(String modelFileName,
-      String featureFileName) throws ModelException, Exception {
-    return createModelFromFiles(modelFileName, featureFileName,
-        FeatureStore.DEFAULT_FEATURE_STORE_NAME);
+  public static LTRScoringModel createModelFromFiles(String modelFileName, String featureFileName)
+      throws ModelException, Exception {
+    return createModelFromFiles(
+        modelFileName, featureFileName, FeatureStore.DEFAULT_FEATURE_STORE_NAME);
   }
 
-  public static LTRScoringModel createModelFromFiles(String modelFileName,
-      String featureFileName, String featureStoreName) throws ModelException, Exception {
-    URL url = TestRerankBase.class.getResource("/modelExamples/"
-        + modelFileName);
-    final String modelJson = FileUtils.readFileToString(new File(url.toURI()),
-        "UTF-8");
+  public static LTRScoringModel createModelFromFiles(
+      String modelFileName, String featureFileName, String featureStoreName)
+      throws ModelException, Exception {
+    URL url = TestRerankBase.class.getResource("/modelExamples/" + modelFileName);
+    final String modelJson = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
     final ManagedModelStore ms = getManagedModelStore();
 
-    url = TestRerankBase.class.getResource("/featureExamples/"
-        + featureFileName);
-    final String featureJson = FileUtils.readFileToString(
-        new File(url.toURI()), "UTF-8");
+    url = TestRerankBase.class.getResource("/featureExamples/" + featureFileName);
+    final String featureJson = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
 
     Object parsedFeatureJson = null;
     try {
@@ -332,44 +331,41 @@ public class TestRerankBase extends RestTestBase {
     fs.applyUpdatesToManagedData(parsedFeatureJson);
     ms.setManagedFeatureStore(fs); // can we skip this and just use fs directly below?
 
-    final LTRScoringModel ltrScoringModel = ManagedModelStore.fromLTRScoringModelMap(
-        solrResourceLoader, mapFromJson(modelJson), ms.getManagedFeatureStore());
+    final LTRScoringModel ltrScoringModel =
+        ManagedModelStore.fromLTRScoringModelMap(
+            solrResourceLoader, mapFromJson(modelJson), ms.getManagedFeatureStore());
     ms.addModel(ltrScoringModel);
     return ltrScoringModel;
   }
 
   @SuppressWarnings("unchecked")
-  static private Map<String,Object> mapFromJson(String json) throws ModelException {
+  private static Map<String, Object> mapFromJson(String json) throws ModelException {
     Object parsedJson = null;
     try {
       parsedJson = Utils.fromJSONString(json);
     } catch (final Exception ioExc) {
       throw new ModelException("ObjectBuilder failed parsing json", ioExc);
     }
-    return (Map<String,Object>) parsedJson;
+    return (Map<String, Object>) parsedJson;
   }
 
   public static void loadFeatures(String fileName) throws Exception {
-    final URL url = TestRerankBase.class.getResource("/featureExamples/"
-        + fileName);
-    final String multipleFeatures = FileUtils.readFileToString(
-        new File(url.toURI()), "UTF-8");
+    final URL url = TestRerankBase.class.getResource("/featureExamples/" + fileName);
+    final String multipleFeatures = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
     log.info("send \n{}", multipleFeatures);
 
-    assertJPut(ManagedFeatureStore.REST_END_POINT, multipleFeatures,
-        "/responseHeader/status==0");
+    assertJPut(ManagedFeatureStore.REST_END_POINT, multipleFeatures, "/responseHeader/status==0");
   }
 
-  protected List<Feature> getFeatures(List<String> names)
-      throws FeatureException {
+  protected List<Feature> getFeatures(List<String> names) throws FeatureException {
     final List<Feature> features = new ArrayList<>();
     int pos = 0;
     for (final String name : names) {
-      final Map<String,Object> params = new HashMap<String,Object>();
+      final Map<String, Object> params = new HashMap<String, Object>();
       params.put("value", 10);
-      final Feature f = Feature.getInstance(solrResourceLoader,
-          ValueFeature.class.getCanonicalName(),
-          name, params);
+      final Feature f =
+          Feature.getInstance(
+              solrResourceLoader, ValueFeature.class.getCanonicalName(), name, params);
       f.setIndex(pos);
       features.add(f);
       ++pos;
@@ -382,22 +378,54 @@ public class TestRerankBase extends RestTestBase {
   }
 
   protected static void bulkIndex() throws Exception {
-    assertU(adoc("title", "bloomberg different bla", "description",
-        "bloomberg", "id", "6", "popularity", "1"));
-    assertU(adoc("title", "bloomberg bloomberg ", "description", "bloomberg",
-        "id", "7", "popularity", "2"));
-    assertU(adoc("title", "bloomberg bloomberg bloomberg", "description",
-        "bloomberg", "id", "8", "popularity", "3"));
-    assertU(adoc("title", "bloomberg bloomberg bloomberg bloomberg",
-        "description", "bloomberg", "id", "9", "popularity", "5"));
+    assertU(
+        adoc(
+            "title",
+            "bloomberg different bla",
+            "description",
+            "bloomberg",
+            "id",
+            "6",
+            "popularity",
+            "1"));
+    assertU(
+        adoc(
+            "title",
+            "bloomberg bloomberg ",
+            "description",
+            "bloomberg",
+            "id",
+            "7",
+            "popularity",
+            "2"));
+    assertU(
+        adoc(
+            "title",
+            "bloomberg bloomberg bloomberg",
+            "description",
+            "bloomberg",
+            "id",
+            "8",
+            "popularity",
+            "3"));
+    assertU(
+        adoc(
+            "title",
+            "bloomberg bloomberg bloomberg bloomberg",
+            "description",
+            "bloomberg",
+            "id",
+            "9",
+            "popularity",
+            "5"));
     assertU(commit());
   }
 
-  protected static void doTestParamsToMap(String featureClassName,
-      LinkedHashMap<String,Object> featureParams) throws Exception {
+  protected static void doTestParamsToMap(
+      String featureClassName, LinkedHashMap<String, Object> featureParams) throws Exception {
 
     // start with default parameters
-    final LinkedHashMap<String,Object> paramsA = new LinkedHashMap<String,Object>();
+    final LinkedHashMap<String, Object> paramsA = new LinkedHashMap<String, Object>();
     final Object defaultValue;
     switch (random().nextInt(6)) {
       case 0:
@@ -431,21 +459,20 @@ public class TestRerankBase extends RestTestBase {
     paramsA.putAll(featureParams);
 
     // next choose a random feature name
-    final String featureName = "randomFeatureName"+random().nextInt(10);
+    final String featureName = "randomFeatureName" + random().nextInt(10);
 
     // create a feature from the parameters
-    final Feature featureA = Feature.getInstance(solrResourceLoader,
-        featureClassName, featureName, paramsA);
+    final Feature featureA =
+        Feature.getInstance(solrResourceLoader, featureClassName, featureName, paramsA);
 
     // turn the feature back into parameters
-    final LinkedHashMap<String,Object> paramsB = featureA.paramsToMap();
+    final LinkedHashMap<String, Object> paramsB = featureA.paramsToMap();
 
     // create feature B from feature A's parameters
-    final Feature featureB = Feature.getInstance(solrResourceLoader,
-        featureClassName, featureName, paramsB);
+    final Feature featureB =
+        Feature.getInstance(solrResourceLoader, featureClassName, featureName, paramsB);
 
     // check that feature A and feature B are identical
     assertEquals(featureA, featureB);
   }
-
 }

@@ -21,32 +21,32 @@ import org.junit.Test;
 
 public class ShardBackupIdTest extends SolrTestCaseJ4 {
 
-    @Test
-    public void testCanParseIDFromStringWithUnsplitShardName() {
-        final String idString = "md_shard1_0";
+  @Test
+  public void testCanParseIDFromStringWithUnsplitShardName() {
+    final String idString = "md_shard1_0";
 
-        final ShardBackupId parsedId = ShardBackupId.from(idString);
+    final ShardBackupId parsedId = ShardBackupId.from(idString);
 
-        assertEquals("shard1", parsedId.getShardName());
-        assertEquals(new BackupId(0), parsedId.getContainingBackupId());
-    }
+    assertEquals("shard1", parsedId.getShardName());
+    assertEquals(new BackupId(0), parsedId.getContainingBackupId());
+  }
 
-    @Test
-    public void testCanParseIdFromStringWithSplitShardName() {
-        final String idString = "md_shard2_0_5";
+  @Test
+  public void testCanParseIdFromStringWithSplitShardName() {
+    final String idString = "md_shard2_0_5";
 
-        final ShardBackupId parsedId = ShardBackupId.from(idString);
+    final ShardBackupId parsedId = ShardBackupId.from(idString);
 
-        assertEquals("shard2_0", parsedId.getShardName());
-        assertEquals(new BackupId(5), parsedId.getContainingBackupId());
-    }
+    assertEquals("shard2_0", parsedId.getShardName());
+    assertEquals(new BackupId(5), parsedId.getContainingBackupId());
+  }
 
-    @Test
-    public void testCanParseIdFromStringWithManySplitShardName() {
-        final String idString = "md_shard2_0_1_3";
-        final ShardBackupId parsedId = ShardBackupId.from(idString);
+  @Test
+  public void testCanParseIdFromStringWithManySplitShardName() {
+    final String idString = "md_shard2_0_1_3";
+    final ShardBackupId parsedId = ShardBackupId.from(idString);
 
-        assertEquals("shard2_0_1", parsedId.getShardName());
-        assertEquals(new BackupId(3), parsedId.getContainingBackupId());
-    }
+    assertEquals("shard2_0_1", parsedId.getShardName());
+    assertEquals(new BackupId(3), parsedId.getContainingBackupId());
+  }
 }

@@ -15,10 +15,21 @@
  * limitations under the License.
  */
 
-
 apply plugin: 'java-library'
 
 description = 'Apache Solr Core'
+
+configurations {
+  // jettyClientImplementation should be used for all jetty client libraries used by the Solr Server.
+  // These libraries must be available in the WEB-INF/lib, as well as server/lib.
+  // Jetty does not allow for these specific libraries to be accessed from the webapp, if they only live in server/lib.
+  // Note: because of SolrEmbedded, this is not all jetty libraries.
+  // (Solr Core requires the jetty server libraries because of embedded Solr, however the webapp does not use these)
+  jettyClientImplementation
+  implementation {
+    extendsFrom jettyClientImplementation
+  }
+}
 
 dependencies {
   // Spotbugs Annotations are only needed for old findbugs
@@ -26,6 +37,7 @@ dependencies {
   // It is not included in the release so exclude from checks.
   compileOnly 'com.github.spotbugs:spotbugs-annotations'
   testCompileOnly 'com.github.spotbugs:spotbugs-annotations'
+  permitUnusedDeclared 'com.github.spotbugs:spotbugs-annotations'
   // Exclude these from jar validation and license checks.
   configurations.jarValidation {
     exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
@@ -43,15 +55,39 @@ dependencies {
   api 'org.slf4j:slf4j-api'
 
   api project(':solr:solrj')
-  api project(':solr:server')
+
+  api 'io.dropwizard.metrics:metrics-core'
+  implementation ('io.dropwizard.metrics:metrics-graphite', {
+    exclude group: "com.rabbitmq", module: "amqp-client"
+  })
+  implementation 'io.dropwizard.metrics:metrics-jmx'
+  implementation 'io.dropwizard.metrics:metrics-jvm'
+
+  // Jetty (both for client and server, which is only used by EmbeddedSolrServer)
+  implementation 'org.eclipse.jetty:jetty-alpn-server'
+  runtimeOnly('org.eclipse.jetty:jetty-alpn-java-server', {
+    exclude group: "org.eclipse.jetty.alpn", module: "alpn-api"
+  })
+  jettyClientImplementation 'org.eclipse.jetty:jetty-http'
+  jettyClientImplementation 'org.eclipse.jetty:jetty-io'
+  implementation 'org.eclipse.jetty:jetty-rewrite'
+  implementation 'org.eclipse.jetty:jetty-server'
+  implementation 'org.eclipse.jetty:jetty-servlet'
+  jettyClientImplementation 'org.eclipse.jetty:jetty-util'
+
+  jettyClientImplementation 'org.eclipse.jetty.http2:http2-common'
+  implementation 'org.eclipse.jetty.http2:http2-server'
+
+  implementation 'javax.servlet:javax.servlet-api'
 
   // Non-API below; although there are exceptions
 
-  implementation "org.apache.lucene:lucene-analysis-kuromoji"
-  implementation "org.apache.lucene:lucene-analysis-nori"
-  implementation "org.apache.lucene:lucene-analysis-phonetic"
-  implementation "org.apache.lucene:lucene-backward-codecs"
+  runtimeOnly "org.apache.lucene:lucene-analysis-kuromoji"
+  runtimeOnly "org.apache.lucene:lucene-analysis-nori"
+  runtimeOnly "org.apache.lucene:lucene-analysis-phonetic"
+  runtimeOnly "org.apache.lucene:lucene-backward-codecs"
   implementation "org.apache.lucene:lucene-codecs"
+  implementation "org.apache.lucene:lucene-backward-codecs"
   implementation "org.apache.lucene:lucene-classification"
   implementation "org.apache.lucene:lucene-expressions"
   implementation "org.apache.lucene:lucene-grouping"
@@ -62,6 +98,7 @@ dependencies {
   implementation "org.apache.lucene:lucene-sandbox"
   implementation "org.apache.lucene:lucene-spatial-extras"
   implementation "org.apache.lucene:lucene-suggest"
+
 
   // Collections & lang utilities
   implementation 'com.google.guava:guava'
@@ -87,21 +124,9 @@ dependencies {
   implementation 'org.apache.httpcomponents:httpclient'
   implementation 'org.apache.httpcomponents:httpcore'
 
-  implementation 'javax.servlet:javax.servlet-api'
-
   implementation 'org.eclipse.jetty:jetty-client'
 
-  implementation 'org.eclipse.jetty.http2:http2-common'
-  implementation 'org.eclipse.jetty.http2:http2-server'
-  implementation 'org.eclipse.jetty:jetty-alpn-server'
-  implementation 'org.eclipse.jetty:jetty-http'
-  implementation 'org.eclipse.jetty:jetty-io'
-  implementation 'org.eclipse.jetty:jetty-rewrite'
-  implementation 'org.eclipse.jetty:jetty-server'
-  implementation 'org.eclipse.jetty:jetty-servlet'
-  implementation 'org.eclipse.jetty:jetty-util'
-
-  // ZooKeeper & Curator
+  // ZooKeeper
   implementation('org.apache.zookeeper:zookeeper', {
     exclude group: "org.apache.yetus", module: "audience-annotations"
     exclude group: "log4j", module: "log4j"
@@ -110,11 +135,9 @@ dependencies {
   implementation ('org.apache.zookeeper:zookeeper-jute') {
     exclude group: 'org.apache.yetus', module: 'audience-annotations'
   }
+  testImplementation 'org.apache.zookeeper:zookeeper::tests'
   // required for instantiating a Zookeeper server (for embedding ZK or running tests)
   runtimeOnly ('org.xerial.snappy:snappy-java')
-  implementation ('org.apache.curator:curator-client')
-  implementation ('org.apache.curator:curator-framework')
-  runtimeOnly ('org.apache.curator:curator-recipes')
 
   // For Package Manager
   implementation 'com.github.zafarkhaja:java-semver'
@@ -140,55 +163,15 @@ dependencies {
   implementation 'org.apache.logging.log4j:log4j-core'
   implementation 'org.apache.logging.log4j:log4j-slf4j-impl'
 
-  implementation 'io.dropwizard.metrics:metrics-core'
-  implementation ('io.dropwizard.metrics:metrics-graphite', {
-    exclude group: "com.rabbitmq", module: "amqp-client"
-  })
-  implementation 'io.dropwizard.metrics:metrics-jmx'
-  implementation 'io.dropwizard.metrics:metrics-jvm'
-
-  testImplementation 'org.slf4j:jcl-over-slf4j'
-
   // For faster XML processing than the JDK
   implementation 'org.codehaus.woodstox:stax2-api'
   implementation 'com.fasterxml.woodstox:woodstox-core'
 
-  // SQL Parser via Calcite
-  implementation ('org.apache.calcite:calcite-core', {
-    exclude group: 'org.apache.calcite.avatica', module: 'avatica-metrics'
-    exclude group: 'com.google.guava', module: 'guava' // TODO remove this to keep versions in sync
-    exclude group: 'com.fasterxml.jackson.dataformat', module: 'jackson-dataformat-yaml'
-    exclude group: 'com.google.uzaygezen', module: 'uzaygezen-core'
-    exclude group: 'com.yahoo.datasketches', module: 'sketches-core'
-    exclude group: 'org.apache.commons', module: 'commons-dbcp2'
-    exclude group: 'net.minidev', module: 'json-smart'
-    exclude group: 'net.hydromatic', module: 'aggdesigner-algorithm'
-  })
-  // sub-deps of calcite-core that we reference directly
-  implementation ('org.apache.calcite:calcite-linq4j') { transitive = false }
-  implementation ('org.apache.calcite.avatica:avatica-core') { transitive = false }
+  testRuntimeOnly 'org.slf4j:jcl-over-slf4j'
 
-  // Hadoop auth framework
-  implementation ('org.apache.hadoop:hadoop-annotations')
-  implementation ('org.apache.hadoop:hadoop-auth') { transitive = false }
-  implementation ('org.apache.hadoop:hadoop-common') { transitive = false }
-  // transitive of hadoop-common; used by Kerberos auth
-  runtimeOnly 'commons-collections:commons-collections'
-  runtimeOnly 'com.google.re2j:re2j'
-  runtimeOnly 'org.apache.commons:commons-configuration2'
-  runtimeOnly 'org.apache.htrace:htrace-core4' // note: removed in Hadoop 3.3.2
-  runtimeOnly 'org.apache.kerby:kerb-core'
-  runtimeOnly 'org.apache.kerby:kerb-util'
+  testRuntimeOnly "org.apache.lucene:lucene-analysis-icu"
 
-  // Hadoop MiniKdc Dependencies (for Kerberos auth tests)
-  testImplementation ('org.apache.hadoop:hadoop-minikdc', {
-    exclude group:'org.apache.kerby', module:'kerby-xdr'
-    exclude group:'org.apache.kerby', module:'token-provider'
-  })
-
-  testImplementation "org.apache.lucene:lucene-analysis-icu"
-
-  testImplementation project(':solr:modules:analysis-extras')
+  testRuntimeOnly project(':solr:modules:analysis-extras')
 
   testImplementation project(':solr:core')
   testImplementation project(':solr:test-framework')

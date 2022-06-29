@@ -19,7 +19,6 @@ package org.apache.solr.analytics.facet;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.function.Consumer;
-
 import org.apache.lucene.search.Query;
 import org.apache.solr.analytics.function.ReductionCollectionManager.ReductionDataCollection;
 import org.apache.solr.analytics.util.FacetRangeGenerator;
@@ -30,9 +29,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QueryUtils;
 
-/**
- * A facet that groups data by a discrete set of ranges.
- */
+/** A facet that groups data by a discrete set of ranges. */
 public class RangeFacet extends AbstractSolrQueryFacet {
   protected final SchemaField field;
   protected final String start;
@@ -53,7 +50,10 @@ public class RangeFacet extends AbstractSolrQueryFacet {
   }
 
   @Override
-  public void createFacetValueExecuters(final Query filter, SolrQueryRequest queryRequest, Consumer<FacetValueQueryExecuter> consumer) {
+  public void createFacetValueExecuters(
+      final Query filter,
+      SolrQueryRequest queryRequest,
+      Consumer<FacetValueQueryExecuter> consumer) {
     // Computes the end points of the ranges in the rangeFacet
     final FacetRangeGenerator<? extends Comparable<?>> rec = FacetRangeGenerator.create(this);
     final SchemaField sf = field;
@@ -61,7 +61,10 @@ public class RangeFacet extends AbstractSolrQueryFacet {
     // Create a rangeFacetAccumulator for each range and
     // collect the documents for that range.
     for (FacetRange range : rec.getRanges()) {
-      Query q = sf.getType().getRangeQuery(null, sf, range.lower, range.upper, range.includeLower,range.includeUpper);
+      Query q =
+          sf.getType()
+              .getRangeQuery(
+                  null, sf, range.lower, range.upper, range.includeLower, range.includeUpper);
       // The searcher sends docIds to the RangeFacetAccumulator which forwards
       // them to <code>collectRange()</code> in this class for collection.
       Query rangeQuery = QueryUtils.combineQueryAndFilter(q, filter);

@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Classes for updating cluster state in SolrCloud mode.
- */
+/** Classes for updating cluster state in SolrCloud mode. */
 package org.apache.solr.cloud.overseer;

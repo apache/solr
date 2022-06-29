@@ -19,13 +19,13 @@ package org.apache.solr.analytics.value.constant;
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 import java.util.function.LongConsumer;
-
 import org.apache.solr.analytics.facet.compare.ConstantComparator;
 import org.apache.solr.analytics.value.LongValue;
 import org.apache.solr.analytics.value.LongValue.CastingLongValue;
 
 /**
- * A constant {@link LongValue}. Every call to {@link #getLong()} and other methods will return the same constant value.
+ * A constant {@link LongValue}. Every call to {@link #getLong()} and other methods will return the
+ * same constant value.
  */
 public class ConstantLongValue extends ConstantValue implements CastingLongValue {
   private final long value;
@@ -39,23 +39,26 @@ public class ConstantLongValue extends ConstantValue implements CastingLongValue
     this.exprStr = ConstantValue.createExpressionString(this, valueStr);
   }
 
-
   @Override
   public long getLong() {
     return value;
   }
+
   @Override
   public double getDouble() {
     return value;
   }
+
   @Override
   public String getString() {
     return valueStr;
   }
+
   @Override
   public Object getObject() {
     return value;
   }
+
   @Override
   public boolean exists() {
     return true;
@@ -65,14 +68,17 @@ public class ConstantLongValue extends ConstantValue implements CastingLongValue
   public void streamLongs(LongConsumer cons) {
     cons.accept(value);
   }
+
   @Override
   public void streamDoubles(DoubleConsumer cons) {
     cons.accept(value);
   }
+
   @Override
   public void streamStrings(Consumer<String> cons) {
     cons.accept(valueStr);
   }
+
   @Override
   public void streamObjects(Consumer<Object> cons) {
     cons.accept(value);

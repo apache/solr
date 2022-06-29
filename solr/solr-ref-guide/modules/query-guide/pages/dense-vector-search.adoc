@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The Apache Solr *Dense Vector Search* module adds support for indexing and searching dense numerical vectors.
+Solr's *Dense Vector Search* adds support for indexing and searching dense numerical vectors.
 
 https://en.wikipedia.org/wiki/Deep_learning[Deep learning] can be used to produce a vector representation of both the query and the documents in a corpus of information.
 
@@ -57,7 +57,7 @@ The dense vector field gives the possibility of indexing and searching dense vec
 
 For example:
 
-`[1.0, 2.5, 3.7, 4.1]` 
+`[1.0, 2.5, 3.7, 4.1]`
 
 Here's how `DenseVectorField` should be configured in the schema:
 
@@ -96,7 +96,7 @@ this similarity is intended as an optimized way to perform cosine similarity. In
 
 * `cosine`: https://en.wikipedia.org/wiki/Cosine_similarity[Cosine similarity]
 
-[NOTE] 
+[NOTE]
 the preferred way to perform cosine similarity is to normalize all vectors to unit length, and instead use DOT_PRODUCT. You should only use this function if you need to preserve the original vectors and cannot normalize them in advance.
 
 To use the following advanced parameters that customise the codec format
@@ -109,20 +109,20 @@ and the hyper-parameter of the HNSW algorithm make sure you set this configurati
 Here's how `DenseVectorField` can be configured with the advanced codec hyper-parameters:
 
 [source,xml]
-<fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" codecFormat="Lucene90HnswVectorsFormat" hnswMaxConnections="10" hnswBeamWidth="40"/>
+<fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" codecFormat="Lucene91HnswVectorsFormat" hnswMaxConnections="10" hnswBeamWidth="40"/>
 <field name="vector" type="knn_vector" indexed="true" stored="true"/>
 
 `codecFormat`::
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `Lucene90HnswVectorsFormat`
+|Optional |Default: `Lucene91HnswVectorsFormat`
 |===
 +
 (advanced) Specifies the knn codec implementation to use
 +
 
-Accepted values: `Lucene90HnswVectorsFormat`.
+Accepted values: `Lucene90HnswVectorsFormat`, `Lucene91HnswVectorsFormat` .
 
 Please note that the `codecFormat` accepted values may change in future releases.
 
@@ -139,7 +139,7 @@ If you choose to customize the `codecFormat` in your schema, upgrading to a futu
 |Optional |Default: `16`
 |===
 +
-(advanced) This parameter is specific for the `Lucene90HnswVectorsFormat` codec format:
+(advanced) This parameter is specific for the `Lucene90HnswVectorsFormat` and `Lucene91HnswVectorsFormat` codec formats:
 +
 Controls how many of the nearest neighbor candidates are connected to the new node.
 +
@@ -155,7 +155,7 @@ Any integer.
 |Optional |Default: `100`
 |===
 +
-(advanced) This parameter is specific for the `Lucene90HnswVectorsFormat` codec format:
+(advanced) This parameter is specific for the `Lucene90HnswVectorsFormat` and `Lucene91HnswVectorsFormat` codec formats:
 +
 It is the number of nearest neighbor candidates to track while searching the graph for each newly inserted node.
 +

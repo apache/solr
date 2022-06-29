@@ -17,7 +17,6 @@
 package org.apache.solr.ltr.feature;
 
 import java.util.LinkedHashMap;
-
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.model.LinearModel;
@@ -25,29 +24,47 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-
 public class TestRankingFeature extends TestRerankBase {
 
   @Before
   public void before() throws Exception {
     setuptest(false);
 
-    assertU(adoc("id", "1", "title", "w1", "description", "w1", "popularity",
-        "1"));
-    assertU(adoc("id", "2", "title", "w2 2asd asdd didid", "description",
-        "w2 2asd asdd didid", "popularity", "2"));
-    assertU(adoc("id", "3", "title", "w3", "description", "w3", "popularity",
-        "3"));
-    assertU(adoc("id", "4", "title", "w4", "description", "w4", "popularity",
-        "4"));
-    assertU(adoc("id", "5", "title", "w5", "description", "w5", "popularity",
-        "5"));
-    assertU(adoc("id", "6", "title", "w1 w2", "description", "w1 w2",
-        "popularity", "6"));
-    assertU(adoc("id", "7", "title", "w1 w2 w3 w4 w5", "description",
-        "w1 w2 w3 w4 w5 w8", "popularity", "7"));
-    assertU(adoc("id", "8", "title", "w1 w1 w1 w2 w2 w8", "description",
-        "w1 w1 w1 w2 w2", "popularity", "8"));
+    assertU(adoc("id", "1", "title", "w1", "description", "w1", "popularity", "1"));
+    assertU(
+        adoc(
+            "id",
+            "2",
+            "title",
+            "w2 2asd asdd didid",
+            "description",
+            "w2 2asd asdd didid",
+            "popularity",
+            "2"));
+    assertU(adoc("id", "3", "title", "w3", "description", "w3", "popularity", "3"));
+    assertU(adoc("id", "4", "title", "w4", "description", "w4", "popularity", "4"));
+    assertU(adoc("id", "5", "title", "w5", "description", "w5", "popularity", "5"));
+    assertU(adoc("id", "6", "title", "w1 w2", "description", "w1 w2", "popularity", "6"));
+    assertU(
+        adoc(
+            "id",
+            "7",
+            "title",
+            "w1 w2 w3 w4 w5",
+            "description",
+            "w1 w2 w3 w4 w5 w8",
+            "popularity",
+            "7"));
+    assertU(
+        adoc(
+            "id",
+            "8",
+            "title",
+            "w1 w1 w1 w2 w2 w8",
+            "description",
+            "w1 w1 w1 w2 w2",
+            "popularity",
+            "8"));
     assertU(commit());
   }
 
@@ -59,15 +76,21 @@ public class TestRankingFeature extends TestRerankBase {
   @Test
   public void testRankingSolrFeature() throws Exception {
     // before();
-    loadFeature("powpularityS", SolrFeature.class.getName(),
-        "{\"q\":\"{!func}pow(popularity,2)\"}");
-    loadFeature("unpopularityS", SolrFeature.class.getName(),
-        "{\"q\":\"{!func}div(1,popularity)\"}");
+    loadFeature(
+        "powpularityS", SolrFeature.class.getName(), "{\"q\":\"{!func}pow(popularity,2)\"}");
+    loadFeature(
+        "unpopularityS", SolrFeature.class.getName(), "{\"q\":\"{!func}div(1,popularity)\"}");
 
-    loadModel("powpularityS-model", LinearModel.class.getName(),
-        new String[] {"powpularityS"}, "{\"weights\":{\"powpularityS\":1.0}}");
-    loadModel("unpopularityS-model", LinearModel.class.getName(),
-        new String[] {"unpopularityS"}, "{\"weights\":{\"unpopularityS\":1.0}}");
+    loadModel(
+        "powpularityS-model",
+        LinearModel.class.getName(),
+        new String[] {"powpularityS"},
+        "{\"weights\":{\"powpularityS\":1.0}}");
+    loadModel(
+        "unpopularityS-model",
+        LinearModel.class.getName(),
+        new String[] {"unpopularityS"},
+        "{\"weights\":{\"unpopularityS\":1.0}}");
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("title:w1");
@@ -105,27 +128,30 @@ public class TestRankingFeature extends TestRerankBase {
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='7'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='8'");
 
-    //bad solr ranking feature
-    loadFeature("powdesS", SolrFeature.class.getName(),
-        "{\"q\":\"{!func}pow(description,2)\"}");
-    loadModel("powdesS-model", LinearModel.class.getName(),
-        new String[] {"powdesS"}, "{\"weights\":{\"powdesS\":1.0}}");
+    // bad solr ranking feature
+    loadFeature("powdesS", SolrFeature.class.getName(), "{\"q\":\"{!func}pow(description,2)\"}");
+    loadModel(
+        "powdesS-model",
+        LinearModel.class.getName(),
+        new String[] {"powdesS"},
+        "{\"weights\":{\"powdesS\":1.0}}");
 
     query.remove("rq");
     query.add("rq", "{!ltr model=powdesS-model reRankDocs=4}");
 
-    assertJQ("/query" + query.toQueryString(),
-        "/error/msg/=='"+FeatureException.class.getName()+": " +
-        "java.lang.UnsupportedOperationException: " +
-        "Unable to extract feature for powdesS'");
-
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/error/msg/=='"
+            + FeatureException.class.getName()
+            + ": "
+            + "java.lang.UnsupportedOperationException: "
+            + "Unable to extract feature for powdesS'");
   }
 
   @Test
   public void testParamsToMap() throws Exception {
-    final LinkedHashMap<String,Object> params = new LinkedHashMap<String,Object>();
+    final LinkedHashMap<String, Object> params = new LinkedHashMap<String, Object>();
     params.put("q", "{!func}pow(popularity,2)");
     doTestParamsToMap(SolrFeature.class.getName(), params);
   }
-
 }

@@ -17,26 +17,21 @@
 
 package org.apache.solr.common;
 
-
 import java.io.Closeable;
 import java.io.IOException;
 
-/**This is an interface to stream data out using a push API
- *
- */
+/** This is an interface to stream data out using a push API */
 public interface PushWriter extends Closeable {
 
-  /**Write a Map. The map is opened in the beginning of the method
-   * and closed at the end. All map entries MUST be written before this
-   * method returns
+  /**
+   * Write a Map. The map is opened in the beginning of the method and closed at the end. All map
+   * entries MUST be written before this method returns
    */
   void writeMap(MapWriter mw) throws IOException;
 
-  /**Write an array. The array is opened at the beginning of this method
-   * and closed at the end. All array entries must be written before this
-   * method returns
-   *
+  /**
+   * Write an array. The array is opened at the beginning of this method and closed at the end. All
+   * array entries must be written before this method returns
    */
   void writeIterator(IteratorWriter iw) throws IOException;
-
 }

@@ -18,7 +18,6 @@ package org.apache.solr.analytics.function.mapping;
 
 import java.util.Arrays;
 import java.util.Iterator;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.function.mapping.ComparisonFunction.LTFunction;
 import org.apache.solr.analytics.value.AnalyticsValueStream;
@@ -37,7 +36,8 @@ public class LTFunctionTest extends SolrTestCaseJ4 {
     TestDoubleValue base = new TestDoubleValue();
     TestDoubleValue comp = new TestDoubleValue();
 
-    AnalyticsValueStream uncasted = LTFunction.creatorFunction.apply(new AnalyticsValueStream[] {base, comp});
+    AnalyticsValueStream uncasted =
+        LTFunction.creatorFunction.apply(new AnalyticsValueStream[] {base, comp});
     assertTrue(uncasted instanceof BooleanValue);
     BooleanValue func = (BooleanValue) uncasted;
 
@@ -79,7 +79,8 @@ public class LTFunctionTest extends SolrTestCaseJ4 {
     TestDateValue base = new TestDateValue();
     TestDateValue comp = new TestDateValue();
 
-    AnalyticsValueStream uncasted = LTFunction.creatorFunction.apply(new AnalyticsValueStream[] {base, comp});
+    AnalyticsValueStream uncasted =
+        LTFunction.creatorFunction.apply(new AnalyticsValueStream[] {base, comp});
     assertTrue(uncasted instanceof BooleanValue);
     BooleanValue func = (BooleanValue) uncasted;
 
@@ -121,41 +122,46 @@ public class LTFunctionTest extends SolrTestCaseJ4 {
     TestDoubleValue base = new TestDoubleValue();
     TestDoubleValueStream comp = new TestDoubleValueStream();
 
-    AnalyticsValueStream uncasted = LTFunction.creatorFunction.apply(new AnalyticsValueStream[] {base, comp});
+    AnalyticsValueStream uncasted =
+        LTFunction.creatorFunction.apply(new AnalyticsValueStream[] {base, comp});
     assertTrue(uncasted instanceof BooleanValueStream);
     BooleanValueStream func = (BooleanValueStream) uncasted;
 
     // No values
     base.setValue(-4.2).setExists(true);
     comp.setValues();
-    func.streamBooleans( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamBooleans(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     base.setExists(false);
     comp.setValues(-4.2);
-    func.streamBooleans( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamBooleans(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // One value
     base.setValue(-4.2).setExists(true);
     comp.setValues(-4);
     Iterator<Boolean> values1 = Arrays.asList(true).iterator();
-    func.streamBooleans( value -> {
-      assertTrue(values1.hasNext());
-      assertEquals(values1.next(), value);
-    });
+    func.streamBooleans(
+        value -> {
+          assertTrue(values1.hasNext());
+          assertEquals(values1.next(), value);
+        });
     assertFalse(values1.hasNext());
 
     // Multiple values
     base.setValue(4).setExists(true);
     comp.setValues(4, -10, 2345, -74, 4.0001);
     Iterator<Boolean> values2 = Arrays.asList(false, false, true, false, true).iterator();
-    func.streamBooleans( value -> {
-      assertTrue(values2.hasNext());
-      assertEquals(values2.next(), value);
-    });
+    func.streamBooleans(
+        value -> {
+          assertTrue(values2.hasNext());
+          assertEquals(values2.next(), value);
+        });
     assertFalse(values2.hasNext());
   }
 
@@ -164,41 +170,46 @@ public class LTFunctionTest extends SolrTestCaseJ4 {
     TestDoubleValueStream base = new TestDoubleValueStream();
     TestDoubleValue comp = new TestDoubleValue();
 
-    AnalyticsValueStream uncasted = LTFunction.creatorFunction.apply(new AnalyticsValueStream[] {base, comp});
+    AnalyticsValueStream uncasted =
+        LTFunction.creatorFunction.apply(new AnalyticsValueStream[] {base, comp});
     assertTrue(uncasted instanceof BooleanValueStream);
     BooleanValueStream func = (BooleanValueStream) uncasted;
 
     // No values
     base.setValues();
     comp.setValue(-4.2).setExists(true);
-    func.streamBooleans( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamBooleans(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     base.setValues(-4.2);
     comp.setExists(false);
-    func.streamBooleans( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamBooleans(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // One value
     base.setValues(-4.2);
     comp.setValue(-4).setExists(true);
     Iterator<Boolean> values1 = Arrays.asList(true).iterator();
-    func.streamBooleans( value -> {
-      assertTrue(values1.hasNext());
-      assertEquals(values1.next(), value);
-    });
+    func.streamBooleans(
+        value -> {
+          assertTrue(values1.hasNext());
+          assertEquals(values1.next(), value);
+        });
     assertFalse(values1.hasNext());
 
     // Multiple values
     base.setValues(4, -10, 2345, -74, 4.0001);
     comp.setValue(4).setExists(true);
     Iterator<Boolean> values2 = Arrays.asList(false, true, false, true, false).iterator();
-    func.streamBooleans( value -> {
-      assertTrue(values2.hasNext());
-      assertEquals(values2.next(), value);
-    });
+    func.streamBooleans(
+        value -> {
+          assertTrue(values2.hasNext());
+          assertEquals(values2.next(), value);
+        });
     assertFalse(values2.hasNext());
   }
 
@@ -207,41 +218,51 @@ public class LTFunctionTest extends SolrTestCaseJ4 {
     TestDateValue base = new TestDateValue();
     TestDateValueStream comp = new TestDateValueStream();
 
-    AnalyticsValueStream uncasted = LTFunction.creatorFunction.apply(new AnalyticsValueStream[] {base, comp});
+    AnalyticsValueStream uncasted =
+        LTFunction.creatorFunction.apply(new AnalyticsValueStream[] {base, comp});
     assertTrue(uncasted instanceof BooleanValueStream);
     BooleanValueStream func = (BooleanValueStream) uncasted;
 
     // No values
     base.setValue("1800-01-02T10:20:30Z").setExists(true);
     comp.setValues();
-    func.streamBooleans( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamBooleans(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     base.setExists(false);
     comp.setValues("1800-01-02T10:20:30Z");
-    func.streamBooleans( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamBooleans(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // One value
     base.setValue("1803-01-02T10:20:30Z").setExists(true);
     comp.setValues("1800-01-02T10:20:30Z");
     Iterator<Boolean> values1 = Arrays.asList(false).iterator();
-    func.streamBooleans( value -> {
-      assertTrue(values1.hasNext());
-      assertEquals(values1.next(), value);
-    });
+    func.streamBooleans(
+        value -> {
+          assertTrue(values1.hasNext());
+          assertEquals(values1.next(), value);
+        });
     assertFalse(values1.hasNext());
 
     // Multiple values
     base.setValue("1800-01-02T10:20:30Z").setExists(true);
-    comp.setValues("1800-03-02T10:20:30Z", "1799-01-01T10:20:29Z", "1800-01-02T10:20:31Z", "1800-01-02T10:20:30Z", "1800-01-02T10:20:29Z");
+    comp.setValues(
+        "1800-03-02T10:20:30Z",
+        "1799-01-01T10:20:29Z",
+        "1800-01-02T10:20:31Z",
+        "1800-01-02T10:20:30Z",
+        "1800-01-02T10:20:29Z");
     Iterator<Boolean> values2 = Arrays.asList(true, false, true, false, false).iterator();
-    func.streamBooleans( value -> {
-      assertTrue(values2.hasNext());
-      assertEquals(values2.next(), value);
-    });
+    func.streamBooleans(
+        value -> {
+          assertTrue(values2.hasNext());
+          assertEquals(values2.next(), value);
+        });
     assertFalse(values2.hasNext());
   }
 
@@ -250,41 +271,51 @@ public class LTFunctionTest extends SolrTestCaseJ4 {
     TestDateValueStream base = new TestDateValueStream();
     TestDateValue comp = new TestDateValue();
 
-    AnalyticsValueStream uncasted = LTFunction.creatorFunction.apply(new AnalyticsValueStream[] {base, comp});
+    AnalyticsValueStream uncasted =
+        LTFunction.creatorFunction.apply(new AnalyticsValueStream[] {base, comp});
     assertTrue(uncasted instanceof BooleanValueStream);
     BooleanValueStream func = (BooleanValueStream) uncasted;
 
     // No values
     base.setValues();
     comp.setValue("1800-01-02T10:20:30Z").setExists(true);
-    func.streamBooleans( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamBooleans(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     base.setValues("1800-01-02T10:20:30Z");
     comp.setExists(false);
-    func.streamBooleans( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamBooleans(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // One value
     base.setValues("1800-01-02T10:20:30Z");
     comp.setValue("1803-01-02T10:20:30Z").setExists(true);
     Iterator<Boolean> values1 = Arrays.asList(true).iterator();
-    func.streamBooleans( value -> {
-      assertTrue(values1.hasNext());
-      assertEquals(values1.next(), value);
-    });
+    func.streamBooleans(
+        value -> {
+          assertTrue(values1.hasNext());
+          assertEquals(values1.next(), value);
+        });
     assertFalse(values1.hasNext());
 
     // Multiple values
-    base.setValues("1800-03-02T10:20:30Z", "1799-01-01T10:20:29Z", "1800-01-02T10:20:31Z", "1800-01-02T10:20:30Z", "1800-01-02T10:20:29Z");
+    base.setValues(
+        "1800-03-02T10:20:30Z",
+        "1799-01-01T10:20:29Z",
+        "1800-01-02T10:20:31Z",
+        "1800-01-02T10:20:30Z",
+        "1800-01-02T10:20:29Z");
     comp.setValue("1800-01-02T10:20:30Z").setExists(true);
     Iterator<Boolean> values2 = Arrays.asList(false, true, false, false, true).iterator();
-    func.streamBooleans( value -> {
-      assertTrue(values2.hasNext());
-      assertEquals(values2.next(), value);
-    });
+    func.streamBooleans(
+        value -> {
+          assertTrue(values2.hasNext());
+          assertEquals(values2.next(), value);
+        });
     assertFalse(values2.hasNext());
   }
 }

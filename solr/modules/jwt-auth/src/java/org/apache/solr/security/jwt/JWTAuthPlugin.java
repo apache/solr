@@ -49,6 +49,8 @@ import org.apache.http.HttpHeaders;
 import org.apache.http.HttpRequest;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.protocol.HttpContext;
+import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.api.Api;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
@@ -57,6 +59,7 @@ import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.handler.admin.api.ModifyJWTAuthPluginConfigAPI;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.ConfigEditablePlugin;
 import org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode;
@@ -405,24 +408,29 @@ public class JWTAuthPlugin extends AuthenticationPlugin
     String exceptionMessage =
         authResponse.getJwtException() != null ? authResponse.getJwtException().getMessage() : "";
     if (AuthCode.SIGNATURE_INVALID.equals(authResponse.getAuthCode())) {
-      String issuer = jwtConsumer.processToClaims(header).getIssuer();
-      if (issuer != null) {
-        Optional<JWTIssuerConfig> issuerConfig =
-            issuerConfigs.stream().filter(ic -> issuer.equals(ic.getIss())).findFirst();
-        if (issuerConfig.isPresent() && issuerConfig.get().usesHttpsJwk()) {
-          log.info(
-              "Signature validation failed for issuer {}. Refreshing JWKs from IdP before trying again: {}",
-              issuer,
-              exceptionMessage);
-          for (HttpsJwks httpsJwks : issuerConfig.get().getHttpsJwks()) {
-            httpsJwks.refresh();
+      String jwt = parseAuthorizationHeader(header);
+      try {
+        String issuer = jwtConsumer.processToClaims(jwt).getIssuer();
+        if (issuer != null) {
+          Optional<JWTIssuerConfig> issuerConfig =
+              issuerConfigs.stream().filter(ic -> issuer.equals(ic.getIss())).findFirst();
+          if (issuerConfig.isPresent() && issuerConfig.get().usesHttpsJwk()) {
+            log.info(
+                "Signature validation failed for issuer {}. Refreshing JWKs from IdP before trying again: {}",
+                issuer,
+                exceptionMessage);
+            for (HttpsJwks httpsJwks : issuerConfig.get().getHttpsJwks()) {
+              httpsJwks.refresh();
+            }
+            authResponse = authenticate(header); // Retry
+            exceptionMessage =
+                authResponse.getJwtException() != null
+                    ? authResponse.getJwtException().getMessage()
+                    : "";
           }
-          authResponse = authenticate(header); // Retry
-          exceptionMessage =
-              authResponse.getJwtException() != null
-                  ? authResponse.getJwtException().getMessage()
-                  : "";
         }
+      } catch (InvalidJwtException ex) {
+        /* ignored */
       }
     }
 
@@ -700,7 +708,8 @@ public class JWTAuthPlugin extends AuthenticationPlugin
 
   @Override
   public ValidatingJsonMap getSpec() {
-    return Utils.getSpec("cluster.security.JwtAuth.Commands").getSpec();
+    final List<Api> apis = AnnotatedApi.getApis(new ModifyJWTAuthPluginConfigAPI());
+    return apis.get(0).getSpec();
   }
 
   /**

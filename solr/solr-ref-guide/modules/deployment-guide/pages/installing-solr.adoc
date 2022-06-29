@@ -18,8 +18,10 @@
 // under the License.
 
 Installation of Solr on Unix-compatible or Windows servers generally requires simply extracting (or, unzipping) the download package.
-
 Please be sure to review the xref:system-requirements.adoc[] before starting Solr.
+
+Solr can also be xref:solr-in-docker.adoc[installed and deployed in Docker].
+The official image uses the binary release directly, so the xref:#directory-layout[directory layout] will be identical to what is described below.
 
 == Available Solr Packages
 
@@ -92,10 +94,11 @@ This script is used on *nix systems to install Solr as a service.
 It is described in more detail in the section xref:taking-solr-to-production.adoc[].
 
 modules/::
-Solr's `modules` directory includes 1st-party add-on plugins for specialized features of Solr.
+Solr's `modules` directory includes 1st-party add-ons for specialized features that enhance Solr.
+See the section xref:configuration-guide:solr-modules.adoc[] for more information.
 
 prometheus-exporter/::
-A standalone application, included under `bin/`, that montiors Solr instances and produces Prometheus metrics.
+A standalone application, included under `bin/`, that monitors Solr instances and produces Prometheus metrics.
 See the section xref:deployment-guide:monitoring-with-prometheus-and-grafana.adoc[] for more information.
 
 docker/::
@@ -103,6 +106,12 @@ This contains a Dockerfile to build a Docker image from the binary distribution,
 This directory also contains the scripts needed when using Solr inside the Docker image, under the `scripts/` directory.
 The `README.md` in this directory describes how custom Solr Docker images can be built using this binary distribution.
 Refer to the section xref:deployment-guide:solr-in-docker.adoc[] page for information on using a Solr Docker image.
+
+lib/::
+Folder where Solr will look for additional plugin jar files.
+
+dist/::
+The `dist` directory contains the main Solr .jar files.
 
 docs/::
 The `docs` directory includes a link to online Javadocs for Solr.

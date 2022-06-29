@@ -21,13 +21,14 @@ import java.io.DataOutput;
 import java.util.function.BooleanSupplier;
 import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
-
 import org.apache.solr.analytics.stream.reservation.read.LongCheckedDataReader;
 import org.apache.solr.analytics.stream.reservation.write.LongCheckedDataWriter;
 
-public class LongCheckedReservation extends ReductionCheckedDataReservation<LongConsumer, LongSupplier> {
+public class LongCheckedReservation
+    extends ReductionCheckedDataReservation<LongConsumer, LongSupplier> {
 
-  public LongCheckedReservation(LongConsumer applier, LongSupplier extractor, BooleanSupplier exists) {
+  public LongCheckedReservation(
+      LongConsumer applier, LongSupplier extractor, BooleanSupplier exists) {
     super(applier, extractor, exists);
   }
 

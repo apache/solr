@@ -23,7 +23,6 @@ import org.junit.Test;
 
 public class TestLTRQParserPlugin extends TestRerankBase {
 
-
   @BeforeClass
   public static void before() throws Exception {
     setuptest(true);
@@ -106,24 +105,26 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     // String nonRerankedScore = "0.09271725";
 
     // Normal solr order
-    assertJQ("/query" + query.toQueryString(),
+    assertJQ(
+        "/query" + query.toQueryString(),
         "/response/docs/[0]/id=='9'",
         "/response/docs/[1]/id=='8'",
         "/response/docs/[2]/id=='7'",
         "/response/docs/[3]/id=='6'"
-    //  "/response/docs/[3]/score=="+nonRerankedScore
-    );
+        //  "/response/docs/[3]/score=="+nonRerankedScore
+        );
 
     query.add("rq", "{!ltr model=6029760550880411648 reRankDocs=3}");
 
     // Different order for top 3 reranked, but last one is the same top nonreranked doc
-    assertJQ("/query" + query.toQueryString(),
+    assertJQ(
+        "/query" + query.toQueryString(),
         "/response/docs/[0]/id=='7'",
         "/response/docs/[1]/id=='8'",
         "/response/docs/[2]/id=='9'",
         "/response/docs/[3]/id=='6'"
-    //  "/response/docs/[3]/score=="+nonRerankedScore
-    );
+        //  "/response/docs/[3]/score=="+nonRerankedScore
+        );
   }
 
   @Test
@@ -136,5 +137,4 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     query.add("rq", "{!ltr reRankDocs=3 model=6029760550880411648}");
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==0");
   }
-
 }
