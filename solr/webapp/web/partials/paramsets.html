@@ -21,6 +21,8 @@
     <div id="form">
         <form>
 
+          <fieldset class="Select Paramset">
+              <legend>Select Paramset</legend>
             <div id="paramset-name-container">
 
               <label for="paramsetName">
@@ -35,6 +37,10 @@
 
             </div>
 
+            <div id="delete-paramset" ng-show="name">
+              <button id="delete-paramset" class="warn" ng-click="deleteParamset()">Delete Paramset</button>
+            <div>
+          </fieldset>
 
             <div>
                 <form>
@@ -74,7 +80,7 @@
 
             </div>
 
-            <button type="submit" ng-click="submit()" id="submit">Submit Paramset</button>
+            <button type="submit" ng-click="submit()" id="submit">Submit Paramset Updates</button>
         </form>
     </div>
     <div id="result">

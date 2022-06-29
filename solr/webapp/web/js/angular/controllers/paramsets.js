@@ -73,7 +73,7 @@ solrAdminApp.controller('ParamSetsController',
       }
     }
     $scope.getParamsets();
-    
+
     $scope.refresh = function () {
       $scope.paramsetContent = "";
       $scope.placeholder = JSON.stringify($scope.sampleAPICommand, null, '  ');
@@ -100,4 +100,31 @@ solrAdminApp.controller('ParamSetsController',
         $scope.responseStatus = failure;
       }
     }
+
+    $scope.deleteParamset = function () {
+      var params = {};
+
+      params.core = $routeParams.core;
+      params.wt = "json";
+      params.name = $scope.name;
+
+      var apiPayload = {
+        "delete": [$scope.name]
+      };
+
+      ParamSet.submit(params, apiPayload, callback, failure);
+
+      ///////
+      function callback(success) {
+        $scope.responseStatus = "success";
+        delete success.$promise;
+        delete success.$resolved;
+        $scope.response = JSON.stringify(success, null, '  ');
+        $scope.getParamsets();
+      }
+      function failure (failure) {
+        $scope.responseStatus = failure;
+      }
+    }
+
   });

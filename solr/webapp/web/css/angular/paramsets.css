@@ -34,6 +34,13 @@ limitations under the License.
     margin-top: 15px;
 }
 
+#content #paramsets #delete-paramset
+{
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+
 #content #paramsets #form fieldset legend, #content #paramsets #form .optional.expanded legend {
     display: block;
     margin-left: 10px;
