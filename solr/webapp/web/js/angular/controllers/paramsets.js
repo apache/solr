@@ -17,7 +17,7 @@
 //helper for formatting JSON and others
 
 solrAdminApp.controller('ParamSetsController',
-  function($scope, $routeParams, ParamSet, Constants) {
+  function($scope, $location, $routeParams, ParamSet, Constants) {
 
     $scope.paramsetList = [];
 
@@ -34,8 +34,34 @@ solrAdminApp.controller('ParamSetsController',
     }
 
     $scope.selectParamset = function() {
+      $location.search("paramset", $scope.name);
       $scope.getParamsets(true);
     }
+
+    $scope.getAllParamsets = function () {
+      $scope.refresh();
+
+      var params = {};
+      params.core = $routeParams.core;
+      params.wt = "json";
+
+      ParamSet.get(params, callback, failure);
+
+      ///////
+
+      function callback(success) {
+        $scope.responseStatus = "success";
+        delete success.$promise;
+        delete success.$resolved;
+        $scope.response = JSON.stringify(success, null, '  ');
+        $scope.paramsetList = success.response.params ? Object.keys(success.response.params) : [];
+      }
+
+      function failure (failure) {
+        $scope.responseStatus = failure;
+      }
+    }
+    
 
     $scope.getParamsets = function (isSelected) {
       $scope.refresh();
@@ -43,6 +69,13 @@ solrAdminApp.controller('ParamSetsController',
       var params = {};
       params.core = $routeParams.core;
       params.wt = "json";
+
+      if ($routeParams.paramset){
+        isSelected = true;
+        $scope.name = $routeParams.paramset;
+        $scope.getAllParamsets();
+      }
+      console.log("isSelected?" + isSelected);
       params.name = isSelected ? $scope.name : null;
 
       ParamSet.get(params, callback, failure);
@@ -72,6 +105,8 @@ solrAdminApp.controller('ParamSetsController',
         $scope.responseStatus = failure;
       }
     }
+
+
     $scope.getParamsets();
 
     $scope.refresh = function () {
