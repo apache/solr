@@ -71,7 +71,7 @@ solrAdminApp.controller('ParamSetsController',
     }
 
 
-    $scope.getAllParamsets = function () {
+    $scope.getParamsets = function () {
       $scope.refresh();
 
       var params = {};
@@ -95,52 +95,7 @@ solrAdminApp.controller('ParamSetsController',
       }
     }
 
-
-    $scope.getParamsets = function (isSelected) {
-      $scope.refresh();
-
-      var params = {};
-      params.core = $routeParams.core;
-      params.wt = "json";
-
-      if ($routeParams.paramset){
-        isSelected = true;
-        $scope.name = $routeParams.paramset;
-        $scope.getAllParamsets();
-      }
-      console.log("isSelected?" + isSelected);
-      params.name = isSelected ? $scope.name : null;
-
-      ParamSet.get(params, callback, failure);
-
-      ///////
-
-      function callback(success) {
-        $scope.responseStatus = "success";
-        delete success.$promise;
-        delete success.$resolved;
-        $scope.response = JSON.stringify(success, null, '  ');
-        if (isSelected) {
-          var apiPayload = {
-            "set": success.response.params
-          };
-          // remove json key that is defined as "", it can't be submitted via the API.
-          var paramsetName = Object.keys(apiPayload.set)[0];
-          delete apiPayload.set[paramsetName][""]
-
-          $scope.paramsetContent = JSON.stringify(apiPayload, null, '  ');
-        } else {
-          $scope.paramsetList = success.response.params ? Object.keys(success.response.params) : [];
-        }
-      }
-
-      function failure (failure) {
-        $scope.responseStatus = failure;
-      }
-    }
-
-
-    $scope.getAllParamsets();
+    $scope.getParamsets();
     if ($routeParams.paramset){
       $scope.name = $routeParams.paramset;
       $scope.getParamset($routeParams.paramset);
@@ -167,7 +122,7 @@ solrAdminApp.controller('ParamSetsController',
         delete success.$resolved;
         $scope.response = JSON.stringify(success, null, '  ');
         $scope.name = null;
-        $scope.getAllParamsets();
+        $scope.getParamsets();
       }
       function failure (failure) {
         $scope.responseStatus = failure;
@@ -193,7 +148,7 @@ solrAdminApp.controller('ParamSetsController',
         delete success.$promise;
         delete success.$resolved;
         $scope.response = JSON.stringify(success, null, '  ');
-        $scope.getAllParamsets();
+        $scope.getParamsets();
       }
       function failure (failure) {
         $scope.responseStatus = failure;
