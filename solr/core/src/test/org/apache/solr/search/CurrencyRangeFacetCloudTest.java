@@ -538,7 +538,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
 
       } catch (AssertionError | RuntimeException ae) {
         throw new AssertionError(
-            solrQuery + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
+            solrQuery + " -> " + rsp + " ===> " + ae.getMessage(), ae);
       }
     }
   }
