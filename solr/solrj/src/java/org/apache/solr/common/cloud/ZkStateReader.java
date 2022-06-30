@@ -287,7 +287,7 @@ public class ZkStateReader implements SolrCloseable {
      * @return whether an active watch exists for such collection
      */
     private boolean updateDocCollection(String collection, DocCollection newState) {
-      DocCollectionWatch<DocCollectionWatcher> watch = get(collection);
+    DocCollectionWatch<DocCollectionWatcher> finalWatch = computeIfPresent(collection, (col, watch) -> {
       if (watch != null) {
         DocCollection oldState = watch.currentDoc;
         if (oldState == null && newState == null) {
@@ -317,11 +317,10 @@ public class ZkStateReader implements SolrCloseable {
             }
           }
         }
-        return true;
-      } else {
-        return false;
       }
-    }
+      return watch;
+    });
+    return finalWatch != null;
   }
 
   private static class DocCollectionWatch<T> extends CollectionWatch<T> {
