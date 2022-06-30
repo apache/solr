@@ -56,11 +56,9 @@ import org.slf4j.LoggerFactory;
 public class TestBulkSchemaAPI extends RestTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static File tmpSolrHome;
-
   @Before
   public void before() throws Exception {
-    tmpSolrHome = createTempDir().toFile();
+    File tmpSolrHome = createTempDir().toFile();
     FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
 
     System.setProperty("managed.schema.mutable", "true");

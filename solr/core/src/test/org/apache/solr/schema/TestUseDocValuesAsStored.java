@@ -49,9 +49,6 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
 
   private int id = 1;
 
-  private static File tmpSolrHome;
-  private static File tmpConfDir;
-
   private static final String collection = "collection1";
   private static final String confDir = collection + "/conf";
 
@@ -98,8 +95,8 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
 
   @Before
   private void initManagedSchemaCore() throws Exception {
-    tmpSolrHome = createTempDir().toFile();
-    tmpConfDir = new File(tmpSolrHome, confDir);
+    File tmpSolrHome = createTempDir().toFile();
+    File tmpConfDir = new File(tmpSolrHome, confDir);
     File testHomeConfDir = new File(TEST_HOME(), confDir);
     FileUtils.copyFileToDirectory(
         new File(testHomeConfDir, "solrconfig-managed-schema.xml"), tmpConfDir);
