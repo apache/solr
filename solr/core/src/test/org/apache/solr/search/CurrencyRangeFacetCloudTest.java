@@ -181,7 +181,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
           }
         } catch (AssertionError | RuntimeException ae) {
           throw new AssertionError(
-              solrQuery + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
+              solrQuery + " -> " + rsp + " ===> " + ae.getMessage(), ae);
         }
 
         // same basic logic, w/json.facet
@@ -239,7 +239,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
           }
         } catch (AssertionError | RuntimeException ae) {
           throw new AssertionError(
-              solrQuery + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
+              solrQuery + " -> " + rsp + " ===> " + ae.getMessage(), ae);
         }
       }
     }
@@ -306,7 +306,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
         }
       } catch (AssertionError | RuntimeException ae) {
         throw new AssertionError(
-            solrQuery + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
+            solrQuery + " -> " + rsp + " ===> " + ae.getMessage(), ae);
       }
     }
   }
@@ -365,7 +365,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
         }
       } catch (AssertionError | RuntimeException ae) {
         throw new AssertionError(
-            solrQuery + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
+            solrQuery + " -> " + rsp + " ===> " + ae.getMessage(), ae);
       }
     }
   }
