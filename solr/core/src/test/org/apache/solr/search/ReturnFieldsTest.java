@@ -461,7 +461,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
             new SolrReturnFields(req("fl", allFieldNames + ",bogus1,bogus2,bogus3")))) {
 
       docOut = convertLuceneDocToSolrDoc(docIn, schema, rf);
-      final String debug = rf + " => " + docOut.toString();
+      final String debug = rf + " => " + docOut;
       assertEquals(debug, 24, docOut.size());
       assertTrue(debug, docOut.get("id") instanceof StringField);
       assertTrue(debug, docOut.get("store") instanceof StringField);
