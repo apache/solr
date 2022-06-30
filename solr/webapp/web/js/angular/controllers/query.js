@@ -15,13 +15,14 @@
  limitations under the License.
 */
 
+/*
+  The chosen multiple directives on the Paramset select box generates
+  TypeError: a.map is not a function, however query screen does work.
+  Removing the 'multiple' to be single select prevents this error.
+*/
 solrAdminApp.controller('QueryController',
   function($scope, $route, $routeParams, $location, Query, Constants, ParamSet){
-    var vm = this;
-
     $scope.resetMenu("query", Constants.IS_COLLECTION_PAGE);
-
-    $scope.paramsetList = [];
 
     $scope._models = [];
     $scope.filters = [{fq:""}];
@@ -31,12 +32,11 @@ solrAdminApp.controller('QueryController',
     $scope.val['q.op'] = "OR";
     $scope.val['defType'] = "";
     $scope.val['indent'] = true;
-    vm.useParams = [];
+    $scope.useParams = [];
 
     getParamsets();
 
     function getParamsets() {
-      $scope.refresh();
 
       var params = {};
       params.core = $routeParams.core;
@@ -59,10 +59,10 @@ solrAdminApp.controller('QueryController',
     }
 
     // get list of ng-models that have a form element
-    function setModels(argTagName, isData){
+    function setModels(argTagName){
         var fields = document.getElementsByTagName(argTagName);
         for( var i = 0, iLen = fields.length; i<iLen; i++ ){
-          var model = fields[i].getAttribute(isData ? "data-model" : "ng-model");
+            var model = fields[i].getAttribute("ng-model");
             if( model ){
                 $scope._models.push({modelName: model, element: fields[i]});
             }
@@ -83,9 +83,15 @@ solrAdminApp.controller('QueryController',
       }
     }
     function setParam(argKey, argValue, argProperty){
+      console.log(argKey);
+      console.log(argValue);
+      console.log("Do we have argProperty?")
+      console.log(argProperty)
       if( argProperty ){
+        console.log("AA")
         $scope[argProperty][argKey] = argValue;
       } else if ( $scope._models.map(function(field){return field.modelName}).indexOf("val['" + argKey + "']") > -1 ) {
+        console.log("BB")
         // parameters stored in "val" will be used in both links (admin link and REST-request)
         var index = $scope._models.map(function(field){return field.modelName}).indexOf("val['" + argKey + "']");
         var field = $scope._models[index].element;
@@ -97,18 +103,14 @@ solrAdminApp.controller('QueryController',
         }
         $scope.val[argKey] = argValue;
       } else if( $scope._models.map(function(field){return field.modelName}).indexOf(argKey) > -1 ) {
-        var index = $scope._models.map(function(field){return field.modelName}).indexOf(argKey);
-        var field = $scope._models[index].element;
-        if(field.tagName == "UI-SELECT" && argValue) {
-          vm[argKey] = argValue.split(",");
-        }
-        else {
-          // parameters that will only be used to generate the admin link
-          $scope[argKey] = argValue;
-        }
+        console.log("CC")
+        // parameters that will only be used to generate the admin link
+        $scope[argKey] = argValue;
       } else {
+        console.log("DD")
         insertToRawParams(argKey, argValue);
       }
+      console.log("EE")
     }
     // store not processed values to be displayed in a field
     function insertToRawParams(argKey, argValue){
@@ -172,19 +174,13 @@ solrAdminApp.controller('QueryController',
                   return param.indexOf(argParam) === 0;
               });
       }
-
       copy(params, $scope.val);
-
       purgeParams(params, ["q.alt", "qf", "mm", "pf", "ps", "qs", "tie", "bq", "bf"], $scope.val.defType !== "dismax" && $scope.val.defType !== "edismax");
       purgeParams(params, ["uf", "pf2", "pf3", "ps2", "ps3", "boost", "stopwords", "lowercaseOperators"], $scope.val.defType !== "edismax");
       purgeParams(params, getDependentFields("hl"), $scope.val.hl !== true);
       purgeParams(params, getDependentFields("facet"), $scope.val.facet !== true);
-      purgeParams(params, ["spatial", "pt", "sfield", "d"], $scope.val.spatial !== true);
+      purgeParams(params, getDependentFields("spatial"), $scope.val.spatial !== true);
       purgeParams(params, getDependentFields("spellcheck"), $scope.val.spellcheck !== true);
-      if (vm.useParams && vm.useParams.length > 0) {
-        set("useParams", vm.useParams.join(","));
-      }
-
       var qt = $scope.qt ? $scope.qt : "/select";
 
       for (var filter in $scope.filters) {
@@ -213,17 +209,41 @@ solrAdminApp.controller('QueryController',
         params.handler = "select";
         set("qt", qt);
       }
+
+      // convert useParams to array to generate nice URL.
+      if (!Array.isArray($scope.useParams)){
+        params.useParams = $scope.useParams.split(",");
+      }
+      else {
+        params.useParams = $scope.useParams;
+      }
+
       // create rest result url
       var url = Query.url(params);
+
+      // convert useParams back to string
+      if (Array.isArray($scope.useParams)){
+        params.useParams = $scope.useParams.join(",");
+      }
+      else {
+        params.useParams = $scope.useParams;
+      }
 
       // create admin page url
       var adminParams = {...params};
       delete adminParams.handler;
       delete adminParams.core
+      if (!Array.isArray(adminParams.useParams)){
+        adminParams.useParams = adminParams.useParams.split(",");
+      }
       if( $scope.qt != null ) {
         adminParams.qt = [$scope.qt];
       }
       if (isPageReload) {
+        if (!Array.isArray(params.useParams)){
+          params.useParams = params.useParams.split(",");
+        }
+
         Query.query(params, function (data) {
           $scope.lang = $scope.val['wt'];
           if (!$scope.lang || $scope.lang === '') {
@@ -257,7 +277,6 @@ solrAdminApp.controller('QueryController',
     setModels("input");
     setModels("textarea");
     setModels("select");
-    setModels("ui-select", true);
     setUrlParams();
 
     if ($location.search().q) {
