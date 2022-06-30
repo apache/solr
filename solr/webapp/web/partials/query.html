@@ -23,14 +23,6 @@ limitations under the License.
       </label>
       <input type="text" ng-model="qt" id="qt" placeholder="/select" value="/select" title="Request handler in solrconfig.xml.">
 
-      <label for="choose_paramset">Choose Paramset to Apply</label>
-      <ui-select data-model="useParams" ng-model="vm.useParams" id="choose_paramset" multiple theme="bootstrap" sortable="true" title="Choose paramsets" close-on-select="false">
-        <ui-select-match  placeholder="Select paramset...">{{$item}}</ui-select-match>
-        <ui-select-choices repeat="paramset in paramsetList | filter: $select.search track by paramset">
-          <div ng-bind="paramset"></div>
-        </ui-select-choices>
-      </ui-select>
-
       <fieldset class="common">
         <legend>common</legend>
         <div class="fieldset">
@@ -84,6 +76,15 @@ limitations under the License.
           <a rel="help">df</a>
         </label>
         <input type="text" ng-model="val['df']" name="df" id="df" value="" title="Default search field">
+
+        <label for="useParams">paramset(s)</label>
+        <select id="useParams"
+          ng-model="useParams"
+          title="The paramsets to apply to the query."
+      
+          multiple
+          data-placeholder="Select paramset(s)..."
+          ng-options="item for item in paramsetList"><option value=""></option></select>
 
         <label for="wt" title="The writer type (response format).">
           <a rel="help">wt</a>
@@ -295,13 +296,13 @@ limitations under the License.
         <div class="fieldset" ng-show="val['spatial']">
 
         <label for="pt">pt</label>
-        <input type="text" ng-model="val['pt']" name="pt" id="pt">
+        <input type="text" ng-model="val['spatial.pt']" name="pt" id="pt">
 
         <label for="sfield">sfield</label>
-        <input type="text" ng-model="val['sfield']" name="sfield" id="sfield">
+        <input type="text" ng-model="val['spatial.sfield']" name="sfield" id="sfield">
 
         <label for="d">d</label>
-        <input type="text" ng-model="val['d']" name="d" id="d">
+        <input type="text" ng-model="val['spatial.d']" name="d" id="d">
 
         </div>
       </fieldset>
