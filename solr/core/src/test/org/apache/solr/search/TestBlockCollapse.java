@@ -1063,7 +1063,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
   }
 
   /** returns a (new) list of the block based documents used in our test methods */
-  protected static final List<SolrInputDocument> makeBlockDocs() {
+  protected static List<SolrInputDocument> makeBlockDocs() {
     // NOTE: block_i and block_s1 will contain identical content so these need to be "numbers"...
     // The specific numbers shouldn't matter (and we explicitly test '0' to confirm legacy
     // bug/behavior
