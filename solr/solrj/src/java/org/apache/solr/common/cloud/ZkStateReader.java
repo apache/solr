@@ -191,7 +191,7 @@ public class ZkStateReader implements SolrCloseable {
   private final Runnable securityNodeListener;
 
   /**
-   * Collections with active watches. The {@link DocCollectionWatch} inside for each collection
+   * Collections with active watches. The {@link StatefulCollectionWatch} inside for each collection
    * might also contain the latest DocCollection (state) observed
    */
   private DocCollectionWatches collectionWatches = new DocCollectionWatches();
@@ -250,7 +250,7 @@ public class ZkStateReader implements SolrCloseable {
    * <p>Each watcher DocCollectionWatch also contains the latest DocCollection (state) observed
    */
   private static class DocCollectionWatches
-      extends ConcurrentHashMap<String, DocCollectionWatch<DocCollectionWatcher>> {
+      extends ConcurrentHashMap<String, StatefulCollectionWatch<DocCollectionWatcher>> {
 
     /**
      * Gets the DocCollection (state) of the collection which the corresponding watch last observed
@@ -260,8 +260,8 @@ public class ZkStateReader implements SolrCloseable {
      *     collection.
      */
     private DocCollection getDocCollection(String collection) {
-      DocCollectionWatch<DocCollectionWatcher> watch = get(collection);
-      return watch != null ? watch.currentDoc : null;
+      StatefulCollectionWatch<DocCollectionWatcher> watch = get(collection);
+      return watch != null ? watch.currentState : null;
     }
 
     /**
@@ -272,14 +272,14 @@ public class ZkStateReader implements SolrCloseable {
     private Set<String> activeCollections() {
       return this.entrySet().stream()
           .filter(
-              (Entry<String, DocCollectionWatch<DocCollectionWatcher>> entry) ->
-                  entry.getValue().currentDoc != null)
+              (Entry<String, StatefulCollectionWatch<DocCollectionWatcher>> entry) ->
+                  entry.getValue().currentState != null)
           .map(Entry::getKey)
           .collect(Collectors.toUnmodifiableSet());
     }
 
     /**
-     * Updates the latest observed DocCollection (state) of the {@link DocCollectionWatch} if the
+     * Updates the latest observed DocCollection (state) of the {@link StatefulCollectionWatch} if the
      * collection is being watched
      *
      * @param collection the collection name
@@ -287,44 +287,43 @@ public class ZkStateReader implements SolrCloseable {
      * @return whether an active watch exists for such collection
      */
     private boolean updateDocCollection(String collection, DocCollection newState) {
-    DocCollectionWatch<DocCollectionWatcher> finalWatch = computeIfPresent(collection, (col, watch) -> {
-      if (watch != null) {
-        DocCollection oldState = watch.currentDoc;
+      StatefulCollectionWatch<DocCollectionWatcher> finalWatch = computeIfPresent(collection, (col, watch) -> {
+        DocCollection oldState = watch.currentState;
         if (oldState == null && newState == null) {
           // OK, the collection not yet exist in ZK
         } else if (oldState == null) {
           if (log.isDebugEnabled()) {
             log.debug("Add data for [{}] ver [{}]", collection, newState.getZNodeVersion());
           }
-          watch.currentDoc = newState;
+          watch.currentState = newState;
         } else if (newState == null) {
           log.debug("Removing cached collection state for [{}]", collection);
-          watch.currentDoc = null;
+          watch.currentState = null;
         } else { // both new and old states are non-null
           int oldCVersion =
-              oldState.getPerReplicaStates() == null ? -1 : oldState.getPerReplicaStates().cversion;
+                  oldState.getPerReplicaStates() == null ? -1 : oldState.getPerReplicaStates().cversion;
           int newCVersion =
-              newState.getPerReplicaStates() == null ? -1 : newState.getPerReplicaStates().cversion;
+                  newState.getPerReplicaStates() == null ? -1 : newState.getPerReplicaStates().cversion;
           if (oldState.getZNodeVersion() < newState.getZNodeVersion()
-              || oldCVersion < newCVersion) {
-            watch.currentDoc = newState;
+                  || oldCVersion < newCVersion) {
+            watch.currentState = newState;
             if (log.isDebugEnabled()) {
               log.debug(
-                  "Updating data for [{}] from [{}] to [{}]",
-                  collection,
-                  oldState.getZNodeVersion(),
-                  newState.getZNodeVersion());
+                      "Updating data for [{}] from [{}] to [{}]",
+                      collection,
+                      oldState.getZNodeVersion(),
+                      newState.getZNodeVersion());
             }
           }
         }
-      }
-      return watch;
-    });
-    return finalWatch != null;
+        return watch;
+      });
+      return finalWatch != null;
+    }
   }
 
-  private static class DocCollectionWatch<T> extends CollectionWatch<T> {
-    private DocCollection currentDoc;
+  private static class StatefulCollectionWatch<T> extends CollectionWatch<T> {
+    private DocCollection currentState;
   }
 
   public static final Set<String> KNOWN_CLUSTER_PROPS =
@@ -605,13 +604,13 @@ public class ZkStateReader implements SolrCloseable {
     Map<String, ClusterState.CollectionRef> result = new LinkedHashMap<>();
 
     // Add collections
-    for (Map.Entry<String, DocCollectionWatch<DocCollectionWatcher>> entry :
+    for (Map.Entry<String, StatefulCollectionWatch<DocCollectionWatcher>> entry :
         collectionWatches.entrySet()) {
-      if (entry.getValue().currentDoc != null) {
+      if (entry.getValue().currentState != null) {
         // if the doc is null for the collection watch, then it should not be inserted into the
         // state
         result.putIfAbsent(
-            entry.getKey(), new ClusterState.CollectionRef(entry.getValue().currentDoc));
+            entry.getKey(), new ClusterState.CollectionRef(entry.getValue().currentState));
       }
     }
 
@@ -1698,7 +1697,7 @@ public class ZkStateReader implements SolrCloseable {
         (k, v) -> {
           if (v == null) {
             reconstructState.set(true);
-            v = new DocCollectionWatch<>();
+            v = new StatefulCollectionWatch<>();
           }
           v.coreRefCount++;
           return v;
@@ -1782,7 +1781,7 @@ public class ZkStateReader implements SolrCloseable {
         collection,
         (k, v) -> {
           if (v == null) {
-            v = new DocCollectionWatch<>();
+            v = new StatefulCollectionWatch<>();
             watchSet.set(true);
           }
           v.stateWatchers.add(stateWatcher);
