@@ -46,7 +46,7 @@ public class PurgeGraphTest extends SolrTestCaseJ4 {
     repository = new LocalFileSystemRepository();
     baseLocationUri =
         repository.createDirectoryURI(
-            createTempDir("backup_files_" + UUID.randomUUID()).toAbsolutePath());
+            createTempDir("backup_files_" + UUID.randomUUID()).toAbsolutePath().toString());
     backupPaths = new BackupFilePaths(repository, baseLocationUri);
 
     backupPaths.createIncrementalBackupFolders();
