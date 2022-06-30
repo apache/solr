@@ -12,6 +12,7 @@
         "root": {
           "feature": "user_device_smartphone",
           "threshold": "0.5f",
+          "missing": "right",
           "left" : {
             "value" : "0"
           },
@@ -25,6 +26,7 @@
         "root": {
           "feature": "user_device_tablet",
           "threshold": "0.5f",
+          "missing": "left",
           "left" : {
             "value" : "0"
           },
