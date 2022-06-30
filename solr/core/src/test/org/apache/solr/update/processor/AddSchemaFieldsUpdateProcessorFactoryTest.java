@@ -39,16 +39,13 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
       "solrconfig-add-schema-fields-update-processor-chains.xml";
   private static final String SCHEMA_XML = "schema-add-schema-fields-update-processor.xml";
 
-  private static File tmpSolrHome;
-  private static File tmpConfDir;
-
   private static final String collection = "collection1";
   private static final String confDir = collection + "/conf";
 
   @Before
   private void initManagedSchemaCore() throws Exception {
-    tmpSolrHome = createTempDir().toFile();
-    tmpConfDir = new File(tmpSolrHome, confDir);
+    File tmpSolrHome = createTempDir().toFile();
+    File tmpConfDir = new File(tmpSolrHome, confDir);
     File testHomeConfDir = new File(TEST_HOME(), confDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, SOLRCONFIG_XML), tmpConfDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, SCHEMA_XML), tmpConfDir);

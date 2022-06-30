@@ -36,11 +36,10 @@ import org.junit.Test;
 
 /** A test case for the several HTTP cache headers emitted by Solr */
 public class CacheHeaderTest extends CacheHeaderTestBase {
-  private static File solrHomeDirectory;
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    solrHomeDirectory = createTempDir().toFile();
+    File solrHomeDirectory = createTempDir().toFile();
     setupJettyTestHome(solrHomeDirectory, "collection1");
     createAndStartJetty(solrHomeDirectory.getAbsolutePath());
   }
