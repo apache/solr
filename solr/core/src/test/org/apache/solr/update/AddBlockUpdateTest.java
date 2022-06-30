@@ -102,10 +102,10 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     String oldCacheNamePropValue = System.getProperty("blockJoinParentFilterCache");
-    boolean cachedMode;
+    final boolean cachedMode = random().nextBoolean();
     System.setProperty(
         "blockJoinParentFilterCache",
-        (cachedMode = random().nextBoolean()) ? "blockJoinParentFilterCache" : "don't cache");
+        cachedMode ? "blockJoinParentFilterCache" : "don't cache");
     if (oldCacheNamePropValue != null) {
       System.setProperty("blockJoinParentFilterCache", oldCacheNamePropValue);
     }
