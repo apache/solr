@@ -435,7 +435,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
             new SolrReturnFields(req("fl", "id,xxx:[geo f=store],uniq,foo_2_s1,subword")),
             new SolrReturnFields(req("fl", "id,xxx:subword,uniq,yyy:foo_2_s1,[geo f=store]")))) {
       docOut = convertLuceneDocToSolrDoc(docIn, schema, rf);
-      final String debug = rf + " => " + docOut.toString();
+      final String debug = rf + " => " + docOut;
       assertEquals(debug, 5, docOut.size());
       assertEquals(
           debug,
