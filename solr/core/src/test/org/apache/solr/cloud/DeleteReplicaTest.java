@@ -567,8 +567,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
    * same node. Instead tests should only assert that the number of watchers has decreased by 1 per
    * known replica removed)
    */
-  private static final long countUnloadCoreOnDeletedWatchers(
-      final Set<DocCollectionWatcher> watchers) {
+  private static long countUnloadCoreOnDeletedWatchers(final Set<DocCollectionWatcher> watchers) {
     return watchers.stream()
         .filter(w -> w instanceof ZkController.UnloadCoreOnDeletedWatcher)
         .count();

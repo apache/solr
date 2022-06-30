@@ -1131,15 +1131,15 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
     }
   }
 
-  private static final ModelRange emptyVals() {
+  private static ModelRange emptyVals() {
     return new ModelRange(-1, -100);
   }
 
-  private static final ModelRange modelVals(int value) {
+  private static ModelRange modelVals(int value) {
     return modelVals(value, value);
   }
 
-  private static final ModelRange modelVals(int lower, int upper) {
+  private static ModelRange modelVals(int lower, int upper) {
     assertTrue(upper + " < " + lower, lower <= upper);
     assertTrue("negative lower", 0 <= lower);
     assertTrue("negative upper", 0 <= upper);
@@ -1147,7 +1147,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
   }
 
   /** randomized helper */
-  private static final Integer pickSubFacetLimit(final boolean doSubFacet) {
+  private static Integer pickSubFacetLimit(final boolean doSubFacet) {
     if (!doSubFacet) {
       return null;
     }
@@ -1155,7 +1155,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
     return (result <= 0) ? -1 : result;
   }
   /** randomized helper */
-  private static final CharSequence makeSubFacet(final Integer subFacetLimit) {
+  private static CharSequence makeSubFacet(final Integer subFacetLimit) {
     if (null == subFacetLimit) {
       return "";
     }
@@ -1182,7 +1182,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
    * @see #formatFacetRangeOther
    * @see #OTHERS
    */
-  private static final List<EnumSet<FacetRangeOther>> buildListOfFacetRangeOtherOptions() {
+  private static List<EnumSet<FacetRangeOther>> buildListOfFacetRangeOtherOptions() {
     assertEquals(
         "If someone adds to FacetRangeOther this method (and bulk of test) needs updated",
         5,
@@ -1206,7 +1206,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
    * @see #assertBeforeAfterBetween
    * @see #buildListOfFacetRangeOtherOptions
    */
-  private static final String formatFacetRangeOther(EnumSet<FacetRangeOther> other) {
+  private static String formatFacetRangeOther(EnumSet<FacetRangeOther> other) {
     if (other.contains(FacetRangeOther.NONE) && random().nextBoolean()) {
       return ""; // sometimes don't output a param at all when we're dealing with the default NONE
     }

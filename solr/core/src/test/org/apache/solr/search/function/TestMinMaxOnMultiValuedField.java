@@ -1073,7 +1073,7 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
    *       other documents in the result.
    * </ul>
    */
-  private static final List<SolrInputDocument> buildMultiValueSortedDocuments(
+  private static List<SolrInputDocument> buildMultiValueSortedDocuments(
       final String f, final List<Object> vals) {
     // build a list of docIds that we can shuffle (so the id order doesn't match the value order)
     List<Integer> ids = new ArrayList<>(vals.size());
