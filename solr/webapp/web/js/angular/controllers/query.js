@@ -15,11 +15,6 @@
  limitations under the License.
 */
 
-/*
-  The chosen multiple directives on the Paramset select box generates
-  TypeError: a.map is not a function, however query screen does work.
-  Removing the 'multiple' to be single select prevents this error.
-*/
 solrAdminApp.controller('QueryController',
   function($scope, $route, $routeParams, $location, Query, Constants, ParamSet){
     $scope.resetMenu("query", Constants.IS_COLLECTION_PAGE);
@@ -83,15 +78,9 @@ solrAdminApp.controller('QueryController',
       }
     }
     function setParam(argKey, argValue, argProperty){
-      console.log(argKey);
-      console.log(argValue);
-      console.log("Do we have argProperty?")
-      console.log(argProperty)
       if( argProperty ){
-        console.log("AA")
         $scope[argProperty][argKey] = argValue;
       } else if ( $scope._models.map(function(field){return field.modelName}).indexOf("val['" + argKey + "']") > -1 ) {
-        console.log("BB")
         // parameters stored in "val" will be used in both links (admin link and REST-request)
         var index = $scope._models.map(function(field){return field.modelName}).indexOf("val['" + argKey + "']");
         var field = $scope._models[index].element;
@@ -103,14 +92,16 @@ solrAdminApp.controller('QueryController',
         }
         $scope.val[argKey] = argValue;
       } else if( $scope._models.map(function(field){return field.modelName}).indexOf(argKey) > -1 ) {
-        console.log("CC")
         // parameters that will only be used to generate the admin link
-        $scope[argKey] = argValue;
+        if (argKey === 'useParams'){
+          $scope[argKey] = argValue.split(",")
+        }
+        else {
+          $scope[argKey] = argValue;
+        }
       } else {
-        console.log("DD")
         insertToRawParams(argKey, argValue);
       }
-      console.log("EE")
     }
     // store not processed values to be displayed in a field
     function insertToRawParams(argKey, argValue){
