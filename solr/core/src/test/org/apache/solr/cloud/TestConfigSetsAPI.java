@@ -434,7 +434,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
             false);
     assertNotNull(map);
     unIgnoreException("The configuration name should be provided");
-    long statusCode = (long) getObjectByPath(map, false, Arrays.asList("responseHeader", "status"));
+    long statusCode = (long) getObjectByPath(map, Arrays.asList("responseHeader", "status"));
     assertEquals(400l, statusCode);
 
     SolrZkClient zkClient =
@@ -466,7 +466,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
             false);
     assertNotNull(map);
     unIgnoreException("already exists`");
-    statusCode = (long) getObjectByPath(map, false, Arrays.asList("responseHeader", "status"));
+    statusCode = (long) getObjectByPath(map, Arrays.asList("responseHeader", "status"));
     assertEquals(400l, statusCode);
     assertTrue(
         "Expected file doesnt exist in zk. It's possibly overwritten",
@@ -682,7 +682,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       // Should not set trusted=true in configSet
       ignoreException(
           "Either empty zipped data, or non-zipped data was passed. In order to upload a configSet, you must zip a non-empty directory to upload.");
-      assertEquals(400, uploadBadConfigSet(configsetName, configsetSuffix, "solr", true, true, v2));
+      assertEquals(400, uploadBadConfigSet(configsetName, configsetSuffix, "solr", v2));
       assertEquals(
           "Expecting version bump",
           solrconfigZkVersion,
@@ -1334,16 +1334,17 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
   private static String getSecurityJson() throws KeeperException, InterruptedException {
     String securityJson;
-    securityJson = "{\n"
-        + "  'authentication':{\n"
-        + "    'blockUnknown': false,\n"
-        + "    'class':'"
-        + MockAuthenticationPlugin.class.getName()
-        + "'},\n"
-        + "  'authorization':{\n"
-        + "    'class':'"
-        + MockAuthorizationPlugin.class.getName()
-        + "'}}";
+    securityJson =
+        "{\n"
+            + "  'authentication':{\n"
+            + "    'blockUnknown': false,\n"
+            + "    'class':'"
+            + MockAuthenticationPlugin.class.getName()
+            + "'},\n"
+            + "  'authorization':{\n"
+            + "    'class':'"
+            + MockAuthorizationPlugin.class.getName()
+            + "'}}";
     return securityJson;
   }
 
@@ -1413,13 +1414,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
         v2);
   }
 
-  private long uploadBadConfigSet(
-      String configSetName,
-      String suffix,
-      String username,
-      boolean overwrite,
-      boolean cleanup,
-      boolean v2)
+  private long uploadBadConfigSet(String configSetName, String suffix, String username, boolean v2)
       throws IOException {
 
     // Read single file from sample configs. This should fail the unzipping
@@ -1428,8 +1423,8 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
         configSetName,
         suffix,
         username,
-        overwrite,
-        cleanup,
+        true,
+        true,
         v2);
   }
 
@@ -1465,7 +1460,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
               usePut);
       assertNotNull(map);
       long statusCode;
-      statusCode = (long) getObjectByPath(map, false, Arrays.asList("responseHeader", "status"));
+      statusCode = (long) getObjectByPath(map, Arrays.asList("responseHeader", "status"));
       return statusCode;
     } // else "not" a V2 request...
 
@@ -1523,7 +1518,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
               usePut);
       assertNotNull(map);
       long statusCode;
-      statusCode = (long) getObjectByPath(map, false, Arrays.asList("responseHeader", "status"));
+      statusCode = (long) getObjectByPath(map, Arrays.asList("responseHeader", "status"));
       return statusCode;
     } // else "not" a V2 request...
 
@@ -1677,8 +1672,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     return m;
   }
 
-  private static Object getObjectByPath(
-      Map<?, ?> root, boolean onlyPrimitive, java.util.List<String> hierarchy) {
+  private static Object getObjectByPath(Map<?, ?> root, List<String> hierarchy) {
     Map<?, ?> obj = root;
     for (int i = 0; i < hierarchy.size(); i++) {
       String s = hierarchy.get(i);
@@ -1688,9 +1682,6 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
         if (obj == null) return null;
       } else {
         Object val = obj.get(s);
-        if (onlyPrimitive && val instanceof Map) {
-          return null;
-        }
         return val;
       }
     }

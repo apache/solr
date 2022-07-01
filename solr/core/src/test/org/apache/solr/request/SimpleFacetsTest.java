@@ -1271,7 +1271,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             p,
-                fieldName,
+            fieldName,
             p + ".start",
             "1976-07-01T00:00:00.000Z",
             p + ".end",
@@ -1329,7 +1329,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             p,
-                fieldName,
+            fieldName,
             p + ".start",
             "1976-07-01T00:00:00.000Z",
             p + ".end",
@@ -1363,7 +1363,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             p,
-                fieldName,
+            fieldName,
             p + ".start",
             "1976-07-01T00:00:00.000Z",
             p + ".end",
@@ -1393,7 +1393,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             p,
-                fieldName,
+            fieldName,
             p + ".start",
             "1976-07-05T00:00:00.000Z",
             p + ".end",
@@ -1416,7 +1416,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             p,
-                fieldName,
+            fieldName,
             p + ".start",
             "1976-07-03T00:00:00.000Z",
             p + ".end",
@@ -1440,7 +1440,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             p,
-                fieldName,
+            fieldName,
             p + ".start",
             "1976-07-01T00:00:00.000Z",
             p + ".end",
@@ -1469,7 +1469,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             p,
-                fieldName,
+            fieldName,
             p + ".start",
             "1976-07-01T00:00:00.000Z",
             p + ".end",
@@ -1499,7 +1499,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             p,
-                fieldName,
+            fieldName,
             p + ".start",
             "-0200-01-01T00:00:00Z", // BC
             p + ".end",
@@ -1548,7 +1548,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             p,
-                fieldName,
+            fieldName,
             p + ".start",
             "1976-07-01T00:00:00.000Z",
             p + ".end",
@@ -1590,7 +1590,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             p,
-                fieldName,
+            fieldName,
             p + ".start",
             "1976-07-01T00:00:00.000Z",
             p + ".end",
@@ -1632,7 +1632,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             p,
-                fieldName,
+            fieldName,
             p + ".start",
             "1976-07-01T00:00:00.000Z",
             p + ".end",
@@ -1676,7 +1676,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             p,
-                fieldName,
+            fieldName,
             p + ".start",
             "1976-07-01T00:00:00.000Z",
             p + ".end",
@@ -1720,7 +1720,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             p,
-                fieldName,
+            fieldName,
             p + ".start",
             "1976-07-01T00:00:00.000Z",
             p + ".end",
@@ -1761,7 +1761,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             p,
-                fieldName,
+            fieldName,
             p + ".start",
             "1976-07-01T00:00:00.000Z",
             p + ".end",
@@ -1802,7 +1802,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             p,
-                fieldName,
+            fieldName,
             p + ".start",
             "1976-07-01T00:00:00.000Z",
             p + ".end",
@@ -1843,7 +1843,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             p,
-                fieldName,
+            fieldName,
             p + ".start",
             "1976-07-01T00:00:00.000Z",
             p + ".end",
@@ -1886,7 +1886,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             p,
-                fieldName,
+            fieldName,
             p + ".start",
             "1976-07-01T00:00:00.000Z",
             p + ".end",
@@ -1947,7 +1947,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "TZ",
             TZ,
             p,
-                fieldName,
+            fieldName,
             p + ".start",
             "NOW/MONTH",
             p + ".end",
@@ -1995,7 +1995,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "TZ",
             TZ,
             p,
-                fieldName,
+            fieldName,
             p + ".start",
             "NOW/MONTH",
             p + ".end",
@@ -2057,7 +2057,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
 
   private void helpTestNumericRangeFacetsDoubleOverflow(
       final String fieldName, final FacetRangeMethod method) {
-    final String pre = "//lst[@name='facet_ranges']/lst[@name='" + fieldName + "']/lst[@name='counts']";
+    final String pre =
+        "//lst[@name='facet_ranges']/lst[@name='" + fieldName + "']/lst[@name='counts']";
     final String meta = pre + "/../";
 
     String start = "0.0";
@@ -2075,7 +2076,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             "facet.range",
-                fieldName,
+            fieldName,
             "facet.range.method",
             method.toString(),
             "facet.range.start",
@@ -2104,7 +2105,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   private void helpTestFractionalNumberRangeFacets(
       final String fieldName, FacetRangeMethod method) {
 
-    final String pre = "//lst[@name='facet_ranges']/lst[@name='" + fieldName + "']/lst[@name='counts']";
+    final String pre =
+        "//lst[@name='facet_ranges']/lst[@name='" + fieldName + "']/lst[@name='counts']";
     final String meta = pre + "/../";
 
     assertQ(
@@ -2336,7 +2338,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
 
   private void helpTestNumericRangeFacetsLongOverflow(
       final String fieldName, final FacetRangeMethod method) {
-    final String pre = "//lst[@name='facet_ranges']/lst[@name='" + fieldName + "']/lst[@name='counts']";
+    final String pre =
+        "//lst[@name='facet_ranges']/lst[@name='" + fieldName + "']/lst[@name='counts']";
     final String meta = pre + "/../";
 
     String start = "0";
@@ -2354,7 +2357,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             "facet.range",
-                fieldName,
+            fieldName,
             "facet.range.method",
             method.toString(),
             "facet.range.start",
@@ -2385,7 +2388,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     // the float test covers a lot of the weird edge cases
     // here we just need some basic sanity checking of the parsing
 
-    final String pre = "//lst[@name='facet_ranges']/lst[@name='" + fieldName + "']/lst[@name='counts']";
+    final String pre =
+        "//lst[@name='facet_ranges']/lst[@name='" + fieldName + "']/lst[@name='counts']";
     final String meta = pre + "/../";
 
     assertQ(

@@ -33,6 +33,8 @@ import org.junit.BeforeClass;
 /** */
 public class TestSearchPerf extends SolrTestCaseJ4 {
 
+  public static final int ITERATIONS = 500;
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema11.xml");
@@ -153,8 +155,7 @@ public class TestSearchPerf extends SolrTestCaseJ4 {
     return ret;
   }
 
-  int doListGen(int iter, Query q, List<Query> filt, boolean cacheQuery, boolean cacheFilt)
-      throws Exception {
+  int doListGen(Query q, List<Query> filt) throws Exception {
     SolrQueryRequest req = lrf.makeRequest();
 
     SolrIndexSearcher searcher = req.getSearcher();
@@ -162,22 +163,15 @@ public class TestSearchPerf extends SolrTestCaseJ4 {
     final RTimer timer = new RTimer();
 
     int ret = 0;
-    for (int i = 0; i < iter; i++) {
+    for (int i = 0; i < ITERATIONS; i++) {
       DocList l =
-          searcher.getDocList(
-              q,
-              filt,
-              (Sort) null,
-              0,
-              10,
-              (cacheQuery ? 0 : SolrIndexSearcher.NO_CHECK_QCACHE)
-                  | (cacheFilt ? 0 : SolrIndexSearcher.NO_CHECK_FILTERCACHE));
+          searcher.getDocList(q, filt, (Sort) null, 0, 10, SolrIndexSearcher.NO_CHECK_QCACHE | 0);
       ret += l.matches();
     }
 
     double elapsed = timer.getTime();
     System.out.println(
-        "ret=" + ret + " time=" + elapsed + " throughput=" + iter * 1000 / (elapsed + 1));
+        "ret=" + ret + " time=" + elapsed + " throughput=" + ITERATIONS * 1000 / (elapsed + 1));
 
     req.close();
     assertTrue(ret > 0); // make sure we did some work
@@ -249,7 +243,7 @@ public class TestSearchPerf extends SolrTestCaseJ4 {
     createIndex2(indexSize, "foomany_s", "t10_100_ws");
 
     // doListGen(100, q, filters, false, true);
-    doListGen(500, q, filters, false, true);
+    doListGen(q, filters);
 
     req.close();
   }

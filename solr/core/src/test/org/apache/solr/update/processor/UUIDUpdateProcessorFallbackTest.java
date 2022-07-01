@@ -155,7 +155,7 @@ public class UUIDUpdateProcessorFallbackTest extends SolrTestCaseJ4 {
   }
 
   /** Convenience method for building up SolrInputFields */
-  SolrInputField field(String name, float boost, Object... values) {
+  SolrInputField field(String name, Object... values) {
     SolrInputField f = new SolrInputField(name);
     for (Object v : values) {
       f.addValue(v);
@@ -165,7 +165,7 @@ public class UUIDUpdateProcessorFallbackTest extends SolrTestCaseJ4 {
 
   /** Convenience method for building up SolrInputFields with default boost */
   SolrInputField f(String name, Object... values) {
-    return field(name, 1.0F, values);
+    return field(name, values);
   }
 
   /**
