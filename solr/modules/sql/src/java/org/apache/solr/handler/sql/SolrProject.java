@@ -53,8 +53,10 @@ class SolrProject extends Project implements SolrRel {
     return super.computeSelfCost(planner, mq).multiplyBy(0.1);
   }
 
-  public void implement(Implementor implementor) {
+  public Implementor implement(Implementor implementor) {
+
     implementor.visitChild(0, getInput());
+
     final SolrRules.RexToSolrTranslator translator =
         new SolrRules.RexToSolrTranslator(
             (JavaTypeFactory) getCluster().getTypeFactory(),
@@ -64,5 +66,7 @@ class SolrProject extends Project implements SolrRel {
       final String expr = pair.left.accept(translator);
       implementor.addFieldMapping(name, expr, false);
     }
+
+    return implementor;
   }
 }

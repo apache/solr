@@ -113,6 +113,7 @@ public class Lang {
         .withFunctionName("std", StdMetric.class)
         .withFunctionName("count", CountMetric.class)
         .withFunctionName("countDist", CountDistinctMetric.class)
+        .withFunctionName("hll", CountDistinctMetric.class)
 
         // tuple manipulation operations
         .withFunctionName("replace", ReplaceOperation.class)

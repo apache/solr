@@ -61,12 +61,14 @@ class SolrSort extends Sort implements SolrRel {
     return new SolrSort(getCluster(), traitSet, input, collation, offset, fetch);
   }
 
-  public void implement(Implementor implementor) {
+  public Implementor implement(Implementor implementor) {
+
     implementor.visitChild(0, getInput());
 
     List<RelFieldCollation> sortCollations = collation.getFieldCollations();
     if (!sortCollations.isEmpty()) {
       // Construct a series of order clauses from the desired collation
+
       final List<RelDataTypeField> fields = getRowType().getFieldList();
       for (RelFieldCollation fieldCollation : sortCollations) {
         final String name = fields.get(fieldCollation.getFieldIndex()).getName();
@@ -85,5 +87,7 @@ class SolrSort extends Sort implements SolrRel {
     if (offset != null && offset instanceof RexLiteral) {
       implementor.setOffset(((RexLiteral) offset).getValue2().toString());
     }
+
+    return implementor;
   }
 }
