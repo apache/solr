@@ -51,11 +51,11 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
         .configure();
   }
 
-  @Test
   /**
    * Assert that requests to "down collection", i.e. a collection which has all replicas in down
    * state (but are hosted on nodes that are live), fail fast and throw meaningful exceptions
    */
+  @Test
   public void testQueryToDownCollectionShouldFailFast() throws Exception {
 
     CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 2, 1)

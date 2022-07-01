@@ -909,7 +909,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
    * once, or if an id is encountered which is not expected, or if an id is <code>[elevated]
    * </code> and comes "after" any ids which were not <code>[elevated]</code>
    *
-   * @returns set of all elevated ids encountered in the walk
+   * @return set of all elevated ids encountered in the walk
    * @see #assertFullWalkNoDups(SolrParams,Consumer)
    */
   public SentinelIntSet assertFullWalkNoDupsElevated(
@@ -947,7 +947,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
    * positive ints) encountered and throws an assertion failure if any id is encountered more than
    * once, or if the set grows above maxSize
    *
-   * @returns set of all ids encountered in the walk
+   * @return set of all ids encountered in the walk
    * @see #assertFullWalkNoDups(SolrParams,Consumer)
    */
   public SentinelIntSet assertFullWalkNoDups(int maxSize, SolrParams params) throws Exception {
