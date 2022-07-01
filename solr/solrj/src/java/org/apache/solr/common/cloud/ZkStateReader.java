@@ -279,45 +279,52 @@ public class ZkStateReader implements SolrCloseable {
     }
 
     /**
-     * Updates the latest observed DocCollection (state) of the {@link StatefulCollectionWatch} if the
-     * collection is being watched
+     * Updates the latest observed DocCollection (state) of the {@link StatefulCollectionWatch} if
+     * the collection is being watched
      *
      * @param collection the collection name
      * @param newState the new DocCollection (state) observed
      * @return whether an active watch exists for such collection
      */
     private boolean updateDocCollection(String collection, DocCollection newState) {
-      StatefulCollectionWatch<DocCollectionWatcher> finalWatch = computeIfPresent(collection, (col, watch) -> {
-        DocCollection oldState = watch.currentState;
-        if (oldState == null && newState == null) {
-          // OK, the collection not yet exist in ZK
-        } else if (oldState == null) {
-          if (log.isDebugEnabled()) {
-            log.debug("Add data for [{}] ver [{}]", collection, newState.getZNodeVersion());
-          }
-          watch.currentState = newState;
-        } else if (newState == null) {
-          log.debug("Removing cached collection state for [{}]", collection);
-          watch.currentState = null;
-        } else { // both new and old states are non-null
-          int oldCVersion =
-                  oldState.getPerReplicaStates() == null ? -1 : oldState.getPerReplicaStates().cversion;
-          int newCVersion =
-                  newState.getPerReplicaStates() == null ? -1 : newState.getPerReplicaStates().cversion;
-          if (oldState.getZNodeVersion() < newState.getZNodeVersion()
-                  || oldCVersion < newCVersion) {
-            watch.currentState = newState;
-            if (log.isDebugEnabled()) {
-              log.debug(
-                      "Updating data for [{}] from [{}] to [{}]",
-                      collection,
-                      oldState.getZNodeVersion(),
-                      newState.getZNodeVersion());
-            }
-          }
-        }
-        return watch;
-      });
+      StatefulCollectionWatch<DocCollectionWatcher> finalWatch =
+          computeIfPresent(
+              collection,
+              (col, watch) -> {
+                DocCollection oldState = watch.currentState;
+                if (oldState == null && newState == null) {
+                  // OK, the collection not yet exist in ZK
+                } else if (oldState == null) {
+                  if (log.isDebugEnabled()) {
+                    log.debug("Add data for [{}] ver [{}]", collection, newState.getZNodeVersion());
+                  }
+                  watch.currentState = newState;
+                } else if (newState == null) {
+                  log.debug("Removing cached collection state for [{}]", collection);
+                  watch.currentState = null;
+                } else { // both new and old states are non-null
+                  int oldCVersion =
+                      oldState.getPerReplicaStates() == null
+                          ? -1
+                          : oldState.getPerReplicaStates().cversion;
+                  int newCVersion =
+                      newState.getPerReplicaStates() == null
+                          ? -1
+                          : newState.getPerReplicaStates().cversion;
+                  if (oldState.getZNodeVersion() < newState.getZNodeVersion()
+                      || oldCVersion < newCVersion) {
+                    watch.currentState = newState;
+                    if (log.isDebugEnabled()) {
+                      log.debug(
+                          "Updating data for [{}] from [{}] to [{}]",
+                          collection,
+                          oldState.getZNodeVersion(),
+                          newState.getZNodeVersion());
+                    }
+                  }
+                }
+                return watch;
+              });
       return finalWatch != null;
     }
   }
