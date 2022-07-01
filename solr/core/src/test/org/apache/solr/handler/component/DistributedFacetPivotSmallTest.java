@@ -313,7 +313,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
         assertEquals(6, pivots.get(3).getCount());
 
       } catch (AssertionFailedError ae) {
-        throw new AssertionError(ae.getMessage() + " <== " + p.toString(), ae);
+        throw new AssertionError(ae.getMessage() + " <== " + p, ae);
       }
     }
 
@@ -350,7 +350,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
         assertEquals(6, pivots.get(2).getCount());
 
       } catch (AssertionFailedError ae) {
-        throw new AssertionError(ae.getMessage() + " <== " + p.toString(), ae);
+        throw new AssertionError(ae.getMessage() + " <== " + p, ae);
       }
     }
 
@@ -388,7 +388,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
         assertEquals(pivots.toString(), 6, pivots.get(0).getCount());
 
       } catch (AssertionFailedError ae) {
-        throw new AssertionError(ae.getMessage() + " <== " + p.toString(), ae);
+        throw new AssertionError(ae.getMessage() + " <== " + p, ae);
       }
     }
 
@@ -1095,7 +1095,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
         assertEquals(6, pivots.get(3).getCount());
 
       } catch (AssertionFailedError ae) {
-        throw new AssertionError(ae.getMessage() + " <== " + p.toString(), ae);
+        throw new AssertionError(ae.getMessage() + " <== " + p, ae);
       }
     }
 
@@ -1138,7 +1138,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
         assertEquals(6, pivots.get(2).getCount());
 
       } catch (AssertionFailedError ae) {
-        throw new AssertionError(ae.getMessage() + " <== " + p.toString(), ae);
+        throw new AssertionError(ae.getMessage() + " <== " + p, ae);
       }
     }
 
@@ -1177,7 +1177,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
         assertEquals(pivots.toString(), 6, pivots.get(0).getCount());
 
       } catch (AssertionFailedError ae) {
-        throw new AssertionError(ae.getMessage() + " <== " + p.toString(), ae);
+        throw new AssertionError(ae.getMessage() + " <== " + p, ae);
       }
     }
   }
@@ -2041,7 +2041,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
         assertEquals(6, pivots.get(3).getCount());
 
       } catch (AssertionFailedError ae) {
-        throw new AssertionError(ae.getMessage() + " <== " + p.toString(), ae);
+        throw new AssertionError(ae.getMessage() + " <== " + p, ae);
       }
     }
 
@@ -2084,7 +2084,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
         assertEquals(6, pivots.get(2).getCount());
 
       } catch (AssertionFailedError ae) {
-        throw new AssertionError(ae.getMessage() + " <== " + p.toString(), ae);
+        throw new AssertionError(ae.getMessage() + " <== " + p, ae);
       }
     }
 
@@ -2123,7 +2123,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
         assertEquals(pivots.toString(), 6, pivots.get(0).getCount());
 
       } catch (AssertionFailedError ae) {
-        throw new AssertionError(ae.getMessage() + " <== " + p.toString(), ae);
+        throw new AssertionError(ae.getMessage() + " <== " + p, ae);
       }
     }
   }

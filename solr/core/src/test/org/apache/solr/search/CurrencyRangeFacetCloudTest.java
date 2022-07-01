@@ -180,8 +180,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
             }
           }
         } catch (AssertionError | RuntimeException ae) {
-          throw new AssertionError(
-              solrQuery.toString() + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
+          throw new AssertionError(solrQuery + " -> " + rsp + " ===> " + ae.getMessage(), ae);
         }
 
         // same basic logic, w/json.facet
@@ -238,8 +237,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
             }
           }
         } catch (AssertionError | RuntimeException ae) {
-          throw new AssertionError(
-              solrQuery.toString() + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
+          throw new AssertionError(solrQuery + " -> " + rsp + " ===> " + ae.getMessage(), ae);
         }
       }
     }
@@ -305,8 +303,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
           }
         }
       } catch (AssertionError | RuntimeException ae) {
-        throw new AssertionError(
-            solrQuery.toString() + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
+        throw new AssertionError(solrQuery + " -> " + rsp + " ===> " + ae.getMessage(), ae);
       }
     }
   }
@@ -364,8 +361,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
           }
         }
       } catch (AssertionError | RuntimeException ae) {
-        throw new AssertionError(
-            solrQuery.toString() + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
+        throw new AssertionError(solrQuery + " -> " + rsp + " ===> " + ae.getMessage(), ae);
       }
     }
   }
@@ -537,8 +533,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
         }
 
       } catch (AssertionError | RuntimeException ae) {
-        throw new AssertionError(
-            solrQuery.toString() + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
+        throw new AssertionError(solrQuery + " -> " + rsp + " ===> " + ae.getMessage(), ae);
       }
     }
   }
@@ -614,8 +609,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
           assertEquals("bucket #" + i, (i == 2 || i == 3) ? 1L : 0L, bucket.get("count"));
         }
       } catch (AssertionError | RuntimeException ae) {
-        throw new AssertionError(
-            solrQuery.toString() + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
+        throw new AssertionError(solrQuery + " -> " + rsp + " ===> " + ae.getMessage(), ae);
       }
     }
   }

@@ -230,7 +230,7 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
 
     assertQ(
         "Check the total number of docs",
-        req("q", "cat:(" + queryString.toString() + ")"),
+        req("q", "cat:(" + queryString + ")"),
         "//result[@numFound=1]");
 
     assertQ(

@@ -74,7 +74,7 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
             + ". Replica props: "
             + replica.getProperties().toString()
             + ". Cluster state is "
-            + clusterState.toString());
+            + clusterState);
   }
 
   // The params are triplets,
@@ -197,6 +197,6 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
         "Collection "
             + collectionName
             + " does not have roles evenly distributed. Collection is: "
-            + col.toString());
+            + col);
   }
 }

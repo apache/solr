@@ -160,23 +160,20 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
         assertNotNull(
             "Test depends on a (dynamic) field matching '" + name + "', Null response", frsp);
         assertEquals(
-            "Test depends on a (dynamic) field matching '"
-                + name
-                + "', bad status: "
-                + frsp.toString(),
+            "Test depends on a (dynamic) field matching '" + name + "', bad status: " + frsp,
             0,
             frsp.getStatus());
         assertNotNull(
             "Test depends on a (dynamic) field matching '"
                 + name
                 + "', schema was changed out from under us? ... "
-                + frsp.toString(),
+                + frsp,
             frsp.getField());
         assertEquals(
             "Test depends on a multivalued dynamic field matching '"
                 + name
                 + "', schema was changed out from under us? ... "
-                + frsp.toString(),
+                + frsp,
             Boolean.TRUE,
             frsp.getField().get("multiValued"));
       } catch (SolrServerException e) {
@@ -956,10 +953,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
         "does not match exactly one doc: " + p.toString() + " => " + docs.toString(),
         1,
         docs.getNumFound());
-    assertEquals(
-        "does not contain exactly one doc: " + p.toString() + " => " + docs.toString(),
-        1,
-        docs.size());
+    assertEquals("does not contain exactly one doc: " + p + " => " + docs, 1, docs.size());
     return docs.get(0);
   }
 
@@ -971,11 +965,10 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     QueryResponse rsp = getRandClient(random()).query(p);
     assertEquals("failed request: " + p.toString() + " => " + rsp.toString(), 0, rsp.getStatus());
     assertTrue(
-        "does not match at least one doc: " + p.toString() + " => " + rsp.toString(),
+        "does not match at least one doc: " + p + " => " + rsp,
         1 <= rsp.getResults().getNumFound());
     assertTrue(
-        "rsp does not contain at least one doc: " + p.toString() + " => " + rsp.toString(),
-        1 <= rsp.getResults().size());
+        "rsp does not contain at least one doc: " + p + " => " + rsp, 1 <= rsp.getResults().size());
     return rsp.getResults();
   }
 

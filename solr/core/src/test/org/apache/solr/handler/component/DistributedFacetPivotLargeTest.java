@@ -205,7 +205,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
           assertEquals(company.toString(), 1, company.getCount());
         }
       } catch (AssertionFailedError ae) {
-        throw new AssertionError(ae.getMessage() + " <== " + p.toString(), ae);
+        throw new AssertionError(ae.getMessage() + " <== " + p, ae);
       }
     }
 
@@ -275,7 +275,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
           assertPivot("real_b", null, expectedNumDocsMissingBool, pivots.get(1));
 
         } catch (AssertionFailedError ae) {
-          throw new AssertionError(ae.getMessage() + " <== " + p.toString(), ae);
+          throw new AssertionError(ae.getMessage() + " <== " + p, ae);
         }
       }
     }
@@ -312,7 +312,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
         firstCompany = firstPlace.getPivot().get(0);
         assertPivot("company_t", "bbc", 6, firstCompany);
       } catch (AssertionFailedError ae) {
-        throw new AssertionError(ae.getMessage() + " <== " + p.toString(), ae);
+        throw new AssertionError(ae.getMessage() + " <== " + p, ae);
       }
     }
 
@@ -351,7 +351,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
         // - twoShard   = 52 ... above per-shard min of 50/(numShards=4)
         // = threeShard =  0 ... should be refined and still match nothing
       } catch (AssertionError ae) {
-        throw new AssertionError(ae.getMessage() + ": " + p.toString() + " ==> " + rsp, ae);
+        throw new AssertionError(ae.getMessage() + ": " + p + " ==> " + rsp, ae);
       }
     }
 
@@ -392,7 +392,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
         assertPivot("company_t", "microsoft", 56, firstPlace.getPivot().get(2));
         assertPivot("company_t", "polecat", 52, firstPlace.getPivot().get(3));
       } catch (AssertionError ae) {
-        throw new AssertionError(ae.getMessage() + ": " + p.toString() + " ==> " + rsp, ae);
+        throw new AssertionError(ae.getMessage() + ": " + p + " ==> " + rsp, ae);
       }
     }
 
@@ -431,7 +431,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
         assertPivot("company_t", "microsoft", 56, firstPlace.getPivot().get(2));
         assertPivot("company_t", "polecat", 52, firstPlace.getPivot().get(3));
       } catch (AssertionError ae) {
-        throw new AssertionError(ae.getMessage() + ": " + p.toString() + " ==> " + rsp, ae);
+        throw new AssertionError(ae.getMessage() + ": " + p + " ==> " + rsp, ae);
       }
     }
 
@@ -792,7 +792,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
         firstCompany = firstPlace.getPivot().get(0);
         assertPivot("company_t", "bbc", 101, firstCompany);
       } catch (AssertionFailedError ae) {
-        throw new AssertionError(ae.getMessage() + " <== " + p.toString(), ae);
+        throw new AssertionError(ae.getMessage() + " <== " + p, ae);
       }
     }
 
@@ -824,7 +824,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
         assertPivot("place_s", "cardiff", 257, firstPlace);
         assertEquals(257, firstPlace.getPivot().size());
       } catch (AssertionFailedError ae) {
-        throw new AssertionError(ae.getMessage() + " <== " + p.toString(), ae);
+        throw new AssertionError(ae.getMessage() + " <== " + p, ae);
       }
     }
 
@@ -856,7 +856,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
         assertPivot("place_s", "cardiff", 257, firstPlace);
         assertEquals(100, firstPlace.getPivot().size()); // default
       } catch (AssertionFailedError ae) {
-        throw new AssertionError(ae.getMessage() + " <== " + p.toString(), ae);
+        throw new AssertionError(ae.getMessage() + " <== " + p, ae);
       }
     }
 
@@ -1223,8 +1223,8 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
       int count, // int numKids,
       PivotField actual) {
     assertEquals("FIELD: " + actual.toString(), field, actual.getField());
-    assertEquals("VALUE: " + actual.toString(), value, actual.getValue());
-    assertEquals("COUNT: " + actual.toString(), count, actual.getCount());
+    assertEquals("VALUE: " + actual, value, actual.getValue());
+    assertEquals("COUNT: " + actual, count, actual.getCount());
     // TODO: add arg && assert on number of kids
     // assertEquals("#KIDS: " + actual.toString(), numKids, actual.getPivot().size());
   }
@@ -1233,10 +1233,10 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
   private <B, G> void assertRange(
       String name, B start, G gap, B end, int numCount, RangeFacet<B, G> actual) {
     assertEquals("NAME: " + actual.toString(), name, actual.getName());
-    assertEquals("START: " + actual.toString(), start, actual.getStart());
-    assertEquals("GAP: " + actual.toString(), gap, actual.getGap());
-    assertEquals("END: " + actual.toString(), end, actual.getEnd());
-    assertEquals("#COUNT: " + actual.toString(), numCount, actual.getCounts().size());
+    assertEquals("START: " + actual, start, actual.getStart());
+    assertEquals("GAP: " + actual, gap, actual.getGap());
+    assertEquals("END: " + actual, end, actual.getEnd());
+    assertEquals("#COUNT: " + actual, numCount, actual.getCounts().size());
   }
 
   private void setupDistributedPivotFacetDocuments() throws Exception {

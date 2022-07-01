@@ -85,7 +85,7 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
                     failures.add("ownerT: never saw doneWithTestLatch released");
                   }
                 } catch (InterruptedException ie) {
-                  failures.add("ownerT: " + ie.toString());
+                  failures.add("ownerT: " + ie);
                 }
               }
             },
@@ -211,7 +211,7 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
                     failures.add("ownerT: never saw doneWithTestLatch release");
                   }
                 } catch (InterruptedException ie) {
-                  failures.add("ownerT: " + ie.toString());
+                  failures.add("ownerT: " + ie);
                 }
               } finally {
                 lock.unlock();

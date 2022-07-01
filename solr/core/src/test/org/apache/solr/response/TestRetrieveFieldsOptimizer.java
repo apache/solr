@@ -128,23 +128,23 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
       typesHolder.addFieldType(schema, myName, type);
       fieldsToAdd.put(myName, map("stored", "true", "docValues", "false", "multiValued", "false"));
 
-      myName = type.toString() + storedAndDvSv;
+      myName = type + storedAndDvSv;
       typesHolder.addFieldType(schema, myName, type);
       fieldsToAdd.put(myName, map("stored", "true", "docValues", "true", "multiValued", "false"));
 
-      myName = type.toString() + notStoredDvSv;
+      myName = type + notStoredDvSv;
       typesHolder.addFieldType(schema, myName, type);
       fieldsToAdd.put(myName, map("stored", "false", "docValues", "true", "multiValued", "false"));
 
-      myName = type.toString() + storedNotDvMv;
+      myName = type + storedNotDvMv;
       typesHolder.addFieldType(schema, myName, type);
       fieldsToAdd.put(myName, map("stored", "true", "docValues", "false", "multiValued", "true"));
 
-      myName = type.toString() + storedAndDvMv;
+      myName = type + storedAndDvMv;
       typesHolder.addFieldType(schema, myName, type);
       fieldsToAdd.put(myName, map("stored", "true", "docValues", "true", "multiValued", "true"));
 
-      myName = type.toString() + notStoredDvMv;
+      myName = type + notStoredDvMv;
       typesHolder.addFieldType(schema, myName, type);
       fieldsToAdd.put(myName, map("stored", "false", "docValues", "true", "multiValued", "true"));
     }
@@ -257,7 +257,7 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
         toCheck = new ArrayList(fieldsHolder.allFields);
         break;
       default:
-        fail("Value passed to checkFetchSources unknown: " + source.toString());
+        fail("Value passed to checkFetchSources unknown: " + source);
     }
 
     // MultiValued fields are _always_ read from stored data.

@@ -143,8 +143,8 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
     for (Slice slice : clusterState.getCollection(COLLECTION_NAME).getSlices()) {
       String shardName = slice.getName();
       Replica leader = slice.getLeader();
-      assertNotNull("slice has null leader: " + slice.toString(), leader);
-      assertNotNull("slice leader has null node name: " + slice.toString(), leader.getNodeName());
+      assertNotNull("slice has null leader: " + slice, leader);
+      assertNotNull("slice leader has null node name: " + slice, leader.getNodeName());
       String leaderUrl = urlMap.remove(leader.getNodeName());
       assertNotNull(
           "could not find URL for " + shardName + " leader: " + leader.getNodeName(), leaderUrl);

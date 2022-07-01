@@ -447,19 +447,19 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
       final File backup, final int numDocs, final String expectedSegmentsFileName)
       throws IOException {
     assertNotNull(backup);
-    assertTrue("Backup doesn't exist" + backup.toString(), backup.exists());
+    assertTrue("Backup doesn't exist" + backup, backup.exists());
     if (null != expectedSegmentsFileName) {
       assertTrue(
-          expectedSegmentsFileName + " doesn't exist in " + backup.toString(),
+          expectedSegmentsFileName + " doesn't exist in " + backup,
           new File(backup, expectedSegmentsFileName).exists());
     }
     try (Directory dir = FSDirectory.open(backup.toPath())) {
       TestUtil.checkIndex(dir, true, true, true, null);
       try (DirectoryReader r = DirectoryReader.open(dir)) {
-        assertEquals("numDocs in " + backup.toString(), numDocs, r.numDocs());
+        assertEquals("numDocs in " + backup, numDocs, r.numDocs());
         if (null != expectedSegmentsFileName) {
           assertEquals(
-              "segmentsFile of IndexCommit for: " + backup.toString(),
+              "segmentsFile of IndexCommit for: " + backup,
               expectedSegmentsFileName,
               r.getIndexCommit().getSegmentsFileName());
         }

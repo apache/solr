@@ -209,7 +209,7 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
             final String checkFQ =
                 ((null == collapseVal)
                     ? ("-" + checkField + ":[* TO *]")
-                    : ("{!field f=" + checkField + "}" + collapseVal.toString()));
+                    : ("{!field f=" + checkField + "}" + collapseVal));
 
             final SolrParams checkP =
                 params(

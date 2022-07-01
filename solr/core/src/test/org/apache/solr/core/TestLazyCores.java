@@ -778,7 +778,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
     if (ok) {
       if (failures.size() != 0) {
-        fail("Should have cleared the error, but there are failures " + failures.toString());
+        fail("Should have cleared the error, but there are failures " + failures);
       }
     } else {
       if (failures.size() == 0) {

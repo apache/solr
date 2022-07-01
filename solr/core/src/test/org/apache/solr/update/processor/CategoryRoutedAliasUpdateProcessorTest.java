@@ -559,7 +559,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
       final Object errors = resp.getResponseHeader().get("errors"); // Tolerant URP
       assertNotNull(errors);
       assertTrue(
-          "Expected to find " + errorMsg + " in errors: " + errors.toString(),
+          "Expected to find " + errorMsg + " in errors: " + errors,
           errors.toString().contains(errorMsg));
     } catch (SolrException e) {
       assertTrue(e.getMessage().contains(errorMsg));
