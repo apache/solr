@@ -69,8 +69,7 @@ public class HelloStream extends TupleStream implements Expressible {
 
   @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
-    StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
-    return expression;
+    return new StreamExpression(factory.getFunctionName(this.getClass()));
   }
 
   @Override

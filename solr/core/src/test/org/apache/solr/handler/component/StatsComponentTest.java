@@ -1248,17 +1248,16 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
 
     // force constant score for matches, so we aren't dependent on similarity
     final float constScore = 4.2F;
-    final double expectedScore = (double) constScore;
     assertQ(
         "functions over a query",
         req("q", "*:*", "stats", "true", "stats.field", "{!lucene key=k}foo_t:cow^=" + constScore),
-        kpre + "double[@name='min'][.='" + expectedScore + "']",
-        kpre + "double[@name='max'][.='" + expectedScore + "']",
-        kpre + "double[@name='sum'][.='" + (3D * expectedScore) + "']",
+        kpre + "double[@name='min'][.='" + (double) constScore + "']",
+        kpre + "double[@name='max'][.='" + (double) constScore + "']",
+        kpre + "double[@name='sum'][.='" + (3D * (double) constScore) + "']",
         kpre + "long[@name='count'][.='3']",
         kpre + "long[@name='missing'][.='1']",
-        kpre + "double[@name='sumOfSquares'][.='" + (3D * Math.pow(expectedScore, 2D)) + "']",
-        kpre + "double[@name='mean'][.='" + expectedScore + "']",
+        kpre + "double[@name='sumOfSquares'][.='" + (3D * Math.pow((double) constScore, 2D)) + "']",
+        kpre + "double[@name='mean'][.='" + (double) constScore + "']",
         kpre + "double[@name='stddev'][.='0.0']");
   }
 

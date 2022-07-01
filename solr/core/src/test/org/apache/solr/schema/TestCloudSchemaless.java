@@ -63,7 +63,8 @@ public class TestCloudSchemaless extends AbstractFullDistribZkTestBase {
 
   @Override
   public SortedMap<ServletHolder, String> getExtraServlets() {
-    final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
+    final SortedMap<ServletHolder, String> extraServlets;
+    extraServlets = new TreeMap<>();
     return extraServlets;
   }
 

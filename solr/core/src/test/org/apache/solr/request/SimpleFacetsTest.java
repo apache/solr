@@ -1253,9 +1253,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   private void helpTestDateFacets(final String fieldName, final FacetRangeMethod rangeFacetMethod) {
     final String p = "facet.range";
     final String b = "facet_ranges";
-    final String f = fieldName;
     final String c = "/lst[@name='counts']";
-    final String pre = "//lst[@name='" + b + "']/lst[@name='" + f + "']" + c;
+    final String pre = "//lst[@name='" + b + "']/lst[@name='" + fieldName + "']" + c;
     final String meta = pre + "/../";
 
     // range faceting defaults to including only lower endpoint
@@ -1272,7 +1271,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             p,
-            f,
+                fieldName,
             p + ".start",
             "1976-07-01T00:00:00.000Z",
             p + ".end",
@@ -1330,7 +1329,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             p,
-            f,
+                fieldName,
             p + ".start",
             "1976-07-01T00:00:00.000Z",
             p + ".end",
@@ -1364,7 +1363,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             p,
-            f,
+                fieldName,
             p + ".start",
             "1976-07-01T00:00:00.000Z",
             p + ".end",
@@ -1373,7 +1372,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "+1DAY",
             p + ".other",
             "all",
-            "f." + f + ".facet.mincount",
+            "f." + fieldName + ".facet.mincount",
             "2"),
         "*[count(" + pre + "/int)=3]",
         pre + "/int[@name='1976-07-03T00:00:00Z'][.='2'  ]",
@@ -1394,7 +1393,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             p,
-            f,
+                fieldName,
             p + ".start",
             "1976-07-05T00:00:00.000Z",
             p + ".end",
@@ -1417,7 +1416,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             p,
-            f,
+                fieldName,
             p + ".start",
             "1976-07-03T00:00:00.000Z",
             p + ".end",
@@ -1441,7 +1440,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             p,
-            f,
+                fieldName,
             p + ".start",
             "1976-07-01T00:00:00.000Z",
             p + ".end",
@@ -1470,7 +1469,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             p,
-            f,
+                fieldName,
             p + ".start",
             "1976-07-01T00:00:00.000Z",
             p + ".end",
@@ -1500,7 +1499,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             p,
-            f,
+                fieldName,
             p + ".start",
             "-0200-01-01T00:00:00Z", // BC
             p + ".end",
@@ -1535,9 +1534,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   private void helpTestDateRangeFacetsWithIncludeOption(final String fieldName) {
     final String p = "facet.range";
     final String b = "facet_ranges";
-    final String f = fieldName;
     final String c = "/lst[@name='counts']";
-    final String pre = "//lst[@name='" + b + "']/lst[@name='" + f + "']" + c;
+    final String pre = "//lst[@name='" + b + "']/lst[@name='" + fieldName + "']" + c;
     final String meta = pre + "/../";
 
     assertQ(
@@ -1550,7 +1548,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             p,
-            f,
+                fieldName,
             p + ".start",
             "1976-07-01T00:00:00.000Z",
             p + ".end",
@@ -1592,7 +1590,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             p,
-            f,
+                fieldName,
             p + ".start",
             "1976-07-01T00:00:00.000Z",
             p + ".end",
@@ -1634,7 +1632,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             p,
-            f,
+                fieldName,
             p + ".start",
             "1976-07-01T00:00:00.000Z",
             p + ".end",
@@ -1678,7 +1676,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             p,
-            f,
+                fieldName,
             p + ".start",
             "1976-07-01T00:00:00.000Z",
             p + ".end",
@@ -1722,7 +1720,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             p,
-            f,
+                fieldName,
             p + ".start",
             "1976-07-01T00:00:00.000Z",
             p + ".end",
@@ -1763,7 +1761,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             p,
-            f,
+                fieldName,
             p + ".start",
             "1976-07-01T00:00:00.000Z",
             p + ".end",
@@ -1804,7 +1802,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             p,
-            f,
+                fieldName,
             p + ".start",
             "1976-07-01T00:00:00.000Z",
             p + ".end",
@@ -1845,7 +1843,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             p,
-            f,
+                fieldName,
             p + ".start",
             "1976-07-01T00:00:00.000Z",
             p + ".end",
@@ -1888,7 +1886,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             p,
-            f,
+                fieldName,
             p + ".start",
             "1976-07-01T00:00:00.000Z",
             p + ".end",
@@ -1926,9 +1924,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   private void helpTestDateRangeFacetsWithTz(final String fieldName) {
     final String p = "facet.range";
     final String b = "facet_ranges";
-    final String f = fieldName;
     final String c = "/lst[@name='counts']";
-    final String pre = "//lst[@name='" + b + "']/lst[@name='" + f + "']" + c;
+    final String pre = "//lst[@name='" + b + "']/lst[@name='" + fieldName + "']" + c;
     final String meta = pre + "/../";
 
     final String TZ = "America/Los_Angeles";
@@ -1950,7 +1947,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "TZ",
             TZ,
             p,
-            f,
+                fieldName,
             p + ".start",
             "NOW/MONTH",
             p + ".end",
@@ -1998,7 +1995,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "TZ",
             TZ,
             p,
-            f,
+                fieldName,
             p + ".start",
             "NOW/MONTH",
             p + ".end",
@@ -2060,8 +2057,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
 
   private void helpTestNumericRangeFacetsDoubleOverflow(
       final String fieldName, final FacetRangeMethod method) {
-    final String f = fieldName;
-    final String pre = "//lst[@name='facet_ranges']/lst[@name='" + f + "']/lst[@name='counts']";
+    final String pre = "//lst[@name='facet_ranges']/lst[@name='" + fieldName + "']/lst[@name='counts']";
     final String meta = pre + "/../";
 
     String start = "0.0";
@@ -2070,7 +2066,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     String mid = Double.toString(((double) Float.MAX_VALUE) * 2D);
 
     assertQ(
-        f + ": checking counts for lower",
+        fieldName + ": checking counts for lower",
         req(
             "q",
             "id_i1:[30 TO 60]",
@@ -2079,7 +2075,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             "facet.range",
-            f,
+                fieldName,
             "facet.range.method",
             method.toString(),
             "facet.range.start",
@@ -2108,17 +2104,16 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   private void helpTestFractionalNumberRangeFacets(
       final String fieldName, FacetRangeMethod method) {
 
-    final String f = fieldName;
-    final String pre = "//lst[@name='facet_ranges']/lst[@name='" + f + "']/lst[@name='counts']";
+    final String pre = "//lst[@name='facet_ranges']/lst[@name='" + fieldName + "']/lst[@name='counts']";
     final String meta = pre + "/../";
 
     assertQ(
-        f + ": checking counts for lower",
+        fieldName + ": checking counts for lower",
         req(
             "q", "*:*",
             "rows", "0",
             "facet", "true",
-            "facet.range", f,
+            "facet.range", fieldName,
             "facet.range.method", method.toString(),
             "facet.range.start", "10",
             "facet.range.end", "50",
@@ -2135,12 +2130,12 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         meta + "/int[@name='between'][.='6']");
 
     assertQ(
-        f + ":checking counts for upper",
+        fieldName + ":checking counts for upper",
         req(
             "q", "*:*",
             "rows", "0",
             "facet", "true",
-            "facet.range", f,
+            "facet.range", fieldName,
             "facet.range.method", method.toString(),
             "facet.range.start", "10",
             "facet.range.end", "50",
@@ -2157,12 +2152,12 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         meta + "/int[@name='between'][.='6']");
 
     assertQ(
-        f + ":checking counts for lower & upper",
+        fieldName + ":checking counts for lower & upper",
         req(
             "q", "*:*",
             "rows", "0",
             "facet", "true",
-            "facet.range", f,
+            "facet.range", fieldName,
             "facet.range.method", method.toString(),
             "facet.range.start", "10",
             "facet.range.end", "50",
@@ -2180,12 +2175,12 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         meta + "/int[@name='between'][.='6']");
 
     assertQ(
-        f + ": checking counts for upper & edge",
+        fieldName + ": checking counts for upper & edge",
         req(
             "q", "*:*",
             "rows", "0",
             "facet", "true",
-            "facet.range", f,
+            "facet.range", fieldName,
             "facet.range.method", method.toString(),
             "facet.range.start", "20",
             "facet.range.end", "50",
@@ -2202,12 +2197,12 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         meta + "/int[@name='between'][.='5']");
 
     assertQ(
-        f + ": checking counts for upper & outer",
+        fieldName + ": checking counts for upper & outer",
         req(
             "q", "*:*",
             "rows", "0",
             "facet", "true",
-            "facet.range", f,
+            "facet.range", fieldName,
             "facet.range.method", method.toString(),
             "facet.range.start", "10",
             "facet.range.end", "30",
@@ -2223,12 +2218,12 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         meta + "/int[@name='between'][.='5']");
 
     assertQ(
-        f + ": checking counts for lower & edge",
+        fieldName + ": checking counts for lower & edge",
         req(
             "q", "*:*",
             "rows", "0",
             "facet", "true",
-            "facet.range", f,
+            "facet.range", fieldName,
             "facet.range.method", method.toString(),
             "facet.range.start", "10",
             "facet.range.end", "30",
@@ -2244,12 +2239,12 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         meta + "/int[@name='between'][.='5']");
 
     assertQ(
-        f + ": checking counts for lower & outer",
+        fieldName + ": checking counts for lower & outer",
         req(
             "q", "*:*",
             "rows", "0",
             "facet", "true",
-            "facet.range", f,
+            "facet.range", fieldName,
             "facet.range.method", method.toString(),
             "facet.range.start", "20",
             "facet.range.end", "40",
@@ -2265,12 +2260,12 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         meta + "/int[@name='between'][.='5']");
 
     assertQ(
-        f + ": checking counts for lower & edge & outer",
+        fieldName + ": checking counts for lower & edge & outer",
         req(
             "q", "*:*",
             "rows", "0",
             "facet", "true",
-            "facet.range", f,
+            "facet.range", fieldName,
             "facet.range.method", method.toString(),
             "facet.range.start", "20",
             "facet.range.end", "35.3",
@@ -2288,12 +2283,12 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         meta + "/int[@name='between'][.='5']");
 
     assertQ(
-        f + ": checking counts for include all",
+        fieldName + ": checking counts for include all",
         req(
             "q", "*:*",
             "rows", "0",
             "facet", "true",
-            "facet.range", f,
+            "facet.range", fieldName,
             "facet.range.method", method.toString(),
             "facet.range.start", "20",
             "facet.range.end", "35.3",
@@ -2341,8 +2336,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
 
   private void helpTestNumericRangeFacetsLongOverflow(
       final String fieldName, final FacetRangeMethod method) {
-    final String f = fieldName;
-    final String pre = "//lst[@name='facet_ranges']/lst[@name='" + f + "']/lst[@name='counts']";
+    final String pre = "//lst[@name='facet_ranges']/lst[@name='" + fieldName + "']/lst[@name='counts']";
     final String meta = pre + "/../";
 
     String start = "0";
@@ -2351,7 +2345,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     String mid = Long.toString(((long) Integer.MAX_VALUE) * 2L);
 
     assertQ(
-        f + ": checking counts for lower",
+        fieldName + ": checking counts for lower",
         req(
             "q",
             "id_i1:[30 TO 60]",
@@ -2360,7 +2354,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             "facet.range",
-            f,
+                fieldName,
             "facet.range.method",
             method.toString(),
             "facet.range.start",
@@ -2391,17 +2385,16 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     // the float test covers a lot of the weird edge cases
     // here we just need some basic sanity checking of the parsing
 
-    final String f = fieldName;
-    final String pre = "//lst[@name='facet_ranges']/lst[@name='" + f + "']/lst[@name='counts']";
+    final String pre = "//lst[@name='facet_ranges']/lst[@name='" + fieldName + "']/lst[@name='counts']";
     final String meta = pre + "/../";
 
     assertQ(
-        f + ": checking counts for lower",
+        fieldName + ": checking counts for lower",
         req(
             "q", "id_i1:[30 TO 60]",
             "rows", "0",
             "facet", "true",
-            "facet.range", f,
+            "facet.range", fieldName,
             "facet.range.method", method.toString(),
             "facet.range.start", "35",
             "facet.range.end", "50",
@@ -2417,12 +2410,12 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         meta + "/int[@name='between'][.='6']");
 
     assertQ(
-        f + ":checking counts for upper",
+        fieldName + ":checking counts for upper",
         req(
             "q", "id_i1:[30 TO 60]",
             "rows", "0",
             "facet", "true",
-            "facet.range", f,
+            "facet.range", fieldName,
             "facet.range.method", method.toString(),
             "facet.range.start", "35",
             "facet.range.end", "50",

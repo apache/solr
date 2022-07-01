@@ -168,7 +168,6 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
     QueryResponse rsp = null;
 
     final String intsort = "int" + (random().nextBoolean() ? "" : "_dv");
-    final String intmissingsort = intsort;
 
     // trivial base case: ensure cursorMark against an empty index doesn't blow up
     cursorMark = CURSOR_MARK_START;
@@ -322,7 +321,7 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
             "rows", "3",
             "fl", "id",
             "json.nl", "map",
-            "sort", intmissingsort + "_first  asc, id asc");
+            "sort", intsort + "_first  asc, id asc");
     rsp = query(p(params, CURSOR_MARK_PARAM, cursorMark));
     assertNumFound(8, rsp);
     assertStartsAt(0, rsp);
@@ -356,7 +355,7 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
             "rows", "3",
             "fl", "id",
             "json.nl", "map",
-            "sort", intmissingsort + "_last asc, id asc");
+            "sort", intsort + "_last asc, id asc");
     rsp = query(p(params, CURSOR_MARK_PARAM, cursorMark));
     assertNumFound(8, rsp);
     assertStartsAt(0, rsp);

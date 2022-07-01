@@ -167,24 +167,23 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
 
   private void doTestSameTargetReindexing(boolean sourceRemove, boolean followAliases)
       throws Exception {
-    final String sourceCollection = "sameTargetReindexing_" + sourceRemove + "_" + followAliases;
-    final String targetCollection = sourceCollection;
+    final String collection = "sameTargetReindexing_" + sourceRemove + "_" + followAliases;
 
-    createCollection(sourceCollection, "conf1", 2, 2);
+    createCollection(collection, "conf1", 2, 2);
     indexDocs(
-        sourceCollection,
+        collection,
         NUM_DOCS,
         i -> new SolrInputDocument("id", String.valueOf(i), "string_s", String.valueOf(i)));
 
     CollectionAdminRequest.ReindexCollection req =
-        CollectionAdminRequest.reindexCollection(sourceCollection).setTarget(targetCollection);
+        CollectionAdminRequest.reindexCollection(collection).setTarget(collection);
     req.setRemoveSource(sourceRemove);
     req.setFollowAliases(followAliases);
     req.process(solrClient);
 
     String realTargetCollection = null;
     TimeOut timeOut = new TimeOut(30, TimeUnit.SECONDS, cloudManager.getTimeSource());
-    String prefix = ReindexCollectionCmd.TARGET_COL_PREFIX + targetCollection;
+    String prefix = ReindexCollectionCmd.TARGET_COL_PREFIX + collection;
     while (!timeOut.hasTimedOut()) {
       timeOut.sleep(500);
       for (String name : cloudManager.getClusterState().getCollectionsMap().keySet()) {
@@ -210,11 +209,11 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
         });
     ZkStateReader.from(solrClient).aliasesManager.update();
     // verify the target docs exist
-    QueryResponse rsp = solrClient.query(targetCollection, params(CommonParams.Q, "*:*"));
+    QueryResponse rsp = solrClient.query(collection, params(CommonParams.Q, "*:*"));
     assertEquals("copied num docs", NUM_DOCS, rsp.getResults().getNumFound());
     ClusterState state = solrClient.getClusterState();
     if (sourceRemove) {
-      assertFalse("source collection still present", state.hasCollection(sourceCollection));
+      assertFalse("source collection still present", state.hasCollection(collection));
     }
   }
 

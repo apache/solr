@@ -210,7 +210,8 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
   public void checkResultFormat() {
     // Check input and output format is the same
     String IN = "89.9,-130"; // lat,lon
-    String OUT = IN; // IDENTICAL!
+    String OUT; // IDENTICAL!
+    OUT = IN;
 
     assertU(adoc("id", "11", fieldName, IN));
     assertU(commit());

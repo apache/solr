@@ -71,8 +71,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
     try {
       // set up the client...
       final String baseUrl = buildUrl(port, context);
-      HttpSolrClient client = getHttpSolrClient(baseUrl, 15000, 60000);
-      return client;
+      return getHttpSolrClient(baseUrl, 15000, 60000);
     } catch (Exception ex) {
       throw new RuntimeException(ex);
     }

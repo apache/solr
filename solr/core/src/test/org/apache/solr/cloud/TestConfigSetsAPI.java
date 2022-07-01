@@ -1333,17 +1333,17 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   }
 
   private static String getSecurityJson() throws KeeperException, InterruptedException {
-    String securityJson =
-        "{\n"
-            + "  'authentication':{\n"
-            + "    'blockUnknown': false,\n"
-            + "    'class':'"
-            + MockAuthenticationPlugin.class.getName()
-            + "'},\n"
-            + "  'authorization':{\n"
-            + "    'class':'"
-            + MockAuthorizationPlugin.class.getName()
-            + "'}}";
+    String securityJson;
+    securityJson = "{\n"
+        + "  'authentication':{\n"
+        + "    'blockUnknown': false,\n"
+        + "    'class':'"
+        + MockAuthenticationPlugin.class.getName()
+        + "'},\n"
+        + "  'authorization':{\n"
+        + "    'class':'"
+        + MockAuthorizationPlugin.class.getName()
+        + "'}}";
     return securityJson;
   }
 
@@ -1464,8 +1464,8 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
               username,
               usePut);
       assertNotNull(map);
-      long statusCode =
-          (long) getObjectByPath(map, false, Arrays.asList("responseHeader", "status"));
+      long statusCode;
+      statusCode = (long) getObjectByPath(map, false, Arrays.asList("responseHeader", "status"));
       return statusCode;
     } // else "not" a V2 request...
 
@@ -1522,8 +1522,8 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
               username,
               usePut);
       assertNotNull(map);
-      long statusCode =
-          (long) getObjectByPath(map, false, Arrays.asList("responseHeader", "status"));
+      long statusCode;
+      statusCode = (long) getObjectByPath(map, false, Arrays.asList("responseHeader", "status"));
       return statusCode;
     } // else "not" a V2 request...
 
