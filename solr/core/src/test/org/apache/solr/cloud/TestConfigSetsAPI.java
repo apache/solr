@@ -543,7 +543,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
             + "                 },\n"
             + "    }";
 
-    ByteBuffer buff = Charset.forName("UTF-8").encode(payload);
+    ByteBuffer buff = UTF_8.encode(payload);
     Map<?, ?> map =
         postDataAndGetResponse(
             cluster.getSolrClient(),

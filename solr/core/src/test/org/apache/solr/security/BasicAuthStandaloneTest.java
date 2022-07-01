@@ -121,7 +121,7 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
       assertTrue(
           new String(
                   Utils.toJSON(securityConfHandler.getSecurityConfig(false).getData()),
-                  Charset.forName("UTF-8"))
+                  UTF_8)
               .contains("harry"));
 
       // Edit authorization
