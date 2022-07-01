@@ -318,7 +318,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
         }
       }
 
-      /**
+      /*
        * String strResponse = h.query(req(params)); Object realResponse =
        * ObjectBuilder.fromJSON(strResponse);
        */

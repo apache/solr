@@ -298,7 +298,7 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
         responses.add(strResponse);
       }
 
-      /**
+      /*
        * String strResponse = h.query(req(params)); Object realResponse =
        * ObjectBuilder.fromJSON(strResponse);
        */

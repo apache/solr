@@ -265,7 +265,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
    * Randomly chooses to do a commit, where the probability of doing so increases the longer it's
    * been since a commit was done.
    *
-   * @returns <code>0</code> if a commit was done, else <code>itersSinceLastCommit + 1</code>
+   * @return <code>0</code> if a commit was done, else <code>itersSinceLastCommit + 1</code>
    */
   private static int maybeCommit(
       final Random rand, final int itersSinceLastCommit, final int numIters)
