@@ -55,7 +55,7 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterClass() {
     admin = null; // Release it or the test harness complains.
     solrHomeDirectory = null;
   }

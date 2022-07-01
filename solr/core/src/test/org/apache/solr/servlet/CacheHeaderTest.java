@@ -45,7 +45,7 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
   }
 
   @AfterClass
-  public static void afterTest() throws Exception {}
+  public static void afterTest() {}
 
   protected static final String CONTENTS = "id\n100\n101\n102";
 

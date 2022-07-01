@@ -448,8 +448,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
       Slice.State expectedState,
       int numNrt,
       int numTlog,
-      int numPull)
-      throws Exception {
+      int numPull) {
     Slice s = coll.getSlice(shard);
     assertEquals("unexpected shard state", expectedState, s.getState());
     AtomicInteger actualNrt = new AtomicInteger();

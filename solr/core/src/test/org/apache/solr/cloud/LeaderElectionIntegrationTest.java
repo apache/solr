@@ -151,7 +151,7 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
   }
 
   @AfterClass
-  public static void afterClass() throws InterruptedException {
+  public static void afterClass() {
     System.clearProperty("solrcloud.skip.autorecovery");
   }
 }

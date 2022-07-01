@@ -137,7 +137,7 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     }
   }
 
-  public void testIntSpecialValues() throws Exception {
+  public void testIntSpecialValues() {
     int[] vals =
         new int[] {
           Integer.MIN_VALUE,
@@ -200,7 +200,7 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     }
   }
 
-  public void testDoubles() throws Exception {
+  public void testDoubles() {
     double[] vals =
         new double[] {
           Double.NEGATIVE_INFINITY,
@@ -259,7 +259,7 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     }
   }
 
-  public void testFloats() throws Exception {
+  public void testFloats() {
     float[] vals =
         new float[] {
           Float.NEGATIVE_INFINITY,
@@ -371,7 +371,7 @@ public class TestLegacyNumericUtils extends SolrTestCase {
   }
 
   /** LUCENE-2541: LegacyNumericRangeQuery errors with endpoints near long min and max values */
-  public void testLongExtremeValues() throws Exception {
+  public void testLongExtremeValues() {
     // upper end extremes
     assertLongRangeSplit(
         Long.MAX_VALUE,

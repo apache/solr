@@ -344,7 +344,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     }
   }
 
-  protected HttpSolrClient getHttpSolrClient(Replica replica) throws Exception {
+  protected HttpSolrClient getHttpSolrClient(Replica replica) {
     return getHttpSolrClient(replica.getCoreUrl());
   }
 

@@ -237,7 +237,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     }
   }
 
-  public void testFunctions() throws Exception {
+  public void testFunctions() {
     assertQ(
         "fl=log(val_i)",
         req("q", "*:*", "rows", "1", "fl", "log(val_i)"),

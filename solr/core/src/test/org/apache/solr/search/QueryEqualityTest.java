@@ -1440,7 +1440,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     }
   }
 
-  public void testPayloadScoreQuery() throws Exception {
+  public void testPayloadScoreQuery() {
     // There was a bug with PayloadScoreQuery's .equals() method that said two queries were equal
     // with different includeSpanScore settings
 
@@ -1454,7 +1454,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
                 "{!payload_score f=foo_dpf v=query func=min includeSpanScore=true}"));
   }
 
-  public void testPayloadCheckQuery() throws Exception {
+  public void testPayloadCheckQuery() {
     expectThrows(
         AssertionError.class,
         "queries should not have been equal",

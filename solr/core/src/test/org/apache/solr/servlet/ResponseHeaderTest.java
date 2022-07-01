@@ -77,12 +77,12 @@ public class ResponseHeaderTest extends SolrJettyTestBase {
   public static class ComponentThatAddsHeader extends SearchComponent {
 
     @Override
-    public void prepare(ResponseBuilder rb) throws IOException {
+    public void prepare(ResponseBuilder rb) {
       rb.rsp.addHttpHeader("Warning", "This is a test warning");
     }
 
     @Override
-    public void process(ResponseBuilder rb) throws IOException {}
+    public void process(ResponseBuilder rb) {}
 
     @Override
     public String getDescription() {

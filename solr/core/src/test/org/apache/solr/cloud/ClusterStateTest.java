@@ -35,7 +35,7 @@ import org.junit.Test;
 public class ClusterStateTest extends SolrTestCaseJ4 {
 
   @Test
-  public void testStoreAndRead() throws Exception {
+  public void testStoreAndRead() {
     Map<String, DocCollection> collectionStates = new HashMap<>();
     Set<String> liveNodes = new HashSet<>();
     liveNodes.add("node1");

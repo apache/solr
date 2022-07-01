@@ -70,7 +70,7 @@ public class BlobRepositoryMockingTest {
   }
 
   @Before
-  public void setUp() throws IllegalAccessException, NoSuchFieldException {
+  public void setUp() {
     blobFetched = false;
     blobKey = "";
     reset(mocks);

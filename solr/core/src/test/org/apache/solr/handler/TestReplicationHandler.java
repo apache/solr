@@ -270,7 +270,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void doTestHandlerPathUnchanged() throws Exception {
+  public void doTestHandlerPathUnchanged() {
     assertEquals("/replication", ReplicationHandler.PATH);
   }
 
@@ -1529,7 +1529,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void doTestIllegalFilePaths() throws Exception {
+  public void doTestIllegalFilePaths() {
     // Loop through the file=, cf=, tlogFile= params and prove that it throws exception for path
     // traversal attempts
     String absFile = Paths.get("foo").toAbsolutePath().toString();
@@ -1588,7 +1588,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testShouldReportErrorWhenRequiredCommandArgMissing() throws Exception {
+  public void testShouldReportErrorWhenRequiredCommandArgMissing() {
     SolrQuery q = new SolrQuery();
     q.add("qt", "/replication").add("wt", "json");
     SolrException thrown =

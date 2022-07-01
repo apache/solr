@@ -5020,7 +5020,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   }
 
   /** test code to ensure TDigest is working as we expect. */
-  public void XtestTDigest() throws Exception {
+  public void XtestTDigest() {
     AVLTreeDigest t1 = new AVLTreeDigest(100);
     t1.add(10, 1);
     t1.add(90, 1);

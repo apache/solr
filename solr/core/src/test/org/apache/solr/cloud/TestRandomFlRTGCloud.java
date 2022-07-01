@@ -197,7 +197,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
    * @see #FL_VALIDATORS
    * @see TransformerFactory#defaultFactories
    */
-  public void testCoverage() throws Exception {
+  public void testCoverage() {
     final Set<String> implicit = new LinkedHashSet<>();
     for (String t : TransformerFactory.defaultFactories.keySet()) {
       implicit.add(t);

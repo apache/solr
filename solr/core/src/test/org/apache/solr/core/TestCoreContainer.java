@@ -27,7 +27,6 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -63,7 +62,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   private static final String SOLR_HOME_PROP = "solr.solr.home";
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeClass() {
     oldSolrHome = System.getProperty(SOLR_HOME_PROP);
     System.setProperty("configsets", getFile("solr/configsets").getAbsolutePath());
   }
@@ -82,7 +81,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     return init(solrHomeDirectory, xml);
   }
 
-  private CoreContainer init(Path homeDirectory, String xml) throws Exception {
+  private CoreContainer init(Path homeDirectory, String xml) {
     CoreContainer ret = new CoreContainer(SolrXmlConfig.fromString(homeDirectory, xml));
     ret.load();
     return ret;
@@ -320,7 +319,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testDeleteBadCores() throws Exception {
+  public void testDeleteBadCores() {
 
     MockCoresLocator cl = new MockCoresLocator();
 
@@ -562,50 +561,48 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     }
 
     @Override
-    public boolean checkConfigExists(String configName) throws IOException {
+    public boolean checkConfigExists(String configName) {
       return false;
     }
 
     @Override
-    public void deleteConfig(String configName) throws IOException {}
+    public void deleteConfig(String configName) {}
 
     @Override
-    public void deleteFilesFromConfig(String configName, List<String> filesToDelete)
-        throws IOException {}
+    public void deleteFilesFromConfig(String configName, List<String> filesToDelete) {}
 
-    public void copyConfig(String fromConfig, String toConfig) throws IOException {}
+    public void copyConfig(String fromConfig, String toConfig) {}
 
     @Override
-    public void uploadConfig(String configName, Path dir) throws IOException {}
+    public void uploadConfig(String configName, Path dir) {}
 
     @Override
     public void uploadFileToConfig(
-        String configName, String fileName, byte[] data, boolean overwriteOnExists)
-        throws IOException {}
+        String configName, String fileName, byte[] data, boolean overwriteOnExists) {}
 
     @Override
-    public void setConfigMetadata(String configName, Map<String, Object> data) throws IOException {}
+    public void setConfigMetadata(String configName, Map<String, Object> data) {}
 
     @Override
-    public Map<String, Object> getConfigMetadata(String configName) throws IOException {
+    public Map<String, Object> getConfigMetadata(String configName) {
       return null;
     }
 
     @Override
-    public void downloadConfig(String configName, Path dir) throws IOException {}
+    public void downloadConfig(String configName, Path dir) {}
 
     @Override
-    public List<String> listConfigs() throws IOException {
+    public List<String> listConfigs() {
       return null;
     }
 
     @Override
-    public byte[] downloadFileFromConfig(String configName, String filePath) throws IOException {
+    public byte[] downloadFileFromConfig(String configName, String filePath) {
       return new byte[0];
     }
 
     @Override
-    public List<String> getAllConfigFiles(String configName) throws IOException {
+    public List<String> getAllConfigFiles(String configName) {
       return null;
     }
 
@@ -616,7 +613,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     @Override
     protected Long getCurrentSchemaModificationVersion(
-        String configSet, SolrConfig solrConfig, String schemaFileName) throws IOException {
+        String configSet, SolrConfig solrConfig, String schemaFileName) {
       return null;
     }
   }

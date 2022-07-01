@@ -48,7 +48,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRemove() throws Exception {
+  public void testRemove() {
     SolrInputDocument doc;
 
     doc = new SolrInputDocument();
@@ -118,7 +118,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRemoveInteger() throws Exception {
+  public void testRemoveInteger() {
     SolrInputDocument doc;
 
     doc = new SolrInputDocument();
@@ -209,7 +209,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRemoveIntegerInDocSavedWithInteger() throws Exception {
+  public void testRemoveIntegerInDocSavedWithInteger() {
     SolrInputDocument doc;
 
     doc = new SolrInputDocument();
@@ -300,7 +300,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRemoveIntegerUsingStringType() throws Exception {
+  public void testRemoveIntegerUsingStringType() {
     SolrInputDocument doc;
 
     doc = new SolrInputDocument();
@@ -372,7 +372,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRemoveIntegerUsingLongType() throws Exception {
+  public void testRemoveIntegerUsingLongType() {
     SolrInputDocument doc;
 
     doc = new SolrInputDocument();
@@ -445,7 +445,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRemoveIntegerUsingFloatType() throws Exception {
+  public void testRemoveIntegerUsingFloatType() {
     SolrInputDocument doc;
 
     doc = new SolrInputDocument();
@@ -537,7 +537,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRemoveIntegerUsingDoubleType() throws Exception {
+  public void testRemoveIntegerUsingDoubleType() {
     SolrInputDocument doc;
 
     doc = new SolrInputDocument();
@@ -612,7 +612,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRemoveDateUsingStringType() throws Exception {
+  public void testRemoveDateUsingStringType() {
     SolrInputDocument doc;
 
     doc = new SolrInputDocument();
@@ -733,7 +733,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
   @Ignore("Remove Date is not supported in other formats than UTC")
   @Test
-  public void testRemoveDateUsingDateType() throws Exception {
+  public void testRemoveDateUsingDateType() {
     SolrInputDocument doc;
 
     doc = new SolrInputDocument();
@@ -854,7 +854,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRemoveFloatUsingFloatType() throws Exception {
+  public void testRemoveFloatUsingFloatType() {
     SolrInputDocument doc;
 
     doc = new SolrInputDocument();
@@ -925,7 +925,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRemoveFloatUsingStringType() throws Exception {
+  public void testRemoveFloatUsingStringType() {
     SolrInputDocument doc;
 
     doc = new SolrInputDocument();
@@ -1002,7 +1002,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRemoveregex() throws Exception {
+  public void testRemoveregex() {
     SolrInputDocument doc;
 
     doc = new SolrInputDocument();
@@ -1073,7 +1073,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRemoveregexMustMatchWholeValue() throws Exception {
+  public void testRemoveregexMustMatchWholeValue() {
     SolrInputDocument doc;
 
     doc = new SolrInputDocument();
@@ -1115,7 +1115,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testAdd() throws Exception {
+  public void testAdd() {
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "3");
     doc.setField("cat", new String[] {"aaa", "ccc"});
@@ -1146,7 +1146,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testAddDistinct() throws Exception {
+  public void testAddDistinct() {
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "3");
     doc.setField("cat", new String[] {"aaa", "ccc"});
@@ -1204,7 +1204,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testAddMultiple() throws Exception {
+  public void testAddMultiple() {
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "3");
     doc.setField("cat", new String[] {"aaa", "ccc"});
@@ -1258,7 +1258,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSet() throws Exception {
+  public void testSet() {
     SolrInputDocument doc;
 
     doc = new SolrInputDocument();
@@ -1295,7 +1295,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertFailedU(adoc(doc));
   }
 
-  public void testAtomicUpdatesOnDateFields() throws Exception {
+  public void testAtomicUpdatesOnDateFields() {
     String[] dateFieldNames = {"simple_tdt1", "simple_tdts", "simple_tdtdv1", "simple_tdtdvs"};
 
     SolrInputDocument doc = new SolrInputDocument();

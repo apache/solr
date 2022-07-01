@@ -81,7 +81,7 @@ public class TestSearcherReuse extends SolrTestCaseJ4 {
     assertU(commit());
   }
 
-  public void test() throws Exception {
+  public void test() {
 
     // seed some docs & segments
     int numDocs = atLeast(1);
