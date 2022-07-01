@@ -235,7 +235,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
                 .add("qt", "/replication")
                 .add("command", ReplicationHandler.CMD_DETAILS));
     if (log.isInfoEnabled()) {
-      log.info("DETAILS {}", Utils.writeJson(response, new StringWriter(), true).toString());
+      log.info("DETAILS {}", Utils.writeJson(response, new StringWriter(), true));
     }
     assertEquals(
         "follower's clearedLocalIndexFirst (from rep details)",

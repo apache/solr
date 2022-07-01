@@ -96,8 +96,7 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     assertNotNull(schema.getFieldOrNull(fieldName));
     assertEquals("pfloats", schema.getFieldType(fieldName).getTypeName());
     assertU(commit());
-    assertQ(
-        req("id:2"), "//arr[@name='" + fieldName + "']/float[.='" + floatValue.toString() + "']");
+    assertQ(req("id:2"), "//arr[@name='" + fieldName + "']/float[.='" + floatValue + "']");
   }
 
   public void testSingleFieldMixedFieldTypesRoundTrip() throws Exception {
@@ -115,8 +114,8 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     assertU(commit());
     assertQ(
         req("id:3"),
-        "//arr[@name='" + fieldName + "']/double[.='" + fieldValue1.toString() + "']",
-        "//arr[@name='" + fieldName + "']/double[.='" + fieldValue2.toString() + "']");
+        "//arr[@name='" + fieldName + "']/double[.='" + fieldValue1 + "']",
+        "//arr[@name='" + fieldName + "']/double[.='" + fieldValue2 + "']");
   }
 
   public void testSingleFieldDefaultFieldTypeRoundTrip() throws Exception {
@@ -138,9 +137,9 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     assertU(commit());
     assertQ(
         req("id:4"),
-        "//arr[@name='" + fieldName + "']/str[.='" + fieldValue1.toString() + "']",
-        "//arr[@name='" + fieldName + "']/str[.='" + fieldValue2.toString() + "']",
-        "//arr[@name='" + fieldName + "']/str[.='" + fieldValue3.toString() + "']");
+        "//arr[@name='" + fieldName + "']/str[.='" + fieldValue1 + "']",
+        "//arr[@name='" + fieldName + "']/str[.='" + fieldValue2 + "']",
+        "//arr[@name='" + fieldName + "']/str[.='" + fieldValue3 + "']");
   }
 
   public void testSingleFieldDefaultTypeMappingRoundTrip() throws Exception {
@@ -163,9 +162,9 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     assertU(commit());
     assertQ(
         req("id:4"),
-        "//arr[@name='" + fieldName + "']/str[.='" + fieldValue1.toString() + "']",
-        "//arr[@name='" + fieldName + "']/str[.='" + fieldValue2.toString() + "']",
-        "//arr[@name='" + fieldName + "']/str[.='" + fieldValue3.toString() + "']");
+        "//arr[@name='" + fieldName + "']/str[.='" + fieldValue1 + "']",
+        "//arr[@name='" + fieldName + "']/str[.='" + fieldValue2 + "']",
+        "//arr[@name='" + fieldName + "']/str[.='" + fieldValue3 + "']");
   }
 
   public void testMultipleFieldsRoundTrip() throws Exception {
@@ -195,11 +194,11 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     assertU(commit());
     assertQ(
         req("id:5"),
-        "//arr[@name='" + fieldName1 + "']/double[.='" + field1Value1.toString() + "']",
-        "//arr[@name='" + fieldName1 + "']/double[.='" + field1Value2.toString() + "']",
+        "//arr[@name='" + fieldName1 + "']/double[.='" + field1Value1 + "']",
+        "//arr[@name='" + fieldName1 + "']/double[.='" + field1Value2 + "']",
         "//arr[@name='" + fieldName1 + "']/double[.='" + field1Value3.doubleValue() + "']",
-        "//arr[@name='" + fieldName2 + "']/long[.='" + field2Value1.toString() + "']",
-        "//arr[@name='" + fieldName2 + "']/long[.='" + field2Value2.toString() + "']");
+        "//arr[@name='" + fieldName2 + "']/long[.='" + field2Value1 + "']",
+        "//arr[@name='" + fieldName2 + "']/long[.='" + field2Value2 + "']");
   }
 
   public void testParseAndAddMultipleFieldsRoundTrip() throws Exception {
@@ -257,11 +256,11 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     assertU(commit());
     assertQ(
         req("id:6"),
-        "//arr[@name='" + fieldName1 + "']/double[.='" + field1Value1.toString() + "']",
-        "//arr[@name='" + fieldName1 + "']/double[.='" + field1Value2.toString() + "']",
+        "//arr[@name='" + fieldName1 + "']/double[.='" + field1Value1 + "']",
+        "//arr[@name='" + fieldName1 + "']/double[.='" + field1Value2 + "']",
         "//arr[@name='" + fieldName1 + "']/double[.='" + field1Value3.doubleValue() + "']",
-        "//arr[@name='" + fieldName2 + "']/long[.='" + field2Value1.toString() + "']",
-        "//arr[@name='" + fieldName2 + "']/long[.='" + field2Value2.toString() + "']",
+        "//arr[@name='" + fieldName2 + "']/long[.='" + field2Value1 + "']",
+        "//arr[@name='" + fieldName2 + "']/long[.='" + field2Value2 + "']",
         "//arr[@name='" + fieldName3 + "']/str[.='" + field3String1 + "']",
         "//arr[@name='" + fieldName3 + "']/str[.='" + field3String2 + "']",
         "//arr[@name='" + fieldName4 + "']/date[.='" + field4Value1String + "']");

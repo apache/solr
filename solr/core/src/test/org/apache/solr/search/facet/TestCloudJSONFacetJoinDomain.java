@@ -738,9 +738,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
       this.refine = refine;
       if (isRefinementNeeded(limit, overrequest)) {
         assertEquals(
-            "Invalid refine param based on limit & overrequest: " + this.toString(),
-            Boolean.TRUE,
-            refine);
+            "Invalid refine param based on limit & overrequest: " + this, Boolean.TRUE, refine);
       }
     }
 

@@ -115,7 +115,7 @@ public class TestJmxIntegration extends SolrTestCaseJ4 {
     int numDynamicMbeans = 0;
     for (ObjectInstance o : objects) {
       ObjectName name = o.getObjectName();
-      assertNotNull("Null name on: " + o.toString(), name);
+      assertNotNull("Null name on: " + o, name);
       MBeanInfo mbeanInfo = mbeanServer.getMBeanInfo(name);
       if (name.getDomain().equals("solr")) {
         numDynamicMbeans++;

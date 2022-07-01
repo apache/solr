@@ -724,8 +724,8 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       final int id = Integer.parseInt(doc.get("id").toString());
       final Object val = doc.get(fieldName);
       final Object docid = doc.get("[docid]");
-      assertEquals(msgPre + " wrong val for " + doc.toString(), valuesList.get(id), val);
-      assertEquals(msgPre + " wrong [docid] for " + doc.toString(), luceneDocids.get(id), docid);
+      assertEquals(msgPre + " wrong val for " + doc, valuesList.get(id), val);
+      assertEquals(msgPre + " wrong [docid] for " + doc, luceneDocids.get(id), docid);
     }
   }
 
@@ -1403,7 +1403,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     assertNotNull("expected contains no name: " + expected, fieldName);
     FieldResponse rsp = new Field(fieldName).process(this.cloudClient);
     assertNotNull("Field Null Response: " + fieldName, rsp);
-    assertEquals("Field Status: " + fieldName + " => " + rsp.toString(), 0, rsp.getStatus());
+    assertEquals("Field Status: " + fieldName + " => " + rsp, 0, rsp.getStatus());
     assertEquals("Field: " + fieldName, expected, rsp.getField());
   }
 

@@ -355,17 +355,17 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
         if (!boostedResults.get(i).equals(controlResults.get(i))) {
           throw new Exception(
               "boosted results do not match control results, boostedResults size:"
-                  + boostedResults.toString()
+                  + boostedResults
                   + ", controlResults size:"
-                  + controlResults.toString());
+                  + controlResults);
         }
       }
     } else {
       throw new Exception(
           "boosted results do not match control results, boostedResults size:"
-              + boostedResults.toString()
+              + boostedResults
               + ", controlResults size:"
-              + controlResults.toString());
+              + controlResults);
     }
   }
 

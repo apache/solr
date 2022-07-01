@@ -1044,7 +1044,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     assertTrue("init failure isn't SAXParseException", ex instanceof SAXParseException);
     SAXParseException saxEx = (SAXParseException) ex;
     assertTrue(
-        "init failure doesn't mention problem: " + saxEx.toString(),
+        "init failure doesn't mention problem: " + saxEx,
         saxEx.getSystemId().contains("solrconfig.xml"));
 
     // ----

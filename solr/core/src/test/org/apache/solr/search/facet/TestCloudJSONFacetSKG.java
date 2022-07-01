@@ -521,7 +521,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
     final String bucketQ = facet.field + ":" + fieldVal;
     @SuppressWarnings({"unchecked"})
     final NamedList<Object> skgBucket = (NamedList<Object>) bucket.get("skg");
-    assertNotNull(facetKey + "/bucket:" + bucket.toString(), skgBucket);
+    assertNotNull(facetKey + "/bucket:" + bucket, skgBucket);
 
     // TODO: make this more efficient?
     // ideally we'd do a single query w/4 facet.queries, one for each count

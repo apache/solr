@@ -214,7 +214,7 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     }
 
     if (response.getStatus() != 0 || response.getErrorMessages() != null) {
-      fail("Could not create collection. Response" + response.toString());
+      fail("Could not create collection. Response" + response);
     }
   }
 

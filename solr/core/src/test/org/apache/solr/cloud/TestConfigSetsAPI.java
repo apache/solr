@@ -1480,7 +1480,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
           .process(cluster.getSolrClient())
           .getStatus();
     } catch (SolrServerException e1) {
-      throw new AssertionError("Server error uploading configset: " + e1.toString(), e1);
+      throw new AssertionError("Server error uploading configset: " + e1, e1);
     } catch (SolrException e2) {
       return e2.code();
     }
@@ -1540,7 +1540,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
           .process(cluster.getSolrClient())
           .getStatus();
     } catch (SolrServerException e1) {
-      throw new AssertionError("Server error uploading file to configset: " + e1.toString(), e1);
+      throw new AssertionError("Server error uploading file to configset: " + e1, e1);
     } catch (SolrException e2) {
       return e2.code();
     }

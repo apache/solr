@@ -244,7 +244,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
         assertDebug(r, all || results, "explain");
         assertDebug(r, all || timing, "timing");
       } catch (AssertionError e) {
-        throw new AssertionError(q.toString() + ": " + e.getMessage(), e);
+        throw new AssertionError(q + ": " + e.getMessage(), e);
       }
     }
   }

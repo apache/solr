@@ -425,7 +425,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
               "Sanity check: leaderProps isn't a leader?: " + leaderProps.toString(),
               leaderProps.getStr(Slice.LEADER));
           assertTrue(
-              "Sanity check: leaderProps isn't using the proxy port?: " + leaderProps.toString(),
+              "Sanity check: leaderProps isn't using the proxy port?: " + leaderProps,
               leaderProps.getCoreUrl().contains("" + proxy.getListenPort()));
         }
 

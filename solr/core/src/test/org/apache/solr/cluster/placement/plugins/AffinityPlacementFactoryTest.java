@@ -903,7 +903,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     try {
       plugin.verifyAllowedModification(deleteReplicasRequest, placementContext);
     } catch (PlacementException pe) {
-      fail("should have succeeded: " + pe.toString());
+      fail("should have succeeded: " + pe);
     }
 
     secondaryCollection

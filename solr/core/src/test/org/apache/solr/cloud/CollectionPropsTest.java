@@ -63,7 +63,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
     CollectionAdminRequest.Create request =
         CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2);
     CollectionAdminResponse response = request.process(cluster.getSolrClient());
-    assertTrue("Unable to create collection: " + response.toString(), response.isSuccess());
+    assertTrue("Unable to create collection: " + response, response.isSuccess());
   }
 
   @Test

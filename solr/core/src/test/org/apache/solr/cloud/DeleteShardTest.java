@@ -125,7 +125,7 @@ public class DeleteShardTest extends SolrCloudTestCase {
     }
 
     waitForState(
-        "Expected shard " + slice + " to be in state " + state.toString(),
+        "Expected shard " + slice + " to be in state " + state,
         collection,
         (n, c) -> {
           return c.getSlice(slice).getState() == state;
