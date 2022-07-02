@@ -128,11 +128,11 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
     sendDoc(5);
 
     try (HttpSolrClient server = getHttpSolrClient(leader, testCollectionName)) {
-      assertDocExists(server, testCollectionName, "5");
+      assertDocExists(server, "5");
     }
 
     try (HttpSolrClient server = getHttpSolrClient(notLeaders.get(1), testCollectionName)) {
-      assertDocExists(server, testCollectionName, "5");
+      assertDocExists(server, "5");
     }
 
     Thread.sleep(sleepMsBeforeHealPartition);

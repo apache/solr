@@ -65,8 +65,6 @@ import org.slf4j.LoggerFactory;
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-9182 - causes OOM")
 public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   public DistribCursorPagingTest() {
     System.setProperty(
         "solr.test.useFilterForSortedQuery", Boolean.toString(random().nextBoolean()));

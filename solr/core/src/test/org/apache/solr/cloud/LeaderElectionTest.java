@@ -597,7 +597,4 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     super.tearDown();
   }
 
-  private void printLayout() throws Exception {
-    zkClient.printLayoutToStream(System.out);
-  }
 }

@@ -42,7 +42,7 @@ public class TestSimpleTrackingShardHandler extends BaseDistributedSearchTestCas
     TrackingShardHandlerFactory.setTrackingQueue(
         Collections.singletonList(controlJetty), trackingQueue);
 
-    QueryResponse ignored = query("q", "*:*", "fl", "id", "sort", "id asc");
+    query("q", "*:*", "fl", "id", "sort", "id asc");
 
     int numShardRequests = 0;
     for (List<ShardRequestAndParams> shard : trackingQueue.getAllRequests().values()) {

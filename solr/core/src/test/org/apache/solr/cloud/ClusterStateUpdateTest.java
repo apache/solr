@@ -36,7 +36,6 @@ import org.slf4j.LoggerFactory;
 
 @Slow
 public class ClusterStateUpdateTest extends SolrCloudTestCase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   public void setUp() throws Exception {

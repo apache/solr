@@ -62,8 +62,6 @@ import org.slf4j.LoggerFactory;
 
 public class DocValuesNotIndexedTest extends SolrCloudTestCase {
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   @Rule public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   static final String COLLECTION = "dv_coll";
@@ -158,8 +156,8 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
 
     defineFields(updateList, fieldsToTestSingle, false);
     defineFields(updateList, fieldsToTestMulti, true);
-    defineFields(updateList, fieldsToTestGroupSortFirst, false, "sorMissingFirst", "true");
-    defineFields(updateList, fieldsToTestGroupSortLast, false, "sorMissingLast", "true");
+    defineFields(updateList, fieldsToTestGroupSortFirst, false);
+    defineFields(updateList, fieldsToTestGroupSortLast, false);
 
     MultiUpdate multiUpdateRequest = new MultiUpdate(updateList);
     SchemaResponse.UpdateResponse multipleUpdatesResponse =
@@ -486,7 +484,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
   }
 
   private static void defineFields(
-      List<Update> updateList, List<FieldProps> props, boolean multi, String... extras) {
+          List<Update> updateList, List<FieldProps> props, boolean multi) {
     for (FieldProps prop : props) {
       Map<String, Object> fieldAttributes = new LinkedHashMap<>();
       fieldAttributes.put("name", prop.getName());

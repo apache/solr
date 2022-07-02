@@ -95,8 +95,6 @@ public class DeleteShardTest extends SolrCloudTestCase {
 
   protected void setSliceState(String collection, String slice, State state) throws Exception {
 
-    CloudSolrClient client = cluster.getSolrClient();
-
     // TODO can this be encapsulated better somewhere?
     Map<String, Object> propMap = new HashMap<>();
     propMap.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower());

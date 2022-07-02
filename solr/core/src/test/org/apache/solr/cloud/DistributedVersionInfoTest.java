@@ -330,9 +330,9 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
         if (deletedDocs != null && deletedDocs.contains(d)) continue;
 
         String docId = String.valueOf(d);
-        Long leaderVers = assertDocExists(leaderSolr, testCollectionName, docId, null);
+        Long leaderVers = assertDocExists(leaderSolr, docId, null);
         for (HttpSolrClient replicaSolr : replicas)
-          assertDocExists(replicaSolr, testCollectionName, docId, leaderVers);
+          assertDocExists(replicaSolr, docId, leaderVers);
       }
     } finally {
       if (leaderSolr != null) {
@@ -360,7 +360,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
    * Query the real-time get handler for a specific doc by ID to verify it exists in the provided
    * server, using distrib=false, so it doesn't route to another replica.
    */
-  protected Long assertDocExists(HttpSolrClient solr, String coll, String docId, Long expVers)
+  protected Long assertDocExists(HttpSolrClient solr, String docId, Long expVers)
       throws Exception {
     QueryRequest qr =
         new QueryRequest(
