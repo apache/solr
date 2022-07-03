@@ -34,6 +34,10 @@ import org.apache.solr.common.util.NamedList;
 
 public class MockingHttp2SolrClient extends Http2SolrClient {
 
+  protected MockingHttp2SolrClient(String serverBaseUrl, Http2SolrClient.Builder builder) {
+    super(serverBaseUrl, builder);
+  }
+
   public enum Exp {
     CONNECT_EXCEPTION,
     SOCKET_EXCEPTION,
@@ -45,12 +49,6 @@ public class MockingHttp2SolrClient extends Http2SolrClient {
 
   @SuppressWarnings({"rawtypes"})
   private Set<SolrRequest> reqGotException;
-
-  public MockingHttp2SolrClient(String baseSolrUrl, Builder builder) {
-    super(baseSolrUrl, builder);
-    this.oneExpPerReq = builder.oneExpPerReq;
-    this.reqGotException = new HashSet<>();
-  }
 
   public static class Builder extends Http2SolrClient.Builder {
     private boolean oneExpPerReq = false;
@@ -65,15 +63,6 @@ public class MockingHttp2SolrClient extends Http2SolrClient {
       return new MockingHttp2SolrClient(null, this);
     }
 
-    // DBQ won't cause exception
-    Builder oneExpPerReq() {
-      oneExpPerReq = true;
-      return this;
-    }
-  }
-
-  public void setExp(Exp exp) {
-    this.exp = exp;
   }
 
   private Exception exception() {

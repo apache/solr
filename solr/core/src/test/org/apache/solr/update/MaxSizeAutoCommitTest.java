@@ -53,8 +53,6 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
   private static String delDoc(int id) {
     return delI(Integer.toString(id));
   }
-  // How long to sleep while checking for commits
-  private static final int COMMIT_CHECKING_SLEEP_TIME_MS = 50;
   // max TLOG file size
   private static final int MAX_FILE_SIZE = 1000;
 

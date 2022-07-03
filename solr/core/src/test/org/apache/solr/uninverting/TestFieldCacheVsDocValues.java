@@ -232,7 +232,7 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
       LeafReader r = context.reader();
       SortedDocValues expected = FieldCache.DEFAULT.getTermsIndex(r, "indexed");
       SortedDocValues actual = r.getSortedDocValues("dv");
-      assertEquals(r.maxDoc(), expected, actual);
+      assertEquals(expected, actual);
     }
     ir.close();
     dir.close();
@@ -290,7 +290,7 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
       LeafReader r = context.reader();
       SortedSetDocValues expected = FieldCache.DEFAULT.getDocTermOrds(r, "indexed", null);
       SortedSetDocValues actual = r.getSortedSetDocValues("dv");
-      assertEquals(r.maxDoc(), expected, actual);
+      assertEquals(expected, actual);
     }
     ir.close();
 
@@ -301,7 +301,7 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
     LeafReader ar = getOnlyLeafReader(ir);
     SortedSetDocValues expected = FieldCache.DEFAULT.getDocTermOrds(ar, "indexed", null);
     SortedSetDocValues actual = ar.getSortedSetDocValues("dv");
-    assertEquals(ir.maxDoc(), expected, actual);
+    assertEquals(expected, actual);
     ir.close();
 
     writer.close();
@@ -386,7 +386,7 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
     }
   }
 
-  private void assertEquals(int maxDoc, SortedDocValues expected, SortedDocValues actual)
+  private void assertEquals(SortedDocValues expected, SortedDocValues actual)
       throws Exception {
     // can be null for the segment if no docs actually had any SortedDocValues
     // in this case FC.getDocTermsOrds returns EMPTY
@@ -419,7 +419,7 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
     assertEquals(expected.getValueCount(), expected.termsEnum(), actual.termsEnum());
   }
 
-  private void assertEquals(int maxDoc, SortedSetDocValues expected, SortedSetDocValues actual)
+  private void assertEquals(SortedSetDocValues expected, SortedSetDocValues actual)
       throws Exception {
     // can be null for the segment if no docs actually had any SortedDocValues
     // in this case FC.getDocTermsOrds returns EMPTY
