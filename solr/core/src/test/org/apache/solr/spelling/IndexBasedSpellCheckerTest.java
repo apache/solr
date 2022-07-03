@@ -319,11 +319,11 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     File altIndexDir = new File(tmpDir, "alternateIdx" + new Date().getTime());
     Directory dir = newFSDirectory(altIndexDir.toPath());
     IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(new WhitespaceAnalyzer()));
-    for (int i = 0; i < ALT_DOCS.length; i++) {
-      Document doc = new Document();
-      doc.add(new TextField("title", ALT_DOCS[i], Field.Store.YES));
-      iw.addDocument(doc);
-    }
+      for (String alt_doc : ALT_DOCS) {
+          Document doc = new Document();
+          doc.add(new TextField("title", alt_doc, Field.Store.YES));
+          iw.addDocument(doc);
+      }
     iw.forceMerge(1);
     iw.close();
     dir.close();

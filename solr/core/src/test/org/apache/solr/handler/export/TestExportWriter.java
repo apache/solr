@@ -1235,8 +1235,8 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     for (int i = 0; i < 100; i++) {
       boolean found = false;
       String si = String.valueOf(i);
-      for (int j = 0; j < docs.size(); j++) {
-        if (docs.get(j).get("sortabledv_udvas").equals(si)) {
+      for (Map<String, Object> doc : docs) {
+        if (doc.get("sortabledv_udvas").equals(si)) {
           found = true;
           break;
         }
@@ -1362,9 +1362,9 @@ public class TestExportWriter extends SolrTestCaseJ4 {
           ((LinkedHashMap) doclist.get(i)).get("id"),
           String.valueOf(((HashMap<?, ?>) docs.get(i)).get("id")));
 
-      for (int j = 0; j < fieldSorts.length; j++) { // fields ..
-        String field = fieldSorts[j].getField();
-        String sort = fieldSorts[j].getSort();
+      for (SortFields fieldSort : fieldSorts) { // fields ..
+        String field = fieldSort.getField();
+        String sort = fieldSort.getSort();
         String fieldVal1 = String.valueOf(((HashMap) docs.get(i)).get(field)); // 1st doc
         String fieldVal2 = String.valueOf(((HashMap) docs.get(i + 1)).get(field)); // 2nd obj
         if (fieldVal1.equals(fieldVal2)) {
@@ -1372,9 +1372,9 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         } else {
           if (sort.equals("asc")) {
             if (field.equals("stringdv")
-                || field.equals("field1_s_dv")
-                || field.equals("datedv")
-                || field.equals("booleandv")) { // use string comparator
+                    || field.equals("field1_s_dv")
+                    || field.equals("datedv")
+                    || field.equals("booleandv")) { // use string comparator
               assertTrue(fieldVal1.compareTo(fieldVal2) < 0);
             } else if (field.equals("doubledv")) {
               assertTrue(Double.compare(Double.valueOf(fieldVal1), Double.valueOf(fieldVal2)) <= 0);
@@ -1382,15 +1382,15 @@ public class TestExportWriter extends SolrTestCaseJ4 {
               assertTrue(Float.compare(Float.valueOf(fieldVal1), Float.valueOf(fieldVal2)) <= 0);
             } else if (field.equals("intdv") || "field2_i_p".equals(field)) {
               assertTrue(
-                  Integer.compare(Integer.valueOf(fieldVal1), Integer.valueOf(fieldVal2)) <= 0);
+                      Integer.compare(Integer.valueOf(fieldVal1), Integer.valueOf(fieldVal2)) <= 0);
             } else if (field.equals("longdv") || field.equals("field3_l_p")) {
               assertTrue(Long.compare(Integer.valueOf(fieldVal1), Long.valueOf(fieldVal2)) <= 0);
             }
           } else {
             if (field.equals("stringdv")
-                || field.equals("field1_s_dv")
-                || field.equals("datedv")
-                || field.equals("booleandv")) { // use string comparator
+                    || field.equals("field1_s_dv")
+                    || field.equals("datedv")
+                    || field.equals("booleandv")) { // use string comparator
               assertTrue(fieldVal1.compareTo(fieldVal2) > 0);
             } else if (field.equals("doubledv")) {
               assertTrue(Double.compare(Double.valueOf(fieldVal1), Double.valueOf(fieldVal2)) >= 0);
@@ -1398,7 +1398,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
               assertTrue(Float.compare(Float.valueOf(fieldVal1), Float.valueOf(fieldVal2)) >= 0);
             } else if (field.equals("intdv") || "field2_i_p".equals(field)) {
               assertTrue(
-                  Integer.compare(Integer.valueOf(fieldVal1), Integer.valueOf(fieldVal2)) >= 0);
+                      Integer.compare(Integer.valueOf(fieldVal1), Integer.valueOf(fieldVal2)) >= 0);
             } else if (field.equals("longdv") || field.equals("field3_l_p")) {
               assertTrue(Long.compare(Integer.valueOf(fieldVal1), Long.valueOf(fieldVal2)) >= 0);
             }

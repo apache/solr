@@ -684,10 +684,10 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
     Slice shard1 = clusterState.getCollection(DEFAULT_COLLECTION).getSlice(SHARD1);
     leader = shard1.getLeader();
 
-    for (int i = 0; i < clients.size(); i++) {
+    for (SolrClient client : clients) {
       String leaderBaseUrl = zkStateReader.getBaseUrlForNodeName(leader.getNodeName());
-      if (((HttpSolrClient) clients.get(i)).getBaseURL().startsWith(leaderBaseUrl))
-        return clients.get(i);
+      if (((HttpSolrClient) client).getBaseURL().startsWith(leaderBaseUrl))
+        return client;
     }
 
     return null;
