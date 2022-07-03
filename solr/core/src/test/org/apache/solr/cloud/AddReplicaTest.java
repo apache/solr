@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import static org.apache.solr.client.solrj.response.RequestStatusState.COMPLETED;
 
-import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
@@ -31,8 +30,6 @@ import org.apache.solr.common.cloud.Replica;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** */
 public class AddReplicaTest extends SolrCloudTestCase {

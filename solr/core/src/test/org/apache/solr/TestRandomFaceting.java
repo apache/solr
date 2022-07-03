@@ -322,10 +322,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
   }
 
   private void validateResponse(
-          String expected,
-          String actual,
-          ModifiableSolrParams params,
-          List<String> methods)
+      String expected, String actual, ModifiableSolrParams params, List<String> methods)
       throws Exception {
     if (params.getBool("facet.exists", false)) {
       if (isSortByCount(params)) { // it's challenged with facet.sort=count

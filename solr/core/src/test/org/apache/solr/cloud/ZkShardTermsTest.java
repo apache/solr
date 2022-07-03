@@ -18,7 +18,6 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -36,12 +35,10 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ZkShardTermsTest extends SolrCloudTestCase {
 
-    @BeforeClass
+  @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(1)
         .addConfig(

@@ -16,26 +16,31 @@
  */
 package org.apache.solr.cloud;
 
-import org.apache.solr.core.CloudConfig;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.CoreDescriptor;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
+import org.apache.solr.core.CloudConfig;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
 
 public class MockSimpleZkController extends ZkController {
 
   /**
-   * @param cc                     Core container associated with this controller. cannot be null.
-   * @param zkServerAddress        where to connect to the zk server
+   * @param cc Core container associated with this controller. cannot be null.
+   * @param zkServerAddress where to connect to the zk server
    * @param zkClientConnectTimeout timeout in ms
-   * @param cloudConfig            configuration for this controller. TODO: possibly redundant with
-   *                               CoreContainer
-   * @param descriptorsSupplier    a supplier of the current core descriptors. used to know which cores
+   * @param cloudConfig configuration for this controller. TODO: possibly redundant with
+   *     CoreContainer
+   * @param descriptorsSupplier a supplier of the current core descriptors. used to know which cores
    */
-  public MockSimpleZkController(CoreContainer cc, String zkServerAddress, int zkClientConnectTimeout, CloudConfig cloudConfig, Supplier<List<CoreDescriptor>> descriptorsSupplier) throws InterruptedException, TimeoutException, IOException {
+  public MockSimpleZkController(
+      CoreContainer cc,
+      String zkServerAddress,
+      int zkClientConnectTimeout,
+      CloudConfig cloudConfig,
+      Supplier<List<CoreDescriptor>> descriptorsSupplier)
+      throws InterruptedException, TimeoutException, IOException {
     super(cc, zkServerAddress, zkClientConnectTimeout, cloudConfig, descriptorsSupplier);
   }
 

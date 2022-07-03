@@ -18,7 +18,6 @@
 package org.apache.solr.cluster.placement;
 
 import java.util.*;
-import java.util.stream.Collectors;
 import org.apache.solr.cluster.*;
 
 /**

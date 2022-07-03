@@ -17,7 +17,6 @@
 
 package org.apache.solr.cloud;
 
-import java.lang.invoke.MethodHandles;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -26,11 +25,9 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.cloud.Replica;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class TestCloudRecovery2 extends SolrCloudTestCase {
-    private static final String COLLECTION = "collection1";
+  private static final String COLLECTION = "collection1";
 
   @BeforeClass
   public static void setupCluster() throws Exception {

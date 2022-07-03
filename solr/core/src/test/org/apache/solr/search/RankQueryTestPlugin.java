@@ -624,8 +624,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private NamedList unmarshalSortValues(
-            SortSpec sortSpec, NamedList sortFieldValues) {
+    private NamedList unmarshalSortValues(SortSpec sortSpec, NamedList sortFieldValues) {
       NamedList unmarshalledSortValsPerField = new NamedList<>();
 
       if (0 == sortFieldValues.size()) return unmarshalledSortValsPerField;

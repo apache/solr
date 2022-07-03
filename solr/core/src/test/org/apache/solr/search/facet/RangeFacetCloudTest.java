@@ -39,8 +39,6 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.FacetParams.FacetRangeOther;
 import org.apache.solr.common.util.NamedList;
 import org.junit.BeforeClass;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Builds a random index of a few simple fields, maintaining an in-memory model of the expected doc
@@ -52,7 +50,7 @@ import org.slf4j.LoggerFactory;
  */
 public class RangeFacetCloudTest extends SolrCloudTestCase {
 
-    private static final String COLLECTION = MethodHandles.lookup().lookupClass().getName();
+  private static final String COLLECTION = MethodHandles.lookup().lookupClass().getName();
   private static final String CONF = COLLECTION + "_configSet";
 
   private static final String INT_FIELD = "range_i";

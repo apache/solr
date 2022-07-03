@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -38,14 +37,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** */
 @Ignore("Abstract classes should not be executed as tests")
 public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
 
-    protected int numNodes = 2;
+  protected int numNodes = 2;
   protected String configset = "cloud-dynamic";
 
   protected String collectionName = "collection_" + getClass().getSimpleName();

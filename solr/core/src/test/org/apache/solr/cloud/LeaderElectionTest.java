@@ -596,5 +596,4 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     server.shutdown();
     super.tearDown();
   }
-
 }

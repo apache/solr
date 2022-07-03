@@ -61,7 +61,6 @@ public class TaggerTest extends TaggerTestCase {
     String getName() {
       return name().replace('_', ' ');
     }
-
   }
 
   public void testFormat() throws Exception {

@@ -737,9 +737,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   }
 
   protected void verifySubmitCaptures(
-          Integer numberOfSlices,
-          Integer numberOfReplica,
-          Collection<String> createNodes) {
+      Integer numberOfSlices, Integer numberOfReplica, Collection<String> createNodes) {
     List<String> coreNames = new ArrayList<>();
     Map<String, Map<String, Integer>>
         sliceToNodeUrlsWithoutProtocolPartToNumberOfShardsRunningMapMap = new HashMap<>();
@@ -976,8 +974,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     }
 
     if (collectionExceptedToBeCreated) {
-      verifySubmitCaptures(
-          numberOfSlices, replicationFactor, createNodeList);
+      verifySubmitCaptures(numberOfSlices, replicationFactor, createNodeList);
     }
   }
 

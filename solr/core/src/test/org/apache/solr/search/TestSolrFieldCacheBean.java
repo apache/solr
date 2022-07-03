@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search;
 
-import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.Random;
 import org.apache.lucene.tests.util.TestUtil;
@@ -26,8 +25,6 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class TestSolrFieldCacheBean extends SolrTestCaseJ4 {
 

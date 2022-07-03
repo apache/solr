@@ -502,8 +502,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     }
   }
 
-  void createCollectionWithRetry(
-          String testCollectionName, int numShards, int replicationFactor)
+  void createCollectionWithRetry(String testCollectionName, int numShards, int replicationFactor)
       throws IOException, SolrServerException, InterruptedException, TimeoutException {
     CollectionAdminResponse resp =
         createCollection(testCollectionName, "conf1", numShards, replicationFactor);

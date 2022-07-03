@@ -78,7 +78,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
   private static final String DEBUG_LABEL = MethodHandles.lookup().lookupClass().getName();
   private static final String COLLECTION_NAME = DEBUG_LABEL + "_collection";
 
-    private static final int MAX_FIELD_NUM = 15;
+  private static final int MAX_FIELD_NUM = 15;
   private static final int UNIQUE_FIELD_VALS = 50;
 
   /** Multi-Valued string field suffixes that can be randomized for testing diff facet code paths */

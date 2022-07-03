@@ -96,10 +96,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
     assertTrue(collectErrors.toString(), success);
   }
 
-  private void invokeBulkCall(
-      String cacheName,
-      List<String> errs)
-      throws Exception {
+  private void invokeBulkCall(String cacheName, List<String> errs) throws Exception {
 
     String payload =
         "{"

@@ -321,7 +321,6 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
   /**
    * Validates a backup dir exists, passes check index, and contains a number of "real" documents
    * that match its name
-   *
    */
   private void validateBackup(final File backup) throws IOException {
     log.info("Checking Validity of {}", backup);

@@ -37,7 +37,6 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.UpdateLog;
-import org.apache.solr.update.VersionInfo;
 import org.apache.solr.util.TestHarness;
 import org.junit.After;
 import org.junit.Before;

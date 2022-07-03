@@ -194,7 +194,6 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     for (int i = 0; i < threads2.length; i++) {
       threads2[i].join();
     }
-    SolrCore core = h.getCore();
 
     assertU(commit());
 

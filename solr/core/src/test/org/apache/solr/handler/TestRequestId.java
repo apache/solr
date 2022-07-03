@@ -19,7 +19,6 @@ package org.apache.solr.handler;
 
 import static org.hamcrest.core.StringContains.containsString;
 
-import java.lang.invoke.MethodHandles;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
@@ -27,14 +26,12 @@ import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.LogListener;
 import org.junit.BeforeClass;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 @SuppressForbidden(reason = "We need to use log4J2 classes directly to test MDC impacts")
 public class TestRequestId extends SolrTestCaseJ4 {
 
-    @BeforeClass
+  @BeforeClass
   public static void beforeTests() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
   }

@@ -17,7 +17,6 @@
 package org.apache.solr.cloud.api.collections;
 
 import java.io.File;
-import java.lang.invoke.MethodHandles;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -25,8 +24,6 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Integration test verifying particular errors are reported correctly by the Collection-level
@@ -35,7 +32,7 @@ import org.slf4j.LoggerFactory;
 public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
   // TODO could these be unit tests somehow and still validate the response users see with certainty
 
-    private static final int NUM_SHARDS = 1;
+  private static final int NUM_SHARDS = 1;
   private static final int NUM_REPLICAS = 1;
   private static final String COLLECTION_NAME = "initial_collection";
   private static final String BACKUP_NAME = "backup_name";

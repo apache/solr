@@ -54,8 +54,6 @@ public class UniqFieldsUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
   public void testUniqFields() throws Exception {
     SolrCore core = h.getCore();
     UpdateRequestProcessorChain chained = core.getUpdateProcessingChain("uniq-fields");
-    UniqFieldsUpdateProcessorFactory factory =
-        ((UniqFieldsUpdateProcessorFactory) chained.getProcessors().get(0));
     assertNotNull(chained);
 
     addDoc(

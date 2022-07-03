@@ -20,7 +20,6 @@ package org.apache.solr.update;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketException;
-import java.util.HashSet;
 import java.util.Set;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -62,7 +61,6 @@ public class MockingHttp2SolrClient extends Http2SolrClient {
     public MockingHttp2SolrClient build() {
       return new MockingHttp2SolrClient(null, this);
     }
-
   }
 
   private Exception exception() {

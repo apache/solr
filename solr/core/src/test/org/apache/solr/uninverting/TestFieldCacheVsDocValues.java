@@ -386,8 +386,7 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
     }
   }
 
-  private void assertEquals(SortedDocValues expected, SortedDocValues actual)
-      throws Exception {
+  private void assertEquals(SortedDocValues expected, SortedDocValues actual) throws Exception {
     // can be null for the segment if no docs actually had any SortedDocValues
     // in this case FC.getDocTermsOrds returns EMPTY
     if (actual == null) {

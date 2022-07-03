@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -42,8 +41,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class TestCloudDeleteByQuery extends SolrCloudTestCase {
 

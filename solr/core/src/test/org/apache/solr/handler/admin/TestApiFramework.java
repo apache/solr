@@ -136,8 +136,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     assertEquals("shard1", parts.get("shard"));
     assertEquals("replica1", parts.get("replica"));
 
-    SolrQueryResponse rsp =
-        invoke(containerHandlers, null, "/collections/_introspect", mockCC);
+    SolrQueryResponse rsp = invoke(containerHandlers, null, "/collections/_introspect", mockCC);
 
     Set<String> methodNames = new HashSet<>();
     methodNames.add(rsp.getValues()._getStr("/spec[0]/methods[0]", null));
@@ -151,10 +150,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
 
     rsp =
         invoke(
-            coreHandlers,
-            "/schema/_introspect",
-            "/collections/hello/schema/_introspect",
-                mockCC);
+            coreHandlers, "/schema/_introspect", "/collections/hello/schema/_introspect", mockCC);
     methodNames.add(rsp.getValues()._getStr("/spec[0]/methods[0]", null));
     methodNames.add(rsp.getValues()._getStr("/spec[1]/methods[0]", null));
     assertTrue(methodNames.contains("POST"));
@@ -356,10 +352,10 @@ public class TestApiFramework extends SolrTestCaseJ4 {
   }
 
   private SolrQueryResponse invoke(
-          PluginBag<SolrRequestHandler> reqHandlers,
-          String path,
-          String fullPath,
-          CoreContainer mockCC) {
+      PluginBag<SolrRequestHandler> reqHandlers,
+      String path,
+      String fullPath,
+      CoreContainer mockCC) {
     HashMap<String, String> parts = new HashMap<>();
     boolean containerHandlerLookup = mockCC.getRequestHandlers() == reqHandlers;
     path = path == null ? fullPath : path;

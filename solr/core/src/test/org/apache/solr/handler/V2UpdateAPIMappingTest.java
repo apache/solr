@@ -30,7 +30,6 @@ import java.util.Map;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.api.UpdateAPI;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -38,7 +37,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 
 /** Unit tests for the v2 to v1 mapping logic in {@link UpdateAPI} */
 public class V2UpdateAPIMappingTest {

@@ -83,9 +83,7 @@ public final class SolrMetricTestUtils {
   }
 
   public static SolrMetricProducer getProducerOf(
-          SolrInfoBean.Category category,
-          String scope,
-          Map<String, Counter> metrics) {
+      SolrInfoBean.Category category, String scope, Map<String, Counter> metrics) {
     return new SolrMetricProducer() {
       SolrMetricsContext solrMetricsContext;
 

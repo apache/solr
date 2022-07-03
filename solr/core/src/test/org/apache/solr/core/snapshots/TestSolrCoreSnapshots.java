@@ -16,7 +16,6 @@
  */
 package org.apache.solr.core.snapshots;
 
-import java.lang.invoke.MethodHandles;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -53,8 +52,6 @@ import org.apache.solr.handler.BackupRestoreUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Tests for index backing up and restoring index snapshots.
@@ -68,7 +65,7 @@ import org.slf4j.LoggerFactory;
 @SolrTestCaseJ4.SuppressSSL // Currently, unknown why SSL does not work with this test
 @Slow
 public class TestSolrCoreSnapshots extends SolrCloudTestCase {
-    private static long docsSeed; // see indexDocs()
+  private static long docsSeed; // see indexDocs()
 
   @BeforeClass
   public static void setupClass() throws Exception {

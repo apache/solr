@@ -920,5 +920,4 @@ public class TestSubQueryTransformer extends SolrTestCaseJ4 {
             "" + (deptMultiplier * 2)),
         noMatchAtSubQ);
   }
-
 }

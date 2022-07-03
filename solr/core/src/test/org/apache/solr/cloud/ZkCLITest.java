@@ -490,5 +490,4 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     }
     super.tearDown();
   }
-
 }

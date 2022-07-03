@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import static org.hamcrest.CoreMatchers.is;
 
-import java.lang.invoke.MethodHandles;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -28,8 +27,6 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ShardParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Test which asserts that shards.tolerant=true works even if one shard is down and also asserts
@@ -37,7 +34,7 @@ import org.slf4j.LoggerFactory;
  */
 public class TestDownShardTolerantSearch extends SolrCloudTestCase {
 
-    @BeforeClass
+  @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(2).addConfig("conf", configset("cloud-minimal")).configure();
   }

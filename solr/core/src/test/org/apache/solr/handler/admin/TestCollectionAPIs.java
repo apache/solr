@@ -25,7 +25,6 @@ import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_VALUE
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.util.Utils.fromJSONString;
 
-import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -54,8 +53,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.SolrRequestParsers;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class TestCollectionAPIs extends SolrTestCaseJ4 {
 
@@ -292,7 +289,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     return output;
   }
 
-    public static Pair<SolrQueryRequest, SolrQueryResponse> makeCall(
+  public static Pair<SolrQueryRequest, SolrQueryResponse> makeCall(
       final ApiBag apiBag,
       String path,
       final SolrRequest.METHOD method,

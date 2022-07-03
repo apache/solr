@@ -21,7 +21,6 @@ import static org.hamcrest.CoreMatchers.is;
 import java.util.List;
 import java.util.Random;
 import org.apache.solr.BaseDistributedSearchTestCase;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;

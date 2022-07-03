@@ -17,7 +17,6 @@
 
 package org.apache.solr.security;
 
-import java.lang.invoke.MethodHandles;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -25,12 +24,10 @@ import org.apache.solr.cloud.SolrCloudAuthTestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class BasicAuthOnSingleNodeTest extends SolrCloudAuthTestCase {
 
-    private static final String COLLECTION = "authCollection";
+  private static final String COLLECTION = "authCollection";
 
   @Before
   public void setupCluster() throws Exception {

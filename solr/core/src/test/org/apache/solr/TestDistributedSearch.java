@@ -1984,8 +1984,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     return rsp;
   }
 
-  protected void comparePartialResponses(
-          QueryResponse rsp, List<String> upShards) {
+  protected void comparePartialResponses(QueryResponse rsp, List<String> upShards) {
     NamedList<?> sinfo = (NamedList<?>) rsp.getResponse().get(ShardParams.SHARDS_INFO);
 
     assertNotNull("missing shard info", sinfo);

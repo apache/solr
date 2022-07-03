@@ -34,12 +34,10 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.CurrencyFieldTypeTest;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
 
-    private static final String COLLECTION = MethodHandles.lookup().lookupClass().getName();
+  private static final String COLLECTION = MethodHandles.lookup().lookupClass().getName();
   private static final String CONF = COLLECTION + "_configSet";
 
   private static String FIELD = null; // randomized

@@ -18,7 +18,6 @@
 package org.apache.solr.cloud.overseer;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -29,8 +28,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @LuceneTestCase.Slow
 @SolrTestCaseJ4.SuppressSSL
@@ -43,7 +40,7 @@ public class ZkCollectionPropsCachingTest extends SolrCloudTestCase {
   //
   private String collectionName;
 
-    @BeforeClass
+  @BeforeClass
   public static void setupClass() throws Exception {
     configureCluster(4).addConfig("conf", configset("cloud-minimal")).configure();
   }

@@ -129,8 +129,7 @@ public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
               aliasName,
               "2017-12-25T23:24:25Z",
               solrClient,
-              failure
-          );
+              failure);
     }
 
     startAll(threads);
@@ -163,11 +162,11 @@ public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
     protected final AtomicReference<Exception> failure;
 
     CreateRoutedAliasThread(
-            String name,
-            String aliasName,
-            String start,
-            SolrClient solrClient,
-            AtomicReference<Exception> failure) {
+        String name,
+        String aliasName,
+        String start,
+        SolrClient solrClient,
+        AtomicReference<Exception> failure) {
       super(name);
       this.aliasName = aliasName;
       this.start = start;
