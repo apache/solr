@@ -977,8 +977,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
         }
       }
       assertTrue(
-          USAGE + " must be >= " + minValidDocId + ": " + value,
-          minValidDocId <= (Integer) value);
+          USAGE + " must be >= " + minValidDocId + ": " + value, minValidDocId <= (Integer) value);
       return Collections.<String>singleton(resultKey);
     }
   }

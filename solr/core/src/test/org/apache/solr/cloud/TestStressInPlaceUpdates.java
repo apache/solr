@@ -434,9 +434,7 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
 
                     final Long foundVersion = (Long) actual.getFieldValue("_version_");
                     assertNotNull(msg, foundVersion);
-                    assertTrue(
-                        msg + "... solr doc has non-positive version???",
-                        0 < foundVersion);
+                    assertTrue(msg + "... solr doc has non-positive version???", 0 < foundVersion);
                     final Integer intVal = (Integer) actual.getFieldValue("val1_i_dvo");
                     assertNotNull(msg, intVal);
 
