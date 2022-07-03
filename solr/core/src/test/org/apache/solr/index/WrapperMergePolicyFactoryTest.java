@@ -104,14 +104,14 @@ public class WrapperMergePolicyFactoryTest extends SolrTestCaseJ4 {
         if (wrappingNoCFSRatio != null) {
           assertEquals(
               "#" + ii + " wrappingNoCFSRatio",
-              wrappingNoCFSRatio.doubleValue(),
+                  wrappingNoCFSRatio,
               mp.getNoCFSRatio(),
               0.0d);
         }
         if (wrappedNoCFSRatio != null) {
           assertEquals(
               "#" + ii + " wrappedNoCFSRatio",
-              wrappedNoCFSRatio.doubleValue(),
+                  wrappedNoCFSRatio,
               mp.getNoCFSRatio(),
               0.0d);
         }

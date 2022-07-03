@@ -438,7 +438,7 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
     final Map<String, Object> initArgs = new HashMap<>();
     initArgs.put("aFloat", theFloatObject);
     SolrPluginUtils.invokeSetters(bean, initArgs.entrySet());
-    assertEquals(bean.getAFloat(), theFloat.floatValue(), 0.0);
+    assertEquals(bean.getAFloat(), theFloat, 0.0);
   }
 
   /** macro */
