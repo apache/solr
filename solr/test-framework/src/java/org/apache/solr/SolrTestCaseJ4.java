@@ -219,7 +219,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     try (Writer writer =
         new OutputStreamWriter(
             Files.newOutputStream(coreDirectory.resolve(CORE_PROPERTIES_FILENAME)),
-                StandardCharsets.UTF_8)) {
+            StandardCharsets.UTF_8)) {
       properties.store(writer, testname);
     }
   }
