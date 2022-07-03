@@ -798,9 +798,9 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertFalse(d1.getField("id") instanceof LazyDocument.LazyField);
     values1 = d1.getFields("test_hlt");
     assertEquals(4, values1.length);
-    for (int i = 0; i < values1.length; i++) {
-      assertTrue(values1[i] instanceof LazyDocument.LazyField);
-      LazyDocument.LazyField f = (LazyDocument.LazyField) values1[i];
+    for (IndexableField field : values1) {
+      assertTrue(field instanceof LazyDocument.LazyField);
+      LazyDocument.LazyField f = (LazyDocument.LazyField) field;
       assertFalse(f.hasBeenLoaded());
     }
     req.close();

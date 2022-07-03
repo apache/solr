@@ -2005,8 +2005,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       String shard = entry.getKey();
       NamedList<?> info = (NamedList<?>) entry.getValue();
       boolean found = false;
-      for (int i = 0; i < shardsArr.length; i++) {
-        String s = shardsArr[i];
+      for (String s : shardsArr) {
         if (shard.contains(s)) {
           found = true;
           // make sure that it responded if it's up and the landing node didn't error before sending
@@ -2016,34 +2015,34 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
             // assertTrue("Expected to find numFound in the up shard info",info.get("numFound") !=
             // null);
             boolean timeAllowedError =
-                info.get("error") != null
-                    && info.get("error").toString().contains("Time allowed to handle this request");
+                    info.get("error") != null
+                            && info.get("error").toString().contains("Time allowed to handle this request");
             if (timeAllowedError) {
               assertEquals(
-                  "Expected to find the "
-                      + SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY
-                      + " header set if a shard is down",
-                  Boolean.TRUE,
-                  rsp.getHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
+                      "Expected to find the "
+                              + SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY
+                              + " header set if a shard is down",
+                      Boolean.TRUE,
+                      rsp.getHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
               assertTrue(
-                  "Expected to find error in the down shard info: " + info,
-                  info.get("error") != null);
+                      "Expected to find error in the down shard info: " + info,
+                      info.get("error") != null);
             } else {
               assertTrue(
-                  "Expected timeAllowedError or to find shardAddress in the up shard info: " + info,
-                  info.get("shardAddress") != null);
+                      "Expected timeAllowedError or to find shardAddress in the up shard info: " + info,
+                      info.get("shardAddress") != null);
             }
           } else {
             assertEquals(
-                "Expected to find the "
-                    + SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY
-                    + " header set if a shard is down. Response: "
-                    + rsp,
-                Boolean.TRUE,
-                rsp.getHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
+                    "Expected to find the "
+                            + SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY
+                            + " header set if a shard is down. Response: "
+                            + rsp,
+                    Boolean.TRUE,
+                    rsp.getHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
             assertTrue(
-                "Expected to find error in the down shard info: " + info.toString(),
-                info.get("error") != null);
+                    "Expected to find error in the down shard info: " + info.toString(),
+                    info.get("error") != null);
           }
         }
       }
