@@ -21,7 +21,6 @@ import static org.apache.lucene.tests.util.LuceneTestCase.random;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -57,8 +56,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class DocValuesNotIndexedTest extends SolrCloudTestCase {
 
