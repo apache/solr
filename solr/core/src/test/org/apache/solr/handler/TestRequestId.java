@@ -34,9 +34,7 @@ import org.slf4j.MDC;
 @SuppressForbidden(reason = "We need to use log4J2 classes directly to test MDC impacts")
 public class TestRequestId extends SolrTestCaseJ4 {
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  @BeforeClass
+    @BeforeClass
   public static void beforeTests() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
   }

@@ -37,8 +37,7 @@ import org.slf4j.LoggerFactory;
 
 public class TestQueryingOnDownCollection extends SolrCloudTestCase {
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final String COLLECTION_NAME = "infected";
+    private static final String COLLECTION_NAME = "infected";
 
   private static final String USERNAME = "solr";
   private static final String PASSWORD = "solr";

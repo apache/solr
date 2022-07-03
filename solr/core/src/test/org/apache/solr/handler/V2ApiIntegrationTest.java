@@ -94,15 +94,6 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
         incorrectPayload);
   }
 
-  private long getStatus(V2Response response) {
-    Object header = response.getResponse().get("responseHeader");
-    if (header instanceof NamedList) {
-      return (int) ((NamedList<?>) header).get("status");
-    } else {
-      return (long) ((Map<?, ?>) header).get("status");
-    }
-  }
-
   @Test
   public void testIntrospect() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();

@@ -49,9 +49,7 @@ import org.slf4j.LoggerFactory;
 @LuceneTestCase.Slow
 public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  private static final int numShards = 2;
+    private static final int numShards = 2;
   private static final int numReplicas = 2;
   private static final int nodeCount = 5;
   private static final String configName = "solrCloudCollectionConfig";

@@ -65,8 +65,6 @@ import org.slf4j.LoggerFactory;
  */
 public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   private static final int NUM_SHARDS = 2;
   private static final int REPLICATION_FACTOR = 2;
   private static final int NUM_SERVERS = 5;

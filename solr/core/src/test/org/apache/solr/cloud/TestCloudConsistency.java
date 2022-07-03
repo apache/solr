@@ -320,9 +320,9 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     try {
       for (int d = firstDocId; d <= lastDocId; d++) {
         String docId = String.valueOf(d);
-        assertDocExists(leaderSolr, testCollectionName, docId);
+        assertDocExists(leaderSolr, docId);
         for (HttpSolrClient replicaSolr : replicas) {
-          assertDocExists(replicaSolr, testCollectionName, docId);
+          assertDocExists(replicaSolr, docId);
         }
       }
     } finally {
@@ -335,7 +335,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     }
   }
 
-  private void assertDocExists(HttpSolrClient solr, String coll, String docId) throws Exception {
+  private void assertDocExists(HttpSolrClient solr, String docId) throws Exception {
     NamedList<?> rsp = realTimeGetDocId(solr, docId);
     String match = JSONTestUtil.matchObj("/id", rsp.get("doc"), docId);
     assertTrue(

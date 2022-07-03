@@ -202,12 +202,6 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
 
   }
 
-  static final Comparator<String> lessFloat =
-      (o1, o2) -> {
-        assertTrue(Float.parseFloat(o1) < Float.parseFloat(o2));
-        return 0;
-      };
-
   @Ignore("SOLR-7814, also don't forget cover boost at testCacheHit()")
   public void testBoost() throws Exception {
     indexDataForScoring();

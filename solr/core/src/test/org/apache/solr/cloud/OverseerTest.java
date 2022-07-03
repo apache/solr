@@ -342,9 +342,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
       return null;
     }
 
-    public ZkStateReader getZkReader() {
-      return zkStateReader;
-    }
   }
 
   @BeforeClass
@@ -914,8 +911,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       mockController.createCollection(COLLECTION, 1);
 
-      ZkController zkController = createMockZkController(server.getZkAddress(), zkClient, reader);
-
       mockController.publishState(
           COLLECTION,
           core,
@@ -1383,8 +1378,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
       overseerClient = electNewOverseer(server.getZkAddress());
 
       mockController.createCollection(COLLECTION, 1);
-
-      ZkController zkController = createMockZkController(server.getZkAddress(), zkClient, reader);
 
       mockController.publishState(
           COLLECTION,
@@ -1935,14 +1928,14 @@ public class OverseerTest extends SolrTestCaseJ4 {
     when(zkController.getLeaderProps(anyString(), anyString(), anyInt())).thenCallRealMethod();
     when(zkController.getLeaderProps(anyString(), anyString(), anyInt(), anyBoolean()))
         .thenCallRealMethod();
-    doReturn(getCloudDataProvider(zkAddress, zkClient, reader))
+    doReturn(getCloudDataProvider(zkAddress, zkClient))
         .when(zkController)
         .getSolrCloudManager();
     return zkController;
   }
 
   private SolrCloudManager getCloudDataProvider(
-      String zkAddress, SolrZkClient zkClient, ZkStateReader reader) {
+          String zkAddress, SolrZkClient zkClient) {
     var client =
         new CloudLegacySolrClient.Builder(Collections.singletonList(zkAddress), Optional.empty())
             .withSocketTimeout(30000)

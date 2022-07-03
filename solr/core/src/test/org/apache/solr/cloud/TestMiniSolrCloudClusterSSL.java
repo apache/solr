@@ -319,10 +319,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
 
       // sanity check the HttpClient used under the hood by our the cluster's CloudSolrClient
       // ensure it has the necessary protocols/credentials for each jetty server
-      //
-      // NOTE: we're not responsible for closing the cloud client
-      final HttpClient cloudClient =
-          ((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient();
+
       try (HttpSolrClient client = getRandomizedHttpSolrClient(baseURL)) {
         assertEquals(0, CoreAdminRequest.getStatus(/* all */ null, client).getStatus());
       }

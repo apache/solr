@@ -169,7 +169,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
       Map<String, Counter> metrics =
           SolrMetricTestUtils.getRandomMetricsWithReplacements(random, registered);
       SolrMetricProducer producer =
-          SolrMetricTestUtils.getProducerOf(metricManager, category, scope, metrics);
+          SolrMetricTestUtils.getProducerOf(category, scope, metrics);
       coreMetricManager.registerMetricProducer(scope, producer);
       registered.putAll(metrics);
       // waitForListener();
@@ -193,7 +193,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
     SolrInfoBean.Category category = SolrMetricTestUtils.getRandomCategory(random, true);
     Map<String, Counter> metrics = SolrMetricTestUtils.getRandomMetrics(random, true);
     SolrMetricProducer producer =
-        SolrMetricTestUtils.getProducerOf(metricManager, category, scope, metrics);
+        SolrMetricTestUtils.getProducerOf(category, scope, metrics);
     coreMetricManager.registerMetricProducer(scope, producer);
     Set<ObjectInstance> objects = TEST_MBEAN_SERVER.queryMBeans(null, null);
     assertEquals(
@@ -291,7 +291,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
     SolrInfoBean.Category category = SolrMetricTestUtils.getRandomCategory(random(), true);
     Map<String, Counter> metrics = SolrMetricTestUtils.getRandomMetrics(random(), true);
     SolrMetricProducer producer =
-        SolrMetricTestUtils.getProducerOf(metricManager, category, scope, metrics);
+        SolrMetricTestUtils.getProducerOf(category, scope, metrics);
     coreMetricManager.registerMetricProducer(scope, producer);
     Set<ObjectInstance> objects = TEST_MBEAN_SERVER.queryMBeans(null, null);
     assertEquals(

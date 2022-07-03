@@ -47,8 +47,6 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
 
   private SolrZkClient zkClient;
 
-  private ZkStateReader reader;
-
   private NodeConfig cfg;
 
   private void setUpZkAndDiskXml(boolean toZk, boolean leaveOnLocal) throws Exception {
@@ -100,9 +98,6 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
       zkClient.close();
     }
 
-    if (reader != null) {
-      reader.close();
-    }
     zkServer.shutdown();
   }
 

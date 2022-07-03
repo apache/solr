@@ -95,7 +95,6 @@ public class TestStressRecovery extends TestRTGBase {
 
     final UpdateHandler uHandler = h.getCore().getUpdateHandler();
     final UpdateLog uLog = uHandler.getUpdateLog();
-    final VersionInfo vInfo = uLog.getVersionInfo();
     final Object stateChangeLock = new Object();
     this.visibleModel = model;
     final Semaphore[] writePermissions = new Semaphore[nWriteThreads];

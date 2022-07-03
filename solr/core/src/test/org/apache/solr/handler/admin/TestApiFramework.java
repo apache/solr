@@ -19,7 +19,6 @@ package org.apache.solr.handler.admin;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.solr.api.ApiBag.EMPTY_SPEC;
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.common.params.CommonParams.COLLECTIONS_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.CONFIGSETS_HANDLER_PATH;
@@ -138,7 +137,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     assertEquals("replica1", parts.get("replica"));
 
     SolrQueryResponse rsp =
-        invoke(containerHandlers, null, "/collections/_introspect", GET, mockCC);
+        invoke(containerHandlers, null, "/collections/_introspect", mockCC);
 
     Set<String> methodNames = new HashSet<>();
     methodNames.add(rsp.getValues()._getStr("/spec[0]/methods[0]", null));
@@ -155,14 +154,13 @@ public class TestApiFramework extends SolrTestCaseJ4 {
             coreHandlers,
             "/schema/_introspect",
             "/collections/hello/schema/_introspect",
-            GET,
-            mockCC);
+                mockCC);
     methodNames.add(rsp.getValues()._getStr("/spec[0]/methods[0]", null));
     methodNames.add(rsp.getValues()._getStr("/spec[1]/methods[0]", null));
     assertTrue(methodNames.contains("POST"));
     assertTrue(methodNames.contains("GET"));
 
-    rsp = invoke(coreHandlers, "/", "/collections/hello/_introspect", GET, mockCC);
+    rsp = invoke(coreHandlers, "/", "/collections/hello/_introspect", mockCC);
     assertConditions(
         rsp.getValues().asMap(2),
         Map.of(
@@ -358,11 +356,10 @@ public class TestApiFramework extends SolrTestCaseJ4 {
   }
 
   private SolrQueryResponse invoke(
-      PluginBag<SolrRequestHandler> reqHandlers,
-      String path,
-      String fullPath,
-      SolrRequest.METHOD method,
-      CoreContainer mockCC) {
+          PluginBag<SolrRequestHandler> reqHandlers,
+          String path,
+          String fullPath,
+          CoreContainer mockCC) {
     HashMap<String, String> parts = new HashMap<>();
     boolean containerHandlerLookup = mockCC.getRequestHandlers() == reqHandlers;
     path = path == null ? fullPath : path;

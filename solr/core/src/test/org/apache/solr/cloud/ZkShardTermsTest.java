@@ -41,9 +41,7 @@ import org.slf4j.LoggerFactory;
 
 public class ZkShardTermsTest extends SolrCloudTestCase {
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  @BeforeClass
+    @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(1)
         .addConfig(

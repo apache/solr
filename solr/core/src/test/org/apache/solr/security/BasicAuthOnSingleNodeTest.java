@@ -30,8 +30,7 @@ import org.slf4j.LoggerFactory;
 
 public class BasicAuthOnSingleNodeTest extends SolrCloudAuthTestCase {
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final String COLLECTION = "authCollection";
+    private static final String COLLECTION = "authCollection";
 
   @Before
   public void setupCluster() throws Exception {

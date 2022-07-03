@@ -54,7 +54,7 @@ public class DistributedFacetExistsSmallTest extends BaseDistributedSearchTestCa
     index(id, maxId += 1 + rnd.nextInt(5), FLD, "CCC");
     index(id, maxId += 1 + rnd.nextInt(5), FLD, "CCC");
 
-    final SolrClient shard0 = clients.get(0);
+    // final SolrClient shard0 = clients.get(0);
     // expectedly fails test
     // shard0.add(sdoc("id", 13, FLD, "DDD"));
     commit();

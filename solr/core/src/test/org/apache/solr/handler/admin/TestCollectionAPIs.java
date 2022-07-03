@@ -58,7 +58,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class TestCollectionAPIs extends SolrTestCaseJ4 {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Test
   public void testCopyParamsToMap() {
@@ -293,24 +292,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     return output;
   }
 
-  static void assertErrorContains(
-      final ApiBag apiBag,
-      final String path,
-      final SolrRequest.METHOD method,
-      final String payload,
-      final CoreContainer cc,
-      String expectedErrorMsg) {
-    RuntimeException e =
-        expectThrows(RuntimeException.class, () -> makeCall(apiBag, path, method, payload, cc));
-    assertTrue(
-        "Expected exception with error message '"
-            + expectedErrorMsg
-            + "' but got: "
-            + e.getMessage(),
-        e.getMessage().contains(expectedErrorMsg));
-  }
-
-  public static Pair<SolrQueryRequest, SolrQueryResponse> makeCall(
+    public static Pair<SolrQueryRequest, SolrQueryResponse> makeCall(
       final ApiBag apiBag,
       String path,
       final SolrRequest.METHOD method,

@@ -37,9 +37,7 @@ import org.slf4j.LoggerFactory;
  */
 public class TestDownShardTolerantSearch extends SolrCloudTestCase {
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  @BeforeClass
+    @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(2).addConfig("conf", configset("cloud-minimal")).configure();
   }

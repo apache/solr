@@ -110,7 +110,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     String testCollectionName = "repfacttest_c8n_2x2";
     String shardId = "shard1";
 
-    createCollectionWithRetry(testCollectionName, "conf1", numShards, replicationFactor);
+    createCollectionWithRetry(testCollectionName, numShards, replicationFactor);
 
     cloudClient.setDefaultCollection(testCollectionName);
 
@@ -297,7 +297,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     final String shardId = "shard1";
     final int minRf = 2;
 
-    createCollectionWithRetry(testCollectionName, "conf1", numShards, replicationFactor);
+    createCollectionWithRetry(testCollectionName, numShards, replicationFactor);
     cloudClient.setDefaultCollection(testCollectionName);
 
     List<Replica> replicas =
@@ -503,7 +503,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
   }
 
   void createCollectionWithRetry(
-      String testCollectionName, String config, int numShards, int replicationFactor)
+          String testCollectionName, int numShards, int replicationFactor)
       throws IOException, SolrServerException, InterruptedException, TimeoutException {
     CollectionAdminResponse resp =
         createCollection(testCollectionName, "conf1", numShards, replicationFactor);

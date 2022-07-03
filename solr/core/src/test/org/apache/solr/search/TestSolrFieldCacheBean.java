@@ -31,8 +31,6 @@ import org.slf4j.LoggerFactory;
 
 public class TestSolrFieldCacheBean extends SolrTestCaseJ4 {
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema-minimal.xml");

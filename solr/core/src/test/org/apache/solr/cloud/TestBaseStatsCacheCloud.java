@@ -44,9 +44,8 @@ import org.slf4j.LoggerFactory;
 /** */
 @Ignore("Abstract classes should not be executed as tests")
 public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  protected int numNodes = 2;
+    protected int numNodes = 2;
   protected String configset = "cloud-dynamic";
 
   protected String collectionName = "collection_" + getClass().getSimpleName();

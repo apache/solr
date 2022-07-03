@@ -54,7 +54,6 @@ import org.apache.solr.SolrTestCase;
 /** */
 public class TestDocSet extends SolrTestCase {
   Random rand;
-  private Object IndexSearcher;
 
   @Override
   public void setUp() throws Exception {
@@ -609,12 +608,6 @@ public class TestDocSet extends SolrTestCase {
       IndexReader r = dummyMultiReader(maxSeg, maxDoc);
       doFilterTest(r);
     }
-  }
-
-  private DocIdSetIterator getDocIdSetIteratorFromQuery(
-      DocSetQuery dsq, LeafReaderContext readerContext) throws IOException {
-    Scorer scorer = dsq.createWeight(null, ScoreMode.COMPLETE_NO_SCORES, 0).scorer(readerContext);
-    return scorer != null ? scorer.iterator() : null;
   }
 
   private static final int MAX_SRC_SIZE = 130; // push _just_ into 3 `long` "words"

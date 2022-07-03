@@ -228,7 +228,6 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
     eventsListener.events.clear();
     eventsListener.setExpectedType(ClusterEvent.EventType.CLUSTER_PROPERTIES_CHANGED);
     ClusterProperties clusterProperties = new ClusterProperties(cluster.getZkClient());
-    Map<String, Object> oldProps = new HashMap<>(clusterProperties.getClusterProperties());
     clusterProperties.setClusterProperty("ext.foo", "bar");
     eventsListener.waitForExpectedEvent(30);
     assertNotNull(

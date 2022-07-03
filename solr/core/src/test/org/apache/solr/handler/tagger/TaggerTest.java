@@ -62,13 +62,6 @@ public class TaggerTest extends TaggerTestCase {
       return name().replace('_', ' ');
     }
 
-    static N lookupByName(String name) {
-      return N.valueOf(name.replace(' ', '_'));
-    }
-
-    int getId() {
-      return ordinal();
-    }
   }
 
   public void testFormat() throws Exception {

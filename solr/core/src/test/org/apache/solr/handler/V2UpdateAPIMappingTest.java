@@ -43,9 +43,7 @@ import org.mockito.ArgumentCaptor;
 /** Unit tests for the v2 to v1 mapping logic in {@link UpdateAPI} */
 public class V2UpdateAPIMappingTest {
   private ApiBag apiBag;
-  private ArgumentCaptor<SolrQueryRequest> queryRequestCaptor;
   private UpdateRequestHandler mockUpdateHandler;
-  private ConfigSetsHandler mockConfigSetHandler;
 
   @BeforeClass
   public static void ensureWorkingMockito() {
@@ -55,9 +53,6 @@ public class V2UpdateAPIMappingTest {
   @Before
   public void setupApiBag() {
     mockUpdateHandler = mock(UpdateRequestHandler.class);
-    mockConfigSetHandler = mock(ConfigSetsHandler.class);
-    queryRequestCaptor = ArgumentCaptor.forClass(SolrQueryRequest.class);
-
     apiBag = new ApiBag(false);
     final UpdateAPI updateAPI = new UpdateAPI(mockUpdateHandler);
 

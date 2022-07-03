@@ -491,9 +491,4 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     super.tearDown();
   }
 
-  private void printLayout(String zkHost) throws Exception {
-    SolrZkClient zkClient = new SolrZkClient(zkHost, AbstractZkTestCase.TIMEOUT);
-    zkClient.printLayoutToStream(System.out);
-    zkClient.close();
-  }
 }

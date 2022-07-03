@@ -35,9 +35,7 @@ import org.slf4j.LoggerFactory;
 public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
   // TODO could these be unit tests somehow and still validate the response users see with certainty
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  private static final int NUM_SHARDS = 1;
+    private static final int NUM_SHARDS = 1;
   private static final int NUM_REPLICAS = 1;
   private static final String COLLECTION_NAME = "initial_collection";
   private static final String BACKUP_NAME = "backup_name";

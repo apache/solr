@@ -46,7 +46,6 @@ public class BlobRepositoryCloudTest extends SolrCloudTestCase {
         .addConfig("configname", TEST_PATH.resolve("resource-sharing"))
         .configure();
     //    Thread.sleep(2000);
-    HashMap<String, String> params = new HashMap<>();
     CollectionAdminRequest.createCollection(CollectionAdminParams.SYSTEM_COLL, null, 1, 1)
         .process(cluster.getSolrClient());
     // test component will fail if it can't find a blob with this data by this name

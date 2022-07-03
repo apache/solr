@@ -30,8 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class TestCloudRecovery2 extends SolrCloudTestCase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final String COLLECTION = "collection1";
+    private static final String COLLECTION = "collection1";
 
   @BeforeClass
   public static void setupCluster() throws Exception {

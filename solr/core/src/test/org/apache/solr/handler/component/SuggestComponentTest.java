@@ -29,8 +29,6 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
 
   private static final String rh = "/suggest";
 
-  private static CoreContainer cc;
-
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-suggestercomponent.xml", "schema.xml");
@@ -821,10 +819,8 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
 
   private void reloadCore(boolean createNewCore) throws Exception {
     if (createNewCore) {
-      CoreContainer cores = h.getCoreContainer();
       SolrCore core = h.getCore();
       String dataDir1 = core.getDataDir();
-      CoreDescriptor cd = core.getCoreDescriptor();
       h.close();
       createCore();
       SolrCore createdCore = h.getCore();

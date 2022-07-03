@@ -53,10 +53,8 @@ public class TestSearchPerf extends SolrTestCaseJ4 {
   }
 
   Random r = new Random(0); // specific seed for reproducible perf testing
-  int nDocs;
 
   void createIndex(int nDocs) {
-    this.nDocs = nDocs;
     assertU(delQ("*:*"));
     for (int i = 0; i < nDocs; i++) {
       assertU(

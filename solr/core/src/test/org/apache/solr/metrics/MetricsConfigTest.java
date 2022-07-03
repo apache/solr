@@ -40,19 +40,6 @@ import org.junit.rules.TestRule;
 public class MetricsConfigTest extends SolrTestCaseJ4 {
   @Rule public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
-  // tmp dir, cleaned up automatically.
-  private static File solrHome = null;
-
-  @BeforeClass
-  public static void setupLoader() {
-    solrHome = createTempDir().toFile();
-  }
-
-  @AfterClass
-  public static void cleanupLoader() {
-    solrHome = null;
-  }
-
   @Test
   public void testDefaults() throws Exception {
     NodeConfig cfg = loadNodeConfig("solr-metricsconfig.xml");

@@ -36,9 +36,7 @@ import org.slf4j.LoggerFactory;
 @RandomizeSSL(ssl = 0.5, reason = "frequent SSL usage to make test worth while")
 public class TestSSLRandomization extends SolrCloudTestCase {
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  @BeforeClass
+    @BeforeClass
   public static void createMiniSolrCloudCluster() throws Exception {
     configureCluster(TestMiniSolrCloudClusterSSL.NUM_SERVERS).configure();
   }

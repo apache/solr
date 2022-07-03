@@ -54,9 +54,7 @@ import org.junit.Test;
 @SolrTestCaseJ4.SuppressSSL
 public class ZkControllerTest extends SolrTestCaseJ4 {
 
-  private static final String COLLECTION_NAME = "collection1";
-
-  static final int TIMEOUT = 10000;
+    static final int TIMEOUT = 10000;
 
   @BeforeClass
   public static void beforeClass() throws Exception {}

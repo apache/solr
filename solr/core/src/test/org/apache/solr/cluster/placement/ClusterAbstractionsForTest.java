@@ -65,11 +65,6 @@ class ClusterAbstractionsForTest {
   static class NodeImpl implements Node {
     public final String nodeName;
 
-    /** Transforms a collection of node names into a set of {@link Node} instances. */
-    static Set<Node> getNodes(Collection<String> nodeNames) {
-      return nodeNames.stream().map(NodeImpl::new).collect(Collectors.toSet());
-    }
-
     NodeImpl(String nodeName) {
       this.nodeName = nodeName;
     }

@@ -183,9 +183,6 @@ public class TestOrdValues extends SolrTestCase {
   protected static final String INT_FIELD = "iii";
   protected static final String FLOAT_FIELD = "fff";
 
-  protected ValueSource INT_VALUESOURCE = new IntFieldSource(INT_FIELD);
-  protected ValueSource FLOAT_VALUESOURCE = new FloatFieldSource(FLOAT_FIELD);
-
   private static final String DOC_TEXT_LINES[] = {
     "Well, this is just some plain text we use for creating the ",
     "test documents. It used to be a text from an online collection ",
@@ -298,11 +295,6 @@ public class TestOrdValues extends SolrTestCase {
   // some text line for regular search
   private static String textLine(int docNum) {
     return DOC_TEXT_LINES[docNum % DOC_TEXT_LINES.length];
-  }
-
-  // extract expected doc score from its ID Field: "ID7" --> 7.0
-  protected static float expectedFieldScore(String docIDFieldVal) {
-    return Float.parseFloat(docIDFieldVal.substring(2));
   }
 
   // debug messages (change DBG to true for anything to print)

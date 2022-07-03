@@ -42,9 +42,8 @@ public class ZkCollectionPropsCachingTest extends SolrCloudTestCase {
   // don't add one! :)
   //
   private String collectionName;
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  @BeforeClass
+    @BeforeClass
   public static void setupClass() throws Exception {
     configureCluster(4).addConfig("conf", configset("cloud-minimal")).configure();
   }

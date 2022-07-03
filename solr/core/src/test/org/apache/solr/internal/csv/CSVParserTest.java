@@ -384,37 +384,6 @@ public class CSVParserTest extends TestCase {
     }
   }
 
-  public void OLDtestBackslashEscaping() throws IOException {
-    String code =
-        "one,two,three\n"
-            + "on\\\"e,two\n"
-            + "on\"e,two\n"
-            + "one,\"tw\\\"o\"\n"
-            + "one,\"t\\,wo\"\n"
-            + "one,two,\"th,ree\"\n"
-            + "\"a\\\\\"\n"
-            + "a\\,b\n"
-            + "\"a\\\\,b\"";
-    String[][] res = {
-      {"one", "two", "three"},
-      {"on\\\"e", "two"},
-      {"on\"e", "two"},
-      {"one", "tw\"o"},
-      {"one", "t\\,wo"}, // backslash in quotes only escapes a delimiter (",")
-      {"one", "two", "th,ree"},
-      {"a\\\\"}, // backslash in quotes only escapes a delimiter (",")
-      {"a\\", "b"}, // a backslash must be returned
-      {"a\\\\,b"} // backslash in quotes only escapes a delimiter (",")
-    };
-    CSVParser parser = new CSVParser(new StringReader(code));
-    String[][] tmp = parser.getAllValues();
-    assertEquals(res.length, tmp.length);
-    assertTrue(tmp.length > 0);
-    for (int i = 0; i < res.length; i++) {
-      assertTrue(Arrays.equals(res[i], tmp[i]));
-    }
-  }
-
   public void testBackslashEscaping() throws IOException {
 
     // To avoid confusion over the need for escaping chars in java code,

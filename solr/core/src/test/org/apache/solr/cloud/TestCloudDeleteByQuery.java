@@ -47,8 +47,6 @@ import org.slf4j.LoggerFactory;
 
 public class TestCloudDeleteByQuery extends SolrCloudTestCase {
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   private static final int NUM_SHARDS = 2;
   private static final int REPLICATION_FACTOR = 2;
   private static final int NUM_SERVERS = 5;
@@ -80,7 +78,7 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
   private static final String S_TWO_PRE = "XYZ!";
 
   @AfterClass
-  private static void afterClass() throws Exception {
+  public static void afterClass() throws Exception {
     if (null != CLOUD_CLIENT) {
       CLOUD_CLIENT.close();
       CLOUD_CLIENT = null;
@@ -224,7 +222,7 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
   }
 
   @Before
-  private void clearCloudCollection() throws Exception {
+  public void clearCloudCollection() throws Exception {
     assertEquals(0, CLOUD_CLIENT.deleteByQuery("*:*").getStatus());
     assertEquals(0, CLOUD_CLIENT.commit().getStatus());
   }

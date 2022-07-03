@@ -938,10 +938,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     assertVersions(leaderClient, followerClient);
 
-    NamedList<Object> details = getDetails(leaderClient);
-
-    details = getDetails(followerClient);
-
     checkForSingleIndex(leaderJetty);
     checkForSingleIndex(followerJetty);
   }

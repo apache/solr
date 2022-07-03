@@ -38,7 +38,6 @@ public class TestDistribDocBasedVersion extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   String bucket1 = "shard1"; // shard1: top bits:10  80000000:ffffffff
-  String bucket2 = "shard2"; // shard2: top bits:00  00000000:7fffffff
 
   private static String vfield = "my_version_l";
 
@@ -320,20 +319,6 @@ public class TestDistribDocBasedVersion extends AbstractFullDistribZkTestBase {
     Map<String, Object> obtainedIds = new HashMap<>();
     for (SolrDocument doc : rsp.getResults()) {
       obtainedIds.put((String) doc.get("id"), doc.get(vfield));
-    }
-
-    assertEquals(expectedIds, obtainedIds);
-  }
-
-  void doRTG(String ids) throws Exception {
-    solrClient.query(params("qt", "/get", "ids", ids));
-
-    Set<String> expectedIds = new HashSet<>(StrUtils.splitSmart(ids, ",", true));
-
-    QueryResponse rsp = cloudClient.query(params("qt", "/get", "ids", ids));
-    Set<String> obtainedIds = new HashSet<>();
-    for (SolrDocument doc : rsp.getResults()) {
-      obtainedIds.add((String) doc.get("id"));
     }
 
     assertEquals(expectedIds, obtainedIds);

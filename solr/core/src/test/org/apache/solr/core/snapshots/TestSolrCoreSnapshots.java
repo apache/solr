@@ -68,8 +68,7 @@ import org.slf4j.LoggerFactory;
 @SolrTestCaseJ4.SuppressSSL // Currently, unknown why SSL does not work with this test
 @Slow
 public class TestSolrCoreSnapshots extends SolrCloudTestCase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static long docsSeed; // see indexDocs()
+    private static long docsSeed; // see indexDocs()
 
   @BeforeClass
   public static void setupClass() throws Exception {

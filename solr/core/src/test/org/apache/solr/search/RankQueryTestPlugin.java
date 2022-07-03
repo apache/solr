@@ -535,13 +535,12 @@ public class RankQueryTestPlugin extends QParserPlugin {
         numFound += docs.getNumFound();
 
         SortSpec ss = rb.getSortSpec();
-        Sort sort = ss.getSort();
 
         @SuppressWarnings({"rawtypes"})
         NamedList sortFieldValues =
             (NamedList) (srsp.getSolrResponse().getResponse().get("merge_values"));
         @SuppressWarnings({"rawtypes"})
-        NamedList unmarshalledSortFieldValues = unmarshalSortValues(ss, sortFieldValues, schema);
+        NamedList unmarshalledSortFieldValues = unmarshalSortValues(ss, sortFieldValues);
         @SuppressWarnings({"rawtypes"})
         List lst = (List) unmarshalledSortFieldValues.getVal(0);
 
@@ -626,7 +625,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     private NamedList unmarshalSortValues(
-        SortSpec sortSpec, NamedList sortFieldValues, IndexSchema schema) {
+            SortSpec sortSpec, NamedList sortFieldValues) {
       NamedList unmarshalledSortValsPerField = new NamedList<>();
 
       if (0 == sortFieldValues.size()) return unmarshalledSortValsPerField;

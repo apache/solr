@@ -52,9 +52,7 @@ import org.slf4j.LoggerFactory;
  */
 public class RangeFacetCloudTest extends SolrCloudTestCase {
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  private static final String COLLECTION = MethodHandles.lookup().lookupClass().getName();
+    private static final String COLLECTION = MethodHandles.lookup().lookupClass().getName();
   private static final String CONF = COLLECTION + "_configSet";
 
   private static final String INT_FIELD = "range_i";

@@ -64,11 +64,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     shutdownCluster();
   }
 
-  protected String getSolrXml() {
-    return "solr.xml";
-  }
-
-  @Test
+    @Test
   public void test() throws Exception {
     configureCluster(6)
         .addConfig(

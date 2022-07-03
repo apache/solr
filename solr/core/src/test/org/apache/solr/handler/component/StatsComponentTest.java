@@ -465,7 +465,6 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
   public void testFieldStatisticsResultsStringField() throws Exception {
     String f = "active_s";
 
-    SolrCore core = h.getCore();
     assertU(adoc("id", "1", f, "string1"));
     assertU(adoc("id", "2", f, "string2"));
     assertU(adoc("id", "3", f, "string3"));
@@ -646,7 +645,6 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "4", f, "-40"));
     assertU(commit());
 
-    final String fpre = XPRE + "lst[@name='stats_fields']/lst[@name='" + f + "']/";
     final String key = "key_key";
     final String kpre = XPRE + "lst[@name='stats_fields']/lst[@name='" + key + "']/";
 
@@ -1604,7 +1602,6 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
 
     EnumSet<Stat> allStats = EnumSet.allOf(Stat.class);
 
-    final List<ExpectedStat> expected = new ArrayList<ExpectedStat>(allStats.size());
     ExpectedStat.createSimple(Stat.min, "true", "double", "0.0");
     ExpectedStat.createSimple(Stat.max, "true", "double", "9.0");
     ExpectedStat.createSimple(Stat.missing, "true", "long", "0");

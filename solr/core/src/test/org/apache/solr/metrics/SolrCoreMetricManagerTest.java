@@ -65,7 +65,7 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
     SolrInfoBean.Category category = SolrMetricTestUtils.getRandomCategory(random);
     Map<String, Counter> metrics = SolrMetricTestUtils.getRandomMetrics(random);
     SolrMetricProducer producer =
-        SolrMetricTestUtils.getProducerOf(metricManager, category, scope, metrics);
+        SolrMetricTestUtils.getProducerOf(category, scope, metrics);
     try {
       coreMetricManager.registerMetricProducer(scope, producer);
       assertNotNull(scope);
@@ -95,7 +95,7 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
         continue;
       }
       SolrMetricProducer producer =
-          SolrMetricTestUtils.getProducerOf(metricManager, category, scope, metrics);
+          SolrMetricTestUtils.getProducerOf(category, scope, metrics);
       coreMetricManager.registerMetricProducer(scope, producer);
       registered.putAll(metrics);
       assertRegistered(scope, registered, coreMetricManager);

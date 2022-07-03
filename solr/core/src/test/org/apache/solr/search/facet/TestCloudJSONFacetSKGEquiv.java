@@ -78,8 +78,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
   private static final String DEBUG_LABEL = MethodHandles.lookup().lookupClass().getName();
   private static final String COLLECTION_NAME = DEBUG_LABEL + "_collection";
 
-  private static final int DEFAULT_LIMIT = FacetField.DEFAULT_FACET_LIMIT;
-  private static final int MAX_FIELD_NUM = 15;
+    private static final int MAX_FIELD_NUM = 15;
   private static final int UNIQUE_FIELD_VALS = 50;
 
   /** Multi-Valued string field suffixes that can be randomized for testing diff facet code paths */
@@ -1018,12 +1017,12 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
           facetField,
           map(
               "limit", randomLimitParam(random()),
-              "overrequest", randomOverrequestParam(random(), sort),
+              "overrequest", randomOverrequestParam(random()),
               "prefix", randomPrefixParam(random(), facetField),
               "perSeg", randomPerSegParam(random()),
               "sort", sort,
-              "prelim_sort", randomPrelimSortParam(random(), sort),
-              "allBuckets", randomAllBucketsParam(random(), sort),
+              "prelim_sort", randomPrelimSortParam(sort),
+              "allBuckets", randomAllBucketsParam(random()),
               "refine", randomRefineParam(random())));
     }
 
@@ -1073,7 +1072,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
      *
      * @return a Boolean, may be null
      */
-    public static Boolean randomAllBucketsParam(final Random r, final String sort) {
+    public static Boolean randomAllBucketsParam(final Random r) {
       switch (r.nextInt(4)) {
         case 0:
           return true;
@@ -1184,7 +1183,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
      * @return a sort string (w/direction), or null to specify nothing (trigger default behavior)
      * @see #randomSortParam
      */
-    public static String randomPrelimSortParam(final Random r, final String sort) {
+    public static String randomPrelimSortParam(final String sort) {
 
       if (null != sort && sort.startsWith("skg") && 1 == TestUtil.nextInt(random(), 0, 3)) {
         return "count desc";
@@ -1221,7 +1220,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
      *     behavior)
      * @see #UNIQUE_FIELD_VALS
      */
-    public static Integer randomOverrequestParam(final Random r, final String sort) {
+    public static Integer randomOverrequestParam(final Random r) {
 
       switch (r.nextInt(10)) {
         case 0:
