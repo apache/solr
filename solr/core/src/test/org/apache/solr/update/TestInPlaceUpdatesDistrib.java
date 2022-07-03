@@ -221,8 +221,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
     String leaderBaseUrl = zkStateReader.getBaseUrlForNodeName(leader.getNodeName());
     for (SolrClient solrClient : clients) {
-      if (((HttpSolrClient) solrClient).getBaseURL().startsWith(leaderBaseUrl))
-        LEADER = solrClient;
+      if (((HttpSolrClient) solrClient).getBaseURL().startsWith(leaderBaseUrl)) LEADER = solrClient;
     }
 
     NONLEADERS = new ArrayList<>();
@@ -232,8 +231,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       }
       String baseUrl = zkStateReader.getBaseUrlForNodeName(rep.getNodeName());
       for (SolrClient client : clients) {
-        if (((HttpSolrClient) client).getBaseURL().startsWith(baseUrl))
-          NONLEADERS.add(client);
+        if (((HttpSolrClient) client).getBaseURL().startsWith(baseUrl)) NONLEADERS.add(client);
       }
     }
 
@@ -1198,7 +1196,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       SolrDocument doc = client.getById(String.valueOf(0), params("distrib", "false"));
       assertNotNull("Client: " + ((HttpSolrClient) client).getBaseURL(), doc);
       assertEquals(
-              "Client: " + ((HttpSolrClient) client).getBaseURL(), 5, doc.getFieldValue(field));
+          "Client: " + ((HttpSolrClient) client).getBaseURL(), 5, doc.getFieldValue(field));
     }
 
     log.info("reorderedDBQsResurrectionTest: This test passed fine...");

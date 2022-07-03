@@ -82,9 +82,9 @@ public class DistributedFacetPivotLongTailTest extends BaseDistributedSearchTest
     List<PivotField> pivots = null;
 
     List<List<PivotField>> shardPivots = new ArrayList<>(clients.size());
-      for (org.apache.solr.client.solrj.SolrClient client : clients) {
-          shardPivots.add(client.query(req).getFacetPivot().get("foo_s,bar_s"));
-      }
+    for (org.apache.solr.client.solrj.SolrClient client : clients) {
+      shardPivots.add(client.query(req).getFacetPivot().get("foo_s,bar_s"));
+    }
 
     // top 5 same on all shards
     for (int i = 0; i < 3; i++) {

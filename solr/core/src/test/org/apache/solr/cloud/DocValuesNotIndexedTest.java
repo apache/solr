@@ -416,7 +416,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
             case 7:
               ++sevenCount;
               assertNotNull(
-                      "Every group with 7 entries should have a group value.", grp.getGroupValue());
+                  "Every group with 7 entries should have a group value.", grp.getGroupValue());
               break;
             case 10:
               ++nullCount;
@@ -426,19 +426,19 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
             case 24:
               ++boolCount;
               assertEquals(
-                      "We should have more counts for boolean fields!", boolName, prop.getName());
+                  "We should have more counts for boolean fields!", boolName, prop.getName());
               break;
 
             default:
               fail(
-                      "Unexpected number of elements in the group for '"
-                              + prop.getName()
-                              + "' size: '"
-                              + grp.getResult().size()
-                              + "' GroupValue: '"
-                              + grp.getGroupValue()
-                              + "' rsp: "
-                              + rsp);
+                  "Unexpected number of elements in the group for '"
+                      + prop.getName()
+                      + "' size: '"
+                      + grp.getResult().size()
+                      + "' GroupValue: '"
+                      + grp.getGroupValue()
+                      + "' rsp: "
+                      + rsp);
           }
         }
       }

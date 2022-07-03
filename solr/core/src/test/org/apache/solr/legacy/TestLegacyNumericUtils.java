@@ -130,9 +130,9 @@ public class TestLegacyNumericUtils extends SolrTestCase {
         long prefixVal = LegacyNumericUtils.prefixCodedToLong(ref.get());
         long mask = (1L << j) - 1L;
         assertEquals(
-                "difference between prefix val and original value for " + val + " with shift=" + j,
-                val & mask,
-                val - prefixVal);
+            "difference between prefix val and original value for " + val + " with shift=" + j,
+            val & mask,
+            val - prefixVal);
       }
     }
   }
@@ -193,9 +193,9 @@ public class TestLegacyNumericUtils extends SolrTestCase {
         int prefixVal = LegacyNumericUtils.prefixCodedToInt(ref.get());
         int mask = (1 << j) - 1;
         assertEquals(
-                "difference between prefix val and original value for " + val + " with shift=" + j,
-                val & mask,
-                val - prefixVal);
+            "difference between prefix val and original value for " + val + " with shift=" + j,
+            val & mask,
+            val - prefixVal);
       }
     }
   }

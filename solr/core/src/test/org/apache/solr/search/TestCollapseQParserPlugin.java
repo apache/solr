@@ -334,19 +334,19 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
 
     List<Integer> boostedResults = new ArrayList<>();
 
-      for (int result : resultsArray) {
-          if (mergeBoost.boost(result)) {
-              boostedResults.add(result);
-          }
+    for (int result : resultsArray) {
+      if (mergeBoost.boost(result)) {
+        boostedResults.add(result);
       }
+    }
 
     List<Integer> controlResults = new ArrayList<>();
 
-      for (int result : resultsArray) {
-          if (Arrays.binarySearch(boostedArray, result) > -1) {
-              controlResults.add(result);
-          }
+    for (int result : resultsArray) {
+      if (Arrays.binarySearch(boostedArray, result) > -1) {
+        controlResults.add(result);
       }
+    }
 
     if (boostedResults.size() == controlResults.size()) {
       for (int i = 0; i < boostedResults.size(); i++) {

@@ -301,10 +301,10 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
   private void assertNoOverLap(
       @SuppressWarnings({"rawtypes"}) Set setA, @SuppressWarnings({"rawtypes"}) Set setB)
       throws Exception {
-      for (Object o : setA) {
-          if (setB.contains(o)) {
-              throw new Exception("Overlapping sets for value:" + o.toString());
-          }
+    for (Object o : setA) {
+      if (setB.contains(o)) {
+        throw new Exception("Overlapping sets for value:" + o.toString());
       }
+    }
   }
 }

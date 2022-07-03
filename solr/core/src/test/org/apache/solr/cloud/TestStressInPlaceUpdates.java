@@ -686,8 +686,7 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
 
     for (SolrClient client : clients) {
       String leaderBaseUrl = zkStateReader.getBaseUrlForNodeName(leader.getNodeName());
-      if (((HttpSolrClient) client).getBaseURL().startsWith(leaderBaseUrl))
-        return client;
+      if (((HttpSolrClient) client).getBaseURL().startsWith(leaderBaseUrl)) return client;
     }
 
     return null;

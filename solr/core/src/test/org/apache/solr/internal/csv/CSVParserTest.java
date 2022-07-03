@@ -216,10 +216,10 @@ public class CSVParserTest extends TestCase {
   public void testGetLine() throws IOException {
     CSVParser parser = new CSVParser(new StringReader(code));
     String[] tmp = null;
-      for (String[] re : res) {
-          tmp = parser.getLine();
-          assertTrue(Arrays.equals(re, tmp));
-      }
+    for (String[] re : res) {
+      tmp = parser.getLine();
+      assertTrue(Arrays.equals(re, tmp));
+    }
     tmp = parser.getLine();
     assertTrue(tmp == null);
   }
@@ -227,12 +227,12 @@ public class CSVParserTest extends TestCase {
   public void testNextValue() throws IOException {
     CSVParser parser = new CSVParser(new StringReader(code));
     String tmp = null;
-      for (String[] re : res) {
-          for (int j = 0; j < re.length; j++) {
-              tmp = parser.nextValue();
-              assertEquals(re[j], tmp);
-          }
+    for (String[] re : res) {
+      for (int j = 0; j < re.length; j++) {
+        tmp = parser.nextValue();
+        assertEquals(re[j], tmp);
       }
+    }
     tmp = parser.nextValue();
     assertTrue(tmp == null);
   }
@@ -302,16 +302,16 @@ public class CSVParserTest extends TestCase {
       {"world", ""}
     };
     String code;
-      for (String s : codes) {
-          code = s;
-          CSVParser parser = new CSVParser(new StringReader(code), CSVStrategy.EXCEL_STRATEGY);
-          String[][] tmp = parser.getAllValues();
-          assertEquals(res.length, tmp.length);
-          assertTrue(tmp.length > 0);
-          for (int i = 0; i < res.length; i++) {
-              assertTrue(Arrays.equals(res[i], tmp[i]));
-          }
+    for (String s : codes) {
+      code = s;
+      CSVParser parser = new CSVParser(new StringReader(code), CSVStrategy.EXCEL_STRATEGY);
+      String[][] tmp = parser.getAllValues();
+      assertEquals(res.length, tmp.length);
+      assertTrue(tmp.length > 0);
+      for (int i = 0; i < res.length; i++) {
+        assertTrue(Arrays.equals(res[i], tmp[i]));
       }
+    }
   }
 
   public void testEndOfFileBehaviorCSV() throws Exception {
@@ -330,16 +330,16 @@ public class CSVParserTest extends TestCase {
       {"world", ""}
     };
     String code;
-      for (String s : codes) {
-          code = s;
-          CSVParser parser = new CSVParser(new StringReader(code));
-          String[][] tmp = parser.getAllValues();
-          assertEquals(res.length, tmp.length);
-          assertTrue(tmp.length > 0);
-          for (int i = 0; i < res.length; i++) {
-              assertTrue(Arrays.equals(res[i], tmp[i]));
-          }
+    for (String s : codes) {
+      code = s;
+      CSVParser parser = new CSVParser(new StringReader(code));
+      String[][] tmp = parser.getAllValues();
+      assertEquals(res.length, tmp.length);
+      assertTrue(tmp.length > 0);
+      for (int i = 0; i < res.length; i++) {
+        assertTrue(Arrays.equals(res[i], tmp[i]));
       }
+    }
   }
 
   public void testEmptyLineBehaviourExcel() throws Exception {
@@ -352,16 +352,16 @@ public class CSVParserTest extends TestCase {
       {""}
     };
     String code;
-      for (String s : codes) {
-          code = s;
-          CSVParser parser = new CSVParser(new StringReader(code), CSVStrategy.EXCEL_STRATEGY);
-          String[][] tmp = parser.getAllValues();
-          assertEquals(res.length, tmp.length);
-          assertTrue(tmp.length > 0);
-          for (int i = 0; i < res.length; i++) {
-              assertTrue(Arrays.equals(res[i], tmp[i]));
-          }
+    for (String s : codes) {
+      code = s;
+      CSVParser parser = new CSVParser(new StringReader(code), CSVStrategy.EXCEL_STRATEGY);
+      String[][] tmp = parser.getAllValues();
+      assertEquals(res.length, tmp.length);
+      assertTrue(tmp.length > 0);
+      for (int i = 0; i < res.length; i++) {
+        assertTrue(Arrays.equals(res[i], tmp[i]));
       }
+    }
   }
 
   public void testEmptyLineBehaviourCSV() throws Exception {
@@ -372,16 +372,16 @@ public class CSVParserTest extends TestCase {
       {"hello", ""} // CSV Strategy ignores empty lines
     };
     String code;
-      for (String s : codes) {
-          code = s;
-          CSVParser parser = new CSVParser(new StringReader(code));
-          String[][] tmp = parser.getAllValues();
-          assertEquals(res.length, tmp.length);
-          assertTrue(tmp.length > 0);
-          for (int i = 0; i < res.length; i++) {
-              assertTrue(Arrays.equals(res[i], tmp[i]));
-          }
+    for (String s : codes) {
+      code = s;
+      CSVParser parser = new CSVParser(new StringReader(code));
+      String[][] tmp = parser.getAllValues();
+      assertEquals(res.length, tmp.length);
+      assertTrue(tmp.length > 0);
+      for (int i = 0; i < res.length; i++) {
+        assertTrue(Arrays.equals(res[i], tmp[i]));
       }
+    }
   }
 
   public void OLDtestBackslashEscaping() throws IOException {
@@ -579,12 +579,12 @@ public class CSVParserTest extends TestCase {
     String[][] data = parser.getAllValues();
     parser = new CSVParser(new StringReader(code));
     CSVParser parser1 = new CSVParser(new StringReader(code));
-      for (String[] datum : data) {
-          assertTrue(Arrays.equals(parser1.getLine(), datum));
-          for (int j = 0; j < datum.length; j++) {
-              assertEquals(parser.nextValue(), datum[j]);
-          }
+    for (String[] datum : data) {
+      assertTrue(Arrays.equals(parser1.getLine(), datum));
+      for (int j = 0; j < datum.length; j++) {
+        assertEquals(parser.nextValue(), datum[j]);
       }
+    }
   }
 
   // From SANDBOX-153

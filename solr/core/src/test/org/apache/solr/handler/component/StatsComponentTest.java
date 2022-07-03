@@ -2368,9 +2368,9 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
         public EnumSet<Stat> next() {
           EnumSet<Stat> result = EnumSet.noneOf(Stat.class);
           int[] indexes = wrapped.next();
-            for (int index : indexes) {
-                result.add(all[index]);
-            }
+          for (int index : indexes) {
+            result.add(all[index]);
+          }
           return result;
         }
       };

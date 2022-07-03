@@ -179,21 +179,21 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
       threads2[i].setName("testThread2-" + i);
     }
 
-      for (Thread element : threads) {
-          element.start();
-      }
+    for (Thread element : threads) {
+      element.start();
+    }
 
-      for (Thread item : threads2) {
-          item.start();
-      }
+    for (Thread item : threads2) {
+      item.start();
+    }
 
-      for (Thread value : threads) {
-          value.join();
-      }
+    for (Thread value : threads) {
+      value.join();
+    }
 
-      for (Thread thread : threads2) {
-          thread.join();
-      }
+    for (Thread thread : threads2) {
+      thread.join();
+    }
     SolrCore core = h.getCore();
 
     assertU(commit());

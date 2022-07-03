@@ -1372,9 +1372,9 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         } else {
           if (sort.equals("asc")) {
             if (field.equals("stringdv")
-                    || field.equals("field1_s_dv")
-                    || field.equals("datedv")
-                    || field.equals("booleandv")) { // use string comparator
+                || field.equals("field1_s_dv")
+                || field.equals("datedv")
+                || field.equals("booleandv")) { // use string comparator
               assertTrue(fieldVal1.compareTo(fieldVal2) < 0);
             } else if (field.equals("doubledv")) {
               assertTrue(Double.compare(Double.valueOf(fieldVal1), Double.valueOf(fieldVal2)) <= 0);
@@ -1382,15 +1382,15 @@ public class TestExportWriter extends SolrTestCaseJ4 {
               assertTrue(Float.compare(Float.valueOf(fieldVal1), Float.valueOf(fieldVal2)) <= 0);
             } else if (field.equals("intdv") || "field2_i_p".equals(field)) {
               assertTrue(
-                      Integer.compare(Integer.valueOf(fieldVal1), Integer.valueOf(fieldVal2)) <= 0);
+                  Integer.compare(Integer.valueOf(fieldVal1), Integer.valueOf(fieldVal2)) <= 0);
             } else if (field.equals("longdv") || field.equals("field3_l_p")) {
               assertTrue(Long.compare(Integer.valueOf(fieldVal1), Long.valueOf(fieldVal2)) <= 0);
             }
           } else {
             if (field.equals("stringdv")
-                    || field.equals("field1_s_dv")
-                    || field.equals("datedv")
-                    || field.equals("booleandv")) { // use string comparator
+                || field.equals("field1_s_dv")
+                || field.equals("datedv")
+                || field.equals("booleandv")) { // use string comparator
               assertTrue(fieldVal1.compareTo(fieldVal2) > 0);
             } else if (field.equals("doubledv")) {
               assertTrue(Double.compare(Double.valueOf(fieldVal1), Double.valueOf(fieldVal2)) >= 0);
@@ -1398,7 +1398,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
               assertTrue(Float.compare(Float.valueOf(fieldVal1), Float.valueOf(fieldVal2)) >= 0);
             } else if (field.equals("intdv") || "field2_i_p".equals(field)) {
               assertTrue(
-                      Integer.compare(Integer.valueOf(fieldVal1), Integer.valueOf(fieldVal2)) >= 0);
+                  Integer.compare(Integer.valueOf(fieldVal1), Integer.valueOf(fieldVal2)) >= 0);
             } else if (field.equals("longdv") || field.equals("field3_l_p")) {
               assertTrue(Long.compare(Integer.valueOf(fieldVal1), Long.valueOf(fieldVal2)) >= 0);
             }

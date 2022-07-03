@@ -5289,11 +5289,11 @@ public class TestPointFields extends SolrTestCaseJ4 {
     SchemaField sf = h.getCore().getLatestSchema().getField(fieldName);
     assertTrue(sf.getType() instanceof PointField);
 
-      for (String s : values) {
-          assertQ(
-                  req("q", "{!term f='" + fieldName + "'}" + s, "fl", "id," + fieldName),
-                  "//*[@numFound='1']");
-      }
+    for (String s : values) {
+      assertQ(
+          req("q", "{!term f='" + fieldName + "'}" + s, "fl", "id," + fieldName),
+          "//*[@numFound='1']");
+    }
 
     for (int i = 0; i < values.length; i++) {
       assertQ(
@@ -5360,11 +5360,11 @@ public class TestPointFields extends SolrTestCaseJ4 {
                 values[(i + 1) % values.length]));
       }
       assertU(commit());
-        for (String value : values) {
-            assertQ(
-                    req("q", "{!term f='" + fieldName + "'}" + value, "fl", "id," + fieldName),
-                    "//*[@numFound='2']");
-        }
+      for (String value : values) {
+        assertQ(
+            req("q", "{!term f='" + fieldName + "'}" + value, "fl", "id," + fieldName),
+            "//*[@numFound='2']");
+      }
 
       for (int i = 0; i < values.length; i++) {
         assertQ(
