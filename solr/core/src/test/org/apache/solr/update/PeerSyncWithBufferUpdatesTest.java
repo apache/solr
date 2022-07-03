@@ -69,7 +69,6 @@ public class PeerSyncWithBufferUpdatesTest extends BaseDistributedSearchTestCase
 
     SolrClient client0 = clients.get(0);
     SolrClient client1 = clients.get(1);
-    SolrClient client2 = clients.get(2);
 
     long v = 0;
     // add some context
@@ -124,7 +123,6 @@ public class PeerSyncWithBufferUpdatesTest extends BaseDistributedSearchTestCase
 
     log.info("After buffer updates");
     jetty1Core.getUpdateHandler().getUpdateLog().bufferUpdates();
-    List<Object> onWireUpdates = new ArrayList<>();
     Set<Integer> docIds = new HashSet<>();
 
     for (int i = 0; i <= 50; i++) {
@@ -139,8 +137,9 @@ public class PeerSyncWithBufferUpdatesTest extends BaseDistributedSearchTestCase
 
         SolrInputDocument doc = sdoc("id", docId, "val_i_dvo", val, "_version_", ++v);
         add(client0, seenLeader, doc);
-        if (random().nextBoolean()) add(client1, seenLeader, doc);
-        else onWireUpdates.add(doc);
+        if (random().nextBoolean()) {
+          add(client1, seenLeader, doc);
+        }
 
       } else if (kindOfUpdate <= 65) {
         // delete by query
@@ -153,8 +152,6 @@ public class PeerSyncWithBufferUpdatesTest extends BaseDistributedSearchTestCase
         delQ(client0, params(DISTRIB_UPDATE_PARAM, FROM_LEADER, "_version_", version), query);
         if (random().nextBoolean()) {
           delQ(client1, params(DISTRIB_UPDATE_PARAM, FROM_LEADER, "_version_", version), query);
-        } else {
-          onWireUpdates.add(new DeleteByQuery(query, version));
         }
 
       } else {
@@ -166,33 +163,11 @@ public class PeerSyncWithBufferUpdatesTest extends BaseDistributedSearchTestCase
         del(client0, params(DISTRIB_UPDATE_PARAM, FROM_LEADER, "_version_", version), docId);
         if (random().nextBoolean()) {
           del(client1, params(DISTRIB_UPDATE_PARAM, FROM_LEADER, "_version_", version), docId);
-        } else {
-          onWireUpdates.add(new DeleteById(docId, version));
         }
       }
     }
     // with many gaps, client1 should be able to sync
     assertSync(client1, numVersions, true, shardsArr[0]);
-  }
-
-  private static class DeleteByQuery {
-    String query;
-    String version;
-
-    public DeleteByQuery(String query, String version) {
-      this.query = query;
-      this.version = version;
-    }
-  }
-
-  private static class DeleteById {
-    String id;
-    String version;
-
-    public DeleteById(String id, String version) {
-      this.id = id;
-      this.version = version;
-    }
   }
 
   private void validateDocs(Set<Integer> docsAdded, SolrClient client0, SolrClient client1)
