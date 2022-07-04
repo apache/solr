@@ -123,7 +123,7 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
             FieldType fieldType = (schemaField == null ? null : schemaField.getType());
             if (fieldType instanceof DenseVectorField) {
               DenseVectorField vectorType = (DenseVectorField) fieldType;
-              String knnAlgorithm = vectorType.getAlgorithm();
+              String knnAlgorithm = vectorType.getKnnAlgorithm();
               if (knnAlgorithm != null) {
                 if (knnAlgorithm.equals(DenseVectorField.HNSW_ALGORITHM)) {
                   int maxConn = vectorType.getHnswMaxConn();
@@ -132,7 +132,7 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
                 }
               } else {
                 throw new SolrException(
-                    ErrorCode.SERVER_ERROR, "the KNN algorithm provided is not supported");
+                    ErrorCode.SERVER_ERROR, knnAlgorithm + " KNN algorithm provided is not supported");
               }
             }
             return super.getKnnVectorsFormatForField(field);

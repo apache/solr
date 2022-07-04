@@ -50,7 +50,7 @@ public class DenseVectorField extends FloatPointField {
   static final String KNN_VECTOR_DIMENSION = "vectorDimension";
   static final String KNN_SIMILARITY_FUNCTION = "similarityFunction";
 
-  static final String ALGORITHM = "knnAlgorithm";
+  static final String KNN_ALGORITHM = "knnAlgorithm";
   static final String HNSW_MAX_CONNECTIONS = "hnswMaxConnections";
   static final String HNSW_BEAM_WIDTH = "hnswBeamWidth";
 
@@ -58,7 +58,7 @@ public class DenseVectorField extends FloatPointField {
   private VectorSimilarityFunction similarityFunction;
   private VectorSimilarityFunction DEFAULT_SIMILARITY = VectorSimilarityFunction.EUCLIDEAN;
 
-  private String algorithm;
+  private String knnAlgorithm;
   /**
    * This parameter is coupled with the hnsw algorithm. Controls how many of the nearest neighbor
    * candidates are connected to the new node. See {@link HnswGraph} for more details.
@@ -104,9 +104,9 @@ public class DenseVectorField extends FloatPointField {
             .orElse(DEFAULT_SIMILARITY);
     args.remove(KNN_SIMILARITY_FUNCTION);
 
-    this.algorithm = args.get(ALGORITHM);
+    this.knnAlgorithm = args.get(KNN_ALGORITHM);
 
-    args.remove(ALGORITHM);
+    args.remove(KNN_ALGORITHM);
 
     this.hnswMaxConn =
         ofNullable(args.get(HNSW_MAX_CONNECTIONS))
@@ -134,8 +134,8 @@ public class DenseVectorField extends FloatPointField {
     return similarityFunction;
   }
 
-  public String getAlgorithm() {
-    return algorithm;
+  public String getKnnAlgorithm() {
+    return knnAlgorithm;
   }
 
   public Integer getHnswMaxConn() {

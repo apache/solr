@@ -125,7 +125,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       DenseVectorField type1 = (DenseVectorField) vector.getType();
       MatcherAssert.assertThat(type1.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
       MatcherAssert.assertThat(type1.getDimension(), is(4));
-      MatcherAssert.assertThat(type1.getAlgorithm(), is("hnsw"));
+      MatcherAssert.assertThat(type1.getKnnAlgorithm(), is("hnsw"));
       MatcherAssert.assertThat(type1.getHnswMaxConn(), is(10));
       MatcherAssert.assertThat(type1.getHnswBeamWidth(), is(40));
 
@@ -135,7 +135,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       DenseVectorField type2 = (DenseVectorField) vector2.getType();
       MatcherAssert.assertThat(type2.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
       MatcherAssert.assertThat(type2.getDimension(), is(4));
-      MatcherAssert.assertThat(type2.getAlgorithm(), is("hnsw"));
+      MatcherAssert.assertThat(type2.getKnnAlgorithm(), is("hnsw"));
       MatcherAssert.assertThat(type2.getHnswMaxConn(), is(6));
       MatcherAssert.assertThat(type2.getHnswBeamWidth(), is(60));
 
@@ -145,7 +145,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       DenseVectorField type3 = (DenseVectorField) vector3.getType();
       MatcherAssert.assertThat(type3.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
       MatcherAssert.assertThat(type3.getDimension(), is(5));
-      MatcherAssert.assertThat(type3.getAlgorithm(), is("hnsw"));
+      MatcherAssert.assertThat(type3.getKnnAlgorithm(), is("hnsw"));
       MatcherAssert.assertThat(type3.getHnswMaxConn(), is(8));
       MatcherAssert.assertThat(type3.getHnswBeamWidth(), is(46));
 
@@ -156,7 +156,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       MatcherAssert.assertThat(
           typeDefault.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
       MatcherAssert.assertThat(typeDefault.getDimension(), is(4));
-      assertNull(typeDefault.getAlgorithm());
+      assertNull(typeDefault.getKnnAlgorithm());
       MatcherAssert.assertThat(typeDefault.getHnswMaxConn(), is(16));
       MatcherAssert.assertThat(typeDefault.getHnswBeamWidth(), is(100));
     } finally {
