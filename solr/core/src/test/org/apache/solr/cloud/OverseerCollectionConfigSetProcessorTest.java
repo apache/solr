@@ -103,7 +103,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   private static final String ADMIN_PATH = "/admin/cores";
   private static final String COLLECTION_NAME = "mycollection";
   private static final String CONFIG_NAME = "myconfig";
-  public static final int MAXWAIT = 10000;
+  private static final int MAX_WAIT_MS = 10000;
 
   private static OverseerTaskQueue workQueueMock;
   private static OverseerTaskQueue stateUpdateQueueMock;
@@ -898,7 +898,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   protected void waitForEmptyQueue() throws Exception {
     final TimeOut timeout = new TimeOut(MAXWAIT, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
     while (queue.peek() != null) {
-      if (timeout.hasTimedOut()) fail("Queue not empty within " + (long) 10000 + " ms");
+      if (timeout.hasTimedOut()) fail("Queue not empty within " + MAX_WAIT_MS + " ms");
       Thread.sleep(100);
     }
   }

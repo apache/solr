@@ -77,7 +77,7 @@ import org.slf4j.LoggerFactory;
 
 @LuceneTestCase.Slow
 public class CollectionsAPISolrJTest extends SolrCloudTestCase {
-  public static final int TIMEOUT = 3000;
+  private static final int TIMEOUT = 3000;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Before
