@@ -48,7 +48,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 
 /**
  * Highlights query words in the search results. See the <a
- * href="https://solr.apache.org/guide/highlighting.html">ref guide</a>.
+ * href="https://solr.apache.org/guide/solr/latest/query-guide/highlighting.html">ref guide</a>.
  *
  * @since solr 1.3
  */

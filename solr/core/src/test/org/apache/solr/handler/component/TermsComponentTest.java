@@ -697,7 +697,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
     try {
       SchemaField sf = req.getSchema().getField("foo_pi");
 
-      /**
+      /*
        * LeafReader r = req.getSearcher().getIndexReader().leaves().get(0).reader(); PointValues pv
        * = r.getPointValues("foo_pi"); System.out.println("pv=" + pv); if (pv instanceof
        * AssertingLeafReader.AssertingPointValues) { pv =

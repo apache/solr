@@ -195,7 +195,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
                       if (newLeader != null
                           && !newLeader.getName().equals(leader.getName())
                           && newLeader.getState() == Replica.State.ACTIVE) {
-                        // this is is the bad case, our "bad" state was found before timeout
+                        // this is the bad case, our "bad" state was found before timeout
                         log.error("WTF: New Leader={}", newLeader);
                         return true;
                       }
@@ -261,7 +261,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
                     if (newLeader != null
                         && !newLeader.getName().equals(leader.getName())
                         && newLeader.getState() == Replica.State.ACTIVE) {
-                      // this is is the bad case, our "bad" state was found before timeout
+                      // this is the bad case, our "bad" state was found before timeout
                       log.error("WTF: New Leader={}", newLeader);
                       return true;
                     }

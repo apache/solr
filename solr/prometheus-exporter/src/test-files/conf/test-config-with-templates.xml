@@ -41,7 +41,7 @@
       {
       name: "solr_metrics_core_query_{UNIQUE}",
       type: "{TYPE}",
-      help: "See: https://solr.apache.org/guide/performance-statistics-reference.html",
+      help: "See: https://solr.apache.org/guide/solr/latest/deployment-guide/performance-statistics-reference.html",
       label_names: ["category", "searchHandler", "core"],
       label_values: [$category, $handler, $core],
       value: $value
@@ -50,7 +50,7 @@
       {
       name: "solr_metrics_core_query_{UNIQUE}",
       type: "{TYPE}",
-      help: "See: https://solr.apache.org/guide/performance-statistics-reference.html",
+      help: "See: https://solr.apache.org/guide/solr/latest/deployment-guide/performance-statistics-reference.html",
       label_names: ["category", "searchHandler", "core", "collection", "shard", "replica"],
       label_values: [$category, $handler, $core, $collection, $shard, $replica],
       value: $value
@@ -75,7 +75,7 @@
       {
       name: "solr_metrics_core_{UNIQUE}",
       type: "{TYPE}",
-      help: "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
+      help: "See following URL: https://solr.apache.org/guide/solr/latest/deployment-guide/metrics-reporting.html",
       label_names: ["category", "handler", "core"],
       label_values: [$category, $handler, $core],
       value: $value
@@ -84,7 +84,7 @@
       {
       name: "solr_metrics_core_{UNIQUE}",
       type: "{TYPE}",
-      help: "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
+      help: "See following URL: https://solr.apache.org/guide/solr/latest/deployment-guide/metrics-reporting.html",
       label_names: ["category", "handler", "core", "collection", "shard", "replica"],
       label_values: [$category, $handler, $core, $collection, $shard, $replica],
       value: $value
@@ -99,7 +99,7 @@
       {
       name         : "solr_metrics_node_{UNIQUE}",
       type         : "{TYPE}",
-      help         : "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
+      help         : "See following URL: https://solr.apache.org/guide/solr/latest/deployment-guide/metrics-reporting.html",
       label_names  : ["category", "handler"],
       label_values : [$category, $handler],
       value        : $value
@@ -143,7 +143,7 @@
             {
             name: "solr_metrics_core_query_errors_1minRate",
             type: "GAUGE",
-            help: "See: https://solr.apache.org/guide/performance-statistics-reference.html",
+            help: "See: https://solr.apache.org/guide/solr/latest/deployment-guide/performance-statistics-reference.html",
             label_names: ["category", "searchHandler", "core"],
             label_values: [$category, $handler, $core],
             value: $value
@@ -152,7 +152,7 @@
             {
             name: "solr_metrics_core_query_errors_1minRate",
             type: "GAUGE",
-            help: "See: https://solr.apache.org/guide/performance-statistics-reference.html",
+            help: "See: https://solr.apache.org/guide/solr/latest/deployment-guide/performance-statistics-reference.html",
             label_names: ["category", "searchHandler", "core", "collection", "shard", "replica"],
             label_values: [$category, $handler, $core, $collection, $shard, $replica],
             value: $value
@@ -180,7 +180,7 @@
             {
             name: "solr_metrics_core_timeouts_total",
             type: "COUNTER",
-            help: "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
+            help: "See following URL: https://solr.apache.org/guide/solr/latest/deployment-guide/metrics-reporting.html",
             label_names: ["category", "handler", "core"],
             label_values: [$category, $handler, $core],
             value: $value
@@ -189,7 +189,7 @@
             {
             name: "solr_metrics_core_timeouts_total",
             type: "COUNTER",
-            help: "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
+            help: "See following URL: https://solr.apache.org/guide/solr/latest/deployment-guide/metrics-reporting.html",
             label_names: ["category", "handler", "core", "collection", "shard", "replica"],
             label_values: [$category, $handler, $core, $collection, $shard, $replica],
             value: $value
@@ -207,7 +207,7 @@
             {
             name         : "solr_metrics_node_time_seconds_total",
             type         : "COUNTER",
-            help         : "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
+            help         : "See following URL: https://solr.apache.org/guide/solr/latest/deployment-guide/metrics-reporting.html",
             label_names  : ["category", "handler"],
             label_values : [$category, $handler],
             value        : $value

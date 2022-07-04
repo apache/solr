@@ -128,23 +128,23 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
       typesHolder.addFieldType(schema, myName, type);
       fieldsToAdd.put(myName, map("stored", "true", "docValues", "false", "multiValued", "false"));
 
-      myName = type.toString() + storedAndDvSv;
+      myName = type + storedAndDvSv;
       typesHolder.addFieldType(schema, myName, type);
       fieldsToAdd.put(myName, map("stored", "true", "docValues", "true", "multiValued", "false"));
 
-      myName = type.toString() + notStoredDvSv;
+      myName = type + notStoredDvSv;
       typesHolder.addFieldType(schema, myName, type);
       fieldsToAdd.put(myName, map("stored", "false", "docValues", "true", "multiValued", "false"));
 
-      myName = type.toString() + storedNotDvMv;
+      myName = type + storedNotDvMv;
       typesHolder.addFieldType(schema, myName, type);
       fieldsToAdd.put(myName, map("stored", "true", "docValues", "false", "multiValued", "true"));
 
-      myName = type.toString() + storedAndDvMv;
+      myName = type + storedAndDvMv;
       typesHolder.addFieldType(schema, myName, type);
       fieldsToAdd.put(myName, map("stored", "true", "docValues", "true", "multiValued", "true"));
 
-      myName = type.toString() + notStoredDvMv;
+      myName = type + notStoredDvMv;
       typesHolder.addFieldType(schema, myName, type);
       fieldsToAdd.put(myName, map("stored", "false", "docValues", "true", "multiValued", "true"));
     }
@@ -158,7 +158,7 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
 
     h.getCore().setLatestSchema(schema);
 
-    // All that setup work and we're only going to add a very few docs!
+    // All that setup work, and we're only going to add a very few docs!
     for (int idx = 0; idx < 10; ++idx) {
       addDocWithAllFields(idx);
     }
@@ -257,7 +257,7 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
         toCheck = new ArrayList(fieldsHolder.allFields);
         break;
       default:
-        fail("Value passed to checkFetchSources unknown: " + source.toString());
+        fail("Value passed to checkFetchSources unknown: " + source);
     }
 
     // MultiValued fields are _always_ read from stored data.
@@ -312,7 +312,7 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
   // 1> we got all the values from the place we expected.
   // 2> all the values we expect are actually returned.
   //
-  // NOTE: multiValued fields are _NOT_ fetched from docValues by design so we don't have to worry
+  // NOTE: multiValued fields are _NOT_ fetched from docValues by design, so we don't have to worry
   // about set semantics
   //
   private void check(String flIn, SolrReturnFields.FIELD_SOURCES source) throws Exception {
@@ -523,7 +523,7 @@ class RetrieveField {
 
     FieldType fieldType = schemaField.getType();
 
-    // Why do mutliValued date fields get here as Strings whereas single-valued fields are Dates?
+    // Why do multiValued date fields get here as Strings whereas single-valued fields are Dates?
     // Why do BoolFields sometimes get here as "F" or "T"?
     if (val instanceof String) {
       if (fieldType instanceof TrieDateField || fieldType instanceof DatePointField) {
@@ -620,7 +620,7 @@ class RetrieveField {
         break;
     }
     // There are tricky cases with multiValued fields that are sometimes fetched from docValues that
-    // obey set semantics so be sure we include at least one duplicate in a multValued field
+    // obey set semantics so be sure we include at least one duplicate in a multiValued field
     // sometimes
     if (random().nextBoolean() && valsAsStrings.size() > 1) {
       valsAsStrings.add(valsAsStrings.get(random().nextInt(valsAsStrings.size())));

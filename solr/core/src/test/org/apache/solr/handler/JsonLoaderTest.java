@@ -213,7 +213,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
 
     // list
     checkFieldValueOrdering((pre + "'f':[45,67,89]" + post).replace('\'', '"'));
-    // dup fieldname keys
+    // duplicate field name keys
     checkFieldValueOrdering((pre + "'f':45,'f':67,'f':89" + post).replace('\'', '"'));
   }
 
@@ -395,7 +395,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     SolrQueryRequest req;
     SolrQueryResponse rsp;
     BufferingRequestProcessor p;
-    JsonLoader loader; // multichild test case
+    JsonLoader loader; // multiple children test case
     final boolean array = random().nextBoolean();
     StringBuilder b = new StringBuilder();
     if (array) {
@@ -685,7 +685,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
         "/response/docs/[0]=={'big_decimal_tf':[1.0E38]}");
   }
 
-  // The delete syntax was both extended for simplification in 4.0
+  // The delete operation syntax was extended for simplification in 4.0
   @Test
   public void testDeleteSyntax() throws Exception {
     String str =

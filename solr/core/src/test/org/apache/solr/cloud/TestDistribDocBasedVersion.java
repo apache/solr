@@ -113,7 +113,7 @@ public class TestDistribDocBasedVersion extends AbstractFullDistribZkTestBase {
   private void doTestHardFail() throws Exception {
     log.info("### STARTING doTestHardFail");
 
-    // use a leader so we test both forwarding and non-forwarding logic
+    // use a leader, so we test both forwarding and non-forwarding logic
     solrClient = shardToLeaderJetty.get(bucket1).client.solrClient;
 
     // solrClient = cloudClient;   CloudSolrServer doesn't currently support propagating error codes
@@ -169,7 +169,7 @@ public class TestDistribDocBasedVersion extends AbstractFullDistribZkTestBase {
 
     doRTG("b!doc1,c!doc2,d!doc3,e!doc4", "30,23,22,21");
 
-    // try delete before add
+    // try to delete before add
     vdelete("b!doc123", 100);
     vadd("b!doc123", 99);
     doRTG("b!doc123", "100");
@@ -180,7 +180,7 @@ public class TestDistribDocBasedVersion extends AbstractFullDistribZkTestBase {
     //
     // now test with a non-smart client
     //
-    // use a leader so we test both forwarding and non-forwarding logic
+    // use a leader, so we test both forwarding and non-forwarding logic
     solrClient = shardToLeaderJetty.get(bucket1).client.solrClient;
 
     vadd("b!doc5", 10);
@@ -212,7 +212,7 @@ public class TestDistribDocBasedVersion extends AbstractFullDistribZkTestBase {
 
     doRTG("b!doc5,c!doc6,d!doc7,e!doc8", "30,23,22,21");
 
-    // try delete before add
+    // try to delete before add
     vdelete("b!doc1234", 100);
     vadd("b!doc1234", 99);
     doRTG("b!doc1234", "100");

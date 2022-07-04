@@ -399,7 +399,7 @@ public class TestFiltering extends SolrTestCaseJ4 {
           }
         }
       } else {
-        // negative frange.. make it relatively small
+        // negative frange... make it relatively small
         l = random().nextInt(model.indexSize);
         u = Math.max(model.indexSize - 1, l + random().nextInt(Math.max(model.indexSize / 10, 2)));
 

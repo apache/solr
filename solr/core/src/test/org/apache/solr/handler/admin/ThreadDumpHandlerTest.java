@@ -65,7 +65,7 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
         "monitor checking not supported on this JVM",
         ManagementFactory.getThreadMXBean().isObjectMonitorUsageSupported());
 
-    /** unique class name to show up as a lock class name in output */
+    // unique class name to show up as a lock class name in output
     final class TestMonitorStruct {
       /* empty */
     }
@@ -85,7 +85,7 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
                     failures.add("ownerT: never saw doneWithTestLatch released");
                   }
                 } catch (InterruptedException ie) {
-                  failures.add("ownerT: " + ie.toString());
+                  failures.add("ownerT: " + ie);
                 }
               }
             },
@@ -190,7 +190,7 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
         "ownable sync checking not supported on this JVM",
         ManagementFactory.getThreadMXBean().isSynchronizerUsageSupported());
 
-    /** unique class name to show up as a lock class name in output */
+    // unique class name to show up as a lock class name in output
     final class TestReentrantLockStruct extends ReentrantLock {
       /* empty */
     }
@@ -211,7 +211,7 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
                     failures.add("ownerT: never saw doneWithTestLatch release");
                   }
                 } catch (InterruptedException ie) {
-                  failures.add("ownerT: " + ie.toString());
+                  failures.add("ownerT: " + ie);
                 }
               } finally {
                 lock.unlock();

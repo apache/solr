@@ -96,7 +96,7 @@ public class UUIDUpdateProcessorFallbackTest extends SolrTestCaseJ4 {
     assertEquals(121, d.getFieldValue("processor_default_i"));
   }
 
-  public void testRequesTParams() throws Exception {
+  public void testRequestParams() throws Exception {
     SolrInputDocument d =
         processAdd(
             null,

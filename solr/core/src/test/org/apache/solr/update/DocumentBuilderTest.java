@@ -271,7 +271,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     Iterator<IndexableField> fieldIterator = storedFields.iterator();
     IndexableField field;
 
-    // Test that we retained the particular value ordering, even though though the 2nd of three was
+    // Test that we retained the particular value ordering, even though the 2nd of three was
     // longest
 
     assertTrue(fieldIterator.hasNext());
@@ -356,13 +356,13 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     Document out = DocumentBuilder.toDocument(doc, core.getLatestSchema());
 
     // from /solr/core/src/test-files/solr/collection1/conf/schema.xml
-    KnnVectorField exectedDestination =
+    KnnVectorField expectedDestination =
         new KnnVectorField(
             "vector2", new float[] {1.1f, 2.1f, 3.1f, 4.1f}, VectorSimilarityFunction.DOT_PRODUCT);
 
     MatcherAssert.assertThat(
         ((KnnVectorField) out.getField("vector2")).vectorValue(),
-        is(exectedDestination.vectorValue()));
+        is(expectedDestination.vectorValue()));
 
     List<IndexableField> storedFields =
         StreamSupport.stream(out.spliterator(), false)

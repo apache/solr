@@ -114,9 +114,9 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
   }
 
   @Test
-  public void fieldDefinition_advancedCodecHyperParamer_shouldLoadSchemaField() throws Exception {
+  public void fieldDefinition_advancedCodecHyperParameter_shouldLoadSchemaField() throws Exception {
     try {
-      initCore("solrconfig_codec.xml", "schema-densevector-codec-hyperparamer.xml");
+      initCore("solrconfig_codec.xml", "schema-densevector-codec-hyperparameter.xml");
       IndexSchema schema = h.getCore().getLatestSchema();
 
       SchemaField vector = schema.getField("vector");
@@ -247,7 +247,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
   }
 
   /**
-   * The inputValue is an ArrayList with a type that dipends on the loader used: - {@link
+   * The inputValue is an ArrayList with a type that depends on the loader used: - {@link
    * org.apache.solr.handler.loader.XMLLoader}, {@link org.apache.solr.handler.loader.CSVLoader}
    * produces an ArrayList of String
    */
@@ -260,7 +260,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
   }
 
   /**
-   * The inputValue is an ArrayList with a type that dipends on the loader used: - {@link
+   * The inputValue is an ArrayList with a type that depends on the loader used: - {@link
    * org.apache.solr.handler.loader.JsonLoader} produces an ArrayList of Double
    */
   @Test
@@ -272,7 +272,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
   }
 
   /**
-   * The inputValue is an ArrayList with a type that dipends on the loader used: - {@link
+   * The inputValue is an ArrayList with a type that depends on the loader used: - {@link
    * org.apache.solr.handler.loader.JavabinLoader} produces an ArrayList of Float
    */
   @Test

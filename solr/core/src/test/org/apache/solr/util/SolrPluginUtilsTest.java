@@ -160,7 +160,7 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
     assertTrue(t + " sanity test isn't TermQuery: " + out.getClass(), out instanceof TermQuery);
     assertEquals(t + " sanity test is wrong field", "subject", ((TermQuery) out).getTerm().field());
 
-    /* field has untokenzied type, so this should be a term anyway */
+    /* field has untokenized type, so this should be a term anyway */
     t = "sind:\"simple phrase\"";
     out = qp.parse(t);
     assertNotNull(t + " sanity test gave back null", out);
@@ -215,7 +215,7 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
           countItems(((DisjunctionMaxQuery) sub).iterator()));
     }
 
-    /* a phrase, and a term that is a stop word for some fields */
+    /* a phrase and a term that is a stop word for some fields */
     t = "hoss:\"XXXXXX YYYYY\" hoss:the";
     out = qp.parse(t);
     assertNotNull(t + " was null", out);

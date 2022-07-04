@@ -129,7 +129,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
         invalidToolExitStatus,
         tool.runTool(cli));
 
-    // now index docs like bin/post would do but we can't use SimplePostTool because it uses
+    // now index docs like bin/post would, but we can't use SimplePostTool because it uses
     // System.exit when it encounters an error, which JUnit doesn't like ...
     log.info("Created collection, now posting example docs!");
     Path exampleDocsDir = Path.of(ExternalPaths.SOURCE_HOME, "example", "exampledocs");
@@ -293,7 +293,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     assertTrue("All cores should have been reloaded within 60 seconds!!!", allGood);
   }
 
-  // Collect all of the autoSoftCommit intervals.
+  // Collect all the autoSoftCommit intervals.
   private Map<String, Long> getSoftAutocommitInterval(String collection) throws Exception {
     Map<String, Long> ret = new HashMap<>();
     DocCollection coll = cloudClient.getClusterState().getCollection(collection);

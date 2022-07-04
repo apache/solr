@@ -45,14 +45,14 @@ public class TestRequestId extends SolrTestCaseJ4 {
 
     try (LogListener reqLog = LogListener.info(SolrCore.class.getName() + ".Request")) {
 
-      // Sanity check that the our MDC doesn't already have some sort of rid set in it
+      // Check that our MDC doesn't already have some sort of rid set in it
       assertNull(MDC.get(CommonParams.REQUEST_ID));
 
       // simple request that should successfully be logged ...
       assertQ("xxx", req("q", "*:*", CommonParams.REQUEST_ID, "xxx"), "//*[@numFound='0']");
 
       // Sanity check that the test framework didn't let our "request" MDC info "leak" out of
-      // assertQ..
+      // assertQ...
       assertNull(MDC.get(CommonParams.REQUEST_ID));
 
       {
@@ -73,7 +73,7 @@ public class TestRequestId extends SolrTestCaseJ4 {
             ErrorCode.BAD_REQUEST);
 
         // Sanity check that the test framework didn't let our "request" MDC info "leak" out of
-        // assertQEx..
+        // assertQEx...
         assertNull(MDC.get(CommonParams.REQUEST_ID));
 
         {

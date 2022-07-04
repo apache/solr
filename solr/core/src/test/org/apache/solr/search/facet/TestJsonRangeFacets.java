@@ -205,7 +205,7 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
               + nohardend
               + "        other:all, facet:{ x:{ type:terms, field:cat_s, limit:1, refine:true } } } }";
 
-      // the behavior should be the same, regardless of wether we pass actual_end to the shards
+      // the behavior should be the same, regardless of whether we pass actual_end to the shards
       // because in a "mixed mode" rolling update, the shards should be smart enough to re-compute
       // if the merging node is running an older version that doesn't send it
       for (String actual_end : Arrays.asList(", _actual_end:'9'", "")) {

@@ -36,7 +36,7 @@ public class SampleTest extends SolrTestCaseJ4 {
     initCore("solr/crazy-path-to-config.xml", "solr/crazy-path-to-schema.xml");
   }
 
-  /** Demonstration of some of the simple ways to use the base class */
+  /** Demonstration of some simple ways to use the base class */
   @Test
   public void testSimple() {
     lrf.args.put(CommonParams.VERSION, "2.2");

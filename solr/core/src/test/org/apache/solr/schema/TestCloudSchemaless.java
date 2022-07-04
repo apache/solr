@@ -46,7 +46,7 @@ public class TestCloudSchemaless extends AbstractFullDistribZkTestBase {
       "/response/lst[@name='responseHeader']/int[@name='status'][.='0']";
 
   @After
-  public void teardDown() throws Exception {
+  public void tearDown() throws Exception {
     super.tearDown();
     closeRestTestHarnesses();
   }

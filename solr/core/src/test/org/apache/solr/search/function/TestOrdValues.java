@@ -171,7 +171,7 @@ public class TestOrdValues extends SolrTestCase {
   }
 
   /**
-   * Actual score computation order is slightly different than assumptios this allows for a small
+   * Actual score computation order is slightly different from assumed, this allows for a small
    * amount of variation
    */
   protected static float TEST_SCORE_TOLERANCE_DELTA = 0.001f;
@@ -204,7 +204,7 @@ public class TestOrdValues extends SolrTestCase {
   };
 
   protected static Directory dir;
-  protected static Analyzer anlzr;
+  protected static Analyzer analyzer;
 
   @AfterClass
   public static void afterClassFunctionTestSetup() throws Exception {
@@ -212,7 +212,7 @@ public class TestOrdValues extends SolrTestCase {
       dir.close();
     }
     dir = null;
-    anlzr = null;
+    analyzer = null;
   }
 
   protected static void createIndex(boolean doMultiSegment) throws Exception {
@@ -221,8 +221,8 @@ public class TestOrdValues extends SolrTestCase {
     }
     // prepare a small index with just a few documents.
     dir = newDirectory();
-    anlzr = new MockAnalyzer(random());
-    IndexWriterConfig iwc = newIndexWriterConfig(anlzr).setMergePolicy(newLogMergePolicy());
+    analyzer = new MockAnalyzer(random());
+    IndexWriterConfig iwc = newIndexWriterConfig(analyzer).setMergePolicy(newLogMergePolicy());
     if (doMultiSegment) {
       iwc.setMaxBufferedDocs(TestUtil.nextInt(random(), 2, 7));
     }
