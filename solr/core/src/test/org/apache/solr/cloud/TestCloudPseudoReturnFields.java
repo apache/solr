@@ -115,7 +115,6 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
             .add(sdoc("id", "46", "val_i", "3", "ssto", "X", "subject", "ggg"))
             .getStatus());
     assertEquals(0, CLOUD_CLIENT.commit().getStatus());
-    ;
   }
 
   @Before
@@ -145,7 +144,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
   public void testMultiValued() throws Exception {
     // the response writers used to consult isMultiValued on the field
     // but this doesn't work when you alias a single valued field to
-    // a multi valued field (the field value is copied first, then
+    // a multivalued field (the field value is copied first, then
     // if the type lookup is done again later, we get the wrong thing). SOLR-4036
 
     // score as pseudo field - precondition checks
@@ -161,23 +160,20 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
         assertNotNull(
             "Test depends on a (dynamic) field matching '" + name + "', Null response", frsp);
         assertEquals(
-            "Test depends on a (dynamic) field matching '"
-                + name
-                + "', bad status: "
-                + frsp.toString(),
+            "Test depends on a (dynamic) field matching '" + name + "', bad status: " + frsp,
             0,
             frsp.getStatus());
         assertNotNull(
             "Test depends on a (dynamic) field matching '"
                 + name
                 + "', schema was changed out from under us? ... "
-                + frsp.toString(),
+                + frsp,
             frsp.getField());
         assertEquals(
             "Test depends on a multivalued dynamic field matching '"
                 + name
                 + "', schema was changed out from under us? ... "
-                + frsp.toString(),
+                + frsp,
             Boolean.TRUE,
             frsp.getField().get("multiValued"));
       } catch (SolrServerException e) {
@@ -205,7 +201,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     // returning a an List)
     //
     // (NOTE: not doing this yet due to how it will impact most other tests, many of which are
-    // currently @AwaitsFix'ed)
+    // currently @AwaitsFix status)
     //
     // assertTrue(doc.getFieldValue("val_ss").getClass().toString(),
     //           doc.getFieldValue("val_ss") instanceof List);
@@ -303,7 +299,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
   }
 
   public void testScoreAndAllRealFieldsRTG() throws Exception {
-    // also shouldn't matter if we use RTG (committed or otherwise) .. score should be ignored
+    // shouldn't matter if we use RTG (committed or otherwise), score should be ignored
     for (String fl : TestPseudoReturnFields.SCORE_AND_REAL_FIELDS) {
       for (int i : Arrays.asList(42, 43, 44, 45, 46, 99)) {
         SolrDocument doc = getRandClient(random()).getById("" + i, params("fl", fl));
@@ -346,7 +342,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     SolrDocumentList docs = null;
     SolrDocument doc = null;
 
-    // shouldn't matter if we use RTG (committed or otherwise) .. score should be ignored
+    // shouldn't matter if we use RTG (committed or otherwise), score should be ignored
     for (int i : Arrays.asList(42, 43, 44, 45, 46, 99)) {
       for (SolrParams p :
           Arrays.asList(params("fl", "score,val_i"), params("fl", "score", "fl", "val_i"))) {
@@ -957,10 +953,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
         "does not match exactly one doc: " + p.toString() + " => " + docs.toString(),
         1,
         docs.getNumFound());
-    assertEquals(
-        "does not contain exactly one doc: " + p.toString() + " => " + docs.toString(),
-        1,
-        docs.size());
+    assertEquals("does not contain exactly one doc: " + p + " => " + docs, 1, docs.size());
     return docs.get(0);
   }
 
@@ -972,11 +965,10 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     QueryResponse rsp = getRandClient(random()).query(p);
     assertEquals("failed request: " + p.toString() + " => " + rsp.toString(), 0, rsp.getStatus());
     assertTrue(
-        "does not match at least one doc: " + p.toString() + " => " + rsp.toString(),
+        "does not match at least one doc: " + p + " => " + rsp,
         1 <= rsp.getResults().getNumFound());
     assertTrue(
-        "rsp does not contain at least one doc: " + p.toString() + " => " + rsp.toString(),
-        1 <= rsp.getResults().size());
+        "rsp does not contain at least one doc: " + p + " => " + rsp, 1 <= rsp.getResults().size());
     return rsp.getResults();
   }
 

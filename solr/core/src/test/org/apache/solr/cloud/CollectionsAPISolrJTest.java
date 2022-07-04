@@ -1211,7 +1211,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         new CollectionAdminRequest.OverseerStatus().process(cluster.getSolrClient());
     assertEquals(0, response.getStatus());
     // When running with Distributed Collection API, no real data in Overseer status, but the
-    // Collection API call above shouldn't fail
+    // Collection API calls above shouldn't fail
     if (new CollectionAdminRequest.RequestApiDistributedProcessing()
         .process(cluster.getSolrClient())
         .getIsCollectionApiDistributed()) {

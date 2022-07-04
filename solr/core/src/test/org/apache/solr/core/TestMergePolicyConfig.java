@@ -256,7 +256,7 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
           atomic.reader() instanceof SegmentReader);
 
       assertEquals(
-          "Compound status incorrect for: " + atomic.reader().toString(),
+          "Compound status incorrect for: " + atomic.reader(),
           compound,
           ((SegmentReader) atomic.reader()).getSegmentInfo().info.getUseCompoundFile());
     }

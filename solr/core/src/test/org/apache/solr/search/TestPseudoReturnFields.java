@@ -64,7 +64,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
   public void testMultiValued() throws Exception {
     // the response writers used to consult isMultiValued on the field
     // but this doesn't work when you alias a single valued field to
-    // a multi valued field (the field value is copied first, then
+    // a multivalued field (the field value is copied first, then
     // if the type lookup is done again later, we get the wrong thing). SOLR-4036
 
     // score as pseudo field - precondition checks

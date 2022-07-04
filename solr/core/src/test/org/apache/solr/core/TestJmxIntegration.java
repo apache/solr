@@ -60,7 +60,7 @@ public class TestJmxIntegration extends SolrTestCaseJ4 {
     // Make sure that at least one MBeanServer is available
     // prior to initializing the core
     //
-    // (test configs are setup to use existing server if any,
+    // (test configs are set up to use existing server if any,
     // otherwise skip JMX)
     newMbeanServer = MBeanServerFactory.createMBeanServer();
 
@@ -85,7 +85,7 @@ public class TestJmxIntegration extends SolrTestCaseJ4 {
     // NOTE: we can't guarantee that "mbeanServer == platformServer"
     // the JVM may have multiple MBean servers running when the test started
     // and the contract of not specifying one when configuring solr.xml without
-    // agetnId or serviceUrl is that it will use whatever the "first" MBean server
+    // agentId or serviceUrl is that it will use whatever the "first" MBean server
     // returned by the JVM is.
 
     nameFactory = new JmxObjectNameFactory("default", registryName);
@@ -115,7 +115,7 @@ public class TestJmxIntegration extends SolrTestCaseJ4 {
     int numDynamicMbeans = 0;
     for (ObjectInstance o : objects) {
       ObjectName name = o.getObjectName();
-      assertNotNull("Null name on: " + o.toString(), name);
+      assertNotNull("Null name on: " + o, name);
       MBeanInfo mbeanInfo = mbeanServer.getMBeanInfo(name);
       if (name.getDomain().equals("solr")) {
         numDynamicMbeans++;
@@ -133,7 +133,7 @@ public class TestJmxIntegration extends SolrTestCaseJ4 {
             Object trash = mbeanServer.getAttribute(o.getObjectName(), attr.getName());
           } catch (javax.management.AttributeNotFoundException e) {
             throw new RuntimeException(
-                "Unable to featch attribute for " + o.getObjectName() + ": " + attr.getName(), e);
+                "Unable to fetch attribute for " + o.getObjectName() + ": " + attr.getName(), e);
           }
         }
       }

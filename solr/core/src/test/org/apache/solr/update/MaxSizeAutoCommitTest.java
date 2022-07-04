@@ -71,11 +71,11 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
     core = h.getCore();
     updateHandler = (DirectUpdateHandler2) core.getUpdateHandler();
 
-    // we don't care about auto-commit's opening a new Searcher in this test, just skip it.
+    // we don't care about auto-commits opening a new Searcher in this test, just skip it.
     updateHandler.softCommitTracker.setOpenSearcher(false);
     updateHandler.commitTracker.setOpenSearcher(false);
 
-    // we don't care about soft commit's at all
+    // we don't care about soft commits at all
     updateHandler.softCommitTracker.setTimeUpperBound(-1);
     updateHandler.softCommitTracker.setDocsUpperBound(-1);
     updateHandler.softCommitTracker.setTLogFileSizeUpperBound(-1);
@@ -334,7 +334,7 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
           if ((currentFileSize < MAX_FILE_SIZE)
               && (currentAutoCommitCount == numIters)
               && (!commitTracker.hasPending())) {
-            // if all of these condiions are met, then we should be completely done
+            // if all of these conditions are met, then we should be completely done
             assertSaneOffers(); // last minute sanity check
             return;
           }

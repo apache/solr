@@ -58,7 +58,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
 
     // we need a consistent segmentation because reopen test validation
-    // dependso n merges not happening when it doesn't expect
+    // depends on merges not happening when it doesn't expect
     systemSetPropertySolrTestsMergePolicyFactory(LogDocMergePolicyFactory.class.getName());
 
     initCore("solrconfig.xml", "schema.xml");
@@ -347,7 +347,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
           break;
         }
         if (i == 1000) {
-          fail("Query didn't succeed after 10 secoonds");
+          fail("Query didn't succeed after 10 seconds");
         }
         Thread.sleep(10);
       }
@@ -408,7 +408,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
           break;
         }
         if (i == 1000) {
-          fail("Query didn't succeed after 10 secoonds");
+          fail("Query didn't succeed after 10 seconds");
         }
         Thread.sleep(10);
       }

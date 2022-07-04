@@ -949,7 +949,7 @@ public class ZkController implements Closeable {
       if (OPEN_ACL_UNSAFE.equals(aclToAdd)) {
         log.warn(
             "Contents of zookeeper /security.json are world-readable;"
-                + " consider setting up ACLs as described in https://solr.apache.org/guide/zookeeper-access-control.html");
+                + " consider setting up ACLs as described in https://solr.apache.org/guide/solr/latest/deployment-guide/zookeeper-access-control.html");
       } else {
         tryUpdate = true;
       }

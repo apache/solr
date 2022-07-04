@@ -188,7 +188,7 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
                         break;
                       case "statsCacheImpl":
                         assertTrue(
-                            "incorreect cache impl, expected"
+                            "incorrect cache impl, expected"
                                 + getImplementationName()
                                 + " but was "
                                 + value,

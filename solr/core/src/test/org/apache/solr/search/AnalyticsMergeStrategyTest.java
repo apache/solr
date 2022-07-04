@@ -65,7 +65,7 @@ public class AnalyticsMergeStrategyTest extends BaseDistributedSearchTestCase {
 
     /*
      *  The count qparser plugin is pointing to AnalyticsTestQParserPlugin. This class defines a simple AnalyticsQuery and
-     *  has two merge strategies. If the iterate local param is true then an InterativeMergeStrategy is used.
+     *  has two merge strategies. If the "iterate" local param is true then an InteractiveMergeStrategy is used.
      */
 
     ModifiableSolrParams params = new ModifiableSolrParams();

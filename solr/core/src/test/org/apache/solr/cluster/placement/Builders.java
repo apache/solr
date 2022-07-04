@@ -265,16 +265,16 @@ public class Builders {
 
         for (String replicaNode : replicasOnNodes) {
           // replicaNode is like "TLOG 2" meaning a TLOG replica should be placed on node 2
-          String[] splited = replicaNode.split("\\s+");
-          Assert.assertEquals(2, splited.length);
-          Replica.ReplicaType type = Replica.ReplicaType.valueOf(splited[0]);
+          String[] split = replicaNode.split("\\s+");
+          Assert.assertEquals(2, split.length);
+          Replica.ReplicaType type = Replica.ReplicaType.valueOf(split[0]);
           final NodeBuilder node;
-          int nodeIndex = Integer.parseInt(splited[1]);
+          int nodeIndex = Integer.parseInt(split[1]);
           if (nodeIndex < liveNodes.size()) {
             node = liveNodes.get(nodeIndex);
           } else {
-            // The collection can have replicas on non live nodes. Let's create such a node here
-            // (that is not known to the cluster). There could be many non live nodes in the
+            // The collection can have replicas on non-live nodes. Let's create such a node here
+            // (that is not known to the cluster). There could be many non-live nodes in the
             // collection configuration, they will all reference new instances such as below of a
             // node unknown to cluster, but all will have the same name (so will be equal if
             // tested).
@@ -309,7 +309,7 @@ public class Builders {
 
     /**
      * Initializes shard and replica builders for the collection based on passed parameters.
-     * Replicas are assigned round robin to the nodes. The shard leader is the first NRT replica of
+     * Replicas are assigned round-robin to the nodes. The shard leader is the first NRT replica of
      * each shard (or first TLOG is no NRT). Shard and replica configuration can be modified
      * afterwards, the returned builder hierarchy is a convenient starting point.
      *
@@ -331,7 +331,7 @@ public class Builders {
 
     /**
      * Initializes shard and replica builders for the collection based on passed parameters.
-     * Replicas are assigned round robin to the nodes. The shard leader is the first NRT replica of
+     * Replicas are assigned round-robin to the nodes. The shard leader is the first NRT replica of
      * each shard (or first TLOG is no NRT). Shard and replica configuration can be modified
      * afterwards, the returned builder hierarchy is a convenient starting point.
      *

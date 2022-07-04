@@ -142,7 +142,7 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
       // Treat this node specially, from the ZK docs:
       // The dynamic configuration is stored in a special znode ZooDefs.CONFIG_NODE =
       // /zookeeper/config.
-      // This node by default is read only for all users, except super user and
+      // This node by default is read only for all users, except superuser and
       // users that's explicitly configured for write access.
       assertEquals(
           "Path " + path + " does not have READ_ACL_UNSAFE", ZooDefs.Ids.READ_ACL_UNSAFE, acls);

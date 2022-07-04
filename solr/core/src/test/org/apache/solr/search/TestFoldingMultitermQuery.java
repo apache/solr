@@ -81,7 +81,7 @@ public class TestFoldingMultitermQuery extends SolrTestCaseJ4 {
               "content_keyword",
               docs[i]));
     }
-    // Mixing and matching amongst various languages is probalby a bad thing, so add some tests for
+    // Mixing and matching amongst various languages is probably a bad thing, so add some tests for
     // various special filters
     int idx = docs.length;
     // Greek

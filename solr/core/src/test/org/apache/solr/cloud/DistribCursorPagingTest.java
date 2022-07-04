@@ -268,7 +268,7 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
     //       so here, in this test, we can't assert a hardcoded score ordering -- we trust
     //       the full walk testing (below)
 
-    // int sort with dups, id tie breaker ... and some faceting
+    // int sort with duplicates, id tiebreaker ... and some faceting
     cursorMark = CURSOR_MARK_START;
     params =
         params(
@@ -776,7 +776,7 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
    * than once, or if an id is encountered which is not expected, or if an id is <code>[elevated]
    * </code> and comes "after" any ids which were not <code>[elevated]</code>
    *
-   * @returns set of all elevated ids encountered in the walk
+   * @return set of all elevated ids encountered in the walk
    * @see #assertFullWalkNoDups(SolrParams,Consumer)
    */
   public SentinelIntSet assertFullWalkNoDupsElevated(
@@ -838,7 +838,7 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
    * the sorting in some cases and cause false negatives in the response comparisons (even if we
    * don't include "score" in the "fl")
    *
-   * @returns set of all ids encountered in the walk
+   * @return set of all ids encountered in the walk
    * @see #assertFullWalkNoDups(SolrParams,Consumer)
    */
   public SentinelIntSet assertFullWalkNoDups(int maxSize, SolrParams params) throws Exception {

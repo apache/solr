@@ -317,12 +317,12 @@ public class RankQParserPluginTest extends SolrTestCaseJ4 {
         params(FIELD, "rank_1"));
   }
 
-  private void assertValidRankQuery(String expctedToString, SolrParams localParams)
+  private void assertValidRankQuery(String expectedToString, SolrParams localParams)
       throws IOException, SyntaxError {
     QParser parser = getRankQParser(localParams, null, req());
     Query q = parser.parse();
     assertNotNull(q);
-    assertThat(q.toString(), CoreMatchers.equalTo(expctedToString));
+    assertThat(q.toString(), CoreMatchers.equalTo(expectedToString));
   }
 
   private String expectedFeatureQueryToString(String fieldName, String function, float boost) {

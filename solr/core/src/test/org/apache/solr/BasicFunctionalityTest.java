@@ -439,7 +439,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   @Test
   public void testMultipleUpdatesPerAdd() {
     clearIndex();
-    // big freaking kludge since the response is currently not well formed.
+    // big freaking kludge since the response is currently not well-formed.
     String res =
         h.update(
             "<add><doc><field name=\"id\">1</field></doc><doc><field name=\"id\">2</field></doc></add>");

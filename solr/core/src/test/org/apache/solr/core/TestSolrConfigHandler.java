@@ -63,9 +63,6 @@ public class TestSolrConfigHandler extends RestTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static File tmpSolrHome;
-  private static File tmpConfDir;
-
   private static final String collection = "collection1";
   private static final String confDir = collection + "/conf";
 
@@ -117,8 +114,8 @@ public class TestSolrConfigHandler extends RestTestBase {
 
   @Before
   public void before() throws Exception {
-    tmpSolrHome = createTempDir().toFile();
-    tmpConfDir = new File(tmpSolrHome, confDir);
+    File tmpSolrHome = createTempDir().toFile();
+    File tmpConfDir = new File(tmpSolrHome, confDir);
     FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
 
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();

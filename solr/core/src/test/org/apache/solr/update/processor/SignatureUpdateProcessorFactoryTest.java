@@ -262,8 +262,8 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
       ureq.add(doc);
     }
     {
-      // A and B should have same sig as eachother
-      // even though the particulars of how the the ints_is list are built
+      // A and B should have same sig as each other
+      // even though the particulars of how the ints_is list are built
 
       SolrInputDocument docA = new SolrInputDocument();
       SolrInputDocument docB = new SolrInputDocument();

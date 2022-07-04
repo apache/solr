@@ -253,7 +253,7 @@ public class DistributedFacetPivotLongTailTest extends BaseDistributedSearchTest
       assertEquals(pivot.toString(), 14, pivot.getCount());
     }
 
-    // however with a lower limit and overrequesting disabled,
+    // however, with a lower limit and overrequesting disabled,
     // we're going to miss out on tailB
 
     pivots =

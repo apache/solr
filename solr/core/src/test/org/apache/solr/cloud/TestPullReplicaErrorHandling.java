@@ -210,7 +210,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     //     Back to normal
     //    Even if the leader is back to normal, the replica can get broken pipe for some time when
     // trying to connect to it. The commit
-    //    can fail if it's sent to the replica and it forwards it to the leader, and since it uses
+    //    can fail if it's sent to the replica, and it forwards it to the leader, and since it uses
     // CUSC the error is hidden! That breaks
     //    the last part of this test.
     //    addDocs(20);

@@ -192,7 +192,7 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
     // we care only about the mlt results
     handle.put("response", SKIP);
 
-    // currently distrib mlt is sorting by score (even though it's not really comparable across
+    // currently, distrib mlt is sorting by score (even though it's not really comparable across
     // shards) so it may not match the sort of single shard mlt
     handle.put("17", UNORDERED);
 
@@ -234,12 +234,12 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
     handle.put("13", UNORDERED);
     handle.put("7", UNORDERED);
 
-    // keep in mind that MLT params influence stats that are calulated
+    // keep in mind that MLT params influence stats that are calculated
     // per shard - because of this, depending on params, distrib and single
     // shard queries will not match.
 
     // because distrib and single node do not currently sort exactly the same,
-    // we ask for an mlt.count of 20 to ensure both include all results
+    // we ask for a mlt.count of 20 to ensure both include all results
 
     query(
         "q",

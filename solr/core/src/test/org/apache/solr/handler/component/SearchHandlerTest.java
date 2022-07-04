@@ -65,7 +65,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
           core.getSearchComponent(MoreLikeThisComponent.COMPONENT_NAME),
           handler.getComponents().get(0));
     } catch (IOException e) {
-      fail("IOExcepiton closing SearchHandler");
+      fail("IOException closing SearchHandler");
     }
 
     // Build an explicit list that includes the debug comp.

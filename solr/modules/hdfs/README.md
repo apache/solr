@@ -43,4 +43,4 @@ To execute the module tests:
 
 Usage
 -----
-Please refer to the 'Running Solr on HDFS' section of the reference guide: https://solr.apache.org/guide/running-solr-on-hdfs.html
+Please refer to the 'Running Solr on HDFS' section of the reference guide: https://solr.apache.org/guide/solr/latest/deployment-guide/solr-on-hdfs.html

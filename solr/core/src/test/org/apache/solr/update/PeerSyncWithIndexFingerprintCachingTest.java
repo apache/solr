@@ -82,7 +82,7 @@ public class PeerSyncWithIndexFingerprintCachingTest extends BaseDistributedSear
     // make sure fingerprint before and after deleting are not the same
     Assert.assertTrue(IndexFingerprint.compare(before, after) != 0);
 
-    // replica which missed the delete should be able to sync
+    // replica which missed the delete operation should be able to sync
     assertSync(client1, numVersions, true, shardsArr[0]);
     client0.commit();
     client1.commit();

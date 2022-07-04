@@ -28,7 +28,7 @@ result faceting and highlighting.
 ## Online Documentation
 
 This README file only contains basic setup instructions.  For more
-comprehensive documentation, visit <https://solr.apache.org/guide/>
+comprehensive documentation, visit <https://solr.apache.org/guide/solr>
 
 ## Building with Gradle
 
