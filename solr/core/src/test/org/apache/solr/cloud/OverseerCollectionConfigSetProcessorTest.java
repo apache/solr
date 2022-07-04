@@ -896,7 +896,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   }
 
   protected void waitForEmptyQueue() throws Exception {
-    final TimeOut timeout = new TimeOut(MAXWAIT, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
+    final TimeOut timeout = new TimeOut(MAX_WAIT_MS, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
     while (queue.peek() != null) {
       if (timeout.hasTimedOut()) fail("Queue not empty within " + MAX_WAIT_MS + " ms");
       Thread.sleep(100);
