@@ -1357,7 +1357,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
       // is equal to itself, and that the quality checks work regardless
       // of which caller/callee is used.
       for (Query query : queries) {
-        QueryUtils.checkEqual(value, query);
+        QueryUtils.checkEqual(query1, query2);
       }
     }
   }
