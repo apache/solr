@@ -82,7 +82,7 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
       designateJettys.add(cloudJettys.get(n));
     }
 
-    waitUntilOverseerDesignateIsLeader(zkStateReader.getZkClient(), designates, MAX_WAIT_TIME);
+    waitUntilOverseerDesignateIsLeader(zkStateReader.getZkClient(), designates);
 
     zkStateReader.getZkClient().printLayoutToStream(System.out);
 
@@ -100,8 +100,7 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
                 > 0;
         if (liveDesignates) {
           boolean success =
-              waitUntilOverseerDesignateIsLeader(
-                  zkStateReader.getZkClient(), designates, MAX_WAIT_TIME);
+              waitUntilOverseerDesignateIsLeader(zkStateReader.getZkClient(), designates);
           if (!success) {
             leader =
                 OverseerCollectionConfigSetProcessor.getLeaderNode(zkStateReader.getZkClient());
@@ -115,8 +114,7 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
         }
         cloudJetty.jetty.start();
         boolean success =
-            waitUntilOverseerDesignateIsLeader(
-                zkStateReader.getZkClient(), designates, MAX_WAIT_TIME);
+            waitUntilOverseerDesignateIsLeader(zkStateReader.getZkClient(), designates);
         if (!success) {
           leader = OverseerCollectionConfigSetProcessor.getLeaderNode(zkStateReader.getZkClient());
           if (leader == null)
@@ -145,11 +143,11 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
   }
 
   static boolean waitUntilOverseerDesignateIsLeader(
-      SolrZkClient testZkClient, List<String> overseerDesignates, long timeoutInNanos)
+      SolrZkClient testZkClient, List<String> overseerDesignates)
       throws KeeperException, InterruptedException {
     long now = System.nanoTime();
     // the maximum amount of time we're willing to wait to see the designate as leader
-    long maxTimeout = now + timeoutInNanos;
+    long maxTimeout = now + RollingRestartTest.MAX_WAIT_TIME;
     long timeout = now + TimeUnit.NANOSECONDS.convert(60, TimeUnit.SECONDS);
     boolean firstTime = true;
     int stableCheckTimeout = 2000;

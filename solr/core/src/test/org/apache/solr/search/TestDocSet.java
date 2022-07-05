@@ -406,8 +406,7 @@ public class TestDocSet extends SolrTestCase {
       subs[i] = dummyIndexReader(rand.nextInt(maxDoc));
     }
 
-    MultiReader mr = new MultiReader(subs);
-    return mr;
+    return new MultiReader(subs);
   }
 
   private static boolean checkNullOrEmpty(DocIdSetIterator[] disis) throws IOException {

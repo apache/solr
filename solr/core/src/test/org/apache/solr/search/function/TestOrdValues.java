@@ -62,7 +62,7 @@ public class TestOrdValues extends SolrTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    createIndex(false);
+    createIndex();
   }
 
   /** Test OrdFieldSource */
@@ -215,7 +215,7 @@ public class TestOrdValues extends SolrTestCase {
     analyzer = null;
   }
 
-  protected static void createIndex(boolean doMultiSegment) throws Exception {
+  protected static void createIndex() throws Exception {
     if (VERBOSE) {
       System.out.println("TEST: setUp");
     }
@@ -223,9 +223,6 @@ public class TestOrdValues extends SolrTestCase {
     dir = newDirectory();
     analyzer = new MockAnalyzer(random());
     IndexWriterConfig iwc = newIndexWriterConfig(analyzer).setMergePolicy(newLogMergePolicy());
-    if (doMultiSegment) {
-      iwc.setMaxBufferedDocs(TestUtil.nextInt(random(), 2, 7));
-    }
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     // add docs not exactly in natural ID order, to verify we do check the order of docs by scores
     int remaining = N_DOCS;
@@ -241,12 +238,11 @@ public class TestOrdValues extends SolrTestCase {
       i = (i + 4) % N_DOCS;
       remaining--;
     }
-    if (!doMultiSegment) {
-      if (VERBOSE) {
-        System.out.println("TEST: setUp full merge");
-      }
-      iw.forceMerge(1);
+    if (VERBOSE) {
+      System.out.println("TEST: setUp full merge");
     }
+    iw.forceMerge(1);
+
     iw.close();
     if (VERBOSE) {
       System.out.println("TEST: setUp done close");
