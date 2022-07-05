@@ -238,9 +238,8 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
       int batchSize, Function<Integer, String> requestFn) {
     SolrQueryRequestBase updateReq =
         new SolrQueryRequestBase(core, new MapSolrParams(new HashMap<>())) {};
-    int startId = 0;
     List<String> docs = new ArrayList<>();
-    for (int i = startId; i < startId + batchSize; i++) {
+    for (int i = 0; i < batchSize; i++) {
       docs.add(requestFn.apply(i));
     }
     updateReq.setContentStreams(toContentStreams(docs));
