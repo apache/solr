@@ -16,15 +16,14 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
-import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase.AwaitsFix;
+import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
@@ -93,7 +92,7 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
     assertReplicaInformation(urlScheme);
   }
 
-  private void assertReplicaInformation(String urlScheme) throws Exception {
+  private void assertReplicaInformation(String urlScheme) {
     List<Replica> replicas = getReplicas();
     assertEquals("Wrong number of replicas found", 4, replicas.size());
     for (Replica replica : replicas) {
@@ -103,7 +102,7 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
     }
   }
 
-  private List<Replica> getReplicas() throws IOException {
+  private List<Replica> getReplicas() {
     List<Replica> replicas = new ArrayList<>();
 
     DocCollection collection = cloudClient.getClusterState().getCollection(DEFAULT_COLLECTION);

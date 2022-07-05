@@ -77,7 +77,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
   }
 
   @After
-  private void afterClass() throws Exception {
+  private void afterClass() {
     deleteCore();
     System.clearProperty("managed.schema.mutable");
     System.clearProperty("enable.update.log");
@@ -201,7 +201,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     File managedSchemaFile = new File(tmpConfDir, "managed-schema.xml");
     Files.delete(
         managedSchemaFile
-            .toPath()); // Delete managed-schema.xml so it won't block parsing a new schema
+            .toPath()); // Delete managed-schema.xml, so it won't block parsing a new schema
 
     System.setProperty("managed.schema.mutable", "true");
     initCore(
@@ -235,7 +235,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     assertSchemaResource(collection, "managed-schema.xml");
     deleteCore();
     File managedSchemaFile = new File(tmpConfDir, "managed-schema.xml");
-    // Delete managed-schema.xml so it won't block parsing a new schema
+    // Delete managed-schema.xml, so it won't block parsing a new schema
     Files.delete(managedSchemaFile.toPath());
     System.setProperty("managed.schema.mutable", "true");
     initCore(
@@ -288,7 +288,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
   public void testAddFieldWhenItAlreadyExists() throws Exception {
     deleteCore();
     File managedSchemaFile = new File(tmpConfDir, "managed-schema.xml");
-    // Delete managed-schema.xml so it won't block parsing a new schema
+    // Delete managed-schema.xml, so it won't block parsing a new schema
     Files.delete(managedSchemaFile.toPath());
     System.setProperty("managed.schema.mutable", "true");
     initCore(
@@ -329,7 +329,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
   public void testAddSameFieldTwice() throws Exception {
     deleteCore();
     File managedSchemaFile = new File(tmpConfDir, "managed-schema.xml");
-    // Delete managed-schema.xml so it won't block parsing a new schema
+    // Delete managed-schema.xml, so it won't block parsing a new schema
     Files.delete(managedSchemaFile.toPath());
     System.setProperty("managed.schema.mutable", "true");
     initCore(
@@ -370,7 +370,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
   public void testAddDynamicField() throws Exception {
     deleteCore();
     File managedSchemaFile = new File(tmpConfDir, "managed-schema.xml");
-    // Delete managed-schema.xml so it won't block parsing a new schema
+    // Delete managed-schema.xml, so it won't block parsing a new schema
     Files.delete(managedSchemaFile.toPath());
     System.setProperty("managed.schema.mutable", "true");
     initCore(
@@ -411,7 +411,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
   public void testAddWithSchemaCodecFactory() throws Exception {
     deleteCore();
     File managedSchemaFile = new File(tmpConfDir, "managed-schema.xml");
-    // Delete managed-schema.xml so it won't block parsing a new schema
+    // Delete managed-schema.xml, so it won't block parsing a new schema
     Files.delete(managedSchemaFile.toPath());
     System.setProperty("managed.schema.mutable", "true");
     initCore("solrconfig-managed-schema.xml", "schema_codec.xml", tmpSolrHome.getPath());
@@ -442,7 +442,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
   public void testAddWithSchemaSimilarityFactory() throws Exception {
     deleteCore();
     File managedSchemaFile = new File(tmpConfDir, "managed-schema.xml");
-    // Delete managed-schema.xml so it won't block parsing a new schema
+    // Delete managed-schema.xml, so it won't block parsing a new schema
     Files.delete(managedSchemaFile.toPath());
     System.setProperty("managed.schema.mutable", "true");
     initCore("solrconfig-managed-schema.xml", "schema-bm25.xml", tmpSolrHome.getPath());
@@ -474,7 +474,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     assertSchemaResource(collection, "managed-schema.xml");
     deleteCore();
     File managedSchemaFile = new File(tmpConfDir, "managed-schema.xml");
-    // Delete managed-schema.xml so it won't block parsing a new schema
+    // Delete managed-schema.xml, so it won't block parsing a new schema
     Files.delete(managedSchemaFile.toPath());
     System.setProperty("managed.schema.mutable", "true");
     initCore(
@@ -516,7 +516,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
   public void testAddFieldThenReload() throws Exception {
     deleteCore();
     File managedSchemaFile = new File(tmpConfDir, "managed-schema.xml");
-    // Delete managed-schema.xml so it won't block parsing a new schema
+    // Delete managed-schema.xml, so it won't block parsing a new schema
     Files.delete(managedSchemaFile.toPath());
     System.setProperty("managed.schema.mutable", "true");
     initCore(

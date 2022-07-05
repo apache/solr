@@ -18,16 +18,19 @@
 load bats_helper
 
 setup() {
-  common_setup
+  common_clean_setup
 }
 
 teardown() {
+  # save a snapshot of SOLR_HOME for failed tests
+  save_home_on_failure
+
   solr stop -all >/dev/null 2>&1
 }
 
 @test "SOLR11740 check f" {
-  run -0 solr start
-  run -0 solr start -p 7574
+  solr start
+  solr start -p 7574
   run bash -c 'solr stop -all 2>&1'
   refute_output --partial 'forcefully killing'
 }

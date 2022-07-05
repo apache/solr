@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.ZkTestServer.LimitViolationAction;
@@ -110,7 +110,7 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
           initialLeaderJetty.url);
       for (CloudJettyRunner cloudJettyRunner : otherJetties) {
         log.info(
-            "Nonleader node_name: {},  url: {}",
+            "Non-leader node_name: {},  url: {}",
             cloudJettyRunner.coreNodeName,
             cloudJettyRunner.url);
       }

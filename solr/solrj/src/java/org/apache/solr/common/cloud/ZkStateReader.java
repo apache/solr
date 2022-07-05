@@ -18,7 +18,6 @@ package org.apache.solr.common.cloud;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySortedSet;
-import static org.apache.solr.common.util.Utils.fromJSON;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -47,7 +46,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
-import org.apache.solr.client.solrj.impl.BaseCloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.Callable;
@@ -228,7 +227,7 @@ public class ZkStateReader implements SolrCloseable {
    *
    * @throws IllegalArgumentException if solrClient isn't ZK based.
    */
-  public static ZkStateReader from(BaseCloudSolrClient solrClient) {
+  public static ZkStateReader from(CloudSolrClient solrClient) {
     try {
       var provider = (ZkClientClusterStateProvider) solrClient.getClusterStateProvider();
       return provider.getZkStateReader();
@@ -441,7 +440,7 @@ public class ZkStateReader implements SolrCloseable {
               cd.data =
                   pair.first() == null || pair.first().length == 0
                       ? emptyMap()
-                      : Utils.getDeepCopy((Map) fromJSON(pair.first()), 4, false);
+                      : Utils.getDeepCopy((Map) Utils.fromJSON(pair.first()), 4, false);
               cd.version = pair.second() == null ? -1 : pair.second().getVersion();
               securityData = cd;
               securityNodeListener.run();
@@ -2221,7 +2220,7 @@ public class ZkStateReader implements SolrCloseable {
     public boolean update() throws KeeperException, InterruptedException {
       log.debug("Checking ZK for most up to date Aliases {}", ALIASES);
       // Call sync() first to ensure the subsequent read (getData) is up to date.
-      zkClient.getSolrZooKeeper().sync(ALIASES, null, null);
+      zkClient.getZooKeeper().sync(ALIASES, null, null);
       Stat stat = new Stat();
       final byte[] data = zkClient.getData(ALIASES, null, stat, true);
       return setIfNewer(Aliases.fromJSON(data, stat.getVersion()));

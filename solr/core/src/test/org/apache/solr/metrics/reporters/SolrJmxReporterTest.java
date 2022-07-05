@@ -28,7 +28,7 @@ import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
 import javax.management.ObjectInstance;
 import javax.management.ObjectName;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.PluginInfo;
@@ -142,7 +142,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
   @After
   public void afterTest() throws Exception {
     if (null == metricManager) {
-      return; // test failed to init, nothing to cleanup
+      return; // test failed to init, nothing to clean up
     }
 
     metricManager.closeReporters(coreMetricManager.getRegistryName());
@@ -157,7 +157,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testReportMetrics() throws Exception {
+  public void testReportMetrics() {
     Random random = random();
 
     Map<String, Counter> registered = new HashMap<>();

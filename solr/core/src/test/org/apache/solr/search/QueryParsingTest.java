@@ -53,7 +53,7 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
           parser = QParser.getParser(qstr, defType, req);
         } catch (Exception e) {
           throw new RuntimeException(
-              "getParser excep using defType=" + defType + " with qstr=" + qstr, e);
+              "getParser exception using defType=" + defType + " with qstr=" + qstr, e);
         }
 
         Query q = parser.parse();
@@ -90,7 +90,7 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
         QParser.getParser("strdist(\"a value\",literal('a value'),edit)", NAME, req).getQuery());
   }
 
-  public void testGetQParser() throws Exception {
+  public void testGetQParser() {
     // invalid defType
     SolrException exception =
         expectThrows(SolrException.class, () -> h.query(req("q", "ad", "defType", "bleh")));

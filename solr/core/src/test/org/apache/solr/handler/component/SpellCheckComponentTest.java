@@ -18,9 +18,10 @@ package org.apache.solr.handler.component;
 
 import java.io.File;
 import java.util.*;
-import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util.LuceneTestCase.SuppressTempFileChecks;
+import org.apache.lucene.tests.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase.SuppressTempFileChecks;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SpellingParams;
@@ -290,6 +291,43 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testInvalidDictionary() {
+    assertQEx(
+        "Invalid specified dictionary should throw exception",
+        "Specified dictionaries do not exist: INVALID",
+        req(
+            "json.nl",
+            "map",
+            "qt",
+            rh,
+            SpellCheckComponent.COMPONENT_NAME,
+            "true",
+            "q",
+            "documemt",
+            SpellingParams.SPELLCHECK_DICT,
+            "INVALID"),
+        SolrException.ErrorCode.NOT_FOUND);
+
+    assertQEx(
+        "Invalid specified dictionary should throw exception",
+        "Specified dictionaries do not exist: INVALID2",
+        req(
+            "json.nl",
+            "map",
+            "qt",
+            rh,
+            SpellCheckComponent.COMPONENT_NAME,
+            "true",
+            "q",
+            "test",
+            SpellingParams.SPELLCHECK_Q,
+            "documemt",
+            SpellingParams.SPELLCHECK_DICT,
+            "INVALID2"),
+        SolrException.ErrorCode.NOT_FOUND);
+  }
+
+  @Test
   public void testCollate() throws Exception {
     assertJQ(
         req(
@@ -443,7 +481,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRelativeIndexDirLocation() throws Exception {
+  public void testRelativeIndexDirLocation() {
     SolrCore core = h.getCore();
     File indexDir = new File(core.getDataDir() + File.separator + "spellchecker1");
     assertTrue(indexDir.exists());

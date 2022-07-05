@@ -25,7 +25,7 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Random;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
@@ -171,8 +171,8 @@ public class HLLSerializationTest extends SolrTestCase {
   }
 
   /**
-   * Iterates over all possible constructor args, with the exception of log2m, which is only
-   * iterated up to the specified max so the test runs in a "reasonable" amount of time and ram.
+   * Iterates over all possible constructor args, except for log2m, which is only iterated up to the
+   * specified max so the test runs in a "reasonable" amount of time and RAM.
    */
   private static void assertCardinality(
       final HLLType hllType, final int maxLog2m, final Collection<Long> items)
@@ -189,7 +189,7 @@ public class HLLSerializationTest extends SolrTestCase {
   }
 
   /**
-   * Adds all of the items to the specified hll, then does a round trip serialize/deserialize and
+   * Adds all the items to the specified hll, then does a round trip serialize/deserialize and
    * confirms equality of several properties (including the byte serialization). Repeats process
    * with a clone.
    */

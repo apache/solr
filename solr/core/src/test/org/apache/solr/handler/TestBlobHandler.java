@@ -34,6 +34,7 @@ import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -100,8 +101,12 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
     map = TestSolrConfigHandlerConcurrent.getAsMap(url, cloudClient);
     assertEquals("" + bytarr.length, map._getStr("response/docs[0]/size", null));
 
-    compareInputAndOutput(baseUrl + "/.system/blob/test?wt=filestream", bytarr2, cloudClient);
-    compareInputAndOutput(baseUrl + "/.system/blob/test/1?wt=filestream", bytarr, cloudClient);
+    compareInputAndOutput(
+        baseUrl + "/.system/blob/test?wt=filestream", bytarr2, (CloudLegacySolrClient) cloudClient);
+    compareInputAndOutput(
+        baseUrl + "/.system/blob/test/1?wt=filestream",
+        bytarr,
+        (CloudLegacySolrClient) cloudClient);
   }
 
   static void checkBlobPostMd5(String baseUrl, CloudSolrClient cloudClient) throws Exception {
@@ -157,7 +162,7 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
             i, count, timer.getTime(), map.toString()));
   }
 
-  static void compareInputAndOutput(String url, byte[] bytarr, CloudSolrClient cloudClient)
+  static void compareInputAndOutput(String url, byte[] bytarr, CloudLegacySolrClient cloudClient)
       throws IOException {
 
     HttpClient httpClient = cloudClient.getLbClient().getHttpClient();
@@ -185,7 +190,12 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
       httpPost = new HttpPost(baseUrl + "/.system/blob/" + blobName);
       httpPost.setHeader("Content-Type", "application/octet-stream");
       httpPost.setEntity(new ByteArrayEntity(bytarr.array(), bytarr.arrayOffset(), bytarr.limit()));
-      entity = cloudClient.getLbClient().getHttpClient().execute(httpPost).getEntity();
+      entity =
+          ((CloudLegacySolrClient) cloudClient)
+              .getLbClient()
+              .getHttpClient()
+              .execute(httpPost)
+              .getEntity();
       try {
         response = EntityUtils.toString(entity, StandardCharsets.UTF_8);
         Map<?, ?> m = (Map<?, ?>) fromJSONString(response);

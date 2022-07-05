@@ -17,7 +17,7 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryUtils;
+import org.apache.lucene.tests.search.QueryUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -87,7 +87,7 @@ public class TestValueSourceCache extends SolrTestCaseJ4 {
     }
   }
 
-  // This test should will fail because q1 and q3 evaluate as equal unless
+  // This test should fail because q1 and q3 evaluate as equal unless
   // fixes for bug 2829 are in place.
   void tryQuerySameTypes(String template, String numbers, String type) throws SyntaxError {
     String s1 = template;

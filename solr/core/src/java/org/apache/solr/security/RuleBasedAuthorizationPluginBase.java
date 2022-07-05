@@ -32,10 +32,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.api.Api;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
+import org.apache.solr.handler.admin.api.ModifyRuleBasedAuthConfigAPI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -397,6 +399,7 @@ public abstract class RuleBasedAuthorizationPluginBase
 
   @Override
   public ValidatingJsonMap getSpec() {
-    return Utils.getSpec("cluster.security.RuleBasedAuthorization").getSpec();
+    final List<Api> apis = AnnotatedApi.getApis(new ModifyRuleBasedAuthConfigAPI());
+    return apis.get(0).getSpec();
   }
 }

@@ -32,13 +32,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -100,8 +101,8 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   /** We need to turn off directUpdatesToLeadersOnly due to SOLR-9512 */
   @Override
   protected CloudSolrClient createCloudClient(String defaultCollection) {
-    CloudSolrClient client =
-        new CloudSolrClient.Builder(
+    var client =
+        new CloudLegacySolrClient.Builder(
                 Collections.singletonList(zkServer.getZkAddress()), Optional.empty())
             .sendDirectUpdatesToAnyShardReplica()
             .withConnectionTimeout(5000)
@@ -507,8 +508,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     attemptCollectionDelete(cloudClient, testCollectionName);
   }
 
-  protected List<Replica> getActiveOrRecoveringReplicas(String testCollectionName, String shardId)
-      throws Exception {
+  protected List<Replica> getActiveOrRecoveringReplicas(String testCollectionName, String shardId) {
     Map<String, Replica> activeReplicas = new HashMap<>();
     ZkStateReader zkr = ZkStateReader.from(cloudClient);
     ClusterState cs = zkr.getClusterState();
@@ -595,7 +595,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
 
   /**
    * Query the real-time get handler for a specific doc by ID to verify it exists in the provided
-   * server, using distrib=false so it doesn't route to another replica.
+   * server, using distrib=false, so it doesn't route to another replica.
    */
   protected void assertDocExists(HttpSolrClient solr, String coll, String docId) throws Exception {
     NamedList<?> rsp = realTimeGetDocId(solr, docId);

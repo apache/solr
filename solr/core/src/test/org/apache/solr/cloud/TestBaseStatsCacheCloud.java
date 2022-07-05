@@ -188,7 +188,7 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
                         break;
                       case "statsCacheImpl":
                         assertTrue(
-                            "incorreect cache impl, expected"
+                            "incorrect cache impl, expected"
                                 + getImplementationName()
                                 + " but was "
                                 + value,
@@ -212,7 +212,7 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
   }
 
   protected void assertResponses(
-      QueryResponse controlRsp, QueryResponse cloudRsp, boolean sameScores) throws Exception {
+      QueryResponse controlRsp, QueryResponse cloudRsp, boolean sameScores) {
     Map<String, SolrDocument> cloudDocs = new HashMap<>();
     Map<String, SolrDocument> controlDocs = new HashMap<>();
     cloudRsp.getResults().forEach(doc -> cloudDocs.put((String) doc.getFieldValue("id"), doc));

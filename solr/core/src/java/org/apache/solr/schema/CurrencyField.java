@@ -30,7 +30,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
  * Field type for support of monetary values.
  *
  * <p>See <a
- * href="https://solr.apache.org/guide/currencies-exchange-rates.html">https://solr.apache.org/guide/currencies-exchange-rates.html</a>
+ * href="https://solr.apache.org/guide/solr/latest/indexing-guide/currencies-exchange-rates.html">https://solr.apache.org/guide/solr/latest/indexing-guide/currencies-exchange-rates.html</a>
  *
  * @deprecated Use {@link CurrencyFieldType}
  */

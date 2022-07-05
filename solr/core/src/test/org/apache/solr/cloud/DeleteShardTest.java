@@ -73,7 +73,7 @@ public class DeleteShardTest extends SolrCloudTestCase {
 
     setSliceState(collection, "shard1", Slice.State.INACTIVE);
 
-    // Can delete an INATIVE shard
+    // Can delete an INACTIVE shard
     CollectionAdminRequest.deleteShard(collection, "shard1").process(cluster.getSolrClient());
     waitForState(
         "Expected 'shard1' to be removed",
@@ -125,7 +125,7 @@ public class DeleteShardTest extends SolrCloudTestCase {
     }
 
     waitForState(
-        "Expected shard " + slice + " to be in state " + state.toString(),
+        "Expected shard " + slice + " to be in state " + state,
         collection,
         (n, c) -> {
           return c.getSlice(slice).getState() == state;
@@ -133,8 +133,7 @@ public class DeleteShardTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testDirectoryCleanupAfterDeleteShard()
-      throws InterruptedException, IOException, SolrServerException {
+  public void testDirectoryCleanupAfterDeleteShard() throws IOException, SolrServerException {
 
     final String collection = "deleteshard_test";
     CollectionAdminRequest.createCollectionWithImplicitRouter(collection, "conf", "a,b,c", 1)

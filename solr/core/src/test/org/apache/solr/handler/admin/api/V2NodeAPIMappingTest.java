@@ -52,7 +52,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
-/** Unit tests for the v2 to v1 mapping for Solr's /node/ APIs */
+/** Unit tests for the v2 to v1 mapping for /node/ APIs. */
 public class V2NodeAPIMappingTest {
   private ApiBag apiBag;
   private ArgumentCaptor<SolrQueryRequest> queryRequestCaptor;
@@ -70,7 +70,7 @@ public class V2NodeAPIMappingTest {
   }
 
   @Before
-  public void setupApiBag() throws Exception {
+  public void setupApiBag() {
     mockCoresHandler = mock(CoreAdminHandler.class);
     infoHandler = mock(InfoHandler.class);
     mockSystemInfoHandler = mock(SystemInfoHandler.class);

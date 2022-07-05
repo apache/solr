@@ -143,8 +143,8 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
     for (Slice slice : clusterState.getCollection(COLLECTION_NAME).getSlices()) {
       String shardName = slice.getName();
       Replica leader = slice.getLeader();
-      assertNotNull("slice has null leader: " + slice.toString(), leader);
-      assertNotNull("slice leader has null node name: " + slice.toString(), leader.getNodeName());
+      assertNotNull("slice has null leader: " + slice, leader);
+      assertNotNull("slice leader has null node name: " + slice, leader.getNodeName());
       String leaderUrl = urlMap.remove(leader.getNodeName());
       assertNotNull(
           "could not find URL for " + shardName + " leader: " + leader.getNodeName(), leaderUrl);
@@ -173,7 +173,7 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
         fail("unexpected shard: " + shardName);
       }
     }
-    assertEquals("Should be exactly one server left (nost hosting either shard)", 1, urlMap.size());
+    assertEquals("Should be exactly one server left (not hosting either shard)", 1, urlMap.size());
     NO_COLLECTION_CLIENT =
         getHttpSolrClient(urlMap.values().iterator().next() + "/" + COLLECTION_NAME + "/");
 
@@ -229,7 +229,7 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
     assertEquals(0, CLOUD_CLIENT.commit().getStatus());
   }
 
-  public void testMalformedDBQ(SolrClient client) throws Exception {
+  public void testMalformedDBQ(SolrClient client) {
     assertNotNull("client not initialized", client);
     SolrException e =
         expectThrows(
@@ -240,27 +240,27 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
   }
 
   //
-  public void testMalformedDBQViaCloudClient() throws Exception {
+  public void testMalformedDBQViaCloudClient() {
     testMalformedDBQ(CLOUD_CLIENT);
   }
 
-  public void testMalformedDBQViaShard1LeaderClient() throws Exception {
+  public void testMalformedDBQViaShard1LeaderClient() {
     testMalformedDBQ(S_ONE_LEADER_CLIENT);
   }
 
-  public void testMalformedDBQViaShard2LeaderClient() throws Exception {
+  public void testMalformedDBQViaShard2LeaderClient() {
     testMalformedDBQ(S_TWO_LEADER_CLIENT);
   }
 
-  public void testMalformedDBQViaShard1NonLeaderClient() throws Exception {
+  public void testMalformedDBQViaShard1NonLeaderClient() {
     testMalformedDBQ(S_ONE_NON_LEADER_CLIENT);
   }
 
-  public void testMalformedDBQViaShard2NonLeaderClient() throws Exception {
+  public void testMalformedDBQViaShard2NonLeaderClient() {
     testMalformedDBQ(S_TWO_NON_LEADER_CLIENT);
   }
 
-  public void testMalformedDBQViaNoCollectionClient() throws Exception {
+  public void testMalformedDBQViaNoCollectionClient() {
     testMalformedDBQ(NO_COLLECTION_CLIENT);
   }
 

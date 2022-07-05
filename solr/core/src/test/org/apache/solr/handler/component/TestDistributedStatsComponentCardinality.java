@@ -22,14 +22,18 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util.TestUtil;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.IntStream;
+import org.apache.lucene.tests.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.util.LogLevel;
@@ -77,27 +81,32 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
     log.info("Building an index of {} docs", NUM_DOCS);
 
     // we want a big spread in the long values we use, decrement by BIG_PRIME as we index
-    long longValue = MAX_LONG;
+    final AtomicLong longValue = new AtomicLong(MAX_LONG);
 
-    for (int i = 1; i <= NUM_DOCS; i++) {
-      // with these values, we know that every doc indexed has a unique value in all of the
-      // fields we will compute cardinality against.
-      // which means the number of docs matching a query is the true cardinality for each field
+    Iterator<SolrInputDocument> docs =
+        IntStream.rangeClosed(1, NUM_DOCS)
+            .mapToObj(
+                i -> {
+                  long currentLong = longValue.getAndAccumulate(BIG_PRIME, (x, y) -> x - y);
 
-      final String strValue = "s" + longValue;
-      indexDoc(
-          sdoc(
-              "id", "" + i,
-              "int_i", "" + i,
-              "int_i_prehashed_l", "" + HASHER.hashInt(i).asLong(),
-              "long_l", "" + longValue,
-              "long_l_prehashed_l", "" + HASHER.hashLong(longValue).asLong(),
-              "string_s", strValue,
-              "string_s_prehashed_l",
-                  "" + HASHER.hashString(strValue, StandardCharsets.UTF_8).asLong()));
+                  final String strValue = "s" + currentLong;
 
-      longValue -= BIG_PRIME;
-    }
+                  // with these values, we know that every doc indexed has a unique value in all
+                  // the fields we will compute cardinality against. which means the number of docs
+                  // matching a query is the true cardinality for each field
+                  return sdoc(
+                      "id", Integer.toString(i),
+                      "int_i", Integer.toString(i),
+                      "int_i_prehashed_l", Long.toString(HASHER.hashInt(i).asLong()),
+                      "long_l", Long.toString(currentLong),
+                      "long_l_prehashed_l", Long.toString(HASHER.hashLong(currentLong).asLong()),
+                      "string_s", strValue,
+                      "string_s_prehashed_l",
+                          Long.toString(
+                              HASHER.hashString(strValue, StandardCharsets.UTF_8).asLong()));
+                })
+            .iterator();
+    indexDocs(docs);
 
     commit();
   }
@@ -132,8 +141,8 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
     for (int i = 0; i < NUM_QUERIES; i++) {
 
       // testing shows that on random data, at the size we're dealing with,
-      // MINIMUM_LOG2M_PARAM is just too absurdly small to give anything remotely close the
-      // the theoretically expected relative error.
+      // MINIMUM_LOG2M_PARAM is just too absurdly small to give anything remotely close to the
+      // theoretically expected relative error.
       //
       // So we have to use a slightly higher lower bound on what log2m values we randomly test
       final int log2m =
@@ -171,7 +180,7 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
         // check the relative error of the estimate returned against the known truth
 
         final double relErr = expectedRelativeError(log2m);
-        final long estimate = stats.get(f).getCardinality().longValue();
+        final long estimate = stats.get(f).getCardinality();
         assertTrue(
             f
                 + ": relativeErr="
@@ -195,11 +204,11 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
 
       // WTF? - https://github.com/aggregateknowledge/java-hll/issues/15
       //
-      // aparently we can't rely on estimates always being more accurate with higher log2m values?
+      // apparently we can't rely on estimates always being more accurate with higher log2m values?
       // so for now, just try testing accuracy values that differ by at least 0.5
       //
       // (that should give us a significant enough log2m diff that the "highAccuracy" is always
-      // more accurate -- if, not then the entire premise of the float value is fundementally bogus)
+      // more accurate -- if, not then the entire premise of the float value is fundamentally bogus)
       //
       final double lowAccuracy = random().nextDouble() / 2;
       // final double highAccuracy = Math.min(1.0D, lowAccuracy + (random().nextDouble() / 2));
@@ -213,8 +222,8 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
 
       // can't use STAT_FIELDS here ...
       //
-      // hueristic differences for regwidth on 32 bit values mean we get differences
-      // between estimates for the normal field vs the prehashed (long) field
+      // heuristic differences for regwidth on 32 bit values mean we get differences
+      // between estimates for the normal field vs the prehashed (long) field,
       //
       // so we settle for only testing things where the regwidth is consistent
       // w/the prehashed long...

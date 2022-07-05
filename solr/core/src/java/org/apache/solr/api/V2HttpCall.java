@@ -20,7 +20,6 @@ package org.apache.solr.api;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.*;
 
-import com.google.common.collect.ImmutableSet;
 import io.opentracing.Span;
 import io.opentracing.tag.Tags;
 import java.lang.invoke.MethodHandles;
@@ -37,6 +36,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.JsonSchemaValidator;
 import org.apache.solr.common.util.PathTrie;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginBag;
@@ -60,8 +60,7 @@ public class V2HttpCall extends HttpSolrCall {
   private List<String> pathSegments;
   private String prefix;
   HashMap<String, String> parts = new HashMap<>();
-  static final Set<String> knownPrefixes =
-      ImmutableSet.of("cluster", "node", "collections", "cores", "c");
+  static final Set<String> knownPrefixes = Set.of("cluster", "node", "collections", "cores", "c");
 
   public V2HttpCall(
       SolrDispatchFilter solrDispatchFilter,
@@ -72,6 +71,9 @@ public class V2HttpCall extends HttpSolrCall {
     super(solrDispatchFilter, cc, request, response, retry);
   }
 
+  @SuppressForbidden(
+      reason =
+          "Set the thread contextClassLoader for all 3rd party dependencies that we cannot control")
   protected void init() throws Exception {
     queryParams = SolrRequestParsers.parseQueryString(req.getQueryString());
     String path = this.path;
@@ -84,7 +86,9 @@ public class V2HttpCall extends HttpSolrCall {
             new Api(null) {
               @Override
               public void call(SolrQueryRequest req, SolrQueryResponse rsp) {
-                rsp.add("documentation", "https://solr.apache.org/guide/v2-api.html");
+                rsp.add(
+                    "documentation",
+                    "https://solr.apache.org/guide/solr/latest/configuration-guide/v2-api.html");
                 rsp.add("description", "V2 API root path");
               }
             };
@@ -95,8 +99,8 @@ public class V2HttpCall extends HttpSolrCall {
       }
 
       boolean isCompositeApi = false;
+      api = getApiInfo(cores.getRequestHandlers(), path, req.getMethod(), fullPath, parts);
       if (knownPrefixes.contains(prefix)) {
-        api = getApiInfo(cores.getRequestHandlers(), path, req.getMethod(), fullPath, parts);
         if (api != null) {
           isCompositeApi = api instanceof CompositeApi;
           if (!isCompositeApi) {
@@ -104,6 +108,14 @@ public class V2HttpCall extends HttpSolrCall {
             return;
           }
         }
+      } else { // custom plugin
+        if (api != null) {
+          initAdminRequest(path);
+          return;
+        }
+        assert core == null;
+        throw new SolrException(
+            SolrException.ErrorCode.NOT_FOUND, "Could not load plugin at " + path);
       }
 
       if ("c".equals(prefix) || "collections".equals(prefix)) {
@@ -134,13 +146,6 @@ public class V2HttpCall extends HttpSolrCall {
       } else if ("cores".equals(prefix)) {
         origCorename = pathSegments.get(1);
         core = cores.getCore(origCorename);
-      } else {
-        api = getApiInfo(cores.getRequestHandlers(), path, req.getMethod(), fullPath, parts);
-        if (api != null) {
-          // custom plugin
-          initAdminRequest(path);
-          return;
-        }
       }
       if (core == null) {
         log.error(">> path: '{}'", path);
@@ -150,8 +155,10 @@ public class V2HttpCall extends HttpSolrCall {
         } else {
           throw new SolrException(
               SolrException.ErrorCode.NOT_FOUND,
-              "no core retrieved for core name:  " + origCorename + ". Path : " + path);
+              "no core retrieved for core name: " + origCorename + ". Path: " + path);
         }
+      } else {
+        Thread.currentThread().setContextClassLoader(core.getResourceLoader().getClassLoader());
       }
 
       this.path = path = path.substring(prefix.length() + pathSegments.get(1).length() + 2);
@@ -416,13 +423,7 @@ public class V2HttpCall extends HttpSolrCall {
     }
 
     // Get the templatize-ed path, ex: "/c/{collection}"
-    String path;
-    if (api instanceof AnnotatedApi) {
-      // ideal scenario; eventually everything might be AnnotatedApi?
-      path = ((AnnotatedApi) api).getEndPoint().path()[0]; // consider first to be primary
-    } else {
-      path = computeEndpointPath();
-    }
+    final String path = computeEndpointPath();
 
     String verb = null;
     // if this api has commands ...

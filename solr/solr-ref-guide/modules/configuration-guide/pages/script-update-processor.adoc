@@ -28,14 +28,18 @@ The script can be written in any scripting language supported by your JVM (such 
 WARNING: Being able to run a script of your choice as part of the indexing pipeline is a really powerful tool, that I sometimes call the _Get out of jail free_ card because you can solve some problems this way that you can't in any other way.
 However, you are introducing some potential security vulnerabilities.
 
-== Installing the ScriptingUpdateProcessor and Scripting Engines
 
-The scripting update processor lives in the module `/modules/scripting`, and you need to explicitly add it to your Solr setup.
+== Module
+
+This is provided via the `scripting` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
+
+
+== Enababling the ScriptingUpdateProcessor and Scripting Engines
 
 Java 11 and previous versions come with a JavaScript engine called Nashorn, but Java 12 will require you to add your own JavaScript engine.
-Other supported scripting engines like JRuby, Jython, Groovy, all require you to add JAR files.
+Other supported scripting engines like JRuby, Jython, Groovy, all require you to add JAR files to Solr.
 
-Learn more about adding the `modules/scripting/lib/solr-scripting-*.jar` file, and any other needed JAR files (depending on your scripting engine) into Solr's xref:libs.adoc#lib-directories[Lib Directories].
+Learn more about adding any other needed JAR files (depending on your scripting engine) into Solr's xref:libs.adoc#lib-directories[Lib Directories].
 
 == Configuration
 
@@ -110,12 +114,15 @@ This is useful for logging information from the script.
 `params`::
 The "params" object, if any specified, from the configuration.
 
-== Examples
+== Try it Out
 
-The `processAdd()` and the other script methods can return false to skip further processing of the document.
-All methods must be defined, though generally the `processAdd()` method is where the action is.
+There is a JavaScript example `update-script.js` as part of the "techproducts" configset.
 
-Here's a URL that works with the techproducts example setup demonstrating specifying the "script" update chain: `http://localhost:8983/solr/techproducts/update?commit=true&stream.contentType=text/csv&fieldnames=id,description&stream.body=1,foo&update.chain=script` which logs the following:
+To try out scripting, enable the `<updateRequestProcessorChain name="script">` configuration in the
+file `./server/solr/configsets/sample_techproducts_configs/conf/solrconfig.xml`. Then start Solr via
+`bin/solr start -e techproducts -Dsolr.modules=scripting`.
+
+This URL demonstrates specifying the "script" update chain: `http://localhost:8983/solr/techproducts/update?commit=true&stream.contentType=text/csv&fieldnames=id,description&stream.body=1,foo&update.chain=script` which logs the following:
 
 [source,text]
 ----
@@ -124,9 +131,14 @@ INFO: update-script#processAdd: id=1
 
 You can see the message recorded in the Solr logging UI.
 
+== Examples
+
+The `processAdd()` and the other script methods can return false to skip further processing of the document.
+All methods must be defined, though generally the `processAdd()` method is where the action is.
+
 === Javascript
 
-Note: There is a JavaScript example `update-script.js` as part of the "techproducts" configset.
+Note:
 Check `solrconfig.xml` and uncomment the update request processor definition to enable this feature.
 
 [source,javascript]

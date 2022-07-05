@@ -39,7 +39,6 @@ import org.apache.solr.api.ConfigurablePlugin;
 import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteExecutionException;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -47,7 +46,6 @@ import org.apache.solr.client.solrj.request.beans.Package;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.ClusterSingleton;
-import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
@@ -78,7 +76,9 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
     int nodes = TEST_NIGHTLY ? 4 : 2;
     cluster = configureCluster(nodes).withJettyConfig(jetty -> jetty.enableV2(true)).configure();
-    cluster.getOpenOverseer().getCoreContainer().getContainerPluginsRegistry().setPhaser(phaser);
+    for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+      jetty.getCoreContainer().getContainerPluginsRegistry().setPhaser(phaser);
+    }
   }
 
   @After
@@ -160,9 +160,8 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       assertEquals(404, e.code());
       assertThat(
           e.getMetaData().findRecursive("error", "msg").toString(),
-          containsString("no core retrieved"));
-      // V2HttpCall will separately log the path and stack trace, probably could be fixed
-      assertEquals(2, errors.getCount());
+          containsString("Could not load plugin at"));
+      assertEquals(1, errors.getCount());
     }
 
     // test ClusterSingleton plugin
@@ -254,7 +253,6 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     addPkgVersionReq.process(cluster.getSolrClient());
 
     waitForAllNodesToSync(
-        cluster,
         "/cluster/package",
         Map.of(
             ":result:packages:mypkg[0]:version",
@@ -262,7 +260,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
             ":result:packages:mypkg[0]:files[0]",
             FILE1));
 
-    // Now lets create a plugin using v1 jar file
+    // Now let's create a plugin using v1 jar file
     PluginMeta plugin = new PluginMeta();
     plugin.name = "myplugin";
     plugin.klass = "mypkg:org.apache.solr.handler.MyPlugin";
@@ -450,26 +448,21 @@ public class TestContainerPlugin extends SolrCloudTestCase {
         .build();
   }
 
-  public static void waitForAllNodesToSync(
-      MiniSolrCloudCluster cluster, String path, Map<String, Object> expected) throws Exception {
+  public void waitForAllNodesToSync(String path, Map<String, Object> expected) throws Exception {
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
       String baseUrl = jettySolrRunner.getBaseUrl().toString().replace("/solr", "/api");
       String url = baseUrl + path + "?wt=javabin";
-      // Allow multiple retries here because we need multiple nodes to update
-      // and our single phaser only ensures that one of them has reached expected state
-      TestDistribPackageStore.assertResponseValues(10, new Fetcher(url, jettySolrRunner), expected);
+      TestDistribPackageStore.assertResponseValues(1, new Fetcher(url, jettySolrRunner), expected);
     }
   }
 
-  private void expectError(V2Request req, String expectErrorMsg)
-      throws IOException, SolrServerException {
+  private void expectError(V2Request req, String expectErrorMsg) {
     String errPath = "/error/details[0]/errorMessages[0]";
     expectError(req, cluster.getSolrClient(), errPath, expectErrorMsg);
   }
 
   private static void expectError(
-      V2Request req, SolrClient client, String errPath, String expectErrorMsg)
-      throws IOException, SolrServerException {
+      V2Request req, SolrClient client, String errPath, String expectErrorMsg) {
     RemoteExecutionException e =
         expectThrows(RemoteExecutionException.class, () -> req.process(client));
     String msg = e.getMetaData()._getStr(errPath, "");

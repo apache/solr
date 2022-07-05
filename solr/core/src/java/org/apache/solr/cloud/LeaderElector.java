@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -96,7 +95,7 @@ public class LeaderElector {
    * @param replacement has someone else been the leader already?
    */
   private void checkIfIamLeader(final ElectionContext context, boolean replacement)
-      throws KeeperException, InterruptedException, IOException {
+      throws KeeperException, InterruptedException {
     context.checkIfIamLeaderFired();
     // get all other numbers...
     final String holdElectionPath = context.electionPath + ELECTION_NODE;
@@ -112,7 +111,7 @@ public class LeaderElector {
 
     // If any double-registrations exist for me, remove all but this latest one!
     // TODO: can we even get into this state?
-    String prefix = zkClient.getSolrZooKeeper().getSessionId() + "-" + context.id + "-";
+    String prefix = zkClient.getZooKeeper().getSessionId() + "-" + context.id + "-";
     Iterator<String> it = seqs.iterator();
     while (it.hasNext()) {
       String elec = it.next();
@@ -171,7 +170,7 @@ public class LeaderElector {
   }
 
   protected void runIamLeaderProcess(final ElectionContext context, boolean weAreReplacement)
-      throws KeeperException, InterruptedException, IOException {
+      throws KeeperException, InterruptedException {
     context.runLeaderProcess(weAreReplacement, 0);
   }
 
@@ -214,7 +213,7 @@ public class LeaderElector {
   }
 
   public int joinElection(ElectionContext context, boolean replacement)
-      throws KeeperException, InterruptedException, IOException {
+      throws KeeperException, InterruptedException {
     return joinElection(context, replacement, false);
   }
 
@@ -227,12 +226,12 @@ public class LeaderElector {
    * @return sequential node number
    */
   public int joinElection(ElectionContext context, boolean replacement, boolean joinAtHead)
-      throws KeeperException, InterruptedException, IOException {
+      throws KeeperException, InterruptedException {
     context.joinedElectionFired();
 
     final String shardsElectZkPath = context.electionPath + LeaderElector.ELECTION_NODE;
 
-    long sessionId = zkClient.getSolrZooKeeper().getSessionId();
+    long sessionId = zkClient.getZooKeeper().getSessionId();
     String id = sessionId + "-" + context.id;
     String leaderSeqPath = null;
     boolean cont = true;
@@ -382,7 +381,7 @@ public class LeaderElector {
   }
 
   void retryElection(ElectionContext context, boolean joinAtHead)
-      throws KeeperException, InterruptedException, IOException {
+      throws KeeperException, InterruptedException {
     ElectionWatcher watcher = this.watcher;
     ElectionContext ctx = context.copy();
     if (electionContexts != null) {

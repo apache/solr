@@ -18,12 +18,10 @@ package org.apache.solr.handler.component;
 
 import static org.hamcrest.CoreMatchers.is;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Random;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
@@ -57,7 +55,7 @@ public class DistributedFacetExistsSmallTest extends BaseDistributedSearchTestCa
     index(id, maxId += 1 + rnd.nextInt(5), FLD, "CCC");
 
     final SolrClient shard0 = clients.get(0);
-    // expectidly fails test
+    // expectedly fails test
     // shard0.add(sdoc("id", 13, FLD, "DDD"));
     commit();
 
@@ -130,7 +128,7 @@ public class DistributedFacetExistsSmallTest extends BaseDistributedSearchTestCa
       params.add("facet.prefix", prefixes[rand.nextInt(prefixes.length)]);
     }
 
-    // don't bother trying to to test facet.missing=true + facet.limit=0
+    // don't bother trying to test facet.missing=true + facet.limit=0
     // distrib & non-distrib are known to behave differently in this
     if (rand.nextInt(100) < 20 && 0 < params.getInt("facet.limit", 100)) {
       params.add("facet.missing", "true");
@@ -143,7 +141,7 @@ public class DistributedFacetExistsSmallTest extends BaseDistributedSearchTestCa
     query(params);
   }
 
-  private void checkInvalidMincount() throws SolrServerException, IOException {
+  private void checkInvalidMincount() {
     final ModifiableSolrParams params = buildParams();
     if (random().nextBoolean()) {
       params.remove("facet.exists");

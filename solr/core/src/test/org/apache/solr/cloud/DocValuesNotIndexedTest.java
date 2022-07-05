@@ -17,7 +17,7 @@
 
 package org.apache.solr.cloud;
 
-import static org.apache.lucene.util.LuceneTestCase.random;
+import static org.apache.lucene.tests.util.LuceneTestCase.random;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.IOException;
@@ -193,7 +193,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
 
   @Test
   public void testDistribFaceting() throws IOException, SolrServerException {
-    // For this test, I want to insure that there are shards that do _not_ have a doc with any of
+    // For this test, I want to ensure that there are shards that do _not_ have a doc with any of
     // the DV_only fields, see SOLR-5260. So I'll add exactly 1 document to a 4 shard collection.
 
     CloudSolrClient client = cluster.getSolrClient();
@@ -368,7 +368,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", idx);
 
-      // Every 7th doc we bump a counter by some random amount
+      // Every 7th doc we bump a counter by a random amount
       for (FieldProps prop : fieldProps) {
         doc.addField(prop.getName(), prop.getValue((idx % 7) == 0));
       }
@@ -460,7 +460,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
             7,
             sevenCount);
         assertEquals(
-            "Should be no gropus with 24 or 25 entries for field " + prop.getName(), 0, boolCount);
+            "Should be no groups with 24 or 25 entries for field " + prop.getName(), 0, boolCount);
       }
     }
   }
@@ -555,7 +555,7 @@ class FieldProps {
       long lng = random().nextLong();
       base = lng == Long.MIN_VALUE ? 0 : Math.abs(lng) / 2;
     } else if (name.startsWith("bool")) {
-      base = true; // Must start with a known value since bools only have a two values....
+      base = true; // Must start with a known value since booleans only have two values....
     } else if (name.startsWith("string") || name.startsWith("sortable")) {
       base = "base_string_" + random().nextInt(1_000_000) + "_";
     } else {

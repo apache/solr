@@ -61,9 +61,15 @@ if [ "${THIS_OS:0:6}" == "CYGWIN" ]; then
   echo -e "This script does not support cygwin due to severe limitations and lack of adherence\nto BASH standards, such as lack of lsof, curl, and ps options.\n\nPlease use the native solr.cmd script on Windows!"
   exit 1
 fi
+# Alpine Linux BusyBox comes with a stripped down ps, make sure we have a fully featured one
+if [ $$ -ne $(ps -o pid='' -p $$ || echo 0) ] ; then
+  echo -e "This script relies on a version of ps that supports the -p flag.\n\nPlease install a POSIX compliant version and try again."
+  exit 1
+fi
 
 # This helps with debugging when running bats tests but not the whole script is compliant yet
 # set -u
+# set -o pipefail
 
 # Resolve symlinks to this script
 while [ -h "$SOLR_SCRIPT" ] ; do
@@ -681,7 +687,7 @@ function spinner() {
   local pid=$1
   local delay=0.5
   local spinstr='|/-\'
-  while [ "$(ps aux | awk '{print $2}' | grep -w $pid)" ]; do
+  while ps -o pid='' -p $pid &> /dev/null ; do
       local temp=${spinstr#?}
       printf " [%c]  " "$spinstr"
       local spinstr=$temp${spinstr%"$temp"}
@@ -696,7 +702,7 @@ function solr_pid_by_port() {
   THE_PORT="$1"
   if [ -e "$SOLR_PID_DIR/solr-$THE_PORT.pid" ]; then
     PID=`cat "$SOLR_PID_DIR/solr-$THE_PORT.pid"`
-    CHECK_PID=`ps -o pid='' $PID | tr -d ' '`
+    CHECK_PID=`ps -o pid='' -p $PID | tr -d ' '`
     if [ -n "$CHECK_PID" ]; then
       echo $PID
     fi
@@ -706,7 +712,7 @@ function solr_pid_by_port() {
 # extract the value of the -Djetty.port parameter from a running Solr process
 function jetty_port() {
   SOLR_PID="$1"
-  SOLR_PROC=`ps auxww | grep -w $SOLR_PID | grep start\.jar | grep jetty\.port`
+  SOLR_PROC=`ps -o command='' -p "$SOLR_PID" | grep start\.jar | grep jetty\.port`
   IFS=' ' read -a proc_args <<< "$SOLR_PROC"
   for arg in "${proc_args[@]}"
     do
@@ -848,8 +854,8 @@ function stop_solr() {
         # Check if a process is running with the specified PID.
         # -o stat will output the STAT, where Z indicates a zombie
         # stat='' removes the header (--no-headers isn't supported on all platforms)
-        STAT=`ps -o stat='' $SOLR_PID | tr -d ' '`
-        if [[ "$STAT" != "" && "$STAT" != "Z" ]]; then
+        STAT=`(ps -o stat='' -p $SOLR_PID || :) | tr -d ' '`
+        if [[ "${STAT:-Z}" != "Z" ]]; then
           slept=$((loops * 2))
           if [ $slept -lt $SOLR_STOP_WAIT ]; then
             sleep 2
@@ -868,9 +874,9 @@ function stop_solr() {
     exit 0
   fi
 
-  STAT=`ps -o stat='' $SOLR_PID | tr -d ' '`
-  if [[ "$STAT" != "" && "$STAT" != "Z" ]]; then
-    if [ "$JSTACK" != "" ]; then
+  STAT=`(ps -o stat='' -p $SOLR_PID || :) | tr -d ' '`
+  if [[ "${STAT:-Z}" != "Z" ]]; then
+    if [ -n "{$JSTACK:-}" ]; then
       echo -e "Solr process $SOLR_PID is still running; jstacking it now."
       $JSTACK $SOLR_PID
     elif [ "$JATTACH" != "" ]; then
@@ -884,13 +890,13 @@ function stop_solr() {
     sleep 10
   fi
 
-  STAT=`ps -o stat='' $SOLR_PID | tr -d ' '`
-  if [ "$STAT" == "Z" ]; then
+  STAT=`(ps -o stat='' -p $SOLR_PID || :) | tr -d ' '`
+  if [ "${STAT:-}" == "Z" ]; then
     # This can happen if, for example, you are running Solr inside a docker container with multiple processes
     # rather than running it is as the only service. The --init flag on docker avoids that particular problem.
     echo -e "Solr process $SOLR_PID has terminated abnormally. Solr has exited but a zombie process entry remains."
     exit 1
-  elif [ "$STAT" != "" ]; then
+  elif [ -n "${STAT:-}" ]; then
     echo "ERROR: Failed to kill previous Solr Java process $SOLR_PID ... script fails."
     exit 1
   fi
@@ -1859,7 +1865,7 @@ if [[ "$SCRIPT_CMD" == "stop" && -z "${SOLR_PORT:-}" ]]; then
     if [ $numSolrs -eq 1 ]; then
       # only do this if there is only 1 node running, otherwise they must provide the -p or -all
       PID="$(cat "$(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f)")"
-      CHECK_PID=`ps -o pid='' $PID | tr -d ' '`
+      CHECK_PID=`ps -o pid='' -p $PID | tr -d ' '`
       if [ "$CHECK_PID" != "" ]; then
         port=`jetty_port "$CHECK_PID"`
         if [ "$port" != "" ]; then
@@ -1905,12 +1911,12 @@ if [[ "$SCRIPT_CMD" == "start" ]]; then
   # see if Solr is already running
   SOLR_PID=`solr_pid_by_port "$SOLR_PORT"`
 
-  if [ -z "$SOLR_PID" ]; then
+  if [ -z "${SOLR_PID:-}" ]; then
     # not found using the pid file ... but use ps to ensure not found
-    SOLR_PID=`ps auxww | grep start\.jar | grep -w "\-Djetty\.port=$SOLR_PORT" | grep -v grep | awk '{print $2}' | sort -r`
+    SOLR_PID=`ps auxww | grep start\.jar | awk "/\-Djetty\.port=$SOLR_PORT/"' {print $2}' | sort -r`
   fi
 
-  if [ "$SOLR_PID" != "" ]; then
+  if [ -n "${SOLR_PID:-}" ]; then
     echo -e "\nPort $SOLR_PORT is already being used by another process (pid: $SOLR_PID)\nPlease choose a different port using the -p option.\n"
     exit 1
   fi
@@ -1920,7 +1926,7 @@ else
   SOLR_PID=`solr_pid_by_port "$SOLR_PORT"`
   if [ -z "$SOLR_PID" ]; then
     # not found using the pid file ... but use ps to ensure not found
-    SOLR_PID=`ps auxww | grep start\.jar | grep -w "\-Djetty\.port=$SOLR_PORT" | grep -v grep | awk '{print $2}' | sort -r`
+    SOLR_PID=`ps auxww | grep start\.jar | awk "/\-Djetty\.port=$SOLR_PORT/"' {print $2}' | sort -r`
   fi
   if [ "$SOLR_PID" != "" ]; then
     stop_solr "$SOLR_SERVER_DIR" "$SOLR_PORT" "$STOP_KEY" "$SOLR_PID"
@@ -2189,7 +2195,7 @@ function start_solr() {
     echo -e "    JAVA            = $JAVA"
     echo -e "    SOLR_SERVER_DIR = $SOLR_SERVER_DIR"
     echo -e "    SOLR_HOME       = $SOLR_HOME"
-    echo -e "    SOLR_HOST       = $SOLR_HOST"
+    echo -e "    SOLR_HOST       = ${SOLR_HOST:-}"
     echo -e "    SOLR_PORT       = $SOLR_PORT"
     echo -e "    STOP_PORT       = $STOP_PORT"
     echo -e "    JAVA_MEM_OPTS   = ${JAVA_MEM_OPTS[@]}"
@@ -2201,27 +2207,27 @@ function start_solr() {
       echo -e "    CLOUD_MODE_OPTS = ${CLOUD_MODE_OPTS[@]}"
     fi
 
-    if [ "$SOLR_OPTS" != "" ]; then
+    if [ -n "${SOLR_OPTS:-}" ]; then
       echo -e "    SOLR_OPTS       = ${SOLR_OPTS[@]}"
     fi
 
-    if [ "$SOLR_ADDL_ARGS" != "" ]; then
+    if [ -n "${SOLR_ADDL_ARGS:-}" ]; then
       echo -e "    SOLR_ADDL_ARGS  = $SOLR_ADDL_ARGS"
     fi
 
-    if [ "$ENABLE_REMOTE_JMX_OPTS" == "true" ]; then
-      echo -e "    RMI_PORT        = $RMI_PORT"
+    if [ "${ENABLE_REMOTE_JMX_OPTS:-false}" == "true" ]; then
+      echo -e "    RMI_PORT        = ${RMI_PORT:-}"
       echo -e "    REMOTE_JMX_OPTS = ${REMOTE_JMX_OPTS[@]}"
     fi
 
-    if [ "$SOLR_LOG_LEVEL" != "" ]; then
+    if [ -n "${SOLR_LOG_LEVEL:-}" ]; then
       echo -e "    SOLR_LOG_LEVEL  = $SOLR_LOG_LEVEL"
     fi
 
-    if [ "$SOLR_DATA_HOME" != "" ]; then
+    if [ -n "${SOLR_DATA_HOME:-}" ]; then
       echo -e "    SOLR_DATA_HOME  = $SOLR_DATA_HOME"
     fi
-    echo -e "\n"
+    echo
   fi
 
   # need to launch solr from the server dir
@@ -2274,9 +2280,9 @@ function start_solr() {
       (loops=0
       while true
       do
-        running=$(lsof -t -PniTCP:$SOLR_PORT -sTCP:LISTEN)
-        if [ -z "$running" ]; then
-	  slept=$((loops * 2))
+        running=$(lsof -t -PniTCP:$SOLR_PORT -sTCP:LISTEN || :)
+        if [ -z "${running:-}" ]; then
+          slept=$((loops * 2))
           if [ $slept -lt $SOLR_START_WAIT ]; then
             sleep 2
             loops=$[$loops+1]
@@ -2286,7 +2292,7 @@ function start_solr() {
             exit # subshell!
           fi
         else
-          SOLR_PID=`ps auxww | grep start\.jar | grep -w "\-Djetty\.port=$SOLR_PORT" | grep -v grep | awk '{print $2}' | sort -r`
+          SOLR_PID=`ps auxww | grep start\.jar | awk "/\-Djetty\.port=$SOLR_PORT/"' {print $2}' | sort -r`
           echo -e "\nStarted Solr server on port $SOLR_PORT (pid=$SOLR_PID). Happy searching!\n"
           exit # subshell!
         fi
@@ -2295,7 +2301,7 @@ function start_solr() {
     else
       echo -e "NOTE: Please install lsof as this script needs it to determine if Solr is listening on port $SOLR_PORT."
       sleep 10
-      SOLR_PID=`ps auxww | grep start\.jar | grep -w "\-Djetty\.port=$SOLR_PORT" | grep -v grep | awk '{print $2}' | sort -r`
+      SOLR_PID=`ps auxww | grep start\.jar | awk "/\-Djetty\.port=$SOLR_PORT/"' {print $2}' | sort -r`
       echo -e "\nStarted Solr server on port $SOLR_PORT (pid=$SOLR_PID). Happy searching!\n"
       return;
     fi

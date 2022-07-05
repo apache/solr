@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.StreamParams;
@@ -1080,7 +1080,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
       addDouble(doc, random().nextDouble() * 3000 * (random().nextBoolean() ? 1 : -1), false);
       addDate(doc, dateFormat.format(new Date()), false);
 
-      // MV need to be unique in order to be the same in Trie vs Points
+      // MV needs to be unique in order to be the same in Trie vs Points
       Set<Integer> ints = new HashSet<>();
       Set<Long> longs = new HashSet<>();
       Set<Float> floats = new HashSet<>();

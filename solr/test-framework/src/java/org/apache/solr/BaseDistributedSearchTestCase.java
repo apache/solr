@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -45,8 +46,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.Filter;
 import junit.framework.Assert;
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -569,23 +570,49 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     indexDoc(doc);
   }
 
+  private SolrClient clientFor(SolrInputDocument doc) {
+    return clients.get((doc.getField(id).toString().hashCode() & 0x7fffffff) % clients.size());
+  }
+
   /** Indexes the document in both the control client, and a randomly selected client */
   protected void indexDoc(SolrInputDocument doc) throws IOException, SolrServerException {
+    indexDoc(clientFor(doc), null, doc);
+  }
+
+  protected void indexDoc(SolrClient client, SolrParams params, SolrInputDocument doc)
+      throws IOException, SolrServerException {
     controlClient.add(doc);
     if (shardCount == 0) { // mostly for temp debugging
       return;
     }
-    int which = (doc.getField(id).toString().hashCode() & 0x7fffffff) % clients.size();
-    SolrClient client = clients.get(which);
     client.add(doc);
+  }
+
+  /**
+   * Indexes the stream of documents in both the control client and randomly selected clients (per
+   * batch)
+   */
+  public void indexDocs(Iterator<SolrInputDocument> docs) throws SolrServerException, IOException {
+    int batchSize = 100; // TODO make configurable?
+    List<SolrInputDocument> batch = new ArrayList<>(batchSize);
+    while (docs.hasNext()) {
+      batch.add(docs.next());
+      if (batch.size() == batchSize) {
+        indexDocs(clientFor(batch.get(0)), null, batch);
+        batch.clear();
+      }
+    }
+    if (!batch.isEmpty()) {
+      indexDocs(clientFor(batch.get(0)), null, batch);
+    }
   }
 
   /**
    * Indexes the document in both the control client and the specified client asserting that the
    * responses are equivalent
    */
-  protected UpdateResponse indexDoc(
-      SolrClient client, SolrParams params, SolrInputDocument... sdocs)
+  protected UpdateResponse indexDocs(
+      SolrClient client, SolrParams params, Iterable<SolrInputDocument> sdocs)
       throws IOException, SolrServerException {
     UpdateResponse controlRsp = add(controlClient, params, sdocs);
     UpdateResponse specificRsp = add(client, params, sdocs);
@@ -593,7 +620,19 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return specificRsp;
   }
 
-  protected UpdateResponse add(SolrClient client, SolrParams params, SolrInputDocument... sdocs)
+  /**
+   * This should not be called in a loop, use {@link #add(SolrClient, SolrParams, Iterable)} instead
+   */
+  protected UpdateResponse add(SolrClient client, SolrParams params, SolrInputDocument sdoc)
+      throws IOException, SolrServerException {
+    UpdateRequest ureq = new UpdateRequest();
+    ureq.setParams(new ModifiableSolrParams(params));
+    ureq.add(sdoc);
+    return ureq.process(client);
+  }
+
+  protected UpdateResponse add(
+      SolrClient client, SolrParams params, Iterable<SolrInputDocument> sdocs)
       throws IOException, SolrServerException {
     UpdateRequest ureq = new UpdateRequest();
     ureq.setParams(new ModifiableSolrParams(params));

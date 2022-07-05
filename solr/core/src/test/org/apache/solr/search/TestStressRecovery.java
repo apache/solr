@@ -31,8 +31,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.UpdateHandler;
@@ -131,8 +131,8 @@ public class TestStressRecovery extends TestRTGBase {
                       }
 
                       synchronized (stateChangeLock) {
-                        // These commits won't take affect if we are in recovery mode,
-                        // so change the version to -1 so we won't update our model.
+                        // These commits won't take effect if we are in recovery mode,
+                        // so change the version to -1, so we won't update our model.
                         if (uLog.getState() != UpdateLog.State.ACTIVE) version = -1;
                         if (rand.nextInt(100) < softCommitPercent) {
                           verbose("softCommit start");
@@ -337,7 +337,8 @@ public class TestStressRecovery extends TestRTGBase {
                   @SuppressWarnings({"rawtypes"})
                   List doclist = (List) (((Map) rsp.get("response")).get("docs"));
                   if (doclist.size() == 0) {
-                    // there's no info we can get back with a delete, so not much we can check
+                    // there's no info we can get back with a delete operation, so not much we can
+                    // check
                     // without further synchronization
                   } else {
                     assertEquals(1, doclist.size());
@@ -417,7 +418,7 @@ public class TestStressRecovery extends TestRTGBase {
               writePermissions[writeThreadNumber].release(random().nextInt(2) + 1);
             }
 
-            // throttle readers so they don't steal too much CPU from the recovery thread
+            // throttle readers, so they don't steal too much CPU from the recovery thread
             readPermission.drainPermits();
           }
           if (cnt == 0) {

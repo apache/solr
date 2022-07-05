@@ -26,7 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -193,7 +193,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
     // create collection
     createCollection(collectionName, CollectionHandlingUtils.CREATE_NODE_SET_EMPTY);
 
-    // check the collection's corelessness
+    // check the collection has no cores.
     int coreCount = 0;
     DocCollection docCollection = client.getClusterState().getCollection(collectionName);
     for (Map.Entry<String, Slice> entry : docCollection.getSlicesMap().entrySet()) {

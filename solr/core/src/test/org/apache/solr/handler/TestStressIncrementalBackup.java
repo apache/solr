@@ -23,7 +23,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -102,7 +102,7 @@ public class TestStressIncrementalBackup extends SolrCloudTestCase {
     System.clearProperty("solr.allowPaths");
   }
 
-  @SuppressWarnings("AssertionFailureIgnored") // failure happens inside of a thread
+  @SuppressWarnings("AssertionFailureIgnored") // failure happens inside a thread
   public void testCoreAdminHandler() throws Exception {
     final int numBackupIters = 20; // don't use 'atLeast', we don't want to blow up on nightly
 
@@ -134,9 +134,7 @@ public class TestStressIncrementalBackup extends SolrCloudTestCase {
                 log.info("Heavy Committing #{}: {}", docIdCounter, req);
                 final UpdateResponse rsp = req.process(coreClient);
                 assertEquals(
-                    "Dummy Doc#" + docIdCounter + " add status: " + rsp.toString(),
-                    0,
-                    rsp.getStatus());
+                    "Dummy Doc#" + docIdCounter + " add status: " + rsp, 0, rsp.getStatus());
               }
             } catch (Throwable t) {
               heavyCommitFailure.set(t);
@@ -146,11 +144,11 @@ public class TestStressIncrementalBackup extends SolrCloudTestCase {
 
     heavyCommitting.start();
     try {
-      // now have the "main" test thread try to take a serious of backups/snapshots
+      // now have the "main" test thread try to take a series of backups/snapshots
       // while adding other "real" docs
 
       // NOTE #1: start at i=1 for 'id' & doc counting purposes...
-      // NOTE #2: abort quickly if the oher thread reports a heavyCommitFailure...
+      // NOTE #2: abort quickly if the other thread reports a heavyCommitFailure...
       for (int i = 1; (i <= numBackupIters && null == heavyCommitFailure.get()); i++) {
 
         // in each iteration '#i', the commit we create should have exactly 'i' documents in
@@ -162,7 +160,7 @@ public class TestStressIncrementalBackup extends SolrCloudTestCase {
         req.setParam(UpdateParams.OPEN_SEARCHER, "false"); // we don't care about searching
 
         final UpdateResponse rsp = req.process(coreClient);
-        assertEquals("Real Doc#" + i + " add status: " + rsp.toString(), 0, rsp.getStatus());
+        assertEquals("Real Doc#" + i + " add status: " + rsp, 0, rsp.getStatus());
 
         makeBackup();
       }

@@ -33,9 +33,9 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.NIOFSDirectory;
+import org.apache.lucene.tests.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -83,10 +83,11 @@ import org.slf4j.LoggerFactory;
  * @since 1.4
  */
 @Slow
-@SuppressSSL // Currently unknown why SSL does not work with this test
+@SuppressSSL // Currently, unknown why SSL does not work with this test
 public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final long TIMEOUT = 30000;
 
   JettySolrRunner leaderJetty, followerJetty, repeaterJetty;
   HttpSolrClient leaderClient, followerClient, repeaterClient;
@@ -340,7 +341,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         }
 
         assertNotNull(
-            "Expected to see that the follower has replicated" + i + ": " + details.toString(),
+            "Expected to see that the follower has replicated" + i + ": " + details,
             replicatedAtCount);
 
         // we can have more replications than we added docs because a replication can legally fail
@@ -1011,10 +1012,10 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         assertEquals(totalDocs, leaderQueryResult.getNumFound());
 
         // index fetch
-        Date followerCoreStart = watchCoreStartAt(followerClient, 30 * 1000, null);
+        Date followerCoreStart = watchCoreStartAt(followerClient, null);
         pullFromTo(leaderJetty, followerJetty);
         if (confCoreReload) {
-          watchCoreStartAt(followerClient, 30 * 1000, followerCoreStart);
+          watchCoreStartAt(followerClient, followerCoreStart);
         }
 
         // get docs from follower and check if number is equal to leader
@@ -1084,11 +1085,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         int cnt = indexDirCount(ddir);
         // if after reload, there may be 2 index dirs while the reloaded SolrCore closes.
         if (afterReload) {
-          assertTrue(
-              "found:" + cnt + Arrays.asList(new File(ddir).list()).toString(),
-              1 == cnt || 2 == cnt);
+          assertTrue("found:" + cnt + Arrays.asList(new File(ddir).list()), 1 == cnt || 2 == cnt);
         } else {
-          assertTrue("found:" + cnt + Arrays.asList(new File(ddir).list()).toString(), 1 == cnt);
+          assertTrue("found:" + cnt + Arrays.asList(new File(ddir).list()), 1 == cnt);
         }
       }
     }
@@ -1427,7 +1426,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     rQuery(0, "*:*", followerClient); // sanity check w/retry
 
     // record collection1's start time on follower
-    final Date followerStartTime = watchCoreStartAt(followerClient, 30 * 1000, null);
+    final Date followerStartTime = watchCoreStartAt(followerClient, null);
 
     // add a doc with new field and commit on leader to trigger index fetch from follower.
     index(leaderClient, "id", "2000", "name", "name = " + 2000, "newname", "n2000");
@@ -1435,7 +1434,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     rQuery(1, "newname:n2000", leaderClient); // sanity check
 
     // wait for follower to reload core by watching updated startTime
-    watchCoreStartAt(followerClient, 30 * 1000, followerStartTime);
+    watchCoreStartAt(followerClient, followerStartTime);
 
     NamedList<Object> leaderQueryRsp2 = rQuery(1, "id:2000", leaderClient);
     SolrDocumentList leaderQueryResult2 = (SolrDocumentList) leaderQueryRsp2.get("response");
@@ -1777,20 +1776,19 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
    * assertion failure.
    *
    * @param client The SolrClient to poll
-   * @param timeout the max milliseconds to continue polling for
    * @param min the startTime value must exceed this value before the method will return, if null
    *     this method will return the first startTime value encountered.
    * @return the startTime value of collection
    */
   @SuppressWarnings("unchecked")
-  private Date watchCoreStartAt(SolrClient client, final long timeout, final Date min)
+  private Date watchCoreStartAt(SolrClient client, final Date min)
       throws InterruptedException, IOException, SolrServerException {
     final long sleepInterval = 200;
     long timeSlept = 0;
 
     try (HttpSolrClient adminClient = adminClient(client)) {
       SolrParams p = params("action", "status", "core", "collection1");
-      while (timeSlept < timeout) {
+      while (timeSlept < TIMEOUT) {
         QueryRequest req = new QueryRequest(p);
         req.setPath("/admin/cores");
         try {

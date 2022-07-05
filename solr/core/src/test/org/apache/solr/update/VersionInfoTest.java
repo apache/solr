@@ -115,14 +115,14 @@ public class VersionInfoTest extends SolrTestCaseJ4 {
             + version
             + " ?< "
             + maxVersionFromUlog,
-        version < maxVersionFromUlog.longValue());
+        version < maxVersionFromUlog);
 
     version = vInfo.getVersionFromIndex(idBytes);
-    assertNull("version info should be null for uncommited test doc: " + docId, version);
+    assertNull("version info should be null for uncommitted test doc: " + docId, version);
 
     Long versionFromTLog = ulog.lookupVersion(idBytes);
     assertNotNull(
-        "version from tlog should be non-null for uncommited test doc: " + docId, versionFromTLog);
+        "version from tlog should be non-null for uncommitted test doc: " + docId, versionFromTLog);
 
     // now commit that 2nd doc
     assertU(commit());
@@ -137,7 +137,7 @@ public class VersionInfoTest extends SolrTestCaseJ4 {
         ulog.lookupVersion(idBytes));
     Long versionFromIndex = version = vInfo.getVersionFromIndex(idBytes);
     assertNotNull(
-        "version from index should be non-null for commited test doc: " + docId, versionFromIndex);
+        "version from index should be non-null for committed test doc: " + docId, versionFromIndex);
     assertEquals(
         "version from tlog and version from index should be the same",
         versionFromTLog,

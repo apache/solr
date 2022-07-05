@@ -73,7 +73,7 @@
       "tags": [],
       "title": "Solr Prometheus documentation",
       "type": "link",
-      "url": "https://solr.apache.org/guide/monitoring-solr-with-prometheus-and-grafana.html"
+      "url": "https://solr.apache.org/guide/solr/latest/deployment-guide/monitoring-with-prometheus-and-grafana.html"
     }
   ],
   "panels": [
@@ -1501,7 +1501,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "increase(solr_metrics_core_query_local_count{internal!=\"false\",base_url=~\"$base_url\",collection=~\"$collection\",shard=~\"$shard\",replica=~\"$replica\",core=~\"$core\",searchHandler=~\"$searchHandler\"}[1m])",
+              "expr": "increase(solr_metrics_core_query_requests_total{internal!=\"false\",base_url=~\"$base_url\",collection=~\"$collection\",shard=~\"$shard\",replica=~\"$replica\",core=~\"$core\",searchHandler=~\"$searchHandler\"}[1m])",
               "format": "time_series",
               "instant": false,
               "interval": "",
@@ -1603,7 +1603,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "solr_metrics_core_query_local_1minRate{internal!=\"false\",base_url=~\"$base_url\",collection=~\"$collection\",shard=~\"$shard\",replica=~\"$replica\",core=~\"$core\",searchHandler=~\"$searchHandler\"}",
+              "expr": "solr_metrics_core_query_1minRate{internal!=\"false\",base_url=~\"$base_url\",collection=~\"$collection\",shard=~\"$shard\",replica=~\"$replica\",core=~\"$core\",searchHandler=~\"$searchHandler\"}",
               "format": "time_series",
               "instant": false,
               "interval": "",
@@ -1705,7 +1705,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "solr_metrics_core_query_local_p95_ms{internal!=\"false\",base_url=~\"$base_url\",collection=~\"$collection\",shard=~\"$shard\",replica=~\"$replica\",core=~\"$core\",searchHandler=~\"$searchHandler\"}",
+              "expr": "solr_metrics_core_query_p95_ms{internal!=\"false\",base_url=~\"$base_url\",collection=~\"$collection\",shard=~\"$shard\",replica=~\"$replica\",core=~\"$core\",searchHandler=~\"$searchHandler\"}",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 3,

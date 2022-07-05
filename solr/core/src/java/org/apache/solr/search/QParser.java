@@ -63,7 +63,7 @@ public abstract class QParser {
    *
    * @param qstr The part of the query string specific to this parser
    * @param localParams The set of parameters that are specific to this QParser. See
-   *     https://solr.apache.org/guide/local-parameters-in-queries.html
+   *     https://solr.apache.org/guide/solr/latest/query-guide/local-params.html
    * @param params The rest of the {@link org.apache.solr.common.params.SolrParams}
    * @param req The original {@link org.apache.solr.request.SolrQueryRequest}.
    */

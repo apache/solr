@@ -23,7 +23,7 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
-import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.tests.analysis.MockTokenizer;
 import org.apache.solr.client.solrj.request.DocumentAnalysisRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -118,12 +118,12 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
       this.bytes = bytes;
       this.contentType = contentType;
       name = null;
-      size = Long.valueOf(bytes.length);
+      size = (long) bytes.length;
       sourceInfo = "rawBytes";
     }
 
     @Override
-    public InputStream getStream() throws IOException {
+    public InputStream getStream() {
       return new ByteArrayInputStream(bytes);
     }
 
@@ -134,7 +134,7 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
   }
 
   // This test should also test charset detection in UpdateRequestHandler,
-  // but the DocumentAnalysisRequestHandler is simplier to use/check.
+  // but the DocumentAnalysisRequestHandler is simpler to use/check.
   @Test
   public void testCharsetInDocument() throws Exception {
     final byte[] xmlBytes =
@@ -168,7 +168,7 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
   }
 
   // This test should also test charset detection in UpdateRequestHandler,
-  // but the DocumentAnalysisRequestHandler is simplier to use/check.
+  // but the DocumentAnalysisRequestHandler is simpler to use/check.
   @Test
   public void testCharsetOutsideDocument() throws Exception {
     final byte[] xmlBytes =
@@ -207,7 +207,7 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
    */
   @Test
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public void testHandleAnalysisRequest() throws Exception {
+  public void testHandleAnalysisRequest() {
 
     SolrInputDocument document = new SolrInputDocument();
     document.addField("id", 1);

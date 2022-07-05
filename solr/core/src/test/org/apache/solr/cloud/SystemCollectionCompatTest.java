@@ -119,7 +119,7 @@ public class SystemCollectionCompatTest extends SolrCloudTestCase {
     CollectionAdminResponse response = reloadRequest.process(solrClient);
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
-    // wait for the reload of all replicas to complete
+    // wait for the reload operation of all replicas to complete
     RetryUtil.retryUntil(
         "Timed out waiting for core to reload",
         30,

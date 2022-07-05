@@ -34,11 +34,12 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -46,9 +47,20 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
-import org.apache.solr.cloud.*;
+import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.BasicDistributedZkTest;
+import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.cloud.StoppableIndexingThread;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.CompositeIdRouter;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.HashBasedRouter;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -136,7 +148,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
     try (CloudSolrClient client =
         getCloudSolrClient(
-            zkServer.getZkAddress(), true, cloudClient.getLbClient().getHttpClient())) {
+            zkServer.getZkAddress(), true, ((CloudLegacySolrClient) cloudClient).getHttpClient())) {
       client.setDefaultCollection(collectionName);
       StoppableIndexingThread thread =
           new StoppableIndexingThread(controlClient, client, "i1", true);
@@ -209,7 +221,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
           // add a new replica for the sub-shard
           CollectionAdminRequest.AddReplica addReplica =
               CollectionAdminRequest.addReplicaToShard(collectionName, SHARD1_0);
-          // use control client because less chances of it being the node being restarted
+          // use control client because there are fewer chances of it being the node being restarted
           // this is to avoid flakiness of test because of NoHttpResponseExceptions
           String control_collection =
               client
@@ -218,9 +230,9 @@ public class ShardSplitTest extends BasicDistributedZkTest {
                   .getReplicas()
                   .get(0)
                   .getBaseUrl();
-          try (HttpSolrClient control =
+          try (var control =
               new HttpSolrClient.Builder(control_collection)
-                  .withHttpClient(client.getLbClient().getHttpClient())
+                  .withHttpClient(((CloudLegacySolrClient) client).getHttpClient())
                   .build()) {
             state = addReplica.processAndWait(control, 30);
           }
@@ -283,9 +295,9 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     long numFound = Long.MIN_VALUE;
     int count = 0;
     for (Replica replica : shard.getReplicas()) {
-      HttpSolrClient client =
+      var client =
           new HttpSolrClient.Builder(replica.getCoreUrl())
-              .withHttpClient(cloudClient.getLbClient().getHttpClient())
+              .withHttpClient(((CloudLegacySolrClient) cloudClient).getHttpClient())
               .build();
       QueryResponse response = client.query(new SolrQuery("q", "*:*", "distrib", "false"));
       if (log.isInfoEnabled()) {
@@ -350,7 +362,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     Slice shard11 = collection.getSlice(SHARD1_1);
     assertNull(shard11);
 
-    // lets retry the split
+    // let's retry the split
     TestInjection.reset(); // let the split succeed
     try {
       CollectionAdminRequest.SplitShard splitShard =
@@ -544,7 +556,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
             e);
       }
 
-      // we don't care if the split failed because we are injecting faults and it is likely
+      // we don't care if the split failed because we are injecting faults, and it is likely
       // that the split has failed but in any case we want to assert that all docs that got
       // indexed are available in SolrCloud and if the split succeeded then all replicas of the
       // sub-shard must be consistent (i.e. have same numdocs)

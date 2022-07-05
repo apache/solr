@@ -20,7 +20,7 @@ import static org.hamcrest.core.StringContains.containsString;
 
 import java.util.Collection;
 import java.util.Iterator;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
@@ -72,7 +72,7 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
     testChildReturnFields();
   }
 
-  private void testChildDoctransformerXML() throws Exception {
+  private void testChildDoctransformerXML() {
     String test1[] =
         new String[] {
           "//*[@numFound='1']",
@@ -102,7 +102,7 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
 
     assertQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ", "fl", "*,[child]"), test1);
 
-    // shows parentFilter specified (not necessary any more) and also child
+    // shows parentFilter specified (not necessary anymore) and also child
     assertQ(
         req(
             "q",

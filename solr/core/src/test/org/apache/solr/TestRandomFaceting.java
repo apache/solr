@@ -16,7 +16,6 @@
  */
 package org.apache.solr;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,8 +29,8 @@ import java.util.Random;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
-import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Utils;
@@ -293,7 +292,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
             final boolean trieField = trieFields.matcher(ftype.fname).matches();
             if ((notEnum || trieField) && exists) {
               assertQEx(
-                  "facet.exists only when enum or ommitted",
+                  "facet.exists only when enum or omitted",
                   "facet.exists",
                   req(params),
                   ErrorCode.BAD_REQUEST);
@@ -319,7 +318,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
         }
       }
 
-      /**
+      /*
        * String strResponse = h.query(req(params)); Object realResponse =
        * ObjectBuilder.fromJSON(strResponse);
        */
@@ -337,7 +336,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
       throws Exception {
     if (params.getBool("facet.exists", false)) {
       if (isSortByCount(params)) { // it's challenged with facet.sort=count
-        // that requires to recalculate expactation
+        // that requires to recalculate expectation
         expected = getExpectationForSortByCount(params, methods);
       } else { // facet.sort=index
         expected = capFacetCountsTo1(expected);
@@ -386,7 +385,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
             Object label = iterator.next();
             Long count = (Long) iterator.next();
             final Integer strata;
-            if (label == null) { // missing (here "stratas" seems like overengineering )
+            if (label == null) { // missing (here "stratas" seems like over engineering )
               strata = null;
             } else {
               if (count > 0) {
@@ -466,7 +465,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
     "facet_heatmaps":{}}}
    * */
   @SuppressWarnings({"rawtypes", "unchecked"})
-  private String capFacetCountsTo1(String expected) throws IOException {
+  private String capFacetCountsTo1(String expected) {
     return transformFacetFields(
         expected,
         e -> {
@@ -482,8 +481,8 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
   }
 
   @SuppressWarnings({"unchecked"})
-  private String transformFacetFields(String expected, Consumer<Map.Entry<Object, Object>> consumer)
-      throws IOException {
+  private String transformFacetFields(
+      String expected, Consumer<Map.Entry<Object, Object>> consumer) {
     Object json = Utils.fromJSONString(expected);
     @SuppressWarnings({"rawtypes"})
     Map facet_fields = getFacetFieldMap(json);
@@ -500,7 +499,6 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
   @SuppressWarnings({"rawtypes"})
   private Map getFacetFieldMap(Object json) {
     Object facet_counts = ((Map) json).get("facet_counts");
-    Map facet_fields = (Map) ((Map) facet_counts).get("facet_fields");
-    return facet_fields;
+    return (Map) ((Map) facet_counts).get("facet_fields");
   }
 }

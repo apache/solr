@@ -23,16 +23,14 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class DataDrivenBlockJoinTest extends SolrTestCaseJ4 {
-  private File tmpSolrHome;
-  private File tmpConfDir;
 
   private static final String collection = "collection1";
   private static final String confDir = collection + "/conf";
 
   @Before
   public void before() throws Exception {
-    tmpSolrHome = createTempDir().toFile();
-    tmpConfDir = new File(tmpSolrHome, confDir);
+    File tmpSolrHome = createTempDir().toFile();
+    File tmpConfDir = new File(tmpSolrHome, confDir);
     File testHomeConfDir = new File(TEST_HOME(), confDir);
     FileUtils.copyFileToDirectory(
         new File(testHomeConfDir, "solrconfig-schemaless.xml"), tmpConfDir);
@@ -50,7 +48,7 @@ public class DataDrivenBlockJoinTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testAddNestedDocuments() throws Exception {
+  public void testAddNestedDocuments() {
     assertU(
         "<add>"
             + "  <doc>"

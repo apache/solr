@@ -215,7 +215,7 @@ public class TestDocSet extends SolrTestCase {
   }
 
   public void testRandomDocSets() {
-    // Make the size big enough to go over certain limits (such as one set
+    // Make the size big enough to go over certain limits, such as one set
     // being 8 times the size of another in the int set, or going over 2 times
     // 64 bits for the bit doc set.  Smaller sets can hit more boundary conditions though.
 
@@ -235,7 +235,7 @@ public class TestDocSet extends SolrTestCase {
       }
     }
 
-    if (n <= smallSetCuttoff) {
+    if (n <= smallSetCutoff) {
       if (smallSetType == 0) {
         Arrays.sort(a);
         return new SortedIntDocSet(a);
@@ -260,7 +260,7 @@ public class TestDocSet extends SolrTestCase {
   }
 
   public static int smallSetType = 0; // 0==sortedint, 2==FixedBitSet
-  public static int smallSetCuttoff = 3000;
+  public static int smallSetCutoff = 3000;
 
   /*
   public void testIntersectionSizePerformance() {
@@ -322,7 +322,7 @@ public class TestDocSet extends SolrTestCase {
       }
 
       @Override
-      public Terms terms(String field) throws IOException {
+      public Terms terms(String field) {
         return null;
       }
 
@@ -367,8 +367,8 @@ public class TestDocSet extends SolrTestCase {
       }
 
       @Override
-      public TopDocs searchNearestVectors(String field, float[] target, int k, Bits acceptDocs)
-          throws IOException {
+      public TopDocs searchNearestVectors(
+          String field, float[] target, int k, Bits acceptDoc, int visitedLimits) {
         return null;
       }
 
@@ -379,7 +379,7 @@ public class TestDocSet extends SolrTestCase {
       public void document(int doc, StoredFieldVisitor visitor) {}
 
       @Override
-      public void checkIntegrity() throws IOException {}
+      public void checkIntegrity() {}
 
       @Override
       public LeafMetaData getMetaData() {
@@ -406,8 +406,7 @@ public class TestDocSet extends SolrTestCase {
       subs[i] = dummyIndexReader(rand.nextInt(maxDoc));
     }
 
-    MultiReader mr = new MultiReader(subs);
-    return mr;
+    return new MultiReader(subs);
   }
 
   private static boolean checkNullOrEmpty(DocIdSetIterator[] disis) throws IOException {
@@ -444,8 +443,7 @@ public class TestDocSet extends SolrTestCase {
   }
 
   private static void populateDocs(
-      NoThrowDocIdSetIterator[] disis, int[] docs, ToIntFunction<NoThrowDocIdSetIterator> toDocId)
-      throws IOException {
+      NoThrowDocIdSetIterator[] disis, int[] docs, ToIntFunction<NoThrowDocIdSetIterator> toDocId) {
     for (int i = 0; i < docs.length; i++) {
       docs[i] = toDocId.applyAsInt(disis[i]);
     }
@@ -616,6 +614,26 @@ public class TestDocSet extends SolrTestCase {
       DocSetQuery dsq, LeafReaderContext readerContext) throws IOException {
     Scorer scorer = dsq.createWeight(null, ScoreMode.COMPLETE_NO_SCORES, 0).scorer(readerContext);
     return scorer != null ? scorer.iterator() : null;
+  }
+
+  private static final int MAX_SRC_SIZE = 130; // push _just_ into 3 `long` "words"
+
+  public void testCopyBitsToRange() {
+    // Sanity-check round-tripping.
+    for (int i = 0; i < 1000; i++) {
+      final int sz = rand.nextInt(MAX_SRC_SIZE);
+      final FixedBitSet src = getRandomSet(sz, rand.nextInt(sz + 1));
+      final int destSize = sz * 2;
+      final int destOffset =
+          sz == 0
+              ? 0
+              : (rand.nextInt(sz) + 1); // +1 here b/c we want nextInt(sz) _inclusive_ of sz.
+      final FixedBitSet dest = new FixedBitSet(destSize);
+      final FixedBitSet roundTrip = new FixedBitSet(sz);
+      DocSetUtil.copyTo(src.asReadOnlyBits(), 0, sz, dest, destOffset);
+      DocSetUtil.copyTo(dest.asReadOnlyBits(), destOffset, destOffset + sz, roundTrip, 0);
+      assertEquals(src, roundTrip);
+    }
   }
 
   private Bits getExpectedBits(final DocSet docSet, final LeafReaderContext context) {

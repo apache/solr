@@ -100,9 +100,9 @@ public class PeerSyncWithBufferUpdatesTest extends BaseDistributedSearchTestCase
     add(client1, seenLeader, sdoc("id", "23", "_version_", v));
 
     // client1 should be able to sync
-    assertSync(client1, numVersions, true, shardsArr[0]);
+    assertSync(client1, numVersions, shardsArr[0]);
 
-    // on-wire updates arrived on jetty1
+    // on-wire updates arrived at jetty1
     add(client1, seenLeader, sdoc("id", "21", "_version_", v - 2));
     add(client1, seenLeader, sdoc("id", "22", "_version_", v - 1));
 
@@ -132,7 +132,7 @@ public class PeerSyncWithBufferUpdatesTest extends BaseDistributedSearchTestCase
       if (docIds.size() < 10) kindOfUpdate = 0;
       // TODO test atomic update
       if (kindOfUpdate <= 50) {
-        // add a new document update, may by duplicate with the current one
+        // add a new document update, may be duplicate with the current one
         int val = random().nextInt(1000);
         int docId = random().nextInt(10000);
         docIds.add(docId);
@@ -172,7 +172,7 @@ public class PeerSyncWithBufferUpdatesTest extends BaseDistributedSearchTestCase
       }
     }
     // with many gaps, client1 should be able to sync
-    assertSync(client1, numVersions, true, shardsArr[0]);
+    assertSync(client1, numVersions, shardsArr[0]);
   }
 
   private static class DeleteByQuery {
@@ -215,7 +215,7 @@ public class PeerSyncWithBufferUpdatesTest extends BaseDistributedSearchTestCase
     assertEquals(docsAdded.size(), qacResponse.getResults().getNumFound());
   }
 
-  void assertSync(SolrClient client, int numVersions, boolean expectedResult, String syncWith)
+  void assertSync(SolrClient client, int numVersions, String syncWith)
       throws IOException, SolrServerException {
     QueryRequest qr =
         new QueryRequest(
@@ -227,6 +227,6 @@ public class PeerSyncWithBufferUpdatesTest extends BaseDistributedSearchTestCase
                 "syncWithLeader",
                 syncWith));
     NamedList<?> rsp = client.request(qr);
-    assertEquals(expectedResult, rsp.get("syncWithLeader"));
+    assertEquals(true, rsp.get("syncWithLeader"));
   }
 }

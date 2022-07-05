@@ -788,7 +788,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     assertEquals(Arrays.asList("John W. Campbell"), d.getFieldValues("editors"));
     assertEquals(1000, d.getFieldValue("list_price"));
 
-    // typical usecase: clone and count demonstrating default
+    // typical use case: clone and count demonstrating default
     d =
         processAdd(
             "clone-then-count",

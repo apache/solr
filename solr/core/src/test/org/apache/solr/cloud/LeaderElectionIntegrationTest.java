@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -101,10 +101,7 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
     // timeout the leader
     String leader = getLeader(collection);
     JettySolrRunner jetty = getRunner(leader);
-    ZkController zkController = jetty.getCoreContainer().getZkController();
-
-    zkController.getZkClient().getSolrZooKeeper().closeCnxn();
-    cluster.getZkServer().expire(zkController.getZkClient().getSolrZooKeeper().getSessionId());
+    cluster.expireZkSession(jetty);
 
     for (int i = 0; i < 60; i++) { // wait till leader is changed
       if (jetty != getRunner(getLeader(collection))) {
@@ -148,9 +145,8 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
   private String getLeader(String collection) throws InterruptedException {
 
     ZkNodeProps props = cluster.getZkStateReader().getLeaderRetry(collection, "shard1", 30000);
-    String leader = props.getStr(ZkStateReader.NODE_NAME_PROP);
 
-    return leader;
+    return props.getStr(ZkStateReader.NODE_NAME_PROP);
   }
 
   @AfterClass

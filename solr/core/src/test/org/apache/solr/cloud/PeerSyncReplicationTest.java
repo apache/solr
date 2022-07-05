@@ -36,7 +36,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -170,7 +170,7 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
           shardToLeaderJetty.get("shard1"));
 
       // bring up node that was down all along, and let it PeerSync from the node that was forced to
-      // PeerSynce
+      // PeerSync
       bringUpDeadNodeAndEnsureNoReplication(neverLeader, false);
       waitTillNodesActive();
 
@@ -284,7 +284,7 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
 
     forceNodeFailures(Arrays.asList(replicaToShutDown));
 
-    // two docs need to be sync'd back when replica restarts
+    // two docs need to be synced back when replica restarts
     indexDoc(id, docId, i1, 50, tlong, 50, t1, "document number " + docId++);
     indexDoc(id, docId, i1, 50, tlong, 50, t1, "document number " + docId++);
     commit();
@@ -298,7 +298,7 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
       CloudJettyRunner nodeToBringUp, boolean disableFingerprint) throws Exception {
     // disable fingerprint check if needed
     System.setProperty("solr.disableFingerprint", String.valueOf(disableFingerprint));
-    // we wait a little bit, so socket between leader -> replica will be timeout
+    // we wait a little while, so socket between leader -> replica will be timeout
     Thread.sleep(3000);
     IndexInBackGround iib = new IndexInBackGround(50, nodeToBringUp);
     iib.start();

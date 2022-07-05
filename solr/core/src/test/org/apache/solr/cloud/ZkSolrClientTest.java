@@ -182,8 +182,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
       // simulate session expiration
 
       // one option
-      long sessionId = zkClient.getSolrZooKeeper().getSessionId();
-      server.expire(sessionId);
+      server.expire(zkClient.getZooKeeper().getSessionId());
 
       // another option
       // zkClient.getSolrZooKeeper().getConnection().disconnect();
@@ -215,7 +214,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
     }
   }
 
-  public void testZkCmdExectutor() throws Exception {
+  public void testZkCmdExecutor() throws Exception {
     Path zkDir = createTempDir("zkData");
     ZkTestServer server = null;
 

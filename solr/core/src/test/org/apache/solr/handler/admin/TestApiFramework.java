@@ -19,7 +19,6 @@ package org.apache.solr.handler.admin;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.solr.api.ApiBag.EMPTY_SPEC;
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.common.params.CommonParams.COLLECTIONS_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.CONFIGSETS_HANDLER_PATH;
@@ -27,7 +26,6 @@ import static org.apache.solr.common.params.CommonParams.CORES_HANDLER_PATH;
 import static org.apache.solr.common.util.ValidatingJsonMap.NOT_NULL;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.HashMap;
@@ -138,8 +136,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     assertEquals("shard1", parts.get("shard"));
     assertEquals("replica1", parts.get("replica"));
 
-    SolrQueryResponse rsp =
-        invoke(containerHandlers, null, "/collections/_introspect", GET, mockCC);
+    SolrQueryResponse rsp = invoke(containerHandlers, null, "/collections/_introspect", mockCC);
 
     Set<String> methodNames = new HashSet<>();
     methodNames.add(rsp.getValues()._getStr("/spec[0]/methods[0]", null));
@@ -153,29 +150,25 @@ public class TestApiFramework extends SolrTestCaseJ4 {
 
     rsp =
         invoke(
-            coreHandlers,
-            "/schema/_introspect",
-            "/collections/hello/schema/_introspect",
-            GET,
-            mockCC);
+            coreHandlers, "/schema/_introspect", "/collections/hello/schema/_introspect", mockCC);
     methodNames.add(rsp.getValues()._getStr("/spec[0]/methods[0]", null));
     methodNames.add(rsp.getValues()._getStr("/spec[1]/methods[0]", null));
     assertTrue(methodNames.contains("POST"));
     assertTrue(methodNames.contains("GET"));
 
-    rsp = invoke(coreHandlers, "/", "/collections/hello/_introspect", GET, mockCC);
+    rsp = invoke(coreHandlers, "/", "/collections/hello/_introspect", mockCC);
     assertConditions(
         rsp.getValues().asMap(2),
         Map.of(
             "/availableSubPaths", NOT_NULL,
-            "availableSubPaths /collections/hello/config/jmx", NOT_NULL,
+            "availableSubPaths /collections/hello/config/{component}", NOT_NULL,
             "availableSubPaths /collections/hello/schema", NOT_NULL,
             "availableSubPaths /collections/hello/shards", NOT_NULL,
             "availableSubPaths /collections/hello/shards/{shard}", NOT_NULL,
             "availableSubPaths /collections/hello/shards/{shard}/{replica}", NOT_NULL));
   }
 
-  public void testPayload() throws IOException {
+  public void testPayload() {
     String json = "{package:pkg1, version: '0.1', files  :[a.jar, b.jar]}";
     Utils.fromJSONString(json);
 
@@ -325,7 +318,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
             return Collections.singletonList(
                 new ContentStreamBase() {
                   @Override
-                  public InputStream getStream() throws IOException {
+                  public InputStream getStream() {
                     return payload;
                   }
                 });
@@ -362,7 +355,6 @@ public class TestApiFramework extends SolrTestCaseJ4 {
       PluginBag<SolrRequestHandler> reqHandlers,
       String path,
       String fullPath,
-      SolrRequest.METHOD method,
       CoreContainer mockCC) {
     HashMap<String, String> parts = new HashMap<>();
     boolean containerHandlerLookup = mockCC.getRequestHandlers() == reqHandlers;

@@ -25,13 +25,13 @@ import java.util.Optional;
 import java.util.Set;
 import org.apache.hadoop.util.Time;
 import org.apache.http.HttpStatus;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
@@ -201,7 +201,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
               .build();
     else
       delegationTokenClient =
-          new CloudSolrClient.Builder(
+          new CloudLegacySolrClient.Builder(
                   Collections.singletonList(miniCluster.getZkServer().getZkAddress()),
                   Optional.empty())
               .withLBHttpSolrClientBuilder(

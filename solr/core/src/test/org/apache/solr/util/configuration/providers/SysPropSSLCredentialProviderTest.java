@@ -22,7 +22,7 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
 import java.util.Map;
-import org.apache.lucene.util.TestRuleRestoreSystemProperties;
+import org.apache.lucene.tests.util.TestRuleRestoreSystemProperties;
 import org.apache.solr.util.configuration.SSLConfigurations;
 import org.apache.solr.util.configuration.SSLCredentialProvider;
 import org.junit.Rule;
@@ -41,7 +41,7 @@ public class SysPropSSLCredentialProviderTest {
           SSLConfigurations.SysProps.SSL_CLIENT_TRUST_STORE_PASSWORD);
 
   @Test
-  public void testGetCredentials() throws Exception {
+  public void testGetCredentials() {
     int cnt = 0;
     SysPropSSLCredentialProvider sut = new SysPropSSLCredentialProvider();
     for (Map.Entry<SSLCredentialProvider.CredentialType, String> set :
@@ -53,7 +53,7 @@ public class SysPropSSLCredentialProviderTest {
   }
 
   @Test
-  public void testGetCredentialsWithoutSetup() throws Exception {
+  public void testGetCredentialsWithoutSetup() {
     SysPropSSLCredentialProvider sut = new SysPropSSLCredentialProvider();
     // assuming not to fail
     sut.getCredential(SSLCredentialProvider.CredentialType.SSL_KEY_STORE_PASSWORD);

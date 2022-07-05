@@ -23,8 +23,8 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.AbstractVMParamsZkACLAndCredentialsProvidersTestBase;
@@ -91,8 +91,7 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
 
     try (SolrZkClient zkClient =
         new SolrZkClientWithACLs(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT)) {
-      ZooKeeperSaslClient saslClient =
-          zkClient.getSolrZooKeeper().getConnection().zooKeeperSaslClient;
+      ZooKeeperSaslClient saslClient = zkClient.getZooKeeper().getSaslClient();
       assumeFalse("Could not set up ZK with SASL", saslClient.isFailed());
       zkClient.makePath("/solr", false, true);
     } catch (KeeperException e) {

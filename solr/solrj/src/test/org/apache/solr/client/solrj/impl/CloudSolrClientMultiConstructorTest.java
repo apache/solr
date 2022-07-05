@@ -22,7 +22,7 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
@@ -71,7 +71,10 @@ public class CloudSolrClientMultiConstructorTest extends SolrTestCase {
     try (CloudSolrClient client =
         (new CloudSolrClient.Builder(new ArrayList<>(hosts), Optional.ofNullable(clientChroot))
             .build())) {
-      assertEquals(sb.toString(), ZkClientClusterStateProvider.from(client).getZkHost());
+      try (ZkClientClusterStateProvider zkClientClusterStateProvider =
+          ZkClientClusterStateProvider.from(client)) {
+        assertEquals(sb.toString(), zkClientClusterStateProvider.getZkHost());
+      }
     }
   }
 
@@ -98,8 +101,11 @@ public class CloudSolrClientMultiConstructorTest extends SolrTestCase {
 
     final Optional<String> chrootOption =
         withChroot == false ? Optional.empty() : Optional.of(chroot);
-    try (CloudSolrClient client = new CloudSolrClient.Builder(hosts, chrootOption).build()) {
-      assertEquals(sb.toString(), ZkClientClusterStateProvider.from(client).getZkHost());
+    try (var client = new CloudLegacySolrClient.Builder(hosts, chrootOption).build()) {
+      try (ZkClientClusterStateProvider zkClientClusterStateProvider =
+          ZkClientClusterStateProvider.from(client)) {
+        assertEquals(sb.toString(), zkClientClusterStateProvider.getZkHost());
+      }
     }
   }
 

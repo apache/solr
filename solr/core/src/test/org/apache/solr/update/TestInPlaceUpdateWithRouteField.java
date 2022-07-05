@@ -29,7 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -85,7 +85,7 @@ public class TestInPlaceUpdateWithRouteField extends SolrCloudTestCase {
 
     new UpdateRequest().deleteByQuery("*:*").commit(cluster.getSolrClient(), COLLECTION);
 
-    new UpdateRequest().add(createDocs(NUMBER_OF_DOCS)).commit(cluster.getSolrClient(), COLLECTION);
+    new UpdateRequest().add(createDocs()).commit(cluster.getSolrClient(), COLLECTION);
 
     int id = TestUtil.nextInt(random(), 1, NUMBER_OF_DOCS - 1);
     SolrDocument solrDocument = queryDoc(id);
@@ -160,9 +160,9 @@ public class TestInPlaceUpdateWithRouteField extends SolrCloudTestCase {
     }
   }
 
-  private Collection<SolrInputDocument> createDocs(int number) {
+  private Collection<SolrInputDocument> createDocs() {
     List<SolrInputDocument> result = new ArrayList<>();
-    for (int i = 0; i < number; i++) {
+    for (int i = 0; i < NUMBER_OF_DOCS; i++) {
       String randomShard = shards[random().nextInt(shards.length)];
       result.add(
           sdoc("id", String.valueOf(i), "shardName", randomShard, "inplace_updatable_int", i));

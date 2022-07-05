@@ -38,11 +38,12 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -151,7 +152,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     }
   }
 
-  // 2 times to make sure cleanup is complete and we can create the same collection
+  // 2 times to make sure cleanup is complete, and we can create the same collection
   @Repeat(iterations = 2)
   public void testCreateDelete() throws Exception {
     switch (random().nextInt(3)) {
@@ -172,8 +173,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
                 2, // numShards
                 4); // tlogReplicas
         HttpGet createCollectionGet = new HttpGet(url);
-        HttpResponse httpResponse =
-            cluster.getSolrClient().getHttpClient().execute(createCollectionGet);
+        HttpResponse httpResponse = getHttpClient().execute(createCollectionGet);
         assertEquals(200, httpResponse.getStatusLine().getStatusCode());
         cluster.waitForActiveCollection(collectionName, 2, 8);
         break;
@@ -192,7 +192,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
         HttpPost createCollectionPost = new HttpPost(url);
         createCollectionPost.setHeader("Content-type", "application/json");
         createCollectionPost.setEntity(new StringEntity(requestBody));
-        httpResponse = cluster.getSolrClient().getHttpClient().execute(createCollectionPost);
+        httpResponse = getHttpClient().execute(createCollectionPost);
         assertEquals(200, httpResponse.getStatusLine().getStatusCode());
         cluster.waitForActiveCollection(collectionName, 2, 8);
         break;
@@ -203,7 +203,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
       DocCollection docCollection = getCollectionState(collectionName);
       assertNotNull(docCollection);
       assertEquals("Expecting 2 shards", 2, docCollection.getSlices().size());
-      assertEquals("Expecting 4 relpicas per shard", 8, docCollection.getReplicas().size());
+      assertEquals("Expecting 4 replicas per shard", 8, docCollection.getReplicas().size());
       assertEquals(
           "Expecting 8 tlog replicas, 4 per shard",
           8,
@@ -242,10 +242,14 @@ public class TestTlogReplica extends SolrCloudTestCase {
             CollectionAdminRequest.reloadCollection(collectionName)
                 .process(cluster.getSolrClient());
         assertEquals(0, response.getStatus());
-        waitForState("failed waiting for active colletion", collectionName, clusterShape(2, 8));
+        waitForState("failed waiting for active collection", collectionName, clusterShape(2, 8));
         reloaded = true;
       }
     }
+  }
+
+  private HttpClient getHttpClient() {
+    return ((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient();
   }
 
   @SuppressWarnings("unchecked")
@@ -349,7 +353,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
                 shardName,
                 type);
         HttpGet addReplicaGet = new HttpGet(url);
-        HttpResponse httpResponse = cluster.getSolrClient().getHttpClient().execute(addReplicaGet);
+        HttpResponse httpResponse = getHttpClient().execute(addReplicaGet);
         assertEquals(200, httpResponse.getStatusLine().getStatusCode());
         break;
       case 2: // Add replica with V2 API
@@ -364,7 +368,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
         HttpPost addReplicaPost = new HttpPost(url);
         addReplicaPost.setHeader("Content-type", "application/json");
         addReplicaPost.setEntity(new StringEntity(requestBody));
-        httpResponse = cluster.getSolrClient().getHttpClient().execute(addReplicaPost);
+        httpResponse = getHttpClient().execute(addReplicaPost);
         assertEquals(200, httpResponse.getStatusLine().getStatusCode());
         break;
     }
@@ -392,7 +396,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
         activeReplicaCount(numNrtReplicas, numReplicas, 0));
     DocCollection docCollection =
         assertNumberOfReplicas(numNrtReplicas, numReplicas, 0, false, true);
-    HttpClient httpClient = cluster.getSolrClient().getHttpClient();
+    HttpClient httpClient = getHttpClient();
     int id = 0;
     Slice slice = docCollection.getSlice("shard1");
     List<String> ids = new ArrayList<>(slice.getReplicas().size());
@@ -490,12 +494,12 @@ public class TestTlogReplica extends SolrCloudTestCase {
     int maxAttempts = 3;
     for (int i = 0; i < maxAttempts; i++) {
       try {
-        CollectionAdminResponse respone =
+        CollectionAdminResponse response =
             CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.TLOG)
                 .process(cluster.getSolrClient());
         // This is an unfortunate hack. There are cases where the ADDREPLICA fails, will create a
         // Jira to address that separately. for now, we'll retry
-        if (respone.isSuccess()) {
+        if (response.isSuccess()) {
           break;
         }
         log.error("Unsuccessful attempt to add replica. Attempt: {}/{}", i, maxAttempts);
@@ -639,7 +643,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     // non-leader replicas, since we haven't opened a new searcher on the leader yet
 
     // timeout for stale collection state
-    waitForNumDocsInAllReplicas(4, getNonLeaderReplias(collectionName), 10);
+    waitForNumDocsInAllReplicas(4, getNonLeaderReplicas(collectionName), 10);
 
     // If I add the doc immediately, the leader fails to communicate with the follower with broken
     // pipe. Options are, wait or retry...
@@ -664,7 +668,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     solrRunner.start();
     waitForState("Replica didn't recover", collectionName, activeReplicaCount(0, 2, 0));
     // timeout for stale collection state
-    waitForNumDocsInAllReplicas(5, getNonLeaderReplias(collectionName), 10);
+    waitForNumDocsInAllReplicas(5, getNonLeaderReplicas(collectionName), 10);
     checkRTG(3, 7, cluster.getJettySolrRunners());
     cluster.getSolrClient().commit(collectionName);
 
@@ -713,7 +717,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     }
   }
 
-  private List<Replica> getNonLeaderReplias(String collectionName) {
+  private List<Replica> getNonLeaderReplicas(String collectionName) {
     return getCollectionState(collectionName).getReplicas().stream()
         .filter((r) -> !r.getBool("leader", false))
         .collect(Collectors.toList());
@@ -896,8 +900,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     assertNotNull(doc.get("title_s"));
   }
 
-  private UpdateRequest simulatedUpdateRequest(Long prevVersion, Object... fields)
-      throws SolrServerException, IOException {
+  private UpdateRequest simulatedUpdateRequest(Long prevVersion, Object... fields) {
     SolrInputDocument doc = sdoc(fields);
 
     // get baseUrl of the leader
@@ -914,8 +917,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     return ur;
   }
 
-  private UpdateRequest simulatedDBQ(String query, long version)
-      throws SolrServerException, IOException {
+  private UpdateRequest simulatedDBQ(String query, long version) {
     String baseUrl = getBaseUrl();
 
     UpdateRequest ur = new UpdateRequest();

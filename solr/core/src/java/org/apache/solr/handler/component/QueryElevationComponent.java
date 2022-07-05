@@ -1244,7 +1244,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
     @Override
     public FieldComparator<Integer> newComparator(
-        String fieldName, final int numHits, int sortPos, boolean reversed) {
+        String fieldName, final int numHits, boolean enableSkipping, boolean reversed) {
       return new SimpleFieldComparator<>() {
         final int[] values = new int[numHits];
         int bottomVal;

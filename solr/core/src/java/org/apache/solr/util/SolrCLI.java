@@ -93,6 +93,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -203,8 +204,8 @@ public class SolrCLI implements CLIO {
       String zkHost = cli.getOptionValue("zkHost", ZK_HOST);
 
       log.debug("Connecting to Solr cluster: {}", zkHost);
-      try (CloudSolrClient cloudSolrClient =
-          new CloudSolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
+      try (var cloudSolrClient =
+          new CloudLegacySolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
               .build()) {
 
         String collection = cli.getOptionValue("collection");
@@ -216,7 +217,7 @@ public class SolrCLI implements CLIO {
     }
 
     /** Runs a SolrCloud tool with CloudSolrClient initialized */
-    protected abstract void runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli)
+    protected abstract void runCloudTool(CloudLegacySolrClient cloudSolrClient, CommandLine cli)
         throws Exception;
   }
 
@@ -716,10 +717,10 @@ public class SolrCLI implements CLIO {
               HttpClientUtil.createNewHttpClientRequestContext());
       // check the response JSON from Solr to see if it is an error
       Long statusCode = asLong("/responseHeader/status", json);
-      if (statusCode == -1) {
+      if (statusCode != null && statusCode == -1) {
         throw new SolrServerException(
             "Unable to determine outcome of GET request to: " + getUrl + "! Response: " + json);
-      } else if (statusCode != 0) {
+      } else if (statusCode != null && statusCode != 0) {
         String errMsg = asString("/error/msg", json);
         if (errMsg == null) errMsg = String.valueOf(json);
         throw new SolrServerException(errMsg);
@@ -1207,7 +1208,8 @@ public class SolrCLI implements CLIO {
     }
 
     @Override
-    protected void runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli) throws Exception {
+    protected void runCloudTool(CloudLegacySolrClient cloudSolrClient, CommandLine cli)
+        throws Exception {
       raiseLogLevelUnlessVerbose(cli);
       String collection = cli.getOptionValue("collection");
       if (collection == null)
@@ -1411,7 +1413,7 @@ public class SolrCLI implements CLIO {
             "Must provide either the '-solrUrl' or '-zkHost' parameters!");
 
       try (CloudSolrClient cloudSolrClient =
-          new CloudSolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
+          new CloudLegacySolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
               .build()) {
         cloudSolrClient.connect();
         Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
@@ -1540,7 +1542,7 @@ public class SolrCLI implements CLIO {
       }
 
       try (CloudSolrClient cloudSolrClient =
-          new CloudSolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
+          new CloudLegacySolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
               .build()) {
         echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
         cloudSolrClient.connect();
@@ -2498,7 +2500,7 @@ public class SolrCLI implements CLIO {
     protected void deleteCollection(CommandLine cli) throws Exception {
       String zkHost = getZkHost(cli);
       try (CloudSolrClient cloudSolrClient =
-          new CloudSolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
+          new CloudLegacySolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
               .withSocketTimeout(30000)
               .withConnectionTimeout(15000)
               .build()) {

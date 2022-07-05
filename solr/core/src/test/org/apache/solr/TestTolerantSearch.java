@@ -42,7 +42,6 @@ public class TestTolerantSearch extends SolrJettyTestBase {
   private static SolrClient collection2;
   private static String shard1;
   private static String shard2;
-  private static File solrHome;
 
   private static File createSolrHome() throws Exception {
     File workDir = createTempDir().toFile();
@@ -57,7 +56,7 @@ public class TestTolerantSearch extends SolrJettyTestBase {
   @BeforeClass
   public static void createThings() throws Exception {
     systemSetPropertySolrDisableUrlAllowList("true");
-    solrHome = createSolrHome();
+    File solrHome = createSolrHome();
     createAndStartJetty(solrHome.getAbsolutePath());
     String url = jetty.getBaseUrl().toString();
     collection1 = getHttpSolrClient(url + "/collection1");

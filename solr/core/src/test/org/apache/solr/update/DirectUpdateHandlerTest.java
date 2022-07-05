@@ -82,7 +82,7 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRequireUniqueKey() throws Exception {
+  public void testRequireUniqueKey() {
     // Add a valid document
     assertU(adoc("id", "1"));
 
@@ -97,7 +97,7 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   @SuppressWarnings({"unchecked"})
-  public void testBasics() throws Exception {
+  public void testBasics() {
 
     // get initial metrics
     Map<String, Metric> metrics =
@@ -355,7 +355,7 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testExpungeDeletes() throws Exception {
+  public void testExpungeDeletes() {
     assertU(adoc("id", "1"));
     assertU(adoc("id", "2"));
     assertU(commit());
@@ -441,7 +441,7 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testPostSoftCommitEvents() throws Exception {
+  public void testPostSoftCommitEvents() {
     SolrCore core = h.getCore();
     assert core != null;
     DirectUpdateHandler2 updater = (DirectUpdateHandler2) core.getUpdateHandler();

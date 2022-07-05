@@ -33,10 +33,11 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
-import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -124,7 +125,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     super.tearDown();
   }
 
-  // 2 times to make sure cleanup is complete and we can create the same collection
+  // 2 times to make sure cleanup is complete, and we can create the same collection
   @Repeat(iterations = 2)
   public void testCreateDelete() throws Exception {
     try {
@@ -148,7 +149,7 @@ public class TestPullReplica extends SolrCloudTestCase {
           // These options should all mean the same
           url = url + pickRandom("", "&nrtReplicas=1", "&replicationFactor=1");
           HttpGet createCollectionGet = new HttpGet(url);
-          cluster.getSolrClient().getHttpClient().execute(createCollectionGet);
+          getHttpClient().execute(createCollectionGet);
           break;
         case 2:
           // Sometimes use V2 API
@@ -168,8 +169,7 @@ public class TestPullReplica extends SolrCloudTestCase {
           HttpPost createCollectionPost = new HttpPost(url);
           createCollectionPost.setHeader("Content-type", "application/json");
           createCollectionPost.setEntity(new StringEntity(requestBody));
-          HttpResponse httpResponse =
-              cluster.getSolrClient().getHttpClient().execute(createCollectionPost);
+          HttpResponse httpResponse = getHttpClient().execute(createCollectionPost);
           assertEquals(200, httpResponse.getStatusLine().getStatusCode());
           break;
       }
@@ -177,7 +177,7 @@ public class TestPullReplica extends SolrCloudTestCase {
       while (true) {
         DocCollection docCollection = getCollectionState(collectionName);
         assertNotNull(docCollection);
-        assertEquals("Expecting 4 relpicas per shard", 8, docCollection.getReplicas().size());
+        assertEquals("Expecting 4 replicas per shard", 8, docCollection.getReplicas().size());
         assertEquals(
             "Expecting 6 pull replicas, 3 per shard",
             6,
@@ -459,7 +459,7 @@ public class TestPullReplica extends SolrCloudTestCase {
         collectionName,
         activeReplicaCount(numReplicas, 0, numReplicas));
     DocCollection docCollection = assertNumberOfReplicas(numReplicas, 0, numReplicas, false, true);
-    HttpClient httpClient = cluster.getSolrClient().getHttpClient();
+    HttpClient httpClient = getHttpClient();
     int id = 0;
     Slice slice = docCollection.getSlice("shard1");
     List<String> ids = new ArrayList<>(slice.getReplicas().size());
@@ -584,7 +584,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     // Queries should still work
     waitForNumDocsInAllReplicas(1, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)));
     // Add nrt replica back. Since there is no nrt now, new nrt will have no docs. There will be
-    // data loss, since the it will become the leader and pull replicas will replicate from it.
+    // data loss, since it will become the leader and pull replicas will replicate from it.
     // Maybe we want to change this. Replicate from pull replicas is not a good idea, since they are
     // by definition out of date.
     if (removeReplica) {
@@ -858,7 +858,7 @@ public class TestPullReplica extends SolrCloudTestCase {
                 shardName,
                 type);
         HttpGet addReplicaGet = new HttpGet(url);
-        HttpResponse httpResponse = cluster.getSolrClient().getHttpClient().execute(addReplicaGet);
+        HttpResponse httpResponse = getHttpClient().execute(addReplicaGet);
         assertEquals(200, httpResponse.getStatusLine().getStatusCode());
         break;
       case 2: // Add replica with V2 API
@@ -873,9 +873,13 @@ public class TestPullReplica extends SolrCloudTestCase {
         HttpPost addReplicaPost = new HttpPost(url);
         addReplicaPost.setHeader("Content-type", "application/json");
         addReplicaPost.setEntity(new StringEntity(requestBody));
-        httpResponse = cluster.getSolrClient().getHttpClient().execute(addReplicaPost);
+        httpResponse = getHttpClient().execute(addReplicaPost);
         assertEquals(200, httpResponse.getStatusLine().getStatusCode());
         break;
     }
+  }
+
+  private HttpClient getHttpClient() {
+    return ((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient();
   }
 }

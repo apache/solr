@@ -209,7 +209,7 @@ public class TestSubQueryTransformer extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testJohnOrNancySingleField() throws Exception {
+  public void testJohnOrNancySingleField() {
     // System.out.println("p "+peopleMultiplier+" d "+deptMultiplier);
     assertQ(
         "subq1.fl is limited to single field",
@@ -289,7 +289,7 @@ public class TestSubQueryTransformer extends SolrTestCaseJ4 {
       };
 
   @Test
-  public void testTwoSubQueriesAndByNumberWithTwoFields() throws Exception {
+  public void testTwoSubQueriesAndByNumberWithTwoFields() {
     final SolrQueryRequest johnOrNancyTwoFL = req(johnAndNancyParams);
 
     assertQ(
@@ -495,7 +495,7 @@ public class TestSubQueryTransformer extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testNoExplicitName() throws Exception {
+  public void testNoExplicitName() {
     String[] john =
         new String[] {
           "q",
@@ -551,7 +551,7 @@ public class TestSubQueryTransformer extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testDupePrefix() throws Exception {
+  public void testDupePrefix() {
     assertQEx(
         "subquery name clash",
         req(
@@ -668,7 +668,7 @@ public class TestSubQueryTransformer extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testExceptionPropagation() throws Exception {
+  public void testExceptionPropagation() {
     final SolrQueryRequest r =
         req(
             "q",
@@ -719,7 +719,7 @@ public class TestSubQueryTransformer extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testMultiValue() throws Exception {
+  public void testMultiValue() {
 
     String[] happyPathAsserts =
         new String[] {

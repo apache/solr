@@ -18,10 +18,8 @@ package org.apache.solr.uninverting;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -29,7 +27,9 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.analysis.MockAnalyzer;
+import org.apache.lucene.tests.index.RandomIndexWriter;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.legacy.LegacyFieldType;
 import org.apache.solr.legacy.LegacyIntField;
@@ -124,7 +124,7 @@ public class TestNumericTerms32 extends SolrTestCase {
   private void testSorting(int precisionStep) throws Exception {
     String field = "field" + precisionStep;
     // 10 random tests, the index order is ascending,
-    // so using a reverse sort field should retun descending documents
+    // so using a reverse sort field should return descending documents
     int num = TestUtil.nextInt(random(), 10, 20);
     for (int i = 0; i < num; i++) {
       int lower = (int) (random().nextDouble() * noDocs * distance) + startOffset;

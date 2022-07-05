@@ -87,8 +87,6 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
     refresh();
     Phaser localPhaser = phaser; // volatile read
     if (localPhaser != null) {
-      assert localPhaser.getRegisteredParties() == 1;
-      // we should be the only ones registered, so this will advance phase each time
       localPhaser.arrive();
     }
     return false;

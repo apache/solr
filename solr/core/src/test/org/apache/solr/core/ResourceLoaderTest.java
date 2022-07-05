@@ -113,7 +113,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
   }
 
   @SuppressWarnings({"unchecked"})
-  public void testAwareCompatibility() throws Exception {
+  public void testAwareCompatibility() {
 
     final Class<?> clazz1 = ResourceLoaderAware.class;
     // Check ResourceLoaderAware valid objects
@@ -225,7 +225,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     // check "lib/aLibFile"
     assertNotNull(loader.getClassLoader().getResource("aLibFile"));
 
-    // add inidividual jars from other paths
+    // add individual jars from other paths
     loader.addToClassLoader(
         Collections.singletonList(otherLib.resolve("jar2.jar").toUri().toURL()));
 

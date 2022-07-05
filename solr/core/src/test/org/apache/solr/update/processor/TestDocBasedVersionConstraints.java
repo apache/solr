@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -529,7 +529,7 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
 
     // "dead" placeholder docs can be periodically cleaned up
     // ie: assertU(delQ("+live_b:false +timestamp_tdt:[* TO NOW/MINUTE-5MINUTE]"));
-    // but to prevent the test from ebing time sensitive we'll just purge them all
+    // but to prevent the test from being time sensitive we'll just purge them all
     assertU(delQ("+live_b:false"));
     assertU(commit());
     // now doc can be re-added w/any version, no matter how low

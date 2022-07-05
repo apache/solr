@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -37,17 +36,18 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.tests.analysis.MockAnalyzer;
+import org.apache.lucene.tests.index.RandomIndexWriter;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
 
@@ -122,7 +122,7 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
   // LUCENE-4853
   public void testHugeBinaryValues() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
-    // FSDirectory because SimpleText will consume gobbs of
+    // FSDirectory because SimpleText will consume lots of
     // space when storing big binary values:
     try (Directory d = newFSDirectory(createTempDir("hugeBinaryValues"))) {
       boolean doFixed = random().nextBoolean();
@@ -143,7 +143,7 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
           // we don't use RandomIndexWriter because it might add
           // more docvalues than we expect !!!!
 
-          // Must be > 64KB in size to ensure more than 2 pages in
+          // Must be > 64 KB in size to ensure more than 2 pages in
           // PagedBytes would be needed:
           int numBytes;
           if (doFixed) {
@@ -379,7 +379,7 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
     abstract long next();
   }
 
-  private void assertEquals(Bits expected, Bits actual) throws Exception {
+  private void assertEquals(Bits expected, Bits actual) {
     assertEquals(expected.length(), actual.length());
     for (int i = 0; i < expected.length(); i++) {
       assertEquals(expected.get(i), actual.get(i));

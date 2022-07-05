@@ -37,8 +37,6 @@ import static org.apache.solr.common.params.CoreAdminParams.*;
 import static org.apache.solr.common.params.ShardParams._ROUTE_;
 import static org.apache.solr.common.util.StrUtils.formatString;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
@@ -182,8 +180,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     Object defVal =
         new ClusterProperties(coreContainer.getZkController().getZkStateReader().getZkClient())
             .getClusterProperty(
-                ImmutableList.of(
-                    CollectionAdminParams.DEFAULTS, CollectionAdminParams.COLLECTION, prop),
+                List.of(CollectionAdminParams.DEFAULTS, CollectionAdminParams.COLLECTION, prop),
                 null);
     if (defVal != null) props.put(prop, String.valueOf(defVal));
   }
@@ -275,7 +272,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     }
   }
 
-  static final Set<String> KNOWN_ROLES = ImmutableSet.of("overseer");
+  static final Set<String> KNOWN_ROLES = Set.of("overseer");
 
   public static long DEFAULT_COLLECTION_OP_TIMEOUT = 180 * 1000;
 
@@ -511,7 +508,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
             createSysConfigSet(h.coreContainer);
           }
           if (shardsParam == null) h.copyFromClusterProp(props, NUM_SLICES);
-          for (String prop : ImmutableSet.of(NRT_REPLICAS, PULL_REPLICAS, TLOG_REPLICAS))
+          for (String prop : Set.of(NRT_REPLICAS, PULL_REPLICAS, TLOG_REPLICAS))
             h.copyFromClusterProp(props, prop);
           copyPropertiesWithPrefix(req.getParams(), props, PROPERTY_PREFIX);
           return copyPropertiesWithPrefix(req.getParams(), props, "router.");
@@ -599,12 +596,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         SYNCSHARD,
         (req, rsp, h) -> {
           String extCollection = req.getParams().required().get("collection");
-          String collection =
-              h.coreContainer
-                  .getZkController()
-                  .getZkStateReader()
-                  .getAliases()
-                  .resolveSimpleAlias(extCollection);
+          String collection = h.coreContainer.getAliases().resolveSimpleAlias(extCollection);
           String shard = req.getParams().required().get("shard");
 
           ClusterState clusterState = h.coreContainer.getZkController().getClusterState();
@@ -668,6 +660,17 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
               // Regular alias creation indicated //
               //////////////////////////////////////
               return copy(finalParams.required(), null, NAME, "collections");
+            }
+          } else {
+            if (routedAlias != null) {
+              CoreContainer coreContainer1 = h.getCoreContainer();
+              Aliases aliases = coreContainer1.getAliases();
+              String aliasName = routedAlias.getAliasName();
+              if (aliases.hasAlias(aliasName) && !aliases.isRoutedAlias(aliasName)) {
+                throw new SolrException(
+                    BAD_REQUEST,
+                    "Cannot add routing parameters to existing non-routed Alias: " + aliasName);
+              }
             }
           }
 
@@ -929,12 +932,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         COLLECTIONPROP,
         (req, rsp, h) -> {
           String extCollection = req.getParams().required().get(NAME);
-          String collection =
-              h.coreContainer
-                  .getZkController()
-                  .getZkStateReader()
-                  .getAliases()
-                  .resolveSimpleAlias(extCollection);
+          String collection = h.coreContainer.getAliases().resolveSimpleAlias(extCollection);
           String name = req.getParams().required().get(PROPERTY_NAME);
           String val = req.getParams().get(PROPERTY_VALUE);
           CollectionProperties cp =
@@ -1356,11 +1354,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
           final String collectionName =
               SolrIdentifierValidator.validateCollectionName(req.getParams().get(COLLECTION_PROP));
-          if (h.coreContainer
-              .getZkController()
-              .getZkStateReader()
-              .getAliases()
-              .hasAlias(collectionName)) {
+          if (h.coreContainer.getAliases().hasAlias(collectionName)) {
             throw new SolrException(
                 ErrorCode.BAD_REQUEST,
                 "Collection '" + collectionName + "' is an existing alias, no action taken.");

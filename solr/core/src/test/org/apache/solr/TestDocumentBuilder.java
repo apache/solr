@@ -16,7 +16,6 @@
  */
 package org.apache.solr;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -27,7 +26,7 @@ import org.junit.Test;
 public class TestDocumentBuilder extends SolrTestCase {
 
   @Test
-  public void testDeepCopy() throws IOException {
+  public void testDeepCopy() {
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("field1", "value1");
     doc.addField("field2", "value1");

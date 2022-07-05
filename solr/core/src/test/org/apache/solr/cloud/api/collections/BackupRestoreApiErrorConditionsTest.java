@@ -83,13 +83,12 @@ public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
   }
 
   @AfterClass
-  public static void tearDownClass() throws Exception {
+  public static void tearDownClass() {
     System.clearProperty("solr.allowPaths");
   }
 
   @Test
-  public void testBackupOperationsReportErrorWhenUnknownBackupRepositoryRequested()
-      throws Exception {
+  public void testBackupOperationsReportErrorWhenUnknownBackupRepositoryRequested() {
     // Check message for create-backup
     Exception e =
         expectThrows(

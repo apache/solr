@@ -46,11 +46,17 @@ Solr Cell supplies some metadata of its own too.
 You can configure which elements should be included/ignored, and which should map to another field.
 * Solr Cell maps each piece of metadata onto a field.
 By default it maps to the same name but several parameters control how this is done.
-* When Solr Cell finishes creating the internal `SolrInputDocument`, the rest of the Lucene/Solr indexing stack takes over.
+* When Solr Cell finishes creating the internal `SolrInputDocument`, the rest of the indexing stack takes over.
 The next step after any update handler is the xref:configuration-guide:update-request-processors.adoc[Update Request Processor] chain.
 
-Solr Cell is a module, which means it's not automatically included with Solr but must be configured.
-The example configsets have Solr Cell configured, but if you are not using those, you will want to pay attention to the section <<solrconfig.xml Configuration>> below.
+
+== Module
+
+This is provided via the `extraction` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
+
+The "techproducts" example included with Solr is pre-configured to have Solr Cell configured.
+If you are not using the example, you will want to pay attention to the section <<solrconfig.xml Configuration>> below.
+
 
 === Solr Cell Performance Implications
 
@@ -79,11 +85,19 @@ For a few examples of how this could be done, see this blog post by Erick Ericks
 
 You can try out the Tika framework using the `schemaless` example included in Solr.
 
-This command will simply start Solr and create a core/collection named "gettingstarted" with the `_default` configset.
+This command will start Solr, create a core/collection named `gettingstarted` with the `_default` configset, and enable the extraction module. Then the `/update/extract` handler is added to the `gettingstarted` core/collection to enable Solr Cell.
 
 [source,bash]
 ----
-bin/solr -e schemaless
+bin/solr start -e schemaless -Dsolr.modules=extraction
+
+curl -X POST -H 'Content-type:application/json' -d '{
+  "add-requesthandler": {
+    "name": "/update/extract",
+    "class": "solr.extraction.ExtractingRequestHandler",
+    "defaults":{ "lowernames": "true", "captureAttr":"true"}
+  }
+}' 'http://localhost:8983/solr/gettingstarted/config'
 ----
 
 Once Solr is started, you can use curl to send a sample PDF included with Solr via HTTP POST:
@@ -407,7 +421,8 @@ Also see the section <<Defining XPath Expressions>> for an example.
 
 If you have started Solr with one of the supplied xref:configuration-guide:config-sets.adoc[example configsets], you may already have the `ExtractingRequestHandler` configured by default.
 
-If it is not already configured, you will need to configure `solrconfig.xml` to find the `ExtractingRequestHandler` and its dependencies:
+First, you must enable the xref:#module[Module].
+If `solrconfig.xml` is not already configured, you will need to modify it to find the `ExtractingRequestHandler` and its dependencies:
 
 [source,xml]
 ----

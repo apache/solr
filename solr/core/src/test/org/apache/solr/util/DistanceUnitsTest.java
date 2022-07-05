@@ -21,7 +21,7 @@ import org.locationtech.spatial4j.distance.DistanceUtils;
 
 public class DistanceUnitsTest extends SolrTestCase {
 
-  public void testAddNewUnits() throws Exception {
+  public void testAddNewUnits() {
     DistanceUnits.addUnits("lightyears", 6.73430542e-12, 9.4605284e12 * DistanceUtils.KM_TO_DEG);
     assertTrue(DistanceUnits.getSupportedUnits().contains("lightyears"));
   }

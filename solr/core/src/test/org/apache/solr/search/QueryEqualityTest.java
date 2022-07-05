@@ -21,7 +21,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryUtils;
+import org.apache.lucene.tests.search.QueryUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;
@@ -101,8 +101,8 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   }
 
   public void testQueryLuceneAllDocsWithField() throws Exception {
-    // for all "primative" types except for doubles/floats, 'foo:*' should be functionally
-    // equivilent to "foo:[* TO *]" whatever implementation/optimizations exist for one syntax,
+    // for all "primitive" types except for doubles/floats, 'foo:*' should be functionally
+    // equivalent to "foo:[* TO *]" whatever implementation/optimizations exist for one syntax,
     // should exist for the other syntax as well (regardless of docValues, multivalued, etc...)
     for (String field :
         Arrays.asList(
@@ -508,7 +508,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
             "myField", "foo_i",
             "myInner", "product(4,foo_i)");
     try {
-      // NOTE: unlike most queries, frange defaultsto cost==100
+      // NOTE: unlike most queries, frange defaults to cost==100
       assertQueryEquals(
           "frange",
           req,
@@ -655,7 +655,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
           QParser.getParser("{!parent which=foo_s:parent}", req).getQuery());
     }
 
-    // sanity check multiple ways of specifing _nest_path_ prefixes
+    // check multiple ways of specifying _nest_path_ prefixes
     final String parent_path = "/aa/bb";
     try (SolrQueryRequest req =
         req(
@@ -672,7 +672,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
 
           // using 'inline' prefix query syntax...
           //
-          // '/' has to be escaped other wise it will be treated as a regex query...
+          // '/' has to be escaped otherwise it will be treated as a regex query...
           // ...and when used inside the 'which' param it has to be escaped *AGAIN* because of
           // the "quoted" localparam evaluation layer...
           // (and of course '\' escaping is the java syntax as well, we have to double it)
@@ -759,7 +759,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
             "2",
             "useAutn",
             "false");
-    // make sure all param subsitution works for all args to graph query.
+    // make sure all param substitution works for all args to graph query.
     assertQueryEquals(
         "graph", req, "{!graph from=node_s to=edge_s}*:*", "{!graph from=$from to=$to}*:*");
 

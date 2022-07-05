@@ -46,7 +46,7 @@ public class SpatialFilterTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testPoints() throws Exception {
+  public void testPoints() {
     String fieldName = "home";
     setupDocs(fieldName);
     // Try some edge cases
@@ -60,14 +60,14 @@ public class SpatialFilterTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testLatLonType() throws Exception {
+  public void testLatLonType() {
     String fieldName = "store";
     setupDocs(fieldName);
     // Try some edge cases
     checkHits(fieldName, "1,1", 175, 3, 5, 6, 7);
     checkHits(fieldName, "0,179.8", 200, 2, 8, 9);
-    checkHits(fieldName, "89.8, 50", 200, 2, 10, 11); // this goes over the north pole
-    checkHits(fieldName, "-89.8, 50", 200, 2, 12, 13); // this goes over the south pole
+    checkHits(fieldName, "89.8, 50", 200, 2, 10, 11); // this goes over the North Pole
+    checkHits(fieldName, "-89.8, 50", 200, 2, 12, 13); // this goes over the South Pole
     // try some normal cases
     checkHits(fieldName, "33.0,-80.0", 300, 2);
     // large distance
@@ -91,11 +91,11 @@ public class SpatialFilterTest extends SolrTestCaseJ4 {
     checkHits(fieldName, "0,0", 3001, 3, 14, 15, 16);
     checkHits(fieldName, "0,0", 3000.1, 3, 14, 15, 16);
 
-    // really fine grained distance and reflects some of the vagaries of how we are calculating the
+    // really fine-grained distance and reflects some vagaries of how we are calculating the
     // box
     checkHits(fieldName, "43.517030,-96.789603", 109, 0);
 
-    // falls outside of the real distance, but inside the bounding box
+    // falls outside the real distance, but inside the bounding box
     checkHits(fieldName, true, "43.517030,-96.789603", 110, 0);
     checkHits(fieldName, false, "43.517030,-96.789603", 110, 1, 17);
 

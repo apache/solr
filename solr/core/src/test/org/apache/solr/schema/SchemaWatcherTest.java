@@ -50,7 +50,7 @@ public class SchemaWatcherTest {
   }
 
   @Test
-  public void testDiscardReaderReference() throws Exception {
+  public void testDiscardReaderReference() {
     schemaWatcher.discardReaderReference();
 
     schemaWatcher.process(

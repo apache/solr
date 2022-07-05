@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -29,7 +28,7 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -41,6 +40,8 @@ import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.SessionExpiredException;
+import org.apache.zookeeper.TestableZooKeeper;
+import org.apache.zookeeper.ZooKeeper;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -99,7 +100,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
 
     @Override
     void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStartMs)
-        throws KeeperException, InterruptedException, IOException {
+        throws KeeperException, InterruptedException {
       super.runLeaderProcess(weAreReplacement, pauseBeforeStartMs);
       if (runLeaderDelay > 0) {
         log.info("Sleeping for {}ms to simulate leadership takeover delay", runLeaderDelay);
@@ -139,12 +140,11 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     private volatile boolean electionDone = false;
     private final ZkNodeProps props;
 
-    public ClientThread(String shard, int nodeNumber) throws Exception {
+    public ClientThread(String shard, int nodeNumber) {
       this(null, shard, nodeNumber, 0);
     }
 
-    public ClientThread(ElectorSetup es, String shard, int nodeNumber, long runLeaderDelay)
-        throws Exception {
+    public ClientThread(ElectorSetup es, String shard, int nodeNumber, long runLeaderDelay) {
       super("Thread-" + shard + nodeNumber);
       this.shard = shard;
       this.nodeName = shard + nodeNumber + ":80_solr";
@@ -172,7 +172,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
       }
     }
 
-    private void setupOnConnect() throws InterruptedException, KeeperException, IOException {
+    private void setupOnConnect() throws InterruptedException, KeeperException {
       assertNotNull(es);
       TestLeaderElectionContext context =
           new TestLeaderElectionContext(
@@ -531,32 +531,30 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
         };
 
     Thread connLossThread =
-        new Thread() {
-          @Override
-          public void run() {
-
-            while (!stopStress) {
-              try {
-                Thread.sleep(50);
-                int j;
-                j = random().nextInt(threads.size());
+        new Thread(
+            () -> {
+              while (!stopStress) {
                 try {
-                  threads.get(j).es.zkClient.getSolrZooKeeper().closeCnxn();
-                  if (random().nextBoolean()) {
-                    long sessionId = zkClient.getSolrZooKeeper().getSessionId();
-                    server.expire(sessionId);
+                  Thread.sleep(50);
+                  int j;
+                  j = random().nextInt(threads.size());
+                  try {
+                    ZooKeeper zk = threads.get(j).es.zkClient.getZooKeeper();
+                    assertTrue(zk instanceof TestableZooKeeper);
+                    ((TestableZooKeeper) zk).testableConnloss();
+                    if (random().nextBoolean()) {
+                      server.expire(zk.getSessionId());
+                    }
+                  } catch (Exception e) {
+                    e.printStackTrace();
                   }
+                  Thread.sleep(500);
+
                 } catch (Exception e) {
-                  e.printStackTrace();
+
                 }
-                Thread.sleep(500);
-
-              } catch (Exception e) {
-
               }
-            }
-          }
-        };
+            });
 
     scheduleThread.start();
     connLossThread.start();
@@ -582,7 +580,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
 
     // cleanup any threads still running
     for (ClientThread thread : threads) {
-      thread.es.zkClient.getSolrZooKeeper().close();
+      thread.es.zkClient.getZooKeeper().close();
       thread.close();
     }
 

@@ -37,14 +37,13 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NIOFSDirectory;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.util.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -54,7 +53,7 @@ import org.slf4j.LoggerFactory;
 
 // Backups do checksum validation against a footer value not present in 'SimpleText'
 @LuceneTestCase.SuppressCodecs({"SimpleText"})
-@SolrTestCaseJ4.SuppressSSL // Currently unknown why SSL does not work with this test
+@SolrTestCaseJ4.SuppressSSL // Currently, unknown why SSL does not work with this test
 public class TestReplicationHandlerBackup extends SolrJettyTestBase {
 
   JettySolrRunner leaderJetty;
@@ -86,10 +85,9 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
 
   private static SolrClient createNewSolrClient(int port) {
     try {
-      // setup the client...
+      // set up the client...
       final String baseUrl = buildUrl(port, context);
-      HttpSolrClient client = getHttpSolrClient(baseUrl, 15000, 60000);
-      return client;
+      return getHttpSolrClient(baseUrl, 15000, 60000);
     } catch (Exception ex) {
       throw new RuntimeException(ex);
     }
@@ -246,11 +244,11 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
         new BackupStatusChecker(leaderClient, "/" + DEFAULT_TEST_CORENAME + "/replication");
     for (int i = 0; i < 2; i++) {
       final Path p = Paths.get(leader.getDataDir(), "snapshot." + backupNames[i]);
-      assertTrue("WTF: Backup doesn't exist: " + p.toString(), Files.exists(p));
+      assertTrue("WTF: Backup doesn't exist: " + p, Files.exists(p));
       runBackupCommand(
           leaderJetty, ReplicationHandler.CMD_DELETE_BACKUP, "&name=" + backupNames[i]);
       backupStatus.waitForBackupDeletionSuccess(backupNames[i], 30);
-      assertFalse("backup still exists after deletion: " + p.toString(), Files.exists(p));
+      assertFalse("backup still exists after deletion: " + p, Files.exists(p));
     }
   }
 

@@ -19,7 +19,7 @@ package org.apache.solr.cloud.overseer;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -59,7 +59,7 @@ public class ZkCollectionPropsCachingTest extends SolrCloudTestCase {
     CollectionAdminRequest.Create request =
         CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2);
     CollectionAdminResponse response = request.process(cluster.getSolrClient());
-    assertTrue("Unable to create collection: " + response.toString(), response.isSuccess());
+    assertTrue("Unable to create collection: " + response, response.isSuccess());
   }
 
   @Test

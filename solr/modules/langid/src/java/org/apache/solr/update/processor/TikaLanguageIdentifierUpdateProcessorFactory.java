@@ -40,7 +40,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * </pre>
  *
  * See <a
- * href="https://solr.apache.org/guide/language-detection.html#configuring-tika-language-detection">https://solr.apache.org/guide/language-detection.html#configuring-tika-language-detection</a>
+ * href="https://solr.apache.org/guide/solr/latest/indexing-guide/language-detection.html#configuring-tika-language-detection">https://solr.apache.org/guide/solr/latest/indexing-guide/language-detection.html#configuring-tika-language-detection</a>
  *
  * @since 3.5
  */

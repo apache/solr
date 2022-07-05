@@ -102,7 +102,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         "/collections",
         POST,
         "{create:{name:'newcoll', config:'schemaless', numShards:2, replicationFactor:2 }}",
-        null,
         "{name:newcoll, fromApi:'true', replicationFactor:'2', nrtReplicas:'2', collection.configName:schemaless, numShards:'2', operation:create}");
 
     compareOutput(
@@ -110,7 +109,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         "/collections",
         POST,
         "{create:{name:'newcoll', config:'schemaless', numShards:2, nrtReplicas:2 }}",
-        null,
         "{name:newcoll, fromApi:'true', nrtReplicas:'2', replicationFactor:'2', collection.configName:schemaless, numShards:'2', operation:create}");
 
     compareOutput(
@@ -118,16 +116,14 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         "/collections",
         POST,
         "{create:{name:'newcoll', config:'schemaless', numShards:2, nrtReplicas:2, tlogReplicas:2, pullReplicas:2 }}",
-        null,
         "{name:newcoll, fromApi:'true', nrtReplicas:'2', replicationFactor:'2', tlogReplicas:'2', pullReplicas:'2', collection.configName:schemaless, numShards:'2', operation:create}");
 
-    // test a create collection with custom properties
+    // test a create collection operation with custom properties
     compareOutput(
         apiBag,
         "/collections",
         POST,
         "{create:{name:'newcoll', config:'schemaless', numShards:2, replicationFactor:2, properties:{prop1:'prop1val', prop2: prop2val} }}",
-        null,
         "{name:newcoll, fromApi:'true', replicationFactor:'2', nrtReplicas:'2', collection.configName:schemaless, numShards:'2', operation:create, property.prop1:prop1val, property.prop2:prop2val}");
 
     compareOutput(
@@ -135,7 +131,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         "/collections",
         POST,
         "{create-alias:{name: aliasName , collections:[c1,c2] }}",
-        null,
         "{operation : createalias, name: aliasName, collections:\"c1,c2\" }");
 
     compareOutput(
@@ -143,25 +138,18 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         "/collections",
         POST,
         "{delete-alias:{ name: aliasName}}",
-        null,
         "{operation : deletealias, name: aliasName}");
 
     compareOutput(
-        apiBag,
-        "/collections/collName",
-        POST,
-        "{reload:{}}",
-        null,
-        "{name:collName, operation :reload}");
+        apiBag, "/collections/collName", POST, "{reload:{}}", "{name:collName, operation :reload}");
 
     compareOutput(
-        apiBag, "/collections/collName", DELETE, null, null, "{name:collName, operation :delete}");
+        apiBag, "/collections/collName", DELETE, null, "{name:collName, operation :delete}");
 
     compareOutput(
         apiBag,
         "/collections/collName/shards/shard1",
         DELETE,
-        null,
         null,
         "{collection:collName, shard: shard1 , operation :deleteshard }");
 
@@ -170,7 +158,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         "/collections/collName/shards/shard1/replica1?deleteDataDir=true&onlyIfDown=true",
         DELETE,
         null,
-        null,
         "{collection:collName, shard: shard1, replica :replica1 , deleteDataDir:'true', onlyIfDown: 'true', operation :deletereplica }");
 
     compareOutput(
@@ -178,7 +165,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         "/collections/collName/shards",
         POST,
         "{split:{shard:shard1, ranges: '0-1f4,1f5-3e8,3e9-5dc', coreProperties : {prop1:prop1Val, prop2:prop2Val} }}",
-        null,
         "{collection: collName , shard : shard1, ranges :'0-1f4,1f5-3e8,3e9-5dc', operation : splitshard, property.prop1:prop1Val, property.prop2: prop2Val}");
 
     compareOutput(
@@ -186,7 +172,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         "/collections/collName/shards",
         POST,
         "{add-replica:{shard: shard1, node: 'localhost_8978' , coreProperties : {prop1:prop1Val, prop2:prop2Val} }}",
-        null,
         "{collection: collName , shard : shard1, node :'localhost_8978', operation : addreplica, property.prop1:prop1Val, property.prop2: prop2Val}");
 
     compareOutput(
@@ -194,7 +179,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         "/collections/collName/shards",
         POST,
         "{split:{ splitKey:id12345, coreProperties : {prop1:prop1Val, prop2:prop2Val} }}",
-        null,
         "{collection: collName , split.key : id12345 , operation : splitshard, property.prop1:prop1Val, property.prop2: prop2Val}");
 
     compareOutput(
@@ -202,7 +186,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         "/collections/collName/shards",
         POST,
         "{add-replica:{shard: shard1, node: 'localhost_8978' , type:'TLOG' }}",
-        null,
         "{collection: collName , shard : shard1, node :'localhost_8978', operation : addreplica, type: TLOG}");
 
     compareOutput(
@@ -210,7 +193,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         "/collections/collName/shards",
         POST,
         "{add-replica:{shard: shard1, node: 'localhost_8978' , type:'PULL' }}",
-        null,
         "{collection: collName , shard : shard1, node :'localhost_8978', operation : addreplica, type: PULL}");
 
     // TODO annotation-based v2 APIs still miss enum support to validate the 'type' parameter as
@@ -226,7 +208,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         "/collections/collName",
         POST,
         "{add-replica-property : {name:propA , value: VALA, shard: shard1, replica:replica1}}",
-        null,
         "{collection: collName, shard: shard1, replica : replica1 , property : propA , operation : addreplicaprop, property.value : 'VALA'}");
 
     compareOutput(
@@ -234,7 +215,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         "/collections/collName",
         POST,
         "{delete-replica-property : {property: propA , shard: shard1, replica:replica1} }",
-        null,
         "{collection: collName, shard: shard1, replica : replica1 , property : propA , operation : deletereplicaprop}");
 
     compareOutput(
@@ -242,7 +222,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         "/cluster",
         POST,
         "{add-role : {role : overseer, node : 'localhost_8978'} }",
-        null,
         "{operation : addrole ,role : overseer, node : 'localhost_8978'}");
 
     compareOutput(
@@ -250,7 +229,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         "/cluster",
         POST,
         "{remove-role : {role : overseer, node : 'localhost_8978'} }",
-        null,
         "{operation : removerole ,role : overseer, node : 'localhost_8978'}");
 
     compareOutput(
@@ -258,7 +236,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         "/collections/coll1",
         POST,
         "{balance-shard-unique : {property: preferredLeader} }",
-        null,
         "{operation : balanceshardunique ,collection : coll1, property : preferredLeader}");
 
     compareOutput(
@@ -266,7 +243,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         "/collections/coll1",
         POST,
         "{migrate-docs : {forwardTimeout: 1800, target: coll2, splitKey: 'a123!'} }",
-        null,
         "{operation : migrate ,collection : coll1, target.collection:coll2, forward.timeout:1800, split.key:'a123!'}");
 
     compareOutput(
@@ -274,7 +250,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         "/collections/coll1",
         POST,
         "{set-collection-property : {name: 'foo', value:'bar'} }",
-        null,
         "{operation : collectionprop, name : coll1, propertyName:'foo', propertyValue:'bar'}");
   }
 
@@ -283,10 +258,8 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
       final String path,
       final SolrRequest.METHOD method,
       final String payload,
-      final CoreContainer cc,
-      String expectedOutputMapJson)
-      throws Exception {
-    Pair<SolrQueryRequest, SolrQueryResponse> ctx = makeCall(apiBag, path, method, payload, cc);
+      String expectedOutputMapJson) {
+    Pair<SolrQueryRequest, SolrQueryResponse> ctx = makeCall(apiBag, path, method, payload);
     ZkNodeProps output = (ZkNodeProps) ctx.second().getValues().get(ZkNodeProps.class.getName());
     @SuppressWarnings("unchecked")
     Map<String, ?> expected = (Map<String, ?>) fromJSONString(expectedOutputMapJson);
@@ -299,11 +272,9 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
       final String path,
       final SolrRequest.METHOD method,
       final String payload,
-      final CoreContainer cc,
-      String expectedErrorMsg)
-      throws Exception {
+      String expectedErrorMsg) {
     RuntimeException e =
-        expectThrows(RuntimeException.class, () -> makeCall(apiBag, path, method, payload, cc));
+        expectThrows(RuntimeException.class, () -> makeCall(apiBag, path, method, payload));
     assertTrue(
         "Expected exception with error message '"
             + expectedErrorMsg
@@ -313,12 +284,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
   }
 
   public static Pair<SolrQueryRequest, SolrQueryResponse> makeCall(
-      final ApiBag apiBag,
-      String path,
-      final SolrRequest.METHOD method,
-      final String payload,
-      final CoreContainer cc)
-      throws Exception {
+      final ApiBag apiBag, String path, final SolrRequest.METHOD method, final String payload) {
     SolrParams queryParams = new MultiMapSolrParams(Collections.emptyMap());
     if (path.indexOf('?') > 0) {
       String queryStr = path.substring(path.indexOf('?') + 1);

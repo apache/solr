@@ -214,7 +214,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
           continue;
         }
 
-        if (docs == null) { // could have been initialized in the shards info block above
+        if (docs == null) { // could have been initialized in the 'shardInfo' block above
           docs = (SolrDocumentList) srsp.getSolrResponse().getResponse().get("response");
         }
 
@@ -287,7 +287,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
         ShardDoc shardDoc = shardDocs.get(i);
         shardDoc.positionInResponse = i;
         // Need the toString() for correlation with other lists that must
-        // be strings (like keys in highlighting, explain, etc)
+        // be strings (like keys in highlighting, explain, etc.)
         resultIds.put(shardDoc.id.toString(), shardDoc);
       }
 
@@ -353,7 +353,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
 
         DocList docList = rb.getResults().docList;
 
-        // sort ids from lowest to highest so we can access them in order
+        // sort ids from lowest to highest, so we can access them in order
         int nDocs = docList.size();
         final long[] sortedIds = new long[nDocs];
         final float[] scores = new float[nDocs]; // doc scores, parallel to sortedIds
@@ -420,7 +420,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
             }
 
             if (comparator == null) {
-              comparator = sortField.getComparator(1, 0);
+              comparator = sortField.getComparator(1, true);
               leafComparator = comparator.getLeafComparator(currentLeaf);
             }
 
@@ -516,7 +516,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
           continue;
         }
 
-        if (docs == null) { // could have been initialized in the shards info block above
+        if (docs == null) { // could have been initialized in the 'shardInfo' block above
           docs = (SolrDocumentList) srsp.getSolrResponse().getResponse().get("response");
         }
 
@@ -596,7 +596,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
         ShardDoc shardDoc = shardDocs.get(i);
         shardDoc.positionInResponse = i;
         // Need the toString() for correlation with other lists that must
-        // be strings (like keys in highlighting, explain, etc)
+        // be strings (like keys in highlighting, explain, etc.)
         resultIds.put(shardDoc.id.toString(), shardDoc);
       }
 
@@ -681,7 +681,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
       return new LeafCollector() {
 
         @Override
-        public void setScorer(Scorable scorer) throws IOException {}
+        public void setScorer(Scorable scorer) {}
 
         public void collect(int doc) throws IOException {
           long value;
@@ -740,14 +740,14 @@ public class RankQueryTestPlugin extends QParserPlugin {
     }
 
     @Override
-    public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
+    public LeafCollector getLeafCollector(LeafReaderContext context) {
       final int base = context.docBase;
       return new LeafCollector() {
 
         Scorable scorer;
 
         @Override
-        public void setScorer(Scorable scorer) throws IOException {
+        public void setScorer(Scorable scorer) {
           this.scorer = scorer;
         }
 

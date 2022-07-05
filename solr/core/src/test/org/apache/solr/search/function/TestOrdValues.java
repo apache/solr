@@ -17,7 +17,6 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
@@ -28,19 +27,19 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.tests.analysis.MockAnalyzer;
+import org.apache.lucene.tests.index.RandomIndexWriter;
+import org.apache.lucene.tests.search.QueryUtils;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.legacy.LegacyFloatField;
 import org.apache.solr.legacy.LegacyIntField;
@@ -62,7 +61,7 @@ public class TestOrdValues extends SolrTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    createIndex(false);
+    createIndex();
   }
 
   /** Test OrdFieldSource */
@@ -171,7 +170,7 @@ public class TestOrdValues extends SolrTestCase {
   }
 
   /**
-   * Actual score computation order is slightly different than assumptios this allows for a small
+   * Actual score computation order is slightly different from assumed, this allows for a small
    * amount of variation
    */
   protected static float TEST_SCORE_TOLERANCE_DELTA = 0.001f;
@@ -204,7 +203,7 @@ public class TestOrdValues extends SolrTestCase {
   };
 
   protected static Directory dir;
-  protected static Analyzer anlzr;
+  protected static Analyzer analyzer;
 
   @AfterClass
   public static void afterClassFunctionTestSetup() throws Exception {
@@ -212,20 +211,17 @@ public class TestOrdValues extends SolrTestCase {
       dir.close();
     }
     dir = null;
-    anlzr = null;
+    analyzer = null;
   }
 
-  protected static void createIndex(boolean doMultiSegment) throws Exception {
+  protected static void createIndex() throws Exception {
     if (VERBOSE) {
       System.out.println("TEST: setUp");
     }
     // prepare a small index with just a few documents.
     dir = newDirectory();
-    anlzr = new MockAnalyzer(random());
-    IndexWriterConfig iwc = newIndexWriterConfig(anlzr).setMergePolicy(newLogMergePolicy());
-    if (doMultiSegment) {
-      iwc.setMaxBufferedDocs(TestUtil.nextInt(random(), 2, 7));
-    }
+    analyzer = new MockAnalyzer(random());
+    IndexWriterConfig iwc = newIndexWriterConfig(analyzer).setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     // add docs not exactly in natural ID order, to verify we do check the order of docs by scores
     int remaining = N_DOCS;
@@ -241,12 +237,11 @@ public class TestOrdValues extends SolrTestCase {
       i = (i + 4) % N_DOCS;
       remaining--;
     }
-    if (!doMultiSegment) {
-      if (VERBOSE) {
-        System.out.println("TEST: setUp full merge");
-      }
-      iw.forceMerge(1);
+    if (VERBOSE) {
+      System.out.println("TEST: setUp full merge");
     }
+    iw.forceMerge(1);
+
     iw.close();
     if (VERBOSE) {
       System.out.println("TEST: setUp done close");

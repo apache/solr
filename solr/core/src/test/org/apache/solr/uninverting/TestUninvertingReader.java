@@ -41,8 +41,8 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
 import org.apache.solr.legacy.LegacyFieldType;
@@ -281,7 +281,7 @@ public class TestUninvertingReader extends SolrTestCase {
 
     final int NUM_LEAVES = ir.leaves().size();
 
-    // check the leaves: no more then total set size
+    // check the leaves: no more than total set size
     for (LeafReaderContext rc : ir.leaves()) {
       final LeafReader ar = rc.reader();
       for (String f : UNINVERT_MAP.keySet()) {
@@ -294,7 +294,7 @@ public class TestUninvertingReader extends SolrTestCase {
                 + " values per segment, got "
                 + valSetSize
                 + " from: "
-                + ar.toString(),
+                + ar,
             valSetSize <= EXPECTED_VALSET_SIZE);
 
         if (1 == NUM_LEAVES && MULTI_VALUES.contains(f)) {

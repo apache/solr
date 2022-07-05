@@ -152,7 +152,7 @@ public class TestWriterPerf extends SolrTestCaseJ4 {
         t1,
         "Great works are performed, not by strength, but by perseverance.",
         tag,
-        "herculese",
+        "hercules",
         tag,
         "strong",
         tag,

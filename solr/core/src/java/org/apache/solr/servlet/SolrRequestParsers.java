@@ -220,7 +220,7 @@ public class SolrRequestParsers {
       if (!enableRemoteStreams) {
         throw new SolrException(
             ErrorCode.BAD_REQUEST,
-            "Remote Streaming is disabled. See https://solr.apache.org/guide/requestdispatcher-in-solrconfig.html for help");
+            "Remote Streaming is disabled. See https://solr.apache.org/guide/solr/latest/configuration-guide/requestdispatcher.html for help");
       }
       for (final String file : strs) {
         ContentStreamBase stream = new ContentStreamBase.FileStream(new File(file));
@@ -237,7 +237,7 @@ public class SolrRequestParsers {
       if (!enableStreamBody) {
         throw new SolrException(
             ErrorCode.BAD_REQUEST,
-            "Stream Body is disabled. See https://solr.apache.org/guide/requestdispatcher-in-solrconfig.html for help");
+            "Stream Body is disabled. See https://solr.apache.org/guide/solr/latest/configuration-guide/requestdispatcher.html for help");
       }
       for (final String body : strs) {
         ContentStreamBase stream = new ContentStreamBase.StringStream(body);

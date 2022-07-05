@@ -27,7 +27,7 @@
       }
     },
     "update":{
-      "class":"solr.UpdateRequestHandlerApi",
+      "class":"solr.V2UpdateRequestHandler",
       "useParams": "_UPDATE_JSON_DOCS"
     },
     "/config": {

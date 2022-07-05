@@ -186,6 +186,10 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
         (options.accuracy == Float.MIN_VALUE) ? checker.getAccuracy() : options.accuracy;
 
     for (Token token : options.tokens) {
+      if (token.length() == 0) {
+        result.add(token, Collections.emptyList());
+        continue;
+      }
       String tokenText = token.toString();
       Term term = new Term(field, tokenText);
       int freq = options.reader.docFreq(term);

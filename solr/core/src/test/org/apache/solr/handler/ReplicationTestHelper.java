@@ -25,7 +25,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Properties;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -63,9 +63,8 @@ public final class ReplicationTestHelper {
 
   public static HttpSolrClient createNewSolrClient(String baseUrl) {
     try {
-      // setup the client...
-      HttpSolrClient client = SolrTestCaseJ4.getHttpSolrClient(baseUrl, 15000, 90000);
-      return client;
+      // set up the client...
+      return SolrTestCaseJ4.getHttpSolrClient(baseUrl, 15000, 90000);
     } catch (Exception ex) {
       throw new RuntimeException(ex);
     }

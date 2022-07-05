@@ -124,7 +124,7 @@ public class AnalyticsTestQParserPlugin extends QParserPlugin {
         @SuppressWarnings({"rawtypes"})
         NamedList analytics = (NamedList) response.get("analytics");
         Integer c = (Integer) analytics.get("mycount");
-        count += c.intValue();
+        count += c;
       }
 
       merged.add("mycount", count);
@@ -143,7 +143,7 @@ public class AnalyticsTestQParserPlugin extends QParserPlugin {
         @SuppressWarnings({"rawtypes"})
         NamedList analytics = (NamedList) response.get("analytics");
         Integer c = (Integer) analytics.get("mycount");
-        count += c.intValue();
+        count += c;
       }
 
       ModifiableSolrParams params = new ModifiableSolrParams();
@@ -165,7 +165,7 @@ public class AnalyticsTestQParserPlugin extends QParserPlugin {
         @SuppressWarnings({"rawtypes"})
         NamedList analytics = (NamedList) response.getResponse().get("analytics");
         Integer c = (Integer) analytics.get("mycount");
-        nextCount += c.intValue();
+        nextCount += c;
       }
 
       @SuppressWarnings({"rawtypes"})

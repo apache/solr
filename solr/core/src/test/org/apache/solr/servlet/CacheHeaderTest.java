@@ -36,11 +36,10 @@ import org.junit.Test;
 
 /** A test case for the several HTTP cache headers emitted by Solr */
 public class CacheHeaderTest extends CacheHeaderTestBase {
-  private static File solrHomeDirectory;
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    solrHomeDirectory = createTempDir().toFile();
+    File solrHomeDirectory = createTempDir().toFile();
     setupJettyTestHome(solrHomeDirectory, "collection1");
     createAndStartJetty(solrHomeDirectory.getAbsolutePath());
   }
@@ -52,7 +51,7 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
 
   @Test
   public void testCacheVetoHandler() throws Exception {
-    File f = makeFile(CONTENTS);
+    File f = makeFile(CacheHeaderTest.CONTENTS, StandardCharsets.UTF_8.name());
     HttpRequestBase m =
         getUpdateMethod(
             "GET",
@@ -181,7 +180,7 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
     String etag = head.getValue();
 
     // If-None-Match tests
-    // we set a non matching ETag
+    // we set a non-matching ETag
     get = getSelectMethod(method);
     get.addHeader("If-None-Match", "\"xyz123456\"");
     response = getClient().execute(get);
@@ -213,7 +212,7 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
         response.getStatusLine().getStatusCode());
 
     // If-Match tests
-    // we set a non matching ETag
+    // we set a non-matching ETag
     get = getSelectMethod(method);
     get.addHeader("If-Match", "\"xyz123456\"");
     response = getClient().execute(get);
@@ -268,10 +267,6 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
       head = response.getFirstHeader("Expires");
       assertNotNull("We got no Expires header in response", head);
     }
-  }
-
-  protected File makeFile(String contents) {
-    return makeFile(contents, StandardCharsets.UTF_8.name());
   }
 
   protected File makeFile(String contents, String charset) {

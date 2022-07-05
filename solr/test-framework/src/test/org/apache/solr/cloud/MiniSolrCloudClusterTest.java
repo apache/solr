@@ -24,7 +24,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -65,9 +65,12 @@ public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
           };
       fail("Expected an exception to be thrown from MiniSolrCloudCluster");
     } catch (Exception e) {
-      assertEquals("Error starting up MiniSolrCloudCluster", e.getMessage());
+      assertEquals("Incorrect exception", "Error starting up MiniSolrCloudCluster", e.getMessage());
       assertEquals("Expected one suppressed exception", 1, e.getSuppressed().length);
-      assertEquals("Fake exception on startup!", e.getSuppressed()[0].getMessage());
+      assertEquals(
+          "Incorrect suppressed exception",
+          "Fake exception on startup!",
+          e.getSuppressed()[0].getMessage());
     } finally {
       if (cluster != null) cluster.shutdown();
     }

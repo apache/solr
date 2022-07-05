@@ -61,7 +61,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   public static final String METRICS_PREFIX = "metrics:";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final CloudSolrClient solrClient;
+  private final CloudLegacySolrClient solrClient;
   protected final Map<String, Map<String, Map<String, List<Replica>>>>
       nodeVsCollectionVsShardVsReplicaInfo = new HashMap<>();
   private Map<String, Object> snitchSession = new HashMap<>();
@@ -69,7 +69,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   @SuppressWarnings({"rawtypes"})
   private Map<String, Map> nodeVsTags = new HashMap<>();
 
-  public SolrClientNodeStateProvider(CloudSolrClient solrClient) {
+  public SolrClientNodeStateProvider(CloudLegacySolrClient solrClient) {
     this.solrClient = solrClient;
     try {
       readReplicaDetails();
@@ -324,7 +324,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     ZkClientClusterStateProvider zkClientClusterStateProvider;
-    CloudSolrClient solrClient;
+    CloudLegacySolrClient solrClient;
 
     public boolean isNodeAlive(String node) {
       if (zkClientClusterStateProvider != null) {
@@ -337,7 +337,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
         SnitchInfo perSnitch,
         String node,
         Map<String, Object> session,
-        CloudSolrClient solrClient) {
+        CloudLegacySolrClient solrClient) {
       super(perSnitch, node, session);
       this.solrClient = solrClient;
       this.zkClientClusterStateProvider =
@@ -395,7 +395,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       String url = zkClientClusterStateProvider.getZkStateReader().getBaseUrlForNodeName(solrNode);
 
       GenericSolrRequest request = new GenericSolrRequest(SolrRequest.METHOD.POST, path, params);
-      try (HttpSolrClient client =
+      try (var client =
           new HttpSolrClient.Builder()
               .withHttpClient(solrClient.getHttpClient())
               .withBaseSolrUrl(url)

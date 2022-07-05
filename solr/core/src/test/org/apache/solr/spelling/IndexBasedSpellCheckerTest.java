@@ -18,6 +18,7 @@ package org.apache.solr.spelling;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.Map;
@@ -35,7 +36,7 @@ import org.apache.lucene.search.spell.SuggestMode;
 import org.apache.lucene.search.spell.SuggestWord;
 import org.apache.lucene.search.spell.SuggestWordFrequencyComparator;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase.SuppressTempFileChecks;
+import org.apache.lucene.tests.util.LuceneTestCase.SuppressTempFileChecks;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -80,7 +81,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testComparator() throws Exception {
+  public void testComparator() {
     SpellCheckComponent component =
         (SpellCheckComponent) h.getCore().getSearchComponent("spellcheck");
     assertNotNull(component);
@@ -188,6 +189,14 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
               assertTrue(
                   entry.getValue() + " does not equal: " + SpellingResult.NO_FREQUENCY_INFO,
                   entry.getValue() == SpellingResult.NO_FREQUENCY_INFO);
+
+              // Check empty token due to spellcheck.q = ""
+              spellOpts.tokens = Collections.singletonList(new Token("", 0, 0));
+              result = checker.getSuggestions(spellOpts);
+              assertNotNull(result);
+              suggestions = result.get(spellOpts.tokens.iterator().next());
+              assertNotNull(suggestions);
+              assertTrue("suggestions should be empty", suggestions.isEmpty());
               return null;
             });
   }

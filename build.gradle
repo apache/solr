@@ -23,7 +23,7 @@ plugins {
   id "com.palantir.consistent-versions" version "2.8.0"
   id "org.owasp.dependencycheck" version "6.5.3"
   id 'ca.cutterslade.analyze' version "1.8.3"
-  id 'de.thetaphi.forbiddenapis' version '3.2' apply false
+  id 'de.thetaphi.forbiddenapis' version '3.3' apply false
   id "de.undercouch.download" version "4.0.2" apply false
   id "net.ltgt.errorprone" version "2.0.2" apply false
   id 'com.diffplug.spotless' version "6.3.0" apply false
@@ -207,3 +207,5 @@ apply from: file('gradle/ant-compat/solr.post-jar.gradle')
 
 apply from: file('gradle/node.gradle')
 
+sourceCompatibility = JavaVersion.VERSION_17
+targetCompatibility = JavaVersion.VERSION_17

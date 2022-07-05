@@ -136,7 +136,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
       ++ihCount;
       assertEquals(pathToClassMap.get("/debug/dump"), "solr.DumpRequestHandler");
       ++ihCount;
-      assertEquals(pathToClassMap.get("update"), "solr.UpdateRequestHandlerApi");
+      assertEquals(pathToClassMap.get("update"), "solr.V2UpdateRequestHandler");
       ++ihCount;
       assertEquals(pathToClassMap.get("/tasks/cancel"), "solr.QueryCancellationHandler");
       ++ihCount;
@@ -163,7 +163,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRefCount() throws Exception {
+  public void testRefCount() {
     SolrCore core = h.getCore();
     assertTrue("Refcount != 1", core.getOpenCount() == 1);
 
@@ -269,7 +269,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testInfoRegistry() throws Exception {
+  public void testInfoRegistry() {
     // TEst that SolrInfoMBeans are registered, including SearchComponents
     SolrCore core = h.getCore();
 
@@ -289,7 +289,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testConfiguration() throws Exception {
+  public void testConfiguration() {
     assertEquals(
         "wrong config for slowQueryThresholdMillis", 2000, solrConfig.slowQueryThresholdMillis);
     assertEquals("wrong config for maxBooleanClauses", 1024, solrConfig.booleanQueryMaxClauseCount);

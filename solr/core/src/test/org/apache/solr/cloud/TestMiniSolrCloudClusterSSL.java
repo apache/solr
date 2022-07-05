@@ -31,12 +31,13 @@ import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.lucene.tests.util.TestRuleRestoreSystemProperties;
 import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.TestRuleRestoreSystemProperties;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -112,7 +113,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
 
   public void testNoSslButSillyClientAuth() throws Exception {
     // this combination doesn't really make sense, since ssl==false the clientauth option will be
-    // ignored but we test it anyway for completeness of sanity checking the behavior of code that
+    // ignored, but we test it anyway for completeness of checking the behavior of code that
     // looks at those options.
     final SSLTestConfig sslConfig = new SSLTestConfig(false, true);
     HttpClientUtil.setSocketFactoryRegistryProvider(
@@ -171,8 +172,8 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
     try {
       checkClusterWithCollectionCreations(cluster, sslConfig);
 
-      // Change the defaul SSLContext to match our test config, or to match our original system
-      // default if our test config doesn't use SSL, and reset HttpClientUtil to it's defaults so it
+      // Change the default SSLContext to match our test config, or to match our original system
+      // default if our test config doesn't use SSL, and reset HttpClientUtil to its defaults, so it
       // picks up our SSLContext that way.
       SSLContext.setDefault(
           sslConfig.isSSLMode() ? sslConfig.buildClientSSLContext() : DEFAULT_SSL_CONTEXT);
@@ -292,7 +293,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
   }
 
   /**
-   * verify that we can query all of the Jetty instances the specified cluster using the expected
+   * verify that we can query all the Jetty instances of the specified cluster using the expected
    * options (based on the sslConfig), and that we can <b>NOT</b> query the Jetty instances in
    * specified cluster in the ways that should fail (based on the sslConfig)
    *
@@ -320,7 +321,8 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
       // ensure it has the necessary protocols/credentials for each jetty server
       //
       // NOTE: we're not responsible for closing the cloud client
-      final HttpClient cloudClient = cluster.getSolrClient().getLbClient().getHttpClient();
+      final HttpClient cloudClient =
+          ((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient();
       try (HttpSolrClient client = getRandomizedHttpSolrClient(baseURL)) {
         assertEquals(0, CoreAdminRequest.getStatus(/* all */ null, client).getStatus());
       }
@@ -396,8 +398,8 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
   private static CloseableHttpClient getSslAwareClientWithNoClientCerts() throws Exception {
 
     // NOTE: This method explicitly does *NOT* use HttpClientUtil code because that
-    // will muck with the global static HttpClientBuilder / SchemeRegistryProvider
-    // and we can't do that and still test the entire purpose of what we are trying to test here.
+    // will change the global static HttpClientBuilder / SchemeRegistryProvider, and
+    // we can't do that and still test the entire purpose of what we are trying to test here.
 
     final SSLTestConfig clientConfig = new SSLTestConfig(true, false);
 

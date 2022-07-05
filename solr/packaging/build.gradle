@@ -48,22 +48,8 @@ artifacts {
 }
 
 dependencies {
-  [":solr:modules:analysis-extras",
-   ":solr:modules:analytics",
-   ":solr:modules:extraction",
-   ":solr:modules:clustering",
-   ":solr:modules:gcs-repository",
-   ":solr:modules:hadoop-auth",
-   ":solr:modules:hdfs",
-   ":solr:modules:jaegertracer-configurator",
-   ":solr:modules:jwt-auth",
-   ":solr:modules:langid",
-   ":solr:modules:ltr",
-   ":solr:modules:s3-repository",
-   ":solr:modules:scripting",
-   ":solr:modules:sql"
-  ].each { moduleName ->
-    modules project(path: moduleName, configuration: "packaging")
+  project(":solr:modules").childProjects.values().stream().map(project -> project.path).each { module ->
+    modules project(path: module, configuration: "packaging")
   }
 
   prometheusExporter project(path: ":solr:prometheus-exporter", configuration: "packaging")
@@ -97,6 +83,10 @@ distributions {
         exclude "licenses/README.committers.txt"
         include "CHANGES.txt"
         include "README.md"
+      })
+
+      from ('static/lib', {
+        into 'lib'
       })
 
       from(configurations.modules, {
@@ -183,18 +173,26 @@ task integrationTests(type: BatsTask) {
 
   def integrationTestOutput = "$buildDir/test-output"
   def solrHome = "$integrationTestOutput/solr-home"
+  def solrTestFailuresDir = "$integrationTestOutput/failure-snapshots"
 
+  inputs.dir(distDir)
   outputs.dir(integrationTestOutput)
-  outputs.dir(solrHome)
 
   doFirst {
+    delete integrationTestOutput
+    mkdir integrationTestOutput
+    mkdir solrHome
+    mkdir solrTestFailuresDir
+
     // TODO - if quiet then don't tee
     standardOutput = new TeeOutputStream(System.out, new FileOutputStream("$integrationTestOutput/test-output.txt"))
+
   }
 
   environment SOLR_TIP: distDir.toString()
   environment SOLR_HOME: solrHome
   environment SOLR_LOGS_DIR: "$solrHome/logs"
+  environment TEST_FAILURE_DIR: solrTestFailuresDir
   environment BATS_LIB_PREFIX: "$nodeProjectDir/node_modules"
 }
 
@@ -217,6 +215,7 @@ class BatsTask extends Exec {
     executable "$project.ext.nodeProjectDir/node_modules/bats/bin/bats"
 
     // Note: tests to run must be listed after all other arguments
+    // Additional debugging output: -x, --verbose-run
     setArgs(['--print-output-on-failure'] + (testFiles.empty ? testDir : testFiles))
 
     super.exec()
