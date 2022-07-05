@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
 @LuceneTestCase.Slow
 @SolrTestCaseJ4.SuppressSSL
 public class CollectionPropsTest extends SolrCloudTestCase {
-  public static final int TIMEOUT = 5000;
+  private static final int TIMEOUT = 5000;
   private String collectionName;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
