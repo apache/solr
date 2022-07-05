@@ -93,7 +93,6 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
                               MiniSolrCloudCluster.TEST_URL_ALLOW_LIST,
                               EXPLICIT_ALLOW_LIST_PROPERTY + clusterId))
                       .build();
-              return cluster;
             } catch (Exception e) {
               throw new RuntimeException(e);
             }

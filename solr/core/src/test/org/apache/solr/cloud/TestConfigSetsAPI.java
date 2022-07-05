@@ -1344,7 +1344,6 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
             + "    'class':'"
             + MockAuthorizationPlugin.class.getName()
             + "'}}";
-    return securityJson;
   }
 
   private void uploadConfigSetWithAssertions(String configSetName, String suffix, String username)
