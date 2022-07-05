@@ -1574,7 +1574,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
   @Test
   public void testRandomGrouping() throws Exception {
-    /**
+    /*
      * updateJ("{\"add\":{\"doc\":{\"id\":\"77\"}}}", params("commit","true"));
      * assertJQ(req("q","id:77"), "/response/numFound==1");
      *

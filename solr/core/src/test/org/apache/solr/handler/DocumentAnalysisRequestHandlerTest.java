@@ -118,7 +118,7 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
       this.bytes = bytes;
       this.contentType = contentType;
       name = null;
-      size = Long.valueOf(bytes.length);
+      size = (long) bytes.length;
       sourceInfo = "rawBytes";
     }
 
@@ -134,7 +134,7 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
   }
 
   // This test should also test charset detection in UpdateRequestHandler,
-  // but the DocumentAnalysisRequestHandler is simplier to use/check.
+  // but the DocumentAnalysisRequestHandler is simpler to use/check.
   @Test
   public void testCharsetInDocument() throws Exception {
     final byte[] xmlBytes =
@@ -168,7 +168,7 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
   }
 
   // This test should also test charset detection in UpdateRequestHandler,
-  // but the DocumentAnalysisRequestHandler is simplier to use/check.
+  // but the DocumentAnalysisRequestHandler is simpler to use/check.
   @Test
   public void testCharsetOutsideDocument() throws Exception {
     final byte[] xmlBytes =

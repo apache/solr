@@ -142,7 +142,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
   @After
   public void afterTest() throws Exception {
     if (null == metricManager) {
-      return; // test failed to init, nothing to cleanup
+      return; // test failed to init, nothing to clean up
     }
 
     metricManager.closeReporters(coreMetricManager.getRegistryName());

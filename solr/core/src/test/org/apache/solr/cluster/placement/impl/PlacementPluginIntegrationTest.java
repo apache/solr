@@ -377,7 +377,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
       fail("should have failed due to no nodes with the types: " + rsp);
     } catch (Exception e) {
       assertTrue(
-          "should contain 'no nodes with types':" + e.toString(),
+          "should contain 'no nodes with types':" + e,
           e.toString().contains("no nodes with types"));
     }
     System.setProperty(AffinityPlacementConfig.NODE_TYPE_SYSPROP, "type_0");

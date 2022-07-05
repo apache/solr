@@ -922,9 +922,9 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
             + numberOfNodesToCreateOn
             + " is not allowed to be higher than numberOfNodes "
             + numberOfNodes,
-        numberOfNodes.intValue() >= numberOfNodesToCreateOn.intValue());
+        numberOfNodes >= numberOfNodesToCreateOn);
     assertTrue(
-        "Wrong usage of testTemplage. createNodeListOption has to be "
+        "Wrong usage of testTemplate. createNodeListOption has to be "
             + CreateNodeListOptions.SEND
             + " when numberOfNodes and numberOfNodesToCreateOn are unequal",
         ((createNodeListOption == CreateNodeListOptions.SEND)

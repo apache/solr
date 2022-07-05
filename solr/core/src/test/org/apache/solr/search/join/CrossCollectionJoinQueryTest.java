@@ -101,7 +101,7 @@ public class CrossCollectionJoinQueryTest extends SolrCloudTestCase {
       }
     }
 
-    // some extra docs in each collection (not counded in NUM_PRODUCTS) that should drop out of the
+    // some extra docs in each collection (not counted in NUM_PRODUCTS) that should drop out of the
     // joins because they don't have the join key
     productDocs.add(
         new SolrInputDocument(
@@ -282,7 +282,7 @@ public class CrossCollectionJoinQueryTest extends SolrCloudTestCase {
                 "{!join method=crossCollection solrUrl=\"%s\" fromIndex=products from=product_id_i to=product_id_i}size_s:M",
                 "http://bogus.example.com:8983/solr"),
             true);
-        fail("The query invovling bogus.example.com should not succeed");
+        fail("The query involving bogus.example.com should not succeed");
       } catch (Exception e) {
         // should get here.
         String message = e.getMessage();

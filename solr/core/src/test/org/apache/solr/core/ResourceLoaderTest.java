@@ -225,7 +225,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     // check "lib/aLibFile"
     assertNotNull(loader.getClassLoader().getResource("aLibFile"));
 
-    // add inidividual jars from other paths
+    // add individual jars from other paths
     loader.addToClassLoader(
         Collections.singletonList(otherLib.resolve("jar2.jar").toUri().toURL()));
 

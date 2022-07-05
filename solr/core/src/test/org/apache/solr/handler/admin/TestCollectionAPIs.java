@@ -121,7 +121,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         null,
         "{name:newcoll, fromApi:'true', nrtReplicas:'2', replicationFactor:'2', tlogReplicas:'2', pullReplicas:'2', collection.configName:schemaless, numShards:'2', operation:create}");
 
-    // test a create collection with custom properties
+    // test a create collection operation with custom properties
     compareOutput(
         apiBag,
         "/collections",

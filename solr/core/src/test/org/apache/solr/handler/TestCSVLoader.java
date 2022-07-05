@@ -158,7 +158,7 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
     assertQ(req("id:100"), "//arr[@name='str_s']/str[.='quoted']");
     assertQ(req("id:101"), "count(//str[@name='str_s'])=0");
     // 102 is a quoted zero length field ,"", as opposed to ,,
-    // but we can't distinguish this case (and it's debateable
+    // but we can't distinguish this case (and it's debatable
     // if we should).  Does CSV have a way to specify missing
     // from zero-length?
     assertQ(req("id:102"), "count(//str[@name='str_s'])=0");

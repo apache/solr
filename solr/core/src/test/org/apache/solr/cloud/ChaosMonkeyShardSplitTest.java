@@ -164,7 +164,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
     checkDocCountsAndShardStates(docCounts, numReplicas, documentIds);
 
     // todo - can't call waitForThingsToLevelOut because it looks for
-    // jettys of all shards
+    // all the jetty instances of all shards
     // and the new sub-shards don't have any.
     waitForRecoveriesToFinish(true);
     // waitForThingsToLevelOut(15);

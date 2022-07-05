@@ -102,7 +102,7 @@ public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
             "id", "44",
             "title", "Why the LazY dog was lazy",
             "body",
-                "News flash: Lazy Dog was not actually lazy, it just seemd so compared to Fox"));
+                "News flash: Lazy Dog was not actually lazy, it just seemed so compared to Fox"));
     CLOUD_CLIENT.add(
         sdoc(
             "id", "45",
@@ -128,7 +128,7 @@ public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
     final String expected = " did  a Quick    {brown FOX} perniciously jump over {the lazy dog}";
 
     // based on the documents indexed, these assertions should all pass regardless of
-    // how many shards we have, or wether the request is done via /phrases or /select...
+    // how many shards we have, or whether the request is done via /phrases or /select...
     for (String path : Arrays.asList("/select", "/phrases")) {
       // ... or if we muck with "q" and use the alternative phrases.q for the bits we care about...
       for (SolrParams p :
@@ -152,13 +152,11 @@ public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
 
           final NamedList<Object> lazy_dog = details.get(0);
           assertEquals("dog text", "the lazy dog", lazy_dog.get("text"));
-          assertEquals(
-              "dog score", 0.166666D, ((Double) lazy_dog.get("score")).doubleValue(), 0.000001D);
+          assertEquals("dog score", 0.166666D, (Double) lazy_dog.get("score"), 0.000001D);
 
           final NamedList<Object> brown_fox = details.get(1);
           assertEquals("fox text", "brown FOX", brown_fox.get("text"));
-          assertEquals(
-              "fox score", 0.083333D, ((Double) brown_fox.get("score")).doubleValue(), 0.000001D);
+          assertEquals("fox score", 0.083333D, (Double) brown_fox.get("score"), 0.000001D);
 
         } catch (AssertionError e) {
           throw new AssertionError(e.getMessage() + " ::: " + path + " ==> " + rsp, e);

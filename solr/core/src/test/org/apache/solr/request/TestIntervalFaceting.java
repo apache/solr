@@ -375,7 +375,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
       docFields[8] = "test_f";
       docFields[9] = String.valueOf(randomFloat(cardinality));
       docFields[10] = "test_d";
-      docFields[11] = String.valueOf(raondomDouble(cardinality));
+      docFields[11] = String.valueOf(randomDouble(cardinality));
       docFields[12] = "test_dt";
       docFields[13] = dateFormat.format(new Date(randomMs(cardinality)));
       for (int j = 14; j < docFields.length; ) {
@@ -388,7 +388,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
         docFields[j++] = "test_fs";
         docFields[j++] = String.valueOf(randomFloat(cardinality));
         docFields[j++] = "test_ds";
-        docFields[j++] = String.valueOf(raondomDouble(cardinality));
+        docFields[j++] = String.valueOf(randomDouble(cardinality));
         docFields[j++] = "test_dts";
         docFields[j++] = dateFormat.format(new Date(randomMs(cardinality)));
       }
@@ -409,7 +409,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
         + random().nextInt(cardinality) * 1000 * (random().nextBoolean() ? 1 : -1);
   }
 
-  double raondomDouble(int cardinality) {
+  double randomDouble(int cardinality) {
     if (rarely()) {
       int num = random().nextInt(4);
       if (num == 0) return Double.NEGATIVE_INFINITY;
@@ -564,8 +564,8 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     } else {
       switch (ft.getNumberType()) {
         case DOUBLE:
-          values[0] = raondomDouble(max);
-          values[1] = raondomDouble(max);
+          values[0] = randomDouble(max);
+          values[1] = randomDouble(max);
           break;
         case FLOAT:
           values[0] = randomFloat(max);
@@ -1032,13 +1032,13 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     }
     for (long l : lowerThanStart) {
       assertEquals(
-          "Value " + l + " should be LOWER_THAN_START for inteval " + interval,
+          "Value " + l + " should be LOWER_THAN_START for interval " + interval,
           IntervalCompareResult.LOWER_THAN_START,
           interval.includes(l));
     }
     for (long l : graterThanEnd) {
       assertEquals(
-          "Value " + l + " should be GRATER_THAN_END for inteval " + interval,
+          "Value " + l + " should be GRATER_THAN_END for interval " + interval,
           IntervalCompareResult.GREATER_THAN_END,
           interval.includes(l));
     }
@@ -1524,7 +1524,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     assertU(adoc("id", "3", "test_i_dv", "2"));
     assertU(commit());
 
-    // Don't close this client, it would shutdown the CoreContainer
+    // Don't close this client, it would shut down the CoreContainer
     @SuppressWarnings("resource")
     SolrClient client = new EmbeddedSolrServer(h.getCoreContainer(), h.coreName);
 
@@ -1641,7 +1641,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     }
 
     assertQ(
-        "Unexpected facet iterval count. Field:"
+        "Unexpected facet interval count. Field:"
             + field
             + ", Intervals: "
             + Arrays.toString(intervals)

@@ -519,8 +519,8 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     log.info("Updating the documents...");
     Collections.shuffle(ids, r); // so updates aren't applied in the same order as our 'set'
     for (int id : ids) {
-      // all incremements will use some value X such that 20 < abs(X)
-      // thus ensuring that after all incrememnts are done, there should be
+      // all increments will use some value X such that 20 < abs(X)
+      // thus ensuring that after all increments are done, there should be
       // 0 test docs matching the query inplace_updatable_float:[-10 TO 10]
       final float inc = (r.nextBoolean() ? -1.0F : 1.0F) * (r.nextFloat() + (float) atLeast(20));
       assert 20 < Math.abs(inc);
@@ -636,8 +636,8 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
    * assertDocIdsAndValuesInResults
    *
    * @param debug used in log and assertion messages
-   * @param req the query to execut, should include rows &amp; sort params such that the results can
-   *     be compared to luceneDocids and valuesList
+   * @param req the query to execute, should include rows &amp; sort params such that the results
+   *     can be compared to luceneDocids and valuesList
    * @param luceneDocids a list of "[docid]" values to be tested against each doc in the req results
    *     (in order)
    * @param fieldName used to get value from the doc to validate with valuesList
@@ -662,8 +662,9 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       SolrDocumentList results = null;
       // For each client, do a (sorted) sanity check query to confirm searcher has been re-opened
       // after our update -- if the numFound matches our expectations, then verify the inplace float
-      // value and [docid] of each result doc against our expecations to ensure that the values were
-      // updated properly w/o the doc being completley re-added internally. (ie: truly inplace)
+      // value and [docid] of each result doc against our expectations to ensure that the values
+      // were
+      // updated properly w/o the doc being completely re-added internally. (ie: truly inplace)
       RETRY:
       for (int attempt = 0; attempt <= NUM_RETRIES; attempt++) {
         log.info("Attempt #{} checking {}", attempt, msg);
@@ -680,8 +681,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
                   + "; results=> "
                   + results);
         }
-        log.info(
-            "numFound missmatch, searcher may not have re-opened yet.  Will sleep an retry...");
+        log.info("numFound mismatch, searcher may not have re-opened yet.  Will sleep an retry...");
         Thread.sleep(WAIT_TIME);
       }
 
@@ -690,7 +690,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
   }
 
   /**
-   * Given a result list sorted by "id", asserts that the "[docid] and "inplace_updatable_float"
+   * Given a result list sorted by "id", asserts that the "[docid]" and "inplace_updatable_float"
    * values for each document match in order.
    *
    * @param msgPre used as a prefix for assertion messages
@@ -724,8 +724,8 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       final int id = Integer.parseInt(doc.get("id").toString());
       final Object val = doc.get(fieldName);
       final Object docid = doc.get("[docid]");
-      assertEquals(msgPre + " wrong val for " + doc.toString(), valuesList.get(id), val);
-      assertEquals(msgPre + " wrong [docid] for " + doc.toString(), luceneDocids.get(id), docid);
+      assertEquals(msgPre + " wrong val for " + doc, valuesList.get(id), val);
+      assertEquals(msgPre + " wrong [docid] for " + doc, luceneDocids.get(id), docid);
     }
   }
 
@@ -920,7 +920,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     }
 
     // Reordering needs to happen using parallel threads, since some of these updates will
-    // be blocking calls, waiting for some previous updates to arrive on which it depends.
+    // be blocking calls, waiting for some previous update operations to arrive on which it depends.
     ExecutorService threadpool =
         ExecutorUtil.newMDCAwareFixedThreadPool(
             updates.size() + 1, new SolrNamedThreadFactory(getTestName()));
@@ -1403,7 +1403,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     assertNotNull("expected contains no name: " + expected, fieldName);
     FieldResponse rsp = new Field(fieldName).process(this.cloudClient);
     assertNotNull("Field Null Response: " + fieldName, rsp);
-    assertEquals("Field Status: " + fieldName + " => " + rsp.toString(), 0, rsp.getStatus());
+    assertEquals("Field Status: " + fieldName + " => " + rsp, 0, rsp.getStatus());
     assertEquals("Field: " + fieldName, expected, rsp.getField());
   }
 
@@ -1535,7 +1535,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
   }
 
   /**
-   * Convinience method variant that never uses <code>initFloat</code>
+   * Convenience method variant that never uses <code>initFloat</code>
    *
    * @see #buildRandomIndex(Float,List)
    */
@@ -1560,7 +1560,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
   protected List<Long> buildRandomIndex(Float initFloat, List<Integer> specialIds)
       throws Exception {
 
-    int id = -1; // used for non special docs
+    int id = -1; // used for non-special docs
     final int numPreDocs =
         rarely() || onlyLeaderIndexes ? TestUtil.nextInt(random(), 0, 9) : atLeast(10);
     for (int i = 1; i <= numPreDocs; i++) {
@@ -1625,7 +1625,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     updates.add(regularUpdateRequest("id", 1, "inplace_updatable_float", map("inc", 1)));
     updates.add(regularDeleteByQueryRequest("inplace_updatable_float:14"));
 
-    // The second request will be delayed very very long, so that the next update actually gives up
+    // The second request will be delayed very, very long, so that the next update actually gives up
     // waiting for this and fetches a full update from the leader.
     shardToJetty
         .get(SHARD1)

@@ -102,7 +102,7 @@ public class PeerSyncWithBufferUpdatesTest extends BaseDistributedSearchTestCase
     // client1 should be able to sync
     assertSync(client1, numVersions, true, shardsArr[0]);
 
-    // on-wire updates arrived on jetty1
+    // on-wire updates arrived at jetty1
     add(client1, seenLeader, sdoc("id", "21", "_version_", v - 2));
     add(client1, seenLeader, sdoc("id", "22", "_version_", v - 1));
 
@@ -132,7 +132,7 @@ public class PeerSyncWithBufferUpdatesTest extends BaseDistributedSearchTestCase
       if (docIds.size() < 10) kindOfUpdate = 0;
       // TODO test atomic update
       if (kindOfUpdate <= 50) {
-        // add a new document update, may by duplicate with the current one
+        // add a new document update, may be duplicate with the current one
         int val = random().nextInt(1000);
         int docId = random().nextInt(10000);
         docIds.add(docId);

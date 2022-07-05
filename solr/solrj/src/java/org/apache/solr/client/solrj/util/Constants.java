@@ -17,26 +17,12 @@
 
 package org.apache.solr.client.solrj.util;
 
-import java.util.StringTokenizer;
-
 // Clone of org.apache.lucene.util.Constants, so SolrJ can use it
 public class Constants {
   public static final String JVM_SPEC_VERSION = System.getProperty("java.specification.version");
-  private static final int JVM_MAJOR_VERSION;
-  private static final int JVM_MINOR_VERSION;
 
-  static {
-    final StringTokenizer st = new StringTokenizer(JVM_SPEC_VERSION, ".");
-    JVM_MAJOR_VERSION = Integer.parseInt(st.nextToken());
-    if (st.hasMoreTokens()) {
-      JVM_MINOR_VERSION = Integer.parseInt(st.nextToken());
-    } else {
-      JVM_MINOR_VERSION = 0;
-    }
-  }
-
-  public static final boolean JRE_IS_MINIMUM_JAVA9 =
-      JVM_MAJOR_VERSION > 1 || (JVM_MAJOR_VERSION == 1 && JVM_MINOR_VERSION >= 9);
-  public static final boolean JRE_IS_MINIMUM_JAVA11 =
-      JVM_MAJOR_VERSION > 1 || (JVM_MAJOR_VERSION == 1 && JVM_MINOR_VERSION >= 11);
+  public static final boolean JRE_IS_MINIMUM_JAVA9 = true;
+  public static final boolean JRE_IS_MINIMUM_JAVA11 = true;
+  // Future, enable if needed...
+  // public static final boolean JRE_IS_MINIMUM_JAVA17 = Runtime.version().feature() >= 17;
 }

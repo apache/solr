@@ -20,16 +20,11 @@ package org.apache.solr.api;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
-import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.JsonSchemaValidator;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.PathTrie;
-import org.apache.solr.common.util.Utils;
-import org.apache.solr.common.util.ValidatingJsonMap;
+import org.apache.solr.common.util.*;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.request.SolrQueryRequest;
@@ -42,14 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -150,7 +138,7 @@ public class ApiBag {
     private Collection<AnnotatedApi> combinedApis;
 
     protected CommandAggregatingAnnotatedApi(AnnotatedApi api) {
-      super(api.spec, api.getEndPoint(), api.getCommands(), null);
+      super(api.spec, api.getEndPoint(), Maps.newHashMap(api.getCommands()), null);
       combinedApis = Lists.newArrayList();
     }
 
@@ -196,7 +184,7 @@ public class ApiBag {
       PathTrie<Api> registry = apis.get(method);
 
       if (registry == null)
-        apis.put(method, registry = new CommandAggregatingPathTrie(ImmutableSet.of("_introspect")));
+        apis.put(method, registry = new CommandAggregatingPathTrie(Set.of("_introspect")));
       ValidatingJsonMap url = spec.getMap("url", NOT_NULL);
       ValidatingJsonMap params = url.getMap("params", null);
       if (params != null) {
@@ -213,8 +201,7 @@ public class ApiBag {
           if (!wildCardNames.contains(o.toString()))
             throw new RuntimeException("" + o + " is not a valid part name");
           ValidatingJsonMap pathMeta = parts.getMap(o.toString(), NOT_NULL);
-          pathMeta.get(
-              "type", ENUM_OF, ImmutableSet.of("enum", "string", "int", "number", "boolean"));
+          pathMeta.get("type", ENUM_OF, Set.of("enum", "string", "int", "number", "boolean"));
         }
       }
       verifyCommands(api.getSpec());
@@ -393,7 +380,6 @@ public class ApiBag {
     spec.put("url", urlMap);
     return spec;
   };
-
 
   public PathTrie<Api> getRegistry(String method) {
     return apis.get(method);

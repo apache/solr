@@ -57,7 +57,6 @@ public class TestPerFieldSimilarity extends BaseSimilarityTestCase {
   public void testDefaults() throws Exception {
     Similarity sim = getSimilarity("sim3text");
     assertEquals(BM25Similarity.class, sim.getClass());
-    ;
   }
 
   /** ... and for a dynamic field */

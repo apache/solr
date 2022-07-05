@@ -88,7 +88,7 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
         2, "id", "10", "term_s", "YYYY", group, ccc, "test_i", "1500", "test_l", "1001", "test_f",
         "3200");
 
-    // NOTE: nullPolicy=collapse will only be viable because all null docs are in collocated in
+    // NOTE: nullPolicy=collapse will only be viable because all null docs are in colocated in
     // shard #2
     index_specific(2, "id", "88", "test_i", "1001", "test_l", "1001", "test_f", "3200");
     index_specific(2, "id", "99", "test_i", "11", "test_l", "100", "test_f", "200");

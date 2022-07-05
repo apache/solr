@@ -260,7 +260,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
             ":result:packages:mypkg[0]:files[0]",
             FILE1));
 
-    // Now lets create a plugin using v1 jar file
+    // Now let's create a plugin using v1 jar file
     PluginMeta plugin = new PluginMeta();
     plugin.name = "myplugin";
     plugin.klass = "mypkg:org.apache.solr.handler.MyPlugin";

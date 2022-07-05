@@ -38,7 +38,7 @@ public class KnnQParser extends QParser {
    *
    * @param qstr The part of the query string specific to this parser
    * @param localParams The set of parameters that are specific to this QParser. See
-   *     https://solr.apache.org/guide/local-parameters-in-queries.html
+   *     https://solr.apache.org/guide/solr/latest/query-guide/local-params.html
    * @param params The rest of the {@link SolrParams}
    * @param req The original {@link SolrQueryRequest}.
    */

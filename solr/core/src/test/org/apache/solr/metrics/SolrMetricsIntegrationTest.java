@@ -130,7 +130,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
   @After
   public void afterTest() throws Exception {
     if (null == metricManager) {
-      return; // test failed to init, nothing to cleanup
+      return; // test failed to init, nothing to clean up
     }
 
     SolrCoreMetricManager coreMetricManager = h.getCore().getCoreMetricManager();
