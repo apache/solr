@@ -85,8 +85,7 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
           @Override
           public MiniSolrCloudCluster apply(String clusterId) {
             try {
-              final MiniSolrCloudCluster cluster;
-              cluster =
+              return
                   new MiniSolrCloudCluster.Builder(nodesPerCluster(clusterId), createTempDir())
                       .addConfig("conf", configset("cloud-dynamic"))
                       .withSolrXml(
