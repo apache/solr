@@ -755,8 +755,9 @@ public class NodeConfig {
       this.modules = moduleNames;
       return this;
     }
-    
-    public NodeConfigBuilder setCoreAdminHandlerActions(Map<String,String> coreAdminHandlerActions) {
+
+    public NodeConfigBuilder setCoreAdminHandlerActions(
+        Map<String, String> coreAdminHandlerActions) {
       this.coreAdminHandlerActions = coreAdminHandlerActions;
       return this;
     }
