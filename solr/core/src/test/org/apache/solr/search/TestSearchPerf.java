@@ -33,7 +33,7 @@ import org.junit.BeforeClass;
 /** */
 public class TestSearchPerf extends SolrTestCaseJ4 {
 
-  public static final int ITERATIONS = 500;
+  private static final int ITERATIONS = 500;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -155,7 +155,7 @@ public class TestSearchPerf extends SolrTestCaseJ4 {
     return ret;
   }
 
-  int doListGen(Query q, List<Query> filt) throws Exception {
+  private int doListGen(Query q, List<Query> filt) throws Exception {
     SolrQueryRequest req = lrf.makeRequest();
 
     SolrIndexSearcher searcher = req.getSearcher();
@@ -165,7 +165,7 @@ public class TestSearchPerf extends SolrTestCaseJ4 {
     int ret = 0;
     for (int i = 0; i < ITERATIONS; i++) {
       DocList l =
-          searcher.getDocList(q, filt, (Sort) null, 0, 10, SolrIndexSearcher.NO_CHECK_QCACHE | 0);
+          searcher.getDocList(q, filt, (Sort) null, 0, 10, SolrIndexSearcher.NO_CHECK_QCACHE);
       ret += l.matches();
     }
 
@@ -242,7 +242,6 @@ public class TestSearchPerf extends SolrTestCaseJ4 {
 
     createIndex2(indexSize, "foomany_s", "t10_100_ws");
 
-    // doListGen(100, q, filters, false, true);
     doListGen(q, filters);
 
     req.close();

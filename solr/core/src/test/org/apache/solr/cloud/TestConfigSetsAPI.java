@@ -1333,8 +1333,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   }
 
   private static String getSecurityJson() throws KeeperException, InterruptedException {
-    String securityJson;
-    securityJson =
+    return
         "{\n"
             + "  'authentication':{\n"
             + "    'blockUnknown': false,\n"
@@ -1423,8 +1422,8 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
         configSetName,
         suffix,
         username,
-        true,
-        true,
+        true /* overwrite */,
+        true /* cleanup */,
         v2);
   }
 
@@ -1459,9 +1458,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
               username,
               usePut);
       assertNotNull(map);
-      long statusCode;
-      statusCode = (long) getObjectByPath(map, Arrays.asList("responseHeader", "status"));
-      return statusCode;
+      return (long) getObjectByPath(map, Arrays.asList("responseHeader", "status"));
     } // else "not" a V2 request...
 
     try {
@@ -1517,9 +1514,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
               username,
               usePut);
       assertNotNull(map);
-      long statusCode;
-      statusCode = (long) getObjectByPath(map, Arrays.asList("responseHeader", "status"));
-      return statusCode;
+      return (long) getObjectByPath(map, Arrays.asList("responseHeader", "status"));
     } // else "not" a V2 request...
 
     try {

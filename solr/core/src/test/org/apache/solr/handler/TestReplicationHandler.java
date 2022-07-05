@@ -87,7 +87,7 @@ import org.slf4j.LoggerFactory;
 public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static final long TIMEOUT = 30000;
+  private static final long TIMEOUT = 30000;
 
   JettySolrRunner leaderJetty, followerJetty, repeaterJetty;
   HttpSolrClient leaderClient, followerClient, repeaterClient;

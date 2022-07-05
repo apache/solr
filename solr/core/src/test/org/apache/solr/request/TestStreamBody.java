@@ -131,7 +131,7 @@ public class TestStreamBody extends RestTestBase {
     queryRequest.process(getSolrClient());
   }
 
-  // Enables/disables stream.body through Config API
+  // Enables stream.body through Config API
   private void enableStreamBody() throws Exception {
     RestTestHarness harness = restTestHarness;
     String payload =
