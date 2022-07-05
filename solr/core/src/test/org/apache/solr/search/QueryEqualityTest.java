@@ -1351,12 +1351,12 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
       SolrRequestInfo.clearRequestInfo();
     }
 
-    for (Query value : queries) {
-      QueryUtils.check(value);
+    for (Query query1 : queries) {
+      QueryUtils.check(query1);
       // yes starting j=0 is redundent, we're making sure every query
       // is equal to itself, and that the quality checks work regardless
       // of which caller/callee is used.
-      for (Query query : queries) {
+      for (Query query2 : queries) {
         QueryUtils.checkEqual(query1, query2);
       }
     }
