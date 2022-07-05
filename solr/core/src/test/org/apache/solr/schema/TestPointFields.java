@@ -5289,9 +5289,9 @@ public class TestPointFields extends SolrTestCaseJ4 {
     SchemaField sf = h.getCore().getLatestSchema().getField(fieldName);
     assertTrue(sf.getType() instanceof PointField);
 
-    for (String s : values) {
+    for (String value : values) {
       assertQ(
-          req("q", "{!term f='" + fieldName + "'}" + s, "fl", "id," + fieldName),
+          req("q", "{!term f='" + fieldName + "'}" + value, "fl", "id," + fieldName),
           "//*[@numFound='1']");
     }
 
