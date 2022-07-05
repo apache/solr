@@ -17,10 +17,21 @@
 
 package org.apache.solr.api;
 
+import static org.apache.solr.client.solrj.SolrRequest.SUPPORTED_METHODS;
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.util.StrUtils.formatString;
+import static org.apache.solr.common.util.ValidatingJsonMap.ENUM_OF;
+import static org.apache.solr.common.util.ValidatingJsonMap.NOT_NULL;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
@@ -34,18 +45,6 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-
-import static org.apache.solr.client.solrj.SolrRequest.SUPPORTED_METHODS;
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.util.StrUtils.formatString;
-import static org.apache.solr.common.util.ValidatingJsonMap.ENUM_OF;
-import static org.apache.solr.common.util.ValidatingJsonMap.NOT_NULL;
 
 public class ApiBag {
   private final boolean isCoreSpecific;
@@ -370,16 +369,17 @@ public class ApiBag {
   public static final String HANDLER_NAME = "handlerName";
   public static final SpecProvider EMPTY_SPEC = () -> ValidatingJsonMap.EMPTY;
   public static final Set<String> KNOWN_TYPES =
-          ImmutableSet.of("string", "boolean", "list", "int", "double", "object");
+      ImmutableSet.of("string", "boolean", "list", "int", "double", "object");
   // A Spec template for GET AND POST APIs using the /$handlerName template-variable.
-  public static final SpecProvider HANDLER_NAME_SPEC_PROVIDER = () -> {
-    final ValidatingJsonMap spec = new ValidatingJsonMap();
-    spec.put("methods", Lists.newArrayList("GET", "POST"));
-    final ValidatingJsonMap urlMap = new ValidatingJsonMap();
-    urlMap.put("paths", Collections.singletonList("$" + HANDLER_NAME));
-    spec.put("url", urlMap);
-    return spec;
-  };
+  public static final SpecProvider HANDLER_NAME_SPEC_PROVIDER =
+      () -> {
+        final ValidatingJsonMap spec = new ValidatingJsonMap();
+        spec.put("methods", Lists.newArrayList("GET", "POST"));
+        final ValidatingJsonMap urlMap = new ValidatingJsonMap();
+        urlMap.put("paths", Collections.singletonList("$" + HANDLER_NAME));
+        spec.put("url", urlMap);
+        return spec;
+      };
 
   public PathTrie<Api> getRegistry(String method) {
     return apis.get(method);
