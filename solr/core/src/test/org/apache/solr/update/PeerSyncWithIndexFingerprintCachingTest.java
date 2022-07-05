@@ -110,6 +110,6 @@ public class PeerSyncWithIndexFingerprintCachingTest extends BaseDistributedSear
                 "sync",
                 StrUtils.join(Arrays.asList(syncWith), ',')));
     NamedList<?> rsp = client.request(qr);
-    assertEquals(true, rsp.get("sync"));
+    assertTrue(rsp.get("sync"));
   }
 }

@@ -41,6 +41,6 @@ public class PeerSyncWithLeaderAndIndexFingerprintCachingTest
                 StrUtils.join(Arrays.asList(syncWith), ',')));
     @SuppressWarnings({"rawtypes"})
     NamedList rsp = client.request(qr);
-    assertEquals(true, (Boolean) rsp.get("syncWithLeader"));
+    assertTrue(rsp.get("syncWithLeader"));
   }
 }
