@@ -227,6 +227,6 @@ public class PeerSyncWithBufferUpdatesTest extends BaseDistributedSearchTestCase
                 "syncWithLeader",
                 syncWith));
     NamedList<?> rsp = client.request(qr);
-    assertTrue(rsp.get("syncWithLeader"));
+    assertEquals(true, rsp.get("syncWithLeader"));
   }
 }
