@@ -114,10 +114,10 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
   @Test
   public void testValidAdds() throws IOException {
     SolrInputDocument validDoc = doc(field("id", "1"), field("text", "the quick brown fox"));
-    add("tolerant-chain-max-errors-10", null, validDoc);
+    add("tolerant-chain-max-errors-10", validDoc);
 
     validDoc = doc(field("id", "2"), field("text", "the quick brown fox"));
-    add("tolerant-chain-max-errors-not-set", null, validDoc);
+    add("tolerant-chain-max-errors-not-set", validDoc);
 
     assertU(commit());
     assertQ(req("q", "*:*"), "//result[@numFound='2']");
@@ -129,7 +129,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
   public void testInvalidAdds() throws IOException {
     SolrInputDocument invalidDoc1 = doc(field("text", "the quick brown fox")); // no id
     // This doc should fail without being tolerant
-    Exception e = expectThrows(Exception.class, () -> add("not-tolerant", null, invalidDoc1));
+    Exception e = expectThrows(Exception.class, () -> add("not-tolerant", invalidDoc1));
     assertTrue(e.getMessage().contains("Document is missing mandatory uniqueKey field"));
 
     assertAddsSucceedWithErrors(
@@ -418,10 +418,9 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
     }
   }
 
-  protected SolrQueryResponse add(
-      final String chain, SolrParams requestParams, final SolrInputDocument doc)
+  protected SolrQueryResponse add(final String chain, final SolrInputDocument doc)
       throws IOException {
-    return add(chain, requestParams, Arrays.asList(new SolrInputDocument[] {doc}));
+    return add(chain, null, Arrays.asList(new SolrInputDocument[] {doc}));
   }
 
   protected SolrQueryResponse add(
