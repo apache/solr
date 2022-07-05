@@ -162,7 +162,7 @@ public class TestInPlaceUpdateWithRouteField extends SolrCloudTestCase {
 
   private Collection<SolrInputDocument> createDocs() {
     List<SolrInputDocument> result = new ArrayList<>();
-    for (int i = 0; i < TestInPlaceUpdateWithRouteField.NUMBER_OF_DOCS; i++) {
+    for (int i = 0; i < NUMBER_OF_DOCS; i++) {
       String randomShard = shards[random().nextInt(shards.length)];
       result.add(
           sdoc("id", String.valueOf(i), "shardName", randomShard, "inplace_updatable_int", i));
