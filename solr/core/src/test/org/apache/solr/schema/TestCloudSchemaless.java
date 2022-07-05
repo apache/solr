@@ -20,8 +20,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.SortedMap;
-import java.util.TreeMap;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -30,7 +28,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.util.BaseTestHarness;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -59,13 +56,6 @@ public class TestCloudSchemaless extends AbstractFullDistribZkTestBase {
   @Override
   protected String getCloudSolrConfig() {
     return "solrconfig-schemaless.xml";
-  }
-
-  @Override
-  public SortedMap<ServletHolder, String> getExtraServlets() {
-    final SortedMap<ServletHolder, String> extraServlets;
-    extraServlets = new TreeMap<>();
-    return extraServlets;
   }
 
   private String[] getExpectedFieldResponses(int numberOfDocs) {
