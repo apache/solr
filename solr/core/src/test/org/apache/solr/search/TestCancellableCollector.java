@@ -120,7 +120,6 @@ public class TestCancellableCollector extends SolrTestCase {
   private void cancelQuery(CancellableCollector cancellableCollector) {
     executor.submit(
         () -> {
-          // Wait for some time to let the query start
           cancellableCollector.cancel();
         });
   }
