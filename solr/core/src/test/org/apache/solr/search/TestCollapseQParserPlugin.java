@@ -421,8 +421,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("q", "id:(1 2 5)");
-    params.add("fq", "{!collapse cost=200 field=term_s " + "" + "}");
-    params.add("fq", "{!collapse cost=400 field=" + group + "" + "" + "}");
+    params.add("fq", "{!collapse cost=200 field=term_s }");
+    params.add("fq", "{!collapse cost=400 field=" + group + "}");
 
     params.add("defType", "edismax");
     params.add("bf", "field(test_i)");
@@ -431,8 +431,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
 
     params = new ModifiableSolrParams();
     params.add("q", "id:(1 2 5)");
-    params.add("fq", "{!collapse cost=200 max=test_i field=term_s " + "" + "}");
-    params.add("fq", "{!collapse cost=400 max=test_i field=" + group + "" + "" + "}");
+    params.add("fq", "{!collapse cost=200 max=test_i field=term_s }");
+    params.add("fq", "{!collapse cost=400 max=test_i field=" + group + "}");
 
     params.add("defType", "edismax");
     params.add("bf", "field(test_i)");
