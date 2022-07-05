@@ -1333,17 +1333,16 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   }
 
   private static String getSecurityJson() throws KeeperException, InterruptedException {
-    return
-        "{\n"
-            + "  'authentication':{\n"
-            + "    'blockUnknown': false,\n"
-            + "    'class':'"
-            + MockAuthenticationPlugin.class.getName()
-            + "'},\n"
-            + "  'authorization':{\n"
-            + "    'class':'"
-            + MockAuthorizationPlugin.class.getName()
-            + "'}}";
+    return "{\n"
+        + "  'authentication':{\n"
+        + "    'blockUnknown': false,\n"
+        + "    'class':'"
+        + MockAuthenticationPlugin.class.getName()
+        + "'},\n"
+        + "  'authorization':{\n"
+        + "    'class':'"
+        + MockAuthorizationPlugin.class.getName()
+        + "'}}";
   }
 
   private void uploadConfigSetWithAssertions(String configSetName, String suffix, String username)

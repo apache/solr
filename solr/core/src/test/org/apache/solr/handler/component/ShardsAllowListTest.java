@@ -85,14 +85,13 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
           @Override
           public MiniSolrCloudCluster apply(String clusterId) {
             try {
-              return
-                  new MiniSolrCloudCluster.Builder(nodesPerCluster(clusterId), createTempDir())
-                      .addConfig("conf", configset("cloud-dynamic"))
-                      .withSolrXml(
-                          MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML.replace(
-                              MiniSolrCloudCluster.TEST_URL_ALLOW_LIST,
-                              EXPLICIT_ALLOW_LIST_PROPERTY + clusterId))
-                      .build();
+              return new MiniSolrCloudCluster.Builder(nodesPerCluster(clusterId), createTempDir())
+                  .addConfig("conf", configset("cloud-dynamic"))
+                  .withSolrXml(
+                      MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML.replace(
+                          MiniSolrCloudCluster.TEST_URL_ALLOW_LIST,
+                          EXPLICIT_ALLOW_LIST_PROPERTY + clusterId))
+                  .build();
             } catch (Exception e) {
               throw new RuntimeException(e);
             }
