@@ -52,7 +52,7 @@ import org.mockito.stubbing.Answer;
 public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
 
   private static final class SuspendingZkClient extends SolrZkClient {
-    public static final int ZK_CLIENT_TIMEOUT = 30000;
+    private static final int ZK_CLIENT_TIMEOUT = 30000;
     AtomicReference<Thread> slowpoke = new AtomicReference<>();
 
     private SuspendingZkClient(String zkServerAddress) {
