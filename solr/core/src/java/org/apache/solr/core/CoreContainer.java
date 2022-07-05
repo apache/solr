@@ -49,6 +49,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.auth.AuthSchemeProvider;
 import org.apache.http.client.CredentialsProvider;
@@ -103,6 +104,7 @@ import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.ContainerPluginsApi;
 import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminOp;
 import org.apache.solr.handler.admin.HealthCheckHandler;
 import org.apache.solr.handler.admin.InfoHandler;
 import org.apache.solr.handler.admin.MetricsHandler;
@@ -822,6 +824,16 @@ public class CoreContainer {
     coreAdminHandler =
         createHandler(CORES_HANDLER_PATH, cfg.getCoreAdminHandlerClass(), CoreAdminHandler.class);
 
+    Map<String, CoreAdminOp> coreAdminHandlerActions =
+        cfg.getCoreAdminHandlerActions().entrySet().stream()
+            .collect(
+                Collectors.toMap(
+                    item -> item.getKey(),
+                    item -> createCoreAdminHandlerOperation(item.getValue(), CoreAdminOp.class)));
+
+    // Register custom actions for CoreAdminHandler
+    coreAdminHandler.registerCustomActions(coreAdminHandlerActions);
+    
     metricsHandler = new MetricsHandler(this);
     containerHandlers.put(METRICS_PATH, metricsHandler);
     metricsHandler.initializeMetrics(solrMetricsContext, METRICS_PATH);
@@ -2155,6 +2167,12 @@ public class CoreContainer {
 
   public void waitForLoadingCore(String name, long timeoutMs) {
     solrCores.waitForLoadingCoreToFinish(name, timeoutMs);
+  }
+
+  // ---------------- Core admin handler operations --------------
+
+  protected <A> A createCoreAdminHandlerOperation(String operationClass, Class<A> clazz) {
+    return loader.newInstance(operationClass, clazz, null, null, null);
   }
 
   // ---------------- CoreContainer request handlers --------------

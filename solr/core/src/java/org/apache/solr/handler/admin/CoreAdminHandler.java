@@ -33,6 +33,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.api.AnnotatedApi;
@@ -155,6 +156,27 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   }
 
   /**
+   * Registers custom actions defined in {@code solr.xml}. Called from the {@link CoreContainer}
+   * during load process.
+   */
+  public void registerCustomActions(Map<String, CoreAdminOp> customActions) {
+
+    for (Entry<String, CoreAdminOp> entry : customActions.entrySet()) {
+
+      String action = entry.getKey().toLowerCase(Locale.ROOT);
+      CoreAdminOp operation = entry.getValue();
+
+      if (opMap.containsKey(action)) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "CoreAdminHandler already registered action " + action);
+      }
+
+      opMap.put(action, operation);
+    }
+  }
+
+  /**
    * The instance of CoreContainer this handler handles. This should be the CoreContainer instance
    * that created this handler.
    *
@@ -190,7 +212,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
 
       // Pick the action
       final String action = req.getParams().get(ACTION, STATUS.toString()).toLowerCase(Locale.ROOT);
-      CoreAdminOperation op = opMap.get(action);
+      CoreAdminOp op = opMap.get(action);
       if (op == null) {
         handleCustomAction(req, rsp);
         return;
@@ -206,7 +228,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       } else {
         try {
           MDC.put("CoreAdminHandler.asyncId", taskId);
-          MDC.put("CoreAdminHandler.action", op.action.toString());
+          MDC.put("CoreAdminHandler.action", action);
           parallelExecutor.execute(
               () -> {
                 boolean exceptionCaught = false;
@@ -242,7 +264,10 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
    * <p>This method could be overridden by derived classes to handle custom actions. <br>
    * By default - this method throws a solr exception. Derived classes are free to write their
    * derivation if necessary.
+   * 
+   * @deprecated Use actions defined via {@code solr.xml} instead.
    */
+  @Deprecated
   protected void handleCustomAction(SolrQueryRequest req, SolrQueryResponse rsp) {
     throw new SolrException(
         SolrException.ErrorCode.BAD_REQUEST,
@@ -399,19 +424,19 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     if (parallelExecutor != null) ExecutorUtil.shutdownAndAwaitTermination(parallelExecutor);
   }
 
-  private static final Map<String, CoreAdminOperation> opMap = new HashMap<>();
+  private static final Map<String, CoreAdminOp> opMap = new HashMap<>();
 
-  static class CallInfo {
-    final CoreAdminHandler handler;
-    final SolrQueryRequest req;
-    final SolrQueryResponse rsp;
-    final CoreAdminOperation op;
+  public static class CallInfo {
+    public final CoreAdminHandler handler;
+    public final SolrQueryRequest req;
+    public final SolrQueryResponse rsp;
+    public final CoreAdminOp op;
 
     CallInfo(
         CoreAdminHandler handler,
         SolrQueryRequest req,
         SolrQueryResponse rsp,
-        CoreAdminOperation op) {
+        CoreAdminOp op) {
       this.handler = handler;
       this.req = req;
       this.rsp = rsp;
@@ -458,7 +483,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     Map<String, Object> invoke(SolrQueryRequest req);
   }
 
-  interface CoreAdminOp {
+  public interface CoreAdminOp {
     /**
      * @param it request/response object
      *     <p>If the request is invalid throw a SolrException with

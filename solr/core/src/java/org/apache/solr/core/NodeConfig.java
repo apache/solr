@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
@@ -105,6 +106,8 @@ public class NodeConfig {
 
   private final PluginInfo tracerConfig;
 
+  private final Map<String,String> coreAdminHandlerActions;
+  
   // Track if this config was loaded from zookeeper so that we can skip validating the zookeeper
   // connection later. If it becomes necessary to track multiple potential sources in the future,
   // replace this with an Enum
@@ -144,7 +147,8 @@ public class NodeConfig {
       Set<Path> allowPaths,
       List<String> allowUrls,
       String configSetServiceClass,
-      String modules) {
+      String modules,
+      Map<String, String> coreAdminHandlerActions) {
     // all Path params here are absolute and normalized.
     this.nodeName = nodeName;
     this.coreRootDirectory = coreRootDirectory;
@@ -179,6 +183,7 @@ public class NodeConfig {
     this.allowUrls = allowUrls;
     this.configSetServiceClass = configSetServiceClass;
     this.modules = modules;
+    this.coreAdminHandlerActions = coreAdminHandlerActions;
 
     if (this.cloudConfig != null && this.getCoreLoadThreadCount(false) < 2) {
       throw new SolrException(
@@ -421,6 +426,10 @@ public class NodeConfig {
     return allowUrls;
   }
 
+  public Map<String, String> getCoreAdminHandlerActions() {
+    return coreAdminHandlerActions;
+  }
+  
   // Configures SOLR_HOME/lib to the shared class loader
   private void setupSharedLib() {
     // Always add $SOLR_HOME/lib to the shared resource loader
@@ -541,6 +550,7 @@ public class NodeConfig {
     private String defaultZkHost;
     private Set<Path> allowPaths = Collections.emptySet();
     private List<String> allowUrls = Collections.emptyList();
+    private Map<String, String> coreAdminHandlerActions = Collections.emptyMap();
 
     private final Path solrHome;
     private final String nodeName;
@@ -745,6 +755,11 @@ public class NodeConfig {
       this.modules = moduleNames;
       return this;
     }
+    
+    public NodeConfigBuilder setCoreAdminHandlerActions(Map<String,String> coreAdminHandlerActions) {
+      this.coreAdminHandlerActions = coreAdminHandlerActions;
+      return this;
+    }
 
     public NodeConfig build() {
       // if some things weren't set then set them now.  Simple primitives are set on the field
@@ -785,7 +800,8 @@ public class NodeConfig {
           allowPaths,
           allowUrls,
           configSetServiceClass,
-          modules);
+          modules,
+          coreAdminHandlerActions);
     }
 
     public NodeConfigBuilder setSolrResourceLoader(SolrResourceLoader resourceLoader) {
