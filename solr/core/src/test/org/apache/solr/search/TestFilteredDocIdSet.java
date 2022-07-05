@@ -94,9 +94,9 @@ public class TestFilteredDocIdSet extends SolrTestCase {
     ArrayList<Integer> list = new ArrayList<>();
     int doc = iter.advance(3);
     if (doc != DocIdSetIterator.NO_MORE_DOCS) {
-      list.add(Integer.valueOf(doc));
+      list.add(doc);
       while ((doc = iter.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-        list.add(Integer.valueOf(doc));
+        list.add(doc);
       }
     }
 
@@ -104,7 +104,7 @@ public class TestFilteredDocIdSet extends SolrTestCase {
     int c = 0;
     Iterator<Integer> intIter = list.iterator();
     while (intIter.hasNext()) {
-      docs[c++] = intIter.next().intValue();
+      docs[c++] = intIter.next();
     }
     int[] answer = new int[] {4, 6, 8};
     boolean same = Arrays.equals(answer, docs);

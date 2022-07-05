@@ -383,7 +383,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
       }
 
       Long actual = (null == doc) ? null : (Long) doc.getFirstValue(numericFieldName);
-      if (actual == null || expect != actual.longValue() || !foundWithFilter) {
+      if (actual == null || expect != actual || !foundWithFilter) {
         log.error(
             "docId={}, foundWithFilter={}, expected={}, actual={}",
             docId,
