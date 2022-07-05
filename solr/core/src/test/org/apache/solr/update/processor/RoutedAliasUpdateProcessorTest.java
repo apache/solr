@@ -408,7 +408,7 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     public UpdateRequestProcessor getInstance(
         SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
       return FieldValueMutatingUpdateProcessor.valueMutator(
-          getSelector(), next, (src) -> Integer.valueOf(src.toString()) + 1);
+          getSelector(), next, (src) -> Integer.parseInt(src.toString()) + 1);
     }
   }
 }
