@@ -833,7 +833,7 @@ public class CoreContainer {
 
     // Register custom actions for CoreAdminHandler
     coreAdminHandler.registerCustomActions(coreAdminHandlerActions);
-    
+
     metricsHandler = new MetricsHandler(this);
     containerHandlers.put(METRICS_PATH, metricsHandler);
     metricsHandler.initializeMetrics(solrMetricsContext, METRICS_PATH);

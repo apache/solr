@@ -106,8 +106,8 @@ public class NodeConfig {
 
   private final PluginInfo tracerConfig;
 
-  private final Map<String,String> coreAdminHandlerActions;
-  
+  private final Map<String, String> coreAdminHandlerActions;
+
   // Track if this config was loaded from zookeeper so that we can skip validating the zookeeper
   // connection later. If it becomes necessary to track multiple potential sources in the future,
   // replace this with an Enum
@@ -429,7 +429,7 @@ public class NodeConfig {
   public Map<String, String> getCoreAdminHandlerActions() {
     return coreAdminHandlerActions;
   }
-  
+
   // Configures SOLR_HOME/lib to the shared class loader
   private void setupSharedLib() {
     // Always add $SOLR_HOME/lib to the shared resource loader

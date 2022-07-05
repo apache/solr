@@ -264,7 +264,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
    * <p>This method could be overridden by derived classes to handle custom actions. <br>
    * By default - this method throws a solr exception. Derived classes are free to write their
    * derivation if necessary.
-   * 
+   *
    * @deprecated Use actions defined via {@code solr.xml} instead.
    */
   @Deprecated
@@ -433,10 +433,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     public final CoreAdminOp op;
 
     CallInfo(
-        CoreAdminHandler handler,
-        SolrQueryRequest req,
-        SolrQueryResponse rsp,
-        CoreAdminOp op) {
+        CoreAdminHandler handler, SolrQueryRequest req, SolrQueryResponse rsp, CoreAdminOp op) {
       this.handler = handler;
       this.req = req;
       this.rsp = rsp;
