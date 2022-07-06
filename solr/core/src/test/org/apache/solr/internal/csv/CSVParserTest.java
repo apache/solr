@@ -348,8 +348,7 @@ public class CSVParserTest extends TestCase {
       {""}, // ExcelStrategy does not ignore empty lines
       {""}
     };
-    for (String s : codes) {
-      code = s;
+    for (String code : codes) {
       CSVParser parser = new CSVParser(new StringReader(code), CSVStrategy.EXCEL_STRATEGY);
       String[][] tmp = parser.getAllValues();
       assertEquals(res.length, tmp.length);
