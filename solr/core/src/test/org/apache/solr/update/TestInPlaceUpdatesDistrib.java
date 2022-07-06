@@ -1489,8 +1489,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
   private String getBaseUrl(String id) throws IOException {
     DocCollection collection = cloudClient.getClusterState().getCollection(DEFAULT_COLLECTION);
     Slice slice = collection.getRouter().getTargetSlice(id, null, null, null, collection);
-    String baseUrl = slice.getLeader().getCoreUrl();
-    return baseUrl;
+    return slice.getLeader().getCoreUrl();
   }
 
   UpdateRequest regularUpdateRequest(Object... fields) throws SolrServerException, IOException {

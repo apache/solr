@@ -1134,7 +1134,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
     // as num_i value increases, the asc_* fields increase
     // as num_i value increases, the desc_* fields decrease
     if (doc.getFieldNames().contains("num_i")) {
-      final int val = ((Integer) doc.getFieldValue("num_i")).intValue();
+      final int val = (Integer) doc.getFieldValue("num_i");
       for (String suffix : SELECTOR_FIELD_SUFFIXES) {
         doc.setField("asc" + suffix, val);
         doc.setField("desc" + suffix, 0 - val);

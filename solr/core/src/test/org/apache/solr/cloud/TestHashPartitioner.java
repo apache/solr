@@ -295,14 +295,12 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
       slices.put(slice.getName(), slice);
     }
 
-    DocCollection coll =
-        new DocCollection(
-            "collection1",
-            slices,
-            Collections.singletonMap(
-                ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-            router);
-    return coll;
+    return new DocCollection(
+        "collection1",
+        slices,
+        Collections.singletonMap(
+            ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
+        router);
   }
 
   // from negative to positive, the upper bits of the hash ranges should be

@@ -93,9 +93,9 @@ public class TestFilteredDocIdSet extends SolrTestCase {
     ArrayList<Integer> list = new ArrayList<>();
     int doc = iter.advance(3);
     if (doc != DocIdSetIterator.NO_MORE_DOCS) {
-      list.add(Integer.valueOf(doc));
+      list.add(doc);
       while ((doc = iter.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-        list.add(Integer.valueOf(doc));
+        list.add(doc);
       }
     }
 

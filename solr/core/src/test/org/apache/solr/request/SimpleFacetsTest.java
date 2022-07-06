@@ -1250,10 +1250,9 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     helpTestDateFacets("bday_drf", FacetRangeMethod.FILTER);
   }
 
-  private void helpTestDateFacets(final String fieldName, final FacetRangeMethod rangeFacetMethod) {
+  private void helpTestDateFacets(final String f, final FacetRangeMethod rangeFacetMethod) {
     final String p = "facet.range";
     final String b = "facet_ranges";
-    final String f = fieldName;
     final String c = "/lst[@name='counts']";
     final String pre = "//lst[@name='" + b + "']/lst[@name='" + f + "']" + c;
     final String meta = pre + "/../";
@@ -1532,10 +1531,9 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
    * Similar to helpTestDateFacets, but for different fields with test data exactly on boundary
    * marks
    */
-  private void helpTestDateRangeFacetsWithIncludeOption(final String fieldName) {
+  private void helpTestDateRangeFacetsWithIncludeOption(final String f) {
     final String p = "facet.range";
     final String b = "facet_ranges";
-    final String f = fieldName;
     final String c = "/lst[@name='counts']";
     final String pre = "//lst[@name='" + b + "']/lst[@name='" + f + "']" + c;
     final String meta = pre + "/../";
@@ -1923,10 +1921,9 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     helpTestDateRangeFacetsWithTz("a_tdt");
   }
 
-  private void helpTestDateRangeFacetsWithTz(final String fieldName) {
+  private void helpTestDateRangeFacetsWithTz(final String f) {
     final String p = "facet.range";
     final String b = "facet_ranges";
-    final String f = fieldName;
     final String c = "/lst[@name='counts']";
     final String pre = "//lst[@name='" + b + "']/lst[@name='" + f + "']" + c;
     final String meta = pre + "/../";
@@ -2059,8 +2056,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   }
 
   private void helpTestNumericRangeFacetsDoubleOverflow(
-      final String fieldName, final FacetRangeMethod method) {
-    final String f = fieldName;
+      final String f, final FacetRangeMethod method) {
     final String pre = "//lst[@name='facet_ranges']/lst[@name='" + f + "']/lst[@name='counts']";
     final String meta = pre + "/../";
 
@@ -2105,10 +2101,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     helpTestFractionalNumberRangeFacets(fieldName, FacetRangeMethod.FILTER);
   }
 
-  private void helpTestFractionalNumberRangeFacets(
-      final String fieldName, FacetRangeMethod method) {
+  private void helpTestFractionalNumberRangeFacets(final String f, FacetRangeMethod method) {
 
-    final String f = fieldName;
     final String pre = "//lst[@name='facet_ranges']/lst[@name='" + f + "']/lst[@name='counts']";
     final String meta = pre + "/../";
 
@@ -2340,8 +2334,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   }
 
   private void helpTestNumericRangeFacetsLongOverflow(
-      final String fieldName, final FacetRangeMethod method) {
-    final String f = fieldName;
+      final String f, final FacetRangeMethod method) {
     final String pre = "//lst[@name='facet_ranges']/lst[@name='" + f + "']/lst[@name='counts']";
     final String meta = pre + "/../";
 
@@ -2386,12 +2379,11 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     helpTestWholeNumberRangeFacets(fieldName, FacetRangeMethod.FILTER);
   }
 
-  private void helpTestWholeNumberRangeFacets(final String fieldName, FacetRangeMethod method) {
+  private void helpTestWholeNumberRangeFacets(final String f, FacetRangeMethod method) {
 
     // the float test covers a lot of the weird edge cases
     // here we just need some basic sanity checking of the parsing
 
-    final String f = fieldName;
     final String pre = "//lst[@name='facet_ranges']/lst[@name='" + f + "']/lst[@name='counts']";
     final String meta = pre + "/../";
 
