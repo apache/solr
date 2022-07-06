@@ -61,10 +61,10 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
   private static int nodesPerCluster;
 
   private static void appendClusterNodes(
-      final StringBuilder sb, final String delimiter, final MiniSolrCloudCluster cluster) {
+      final StringBuilder sb, final MiniSolrCloudCluster cluster) {
     cluster
         .getJettySolrRunners()
-        .forEach((jetty) -> sb.append(jetty.getBaseUrl().toString() + delimiter));
+        .forEach((jetty) -> sb.append(jetty.getBaseUrl().toString() + ","));
   }
 
   @BeforeClass
@@ -85,15 +85,13 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
           @Override
           public MiniSolrCloudCluster apply(String clusterId) {
             try {
-              final MiniSolrCloudCluster cluster =
-                  new MiniSolrCloudCluster.Builder(nodesPerCluster(clusterId), createTempDir())
-                      .addConfig("conf", configset("cloud-dynamic"))
-                      .withSolrXml(
-                          MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML.replace(
-                              MiniSolrCloudCluster.TEST_URL_ALLOW_LIST,
-                              EXPLICIT_ALLOW_LIST_PROPERTY + clusterId))
-                      .build();
-              return cluster;
+              return new MiniSolrCloudCluster.Builder(nodesPerCluster(clusterId), createTempDir())
+                  .addConfig("conf", configset("cloud-dynamic"))
+                  .withSolrXml(
+                      MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML.replace(
+                          MiniSolrCloudCluster.TEST_URL_ALLOW_LIST,
+                          EXPLICIT_ALLOW_LIST_PROPERTY + clusterId))
+                  .build();
             } catch (Exception e) {
               throw new RuntimeException(e);
             }
@@ -107,7 +105,7 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
         new DefaultClusterInitFunction(numShards, numReplicas) {
           @Override
           public void accept(String clusterId, MiniSolrCloudCluster cluster) {
-            appendClusterNodes(sb, ",", cluster);
+            appendClusterNodes(sb, cluster);
             if (clusterId.equals(EXPLICIT_CLUSTER_KEY)) {
               System.setProperty(EXPLICIT_ALLOW_LIST_PROPERTY + clusterId, sb.toString());
               for (JettySolrRunner runner : cluster.getJettySolrRunners()) {

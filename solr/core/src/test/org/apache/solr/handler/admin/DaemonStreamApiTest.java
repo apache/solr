@@ -54,7 +54,7 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
   private static final String DAEMON_OP = "DaemonOp";
 
   // We want 2-5 daemons. Choose one of them to start/stop/kill to catch any off-by-one or other
-  // bookeeping errors.
+  // bookkeeping errors.
   final int numDaemons = random().nextInt(3) + 2;
   String daemonOfInterest;
 
@@ -223,7 +223,8 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
             + daemonName
             + "' did not become RUNNABLE, WAITING or TIMED_WAITING in 10 seconds");
   }
-  // There can be some delay while threads stabilize, so we need to loop. Evenutally, the statu of a
+  // There can be some delay while threads stabilize, so we need to loop. Eventually, the status of
+  // a
   // stopped thread should be "TERMINATED"
   private void checkStopped() throws InterruptedException, IOException {
     TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);

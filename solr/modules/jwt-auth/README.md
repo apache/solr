@@ -34,7 +34,7 @@ enabled Identity Provider.
 
 Getting Started
 ---------------
-Please refer to the Solr Ref Guide at https://solr.apache.org/guide/jwt-authentication-plugin.html
+Please refer to the Solr Ref Guide at https://solr.apache.org/guide/solr/latest/deployment-guide/jwt-authentication-plugin.html
 for more information.
 
 User interface

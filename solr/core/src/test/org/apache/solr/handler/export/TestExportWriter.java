@@ -1080,7 +1080,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
       addDouble(doc, random().nextDouble() * 3000 * (random().nextBoolean() ? 1 : -1), false);
       addDate(doc, dateFormat.format(new Date()), false);
 
-      // MV need to be unique in order to be the same in Trie vs Points
+      // MV needs to be unique in order to be the same in Trie vs Points
       Set<Integer> ints = new HashSet<>();
       Set<Long> longs = new HashSet<>();
       Set<Float> floats = new HashSet<>();

@@ -59,7 +59,7 @@ import org.slf4j.LoggerFactory;
  */
 // Backups do checksum validation against a footer value not present in 'SimpleText'
 @LuceneTestCase.SuppressCodecs({"SimpleText"})
-@SolrTestCaseJ4.SuppressSSL // Currently unknown why SSL does not work with this test
+@SolrTestCaseJ4.SuppressSSL // Currently, unknown why SSL does not work with this test
 @Slow
 public class TestSolrCloudSnapshots extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -208,7 +208,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
           CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
               .setLocation(backupLocation);
       //      if (replicaFailures) {
-      //        // In this case one of the Solr servers would be down. Hence we need to increase
+      //        // In this case one of the Solr servers would be down. Hence, we need to increase
       //        // max_shards_per_node property for restore command to succeed.
       //        restore.setMaxShardsPerNode(2);
       //      }
@@ -258,7 +258,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
                   CollectionAdminRequest.deleteReplica(
                       collectionName, replicaToDelete.getShardId(), r.getName());
               delReplica.process(solrClient);
-              // The replica deletion will cleanup the snapshot meta-data.
+              // The replica deletion will clean up the snapshot meta-data.
               snapshotByCoreName.remove(r.getCoreName());
               break;
             }

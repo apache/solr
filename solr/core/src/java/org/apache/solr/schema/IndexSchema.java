@@ -20,7 +20,6 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 
-import com.google.common.collect.ImmutableSet;
 import java.io.IOException;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
@@ -137,8 +136,8 @@ public class IndexSchema {
     return dynamicFields;
   }
 
-  private static final Set<String> FIELDTYPE_KEYS = ImmutableSet.of("fieldtype", "fieldType");
-  private static final Set<String> FIELD_KEYS = ImmutableSet.of("dynamicField", "field");
+  private static final Set<String> FIELDTYPE_KEYS = Set.of("fieldtype", "fieldType");
+  private static final Set<String> FIELD_KEYS = Set.of("dynamicField", "field");
 
   protected Cache<String, SchemaField> dynamicFieldCache =
       new ConcurrentLRUCache<>(10000, 8000, 9000, 100, false, false, null);

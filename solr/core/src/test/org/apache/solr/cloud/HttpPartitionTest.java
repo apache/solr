@@ -595,7 +595,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
 
   /**
    * Query the real-time get handler for a specific doc by ID to verify it exists in the provided
-   * server, using distrib=false so it doesn't route to another replica.
+   * server, using distrib=false, so it doesn't route to another replica.
    */
   protected void assertDocExists(HttpSolrClient solr, String coll, String docId) throws Exception {
     NamedList<?> rsp = realTimeGetDocId(solr, docId);

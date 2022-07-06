@@ -81,10 +81,10 @@ public class ActionThrottleTest extends SolrTestCaseJ4 {
 
     at.minimumWaitBetweenActions();
 
-    long elaspsedTime =
+    long elapsedTime =
         TimeUnit.MILLISECONDS.convert(timeSource.getTimeNs() - start, TimeUnit.NANOSECONDS);
 
-    assertTrue(elaspsedTime + "ms", elaspsedTime >= 995);
+    assertTrue(elapsedTime + "ms", elapsedTime >= 995);
 
     start = timeSource.getTimeNs();
 
@@ -93,10 +93,10 @@ public class ActionThrottleTest extends SolrTestCaseJ4 {
 
     Thread.sleep(random().nextInt(1000));
 
-    elaspsedTime =
+    elapsedTime =
         TimeUnit.MILLISECONDS.convert(timeSource.getTimeNs() - start, TimeUnit.NANOSECONDS);
 
-    assertTrue(elaspsedTime + "ms", elaspsedTime >= 995);
+    assertTrue(elapsedTime + "ms", elapsedTime >= 995);
   }
 
   @Test
@@ -111,10 +111,10 @@ public class ActionThrottleTest extends SolrTestCaseJ4 {
 
     at.minimumWaitBetweenActions();
 
-    long elaspsedTime =
+    long elapsedTime =
         TimeUnit.MILLISECONDS.convert(timeSource.getTimeNs() - start, TimeUnit.NANOSECONDS);
 
-    assertTrue(elaspsedTime + "ms", elaspsedTime >= 995);
+    assertTrue(elapsedTime + "ms", elapsedTime >= 995);
   }
 
   public void testCreateNewThrottleWithLastValue() {

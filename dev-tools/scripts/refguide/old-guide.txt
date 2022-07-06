@@ -269,3 +269,24 @@ working-with-dates.adoc
 working-with-enum-fields.adoc
 working-with-external-files-and-processes.adoc
 zookeeper-access-control.adoc
+
+# Pages from the prereleased 9.0 codebase before the antora migration
+language-detection.html
+result-clustering.html
+query-syntax-and-parsers.html
+edismax-query-parser.html
+fields-and-schema-design.html
+deployment-guide.html
+script-update-processor.html
+schema-elements.html
+sql-query.html
+currencies-exchange-rates.html
+query-elevation-component.html
+neural-search.html
+indexing-with-update-handlers.html
+join-query-parser.html
+core-discovery.html
+indexing-with-tika.html
+document-transformers.html
+real-time-get.html
+cert-authentication-plugin.html

@@ -355,24 +355,24 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
         if (!boostedResults.get(i).equals(controlResults.get(i))) {
           throw new Exception(
               "boosted results do not match control results, boostedResults size:"
-                  + boostedResults.toString()
+                  + boostedResults
                   + ", controlResults size:"
-                  + controlResults.toString());
+                  + controlResults);
         }
       }
     } else {
       throw new Exception(
           "boosted results do not match control results, boostedResults size:"
-              + boostedResults.toString()
+              + boostedResults
               + ", controlResults size:"
-              + controlResults.toString());
+              + controlResults);
     }
   }
 
   @Test
   public void testDoubleCollapse() {
-    testDoubleCollapse("group_s", "");
-    testDoubleCollapse("group_i", "");
+    testDoubleCollapse("group_s");
+    testDoubleCollapse("group_i");
   }
 
   /*
@@ -381,7 +381,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
    * the by finally method of the first collapse. This specific test is meant to confirm that any feature
    * that causes searches to not visit each segment (such as early query termination) doesn't break collapse.
    */
-  private void testDoubleCollapse(String group, String hint) {
+  private void testDoubleCollapse(String group) {
     String[] doc = {
       "id", "1", "term_s", "YYYY", group, "1", "test_i", "5", "test_l", "10", "test_f", "2000"
     };
@@ -421,8 +421,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("q", "id:(1 2 5)");
-    params.add("fq", "{!collapse cost=200 field=term_s " + hint + "}");
-    params.add("fq", "{!collapse cost=400 field=" + group + "" + hint + "}");
+    params.add("fq", "{!collapse cost=200 field=term_s }");
+    params.add("fq", "{!collapse cost=400 field=" + group + "}");
 
     params.add("defType", "edismax");
     params.add("bf", "field(test_i)");
@@ -431,8 +431,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
 
     params = new ModifiableSolrParams();
     params.add("q", "id:(1 2 5)");
-    params.add("fq", "{!collapse cost=200 max=test_i field=term_s " + hint + "}");
-    params.add("fq", "{!collapse cost=400 max=test_i field=" + group + "" + hint + "}");
+    params.add("fq", "{!collapse cost=200 max=test_i field=term_s }");
+    params.add("fq", "{!collapse cost=400 max=test_i field=" + group + "}");
 
     params.add("defType", "edismax");
     params.add("bf", "field(test_i)");
@@ -660,7 +660,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[3]/str[@name='id'][.='2']",
         "//result/doc[4]/str[@name='id'][.='6']");
 
-    // Non trivial sort local param for picking group head
+    // Non-trivial sort local param for picking group head
     params = new ModifiableSolrParams();
     params.add("q", "*:*");
     params.add(
@@ -1346,8 +1346,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     // function based query for deterministic scores
     final String q = "{!func}sum(asc_i,42)";
 
-    // results should be the same regardless of wether we collapse on a string field or numeric
-    // field (docs have identicle group identifiers in both fields)
+    // results should be the same regardless of whether we collapse on a string field or numeric
+    // field (docs have identical group identifiers in both fields)
     for (String f : Arrays.asList("group_i", "group_s")) {
 
       // these group head selectors should all result in identical group heads for our query...

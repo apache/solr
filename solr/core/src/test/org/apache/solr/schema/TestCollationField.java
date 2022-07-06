@@ -105,7 +105,7 @@ public class TestCollationField extends SolrTestCaseJ4 {
   }
 
   /**
-   * Test rangequery again with the DIN 5007-1 collator. We do a range query of tone .. tp, in
+   * Test rangequery again with the DIN 5007-1 collator. We do a range query of tone... tp, in
    * binary order this would retrieve nothing due to case and accent differences.
    */
   public void testBasicRangeQuery() {

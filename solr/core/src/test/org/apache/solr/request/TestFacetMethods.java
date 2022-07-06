@@ -92,7 +92,7 @@ public class TestFacetMethods extends SolrTestCase {
 
     for (int props : Arrays.asList(0 ^ UNINVERTIBLE, 0)) {
       SchemaField field = new SchemaField("field", new TrieIntField(), props, null);
-      // FCS is used by default for most requested methods other then UIF -- regardless of mincount
+      // FCS is used by default for most requested methods other than UIF -- regardless of mincount
       for (int mincount : Arrays.asList(0, 1)) {
         assertEquals(FacetMethod.FCS, SimpleFacets.selectFacetMethod(field, null, mincount));
         assertEquals(
@@ -115,7 +115,7 @@ public class TestFacetMethods extends SolrTestCase {
 
     for (int props : Arrays.asList(MULTIVALUED ^ UNINVERTIBLE, MULTIVALUED)) {
       SchemaField field = new SchemaField("field", new TrieIntField(), props, null);
-      // FC is used by default for most requested methods other then UIF -- regardless of mincount
+      // FC is used by default for most requested methods other than UIF -- regardless of mincount
       for (int mincount : Arrays.asList(0, 1)) {
         assertEquals(FacetMethod.FC, SimpleFacets.selectFacetMethod(field, null, mincount));
         assertEquals(

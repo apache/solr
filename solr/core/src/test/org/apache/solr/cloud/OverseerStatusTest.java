@@ -65,6 +65,7 @@ public class OverseerStatusTest extends SolrCloudTestCase {
     // stats on them.
     if (!cluster.getOpenOverseer().getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
       // Note the "create" key here is in a different map from the "create" key above. Above it's
+      // from the
       // Collection creation in the Collection API, here it's the collection creation from the
       // cluster state updater perspective.
       createcollection =

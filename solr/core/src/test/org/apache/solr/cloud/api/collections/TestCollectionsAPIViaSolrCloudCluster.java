@@ -193,7 +193,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
     // create collection
     createCollection(collectionName, CollectionHandlingUtils.CREATE_NODE_SET_EMPTY);
 
-    // check the collection's corelessness
+    // check the collection has no cores.
     int coreCount = 0;
     DocCollection docCollection = client.getClusterState().getCollection(collectionName);
     for (Map.Entry<String, Slice> entry : docCollection.getSlicesMap().entrySet()) {

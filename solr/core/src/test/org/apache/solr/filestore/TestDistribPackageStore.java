@@ -284,7 +284,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
                   return Objects.equals(val, v);
                 };
         Object actual = rsp._get(key, null);
-        // Important: check all of the values, not just the first one
+        // Important: check all the values, not just the first one
         passed = passed && p.test(actual);
         if (!passed && i >= repeats - 1) {
           String description = Utils.toJSONString(rsp);

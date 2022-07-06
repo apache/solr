@@ -328,7 +328,7 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
 
   @Test
   public void testStringContext() {
-    // Here, the context field is a string, so it's case sensitive
+    // Here, the context field is a string, so it's case-sensitive
     assertQ(
         req(
             "qt",

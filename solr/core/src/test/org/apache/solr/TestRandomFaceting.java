@@ -292,7 +292,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
             final boolean trieField = trieFields.matcher(ftype.fname).matches();
             if ((notEnum || trieField) && exists) {
               assertQEx(
-                  "facet.exists only when enum or ommitted",
+                  "facet.exists only when enum or omitted",
                   "facet.exists",
                   req(params),
                   ErrorCode.BAD_REQUEST);
@@ -318,7 +318,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
         }
       }
 
-      /**
+      /*
        * String strResponse = h.query(req(params)); Object realResponse =
        * ObjectBuilder.fromJSON(strResponse);
        */
@@ -336,7 +336,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
       throws Exception {
     if (params.getBool("facet.exists", false)) {
       if (isSortByCount(params)) { // it's challenged with facet.sort=count
-        // that requires to recalculate expactation
+        // that requires to recalculate expectation
         expected = getExpectationForSortByCount(params, methods);
       } else { // facet.sort=index
         expected = capFacetCountsTo1(expected);
@@ -385,7 +385,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
             Object label = iterator.next();
             Long count = (Long) iterator.next();
             final Integer strata;
-            if (label == null) { // missing (here "stratas" seems like overengineering )
+            if (label == null) { // missing (here "stratas" seems like over engineering )
               strata = null;
             } else {
               if (count > 0) {
@@ -499,7 +499,6 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
   @SuppressWarnings({"rawtypes"})
   private Map getFacetFieldMap(Object json) {
     Object facet_counts = ((Map) json).get("facet_counts");
-    Map facet_fields = (Map) ((Map) facet_counts).get("facet_fields");
-    return facet_fields;
+    return (Map) ((Map) facet_counts).get("facet_fields");
   }
 }

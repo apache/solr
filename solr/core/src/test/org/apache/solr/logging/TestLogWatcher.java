@@ -41,14 +41,14 @@ public class TestLogWatcher extends SolrTestCaseJ4 {
 
   // Create several log watchers and ensure that new messages go to the new watcher.
   // NOTE: Since the superclass logs messages, it's possible that there are one or more
-  //       messages in the queue at the start, especially with asynch logging.
+  //       messages in the queue at the start, especially with async logging.
   //       All we really care about is that new watchers get the new messages, so test for that
   //       explicitly. See SOLR-12732.
   @Test
   public void testLog4jWatcher() throws InterruptedException {
     LogWatcher<?> watcher = null;
     int lim = random().nextInt(3) + 2;
-    // Every time through this loop, insure that, of all the test messages that have been logged,
+    // Every time through this loop, ensure that, of all the test messages that have been logged,
     // only the current test message is present. NOTE: there may be log messages from the superclass
     // the first time around.
     List<String> oldMessages = new ArrayList<>(lim);

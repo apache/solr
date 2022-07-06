@@ -132,8 +132,8 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     for (Slice slice : clusterState.getCollection(COLLECTION_NAME).getSlices()) {
       String shardName = slice.getName();
       Replica leader = slice.getLeader();
-      assertNotNull("slice has null leader: " + slice.toString(), leader);
-      assertNotNull("slice leader has null node name: " + slice.toString(), leader.getNodeName());
+      assertNotNull("slice has null leader: " + slice, leader);
+      assertNotNull("slice leader has null node name: " + slice, leader.getNodeName());
       String leaderUrl = urlMap.remove(leader.getNodeName());
       assertNotNull(
           "could not find URL for " + shardName + " leader: " + leader.getNodeName(), leaderUrl);
@@ -162,7 +162,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
         fail("unexpected shard: " + shardName);
       }
     }
-    assertEquals("Should be exactly one server left (nost hosting either shard)", 1, urlMap.size());
+    assertEquals("Should be exactly one server left (not hosting either shard)", 1, urlMap.size());
     NO_COLLECTION_CLIENT =
         getHttpSolrClient(urlMap.values().iterator().next() + "/" + COLLECTION_NAME + "/");
 
@@ -269,11 +269,9 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
                           doc(f("id", S_TWO_PRE + "Y"), f("foo_i", "bogus_val_Y")))
                       .process(c));
       assertEquals(
-          "not the type of error we were expecting (" + e.code() + "): " + e.toString(),
-          400,
-          e.code());
+          "not the type of error we were expecting (" + e.code() + "): " + e, 400, e.code());
 
-      // verify malformed deleteByQuerys fail
+      // verify malformed deleteByQuery's fail
       e =
           expectThrows(
               SolrException.class,
@@ -453,7 +451,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     assertQueryDocIds(client, false, docId1);
     assertQueryDocIds(client, true, docId2);
 
-    // mix 2 deleteByQuery, one malformed (fail), one that alctaully removes some docs (ok)
+    // mix 2 deleteByQuery, one malformed (fail), one that actually removes some docs (ok)
     assertQueryDocIds(client, true, docId2);
     rsp =
         update(
@@ -668,7 +666,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     // clean slate
     assertEquals(0, client.deleteByQuery("*:*").getStatus());
 
-    // many docs from diff shards, more then 10 (total) should fail
+    // many docs from diff shards, more than 10 (total) should fail
     SolrException e =
         expectThrows(
             SolrException.class,
@@ -694,24 +692,24 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
                         doc(f("id", S_TWO_PRE + "28"), f("foo_i", "bogus_val")),
                         doc(f("id", S_ONE_PRE + "19"), f("foo_i", "bogus_val")),
                         doc(f("id", S_TWO_PRE + "29"), f("foo_i", "bogus_val")),
-                        doc(f("id", S_ONE_PRE + "10")), // may be skipped, more then 10 fails
-                        doc(f("id", S_TWO_PRE + "20")) // may be skipped, more then 10 fails
+                        doc(f("id", S_ONE_PRE + "10")), // may be skipped, more than 10 fails
+                        doc(f("id", S_TWO_PRE + "20")) // may be skipped, more than 10 fails
                         )
                     .process(client));
     {
       // we can't make any reliable assertions about the error message, because
       // it varies based on how the request was routed -- see SOLR-8830
       assertEquals(
-          "not the type of error we were expecting (" + e.code() + "): " + e.toString(),
+          "not the type of error we were expecting (" + e.code() + "): " + e,
           // NOTE: we always expect a 400 because we know that's what we would get from these types
           // of errors on a single node setup -- a 5xx type error isn't something we should have
           // triggered
           400,
           e.code());
 
-      // verify that the Exceptions metadata can tell us what failed.
+      // verify that the Exceptions' metadata can tell us what failed.
       NamedList<String> remoteErrMetadata = e.getMetadata();
-      assertNotNull("no metadata in: " + e.toString(), remoteErrMetadata);
+      assertNotNull("no metadata in: " + e, remoteErrMetadata);
       Set<ToleratedUpdateError> actualKnownErrs =
           new LinkedHashSet<ToleratedUpdateError>(remoteErrMetadata.size());
       int actualKnownErrsCount = 0;
@@ -727,11 +725,9 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
         actualKnownErrs.add(err);
       }
       assertEquals(
-          "wrong number of errors in metadata: " + remoteErrMetadata.toString(),
-          11,
-          actualKnownErrsCount);
+          "wrong number of errors in metadata: " + remoteErrMetadata, 11, actualKnownErrsCount);
       assertEquals(
-          "at least one dup error in metadata: " + remoteErrMetadata.toString(),
+          "at least one dup error in metadata: " + remoteErrMetadata,
           actualKnownErrsCount,
           actualKnownErrs.size());
       for (ToleratedUpdateError err : actualKnownErrs) {
@@ -776,7 +772,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     // clean slate
     assertEquals(0, client.deleteByQuery("*:*").getStatus());
 
-    // many docs from diff shards, more then 10 from a single shard (two) should fail
+    // many docs from diff shards, more than 10 from a single shard (two) should fail
 
     e =
         expectThrows(
@@ -792,8 +788,8 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
                 docs.add(doc(f("id", S_ONE_PRE + i)));
                 docs.add(doc(f("id", S_TWO_PRE + i), f("foo_i", "bogus_val")));
               }
-              docs.add(doc(f("id", S_ONE_PRE + "x"))); // may be skipped, more then 10 fails
-              docs.add(doc(f("id", S_TWO_PRE + "x"))); // may be skipped, more then 10 fails
+              docs.add(doc(f("id", S_ONE_PRE + "x"))); // may be skipped, more than 10 fails
+              docs.add(doc(f("id", S_TWO_PRE + "x"))); // may be skipped, more than 10 fails
 
               update(
                       params("update.chain", "tolerant-chain-max-errors-10", "commit", "true"),
@@ -805,16 +801,16 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
       // we can't make any reliable assertions about the error message, because
       // it varies based on how the request was routed -- see SOLR-8830
       assertEquals(
-          "not the type of error we were expecting (" + e.code() + "): " + e.toString(),
+          "not the type of error we were expecting (" + e.code() + "): " + e,
           // NOTE: we always expect a 400 because we know that's what we would get from these types
           // of errors on a single node setup -- a 5xx type error isn't something we should have
           // triggered
           400,
           e.code());
 
-      // verify that the Exceptions metadata can tell us what failed.
+      // verify that the Exceptions' metadata can tell us what failed.
       NamedList<String> remoteErrMetadata = e.getMetadata();
-      assertNotNull("no metadata in: " + e.toString(), remoteErrMetadata);
+      assertNotNull("no metadata in: " + e, remoteErrMetadata);
       Set<ToleratedUpdateError> actualKnownErrs =
           new LinkedHashSet<ToleratedUpdateError>(remoteErrMetadata.size());
       int actualKnownErrsCount = 0;
@@ -830,11 +826,9 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
         actualKnownErrs.add(err);
       }
       assertEquals(
-          "wrong number of errors in metadata: " + remoteErrMetadata.toString(),
-          11,
-          actualKnownErrsCount);
+          "wrong number of errors in metadata: " + remoteErrMetadata, 11, actualKnownErrsCount);
       assertEquals(
-          "at least one dup error in metadata: " + remoteErrMetadata.toString(),
+          "at least one dup error in metadata: " + remoteErrMetadata,
           actualKnownErrsCount,
           actualKnownErrs.size());
       for (ToleratedUpdateError err : actualKnownErrs) {
@@ -886,12 +880,12 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     // clean slate
     assertEquals(0, client.deleteByQuery("*:*").getStatus());
 
-    // many docs from diff shards, more then 10 don't have any uniqueKey specified
+    // many docs from diff shards, more than 10 don't have any uniqueKey specified
 
     e =
         expectThrows(
             SolrException.class,
-            "did not get a top level exception when more then 10 docs mising uniqueKey",
+            "did not get a top level exception when more then 10 docs missing uniqueKey",
             () -> {
               ArrayList<SolrInputDocument> docs = new ArrayList<SolrInputDocument>(30);
               docs.add(doc(f("id", S_ONE_PRE + "z")));
@@ -902,8 +896,8 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
                 // no "id" field
                 docs.add(doc(f("foo_i", "" + i)));
               }
-              docs.add(doc(f("id", S_ONE_PRE + "x"))); // may be skipped, more then 10 fails
-              docs.add(doc(f("id", S_TWO_PRE + "x"))); // may be skipped, more then 10 fails
+              docs.add(doc(f("id", S_ONE_PRE + "x"))); // may be skipped, more than 10 fails
+              docs.add(doc(f("id", S_TWO_PRE + "x"))); // may be skipped, more than 10 fails
 
               update(
                       params("update.chain", "tolerant-chain-max-errors-10", "commit", "true"),
@@ -915,16 +909,16 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
       // we can't make any reliable assertions about the error message, because
       // it varies based on how the request was routed -- see SOLR-8830
       assertEquals(
-          "not the type of error we were expecting (" + e.code() + "): " + e.toString(),
+          "not the type of error we were expecting (" + e.code() + "): " + e,
           // NOTE: we always expect a 400 because we know that's what we would get from these types
           // of errors on a single node setup -- a 5xx type error isn't something we should have
           // triggered
           400,
           e.code());
 
-      // verify that the Exceptions metadata can tell us what failed.
+      // verify that the Exceptions' metadata can tell us what failed.
       NamedList<String> remoteErrMetadata = e.getMetadata();
-      assertNotNull("no metadata in: " + e.toString(), remoteErrMetadata);
+      assertNotNull("no metadata in: " + e, remoteErrMetadata);
       int actualKnownErrsCount = 0;
       for (int i = 0; i < remoteErrMetadata.size(); i++) {
         ToleratedUpdateError err =
@@ -939,9 +933,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
         assertTrue("failed id didn't match 'unknown': " + err, err.getId().contains("unknown"));
       }
       assertEquals(
-          "wrong number of errors in metadata: " + remoteErrMetadata.toString(),
-          11,
-          actualKnownErrsCount);
+          "wrong number of errors in metadata: " + remoteErrMetadata, 11, actualKnownErrsCount);
     }
 
     assertEquals(0, client.commit().getStatus()); // need to force since update didn't finish
@@ -955,7 +947,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     // clean slate
     assertEquals(0, client.deleteByQuery("*:*").getStatus());
 
-    // many docs from diff shards, more then 10 from a single shard (two) should fail but
+    // many docs from diff shards, more than 10 from a single shard (two) should fail but
     // request should still succeed because of maxErrors=-1 param
 
     ArrayList<SolrInputDocument> docs = new ArrayList<SolrInputDocument>(30);
@@ -1110,14 +1102,14 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
 
       // likewise, we can't make a firm(er) assertion about the response code...
       assertTrue(
-          "not the type of error we were expecting (" + e.code() + "): " + e.toString(),
+          "not the type of error we were expecting (" + e.code() + "): " + e,
           // should be one these 2 depending on order that the async errors were hit...
           // on a single node setup -- a 5xx type error isn't something we should have triggered
           400 == e.code() || 409 == e.code());
 
-      // verify that the Exceptions metadata can tell us what failed.
+      // verify that the Exceptions' metadata can tell us what failed.
       NamedList<String> remoteErrMetadata = e.getMetadata();
-      assertNotNull("no metadata in: " + e.toString(), remoteErrMetadata);
+      assertNotNull("no metadata in: " + e, remoteErrMetadata);
       Set<ToleratedUpdateError> actualKnownErrs =
           new LinkedHashSet<ToleratedUpdateError>(remoteErrMetadata.size());
       int actualKnownErrsCount = 0;
@@ -1133,11 +1125,9 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
         actualKnownErrs.add(err);
       }
       assertEquals(
-          "wrong number of errors in metadata: " + remoteErrMetadata.toString(),
-          4,
-          actualKnownErrsCount);
+          "wrong number of errors in metadata: " + remoteErrMetadata, 4, actualKnownErrsCount);
       assertEquals(
-          "at least one dup error in metadata: " + remoteErrMetadata.toString(),
+          "at least one dup error in metadata: " + remoteErrMetadata,
           actualKnownErrsCount,
           actualKnownErrs.size());
     }
@@ -1176,11 +1166,9 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     List<SimpleOrderedMap<String>> errors =
         (List<SimpleOrderedMap<String>>) response.getResponseHeader().get("errors");
 
-    assertNotNull(assertionMsgPrefix + ": Null errors: " + response.toString(), errors);
+    assertNotNull(assertionMsgPrefix + ": Null errors: " + response, errors);
     assertEquals(
-        assertionMsgPrefix + ": Num error ids: " + errors.toString(),
-        expectedErrs.length,
-        errors.size());
+        assertionMsgPrefix + ": Num error ids: " + errors, expectedErrs.length, errors.size());
 
     for (SimpleOrderedMap<String> err : errors) {
       String assertErrPre = assertionMsgPrefix + ": " + err.toString();
@@ -1192,7 +1180,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
       String message = err.get("message");
       assertNotNull(assertErrPre + " ... null message", message);
 
-      // inefficient scan, but good nough for the size of sets we're dealing with
+      // inefficient scan, but good enough for the size of sets we're dealing with
       boolean found = false;
       for (ExpectedErr expected : expectedErrs) {
         if (expected.type.equals(type)
@@ -1202,11 +1190,11 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
           break;
         }
       }
-      assertTrue(assertErrPre + " ... unexpected err in: " + response.toString(), found);
+      assertTrue(assertErrPre + " ... unexpected err in: " + response, found);
     }
   }
 
-  /** convinience method when the only type of errors you expect are 'add' errors */
+  /** convenience method when the only type of errors you expect are 'add' errors */
   public static void assertUpdateTolerantAddErrors(
       String assertionMsgPrefix, UpdateResponse response, String... errorIdsExpected) {
     ExpectedErr[] expected = new ExpectedErr[errorIdsExpected.length];

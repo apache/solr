@@ -878,8 +878,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
         assertTrue(
             "Ran out of actual keys as of : " + i + "->" + expectedKey, actualKeys.hasNext());
         assertEquals(expectedKey, actualKeys.next());
-        assertEquals(
-            "percentiles are off: " + p.toString(), expectedVals[i], p.get(expectedKey), 1.0D);
+        assertEquals("percentiles are off: " + p, expectedVals[i], p.get(expectedKey), 1.0D);
       }
 
       //
@@ -1988,8 +1987,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       client = upClients.get(which);
     }
 
-    QueryResponse rsp = client.query(params);
-    return rsp;
+    return client.query(params);
   }
 
   protected void comparePartialResponses(
@@ -2027,12 +2025,11 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
                   Boolean.TRUE,
                   rsp.getHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
               assertTrue(
-                  "Expected to find error in the down shard info: " + info.toString(),
+                  "Expected to find error in the down shard info: " + info,
                   info.get("error") != null);
             } else {
               assertTrue(
-                  "Expected timeAllowedError or to find shardAddress in the up shard info: "
-                      + info.toString(),
+                  "Expected timeAllowedError or to find shardAddress in the up shard info: " + info,
                   info.get("shardAddress") != null);
             }
           } else {

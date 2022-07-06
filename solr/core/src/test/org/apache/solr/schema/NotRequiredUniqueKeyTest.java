@@ -30,7 +30,7 @@ public class NotRequiredUniqueKeyTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    System.setProperty("enable.update.log", "false"); // usecase doesn't work with updateLog
+    System.setProperty("enable.update.log", "false"); // use case doesn't work with updateLog
     initCore("solrconfig.xml", "schema-not-required-unique-key.xml");
   }
 

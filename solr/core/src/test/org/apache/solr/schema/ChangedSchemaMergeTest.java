@@ -55,7 +55,7 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
 
     // sanity check our test...
     assertTrue(
-        "Effectiveness of tets depends on SchemaSimilarityFactory being SolrCoreAware "
+        "Effectiveness of tests depends on SchemaSimilarityFactory being SolrCoreAware, "
             + "something changed in the impl and now major portions of this test are useless",
         SolrCoreAware.class.isAssignableFrom(simfac2));
 

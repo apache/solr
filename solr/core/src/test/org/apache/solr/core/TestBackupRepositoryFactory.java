@@ -107,7 +107,7 @@ public class TestBackupRepositoryFactory extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testNonExistantBackupRepository() {
+  public void testNonExistentBackupRepository() {
     PluginInfo[] plugins = new PluginInfo[0];
     BackupRepositoryFactory f = new BackupRepositoryFactory(plugins);
 

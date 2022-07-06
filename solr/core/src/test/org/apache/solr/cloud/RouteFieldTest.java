@@ -91,13 +91,13 @@ public class RouteFieldTest extends SolrCloudTestCase {
             .getStatus());
 
     // We now have two collections, add the same docs to each with the proper
-    // fields so the id field is used in one collection and ROUTE_FIELD in the other..
+    // fields so the id field is used in one collection and ROUTE_FIELD in the other
     List<SolrInputDocument> docsRoute = new ArrayList<>();
     List<SolrInputDocument> docsId = new ArrayList<>();
     int lim = random().nextInt(50) + 50;
     for (int idx = 0; idx < lim; ++idx) {
       SolrInputDocument doc = new SolrInputDocument();
-      // id should be irrelevant for routing, but we want to insure that
+      // id should be irrelevant for routing, but we want to ensure that
       // if somehow we _do_ use id to route, we don't use the same ID
       // as the docs we're adding to the collection routed by id.
       doc.addField("id", idx + 1_500_000);

@@ -214,7 +214,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
     }
   }
 
-  public void testZkCmdExectutor() throws Exception {
+  public void testZkCmdExecutor() throws Exception {
     Path zkDir = createTempDir("zkData");
     ZkTestServer server = null;
 

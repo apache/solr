@@ -89,7 +89,8 @@ public class TestStressLucene extends TestRTGBase {
     final FieldType ft2 = new FieldType();
     ft2.setStored(true);
 
-    // model how solr does locking - only allow one thread to do a hard commit at once, and only one
+    // model how solr handles locking - only allow one thread to do a hard commit at once, and only
+    // one
     // thread to do a soft commit, but
     // a hard commit in progress does not stop a soft commit.
     final Lock hardCommitLock = syncCommits ? new ReentrantLock() : null;

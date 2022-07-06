@@ -102,7 +102,7 @@ public class LoggingHandlerTest extends SolrTestCaseJ4 {
     assertEquals(Level.DEBUG, config.getLoggerConfig(CLASS_LOGGER_NAME).getLevel());
 
     // NOTE: LoggingHandler doesn't actually "remove" the LoggerConfig, ...
-    // evidently so people using they UI can see that it was explicitly turned "OFF" ?
+    // evidently so people using the UI can see that it was explicitly turned "OFF" ?
     mparams.set("set", PARENT_LOGGER_NAME + ":null");
     rsp =
         client.request(

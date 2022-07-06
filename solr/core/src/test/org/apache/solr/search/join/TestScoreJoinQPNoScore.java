@@ -174,7 +174,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
         davesDepartments);
 
     // find people that develop stuff - but limit via filter query to a name of "john"
-    // this tests filters being pushed down to queries (SOLR-3062)
+    // this tests filters being pushed down to the queries (SOLR-3062)
     assertJQ(
         req(
             "q",
@@ -269,7 +269,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
 
       List<FldType> types = new ArrayList<FldType>();
       types.add(new FldType("id", ONE_ONE, new SVal('A', 'Z', 4, 4)));
-      /**
+      /*
        * no numeric fields so far LUCENE-5868 types.add(new FldType("score_f_dv",ONE_ONE, new
        * FVal(1,100))); // field used to score
        */
@@ -280,7 +280,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
       types.add(
           new FldType("small2_ss_dv", ZERO_TWO, new SVal('a', (char) ('c' + indexSize / 3), 1, 1)));
       types.add(new FldType("small3_ss_dv", new IRange(0, 25), new SVal('A', 'z', 1, 1)));
-      /**
+      /*
        * no numeric fields so far LUCENE-5868 types.add(new FldType("small_i_dv",ZERO_ONE, new
        * IRange(0,5+indexSize/3))); types.add(new FldType("small2_i_dv",ZERO_ONE, new
        * IRange(0,5+indexSize/3))); types.add(new FldType("small2_is_dv",ZERO_TWO, new

@@ -21,7 +21,6 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.core.ConfigSetProperties.DEFAULT_FILENAME;
 import static org.junit.matchers.JUnitMatchers.containsString;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -67,6 +66,7 @@ import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
@@ -95,6 +95,7 @@ import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.ConfigSetProperties;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.TestSolrConfigHandler;
+import org.apache.solr.handler.admin.api.ModifyBasicAuthConfigAPI;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.AuthorizationResponse;
@@ -181,14 +182,14 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
         "baseConfigSet2",
         "configSet2",
         null,
-        ImmutableMap.<String, String>of("immutable", "true", "key1", "value1"),
+        Map.of("immutable", "true", "key1", "value1"),
         "solr");
 
     // old, no new
     verifyCreate(
         "baseConfigSet3",
         "configSet3",
-        ImmutableMap.<String, String>of("immutable", "false", "key2", "value2"),
+        Map.of("immutable", "false", "key2", "value2"),
         null,
         "solr");
 
@@ -196,8 +197,8 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     verifyCreate(
         "baseConfigSet4",
         "configSet4",
-        ImmutableMap.<String, String>of("immutable", "true", "onlyOld", "onlyOldValue"),
-        ImmutableMap.<String, String>of("immutable", "false", "onlyNew", "onlyNewValue"),
+        Map.of("immutable", "true", "onlyOld", "onlyOldValue"),
+        Map.of("immutable", "false", "onlyNew", "onlyNewValue"),
         "solr");
   }
 
@@ -433,7 +434,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
             false);
     assertNotNull(map);
     unIgnoreException("The configuration name should be provided");
-    long statusCode = (long) getObjectByPath(map, false, Arrays.asList("responseHeader", "status"));
+    long statusCode = (long) getObjectByPath(map, Arrays.asList("responseHeader", "status"));
     assertEquals(400l, statusCode);
 
     SolrZkClient zkClient =
@@ -465,7 +466,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
             false);
     assertNotNull(map);
     unIgnoreException("already exists`");
-    statusCode = (long) getObjectByPath(map, false, Arrays.asList("responseHeader", "status"));
+    statusCode = (long) getObjectByPath(map, Arrays.asList("responseHeader", "status"));
     assertEquals(400l, statusCode);
     assertTrue(
         "Expected file doesnt exist in zk. It's possibly overwritten",
@@ -681,7 +682,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       // Should not set trusted=true in configSet
       ignoreException(
           "Either empty zipped data, or non-zipped data was passed. In order to upload a configSet, you must zip a non-empty directory to upload.");
-      assertEquals(400, uploadBadConfigSet(configsetName, configsetSuffix, "solr", true, true, v2));
+      assertEquals(400, uploadBadConfigSet(configsetName, configsetSuffix, "solr", v2));
       assertEquals(
           "Expecting version bump",
           solrconfigZkVersion,
@@ -1332,18 +1333,16 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   }
 
   private static String getSecurityJson() throws KeeperException, InterruptedException {
-    String securityJson =
-        "{\n"
-            + "  'authentication':{\n"
-            + "    'blockUnknown': false,\n"
-            + "    'class':'"
-            + MockAuthenticationPlugin.class.getName()
-            + "'},\n"
-            + "  'authorization':{\n"
-            + "    'class':'"
-            + MockAuthorizationPlugin.class.getName()
-            + "'}}";
-    return securityJson;
+    return "{\n"
+        + "  'authentication':{\n"
+        + "    'blockUnknown': false,\n"
+        + "    'class':'"
+        + MockAuthenticationPlugin.class.getName()
+        + "'},\n"
+        + "  'authorization':{\n"
+        + "    'class':'"
+        + MockAuthorizationPlugin.class.getName()
+        + "'}}";
   }
 
   private void uploadConfigSetWithAssertions(String configSetName, String suffix, String username)
@@ -1412,13 +1411,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
         v2);
   }
 
-  private long uploadBadConfigSet(
-      String configSetName,
-      String suffix,
-      String username,
-      boolean overwrite,
-      boolean cleanup,
-      boolean v2)
+  private long uploadBadConfigSet(String configSetName, String suffix, String username, boolean v2)
       throws IOException {
 
     // Read single file from sample configs. This should fail the unzipping
@@ -1427,8 +1420,8 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
         configSetName,
         suffix,
         username,
-        overwrite,
-        cleanup,
+        true /* overwrite */,
+        true /* cleanup */,
         v2);
   }
 
@@ -1463,9 +1456,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
               username,
               usePut);
       assertNotNull(map);
-      long statusCode =
-          (long) getObjectByPath(map, false, Arrays.asList("responseHeader", "status"));
-      return statusCode;
+      return (long) getObjectByPath(map, Arrays.asList("responseHeader", "status"));
     } // else "not" a V2 request...
 
     try {
@@ -1478,7 +1469,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
           .process(cluster.getSolrClient())
           .getStatus();
     } catch (SolrServerException e1) {
-      throw new AssertionError("Server error uploading configset: " + e1.toString(), e1);
+      throw new AssertionError("Server error uploading configset: " + e1, e1);
     } catch (SolrException e2) {
       return e2.code();
     }
@@ -1521,9 +1512,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
               username,
               usePut);
       assertNotNull(map);
-      long statusCode =
-          (long) getObjectByPath(map, false, Arrays.asList("responseHeader", "status"));
-      return statusCode;
+      return (long) getObjectByPath(map, Arrays.asList("responseHeader", "status"));
     } // else "not" a V2 request...
 
     try {
@@ -1538,7 +1527,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
           .process(cluster.getSolrClient())
           .getStatus();
     } catch (SolrServerException e1) {
-      throw new AssertionError("Server error uploading file to configset: " + e1.toString(), e1);
+      throw new AssertionError("Server error uploading file to configset: " + e1, e1);
     } catch (SolrException e2) {
       return e2.code();
     }
@@ -1676,8 +1665,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     return m;
   }
 
-  private static Object getObjectByPath(
-      Map<?, ?> root, boolean onlyPrimitive, java.util.List<String> hierarchy) {
+  private static Object getObjectByPath(Map<?, ?> root, List<String> hierarchy) {
     Map<?, ?> obj = root;
     for (int i = 0; i < hierarchy.size(); i++) {
       String s = hierarchy.get(i);
@@ -1687,9 +1675,6 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
         if (obj == null) return null;
       } else {
         Object val = obj.get(s);
-        if (onlyPrimitive && val instanceof Map) {
-          return null;
-        }
         return val;
       }
     }
@@ -1717,7 +1702,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     FileUtils.copyDirectory(configDir, tmpConfigDir);
     FileUtils.write(
         new File(tmpConfigDir, "configsetprops.json"),
-        getConfigSetProps(ImmutableMap.<String, String>of("immutable", "true")),
+        getConfigSetProps(Map.of("immutable", "true")),
         UTF_8);
     getConfigSetService().uploadConfig("configSet", tmpConfigDir.toPath());
 
@@ -1881,7 +1866,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
         @Override
         public ValidatingJsonMap getSpec() {
-          return Utils.getSpec("cluster.security.BasicAuth.Commands").getSpec();
+          return AnnotatedApi.getApis(new ModifyBasicAuthConfigAPI()).get(0).getSpec();
         }
 
         @Override

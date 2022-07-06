@@ -133,7 +133,7 @@ public class NoCacheHeaderTest extends CacheHeaderTestBase {
     assertNull("We got an ETag in the response", head);
 
     // If-None-Match tests
-    // we set a non matching ETag
+    // we set a non-matching ETag
     get = getSelectMethod(method);
     get.addHeader("If-None-Match", "\"xyz123456\"");
     response = getClient().execute(get);
@@ -154,7 +154,7 @@ public class NoCacheHeaderTest extends CacheHeaderTestBase {
         response.getStatusLine().getStatusCode());
 
     // If-Match tests
-    // we set a non matching ETag
+    // we set a non-matching ETag
     get = getSelectMethod(method);
     get.addHeader("If-Match", "\"xyz123456\"");
     response = getClient().execute(get);
