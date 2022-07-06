@@ -20,7 +20,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest.Field;

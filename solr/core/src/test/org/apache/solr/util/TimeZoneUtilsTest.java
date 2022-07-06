@@ -21,7 +21,7 @@ import java.util.Locale;
 import java.util.Random;
 import java.util.Set;
 import java.util.TimeZone;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 
 public class TimeZoneUtilsTest extends SolrTestCase {

@@ -25,7 +25,7 @@ import static org.junit.Assert.assertThat;
 import java.io.IOException;
 import java.util.Map;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.lucene.util.TestRuleRestoreSystemProperties;
+import org.apache.lucene.tests.util.TestRuleRestoreSystemProperties;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.configuration.SSLCredentialProvider;
 import org.junit.Rule;

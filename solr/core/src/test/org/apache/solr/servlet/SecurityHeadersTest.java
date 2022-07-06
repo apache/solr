@@ -35,7 +35,7 @@ import org.junit.Test;
  * Confirm that the expected security headers are returned when making requests to solr, regardless
  * of whether the request is internally forwarded to another node.
  */
-@org.apache.lucene.util.LuceneTestCase.AwaitsFix(
+@org.apache.lucene.tests.util.LuceneTestCase.AwaitsFix(
     bugUrl = "https://issues.apache.org/jira/browse/SOLR-14903")
 public class SecurityHeadersTest extends SolrCloudTestCase {
 

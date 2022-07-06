@@ -32,7 +32,7 @@ import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.QueryTimeout;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.StandardIndexReaderFactory;
 

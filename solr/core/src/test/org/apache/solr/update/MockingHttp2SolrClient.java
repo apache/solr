@@ -22,7 +22,7 @@ import java.net.ConnectException;
 import java.net.SocketException;
 import java.util.HashSet;
 import java.util.Set;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;

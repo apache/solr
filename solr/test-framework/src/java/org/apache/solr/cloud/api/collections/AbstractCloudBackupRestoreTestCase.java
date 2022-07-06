@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 import java.util.TreeMap;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
