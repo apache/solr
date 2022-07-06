@@ -92,6 +92,18 @@ solrAdminApp.controller('SchemaController',
         };
         $scope.refresh();
 
+        $scope.selectFieldTypeManipulationOption = function() {
+            $scope.fieldTypeObj = $scope.fieldTypeManipulationOption.template;
+        }
+
+        $scope.showHelp = function (id) {
+            if ($scope.helpId && ($scope.helpId === id || id === '')) {
+                delete $scope.helpId;
+            } else {
+                $scope.helpId = id;
+            }
+        };
+
         $scope.selectFieldOrType = function() {
             $location.search($scope.fieldOrType);
         }
@@ -302,6 +314,9 @@ solrAdminApp.controller('SchemaController',
                 $scope.fieldTypeObj = ""
                 delete $scope.addErrors;
             }
+            $scope.fieldTypeManipulationOptions = getFieldTypeManipulationOptions();;
+            $scope.fieldTypeManipulationOption = $scope.fieldTypeManipulationOptions[0];
+            $scope.selectFieldTypeManipulationOption();
         }
 
         $scope.manipulateFieldType = function() {
@@ -630,6 +645,59 @@ var getTermInfo = function(data) {
         }
     }
     return termInfo;
+};
+
+var getFieldTypeManipulationOptions = function() {
+    return [
+        {
+            value: "Add FieldType Template",
+            label: "Add FieldType",
+            template: "{\n" +
+                "  \"add-field-type\": {\n" +
+                "    \"name\": \"myNewTxtField\",\n" +
+                "    \"class\": \"solr.TextField\",\n" +
+                "    \"positionIncrementGap\": \"100\",\n" +
+                "    \"analyzer\": {\n" +
+                "      \"charFilters\": [\n" +
+                "        {\n" +
+                "          \"class\": \"solr.PatternReplaceCharFilterFactory\",\n" +
+                "          \"replacement\": \"$1$1\",\n" +
+                "          \"pattern\": \"([a-zA-Z])\\\\\\\\1+\"\n" +
+                "        }\n" +
+                "      ],\n" +
+                "      \"tokenizer\": {\n" +
+                "        \"class\": \"solr.WhitespaceTokenizerFactory\"\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}"
+        },
+        {
+            value: "Delete FieldType Template",
+            label: "Delete FieldType",
+            template: "{\n" +
+                "  \"delete-field-type\": {\n" +
+                "    \"name\": \"myNewTxtField\"\n" +
+                "  }\n" +
+                "}"
+        },
+        {
+            value: "Replace FieldType Template",
+            label: "Replace FieldType",
+            template: "{\n" +
+                "  \"replace-field-type\": {\n" +
+                "    \"name\": \"myNewTxtField\",\n" +
+                "    \"class\": \"solr.TextField\",\n" +
+                "    \"positionIncrementGap\": \"100\",\n" +
+                "    \"analyzer\": {\n" +
+                "      \"tokenizer\": {\n" +
+                "        \"class\": \"solr.StandardTokenizerFactory\"\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}"
+        }
+    ];
 };
 
 var sortedObjectArray = function(list) {

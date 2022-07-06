@@ -204,20 +204,40 @@ limitations under the License.
 
         </form>
       </div>
-      <div class="action add field-type" data-rel="add" ng-show="showManipulateFieldType" escape-pressed="hideAll()">
-        <form>
-            <p class="clearfix"><label for="add_source">Manipulate Field Type</label>
-                <textarea rows="15" cols="50" type="text" id="manipulate_field_type" ng-model="fieldTypeObj" focus-when="showManipulateFieldType" placeholder="specify field type operation(add, delete, replace) with field type patterns"></textarea>
-            </p>
-            <div ng-repeat="error in manipulateFieldTypeErrors" ng-show="addFieldTypeErrors" class="clearfix note error">
-                <span>{{error}}</span></div>
-            <p class="clearfix buttons">
-                <button type="submit" class="submit" ng-class="{success: added}" ng-click="manipulateFieldType()"><span>Manipulate Field Type</span></button>
-                <button type="reset" class="reset" ng-click="hideAll()"><span>Cancel</span></button>
-            </p>
+        <div class="action add field-type" data-rel="add" ng-show="showManipulateFieldType" escape-pressed="hideAll()">
+            <form>
+                <select id="field_type_manipulation_options"
+                        ng-model="fieldTypeManipulationOption"
+                        chosen
+                        data-placeholder="Please select ..."
+                        ng-change="selectFieldTypeManipulationOption()"
+                        ng-options="f.value for f in fieldTypeManipulationOptions"></select>
+                <a ng-click="showHelp('fieldTypeManipulationHelp')"><img class="help-ico" src="img/ico/question-white.png"/></a>
+                <div id="sampleDocsHelp" class="help" ng-show="helpId === 'fieldTypeManipulationHelp'">
+                    <p>
+                        <a target="_blank" href="https://solr.apache.org/guide/solr/latest/indexing-guide/schema-api.html#add-a-new-field-type">Add a New Field Type</a>: The <b>add-field-type</b> command adds a new field type to your schema.
+                    </p>
+                    <p>
+                        <a target="_blank" href="https://solr.apache.org/guide/solr/latest/indexing-guide/schema-api.html#add-a-new-field-type">Delete a Field Type</a>: The <b>delete-field-type</b> command removes a field type from your schema.
+                    </p>
+                    <p>
+                        <a target="_blank" href="https://solr.apache.org/guide/solr/latest/indexing-guide/schema-api.html#add-a-new-field-type">Replace a Field Type</a>: The <b>replace-field-type</b> command replaces a field type in your schema.
+                    </p>
+                </div>
 
-        </form>
-      </div>
+                <p class="clearfix">
+                    <textarea rows="20" cols="50" type="text" id="manipulate_field_type" ng-model="fieldTypeObj" focus-when="showManipulateFieldType" placeholder="specify field type operation(add, delete, replace) with field type patterns"></textarea>
+                </p>
+
+                <div ng-repeat="error in manipulateFieldTypeErrors" ng-show="addFieldTypeErrors" class="clearfix note error">
+                    <span>{{error}}</span></div>
+                <p class="clearfix buttons">
+                    <button type="submit" class="submit" ng-class="{success: added}" ng-click="manipulateFieldType()"><span>{{fieldTypeManipulationOption.label}}</span></button>
+                    <button type="reset" class="reset" ng-click="hideAll()"><span>Cancel</span></button>
+                </p>
+
+            </form>
+        </div>
     </div>
 
     <div id="data">
