@@ -13,6 +13,8 @@ Bug Fixes
 
 * SOLR-16209: Rolling restart will no longer trigger as much PKI Plugin error logging. (Mike Drob, Tomás Fernández Löbbe)
 
+* SOLR-16264: Set versions for all Antora build tools (Houston Putman)
+
 ==================  9.0.0 ==================
 
 New Features
