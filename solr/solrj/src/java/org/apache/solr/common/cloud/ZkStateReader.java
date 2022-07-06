@@ -631,11 +631,11 @@ public class ZkStateReader implements SolrCloseable {
 
     // Add collections
     for (Entry<String, StatefulCollectionWatch<DocCollectionWatcher>> entry : collectionWatches.watchedCollectionEntries()) {
-      DocCollection currentState = entry.getValue().currentState;
-      if (currentState != null) {
+      if (entry.getValue().currentState != null) {
         // if the doc is null for the collection watch, then it should not be inserted into the
         // state
-        result.putIfAbsent(entry.getKey(), new ClusterState.CollectionRef(currentState));
+        result.putIfAbsent(
+                entry.getKey(), new ClusterState.CollectionRef(entry.getValue().currentState));
       }
     }
 
