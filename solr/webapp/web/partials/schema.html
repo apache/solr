@@ -445,15 +445,16 @@ limitations under the License.
                 </form>
             </div>
         </dd>
-        <dt class="dynamic-field" ng-class="{active: selectedType=='Dynamic Field'}" ng-show="leftbar.dynamicFields">Dynamic Field {{dynamicFields}} / {{dynamicFields.length()}}</dt>
+        
+        <dt class="dynamic-field" ng-class="{active: selectedType=='Dynamic Field'}" ng-show="leftbar.dynamicFields">Dynamic Field</dt>
         <dd class="dynamic-field" ng-class="{active: selectedType=='Dynamic Field'}" ng-repeat="field in leftbar.dynamicFields"><a href="#/{{core}}/schema?dynamic-field={{field}}">{{field}}</a></dd>
 
         <dt class="type" ng-class="{active: selectedType=='Type'}" ng-show="leftbar.types">Type</dt>
         <dd class="type" ng-class="{active: selectedType=='Type'}" ng-repeat="type in leftbar.types"><a href="#/{{core}}/schema?type={{type}}">{{type}}</a></dd>
 
         <dt></dt>
-        <dd class="active delete-field" ng-show="isSchemaUpdatable &amp;&amp; leftbar.fields &amp;&amp;!showDelete"><button ng-click="toggleDelete()"><span>delete field</span></button></dd>
-        <dd class="active delete-field" ng-show="isSchemaUpdatable &amp;&amp; leftbar.dynamicFields &amp;&amp;!showDelete"><button ng-click="toggleDelete()"><span>delete dynamic field</span></button></dd>
+        <dd class="active delete-field" ng-show="isSchemaUpdatable && is.field && !showDelete"><button ng-click="toggleDelete()"><span>delete field</span></button></dd>
+        <dd class="active delete-field" ng-show="isSchemaUpdatable && is.dynamicField && !showDelete"><button ng-click="toggleDelete()"><span>delete dynamic field</span></button></dd>
 
         <div class="action delete" ng-show="showDelete">
 
