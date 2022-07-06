@@ -230,7 +230,7 @@ public class CSVParserTest extends TestCase {
     for (String[] re : res) {
       for (int j = 0; j < re.length; j++) {
         tmp = parser.nextValue();
-        assertEquals(r, tmp);
+        assertEquals(re[j], tmp);
       }
     }
     tmp = parser.nextValue();
@@ -327,9 +327,8 @@ public class CSVParserTest extends TestCase {
       {"hello", ""}, // CSV Strategy ignores empty lines
       {"world", ""}
     };
-    String code;
-    for (String s : codes) {
-      code = s;
+
+    for (String code : codes) {
       CSVParser parser = new CSVParser(new StringReader(code));
       String[][] tmp = parser.getAllValues();
       assertEquals(res.length, tmp.length);
