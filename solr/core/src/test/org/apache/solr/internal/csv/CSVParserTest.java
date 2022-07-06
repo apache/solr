@@ -230,7 +230,7 @@ public class CSVParserTest extends TestCase {
     for (String[] re : res) {
       for (int j = 0; j < re.length; j++) {
         tmp = parser.nextValue();
-        assertEquals(re[j], tmp);
+        assertEquals(r, tmp);
       }
     }
     tmp = parser.nextValue();
@@ -301,9 +301,7 @@ public class CSVParserTest extends TestCase {
       {""}, // ExcelStrategy does not ignore empty lines
       {"world", ""}
     };
-    String code;
-    for (String s : codes) {
-      code = s;
+    for (String code : codes) {
       CSVParser parser = new CSVParser(new StringReader(code), CSVStrategy.EXCEL_STRATEGY);
       String[][] tmp = parser.getAllValues();
       assertEquals(res.length, tmp.length);
@@ -581,8 +579,8 @@ public class CSVParserTest extends TestCase {
     CSVParser parser1 = new CSVParser(new StringReader(code));
     for (String[] datum : data) {
       assertTrue(Arrays.equals(parser1.getLine(), datum));
-      for (int j = 0; j < datum.length; j++) {
-        assertEquals(parser.nextValue(), datum[j]);
+      for (String d : datum) {
+        assertEquals(parser.nextValue(), d);
       }
     }
   }
