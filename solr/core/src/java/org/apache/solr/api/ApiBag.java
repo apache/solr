@@ -17,25 +17,20 @@
 
 package org.apache.solr.api;
 
-import static org.apache.solr.client.solrj.SolrRequest.SUPPORTED_METHODS;
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.util.StrUtils.formatString;
-import static org.apache.solr.common.util.ValidatingJsonMap.ENUM_OF;
-import static org.apache.solr.common.util.ValidatingJsonMap.NOT_NULL;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
-import org.apache.solr.common.util.*;
+import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.JsonSchemaValidator;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.PathTrie;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.request.SolrQueryRequest;
@@ -45,6 +40,25 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
+import static org.apache.solr.client.solrj.SolrRequest.SUPPORTED_METHODS;
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.util.StrUtils.formatString;
+import static org.apache.solr.common.util.ValidatingJsonMap.ENUM_OF;
+import static org.apache.solr.common.util.ValidatingJsonMap.NOT_NULL;
 
 public class ApiBag {
   private final boolean isCoreSpecific;
