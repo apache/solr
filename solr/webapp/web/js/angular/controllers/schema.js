@@ -314,7 +314,7 @@ solrAdminApp.controller('SchemaController',
                 $scope.fieldTypeObj = ""
                 delete $scope.addErrors;
             }
-            $scope.fieldTypeManipulationOptions = getFieldTypeManipulationOptions();;
+            $scope.fieldTypeManipulationOptions = getFieldTypeManipulationOptions();
             $scope.fieldTypeManipulationOption = $scope.fieldTypeManipulationOptions[0];
             $scope.selectFieldTypeManipulationOption();
         }
