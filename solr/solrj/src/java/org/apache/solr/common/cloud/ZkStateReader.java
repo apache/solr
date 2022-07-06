@@ -42,6 +42,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -249,8 +250,8 @@ public class ZkStateReader implements SolrCloseable {
    *
    * <p>Each watcher DocCollectionWatch also contains the latest DocCollection (state) observed
    */
-  private static class DocCollectionWatches
-      extends ConcurrentHashMap<String, StatefulCollectionWatch<DocCollectionWatcher>> {
+  private static class DocCollectionWatches {
+    private static final ConcurrentHashMap<String, StatefulCollectionWatch<DocCollectionWatcher>> statefulWatchesByCollectionName = new ConcurrentHashMap<>();
 
     /**
      * Gets the DocCollection (state) of the collection which the corresponding watch last observed
@@ -260,7 +261,7 @@ public class ZkStateReader implements SolrCloseable {
      *     collection.
      */
     private DocCollection getDocCollection(String collection) {
-      StatefulCollectionWatch<DocCollectionWatcher> watch = get(collection);
+      StatefulCollectionWatch<DocCollectionWatcher> watch = statefulWatchesByCollectionName.get(collection);
       return watch != null ? watch.currentState : null;
     }
 
@@ -270,12 +271,16 @@ public class ZkStateReader implements SolrCloseable {
      * @return an immutable set of active collection names
      */
     private Set<String> activeCollections() {
-      return this.entrySet().stream()
+      return statefulWatchesByCollectionName.entrySet().stream()
           .filter(
               (Entry<String, StatefulCollectionWatch<DocCollectionWatcher>> entry) ->
                   entry.getValue().currentState != null)
           .map(Entry::getKey)
           .collect(Collectors.toUnmodifiableSet());
+    }
+
+    private Set<String> watchedCollections() {
+      return Collections.unmodifiableSet(statefulWatchesByCollectionName.keySet());
     }
 
     /**
@@ -287,13 +292,12 @@ public class ZkStateReader implements SolrCloseable {
      * @return whether an active watch exists for such collection
      */
     private boolean updateDocCollection(String collection, DocCollection newState) {
-      StatefulCollectionWatch<DocCollectionWatcher> finalWatch =
-          computeIfPresent(
+      StatefulCollectionWatch<DocCollectionWatcher> finalWatch = statefulWatchesByCollectionName.computeIfPresent(
               collection,
               (col, watch) -> {
                 DocCollection oldState = watch.currentState;
                 if (oldState == null && newState == null) {
-                  // OK, the collection not yet exist in ZK
+                  // OK, the collection not yet exist in ZK or already deleted
                 } else if (oldState == null) {
                   if (log.isDebugEnabled()) {
                     log.debug("Add data for [{}] ver [{}]", collection, newState.getZNodeVersion());
@@ -326,6 +330,17 @@ public class ZkStateReader implements SolrCloseable {
                 return watch;
               });
       return finalWatch != null;
+    }
+
+    /**
+     * Computes the new StatefulCollectionWatch by the supplied remappingFunction.
+     * @param collectionName  collection name
+     * @param remappingFunction remaps the StatefulCollectionWatch. If this returns null, the associated StatefulCollectionWatch will be removed; otherwise, the returned value will be assigned to such collection
+     * @return the new StatefulCollectionWatch associated with the collection
+     */
+    private StatefulCollectionWatch<DocCollectionWatcher> compute(String collectionName,
+                         BiFunction<String, StatefulCollectionWatch<DocCollectionWatcher>, StatefulCollectionWatch<DocCollectionWatcher>> remappingFunction) {
+      return statefulWatchesByCollectionName.compute(collectionName, remappingFunction);
     }
   }
 
@@ -415,7 +430,7 @@ public class ZkStateReader implements SolrCloseable {
       refreshLiveNodes(null);
 
       Set<String> updatedCollections = new HashSet<>();
-      for (String coll : collectionWatches.keySet()) {
+      for (String coll : collectionWatches.watchedCollections()) {
         DocCollection newState = fetchCollectionState(coll, null);
         if (collectionWatches.updateDocCollection(coll, newState)) {
           updatedCollections.add(coll);
@@ -456,7 +471,7 @@ public class ZkStateReader implements SolrCloseable {
         if (ref.get() != null) {
           return;
         }
-      } else if (collectionWatches.containsKey(collection)) {
+      } else if (collectionWatches.watchedCollections().contains(collection)) {
         // Exists as a watched collection, force a refresh.
         log.debug("Forcing refresh of watched collection state for {}", collection);
         DocCollection newState = fetchCollectionState(collection, null);
@@ -611,13 +626,12 @@ public class ZkStateReader implements SolrCloseable {
     Map<String, ClusterState.CollectionRef> result = new LinkedHashMap<>();
 
     // Add collections
-    for (Map.Entry<String, StatefulCollectionWatch<DocCollectionWatcher>> entry :
-        collectionWatches.entrySet()) {
-      if (entry.getValue().currentState != null) {
+    for (String watchedCollection : collectionWatches.watchedCollections()) {
+      DocCollection currentState = collectionWatches.getDocCollection(watchedCollection);
+      if (currentState != null) {
         // if the doc is null for the collection watch, then it should not be inserted into the
         // state
-        result.putIfAbsent(
-            entry.getKey(), new ClusterState.CollectionRef(entry.getValue().currentState));
+        result.putIfAbsent(watchedCollection, new ClusterState.CollectionRef(currentState));
       }
     }
 
@@ -631,7 +645,7 @@ public class ZkStateReader implements SolrCloseable {
     if (log.isDebugEnabled()) {
       log.debug(
           "clusterStateSet: interesting [{}] watched [{}] lazy [{}] total [{}]",
-          collectionWatches.keySet().size(),
+          collectionWatches.watchedCollections().size(),
           collectionWatches.activeCollections().size(),
           lazyCollectionStates.keySet().size(),
           clusterState.getCollectionStates().size());
@@ -640,8 +654,8 @@ public class ZkStateReader implements SolrCloseable {
     if (log.isTraceEnabled()) {
       log.trace(
           "clusterStateSet: interesting [{}] watched [{}] lazy [{}] total [{}]",
-          collectionWatches.keySet(),
-          collectionWatches.activeCollections().size(),
+          collectionWatches.watchedCollections(),
+          collectionWatches.activeCollections(),
           lazyCollectionStates.keySet(),
           clusterState.getCollectionStates());
     }
@@ -655,7 +669,7 @@ public class ZkStateReader implements SolrCloseable {
 
   /** Refresh collections. */
   private void refreshCollections() {
-    for (String coll : collectionWatches.keySet()) {
+    for (String coll : collectionWatches.watchedCollections()) {
       new StateWatcher(coll).refreshAndWatch();
     }
   }
@@ -685,7 +699,7 @@ public class ZkStateReader implements SolrCloseable {
       this.lazyCollectionStates.keySet().retainAll(children);
       for (String coll : children) {
         // We will create an eager collection for any interesting collections, so don't add to lazy.
-        if (!collectionWatches.containsKey(coll)) {
+        if (!collectionWatches.watchedCollections().contains(coll)) {
           // Double check contains just to avoid allocating an object.
           LazyCollectionRef existing = lazyCollectionStates.get(coll);
           if (existing == null) {
@@ -1362,7 +1376,7 @@ public class ZkStateReader implements SolrCloseable {
         return;
       }
 
-      if (!collectionWatches.containsKey(coll)) {
+      if (!collectionWatches.watchedCollections().contains(coll)) {
         // This collection is no longer interesting, stop watching.
         log.debug("Uninteresting collection {}", coll);
         return;
