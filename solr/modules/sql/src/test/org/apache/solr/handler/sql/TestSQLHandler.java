@@ -2442,7 +2442,9 @@ public class TestSQLHandler extends SolrCloudTestCase {
             "b_s",
             "foo",
             "c_t",
-            "the quick brown fox jumped over the lazy dog")
+            "the quick brown fox jumped over the lazy dog",
+            "d_s",
+            "New York")
         .add(
             "id",
             "2",
@@ -2451,7 +2453,9 @@ public class TestSQLHandler extends SolrCloudTestCase {
             "b_s",
             "foo",
             "c_t",
-            "the sly black dog jumped over the sleeping pig")
+            "the sly black dog jumped over the sleeping pig",
+            "d_s",
+            "New Jersey")
         .add(
             "id",
             "3",
@@ -2460,7 +2464,9 @@ public class TestSQLHandler extends SolrCloudTestCase {
             "b_s",
             "foo",
             "c_t",
-            "the quick brown fox jumped over the lazy dog")
+            "the quick brown fox jumped over the lazy dog",
+            "d_s",
+            "New Hampshire")
         .add(
             "id",
             "4",
@@ -2469,7 +2475,9 @@ public class TestSQLHandler extends SolrCloudTestCase {
             "b_s",
             "foo",
             "c_t",
-            "the sly black dog jumped over the sleepy pig")
+            "the sly black dog jumped over the sleepy pig",
+            "d_s",
+            "New Mexico")
         .add(
             "id",
             "5",
@@ -2478,7 +2486,9 @@ public class TestSQLHandler extends SolrCloudTestCase {
             "b_s",
             "foo",
             "c_t",
-            "the quick brown fox jumped over the lazy dog")
+            "the quick brown fox jumped over the lazy dog",
+            "d_s",
+            "San Diego")
         .add(
             "id",
             "6",
@@ -2487,7 +2497,9 @@ public class TestSQLHandler extends SolrCloudTestCase {
             "b_s",
             "bar",
             "c_t",
-            "the sly black dog jumped over the sleepin piglet")
+            "the sly black dog jumped over the sleepin piglet",
+            "d_s",
+            "San Jose")
         .add(
             "id",
             "7",
@@ -2496,7 +2508,9 @@ public class TestSQLHandler extends SolrCloudTestCase {
             "b_s",
             "zaz",
             "c_t",
-            "the lazy dog jumped over the quick brown fox")
+            "the lazy dog jumped over the quick brown fox",
+            "d_s",
+            "San Francisco")
         .add(
             "id",
             "8",
@@ -2505,7 +2519,9 @@ public class TestSQLHandler extends SolrCloudTestCase {
             "b_s",
             "zaz",
             "c_t",
-            "the lazy dog ducked over the quick brown fox")
+            "the lazy dog ducked over the quick brown fox",
+            "d_s",
+            "San Antonio")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE 'h_llo-%'", 3);
@@ -2520,6 +2536,8 @@ public class TestSQLHandler extends SolrCloudTestCase {
     expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE 'world''\\\\%' ESCAPE '\\'", 1);
     expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE 'w\\_o_ld%' ESCAPE '\\'", 1);
     expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE 'world\\%\\__' ESCAPE '\\'", 1);
+
+    expectResults("SELECT d_s FROM $ALIAS WHERE d_s LIKE 'Sa* Jose'", 1);
 
     // not technically valid SQL but we support it for legacy purposes, see: SOLR-15463
     expectResults("SELECT a_s FROM $ALIAS WHERE a_s='world-*'", 2);

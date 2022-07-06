@@ -56,6 +56,7 @@ import org.apache.solr.client.solrj.io.stream.*;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.*;
+import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
@@ -890,6 +891,10 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     final RelOptCluster cluster = context.getCluster();
     return new SolrTableScan(
         cluster, cluster.traitSetOf(SolrRel.CONVENTION), relOptTable, this, null);
+  }
+
+  public Map<String, LukeResponse.FieldInfo> getSolrFieldTypes() {
+    return this.schema.getSolrFieldTypes();
   }
 
   @SuppressWarnings("WeakerAccess")

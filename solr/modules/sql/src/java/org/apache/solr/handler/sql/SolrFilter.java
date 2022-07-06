@@ -44,6 +44,7 @@ import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.Pair;
+import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
@@ -97,11 +98,16 @@ class SolrFilter extends Filter implements SolrRel {
     implementor.visitChild(0, getInput());
     if (getInput() instanceof SolrAggregate) {
       HavingTranslator translator =
-          new HavingTranslator(getRowType(), implementor.reverseAggMappings, builder);
+          new HavingTranslator(
+              getRowType(),
+              implementor.reverseAggMappings,
+              builder,
+              implementor.solrTable.getSolrFieldTypes());
       String havingPredicate = translator.translateMatch(condition);
       implementor.setHavingPredicate(havingPredicate);
     } else {
-      Translator translator = new Translator(getRowType(), builder);
+      Translator translator =
+          new Translator(getRowType(), builder, implementor.solrTable.getSolrFieldTypes());
       String query = translator.translateMatch(condition);
       implementor.addQuery(query);
       implementor.setNegativeQuery(query.startsWith("-"));
@@ -113,11 +119,16 @@ class SolrFilter extends Filter implements SolrRel {
     protected final RelDataType rowType;
     protected final List<String> fieldNames;
     private final RexBuilder builder;
+    private final Map<String, LukeResponse.FieldInfo> solrFieldTypes;
 
-    Translator(RelDataType rowType, RexBuilder builder) {
+    Translator(
+        RelDataType rowType,
+        RexBuilder builder,
+        Map<String, LukeResponse.FieldInfo> solrFieldTypes) {
       this.rowType = rowType;
       this.fieldNames = SolrRules.solrFieldNames(rowType);
       this.builder = builder;
+      this.solrFieldTypes = solrFieldTypes;
     }
 
     protected RelDataType getFieldType(String field) {
@@ -356,13 +367,16 @@ class SolrFilter extends Filter implements SolrRel {
       terms = translateLikeTermToSolrSyntax(terms, escapeChar);
 
       if (!terms.startsWith("(") && !terms.startsWith("[") && !terms.startsWith("{")) {
-        terms = escapeWithWildcard(terms);
+        String solrFieldType = solrFieldTypes.get(pair.getKey()).getType();
+        terms = escapeWithWildcard(terms, solrFieldType);
 
         // if terms contains multiple words and one or more wildcard chars, then we need to employ
         // the complexphrase parser
         // but that expects the terms wrapped in double-quotes, not parens
         boolean hasMultipleTerms = terms.split("\\s+").length > 1;
-        if (hasMultipleTerms && (terms.contains("*") || terms.contains("?"))) {
+        if (hasMultipleTerms
+            && "text".equals(solrFieldType)
+            && (terms.contains("*") || terms.contains("?"))) {
           String quotedTerms = "\"" + terms.substring(1, terms.length() - 1) + "\"";
           String query = ClientUtils.encodeLocalParamVal(pair.getKey() + ":" + quotedTerms);
           return String.format(Locale.ROOT, "{!complexphrase v=%s}", query);
@@ -448,10 +462,11 @@ class SolrFilter extends Filter implements SolrRel {
       }
 
       String terms = toSolrLiteral(key, value).trim();
+      String solrFieldType = solrFieldTypes.get(key).getType();
 
       if (!terms.startsWith("(") && !terms.startsWith("[") && !terms.startsWith("{")) {
         if (terms.contains("*") || terms.contains("?")) {
-          terms = escapeWithWildcard(terms);
+          terms = escapeWithWildcard(terms, solrFieldType);
         } else {
           terms = "\"" + ClientUtils.escapeQueryChars(terms) + "\"";
         }
@@ -462,15 +477,14 @@ class SolrFilter extends Filter implements SolrRel {
 
     // Wrap filter criteria containing wildcard with parens and unescape the wildcards after
     // escaping protected query chars
-    private String escapeWithWildcard(String terms) {
-      String escaped =
-          ClientUtils.escapeQueryChars(terms)
-              .replace("\\*", "*")
-              .replace("\\?", "?")
-              .replace("\\ ", " ");
-      // if multiple terms, then wrap with parens
-      if (escaped.split("\\s+").length > 1) {
-        escaped = "(" + escaped + ")";
+    private String escapeWithWildcard(String terms, String solrFieldType) {
+      String escaped = ClientUtils.escapeQueryChars(terms).replace("\\*", "*").replace("\\?", "?");
+      if ("text".equals(solrFieldType)) {
+        escaped = escaped.replace("\\ ", " ");
+        // if multiple terms, then wrap with parens
+        if (escaped.split("\\s+").length > 1) {
+          escaped = "(" + escaped + ")";
+        }
       }
       return escaped;
     }
@@ -705,8 +719,11 @@ class SolrFilter extends Filter implements SolrRel {
     private final Map<String, String> reverseAggMappings;
 
     HavingTranslator(
-        RelDataType rowType, Map<String, String> reverseAggMappings, RexBuilder builder) {
-      super(rowType, builder);
+        RelDataType rowType,
+        Map<String, String> reverseAggMappings,
+        RexBuilder builder,
+        Map<String, LukeResponse.FieldInfo> solrFieldTypes) {
+      super(rowType, builder, solrFieldTypes);
       this.reverseAggMappings = reverseAggMappings;
     }
 

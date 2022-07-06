@@ -63,6 +63,7 @@ class SolrSchema extends AbstractSchema implements Closeable {
   // so there's some benefit to caching it for the duration of a statement
   // every statement gets a new SolrSchema instance
   private Map<String, RelDataType> schemaCache = new ConcurrentHashMap<>();
+  private Map<String, LukeResponse.FieldInfo> solrFieldTypes = new HashMap<>();
 
   SolrSchema(Properties properties, SolrClientCache solrClientCache) {
     super();
@@ -162,6 +163,10 @@ class SolrSchema extends AbstractSchema implements Closeable {
     return RelDataTypeImpl.proto(getRowSchema(collection));
   }
 
+  Map<String, LukeResponse.FieldInfo> getSolrFieldTypes() {
+    return this.solrFieldTypes;
+  }
+
   RelDataType getRowSchema(String collection) {
     return schemaCache.computeIfAbsent(collection, this::buildRowSchema);
   }
@@ -182,7 +187,7 @@ class SolrSchema extends AbstractSchema implements Closeable {
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     // merge the actual fields in use returned by Luke with the declared fields in the schema that
     // are empty
-    Map<String, LukeResponse.FieldInfo> combinedFields =
+    solrFieldTypes =
         Stream.of(fieldsInUseMap, storedFields)
             .flatMap(map -> map.entrySet().stream())
             .filter(
@@ -198,7 +203,7 @@ class SolrSchema extends AbstractSchema implements Closeable {
     Map<String, Class<?>> javaClassForTypeMap =
         new HashMap<>(); // local cache for custom field types we've already resolved
 
-    for (Map.Entry<String, LukeResponse.FieldInfo> entry : combinedFields.entrySet()) {
+    for (Map.Entry<String, LukeResponse.FieldInfo> entry : solrFieldTypes.entrySet()) {
       LukeResponse.FieldInfo luceneFieldInfo = entry.getValue();
 
       String luceneFieldType = luceneFieldInfo.getType();
