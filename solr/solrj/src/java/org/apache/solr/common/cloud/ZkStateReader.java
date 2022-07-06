@@ -283,6 +283,10 @@ public class ZkStateReader implements SolrCloseable {
       return Collections.unmodifiableSet(statefulWatchesByCollectionName.keySet());
     }
 
+    private Set<Entry<String, StatefulCollectionWatch<DocCollectionWatcher>>> watchedCollectionEntries() {
+      return Collections.unmodifiableSet(statefulWatchesByCollectionName.entrySet());
+    }
+
     /**
      * Updates the latest observed DocCollection (state) of the {@link StatefulCollectionWatch} if
      * the collection is being watched
@@ -626,12 +630,12 @@ public class ZkStateReader implements SolrCloseable {
     Map<String, ClusterState.CollectionRef> result = new LinkedHashMap<>();
 
     // Add collections
-    for (String watchedCollection : collectionWatches.watchedCollections()) {
-      DocCollection currentState = collectionWatches.getDocCollection(watchedCollection);
+    for (Entry<String, StatefulCollectionWatch<DocCollectionWatcher>> entry : collectionWatches.watchedCollectionEntries()) {
+      DocCollection currentState = entry.getValue().currentState;
       if (currentState != null) {
         // if the doc is null for the collection watch, then it should not be inserted into the
         // state
-        result.putIfAbsent(watchedCollection, new ClusterState.CollectionRef(currentState));
+        result.putIfAbsent(entry.getKey(), new ClusterState.CollectionRef(currentState));
       }
     }
 
