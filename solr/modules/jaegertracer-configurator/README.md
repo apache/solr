@@ -24,8 +24,7 @@ Apache Solr Jaeger Tracer Configurator provides a way for you to expose Solr's t
 
 Add this Solr Module to your Solr installation by enabling it via `-Dsolr.modules=jaegertracer-configurator`
 
-There are a number of sampler's available to Jaeger.   If you choose "remote", you will need to add the GSON
-dependency from https://github.com/google/gson yourself.   Learn more about the available samplers at https://www.jaegertracing.io/docs/sampling/#client-sampling-configuration.  
+There are a number of sampler's available to Jaeger.  Learn more about the available samplers at https://www.jaegertracing.io/docs/sampling/#client-sampling-configuration.
 
 The Jaeger Tracer Configurator is added to `solr.xml` like this:
 

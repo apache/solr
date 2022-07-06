@@ -45,8 +45,7 @@ public class TestJaegerConfigurator extends SolrTestCaseJ4 {
     resetGlobalTracer();
     ExecutorUtil.resetThreadLocalProviders();
 
-    // The default sampler is one that uses GSON but we don't bother with that dependency.
-    //  So we change it to something simple.
+    // "remote" is the default sampler, however we want to use something simpler in the tests.
     System.setProperty("JAEGER_SAMPLER_TYPE", "const");
   }
 
