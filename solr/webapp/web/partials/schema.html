@@ -209,7 +209,7 @@ limitations under the License.
                 <select id="field_type_manipulation_options"
                         ng-model="fieldTypeManipulationOption"
                         chosen
-                        data-placeholder="Please select ..."
+                        disable-search="true"
                         ng-change="selectFieldTypeManipulationOption()"
                         ng-options="f.value for f in fieldTypeManipulationOptions"></select>
                 <a ng-click="showHelp('fieldTypeManipulationHelp')"><img class="help-ico" src="img/ico/question-white.png"/></a>
@@ -218,10 +218,10 @@ limitations under the License.
                         <a target="_blank" href="https://solr.apache.org/guide/solr/latest/indexing-guide/schema-api.html#add-a-new-field-type">Add a New Field Type</a>: The <b>add-field-type</b> command adds a new field type to your schema.
                     </p>
                     <p>
-                        <a target="_blank" href="https://solr.apache.org/guide/solr/latest/indexing-guide/schema-api.html#delete-a-new-field-type">Delete a Field Type</a>: The <b>delete-field-type</b> command removes a field type from your schema.
+                        <a target="_blank" href="https://solr.apache.org/guide/solr/latest/indexing-guide/schema-api.html#delete-a-field-type">Delete a Field Type</a>: The <b>delete-field-type</b> command removes a field type from your schema.
                     </p>
                     <p>
-                        <a target="_blank" href="https://solr.apache.org/guide/solr/latest/indexing-guide/schema-api.html#replace-a-new-field-type">Replace a Field Type</a>: The <b>replace-field-type</b> command replaces a field type in your schema.
+                        <a target="_blank" href="https://solr.apache.org/guide/solr/latest/indexing-guide/schema-api.html#replace-a-field-type">Replace a Field Type</a>: The <b>replace-field-type</b> command replaces a field type in your schema.
                     </p>
                 </div>
 
