@@ -4521,7 +4521,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
       }
     } catch (NumberFormatException e) {
       try {
-        if (Double.valueOf(numbers[1]) < Double.valueOf(numbers[2])) {
+        if (Double.parseDouble(numbers[1]) < Double.parseDouble(numbers[2])) {
           smaller = numbers[1];
           larger = numbers[2];
         } else {

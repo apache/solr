@@ -499,7 +499,6 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
   @SuppressWarnings({"rawtypes"})
   private Map getFacetFieldMap(Object json) {
     Object facet_counts = ((Map) json).get("facet_counts");
-    Map facet_fields = (Map) ((Map) facet_counts).get("facet_fields");
-    return facet_fields;
+    return (Map) ((Map) facet_counts).get("facet_fields");
   }
 }

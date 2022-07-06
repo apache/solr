@@ -1987,8 +1987,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       client = upClients.get(which);
     }
 
-    QueryResponse rsp = client.query(params);
-    return rsp;
+    return client.query(params);
   }
 
   protected void comparePartialResponses(

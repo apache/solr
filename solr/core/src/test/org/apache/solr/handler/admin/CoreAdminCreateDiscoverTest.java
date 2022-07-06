@@ -60,7 +60,7 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
     solrHomeDirectory = null;
   }
 
-  private static void setupCore(String coreName, boolean blivet) throws IOException {
+  private static void setupCore(String coreName) throws IOException {
     File instDir = new File(solrHomeDirectory, coreName);
     File subHome = new File(instDir, "conf");
     assertTrue("Failed to make subdirectory ", subHome.mkdirs());
@@ -79,7 +79,7 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
   @Test
   public void testCreateSavesSysProps() throws Exception {
 
-    setupCore(coreSysProps, true);
+    setupCore(coreSysProps);
 
     // create a new core (using CoreAdminHandler) w/ properties
     // Just to be sure it's NOT written to the core.properties file
@@ -164,7 +164,7 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
   @Test
   public void testCannotCreateTwoCoresWithSameInstanceDir() throws Exception {
 
-    setupCore(coreDuplicate, true);
+    setupCore(coreDuplicate);
 
     File workDir = new File(solrHomeDirectory, coreDuplicate);
     File data = new File(workDir, "data");
@@ -215,7 +215,7 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
   @Test
   public void testInstanceDirAsPropertyParam() throws Exception {
 
-    setupCore("testInstanceDirAsPropertyParam-XYZ", true);
+    setupCore("testInstanceDirAsPropertyParam-XYZ");
 
     // make sure workDir is different even if core name is used as instanceDir
     File workDir = new File(solrHomeDirectory, "testInstanceDirAsPropertyParam-XYZ");
@@ -263,7 +263,7 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
   @Test
   public void testCreateSavesRegProps() throws Exception {
 
-    setupCore(coreNormal, true);
+    setupCore(coreNormal);
 
     // create a new core (using CoreAdminHandler) w/ properties
     // Just to be sure it's NOT written to the core.properties file

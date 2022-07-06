@@ -309,7 +309,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     if (vers == null)
       fail("Failed to get version using query " + query + " from " + replica.getCoreUrl());
 
-    return vers.longValue();
+    return vers;
   }
 
   protected void assertDocsExistInAllReplicas(

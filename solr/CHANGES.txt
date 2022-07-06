@@ -97,6 +97,8 @@ Bug Fixes
 
 Other Changes
 ---------------------
+* SOLR-16245: Make DenseVectorField codec agnostic (Elia Porciani via Alessandro Benedetti)
+
 * SOLR-15897: Remove <jmx/> from all unit test solrconfig.xml files. (Eric Pugh)
 
 * SOLR-15776: Admin UI is now aware of logged-in user's permissions and can adapt accordingly (janhoy)

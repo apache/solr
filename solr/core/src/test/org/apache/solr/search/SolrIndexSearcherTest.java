@@ -273,7 +273,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
               if (fixedScore == null) {
                 expectedScore = 1f;
               } else {
-                expectedScore = fixedScore.floatValue();
+                expectedScore = fixedScore;
                 cmd.setQuery(new FixedScoreReRankQuery(cmd.getQuery(), expectedScore));
               }
 
