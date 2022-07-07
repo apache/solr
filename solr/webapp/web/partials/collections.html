@@ -19,7 +19,7 @@ limitations under the License.
   <div id="ui-block" style="display:none">&nbsp;</div><!-- @todo what is this for? -->
 
   <div class="actions clearfix">
-    <div class="action add" data-rel="add" ng-show="showAdd" style="left:0px">
+    <div class="action add" data-rel="add" ng-show="showAdd" style="left:0px;width:400px">
 
       <form>
 
@@ -56,7 +56,15 @@ limitations under the License.
             <input type="text" name="routerField" id="add_routerField" ng-model="newCollection.routerField"></p>
 
           <p class="clearfix"><label for="add_createNodeSet">createNodeSet:</label>
-            <selectize config='createNodeSetConfig' options='availableNodeSet' ng-model="newCollection.createNodeSet"></selectize>
+            <select
+              chosen
+              multiple
+              data-disable-search="true"
+              placeholder-text-single="'subset of nodes'"
+              ng-model="newCollection.createNodeSet"
+              ng-options="node.name for node in availableNodeSet">
+                <!--option value="">No specified node</option-->
+            </select>
           </p>
 
         </div>

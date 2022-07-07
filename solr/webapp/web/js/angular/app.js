@@ -53,8 +53,7 @@ var solrAdminApp = angular.module("solrAdminApp", [
   "solrAdminServices",
   "localytics.directives",
   "ab-base64",
-  "ui.grid",
-  "selectize"
+  "ui.grid"
 ]);
 
 solrAdminApp.config([
