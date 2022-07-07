@@ -24,15 +24,11 @@ solrAdminApp.controller('CollectionsController',
           $scope.rootUrl = Constants.ROOT_URL + "#/~collections/" + $routeParams.collection;
 
           Zookeeper.liveNodes({}, function(data) {
-            $scope.nodes = [];
+            $scope.availableNodeSet = [];
             var children = data.tree[0].children;
             for (var child in children) {
-              $scope.nodes.push(children[child].text);
-            }
-            $scope.availableNodeSet = [];
-            for (var i in $scope.nodes) {
-                $scope.availableNodeSet.push({name: $scope.nodes[i]});
-            }
+              $scope.availableNodeSet.push({name: children[child].text});
+            }          
           });
 
           Collections.status(function (data) {
