@@ -27,8 +27,8 @@ solrAdminApp.controller('CollectionsController',
             $scope.availableNodeSet = [];
             var children = data.tree[0].children;
             for (var child in children) {
-              $scope.availableNodeSet.push({name: children[child].text});
-            }          
+              $scope.availableNodeSet.push(children[child].text);
+            }
           });
 
           Collections.status(function (data) {
@@ -165,7 +165,7 @@ solrAdminApp.controller('CollectionsController',
             };
             if (coll.shards) params.shards = coll.shards;
             if (coll.routerField) params["router.field"] = coll.routerField;
-            if (coll.createNodeSet) params.createNodeSet = coll.createNodeSet.map(node => node.name).join(",");
+            if (coll.createNodeSet) params.createNodeSet = coll.createNodeSet.join(",");
             Collections.add(params, function(data) {
               $scope.cancelAddCollection();
               $scope.resetMenu("collections", Constants.IS_ROOT_PAGE);
