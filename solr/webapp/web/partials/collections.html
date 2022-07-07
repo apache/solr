@@ -19,7 +19,7 @@ limitations under the License.
   <div id="ui-block" style="display:none">&nbsp;</div><!-- @todo what is this for? -->
 
   <div class="actions clearfix">
-    <div class="action add" data-rel="add" ng-show="showAdd" style="left:0px;width:400px">
+    <div class="action add" data-rel="add" ng-show="showAdd" style="left:0px;width:500px">
 
       <form>
 
@@ -59,11 +59,9 @@ limitations under the License.
             <select
               chosen
               multiple
-              data-disable-search="true"
-              placeholder-text-single="'subset of nodes'"
+              disable-search="true"
               ng-model="newCollection.createNodeSet"
-              ng-options="node.name for node in availableNodeSet">
-                <!--option value="">No specified node</option-->
+              ng-options="node for node in availableNodeSet">
             </select>
           </p>
 
