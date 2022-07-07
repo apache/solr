@@ -33,7 +33,7 @@
  * <p>The {@link org.apache.solr.ltr.LTRScoringQuery} will take care of computing the values of all
  * the features (see {@link org.apache.solr.ltr.feature.Feature}) and then will delegate the final
  * score generation to the {@link org.apache.solr.ltr.model.LTRScoringModel}, by calling the method
- * {@link org.apache.solr.ltr.model.LTRScoringModel#score(float[] modelFeatureValuesNormalized)
+ * {@link org.apache.solr.ltr.model.LTRScoringModel#score(Float[] modelFeatureValuesNormalized)
  * score(float[] modelFeatureValuesNormalized)}.
  */
 package org.apache.solr.ltr;

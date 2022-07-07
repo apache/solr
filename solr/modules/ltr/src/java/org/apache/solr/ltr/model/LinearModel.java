@@ -124,7 +124,7 @@ public class LinearModel extends LTRScoringModel {
   }
 
   @Override
-  public float score(float[] modelFeatureValuesNormalized) {
+  public float score(Float[] modelFeatureValuesNormalized) {
     float score = 0;
     for (int i = 0; i < modelFeatureValuesNormalized.length; ++i) {
       score += modelFeatureValuesNormalized[i] * featureToWeight[i];

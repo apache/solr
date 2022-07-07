@@ -45,6 +45,7 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.model.LTRScoringModel;
+import org.apache.solr.ltr.model.MultipleAdditiveTreesModel;
 import org.apache.solr.request.SolrQueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -373,7 +374,7 @@ public class LTRScoringQuery extends Query implements Accountable {
     // List of the model's features used for scoring. This is a subset of the
     // features used for logging.
     private final Feature.FeatureWeight[] modelFeatureWeights;
-    private final float[] modelFeatureValuesNormalized;
+    private final Float[] modelFeatureValuesNormalized;
     private final Feature.FeatureWeight[] extractedFeatureWeights;
 
     // List of all the feature names, values - used for both scoring and logging
@@ -405,7 +406,7 @@ public class LTRScoringQuery extends Query implements Accountable {
       super(LTRScoringQuery.this);
       this.extractedFeatureWeights = extractedFeatureWeights;
       this.modelFeatureWeights = modelFeatureWeights;
-      this.modelFeatureValuesNormalized = new float[modelFeatureWeights.length];
+      this.modelFeatureValuesNormalized = new Float[modelFeatureWeights.length];
       this.featuresInfo = new FeatureInfo[allFeaturesSize];
       setFeaturesInfo();
     }
@@ -429,7 +430,7 @@ public class LTRScoringQuery extends Query implements Accountable {
     }
 
     // for test use
-    float[] getModelFeatureValuesNormalized() {
+    Float[] getModelFeatureValuesNormalized() {
       return modelFeatureValuesNormalized;
     }
 
@@ -452,6 +453,12 @@ public class LTRScoringQuery extends Query implements Accountable {
           modelFeatureValuesNormalized[pos] = fInfo.getValue();
         } else {
           modelFeatureValuesNormalized[pos] = feature.getDefaultValue();
+          if (ltrScoringModel instanceof MultipleAdditiveTreesModel) {
+            modelFeatureValuesNormalized[pos] = Float.NaN;
+          }
+          else {
+            modelFeatureValuesNormalized[pos] = feature.getDefaultValue();
+          }
         }
         pos++;
       }

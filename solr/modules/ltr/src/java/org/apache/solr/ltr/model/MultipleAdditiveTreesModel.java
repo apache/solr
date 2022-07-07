@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Stack;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
@@ -48,6 +49,7 @@ import org.apache.solr.util.SolrPluginUtils;
  *         "root": {
  *           "feature" : "userTextTitleMatch",
  *           "threshold" : "0.5",
+ *           "missing": "left",
  *           "left" : {
  *             "value" : "-100"
  *           },
@@ -135,6 +137,8 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     private Float threshold;
     private RegressionTreeNode left;
     private RegressionTreeNode right;
+    private String missing;
+
 
     public void setValue(float value) {
       this.value = value;
@@ -161,6 +165,10 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
       this.threshold = Float.parseFloat(threshold) + NODE_SPLIT_SLACK;
     }
 
+    public void setMissing(String direction) {
+      this.missing = direction;
+    }
+
     @SuppressWarnings({"unchecked"})
     public void setLeft(Object left) {
       this.left = createRegressionTreeNode((Map<String, Object>) left);
@@ -182,7 +190,8 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
         sb.append(value);
       } else {
         sb.append("(feature=").append(feature);
-        sb.append(",threshold=").append(threshold.floatValue() - NODE_SPLIT_SLACK);
+        sb.append(",threshold=").append(threshold - NODE_SPLIT_SLACK);
+        sb.append(",missing=").append(missing);
         sb.append(",left=").append(left);
         sb.append(",right=").append(right);
         sb.append(')');
@@ -211,11 +220,11 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
       this.root = createRegressionTreeNode((Map<String, Object>) root);
     }
 
-    public float score(float[] featureVector) {
-      return weight.floatValue() * scoreNode(featureVector, root);
+    public float score(Float[] featureVector) {
+      return weight * scoreNode(featureVector, root);
     }
 
-    public String explain(float[] featureVector) {
+    public String explain(Float[] featureVector) {
       return explainNode(featureVector, root);
     }
 
@@ -279,7 +288,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
   }
 
   @Override
-  public float score(float[] modelFeatureValuesNormalized) {
+  public float score(Float[] modelFeatureValuesNormalized) {
     float score = 0;
     for (final RegressionTree t : trees) {
       score += t.score(modelFeatureValuesNormalized);
@@ -287,7 +296,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     return score;
   }
 
-  private static float scoreNode(float[] featureVector, RegressionTreeNode regressionTreeNode) {
+  private static float scoreNode(Float[] featureVector, RegressionTreeNode regressionTreeNode) {
     while (true) {
       if (regressionTreeNode.isLeaf()) {
         return regressionTreeNode.value;
@@ -298,7 +307,9 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
         return 0f;
       }
 
-      if (featureVector[regressionTreeNode.featureIndex] <= regressionTreeNode.threshold) {
+      if ((featureVector[regressionTreeNode.featureIndex] <= regressionTreeNode.threshold) ||
+              (Float.isNaN(featureVector[regressionTreeNode.featureIndex]) &&
+                      Objects.equals(regressionTreeNode.missing, "left"))) {
         regressionTreeNode = regressionTreeNode.left;
       } else {
         regressionTreeNode = regressionTreeNode.right;
@@ -312,7 +323,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     Stack<RegressionTreeNode> stack = new Stack<RegressionTreeNode>();
     stack.push(regressionTreeNode);
 
-    while (stack.empty() == false) {
+    while (!stack.empty()) {
       RegressionTreeNode topStackNode = stack.pop();
 
       if (topStackNode.isLeaf()) {
@@ -341,7 +352,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     }
   }
 
-  private static String explainNode(float[] featureVector, RegressionTreeNode regressionTreeNode) {
+  private static String explainNode(Float[] featureVector, RegressionTreeNode regressionTreeNode) {
     final StringBuilder returnValueBuilder = new StringBuilder();
     while (true) {
       if (regressionTreeNode.isLeaf()) {
@@ -361,25 +372,25 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
       // each branch and report
       // that here
 
-      if (featureVector[regressionTreeNode.featureIndex] <= regressionTreeNode.threshold) {
-        returnValueBuilder.append(
-            "'"
-                + regressionTreeNode.feature
-                + "':"
-                + featureVector[regressionTreeNode.featureIndex]
-                + " <= "
-                + regressionTreeNode.threshold
-                + ", Go Left | ");
+      if ((featureVector[regressionTreeNode.featureIndex] <= regressionTreeNode.threshold) ||
+              (Float.isNaN(featureVector[regressionTreeNode.featureIndex]) &&
+                      Objects.equals(regressionTreeNode.missing, "left"))) {
+        if (Float.isNaN(featureVector[regressionTreeNode.featureIndex])) {
+          returnValueBuilder.append("'" + regressionTreeNode.feature + "': Nan, Go Left | ");
+        }
+        else {
+          returnValueBuilder.append("'" + regressionTreeNode.feature + "':" + featureVector[regressionTreeNode.featureIndex] + " <= "
+                  + regressionTreeNode.threshold + ", Go Left | ");
+        }
         regressionTreeNode = regressionTreeNode.left;
       } else {
-        returnValueBuilder.append(
-            "'"
-                + regressionTreeNode.feature
-                + "':"
-                + featureVector[regressionTreeNode.featureIndex]
-                + " > "
-                + regressionTreeNode.threshold
-                + ", Go Right | ");
+        if (Float.isNaN(featureVector[regressionTreeNode.featureIndex])) {
+          returnValueBuilder.append("'" + regressionTreeNode.feature + "': Nan, Go Right | ");
+        }
+        else {
+          returnValueBuilder.append("'" + regressionTreeNode.feature + "':" + featureVector[regressionTreeNode.featureIndex] + " > "
+                  + regressionTreeNode.threshold + ", Go Right | ");
+        }
         regressionTreeNode = regressionTreeNode.right;
       }
     }
@@ -397,7 +408,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
   @Override
   public Explanation explain(
       LeafReaderContext context, int doc, float finalScore, List<Explanation> featureExplanations) {
-    final float[] fv = new float[featureExplanations.size()];
+    final Float[] fv = new Float[featureExplanations.size()];
     int index = 0;
     for (final Explanation featureExplain : featureExplanations) {
       fv[index] = featureExplain.getValue().floatValue();
