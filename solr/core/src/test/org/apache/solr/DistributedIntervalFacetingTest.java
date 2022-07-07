@@ -18,7 +18,7 @@ package org.apache.solr;
 
 import java.util.Arrays;
 import java.util.List;
-import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.response.IntervalFacet.Count;

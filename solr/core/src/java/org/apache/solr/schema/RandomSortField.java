@@ -109,8 +109,8 @@ public class RandomSortField extends FieldType {
       new FieldComparatorSource() {
         @Override
         public FieldComparator<Integer> newComparator(
-            final String fieldname, final int numHits, int sortPos, boolean reversed) {
-          return new SimpleFieldComparator<Integer>() {
+            final String fieldname, final int numHits, boolean enableSkipping, boolean reversed) {
+          return new SimpleFieldComparator<>() {
             int seed;
             private final int[] values = new int[numHits];
             int bottomVal;
@@ -197,6 +197,5 @@ public class RandomSortField extends FieldType {
     public int hashCode() {
       return field.hashCode();
     }
-    ;
   }
 }

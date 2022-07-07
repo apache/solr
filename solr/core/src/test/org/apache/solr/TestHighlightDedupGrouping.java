@@ -18,7 +18,7 @@ package org.apache.solr;
 
 import java.io.IOException;
 import org.apache.lucene.search.TimeLimitingCollector;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;

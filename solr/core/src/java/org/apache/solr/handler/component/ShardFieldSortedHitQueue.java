@@ -155,7 +155,7 @@ public class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
 
   Comparator<ShardDoc> comparatorFieldComparator(SortField sortField) {
     @SuppressWarnings({"rawtypes"})
-    final FieldComparator fieldComparator = sortField.getComparator(0, 0);
+    final FieldComparator fieldComparator = sortField.getComparator(0, true);
     return new ShardComparator(sortField) {
       // Since the PriorityQueue keeps the biggest elements by default,
       // we need to reverse the field compare ordering so that the

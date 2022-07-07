@@ -395,10 +395,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return docFetcher;
   }
 
-  List<LeafReaderContext> getLeafContexts() {
-    return super.leafContexts;
-  }
-
   public StatsCache getStatsCache() {
     return statsCache;
   }

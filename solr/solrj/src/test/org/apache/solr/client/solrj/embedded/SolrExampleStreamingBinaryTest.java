@@ -18,7 +18,7 @@ package org.apache.solr.client.solrj.embedded;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;

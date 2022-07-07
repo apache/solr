@@ -18,7 +18,7 @@ package org.apache.solr.prometheus.exporter;
 
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.junit.Before;
 import org.junit.Test;
 

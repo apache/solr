@@ -18,7 +18,7 @@ package org.apache.solr.update;
 
 import java.util.Locale;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.After;
 import org.junit.BeforeClass;

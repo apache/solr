@@ -131,8 +131,8 @@ public class ChildFieldValueSourceParser extends ValueSourceParser {
           childField.getName(), type, reverse, parentFilter, childFilter) {
         @SuppressWarnings("unchecked")
         @Override
-        public FieldComparator<?> getComparator(int numHits, int sortPos) {
-          final FieldComparator<?> comparator = super.getComparator(numHits, sortPos);
+        public FieldComparator<?> getComparator(int numHits, boolean enableSkipping) {
+          final FieldComparator<?> comparator = super.getComparator(numHits, enableSkipping);
           return type == Type.STRING
               ? new BytesToStringComparator((FieldComparator<BytesRef>) comparator)
               : comparator;

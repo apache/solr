@@ -23,7 +23,7 @@ import static org.junit.Assert.assertThat;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.lucene.util.TestRuleRestoreSystemProperties;
+import org.apache.lucene.tests.util.TestRuleRestoreSystemProperties;
 import org.apache.solr.util.configuration.providers.EnvSSLCredentialProvider;
 import org.apache.solr.util.configuration.providers.SysPropSSLCredentialProvider;
 import org.junit.Before;

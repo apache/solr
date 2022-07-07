@@ -18,7 +18,7 @@ package org.apache.solr.hdfs.store.blockcache;
 
 import java.math.BigDecimal;
 import java.util.Map;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;

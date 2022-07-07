@@ -367,7 +367,8 @@ public class TestDocSet extends SolrTestCase {
       }
 
       @Override
-      public TopDocs searchNearestVectors(String field, float[] target, int k, Bits acceptDocs)
+      public TopDocs searchNearestVectors(
+          String field, float[] target, int k, Bits acceptDocs, int visitedLimit)
           throws IOException {
         return null;
       }
