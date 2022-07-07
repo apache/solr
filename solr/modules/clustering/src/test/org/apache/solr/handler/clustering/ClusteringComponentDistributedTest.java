@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.response.Cluster;
