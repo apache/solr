@@ -17,12 +17,10 @@
 package org.apache.solr.common.cloud;
 
 import java.lang.invoke.MethodHandles;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.slf4j.Logger;
@@ -30,36 +28,33 @@ import org.slf4j.LoggerFactory;
 
 public class ClusterStateUtil {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   private static final int TIMEOUT_POLL_MS = 1000;
-  
+
   /**
    * Wait to see *all* cores live and active.
-   * 
-   * @param zkStateReader
-   *          to use for ClusterState
-   * @param timeoutInMs
-   *          how long to wait before giving up
+   *
+   * @param zkStateReader to use for ClusterState
+   * @param timeoutInMs how long to wait before giving up
    * @return false if timed out
    */
-  public static boolean waitForAllActiveAndLiveReplicas(ZkStateReader zkStateReader, int timeoutInMs) {
+  public static boolean waitForAllActiveAndLiveReplicas(
+      ZkStateReader zkStateReader, int timeoutInMs) {
     return waitForAllActiveAndLiveReplicas(zkStateReader, null, timeoutInMs);
   }
-  
+
   /**
    * Wait to see *all* cores live and active.
-   * 
-   * @param zkStateReader
-   *          to use for ClusterState
+   *
+   * @param zkStateReader to use for ClusterState
    * @param collection to look at
-   * @param timeoutInMs
-   *          how long to wait before giving up
+   * @param timeoutInMs how long to wait before giving up
    * @return false if timed out
    */
-  public static boolean waitForAllActiveAndLiveReplicas(ZkStateReader zkStateReader, String collection,
-      int timeoutInMs) {
-    long timeout = System.nanoTime()
-        + TimeUnit.NANOSECONDS.convert(timeoutInMs, TimeUnit.MILLISECONDS);
+  public static boolean waitForAllActiveAndLiveReplicas(
+      ZkStateReader zkStateReader, String collection, int timeoutInMs) {
+    long timeout =
+        System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeoutInMs, TimeUnit.MILLISECONDS);
     boolean success = false;
     while (!success && System.nanoTime() < timeout) {
       success = true;
@@ -67,7 +62,8 @@ public class ClusterStateUtil {
       if (clusterState != null) {
         Map<String, DocCollection> collections = null;
         if (collection != null) {
-          collections = Collections.singletonMap(collection, clusterState.getCollection(collection));
+          collections =
+              Collections.singletonMap(collection, clusterState.getCollection(collection));
         } else {
           collections = clusterState.getCollectionsMap();
         }
@@ -100,35 +96,35 @@ public class ClusterStateUtil {
         }
       }
     }
-    
+
     return success;
   }
-  
+
   /**
-   * Wait to see an entry in the ClusterState with a specific coreNodeName and
-   * baseUrl.
-   * 
-   * @param zkStateReader
-   *          to use for ClusterState
-   * @param collection
-   *          to look in
-   * @param coreNodeName
-   *          to wait for
-   * @param baseUrl
-   *          to wait for
-   * @param timeoutInMs
-   *          how long to wait before giving up
+   * Wait to see an entry in the ClusterState with a specific coreNodeName and baseUrl.
+   *
+   * @param zkStateReader to use for ClusterState
+   * @param collection to look in
+   * @param coreNodeName to wait for
+   * @param baseUrl to wait for
+   * @param timeoutInMs how long to wait before giving up
    * @return false if timed out
    */
-  public static boolean waitToSeeLiveReplica(ZkStateReader zkStateReader,
-      String collection, String coreNodeName, String baseUrl,
+  public static boolean waitToSeeLiveReplica(
+      ZkStateReader zkStateReader,
+      String collection,
+      String coreNodeName,
+      String baseUrl,
       int timeoutInMs) {
-    long timeout = System.nanoTime()
-        + TimeUnit.NANOSECONDS.convert(timeoutInMs, TimeUnit.MILLISECONDS);
-    
+    long timeout =
+        System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeoutInMs, TimeUnit.MILLISECONDS);
+
     while (System.nanoTime() < timeout) {
-      log.debug("waiting to see replica just created live collection={} replica={} baseUrl={}",
-          collection, coreNodeName, baseUrl);
+      log.debug(
+          "waiting to see replica just created live collection={} replica={} baseUrl={}",
+          collection,
+          coreNodeName,
+          baseUrl);
       ClusterState clusterState = zkStateReader.getClusterState();
       if (clusterState != null) {
         DocCollection docCollection = clusterState.getCollection(collection);
@@ -142,8 +138,7 @@ public class ClusterStateUtil {
               boolean live = clusterState.liveNodesContain(replica.getNodeName());
               String rcoreNodeName = replica.getName();
               String rbaseUrl = replica.getBaseUrl();
-              if (live && coreNodeName.equals(rcoreNodeName)
-                  && baseUrl.equals(rbaseUrl)) {
+              if (live && coreNodeName.equals(rcoreNodeName) && baseUrl.equals(rbaseUrl)) {
                 // found it
                 return true;
               }
@@ -158,20 +153,19 @@ public class ClusterStateUtil {
         }
       }
     }
-    
+
     log.error("Timed out waiting to see replica just created in cluster state. Continuing...");
     return false;
   }
-  
+
   public static boolean waitForAllReplicasNotLive(ZkStateReader zkStateReader, int timeoutInMs) {
     return waitForAllReplicasNotLive(zkStateReader, null, timeoutInMs);
   }
-  
 
-  public static boolean waitForAllReplicasNotLive(ZkStateReader zkStateReader,
-      String collection, int timeoutInMs) {
-    long timeout = System.nanoTime()
-        + TimeUnit.NANOSECONDS.convert(timeoutInMs, TimeUnit.MILLISECONDS);
+  public static boolean waitForAllReplicasNotLive(
+      ZkStateReader zkStateReader, String collection, int timeoutInMs) {
+    long timeout =
+        System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeoutInMs, TimeUnit.MILLISECONDS);
     boolean success = false;
     while (!success && System.nanoTime() < timeout) {
       success = true;
@@ -179,7 +173,8 @@ public class ClusterStateUtil {
       if (clusterState != null) {
         Map<String, DocCollection> collections = null;
         if (collection != null) {
-          collections = Collections.singletonMap(collection, clusterState.getCollection(collection));
+          collections =
+              Collections.singletonMap(collection, clusterState.getCollection(collection));
         } else {
           collections = clusterState.getCollectionsMap();
         }
@@ -192,8 +187,7 @@ public class ClusterStateUtil {
               Collection<Replica> replicas = slice.getReplicas();
               for (Replica replica : replicas) {
                 // on a live node?
-                boolean live = clusterState.liveNodesContain(replica
-                    .getNodeName());
+                boolean live = clusterState.liveNodesContain(replica.getNodeName());
                 if (live) {
                   // fail
                   success = false;
@@ -212,10 +206,10 @@ public class ClusterStateUtil {
         }
       }
     }
-    
+
     return success;
   }
-  
+
   public static int getLiveAndActiveReplicaCount(ZkStateReader zkStateReader, String collection) {
     Slice[] slices;
     slices = zkStateReader.getClusterState().getCollection(collection).getActiveSlicesArr();
@@ -231,15 +225,15 @@ public class ClusterStateUtil {
     }
     return liveAndActive;
   }
-  
-  public static boolean waitForLiveAndActiveReplicaCount(ZkStateReader zkStateReader,
-      String collection, int replicaCount, int timeoutInMs) {
-    long timeout = System.nanoTime()
-        + TimeUnit.NANOSECONDS.convert(timeoutInMs, TimeUnit.MILLISECONDS);
+
+  public static boolean waitForLiveAndActiveReplicaCount(
+      ZkStateReader zkStateReader, String collection, int replicaCount, int timeoutInMs) {
+    long timeout =
+        System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeoutInMs, TimeUnit.MILLISECONDS);
     boolean success = false;
     while (!success && System.nanoTime() < timeout) {
       success = getLiveAndActiveReplicaCount(zkStateReader, collection) == replicaCount;
-      
+
       if (!success) {
         try {
           Thread.sleep(TIMEOUT_POLL_MS);
@@ -248,10 +242,8 @@ public class ClusterStateUtil {
           throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted");
         }
       }
-      
     }
-    
+
     return success;
   }
-
 }

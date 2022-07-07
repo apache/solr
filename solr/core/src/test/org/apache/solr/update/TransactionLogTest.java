@@ -17,14 +17,11 @@
 
 package org.apache.solr.update;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
-
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.update.TransactionLog.LogReader;
@@ -34,11 +31,12 @@ public class TransactionLogTest extends SolrTestCase {
 
   @Test
   public void testBigLastAddSize() {
-    String tlogFileName = String.format(Locale.ROOT, UpdateLog.LOG_FILENAME_PATTERN, UpdateLog.TLOG_NAME,
-        Long.MAX_VALUE);
+    String tlogFileName =
+        String.format(
+            Locale.ROOT, UpdateLog.LOG_FILENAME_PATTERN, UpdateLog.TLOG_NAME, Long.MAX_VALUE);
     Path path = createTempDir();
-    File logFile = new File(path.toFile(), tlogFileName);
-    try (TransactionLog transactionLog = new TransactionLog(logFile, new ArrayList<>())) {
+    Path logFile = path.resolve(tlogFileName);
+    try (TransactionLog transactionLog = new TransactionLog(logFile, null)) {
       transactionLog.lastAddSize = 2000000000;
       AddUpdateCommand updateCommand = new AddUpdateCommand(null);
       updateCommand.solrDoc = new SolrInputDocument();
@@ -48,12 +46,13 @@ public class TransactionLogTest extends SolrTestCase {
 
   @Test
   public void testUUID() throws IOException, InterruptedException {
-    String tlogFileName = String.format(Locale.ROOT, UpdateLog.LOG_FILENAME_PATTERN, UpdateLog.TLOG_NAME,
-        Long.MAX_VALUE);
+    String tlogFileName =
+        String.format(
+            Locale.ROOT, UpdateLog.LOG_FILENAME_PATTERN, UpdateLog.TLOG_NAME, Long.MAX_VALUE);
     Path path = createTempDir();
-    File logFile = new File(path.toFile(), tlogFileName);
+    Path logFile = path.resolve(tlogFileName);
     UUID uuid = UUID.randomUUID();
-    try (TransactionLog tlog = new TransactionLog(logFile, new ArrayList<>())) {
+    try (TransactionLog tlog = new TransactionLog(logFile, null)) {
       tlog.deleteOnClose = false;
       AddUpdateCommand updateCommand = new AddUpdateCommand(null);
 
@@ -64,7 +63,7 @@ public class TransactionLogTest extends SolrTestCase {
       tlog.write(updateCommand);
     }
 
-    try (TransactionLog tlog = new TransactionLog(logFile, new ArrayList<>(), true)) {
+    try (TransactionLog tlog = new TransactionLog(logFile, null, true)) {
       LogReader reader = tlog.getReader(0);
       Object entry = reader.next();
       assertNotNull(entry);

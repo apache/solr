@@ -26,41 +26,35 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import org.apache.solr.cluster.api.SimpleMap;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.util.PropertiesUtil;
 import org.apache.solr.common.util.WrappedSimpleMap;
 
-/**
- * ConfigNode impl that copies and maintains data internally from DOM
- */
+/** ConfigNode impl that copies and maintains data internally from DOM */
 public class DataConfigNode implements ConfigNode {
   public final String name;
   public final SimpleMap<String> attributes;
-  public final SimpleMap<List<ConfigNode>> kids ;
+  public final SimpleMap<List<ConfigNode>> kids;
   public final String textData;
-
 
   public DataConfigNode(ConfigNode root) {
     Map<String, List<ConfigNode>> kids = new LinkedHashMap<>();
     name = root.name();
     attributes = wrap(root.attributes());
     textData = root.txt();
-    root.forEachChild(it -> {
-      List<ConfigNode> nodes = kids.computeIfAbsent(it.name(),
-          k -> new ArrayList<>());
-      nodes.add(new DataConfigNode(it));
-      return Boolean.TRUE;
-    });
+    root.forEachChild(
+        it -> {
+          List<ConfigNode> nodes = kids.computeIfAbsent(it.name(), k -> new ArrayList<>());
+          nodes.add(new DataConfigNode(it));
+          return Boolean.TRUE;
+        });
     for (Map.Entry<String, List<ConfigNode>> e : kids.entrySet()) {
-      if(e.getValue()  != null) {
-        e.setValue(ImmutableList.copyOf(e.getValue()));
+      if (e.getValue() != null) {
+        e.setValue(List.copyOf(e.getValue()));
       }
     }
-    this.kids = kids.isEmpty()? EMPTY:  new WrappedSimpleMap<>(ImmutableMap.copyOf(kids));
+    this.kids = kids.isEmpty() ? EMPTY : new WrappedSimpleMap<>(Map.copyOf(kids));
   }
 
   public String subtituteVal(String s) {
@@ -68,7 +62,7 @@ public class DataConfigNode implements ConfigNode {
   }
 
   private SimpleMap<String> wrap(SimpleMap<String> delegate) {
-    if(delegate.size() == 0) return delegate;//avoid unnecessary object creation
+    if (delegate.size() == 0) return delegate; // avoid unnecessary object creation
     return new SimpleMap<>() {
       @Override
       public String get(String key) {
@@ -119,11 +113,12 @@ public class DataConfigNode implements ConfigNode {
     for (String s : matchNames) {
       List<ConfigNode> vals = kids.get(s);
       if (vals != null) {
-        vals.forEach(it -> {
-          if (test == null || test.test(it)) {
-            result.add(it);
-          }
-        });
+        vals.forEach(
+            it -> {
+              if (test == null || test.test(it)) {
+                result.add(it);
+              }
+            });
       }
     }
     return result;
@@ -131,11 +126,14 @@ public class DataConfigNode implements ConfigNode {
 
   @Override
   public void forEachChild(Function<ConfigNode, Boolean> fun) {
-    kids.forEachEntry((s, configNodes) -> {
-      if (configNodes != null) {
-        configNodes.forEach(fun::apply);
-      }
-    });
+    kids.forEachEntry(
+        (s, configNodes) -> {
+          if (configNodes != null) {
+            configNodes.forEach(fun::apply);
+          }
+        });
   }
-  public static final SimpleMap<List<ConfigNode>> EMPTY = new WrappedSimpleMap<>(Collections.emptyMap());
+
+  public static final SimpleMap<List<ConfigNode>> EMPTY =
+      new WrappedSimpleMap<>(Collections.emptyMap());
 }

@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -45,10 +44,12 @@ import org.apache.solr.common.params.StreamParams;
 import org.apache.solr.common.util.NamedList;
 
 /**
-*  Queries a single Solr instance and maps SolrDocs to a Stream of Tuples.
-* @since 5.1.0
-**/
-
+ * Queries a single Solr instance and maps SolrDocs to a Stream of Tuples.
+ *
+ * <p>TODO: Move this to Http2SolrClient
+ *
+ * @since 5.1.0
+ */
 public class SolrStream extends TupleStream {
 
   private static final long serialVersionUID = 1;
@@ -72,9 +73,8 @@ public class SolrStream extends TupleStream {
 
   /**
    * @param baseUrl Base URL of the stream.
-   * @param params  Map&lt;String, String&gt; of parameters
+   * @param params Map&lt;String, String&gt; of parameters
    */
-
   public SolrStream(String baseUrl, SolrParams params) {
     this.baseUrl = baseUrl;
     this.params = params;
@@ -109,14 +109,11 @@ public class SolrStream extends TupleStream {
     this.password = password;
   }
 
-  /**
-  * Opens the stream to a single Solr instance.
-  **/
-
+  /** Opens the stream to a single Solr instance. */
   public void open() throws IOException {
 
     // Reuse the same client per node vs. having one per replica
-    if(cache == null) {
+    if (cache == null) {
       client = new HttpSolrClient.Builder(baseUrl).build();
     } else {
       client = cache.getHttpSolrClient(baseUrl);
@@ -135,10 +132,7 @@ public class SolrStream extends TupleStream {
     }
   }
 
-  /**
-   *  Setting trace to true will include the "_CORE_" field in each Tuple emitted by the stream.
-   **/
-
+  /** Setting trace to true will include the "_CORE_" field in each Tuple emitted by the stream. */
   public void setTrace(boolean trace) {
     this.trace = trace;
   }
@@ -154,16 +148,17 @@ public class SolrStream extends TupleStream {
   private ModifiableSolrParams loadParams(SolrParams paramsIn) throws IOException {
     ModifiableSolrParams solrParams = new ModifiableSolrParams(paramsIn);
     if (params.get("partitionKeys") != null) {
-      if(!params.get("partitionKeys").equals("none") && numWorkers > 1) {
+      if (!params.get("partitionKeys").equals("none") && numWorkers > 1) {
         String partitionFilter = getPartitionFilter();
         solrParams.add("fq", partitionFilter);
       }
-    } else if(numWorkers > 1) {
-        throw new IOException("When numWorkers > 1 partitionKeys must be set. Set partitionKeys=none to send the entire stream to each worker.");
+    } else if (numWorkers > 1) {
+      throw new IOException(
+          "When numWorkers > 1 partitionKeys must be set. Set partitionKeys=none to send the entire stream to each worker.");
     }
 
-    if(checkpoint > 0) {
-      solrParams.add("fq", "{!frange cost=100 incl=false l="+checkpoint+"}_version_");
+    if (checkpoint > 0) {
+      solrParams.add("fq", "{!frange cost=100 incl=false l=" + checkpoint + "}_version_");
     }
 
     return solrParams;
@@ -182,35 +177,29 @@ public class SolrStream extends TupleStream {
   public Explanation toExplanation(StreamFactory factory) throws IOException {
 
     return new StreamExplanation(getStreamNodeId().toString())
-      .withFunctionName("non-expressible")
-      .withImplementingClass(this.getClass().getName())
-      .withExpressionType(ExpressionType.STREAM_SOURCE)
-      .withExpression("non-expressible");
+        .withFunctionName("non-expressible")
+        .withImplementingClass(this.getClass().getName())
+        .withExpressionType(ExpressionType.STREAM_SOURCE)
+        .withExpression("non-expressible");
   }
 
-  /**
-  *  Closes the Stream to a single Solr Instance
-  * */
-
+  /** Closes the Stream to a single Solr Instance */
   public void close() throws IOException {
     if (closeableHttpResponse != null) {
       closeableHttpResponse.close();
     }
-    if(cache == null && client != null) {
+    if (cache == null && client != null) {
       client.close();
     }
   }
 
-  /**
-  * Reads a Tuple from the stream. The Stream is completed when Tuple.EOF == true.
-  **/
-
+  /** Reads a Tuple from the stream. The Stream is completed when Tuple.EOF == true. */
   public Tuple read() throws IOException {
     try {
       Map<String, Object> fields = tupleStreamParser.next();
 
       if (fields == null) {
-        //Return the EOF tuple.
+        // Return the EOF tuple.
         return Tuple.EOF();
       } else {
 
@@ -222,7 +211,7 @@ public class SolrStream extends TupleStream {
 
         if (trace) {
           fields.put("_CORE_", this.baseUrl);
-          if(slice != null) {
+          if (slice != null) {
             fields.put("_SLICE_", slice);
           }
         }
@@ -233,10 +222,15 @@ public class SolrStream extends TupleStream {
         return new Tuple(fields);
       }
     } catch (HandledException e) {
-      throw new IOException("--> "+this.baseUrl+":"+e.getMessage());
+      throw new IOException("--> " + this.baseUrl + ":" + e.getMessage());
     } catch (Exception e) {
-      //The Stream source did not provide an exception in a format that the SolrStream could propagate.
-      throw new IOException("--> "+this.baseUrl+": An exception has occurred on the server, refer to server log for details.", e);
+      // The Stream source did not provide an exception in a format that the SolrStream could
+      // propagate.
+      throw new IOException(
+          "--> "
+              + this.baseUrl
+              + ": An exception has occurred on the server, refer to server log for details.",
+          e);
     }
   }
 
@@ -255,15 +249,15 @@ public class SolrStream extends TupleStream {
   }
 
   /** There is no known sort applied to a SolrStream */
-  public StreamComparator getStreamSort(){
+  public StreamComparator getStreamSort() {
     return null;
   }
 
-  private <V> Map<String, V> mapFields(Map<String, V> fields, Map<String,String> mappings) {
+  private <V> Map<String, V> mapFields(Map<String, V> fields, Map<String, String> mappings) {
 
-    Iterator<Map.Entry<String,String>> it = mappings.entrySet().iterator();
-    while(it.hasNext()) {
-      Map.Entry<String,String> entry = it.next();
+    Iterator<Map.Entry<String, String>> it = mappings.entrySet().iterator();
+    while (it.hasNext()) {
+      Map.Entry<String, String> entry = it.next();
       String mapFrom = entry.getKey();
       String mapTo = entry.getValue();
       V v = fields.get(mapFrom);
@@ -274,21 +268,23 @@ public class SolrStream extends TupleStream {
     return fields;
   }
 
-  private TupleStreamParser constructParser(SolrParams requestParams) throws IOException, SolrServerException {
+  private TupleStreamParser constructParser(SolrParams requestParams)
+      throws IOException, SolrServerException {
     String p = requestParams.get("qt");
     if (p != null) {
       ModifiableSolrParams modifiableSolrParams = (ModifiableSolrParams) requestParams;
       modifiableSolrParams.remove("qt");
-      //performance optimization - remove extra whitespace by default when streaming
+      // performance optimization - remove extra whitespace by default when streaming
       modifiableSolrParams.set("indent", modifiableSolrParams.get("indent", "off"));
     }
 
     String wt = requestParams.get(CommonParams.WT, "json");
     QueryRequest query = new QueryRequest(requestParams);
 
-    // in order to reuse HttpSolrClient objects per node, we need to cache them without the core name in the URL
+    // in order to reuse HttpSolrClient objects per node, we need to cache them without the core
+    // name in the URL
     if (core != null) {
-      query.setPath("/"+core + (p != null ? p : "/select"));
+      query.setPath("/" + core + (p != null ? p : "/select"));
     } else {
       query.setPath(p);
     }
@@ -296,19 +292,28 @@ public class SolrStream extends TupleStream {
     query.setResponseParser(new InputStreamResponseParser(wt));
     query.setMethod(SolrRequest.METHOD.POST);
 
-    if(user != null && password != null) {
+    if (user != null && password != null) {
       query.setBasicAuthCredentials(user, password);
     }
 
     NamedList<Object> genericResponse = client.request(query);
     InputStream stream = (InputStream) genericResponse.get("stream");
-    CloseableHttpResponse httpResponse = (CloseableHttpResponse)genericResponse.get("closeableResponse");
+    CloseableHttpResponse httpResponse =
+        (CloseableHttpResponse) genericResponse.get("closeableResponse");
 
     final int statusCode = httpResponse.getStatusLine().getStatusCode();
     if (statusCode != 200) {
       String errMsg = consumeStreamAsErrorMessage(stream);
       httpResponse.close();
-      throw new IOException("Query to '" + query.getPath() + "?" + query.getParams() + "' failed due to: (" + statusCode + ") " + errMsg);
+      throw new IOException(
+          "Query to '"
+              + query.getPath()
+              + "?"
+              + query.getParams()
+              + "' failed due to: ("
+              + statusCode
+              + ") "
+              + errMsg);
     }
 
     this.closeableHttpResponse = httpResponse;
@@ -326,8 +331,7 @@ public class SolrStream extends TupleStream {
     char[] ach = new char[1024];
     if (stream != null) {
       try (InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
-        while ((r = reader.read(ach)) != -1)
-          errMsg.append(ach, 0, r);
+        while ((r = reader.read(ach)) != -1) errMsg.append(ach, 0, r);
       }
     }
     return errMsg.toString();

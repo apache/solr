@@ -16,48 +16,46 @@
  */
 package org.apache.solr.search;
 
-/**
- * The result of a search.
- */
+/** The result of a search. */
 public class QueryResult {
-  
+
   private boolean partialResults;
   private Boolean segmentTerminatedEarly;
   private DocListAndSet docListAndSet;
   private CursorMark nextCursorMark;
-  
+
   public Object groupedResults; // TODO: currently for testing
-  
+
   public DocList getDocList() {
     return docListAndSet.docList;
   }
-  
+
   public void setDocList(DocList list) {
     if (docListAndSet == null) {
       docListAndSet = new DocListAndSet();
     }
     docListAndSet.docList = list;
   }
-  
+
   public DocSet getDocSet() {
     return docListAndSet.docSet;
   }
-  
+
   public void setDocSet(DocSet set) {
     if (docListAndSet == null) {
       docListAndSet = new DocListAndSet();
     }
     docListAndSet.docSet = set;
   }
-  
+
   public boolean isPartialResults() {
     return partialResults;
   }
-  
+
   public void setPartialResults(boolean partialResults) {
     this.partialResults = partialResults;
   }
-  
+
   public Boolean getSegmentTerminatedEarly() {
     return segmentTerminatedEarly;
   }
@@ -69,17 +67,16 @@ public class QueryResult {
   public void setDocListAndSet(DocListAndSet listSet) {
     docListAndSet = listSet;
   }
-  
+
   public DocListAndSet getDocListAndSet() {
     return docListAndSet;
   }
-  
+
   public void setNextCursorMark(CursorMark next) {
     this.nextCursorMark = next;
   }
-  
+
   public CursorMark getNextCursorMark() {
     return nextCursorMark;
   }
-  
 }

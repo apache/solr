@@ -22,7 +22,7 @@ import java.util.Map;
 /**
  * Represents a "query" facet in a JSON query request.
  *
- * Ready for use in {@link JsonQueryRequest#withFacet(String, Map)}
+ * <p>Ready for use in {@link JsonQueryRequest#withFacet(String, Map)}
  */
 public class QueryFacetMap extends JsonFacetMap<QueryFacetMap> {
   public QueryFacetMap(String queryString) {
@@ -35,5 +35,7 @@ public class QueryFacetMap extends JsonFacetMap<QueryFacetMap> {
   }
 
   @Override
-  public QueryFacetMap getThis() { return this; }
+  public QueryFacetMap getThis() {
+    return this;
+  }
 }

@@ -25,9 +25,8 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 
 /**
- * A class for making a request to the config handler. Tests can use this
- * e.g. to add custom components, handlers, parsers, etc. to an otherwise
- * generic configset.
+ * A class for making a request to the config handler. Tests can use this e.g. to add custom
+ * components, handlers, parsers, etc. to an otherwise generic configset.
  */
 @SuppressWarnings({"rawtypes"})
 public class ConfigRequest extends SolrRequest {
@@ -46,7 +45,9 @@ public class ConfigRequest extends SolrRequest {
 
   @Override
   public RequestWriter.ContentWriter getContentWriter(String expectedType) {
-    return message == null? null: new RequestWriter.StringPayloadContentWriter(message, CommonParams.JSON_MIME);
+    return message == null
+        ? null
+        : new RequestWriter.StringPayloadContentWriter(message, CommonParams.JSON_MIME);
   }
 
   @Override

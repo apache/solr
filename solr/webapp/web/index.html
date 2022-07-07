@@ -71,6 +71,7 @@ limitations under the License.
   <script src="libs/angular-utf8-base64.min.js?_=${version}"></script>
   <script src="js/angular/app.js?_=${version}"></script>
   <script src="js/angular/services.js?_=${version}"></script>
+  <script src="js/angular/permissions.js?_=${version}"></script>
   <script src="js/angular/controllers/index.js?_=${version}"></script>
   <script src="js/angular/controllers/login.js?_=${version}"></script>
   <script src="js/angular/controllers/logging.js?_=${version}"></script>
@@ -117,6 +118,13 @@ limitations under the License.
               <li ng-repeat="(core,error) in initFailures"><strong>{{core}}:</strong> {{error}}</li>
           </ul>
           <p>Please check your logs for more information</p>
+
+      </div>
+
+      <div class="header-message" id="authz-failures" ng-show="showAuthzFailures" ng-cloak>
+
+        <h2>Permission failure</h2>
+        <p>Your user does not have the necessary role(s) to perform this action.</p>
 
       </div>
 
@@ -246,11 +254,12 @@ limitations under the License.
 
         <ul>
 
-          <li class="documentation"><a href="http://solr.apache.org/guide/"><span>Documentation</span></a></li>
-          <li class="issues"><a href="http://issues.apache.org/jira/browse/SOLR"><span>Issue Tracker</span></a></li>
-          <li class="irc"><a href="http://webchat.freenode.net/?channels=#solr"><span>IRC Channel</span></a></li>
-          <li class="mailinglist"><a href="http://wiki.apache.org/solr/UsingMailingLists"><span>Community forum</span></a></li>
-          <li class="wiki-query-syntax"><a href="https://solr.apache.org/guide/query-syntax-and-parsers.html"><span>Solr Query Syntax</span></a></li>
+          <li class="documentation"><a href="https://solr.apache.org/guide/solr/latest/" target="_blank"><span>Documentation</span></a></li>
+          <li class="query-syntax"><a href="https://solr.apache.org/guide/solr/latest/query-guide/query-syntax-and-parsers.html" target="_blank"><span>Solr Query Syntax</span></a></li>
+          <li class="community"><a href="https://solr.apache.org/community.html" target="_blank"><span>Community</span></a></li>
+          <li class="issues"><a href="https://issues.apache.org/jira/browse/SOLR" target="_blank"><span>Issue Tracker</span></a></li>
+          <li class="chat"><a href="https://s.apache.org/solr-slack" target="_blank"><span>Slack</span></a></li>
+          <li class="chat"><a href="https://web.libera.chat/?channels=#solr" target="_blank"><span>IRC</span></a></li>
 
         </ul>
 

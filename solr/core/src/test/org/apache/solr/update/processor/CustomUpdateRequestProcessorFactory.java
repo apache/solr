@@ -20,23 +20,18 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-
-/**
- * A custom class to do custom stuff
- */
-public class CustomUpdateRequestProcessorFactory extends UpdateRequestProcessorFactory 
-{
+/** A custom class to do custom stuff */
+public class CustomUpdateRequestProcessorFactory extends UpdateRequestProcessorFactory {
   public NamedList<?> args = null;
-  
+
   @Override
-  public void init(NamedList<?> args )
-  {
+  public void init(NamedList<?> args) {
     this.args = args;
   }
 
   @Override
-  public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
+  public UpdateRequestProcessor getInstance(
+      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     return new CustomUpdateRequestProcessor(next);
   }
 }
-

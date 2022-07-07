@@ -16,6 +16,7 @@
  */
 package org.apache.solr.update.processor;
 
+import java.io.IOException;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
@@ -25,8 +26,6 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.junit.BeforeClass;
-
-import java.io.IOException;
 
 public class IgnoreCommitOptimizeUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
 
@@ -38,25 +37,36 @@ public class IgnoreCommitOptimizeUpdateProcessorFactoryTest extends SolrTestCase
   public void testIgnoreCommit() throws Exception {
     // verify that the processor returns an error if it receives a commit
     SolrQueryResponse rsp = processCommit("ignore-commit-from-client-403", false);
-    assertNotNull("Sending a commit should have resulted in an exception in the response", rsp.getException());
+    assertNotNull(
+        "Sending a commit should have resulted in an exception in the response",
+        rsp.getException());
 
     rsp = processCommit("ignore-commit-from-client-200", false);
     Exception shouldBeNull = rsp.getException();
-    assertNull("Sending a commit should NOT have resulted in an exception in the response: "+shouldBeNull, shouldBeNull);
+    assertNull(
+        "Sending a commit should NOT have resulted in an exception in the response: "
+            + shouldBeNull,
+        shouldBeNull);
 
     rsp = processCommit("ignore-optimize-only-from-client-403", true);
-    assertNotNull("Sending an optimize should have resulted in an exception in the response", rsp.getException());
+    assertNotNull(
+        "Sending an optimize should have resulted in an exception in the response",
+        rsp.getException());
     // commit should happen if DistributedUpdateProcessor.COMMIT_END_POINT == true
     rsp = processCommit("ignore-commit-from-client-403", false, Boolean.TRUE);
     shouldBeNull = rsp.getException();
-    assertNull("Sending a commit should NOT have resulted in an exception in the response: "+shouldBeNull, shouldBeNull);
+    assertNull(
+        "Sending a commit should NOT have resulted in an exception in the response: "
+            + shouldBeNull,
+        shouldBeNull);
   }
 
   SolrQueryResponse processCommit(final String chain, boolean optimize) throws IOException {
     return processCommit(chain, optimize, null);
   }
 
-  SolrQueryResponse processCommit(final String chain, boolean optimize, Boolean commitEndPoint) throws IOException {
+  SolrQueryResponse processCommit(final String chain, boolean optimize, Boolean commitEndPoint)
+      throws IOException {
     SolrCore core = h.getCore();
     UpdateRequestProcessorChain pc = core.getUpdateProcessingChain(chain);
     assertNotNull("No Chain named: " + chain, pc);
@@ -65,12 +75,12 @@ public class IgnoreCommitOptimizeUpdateProcessorFactoryTest extends SolrTestCase
     SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
 
     if (commitEndPoint != null) {
-      ((ModifiableSolrParams)req.getParams()).set(
-          DistributedUpdateProcessor.COMMIT_END_POINT, commitEndPoint.booleanValue());
+      ((ModifiableSolrParams) req.getParams())
+          .set(DistributedUpdateProcessor.COMMIT_END_POINT, commitEndPoint);
     }
 
     try {
-      SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req,rsp));
+      SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
       CommitUpdateCommand cmd = new CommitUpdateCommand(req, false);
       cmd.optimize = optimize;
       UpdateRequestProcessor processor = pc.createProcessor(req, rsp);

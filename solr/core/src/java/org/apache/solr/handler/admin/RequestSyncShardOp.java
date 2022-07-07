@@ -20,7 +20,6 @@ package org.apache.solr.handler.admin;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.cloud.SyncStrategy;
 import org.apache.solr.cloud.ZkController;
@@ -61,18 +60,23 @@ class RequestSyncShardOp implements CoreAdminHandler.CoreAdminOp {
         Map<String, Object> props = new HashMap<>();
         props.put(ZkStateReader.CORE_NAME_PROP, cname);
         props.put(ZkStateReader.NODE_NAME_PROP, zkController.getNodeName());
+        props.put(
+            ZkStateReader.BASE_URL_PROP,
+            zkController.getZkStateReader().getBaseUrlForNodeName(zkController.getNodeName()));
 
-        boolean success = syncStrategy.sync(zkController, core, new ZkNodeProps(props), true).isSuccess();
+        boolean success =
+            syncStrategy.sync(zkController, core, new ZkNodeProps(props), true).isSuccess();
         // solrcloud_debug
         if (log.isDebugEnabled()) {
           try {
-            RefCounted<SolrIndexSearcher> searchHolder = core
-                .getNewestSearcher(false);
+            RefCounted<SolrIndexSearcher> searchHolder = core.getNewestSearcher(false);
             SolrIndexSearcher searcher = searchHolder.get();
             try {
               if (log.isDebugEnabled()) {
-                log.debug("{} synched {}", core.getCoreContainer().getZkController().getNodeName()
-                    , searcher.count(new MatchAllDocsQuery()));
+                log.debug(
+                    "{} synched {}",
+                    core.getCoreContainer().getZkController().getNodeName(),
+                    searcher.count(new MatchAllDocsQuery()));
               }
             } finally {
               searchHolder.decref();

@@ -102,7 +102,7 @@ REM Location where Solr should write logs to. Absolute or relative to solr start
 REM set SOLR_LOGS_DIR=logs
 
 REM Enables jetty request log for all requests
-REM set SOLR_REQUESTLOG_ENABLED=false
+REM set SOLR_REQUESTLOG_ENABLED=true
 
 REM Sets the port Solr binds to, default is 8983
 REM set SOLR_PORT=8983
@@ -215,6 +215,13 @@ REM Sometimes it may be necessary to place a core or a backup on a different loc
 REM This parameter lets you specify file system path(s) to explicitly allow. The special value of '*' will allow any path
 REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.allowPaths=D:\,E:\other\path
 
+REM Before version 9.0, Solr required a copy of solr.xml file in $SOLR_HOME. Now Solr will use a default file if not found.
+REM To restore the old behaviour, set the variable below to true
+REM set SOLR_SOLRXML_REQUIRED=false
+
 REM Some previous versions of Solr use an outdated log4j dependency. If you are unable to use at least log4j version 2.15.0
 REM then enable the following setting to address CVE-2021-44228
 REM set SOLR_OPTS=%SOLR_OPTS% -Dlog4j2.formatMsgNoLookups=true
+
+REM The bundled plugins in the "modules" folder can easily be enabled as a comma-separated list in SOLR_MODULES variable
+REM set SOLR_MODULES=extraction,ltr

@@ -21,12 +21,11 @@ import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.schema.IndexSchema;
 
-/**
- * A {@link MergePolicyFactory} for {@link TieredMergePolicy} objects.
- */
+/** A {@link MergePolicyFactory} for {@link TieredMergePolicy} objects. */
 public class TieredMergePolicyFactory extends SimpleMergePolicyFactory {
 
-  public TieredMergePolicyFactory(SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args, IndexSchema schema) {
+  public TieredMergePolicyFactory(
+      SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args, IndexSchema schema) {
     super(resourceLoader, args, schema);
   }
 
@@ -34,5 +33,4 @@ public class TieredMergePolicyFactory extends SimpleMergePolicyFactory {
   protected MergePolicy getMergePolicyInstance() {
     return new TieredMergePolicy();
   }
-
 }
