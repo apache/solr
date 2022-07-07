@@ -23,7 +23,6 @@ import static org.apache.solr.security.BasicAuthIntegrationTest.verifySecuritySt
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -119,9 +118,7 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
 
       // Read file from SOLR_HOME and verify that it contains our new user
       assertTrue(
-          new String(
-                  Utils.toJSON(securityConfHandler.getSecurityConfig(false).getData()),
-                  Charset.forName("UTF-8"))
+          new String(Utils.toJSON(securityConfHandler.getSecurityConfig(false).getData()), UTF_8)
               .contains("harry"));
 
       // Edit authorization
