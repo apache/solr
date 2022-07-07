@@ -281,7 +281,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
       ref = reader.getClusterState().getCollectionRef("c2");
       assertNotNull(ref);
-      assert (ref.isLazilyLoaded()); // c2 should be lazily loaded as it's not watched
+      assertTrue("c2 should have been lazily loaded but is not!", ref.isLazilyLoaded()); // c2 should be lazily loaded as it's not watched
       assertEquals(0, ref.get().getZNodeVersion());
     }
   }
