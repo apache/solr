@@ -46,7 +46,7 @@ public class V2ConfigAPIMappingTest extends V2ApiMappingTest<SolrConfigHandler> 
 
   // GET /v2/c/collectionName/config is a pure pass-through to the underlying request handler
   @Test
-  public void testGetAllConfig() throws Exception {
+  public void testGetAllConfig() {
     assertAnnotatedApiExistsFor("GET", "/config");
   }
 
@@ -54,7 +54,7 @@ public class V2ConfigAPIMappingTest extends V2ApiMappingTest<SolrConfigHandler> 
   // handler.  Just check
   // the API lookup works for a handful of the valid config "components".
   @Test
-  public void testGetSingleComponentConfig() throws Exception {
+  public void testGetSingleComponentConfig() {
     assertAnnotatedApiExistsFor("GET", "/config/overlay");
     assertAnnotatedApiExistsFor("GET", "/config/query");
     assertAnnotatedApiExistsFor("GET", "/config/jmx");
@@ -64,7 +64,7 @@ public class V2ConfigAPIMappingTest extends V2ApiMappingTest<SolrConfigHandler> 
   }
 
   @Test
-  public void testGetParamsetsConfig() throws Exception {
+  public void testGetParamsetsConfig() {
     assertAnnotatedApiExistsFor("GET", "/config/params");
     final AnnotatedApi getParamSetsApi = getAnnotatedApiFor("GET", "/config/params");
     // Ensure that the /config/params path redirects to the /config/params specific endpoint (and

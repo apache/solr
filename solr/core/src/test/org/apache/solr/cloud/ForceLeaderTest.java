@@ -59,7 +59,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
   @Test
   @Override
   @Ignore
-  public void test() throws Exception {}
+  public void test() {}
 
   /**
    * Tests that FORCELEADER can get an active leader even only replicas with term lower than

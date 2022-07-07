@@ -540,7 +540,7 @@ public class TestNumericRangeQuery64 extends SolrTestCase {
   }
 
   @Test
-  public void testEqualsAndHash() throws Exception {
+  public void testEqualsAndHash() {
     QueryUtils.checkHashEquals(
         LegacyNumericRangeQuery.newLongRange("test1", 4, 10L, 20L, true, true));
     QueryUtils.checkHashEquals(

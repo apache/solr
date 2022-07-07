@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.Set;
@@ -50,7 +49,7 @@ public class ClusterStateUpdateTest extends SolrCloudTestCase {
   }
 
   @AfterClass
-  public static void afterClass() throws InterruptedException, IOException {
+  public static void afterClass() {
     System.clearProperty("solrcloud.skip.autorecovery");
     System.clearProperty("genericCoreNodeNames");
   }

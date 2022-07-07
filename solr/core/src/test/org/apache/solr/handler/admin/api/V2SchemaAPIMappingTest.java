@@ -70,7 +70,7 @@ public class V2SchemaAPIMappingTest extends V2ApiMappingTest<SchemaHandler> {
   }
 
   @Test
-  public void testSchemaBulkModificationApiMapping() throws Exception {
+  public void testSchemaBulkModificationApiMapping() {
     assertAnnotatedApiExistsFor("POST", "/schema");
   }
 }

@@ -31,7 +31,7 @@ import org.junit.Test;
 public class TestSolrQueryResponse extends SolrTestCase {
 
   @Test
-  public void testName() throws Exception {
+  public void testName() {
     assertEquals("SolrQueryResponse.NAME value changed", "response", SolrQueryResponse.NAME);
   }
 
@@ -77,7 +77,7 @@ public class TestSolrQueryResponse extends SolrTestCase {
   }
 
   @Test
-  public void testResponse() throws Exception {
+  public void testResponse() {
     final SolrQueryResponse response = new SolrQueryResponse();
     assertEquals("response initial value", null, response.getResponse());
     final Object newValue =
@@ -265,7 +265,7 @@ public class TestSolrQueryResponse extends SolrTestCase {
   }
 
   @Test
-  public void testException() throws Exception {
+  public void testException() {
     final SolrQueryResponse response = new SolrQueryResponse();
     assertEquals("exception initial value", null, response.getException());
     final Exception newValue =

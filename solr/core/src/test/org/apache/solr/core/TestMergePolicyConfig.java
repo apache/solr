@@ -46,7 +46,7 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
   private static AtomicInteger docIdCounter = new AtomicInteger(42);
 
   @After
-  public void after() throws Exception {
+  public void after() {
     deleteCore();
   }
 

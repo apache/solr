@@ -1332,7 +1332,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
             .get("id"));
   }
 
-  private static String getSecurityJson() throws KeeperException, InterruptedException {
+  private static String getSecurityJson() {
     return "{\n"
         + "  'authentication':{\n"
         + "    'blockUnknown': false,\n"
@@ -1718,8 +1718,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   }
 
   private void verifyException(
-      SolrClient solrClient, ConfigSetAdminRequest<?, ?> request, String errorContains)
-      throws Exception {
+      SolrClient solrClient, ConfigSetAdminRequest<?, ?> request, String errorContains) {
     ignoreException(errorContains);
     Exception e = expectThrows(Exception.class, () -> solrClient.request(request));
     assertTrue(
@@ -1812,7 +1811,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
    * @see ConfigSetService#getDefaultConfigDirPath
    */
   @Test
-  public void testUserAndTestDefaultConfigsetsAreSame() throws IOException {
+  public void testUserAndTestDefaultConfigsetsAreSame() {
     final Path extPath = Path.of(ExternalPaths.DEFAULT_CONFIGSET);
     assertTrue(
         "_default dir doesn't exist: " + ExternalPaths.DEFAULT_CONFIGSET, Files.exists(extPath));
@@ -1919,6 +1918,6 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     public void init(Map<String, Object> initInfo) {}
 
     @Override
-    public void close() throws IOException {}
+    public void close() {}
   }
 }

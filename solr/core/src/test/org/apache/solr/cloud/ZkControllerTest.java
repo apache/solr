@@ -59,10 +59,10 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
   static final int TIMEOUT = 10000;
 
   @BeforeClass
-  public static void beforeClass() throws Exception {}
+  public static void beforeClass() {}
 
   @AfterClass
-  public static void afterClass() throws Exception {}
+  public static void afterClass() {}
 
   public void testNodeNameUrlConversion() throws Exception {
 

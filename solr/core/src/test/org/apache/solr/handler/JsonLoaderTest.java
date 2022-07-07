@@ -163,7 +163,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testInvalidJsonProducesBadRequestSolrException() throws Exception {
+  public void testInvalidJsonProducesBadRequestSolrException() {
     SolrQueryResponse rsp = new SolrQueryResponse();
     BufferingRequestProcessor p = new BufferingRequestProcessor(null);
     JsonLoader loader = new JsonLoader();
@@ -639,7 +639,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testAddBigIntegerValueToTrieField() throws Exception {
+  public void testAddBigIntegerValueToTrieField() {
     // Adding a BigInteger to a long field should fail
     // BigInteger.longValue() returns only the low-order 64 bits.
 

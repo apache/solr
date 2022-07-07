@@ -79,7 +79,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
       super(query, localParams, params, req);
     }
 
-    public Query parse() throws SyntaxError {
+    public Query parse() {
 
       int mergeStrategy = localParams.getInt("mergeStrategy", 0);
       int collector = localParams.getInt("collector", 0);

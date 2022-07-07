@@ -59,7 +59,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void setupCluster() {
     System.setProperty("solr.zkclienttimeout", "45000");
     System.setProperty("distribUpdateSoTimeout", "15000");
   }

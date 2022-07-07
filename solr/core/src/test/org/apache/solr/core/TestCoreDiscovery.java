@@ -141,7 +141,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   }
 
   @After
-  public void after() throws Exception {}
+  public void after() {}
 
   // Test the basic setup, create some dirs with core.properties files in them, but solr.xml has
   // discoverCores set and ensure that we find all the cores and can load them.

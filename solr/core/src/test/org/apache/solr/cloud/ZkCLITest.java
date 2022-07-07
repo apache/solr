@@ -70,7 +70,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void afterClass() throws InterruptedException {
+  public static void afterClass() {
     System.clearProperty("solrcloud.skip.autorecovery");
   }
 
