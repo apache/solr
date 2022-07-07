@@ -47,8 +47,6 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.util.TimeOut;
-import org.junit.After;
-import org.junit.Before;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -281,7 +279,9 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
       ref = reader.getClusterState().getCollectionRef("c2");
       assertNotNull(ref);
-      assertTrue("c2 should have been lazily loaded but is not!", ref.isLazilyLoaded()); // c2 should be lazily loaded as it's not watched
+      assertTrue(
+          "c2 should have been lazily loaded but is not!",
+          ref.isLazilyLoaded()); // c2 should be lazily loaded as it's not watched
       assertEquals(0, ref.get().getZNodeVersion());
     }
   }
@@ -388,6 +388,9 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             latch.await(10, TimeUnit.SECONDS));
         reader.removeDocCollectionWatcher("c1", dummyWatcher);
 
+        // cluster state might not be updated right the way from the removeDocCollectionWatcher call
+        // above as org.apache.solr.common.cloud.ZkStateReader.Notification might remove the watcher
+        // as well and might still be in the middle of updating the cluster state.
         TimeOut timeOut = new TimeOut(1000, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
         timeOut.waitFor(
             "The ref is not lazily loaded after waiting",
