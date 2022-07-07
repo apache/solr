@@ -99,9 +99,13 @@ public class LTRInterleavingTransformerFactory extends TransformerFactory {
 
     private void implTransform(SolrDocument doc, int docid) {
       LTRScoringQuery rerankingQuery = rerankingQueries[0];
-      if (rerankingQueries.length > 1
-          && rerankingQueries[1].getPickedInterleavingDocIds().contains(docid)) {
-        rerankingQuery = rerankingQueries[1];
+      if (rerankingQueries.length > 1) {
+        if (rerankingQueries[1].getPickedInterleavingDocIds() == null) {
+          return;
+        }
+        if (rerankingQueries[1].getPickedInterleavingDocIds().contains(docid)) {
+          rerankingQuery = rerankingQueries[1];
+        }
       }
       doc.addField(name, rerankingQuery.getScoringModelName());
     }
