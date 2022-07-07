@@ -251,7 +251,8 @@ public class ZkStateReader implements SolrCloseable {
    * <p>Each watcher DocCollectionWatch also contains the latest DocCollection (state) observed
    */
   private static class DocCollectionWatches {
-    private final ConcurrentHashMap<String, StatefulCollectionWatch<DocCollectionWatcher>> statefulWatchesByCollectionName = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, StatefulCollectionWatch<DocCollectionWatcher>>
+        statefulWatchesByCollectionName = new ConcurrentHashMap<>();
 
     /**
      * Gets the DocCollection (state) of the collection which the corresponding watch last observed
@@ -261,7 +262,8 @@ public class ZkStateReader implements SolrCloseable {
      *     collection.
      */
     private DocCollection getDocCollection(String collection) {
-      StatefulCollectionWatch<DocCollectionWatcher> watch = statefulWatchesByCollectionName.get(collection);
+      StatefulCollectionWatch<DocCollectionWatcher> watch =
+          statefulWatchesByCollectionName.get(collection);
       return watch != null ? watch.currentState : null;
     }
 
@@ -283,7 +285,8 @@ public class ZkStateReader implements SolrCloseable {
       return Collections.unmodifiableSet(statefulWatchesByCollectionName.keySet());
     }
 
-    private Set<Entry<String, StatefulCollectionWatch<DocCollectionWatcher>>> watchedCollectionEntries() {
+    private Set<Entry<String, StatefulCollectionWatch<DocCollectionWatcher>>>
+        watchedCollectionEntries() {
       return Collections.unmodifiableSet(statefulWatchesByCollectionName.entrySet());
     }
 
@@ -296,7 +299,8 @@ public class ZkStateReader implements SolrCloseable {
      * @return whether an active watch exists for such collection
      */
     private boolean updateDocCollection(String collection, DocCollection newState) {
-      StatefulCollectionWatch<DocCollectionWatcher> finalWatch = statefulWatchesByCollectionName.computeIfPresent(
+      StatefulCollectionWatch<DocCollectionWatcher> finalWatch =
+          statefulWatchesByCollectionName.computeIfPresent(
               collection,
               (col, watch) -> {
                 DocCollection oldState = watch.currentState;
@@ -338,12 +342,20 @@ public class ZkStateReader implements SolrCloseable {
 
     /**
      * Computes the new StatefulCollectionWatch by the supplied remappingFunction.
-     * @param collectionName  collection name
-     * @param remappingFunction remaps the StatefulCollectionWatch. If this returns null, the associated StatefulCollectionWatch will be removed; otherwise, the returned value will be assigned to such collection
+     *
+     * @param collectionName collection name
+     * @param remappingFunction remaps the StatefulCollectionWatch. If this returns null, the
+     *     associated StatefulCollectionWatch will be removed; otherwise, the returned value will be
+     *     assigned to such collection
      * @return the new StatefulCollectionWatch associated with the collection
      */
-    private StatefulCollectionWatch<DocCollectionWatcher> compute(String collectionName,
-                         BiFunction<String, StatefulCollectionWatch<DocCollectionWatcher>, StatefulCollectionWatch<DocCollectionWatcher>> remappingFunction) {
+    private StatefulCollectionWatch<DocCollectionWatcher> compute(
+        String collectionName,
+        BiFunction<
+                String,
+                StatefulCollectionWatch<DocCollectionWatcher>,
+                StatefulCollectionWatch<DocCollectionWatcher>>
+            remappingFunction) {
       return statefulWatchesByCollectionName.compute(collectionName, remappingFunction);
     }
   }
@@ -630,12 +642,13 @@ public class ZkStateReader implements SolrCloseable {
     Map<String, ClusterState.CollectionRef> result = new LinkedHashMap<>();
 
     // Add collections
-    for (Entry<String, StatefulCollectionWatch<DocCollectionWatcher>> entry : collectionWatches.watchedCollectionEntries()) {
+    for (Entry<String, StatefulCollectionWatch<DocCollectionWatcher>> entry :
+        collectionWatches.watchedCollectionEntries()) {
       if (entry.getValue().currentState != null) {
         // if the doc is null for the collection watch, then it should not be inserted into the
         // state
         result.putIfAbsent(
-                entry.getKey(), new ClusterState.CollectionRef(entry.getValue().currentState));
+            entry.getKey(), new ClusterState.CollectionRef(entry.getValue().currentState));
       }
     }
 
