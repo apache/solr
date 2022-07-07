@@ -2004,8 +2004,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       String shard = entry.getKey();
       NamedList<?> info = (NamedList<?>) entry.getValue();
       boolean found = false;
-      for (int i = 0; i < shardsArr.length; i++) {
-        String s = shardsArr[i];
+      for (String s : shardsArr) {
         if (shard.contains(s)) {
           found = true;
           // make sure that it responded if it's up and the landing node didn't error before sending
