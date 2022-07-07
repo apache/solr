@@ -47,6 +47,8 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.util.TimeOut;
+import org.junit.After;
+import org.junit.Before;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,7 +82,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
   }
 
   private static TestFixture setupTestFixture(String testPrefix) throws Exception {
-    Path zkDir = createTempDir("testExternalCollectionWatchedNotWatched");
+    Path zkDir = createTempDir(testPrefix);
     ZkTestServer server = new ZkTestServer(zkDir);
     server.run();
     SolrZkClient zkClient =
