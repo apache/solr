@@ -185,9 +185,8 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
 
   public HttpClientConnection getConn(ConnectionRequest mConn)
       throws InterruptedException, ConnectionPoolTimeoutException, ExecutionException {
-    HttpClientConnection conn = mConn.get(30, TimeUnit.SECONDS);
 
-    return conn;
+    return mConn.get(30, TimeUnit.SECONDS);
   }
 
   public void headerRequest(
@@ -212,7 +211,6 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
 
   public ConnectionRequest getClientConnectionRequest(
       HttpClient httpClient, HttpRoute route, PoolingHttpClientConnectionManager cm) {
-    ConnectionRequest mConn = cm.requestConnection(route, HttpSolrClient.cacheKey);
-    return mConn;
+    return cm.requestConnection(route, HttpSolrClient.cacheKey);
   }
 }

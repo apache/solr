@@ -4520,7 +4520,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
       }
     } catch (NumberFormatException e) {
       try {
-        if (Double.valueOf(numbers[1]) < Double.valueOf(numbers[2])) {
+        if (Double.parseDouble(numbers[1]) < Double.parseDouble(numbers[2])) {
           smaller = numbers[1];
           larger = numbers[2];
         } else {
@@ -5284,9 +5284,9 @@ public class TestPointFields extends SolrTestCaseJ4 {
     SchemaField sf = h.getCore().getLatestSchema().getField(fieldName);
     assertTrue(sf.getType() instanceof PointField);
 
-    for (int i = 0; i < values.length; i++) {
+    for (String value : values) {
       assertQ(
-          req("q", "{!term f='" + fieldName + "'}" + values[i], "fl", "id," + fieldName),
+          req("q", "{!term f='" + fieldName + "'}" + value, "fl", "id," + fieldName),
           "//*[@numFound='1']");
     }
 
@@ -5355,9 +5355,9 @@ public class TestPointFields extends SolrTestCaseJ4 {
                 values[(i + 1) % values.length]));
       }
       assertU(commit());
-      for (int i = 0; i < values.length; i++) {
+      for (String value : values) {
         assertQ(
-            req("q", "{!term f='" + fieldName + "'}" + values[i], "fl", "id," + fieldName),
+            req("q", "{!term f='" + fieldName + "'}" + value, "fl", "id," + fieldName),
             "//*[@numFound='2']");
       }
 

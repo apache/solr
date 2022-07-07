@@ -124,15 +124,15 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     // check the prefix encoding, lower precision should have the difference to original value equal
     // to the lower removed bits
     final BytesRefBuilder ref = new BytesRefBuilder();
-    for (int i = 0; i < vals.length; i++) {
+    for (long val : vals) {
       for (int j = 0; j < 64; j++) {
-        LegacyNumericUtils.longToPrefixCoded(vals[i], j, ref);
+        LegacyNumericUtils.longToPrefixCoded(val, j, ref);
         long prefixVal = LegacyNumericUtils.prefixCodedToLong(ref.get());
         long mask = (1L << j) - 1L;
         assertEquals(
-            "difference between prefix val and original value for " + vals[i] + " with shift=" + j,
-            vals[i] & mask,
-            vals[i] - prefixVal);
+            "difference between prefix val and original value for " + val + " with shift=" + j,
+            val & mask,
+            val - prefixVal);
       }
     }
   }
@@ -187,15 +187,15 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     // check the prefix encoding, lower precision should have the difference to original value equal
     // to the lower removed bits
     final BytesRefBuilder ref = new BytesRefBuilder();
-    for (int i = 0; i < vals.length; i++) {
+    for (int val : vals) {
       for (int j = 0; j < 32; j++) {
-        LegacyNumericUtils.intToPrefixCoded(vals[i], j, ref);
+        LegacyNumericUtils.intToPrefixCoded(val, j, ref);
         int prefixVal = LegacyNumericUtils.prefixCodedToInt(ref.get());
         int mask = (1 << j) - 1;
         assertEquals(
-            "difference between prefix val and original value for " + vals[i] + " with shift=" + j,
-            vals[i] & mask,
-            vals[i] - prefixVal);
+            "difference between prefix val and original value for " + val + " with shift=" + j,
+            val & mask,
+            val - prefixVal);
       }
     }
   }

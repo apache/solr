@@ -220,9 +220,10 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     leader = shard1.getLeader();
 
     String leaderBaseUrl = zkStateReader.getBaseUrlForNodeName(leader.getNodeName());
-    for (int i = 0; i < clients.size(); i++) {
-      if (((HttpSolrClient) clients.get(i)).getBaseURL().startsWith(leaderBaseUrl))
-        LEADER = clients.get(i);
+    for (SolrClient solrClient : clients) {
+      if (((HttpSolrClient) solrClient).getBaseURL().startsWith(leaderBaseUrl)) {
+        LEADER = solrClient;
+      }
     }
 
     NONLEADERS = new ArrayList<>();
@@ -231,9 +232,10 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
         continue;
       }
       String baseUrl = zkStateReader.getBaseUrlForNodeName(rep.getNodeName());
-      for (int i = 0; i < clients.size(); i++) {
-        if (((HttpSolrClient) clients.get(i)).getBaseURL().startsWith(baseUrl))
-          NONLEADERS.add(clients.get(i));
+      for (SolrClient client : clients) {
+        if (((HttpSolrClient) client).getBaseURL().startsWith(baseUrl)) {
+          NONLEADERS.add(client);
+        }
       }
     }
 
@@ -1193,10 +1195,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     log.info("Doc in both replica 0: {}", doc0);
     log.info("Doc in both replica 1: {}", doc1);
     // assert both replicas have same effect
-    for (int i = 0;
-        i < NONLEADERS.size();
-        i++) { // 0th is re-ordered replica, 1st is well-ordered replica
-      SolrClient client = NONLEADERS.get(i);
+    for (SolrClient client : NONLEADERS) { // 0th is re-ordered replica, 1st is well-ordered replica
       SolrDocument doc = client.getById(String.valueOf(0), params("distrib", "false"));
       assertNotNull("Client: " + ((HttpSolrClient) client).getBaseURL(), doc);
       assertEquals(
@@ -1489,8 +1488,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
   private String getBaseUrl(String id) throws IOException {
     DocCollection collection = cloudClient.getClusterState().getCollection(DEFAULT_COLLECTION);
     Slice slice = collection.getRouter().getTargetSlice(id, null, null, null, collection);
-    String baseUrl = slice.getLeader().getCoreUrl();
-    return baseUrl;
+    return slice.getLeader().getCoreUrl();
   }
 
   UpdateRequest regularUpdateRequest(Object... fields) throws SolrServerException, IOException {

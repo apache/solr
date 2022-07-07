@@ -405,8 +405,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
       int nullCount = 0;
       int sevenCount = 0;
       int boolCount = 0;
-      for (int idx = 0; idx < commands.size(); ++idx) {
-        GroupCommand fieldCommand = commands.get(idx);
+      for (GroupCommand fieldCommand : commands) {
         for (Group grp : fieldCommand.getValues()) {
           switch (grp.getResult().size()) {
             case 7:
