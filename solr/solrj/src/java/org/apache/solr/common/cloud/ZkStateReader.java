@@ -251,7 +251,7 @@ public class ZkStateReader implements SolrCloseable {
    * <p>Each watcher DocCollectionWatch also contains the latest DocCollection (state) observed
    */
   private static class DocCollectionWatches {
-    private static final ConcurrentHashMap<String, StatefulCollectionWatch<DocCollectionWatcher>> statefulWatchesByCollectionName = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, StatefulCollectionWatch<DocCollectionWatcher>> statefulWatchesByCollectionName = new ConcurrentHashMap<>();
 
     /**
      * Gets the DocCollection (state) of the collection which the corresponding watch last observed
