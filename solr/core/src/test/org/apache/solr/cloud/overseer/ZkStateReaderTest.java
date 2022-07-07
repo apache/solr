@@ -47,6 +47,8 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.util.TimeOut;
+import org.junit.After;
+import org.junit.Before;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,6 +81,22 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     }
   }
 
+  private TestFixture fixture = null;
+
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    fixture = setupTestFixture(getTestName());
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    if (fixture != null) {
+      fixture.close();
+    }
+    super.tearDown();
+  }
+
   private static TestFixture setupTestFixture(String testPrefix) throws Exception {
     Path zkDir = createTempDir(testPrefix);
     ZkTestServer server = new ZkTestServer(zkDir);
@@ -96,238 +114,225 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
   }
 
   public void testExternalCollectionWatchedNotWatched() throws Exception {
-    try (TestFixture fixture = setupTestFixture("testExternalCollectionWatchedNotWatched")) {
-      ZkStateWriter writer = fixture.writer;
-      ZkStateReader reader = fixture.reader;
-      fixture.zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
+    ZkStateWriter writer = fixture.writer;
+    ZkStateReader reader = fixture.reader;
+    fixture.zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
 
-      // create new collection
-      ZkWriteCommand c1 =
-          new ZkWriteCommand(
-              "c1",
-              new DocCollection(
-                  "c1",
-                  new HashMap<>(),
-                  Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-                  DocRouter.DEFAULT,
-                  0));
+    // create new collection
+    ZkWriteCommand c1 =
+        new ZkWriteCommand(
+            "c1",
+            new DocCollection(
+                "c1",
+                new HashMap<>(),
+                Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
+                DocRouter.DEFAULT,
+                0));
 
-      writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c1), null);
-      writer.writePendingUpdates();
-      reader.forceUpdateCollection("c1");
+    writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c1), null);
+    writer.writePendingUpdates();
+    reader.forceUpdateCollection("c1");
 
-      assertTrue(reader.getClusterState().getCollectionRef("c1").isLazilyLoaded());
-      reader.registerCore("c1");
-      assertFalse(reader.getClusterState().getCollectionRef("c1").isLazilyLoaded());
-      reader.unregisterCore("c1");
-      assertTrue(reader.getClusterState().getCollectionRef("c1").isLazilyLoaded());
-    }
+    assertTrue(reader.getClusterState().getCollectionRef("c1").isLazilyLoaded());
+    reader.registerCore("c1");
+    assertFalse(reader.getClusterState().getCollectionRef("c1").isLazilyLoaded());
+    reader.unregisterCore("c1");
+    assertTrue(reader.getClusterState().getCollectionRef("c1").isLazilyLoaded());
   }
 
   public void testCollectionStateWatcherCaching() throws Exception {
-    try (TestFixture fixture = setupTestFixture("testCollectionStateWatcherCaching")) {
-      ZkStateWriter writer = fixture.writer;
-      ZkStateReader reader = fixture.reader;
+    ZkStateWriter writer = fixture.writer;
+    ZkStateReader reader = fixture.reader;
 
-      fixture.zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
+    fixture.zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
 
-      DocCollection state =
-          new DocCollection(
-              "c1",
-              new HashMap<>(),
-              Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-              DocRouter.DEFAULT,
-              0);
-      ZkWriteCommand wc = new ZkWriteCommand("c1", state);
-      writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
-      writer.writePendingUpdates();
-      assertTrue(
-          fixture.zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", true));
-      reader.waitForState(
-          "c1", 1, TimeUnit.SECONDS, (liveNodes, collectionState) -> collectionState != null);
+    DocCollection state =
+        new DocCollection(
+            "c1",
+            new HashMap<>(),
+            Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
+            DocRouter.DEFAULT,
+            0);
+    ZkWriteCommand wc = new ZkWriteCommand("c1", state);
+    writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
+    writer.writePendingUpdates();
+    assertTrue(fixture.zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", true));
+    reader.waitForState(
+        "c1", 1, TimeUnit.SECONDS, (liveNodes, collectionState) -> collectionState != null);
 
-      Map<String, Object> props = new HashMap<>();
-      props.put("x", "y");
-      props.put(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME);
-      state = new DocCollection("c1", new HashMap<>(), props, DocRouter.DEFAULT, 0);
-      wc = new ZkWriteCommand("c1", state);
-      writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
-      writer.writePendingUpdates();
+    Map<String, Object> props = new HashMap<>();
+    props.put("x", "y");
+    props.put(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME);
+    state = new DocCollection("c1", new HashMap<>(), props, DocRouter.DEFAULT, 0);
+    wc = new ZkWriteCommand("c1", state);
+    writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
+    writer.writePendingUpdates();
 
-      boolean found = false;
-      TimeOut timeOut = new TimeOut(5, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-      while (!timeOut.hasTimedOut()) {
-        DocCollection c1 = reader.getClusterState().getCollection("c1");
-        if ("y".equals(c1.getStr("x"))) {
-          found = true;
-          break;
-        }
+    boolean found = false;
+    TimeOut timeOut = new TimeOut(5, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    while (!timeOut.hasTimedOut()) {
+      DocCollection c1 = reader.getClusterState().getCollection("c1");
+      if ("y".equals(c1.getStr("x"))) {
+        found = true;
+        break;
       }
-      assertTrue("Could not find updated property in collection c1 even after 5 seconds", found);
     }
+    assertTrue("Could not find updated property in collection c1 even after 5 seconds", found);
   }
 
   public void testWatchedCollectionCreation() throws Exception {
-    try (TestFixture fixture = setupTestFixture("testWatchedCollectionCreation")) {
-      ZkStateWriter writer = fixture.writer;
-      ZkStateReader reader = fixture.reader;
+    ZkStateWriter writer = fixture.writer;
+    ZkStateReader reader = fixture.reader;
 
-      reader.registerCore("c1");
+    reader.registerCore("c1");
 
-      // Initially there should be no c1 collection.
-      assertNull(reader.getClusterState().getCollectionRef("c1"));
+    // Initially there should be no c1 collection.
+    assertNull(reader.getClusterState().getCollectionRef("c1"));
 
-      fixture.zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
-      reader.forceUpdateCollection("c1");
+    fixture.zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
+    reader.forceUpdateCollection("c1");
 
-      // Still no c1 collection, despite a collection path.
-      assertNull(reader.getClusterState().getCollectionRef("c1"));
+    // Still no c1 collection, despite a collection path.
+    assertNull(reader.getClusterState().getCollectionRef("c1"));
 
-      // create new collection
-      DocCollection state =
-          new DocCollection(
-              "c1",
-              new HashMap<>(),
-              Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-              DocRouter.DEFAULT,
-              0);
-      ZkWriteCommand wc = new ZkWriteCommand("c1", state);
-      writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
-      writer.writePendingUpdates();
+    // create new collection
+    DocCollection state =
+        new DocCollection(
+            "c1",
+            new HashMap<>(),
+            Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
+            DocRouter.DEFAULT,
+            0);
+    ZkWriteCommand wc = new ZkWriteCommand("c1", state);
+    writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
+    writer.writePendingUpdates();
 
-      assertTrue(
-          fixture.zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", true));
+    assertTrue(fixture.zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", true));
 
-      // reader.forceUpdateCollection("c1");
-      reader.waitForState("c1", TIMEOUT, TimeUnit.SECONDS, (n, c) -> c != null);
-      ClusterState.CollectionRef ref = reader.getClusterState().getCollectionRef("c1");
-      assertNotNull(ref);
-      assertFalse(ref.isLazilyLoaded());
-    }
+    // reader.forceUpdateCollection("c1");
+    reader.waitForState("c1", TIMEOUT, TimeUnit.SECONDS, (n, c) -> c != null);
+    ClusterState.CollectionRef ref = reader.getClusterState().getCollectionRef("c1");
+    assertNotNull(ref);
+    assertFalse(ref.isLazilyLoaded());
   }
 
   public void testForciblyRefreshAllClusterState() throws Exception {
-    try (TestFixture fixture = setupTestFixture("testForciblyRefreshAllClusterState")) {
-      ZkStateWriter writer = fixture.writer;
-      ZkStateReader reader = fixture.reader;
+    ZkStateWriter writer = fixture.writer;
+    ZkStateReader reader = fixture.reader;
 
-      reader.registerCore("c1"); // watching c1, so it should get non lazy reference
-      fixture.zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
+    reader.registerCore("c1"); // watching c1, so it should get non lazy reference
+    fixture.zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
 
-      reader.forciblyRefreshAllClusterStateSlow();
-      // Initially there should be no c1 collection.
-      assertNull(reader.getClusterState().getCollectionRef("c1"));
+    reader.forciblyRefreshAllClusterStateSlow();
+    // Initially there should be no c1 collection.
+    assertNull(reader.getClusterState().getCollectionRef("c1"));
 
-      // create new collection
-      DocCollection state =
-          new DocCollection(
-              "c1",
-              new HashMap<>(),
-              Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-              DocRouter.DEFAULT,
-              0);
-      ZkWriteCommand wc = new ZkWriteCommand("c1", state);
-      writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
-      writer.writePendingUpdates();
+    // create new collection
+    DocCollection state =
+        new DocCollection(
+            "c1",
+            new HashMap<>(),
+            Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
+            DocRouter.DEFAULT,
+            0);
+    ZkWriteCommand wc = new ZkWriteCommand("c1", state);
+    writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
+    writer.writePendingUpdates();
 
-      assertTrue(
-          fixture.zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", true));
+    assertTrue(fixture.zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", true));
 
-      reader.forciblyRefreshAllClusterStateSlow();
-      ClusterState.CollectionRef ref = reader.getClusterState().getCollectionRef("c1");
-      assertNotNull(ref);
-      assertFalse(ref.isLazilyLoaded());
-      assertEquals(0, ref.get().getZNodeVersion());
+    reader.forciblyRefreshAllClusterStateSlow();
+    ClusterState.CollectionRef ref = reader.getClusterState().getCollectionRef("c1");
+    assertNotNull(ref);
+    assertFalse(ref.isLazilyLoaded());
+    assertEquals(0, ref.get().getZNodeVersion());
 
-      // update the collection
-      state =
-          new DocCollection(
-              "c1",
-              new HashMap<>(),
-              Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-              DocRouter.DEFAULT,
-              ref.get().getZNodeVersion());
-      wc = new ZkWriteCommand("c1", state);
-      writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
-      writer.writePendingUpdates();
+    // update the collection
+    state =
+        new DocCollection(
+            "c1",
+            new HashMap<>(),
+            Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
+            DocRouter.DEFAULT,
+            ref.get().getZNodeVersion());
+    wc = new ZkWriteCommand("c1", state);
+    writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
+    writer.writePendingUpdates();
 
-      reader.forciblyRefreshAllClusterStateSlow();
-      ref = reader.getClusterState().getCollectionRef("c1");
-      assertNotNull(ref);
-      assertFalse(ref.isLazilyLoaded());
-      assertEquals(1, ref.get().getZNodeVersion());
+    reader.forciblyRefreshAllClusterStateSlow();
+    ref = reader.getClusterState().getCollectionRef("c1");
+    assertNotNull(ref);
+    assertFalse(ref.isLazilyLoaded());
+    assertEquals(1, ref.get().getZNodeVersion());
 
-      // delete the collection c1, add a collection c2 that is NOT watched
-      ZkWriteCommand wc1 = new ZkWriteCommand("c1", null);
+    // delete the collection c1, add a collection c2 that is NOT watched
+    ZkWriteCommand wc1 = new ZkWriteCommand("c1", null);
 
-      fixture.zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c2", true);
-      state =
-          new DocCollection(
-              "c2",
-              new HashMap<>(),
-              Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-              DocRouter.DEFAULT,
-              0);
-      ZkWriteCommand wc2 = new ZkWriteCommand("c2", state);
+    fixture.zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c2", true);
+    state =
+        new DocCollection(
+            "c2",
+            new HashMap<>(),
+            Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
+            DocRouter.DEFAULT,
+            0);
+    ZkWriteCommand wc2 = new ZkWriteCommand("c2", state);
 
-      writer.enqueueUpdate(reader.getClusterState(), Arrays.asList(wc1, wc2), null);
-      writer.writePendingUpdates();
+    writer.enqueueUpdate(reader.getClusterState(), Arrays.asList(wc1, wc2), null);
+    writer.writePendingUpdates();
 
-      reader.forciblyRefreshAllClusterStateSlow();
-      ref = reader.getClusterState().getCollectionRef("c1");
-      assertNull(ref);
+    reader.forciblyRefreshAllClusterStateSlow();
+    ref = reader.getClusterState().getCollectionRef("c1");
+    assertNull(ref);
 
-      ref = reader.getClusterState().getCollectionRef("c2");
-      assertNotNull(ref);
-      assertTrue(
-          "c2 should have been lazily loaded but is not!",
-          ref.isLazilyLoaded()); // c2 should be lazily loaded as it's not watched
-      assertEquals(0, ref.get().getZNodeVersion());
-    }
+    ref = reader.getClusterState().getCollectionRef("c2");
+    assertNotNull(ref);
+    assertTrue(
+        "c2 should have been lazily loaded but is not!",
+        ref.isLazilyLoaded()); // c2 should be lazily loaded as it's not watched
+    assertEquals(0, ref.get().getZNodeVersion());
   }
 
   public void testGetCurrentCollections() throws Exception {
-    try (TestFixture fixture = setupTestFixture("testGetCurrentCollections")) {
-      ZkStateWriter writer = fixture.writer;
-      ZkStateReader reader = fixture.reader;
+    ZkStateWriter writer = fixture.writer;
+    ZkStateReader reader = fixture.reader;
 
-      reader.registerCore("c1"); // listen to c1. not yet exist
-      fixture.zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
-      reader.forceUpdateCollection("c1");
-      Set<String> currentCollections = reader.getCurrentCollections();
-      assertEquals(0, currentCollections.size()); // no active collections yet
+    reader.registerCore("c1"); // listen to c1. not yet exist
+    fixture.zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
+    reader.forceUpdateCollection("c1");
+    Set<String> currentCollections = reader.getCurrentCollections();
+    assertEquals(0, currentCollections.size()); // no active collections yet
 
-      // now create both c1 (watched) and c2 (not watched)
-      DocCollection state1 =
-          new DocCollection(
-              "c1",
-              new HashMap<>(),
-              Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-              DocRouter.DEFAULT,
-              0);
-      ZkWriteCommand wc1 = new ZkWriteCommand("c1", state1);
-      DocCollection state2 =
-          new DocCollection(
-              "c2",
-              new HashMap<>(),
-              Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-              DocRouter.DEFAULT,
-              0);
+    // now create both c1 (watched) and c2 (not watched)
+    DocCollection state1 =
+        new DocCollection(
+            "c1",
+            new HashMap<>(),
+            Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
+            DocRouter.DEFAULT,
+            0);
+    ZkWriteCommand wc1 = new ZkWriteCommand("c1", state1);
+    DocCollection state2 =
+        new DocCollection(
+            "c2",
+            new HashMap<>(),
+            Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
+            DocRouter.DEFAULT,
+            0);
 
-      // do not listen to c2
-      fixture.zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c2", true);
-      ZkWriteCommand wc2 = new ZkWriteCommand("c2", state2);
+    // do not listen to c2
+    fixture.zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c2", true);
+    ZkWriteCommand wc2 = new ZkWriteCommand("c2", state2);
 
-      writer.enqueueUpdate(reader.getClusterState(), Arrays.asList(wc1, wc2), null);
-      writer.writePendingUpdates();
+    writer.enqueueUpdate(reader.getClusterState(), Arrays.asList(wc1, wc2), null);
+    writer.writePendingUpdates();
 
-      reader.forceUpdateCollection("c1");
-      reader.forceUpdateCollection("c2");
-      currentCollections =
-          reader.getCurrentCollections(); // should detect both collections (c1 watched, c2 lazy
-      // loaded)
-      assertEquals(2, currentCollections.size());
-    }
+    reader.forceUpdateCollection("c1");
+    reader.forceUpdateCollection("c2");
+    currentCollections =
+        reader.getCurrentCollections(); // should detect both collections (c1 watched, c2 lazy
+    // loaded)
+    assertEquals(2, currentCollections.size());
   }
 
   public void testWatchRaceCondition() throws Exception {
@@ -336,7 +341,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
         ExecutorUtil.newMDCAwareSingleThreadExecutor(
             new SolrNamedThreadFactory("zkStateReaderTest"));
 
-    try (TestFixture fixture = setupTestFixture("testWatchRaceCondition")) {
+    try {
       ZkStateWriter writer = fixture.writer;
       final ZkStateReader reader = fixture.reader;
       fixture.zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
@@ -401,7 +406,6 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       if (updateException.get() != null) {
         throw (updateException.get());
       }
-
     } finally {
       ExecutorUtil.awaitTermination(executorService);
     }
