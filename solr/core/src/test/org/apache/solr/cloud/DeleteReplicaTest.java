@@ -537,8 +537,8 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     CollectionAdminRequest.deleteReplica(collectionName, "shard1", nonLeader.getName())
         .process(cluster.getSolrClient());
     closed.set(true);
-    for (int i = 0; i < threads.length; i++) {
-      threads[i].join();
+    for (Thread thread : threads) {
+      thread.join();
     }
 
     try {

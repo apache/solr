@@ -1235,8 +1235,8 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     for (int i = 0; i < 100; i++) {
       boolean found = false;
       String si = String.valueOf(i);
-      for (int j = 0; j < docs.size(); j++) {
-        if (docs.get(j).get("sortabledv_udvas").equals(si)) {
+      for (Map<String, Object> doc : docs) {
+        if (doc.get("sortabledv_udvas").equals(si)) {
           found = true;
           break;
         }
@@ -1362,9 +1362,9 @@ public class TestExportWriter extends SolrTestCaseJ4 {
           ((LinkedHashMap) doclist.get(i)).get("id"),
           String.valueOf(((HashMap<?, ?>) docs.get(i)).get("id")));
 
-      for (int j = 0; j < fieldSorts.length; j++) { // fields ..
-        String field = fieldSorts[j].getField();
-        String sort = fieldSorts[j].getSort();
+      for (SortFields fieldSort : fieldSorts) { // fields ..
+        String field = fieldSort.getField();
+        String sort = fieldSort.getSort();
         String fieldVal1 = String.valueOf(((HashMap) docs.get(i)).get(field)); // 1st doc
         String fieldVal2 = String.valueOf(((HashMap) docs.get(i + 1)).get(field)); // 2nd obj
         if (fieldVal1.equals(fieldVal2)) {

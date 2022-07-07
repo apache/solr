@@ -81,8 +81,7 @@ public class TestLockTree extends SolrTestCaseJ4 {
       List<Pair<CollectionAction, List<String>>> completedOps = new CopyOnWriteArrayList<>();
       List<Lock> locks = new CopyOnWriteArrayList<>();
       List<Thread> threads = new ArrayList<>();
-      for (int i = 0; i < operations.size(); i++) {
-        Pair<CollectionAction, List<String>> operation = operations.get(i);
+      for (Pair<CollectionAction, List<String>> operation : operations) {
         final Lock lock = session.lock(operation.first(), operation.second());
         if (lock != null) {
           Thread thread = new Thread(getRunnable(completedOps, operation, locks, lock));

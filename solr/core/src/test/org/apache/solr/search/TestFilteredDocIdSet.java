@@ -19,7 +19,6 @@ package org.apache.solr.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import junit.framework.Assert;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -102,9 +101,8 @@ public class TestFilteredDocIdSet extends SolrTestCase {
 
     int[] docs = new int[list.size()];
     int c = 0;
-    Iterator<Integer> intIter = list.iterator();
-    while (intIter.hasNext()) {
-      docs[c++] = intIter.next();
+    for (Integer integer : list) {
+      docs[c++] = integer.intValue();
     }
     int[] answer = new int[] {4, 6, 8};
     boolean same = Arrays.equals(answer, docs);

@@ -217,12 +217,12 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
       "!!A/1000",
       "A//8!B///10!C////"
     };
-    for (int i = 0; i < ids.length; ++i) {
+    for (String id : ids) {
       try {
-        Slice targetSlice = coll.getRouter().getTargetSlice(ids[i], null, null, null, coll);
+        Slice targetSlice = coll.getRouter().getTargetSlice(id, null, null, null, coll);
         assertNotNull(targetSlice);
       } catch (Exception e) {
-        throw new Exception("Exception routing id '" + ids[i] + "'", e);
+        throw new Exception("Exception routing id '" + id + "'", e);
       }
     }
   }
