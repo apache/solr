@@ -395,7 +395,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
    * Returns a new HttpClient that supports both HTTP and HTTPS (with the default test truststore),
    * but has no keystore -- so servers requiring client authentication should fail.
    */
-  private static CloseableHttpClient getSslAwareClientWithNoClientCerts() throws Exception {
+  private static CloseableHttpClient getSslAwareClientWithNoClientCerts() {
 
     // NOTE: This method explicitly does *NOT* use HttpClientUtil code because that
     // will change the global static HttpClientBuilder / SchemeRegistryProvider, and

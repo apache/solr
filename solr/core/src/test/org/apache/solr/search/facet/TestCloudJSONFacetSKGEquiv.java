@@ -724,7 +724,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     }
   }
 
-  public void testRandom() throws Exception {
+  public void testRandom() {
 
     final int numIters = atLeast(10);
     for (int iter = 0; iter < numIters; iter++) {

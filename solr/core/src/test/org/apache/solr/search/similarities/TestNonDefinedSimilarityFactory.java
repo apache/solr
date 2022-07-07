@@ -31,7 +31,7 @@ import org.junit.After;
 public class TestNonDefinedSimilarityFactory extends BaseSimilarityTestCase {
 
   @After
-  public void cleanup() throws Exception {
+  public void cleanup() {
     deleteCore();
   }
 

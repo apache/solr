@@ -57,7 +57,7 @@ public class TestJsonFacetsStatsParsing extends SolrTestCaseJ4 {
         not(new FacetRequest.FacetSort("foo", FacetRequest.SortDirection.desc)));
   }
 
-  public void testEquality() throws IOException {
+  public void testEquality() {
     try (SolrQueryRequest req =
         req(
             "custom_req_param", "foo_i",

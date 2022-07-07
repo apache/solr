@@ -47,7 +47,7 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
   }
 
   @Before
-  public void before() throws Exception {
+  public void before() {
     assertU(delQ("*:*"));
     assertU(commit());
   }

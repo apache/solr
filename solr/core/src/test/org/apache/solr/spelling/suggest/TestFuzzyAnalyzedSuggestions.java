@@ -36,7 +36,7 @@ public class TestFuzzyAnalyzedSuggestions extends SolrTestCaseJ4 {
     assertQ(req("qt", URI_MIN_FUZZY_LENGTH, "q", "", SpellingParams.SPELLCHECK_BUILD, "true"));
   }
 
-  public void testDefault() throws Exception {
+  public void testDefault() {
 
     // tests to demonstrate default maxEdit parameter (value: 1), control for testWithMaxEdit2
     assertQ(

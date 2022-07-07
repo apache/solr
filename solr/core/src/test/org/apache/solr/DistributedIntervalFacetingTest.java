@@ -34,7 +34,7 @@ import org.junit.Test;
 public class DistributedIntervalFacetingTest extends BaseDistributedSearchTestCase {
 
   @BeforeClass
-  public static void beforeSuperClass() throws Exception {
+  public static void beforeSuperClass() {
     schemaString = "schema-distrib-interval-faceting.xml";
     configString = "solrconfig-basic.xml";
   }

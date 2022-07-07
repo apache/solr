@@ -20,7 +20,6 @@ package org.apache.solr.handler.component;
 import static org.junit.Assert.assertEquals;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
@@ -44,7 +43,7 @@ public class ResourceSharingTestComponent extends SearchComponent implements Sol
 
   @SuppressWarnings("SynchronizeOnNonFinalField")
   @Override
-  public void prepare(ResponseBuilder rb) throws IOException {
+  public void prepare(ResponseBuilder rb) {
     SolrParams params = rb.req.getParams();
     ModifiableSolrParams mParams = new ModifiableSolrParams(params);
     String q = "text:" + getTestObj().getLastCollection();
@@ -55,7 +54,7 @@ public class ResourceSharingTestComponent extends SearchComponent implements Sol
   }
 
   @Override
-  public void process(ResponseBuilder rb) throws IOException {}
+  public void process(ResponseBuilder rb) {}
 
   @Override
   public String getDescription() {

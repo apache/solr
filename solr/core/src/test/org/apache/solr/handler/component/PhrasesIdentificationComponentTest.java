@@ -50,7 +50,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
   }
 
   @Before
-  public void addSomeDocs() throws Exception {
+  public void addSomeDocs() {
     assertU(
         adoc(
             "id", "42",
@@ -76,7 +76,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
   }
 
   @After
-  public void deleteAllDocs() throws Exception {
+  public void deleteAllDocs() {
     assertU(delQ("*:*"));
     assertU((commit()));
   }
@@ -237,8 +237,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
       final List<Phrase> phrases,
       final int inputPositionLength,
       final int maxIndexedPositionLength,
-      final int maxQueryPositionLength)
-      throws Exception {
+      final int maxQueryPositionLength) {
     assert 0 < phrases.size() : "Don't use this method if phrases might be empty";
 
     assertEmptyStream(
@@ -605,7 +604,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
     }
   }
 
-  public void testExpectedUserErrors() throws Exception {
+  public void testExpectedUserErrors() {
     assertQEx(
         "empty field list should error",
         "must specify a (weighted) list of fields",
@@ -659,7 +658,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
         ErrorCode.BAD_REQUEST);
   }
 
-  public void testMaxShingleSizeHelper() throws Exception {
+  public void testMaxShingleSizeHelper() {
     IndexSchema schema = h.getCore().getLatestSchema();
 
     assertEquals(
@@ -690,7 +689,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
             schema.getFieldTypeByName("text").getQueryAnalyzer()));
   }
 
-  public void testSimplePhraseRequest() throws Exception {
+  public void testSimplePhraseRequest() {
     final String input = " did  a Quick    brown FOX perniciously jump over the lazy dog";
     final String expected = " did  a Quick    {brown FOX} perniciously jump over {the lazy dog}";
 
@@ -723,7 +722,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
     }
   }
 
-  public void testSimpleSearchRequests() throws Exception {
+  public void testSimpleSearchRequests() {
     final String input = "\"brown fox\"";
 
     assertQ(
@@ -807,7 +806,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
         "count(//lst[@name='phrases']/arr[@name='details']/lst) = 0");
   }
 
-  public void testGreyboxShardSearchRequests() throws Exception {
+  public void testGreyboxShardSearchRequests() {
     final String input = "quick brown fox ran";
 
     final String phrase_xpath = "//lst[@name='phrases']";

@@ -52,7 +52,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
     createIndex();
   }
 
-  public static void createIndex() throws IOException {
+  public static void createIndex() {
     int i = 0;
     List<List<String[]>> blocks = createBlocks();
     for (List<String[]> block : blocks) {

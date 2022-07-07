@@ -629,7 +629,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testClusterProp() throws InterruptedException, IOException, SolrServerException {
+  public void testClusterProp() throws IOException, SolrServerException {
 
     // sanity check our expected default
     final ClusterProperties props = new ClusterProperties(zkClient());

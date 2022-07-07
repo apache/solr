@@ -146,7 +146,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testClose() throws Exception {
+  public void testClose() {
     final CoreContainer cores = h.getCoreContainer();
     SolrCore core = cores.getCore(SolrTestCaseJ4.DEFAULT_TEST_CORENAME);
 
@@ -376,7 +376,7 @@ class ClosingRequestHandler extends EmptyRequestHandler implements SolrCoreAware
 /** An empty handler for testing */
 class EmptyRequestHandler extends RequestHandlerBase {
   @Override
-  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) {
     // nothing!
   }
 

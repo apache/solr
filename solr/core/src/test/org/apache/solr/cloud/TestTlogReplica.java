@@ -1104,7 +1104,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     };
   }
 
-  private List<SolrCore> getSolrCore(boolean isLeader) throws IOException {
+  private List<SolrCore> getSolrCore(boolean isLeader) {
     List<SolrCore> rs = new ArrayList<>();
 
     CloudSolrClient cloudClient = cluster.getSolrClient();
@@ -1143,7 +1143,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     }
   }
 
-  private List<JettySolrRunner> getSolrRunner(boolean isLeader) throws IOException {
+  private List<JettySolrRunner> getSolrRunner(boolean isLeader) {
     List<JettySolrRunner> rs = new ArrayList<>();
     CloudSolrClient cloudClient = cluster.getSolrClient();
     DocCollection docCollection = cloudClient.getClusterState().getCollection(collectionName);

@@ -838,7 +838,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     }
 
     @Override
-    public void reset() throws IOException {
+    public void reset() {
       sentOneToken = false;
     }
 

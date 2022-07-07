@@ -77,7 +77,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
   }
 
   @After
-  public void cleanup() throws Exception {
+  public void cleanup() {
     assertU(delQ("*:*"));
     assertU(commit());
   }
@@ -1159,7 +1159,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
   }
 
   /** execute a local request, verify that we get an expected error */
-  public void assertFail(SolrParams p, ErrorCode expCode, String expSubstr) throws Exception {
+  public void assertFail(SolrParams p, ErrorCode expCode, String expSubstr) {
 
     try {
       SolrException e =

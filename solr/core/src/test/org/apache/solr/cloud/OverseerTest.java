@@ -142,7 +142,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     private List<Overseer> overseers;
 
     public MockZKController(String zkAddress, String nodeName, List<Overseer> overseers)
-        throws InterruptedException, TimeoutException, IOException, KeeperException {
+        throws InterruptedException, IOException, KeeperException {
       this.overseers = overseers;
       this.nodeName = nodeName;
       zkClient = new SolrZkClient(zkAddress, TIMEOUT);

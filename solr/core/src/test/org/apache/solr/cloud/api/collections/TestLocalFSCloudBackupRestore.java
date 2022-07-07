@@ -168,7 +168,7 @@ public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTes
     }
 
     @Override
-    public IndexInput openInput(URI dirPath, String fileName, IOContext ctx) throws IOException {
+    public IndexInput openInput(URI dirPath, String fileName, IOContext ctx) {
       throw new UnsupportedOperationException(poisoned);
     }
 

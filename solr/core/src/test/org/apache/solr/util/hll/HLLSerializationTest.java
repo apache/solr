@@ -92,7 +92,7 @@ public class HLLSerializationTest extends SolrTestCase {
   @Test
   @Slow
   @Monster("may require as much as -Dtests.heapsize=4g depending on random values picked")
-  public void manyValuesHLLSerializationTest() throws Exception {
+  public void manyValuesHLLSerializationTest() {
 
     final HLLType[] ALL_TYPES = EnumSet.allOf(HLLType.class).toArray(new HLLType[0]);
     Arrays.sort(ALL_TYPES);
@@ -137,7 +137,7 @@ public class HLLSerializationTest extends SolrTestCase {
   @Test
   @Slow
   @Monster("can require as much as -Dtests.heapsize=4g because of the massive data structs")
-  public void manyValuesMonsterHLLSerializationTest() throws Exception {
+  public void manyValuesMonsterHLLSerializationTest() {
 
     final HLLType[] ALL_TYPES = EnumSet.allOf(HLLType.class).toArray(new HLLType[0]);
     Arrays.sort(ALL_TYPES);

@@ -35,7 +35,7 @@ public class SchemaWatcherTest {
   private SchemaWatcher schemaWatcher;
 
   @Before
-  public void setUp() throws Exception {
+  public void setUp() {
     SolrTestCaseJ4.assumeWorkingMockito();
 
     mockSchemaReader = mock(ZkIndexSchemaReader.class);

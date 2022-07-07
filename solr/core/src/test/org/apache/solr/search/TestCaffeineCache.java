@@ -19,7 +19,6 @@ package org.apache.solr.search;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -44,7 +43,7 @@ public class TestCaffeineCache extends SolrTestCase {
   String scope = TestUtil.randomSimpleString(random(), 2, 10);
 
   @Test
-  public void testSimple() throws IOException {
+  public void testSimple() {
     CaffeineCache<Integer, String> lfuCache = new CaffeineCache<>();
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
     lfuCache.initializeMetrics(solrMetricsContext, scope + "-1");

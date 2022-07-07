@@ -117,7 +117,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
   }
 
   @Before
-  public void deleteAllAndCommit() throws Exception {
+  public void deleteAllAndCommit() {
     clearIndex();
     assertU(commit("softCommit", "false"));
   }

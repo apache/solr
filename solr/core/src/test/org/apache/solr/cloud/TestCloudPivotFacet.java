@@ -241,8 +241,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
    * facet values in the response, treating each one as a filter query to assert the pivot counts
    * are correct.
    */
-  private void assertPivotCountsAreCorrect(SolrParams baseParams, SolrParams pivotParams)
-      throws SolrServerException {
+  private void assertPivotCountsAreCorrect(SolrParams baseParams, SolrParams pivotParams) {
 
     SolrParams initParams = SolrParams.wrapAppended(pivotParams, baseParams);
 

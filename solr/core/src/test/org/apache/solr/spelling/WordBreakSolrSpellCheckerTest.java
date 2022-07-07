@@ -158,7 +158,7 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testInConjunction() throws Exception {
+  public void testInConjunction() {
     assertQ(
         req(
             "q",
@@ -230,7 +230,7 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testCollate() throws Exception {
+  public void testCollate() {
     assertQ(
         req(
             "q",

@@ -47,7 +47,7 @@ public class AnalyticsTestQParserPlugin extends QParserPlugin {
       super(query, localParams, params, req);
     }
 
-    public Query parse() throws SyntaxError {
+    public Query parse() {
       int base = localParams.getInt("base", 0);
       boolean iterate = localParams.getBool("iterate", false);
       if (iterate) return new TestAnalyticsQuery(base, new TestIterative());

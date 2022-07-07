@@ -109,7 +109,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
   }
 
   @Before
-  public void before() throws Exception {
+  public void before() {
     clearIndex();
     assertU(commit());
   }
