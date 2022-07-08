@@ -19,9 +19,9 @@ package org.apache.solr.common.cloud;
 import java.util.List;
 
 /**
- * A class that retrieves Zookeeper credentials from an external source to be injected into {@link
- * DigestZkCredentialsProvider} and {@link DigestZkACLProvider}. The "external source" here can be
- * System Props, a file, a Secret Manager, or any other local or remote source.
+ * A class that retrieves Zookeeper credentials from some source to be injected into {@link
+ * DigestZkCredentialsProvider} and {@link DigestZkACLProvider}. The source here can be System
+ * Props, a file, a Secret Manager, or any other local or remote source.
  */
 public interface ZkCredentialsInjector {
 

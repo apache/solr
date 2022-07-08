@@ -211,7 +211,6 @@
 #   -DzkDigestCredentialsFile=/path/to/zkDigestCredentialsFile.properties
 #...
 
-
 # Use a custom injector to inject ZK credentials into DigestZkACLProvider
 # -DzkCredentialsInjector expects a class implementing org.apache.solr.common.cloud.ZkCredentialsInjector
 # ...

@@ -64,11 +64,6 @@ public class VMParamsSingleSetCredentialsDigestZkCredentialsProvider
     this.digestZkCredentialsProvider = new DigestZkCredentialsProvider(this.zkCredentialsInjector);
   }
 
-  /*
-  This is a temporary workaround to access createCredentials which is protected and in a different package.
-  "temporary" because VMParamsSingleSetCredentialsDigestZkCredentialsProvider class would be deprecated. Moving
-  the class to acl package would break existing configurations.
-   */
   @Override
   protected Collection<ZkCredentials> createCredentials() {
     return digestZkCredentialsProvider.createCredentials();

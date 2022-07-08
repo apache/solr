@@ -60,15 +60,15 @@ The default behavior in Solr is to add one ACL on all the content it creates - o
 
 == Solr to Zookeeper ACLs Workflow
 
-* Solr to Zookeeper credentials and ACLs are controlled trough 3 interfaces: {solr-javadocs}solrj/org/apache/solr/common/cloud/ZkCredentialsInjector.html[`ZkCredentialsInjector`],  {solr-javadocs}solrj/org/apache/solr/common/cloud/ZkCredentialsProvider.html[`ZkCredentialsProvider`] and {solr-javadocs}solrj/org/apache/solr/common/cloud/ZkACLProvider.html[`ZkACLProvider`].
+* Solr to Zookeeper credentials and ACLs are controlled through 3 interfaces: {solr-javadocs}solrj/org/apache/solr/common/cloud/ZkCredentialsInjector.html[`ZkCredentialsInjector`],  {solr-javadocs}solrj/org/apache/solr/common/cloud/ZkCredentialsProvider.html[`ZkCredentialsProvider`] and {solr-javadocs}solrj/org/apache/solr/common/cloud/ZkACLProvider.html[`ZkACLProvider`].
 
-* The workflow is as follow: Credentials source →   `ZkCredentialsInjector` →  `ZkCredentialsProvider/ZkACLProvider` → Zookeeper.
-
-`ZkCredentialsInjector` gets the credentials from an external source which in turn get injected into `ZkCredentialsProvider`
-and `ZkACLProvider`. The "external source" here can be System Properties, a file, a Secret Manager, or any other local or remote source.
-
-* Those credentials are then passed to Solr trough System Properties using the following properties names:
+* The classes implementing these 3 interfaces are passed to Solr via System Properties using the following properties names:
 `zkCredentialsInjector`, `zkACLProvider` and `zkCredentialsProvider`. See below sections for details.
+
+* The dataflow is as follow: Credentials source → `ZkCredentialsInjector` → `ZkCredentialsProvider/ZkACLProvider` → Zookeeper.
+
+`ZkCredentialsInjector` gets the credentials from some source which in turn get injected into `ZkCredentialsProvider`
+and `ZkACLProvider`. The source" here can be System Properties, a file, a Secret Manager, or any other local or remote source.
 
 * Two sets of roles are supported:
 ** `ALL` user: A user that is allowed to do everything (corresponding to all of `CREATE`, `READ`, `WRITE`, `DELETE`, and `ADMIN`).
@@ -117,7 +117,7 @@ We will describe these 3 steps in details before giving some ready to use exampl
 
 
 ** You control which credentials will be injected by configuring `zkCredentialsInjector` property in the `<solrcloud>` section of xref:configuration-guide:configuring-solr-xml.adoc[`solr.xml`] to the name of a class (on the classpath) implementing the {solr-javadocs}solrj/org/apache/solr/common/cloud/ZkCredentialsInjector.html[`ZkCredentialsInjector`] interface. +
-`server/solr/solr.xml` file in the Solr distribution defines the`zkCredentialsInjector`such that it will take on the value
+`server/solr/solr.xml` file in the Solr distribution defines the`zkCredentialsInjector` such that it will take on the value
 of the same-named `zkCredentialsInjector` system property if it is defined (e.g., by uncommenting
 the `SOLR_ZK_CREDS_AND_ACLS` environment variable definition in `solr.in.sh/.cmd`- see below), or if not, default
 to the `DefaultZkCredentialsInjector` implementation.

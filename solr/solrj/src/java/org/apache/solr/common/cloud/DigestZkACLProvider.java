@@ -22,6 +22,7 @@ import java.lang.invoke.MethodHandles;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ZkCredentialsInjector.ZkCredential;
 import org.apache.zookeeper.ZooDefs;
@@ -37,12 +38,11 @@ public class DigestZkACLProvider extends SecurityAwareZkACLProvider {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public DigestZkACLProvider() {
-    this(new DefaultZkCredentialsInjector());
-  }
+  /** Called by reflective instantiation */
+  public DigestZkACLProvider() {}
 
   public DigestZkACLProvider(ZkCredentialsInjector zkCredentialsInjector) {
-    this.zkCredentialsInjector = zkCredentialsInjector;
+    super(zkCredentialsInjector);
   }
 
   /**
@@ -64,38 +64,39 @@ public class DigestZkACLProvider extends SecurityAwareZkACLProvider {
   }
 
   protected List<ACL> createACLsToAdd(boolean includeReadOnly) {
-    try {
-      List<ACL> result = new ArrayList<>();
-      List<ZkCredential> zkCredentials = zkCredentialsInjector.getZkCredentials();
-      log.debug("createACLsToAdd using ZkCredentials: {}", zkCredentials);
-      for (ZkCredential zkCredential : zkCredentials) {
-        if (StringUtils.isEmpty(zkCredential.getUsername())
-            || StringUtils.isEmpty(zkCredential.getPassword())) {
-          continue;
-        }
-        Id id = createACLId(zkCredential.getUsername(), zkCredential.getPassword());
-        int perms;
-        if (zkCredential.isAll()) {
-          // Not to have to provide too much credentials and ACL information to the process it is
-          // assumed that you want "ALL"-acls
-          // added to the user you are using to connect to ZK
-          perms = ZooDefs.Perms.ALL;
-        } else if (includeReadOnly && zkCredential.isReadonly()) {
-          // Besides, that support for adding additional "READONLY"-acls for another user
-          perms = ZooDefs.Perms.READ;
-        } else continue;
-        result.add(new ACL(perms, id));
+    List<ACL> result = new ArrayList<>();
+    List<ZkCredential> zkCredentials = zkCredentialsInjector.getZkCredentials();
+    log.debug("createACLsToAdd using ZkCredentials: {}", zkCredentials);
+    for (ZkCredential zkCredential : zkCredentials) {
+      if (StringUtils.isEmpty(zkCredential.getUsername())
+          || StringUtils.isEmpty(zkCredential.getPassword())) {
+        continue;
       }
-      if (result.isEmpty()) {
-        result = ZooDefs.Ids.OPEN_ACL_UNSAFE;
-      }
-      return result;
-    } catch (NoSuchAlgorithmException e) {
-      throw new RuntimeException("JVM mis-configured: missing SHA-1 algorithm", e);
+      Id id = createACLId(zkCredential.getUsername(), zkCredential.getPassword());
+      int perms;
+      if (zkCredential.isAll()) {
+        // Not to have to provide too much credentials and ACL information to the process it is
+        // assumed that you want "ALL"-acls
+        // added to the user you are using to connect to ZK
+        perms = ZooDefs.Perms.ALL;
+      } else if (includeReadOnly && zkCredential.isReadonly()) {
+        // Besides, that support for adding additional "READONLY"-acls for another user
+        perms = ZooDefs.Perms.READ;
+      } else continue;
+      result.add(new ACL(perms, id));
     }
+    if (result.isEmpty()) {
+      result = ZooDefs.Ids.OPEN_ACL_UNSAFE;
+    }
+    return result;
   }
 
-  protected Id createACLId(String username, String password) throws NoSuchAlgorithmException {
-    return new Id("digest", generateDigest(username + ":" + password));
+  protected Id createACLId(String username, String password) {
+    try {
+      return new Id("digest", generateDigest(username + ":" + password));
+    } catch (NoSuchAlgorithmException e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "JVM mis-configured: missing SHA-1 algorithm", e);
+    }
   }
 }

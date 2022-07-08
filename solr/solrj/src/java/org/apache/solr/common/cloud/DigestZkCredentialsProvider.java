@@ -26,19 +26,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A class that expects a {@link ZkCredentialsInjector} to create Zookeeper credentials using digest
+ * A class that expects a {@link ZkCredentialsInjector} to create Zookeeper credentials using Digest
  * scheme
  */
 public class DigestZkCredentialsProvider extends DefaultZkCredentialsProvider {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public DigestZkCredentialsProvider() {
-    this(new DefaultZkCredentialsInjector());
-  }
+  /** Called by reflective instantiation */
+  public DigestZkCredentialsProvider() {}
 
   public DigestZkCredentialsProvider(ZkCredentialsInjector zkCredentialsInjector) {
-    this.zkCredentialsInjector = zkCredentialsInjector;
+    super(zkCredentialsInjector);
   }
 
   @Override
