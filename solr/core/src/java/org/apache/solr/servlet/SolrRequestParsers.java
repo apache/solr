@@ -80,7 +80,7 @@ public class SolrRequestParsers {
   public static final String SIMPLE = "simple";
   public static final String STANDARD = "standard";
 
-  private static final Charset CHARSET_US_ASCII = Charset.forName("US-ASCII");
+  private static final Charset CHARSET_US_ASCII = StandardCharsets.US_ASCII;
 
   public static final String INPUT_ENCODING_KEY = "ie";
   private static final byte[] INPUT_ENCODING_BYTES = INPUT_ENCODING_KEY.getBytes(CHARSET_US_ASCII);

@@ -152,7 +152,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterClass() {
     if (null != exe) {
       exe.shutdownNow();
       exe = null;

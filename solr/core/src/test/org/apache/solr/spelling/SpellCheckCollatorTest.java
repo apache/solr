@@ -503,7 +503,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testContextSensitiveCollate() throws Exception {
+  public void testContextSensitiveCollate() {
     //                     DirectSolrSpellChecker   IndexBasedSpellChecker
     String[] dictionary = {"direct", "default_teststop"};
     for (int i = 0; i <= 1; i++) {
@@ -606,7 +606,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testEstimatedHitCounts() throws Exception {
+  public void testEstimatedHitCounts() {
     final String xpathPrefix =
         "//lst[@name='spellcheck']/lst[@name='collations']/lst[@name='collation']/";
     final SolrParams reusedParams =

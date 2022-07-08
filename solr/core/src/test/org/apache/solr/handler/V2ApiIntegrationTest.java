@@ -78,7 +78,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testException() throws Exception {
+  public void testException() {
     String notFoundPath = "/c/" + COLL_NAME + "/abccdef";
     String incorrectPayload = "{rebalance-leaders: {maxAtOnce: abc, maxWaitSeconds: xyz}}";
     testException(new XMLResponseParser(), 404, notFoundPath, incorrectPayload);

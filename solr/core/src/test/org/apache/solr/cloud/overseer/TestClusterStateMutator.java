@@ -37,7 +37,7 @@ public class TestClusterStateMutator extends SolrTestCaseJ4 {
     assumeWorkingMockito();
   }
 
-  public void testCreateCollection() throws Exception {
+  public void testCreateCollection() {
     ClusterState clusterState =
         new ClusterState(
             Collections.<String>emptySet(), Collections.<String, DocCollection>emptyMap());

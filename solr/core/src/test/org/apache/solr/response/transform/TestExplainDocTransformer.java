@@ -97,7 +97,7 @@ public class TestExplainDocTransformer extends SolrTestCaseJ4 {
   }
 
   @After
-  public void cleanup() throws Exception {
+  public void cleanup() {
     assertU(delQ("*:*"));
     assertU(commit());
   }

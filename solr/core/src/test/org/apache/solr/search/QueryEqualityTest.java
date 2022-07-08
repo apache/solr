@@ -1351,13 +1351,13 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
       SolrRequestInfo.clearRequestInfo();
     }
 
-    for (int i = 0; i < queries.length; i++) {
-      QueryUtils.check(queries[i]);
+    for (Query query1 : queries) {
+      QueryUtils.check(query1);
       // yes starting j=0 is redundent, we're making sure every query
       // is equal to itself, and that the quality checks work regardless
       // of which caller/callee is used.
-      for (int j = 0; j < queries.length; j++) {
-        QueryUtils.checkEqual(queries[i], queries[j]);
+      for (Query query2 : queries) {
+        QueryUtils.checkEqual(query1, query2);
       }
     }
   }
@@ -1440,7 +1440,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     }
   }
 
-  public void testPayloadScoreQuery() throws Exception {
+  public void testPayloadScoreQuery() {
     // There was a bug with PayloadScoreQuery's .equals() method that said two queries were equal
     // with different includeSpanScore settings
 
@@ -1454,7 +1454,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
                 "{!payload_score f=foo_dpf v=query func=min includeSpanScore=true}"));
   }
 
-  public void testPayloadCheckQuery() throws Exception {
+  public void testPayloadCheckQuery() {
     expectThrows(
         AssertionError.class,
         "queries should not have been equal",

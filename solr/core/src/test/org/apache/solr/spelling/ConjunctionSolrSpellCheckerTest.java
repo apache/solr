@@ -16,7 +16,6 @@
  */
 package org.apache.solr.spelling;
 
-import java.io.IOException;
 import org.apache.lucene.search.spell.JaroWinklerDistance;
 import org.apache.lucene.search.spell.LevenshteinDistance;
 import org.apache.lucene.search.spell.LuceneLevenshteinDistance;
@@ -84,10 +83,10 @@ public class ConjunctionSolrSpellCheckerTest extends SolrTestCase {
     }
 
     @Override
-    public void reload(SolrCore core, SolrIndexSearcher searcher) throws IOException {}
+    public void reload(SolrCore core, SolrIndexSearcher searcher) {}
 
     @Override
-    public void build(SolrCore core, SolrIndexSearcher searcher) throws IOException {}
+    public void build(SolrCore core, SolrIndexSearcher searcher) {}
 
     @Override
     public SpellingResult getSuggestions(SpellingOptions options) {

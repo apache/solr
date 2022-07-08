@@ -54,7 +54,7 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testDefaults() throws Exception {
+  public void testDefaults() {
     NodeConfig cfg = loadNodeConfig("solr-metricsconfig.xml");
     SolrMetricManager mgr =
         new SolrMetricManager(cfg.getSolrResourceLoader(), cfg.getMetricsConfig());
