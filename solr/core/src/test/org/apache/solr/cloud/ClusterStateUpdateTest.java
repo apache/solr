@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 import org.apache.lucene.tests.util.LuceneTestCase.Slow;

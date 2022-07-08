@@ -81,7 +81,7 @@ public class ConfigureRecoveryStrategyTest extends SolrTestCaseJ4 {
   public static class CustomRecoveryStrategy extends RecoveryStrategy {
 
     private String alternativeBaseUrlProp;
-    
+
     public String getAlternativeBaseUrlProp() {
       return alternativeBaseUrlProp;
     }

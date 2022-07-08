@@ -4589,7 +4589,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
   }
 
   private void doTestPointMultiValuedFunctionQuery(
-    String nonDocValuesField, String docValuesField, String[] numbers) {
+      String nonDocValuesField, String docValuesField, String[] numbers) {
     assert numbers != null && numbers.length == 20;
     for (int i = 0; i < 10; i++) {
       assertU(
