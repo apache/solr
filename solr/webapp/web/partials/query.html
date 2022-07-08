@@ -77,6 +77,15 @@ limitations under the License.
         </label>
         <input type="text" ng-model="val['df']" name="df" id="df" value="" title="Default search field">
 
+        <label for="useParams">paramset(s)</label>
+        <select id="useParams"
+          ng-model="useParams"
+          title="The paramsets to apply to the query."
+          chosen
+          multiple
+          data-placeholder="Select paramset(s)..."
+          ng-options="item for item in paramsetList"><option value=""></option></select>
+
         <label for="wt" title="The writer type (response format).">
           <a rel="help">wt</a>
         </label>
