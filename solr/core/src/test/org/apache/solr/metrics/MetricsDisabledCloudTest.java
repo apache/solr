@@ -36,7 +36,7 @@ public class MetricsDisabledCloudTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testBasic() throws Exception {
+  public void testBasic() {
     NodeConfig cfg = cluster.getRandomJetty(random()).getCoreContainer().getNodeConfig();
     MetricsConfig metricsConfig = cfg.getMetricsConfig();
     assertFalse("metrics should be disabled", metricsConfig.isEnabled());

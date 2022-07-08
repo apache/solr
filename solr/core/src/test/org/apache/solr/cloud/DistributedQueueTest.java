@@ -17,6 +17,7 @@
 package org.apache.solr.cloud;
 
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -36,7 +37,7 @@ import org.junit.Test;
 
 public class DistributedQueueTest extends SolrTestCaseJ4 {
 
-  private static final Charset UTF8 = Charset.forName("UTF-8");
+  private static final Charset UTF8 = StandardCharsets.UTF_8;
 
   protected ZkTestServer zkServer;
   protected SolrZkClient zkClient;

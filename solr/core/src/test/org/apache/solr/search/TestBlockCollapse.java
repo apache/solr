@@ -45,7 +45,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
   }
 
   @After
-  public void cleanup() throws Exception {
+  public void cleanup() {
     clearIndex();
     assertU(commit());
   }
@@ -289,7 +289,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
     }
   }
 
-  public void testSimple() throws Exception {
+  public void testSimple() {
 
     { // convert our docs to update commands, along with some commits, in a shuffled order and
       // process all of them...

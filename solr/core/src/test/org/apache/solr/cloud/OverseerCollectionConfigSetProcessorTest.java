@@ -180,7 +180,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   }
 
   @BeforeClass
-  public static void setUpOnce() throws Exception {
+  public static void setUpOnce() {
     assumeWorkingMockito();
 
     workQueueMock = mock(OverseerTaskQueue.class);

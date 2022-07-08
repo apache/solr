@@ -977,7 +977,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testFuncs() throws Exception {
+  public void testFuncs() {
     clearIndex();
 
     assertU(adoc("id", "1", "foo_d", "9"));

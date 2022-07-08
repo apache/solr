@@ -85,11 +85,11 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
   }
 
   @Before
-  public void cleanup() throws Exception {
+  public void cleanup() {
     clearIndex();
   }
 
-  public void testSimple() throws Exception {
+  public void testSimple() {
     assertU(
         adoc("id", "1", "whitespace_stxt", "how now brown cow ?", "whitespace_f_stxt", "aaa bbb"));
     assertU(

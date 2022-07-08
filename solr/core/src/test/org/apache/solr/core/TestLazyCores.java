@@ -385,8 +385,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     }
   }
 
-  private void tryCreateFail(CoreAdminHandler admin, String name, String dataDir, String... errs)
-      throws Exception {
+  private void tryCreateFail(CoreAdminHandler admin, String name, String dataDir, String... errs) {
     SolrException thrown =
         expectThrows(
             SolrException.class,

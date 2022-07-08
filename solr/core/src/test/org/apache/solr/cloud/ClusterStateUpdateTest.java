@@ -46,7 +46,7 @@ public class ClusterStateUpdateTest extends SolrCloudTestCase {
   }
 
   @AfterClass
-  public static void afterClass() throws InterruptedException, IOException {
+  public static void afterClass() {
     System.clearProperty("solrcloud.skip.autorecovery");
     System.clearProperty("genericCoreNodeNames");
   }

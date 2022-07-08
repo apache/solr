@@ -826,7 +826,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     Map<String, Object> gaugevals;
 
     @Override
-    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) {
       rsp.add("key", key);
     }
 

@@ -47,7 +47,7 @@ public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void AfterClass() throws Exception {}
+  public static void AfterClass() {}
 
   public void testStopwordsAfterCoreReload() throws Exception {
     SolrInputDocument doc = new SolrInputDocument();

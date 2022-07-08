@@ -31,7 +31,7 @@ public class TestAnalyzeInfixSuggestions extends SolrTestCaseJ4 {
     assertQ(req("qt", URI_SUGGEST_DEFAULT, "q", "", SuggesterParams.SUGGEST_BUILD_ALL, "true"));
   }
 
-  public void testSingle() throws Exception {
+  public void testSingle() {
 
     assertQ(
         req("qt", URI_DEFAULT, "q", "japan", SpellingParams.SPELLCHECK_COUNT, "1"),

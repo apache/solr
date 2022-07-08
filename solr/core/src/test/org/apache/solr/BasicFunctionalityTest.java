@@ -103,7 +103,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   ***/
 
   @Test
-  public void testIgnoredFields() throws Exception {
+  public void testIgnoredFields() {
     lrf.args.put(CommonParams.VERSION, "2.2");
     assertU("adding doc with ignored field", adoc("id", "42", "foo_ignored", "blah blah"));
     assertU("commit", commit());
@@ -118,7 +118,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSomeStuff() throws Exception {
+  public void testSomeStuff() {
     clearIndex();
 
     SolrCore core = h.getCore();
@@ -213,7 +213,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   }
 
   /** verify that delete by query works with the QParser framework and pure negative queries */
-  public void testNonTrivialDeleteByQuery() throws Exception {
+  public void testNonTrivialDeleteByQuery() {
     clearIndex();
 
     // setup
@@ -291,7 +291,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testClientErrorOnMalformedDate() throws Exception {
+  public void testClientErrorOnMalformedDate() {
     final String BAD_VALUE = "NOT_A_DATE";
     ignoreException(BAD_VALUE);
 
@@ -346,7 +346,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testClientErrorOnMalformedNumbers() throws Exception {
+  public void testClientErrorOnMalformedNumbers() {
 
     final String BAD_VALUE = "NOT_A_NUMBER";
     ignoreException(BAD_VALUE);
@@ -585,7 +585,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSolrParams() throws Exception {
+  public void testSolrParams() {
     NamedList<Object> nl = new NamedList<>();
     nl.add("i", 555);
     nl.add("s", "bbb");

@@ -32,7 +32,7 @@ import org.junit.Test;
 public class SpellingQueryConverterTest extends SolrTestCase {
 
   @Test
-  public void test() throws Exception {
+  public void test() {
     SpellingQueryConverter converter = new SpellingQueryConverter();
     converter.init(new NamedList<>());
     converter.setAnalyzer(new WhitespaceAnalyzer());

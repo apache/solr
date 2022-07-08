@@ -22,7 +22,6 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.Collections;
@@ -304,7 +303,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
     }
 
     @Override
-    public void start() throws Exception {
+    public void start() {
       if (log.isDebugEnabled()) {
         log.debug("starting {}", Integer.toHexString(hashCode()));
       }
@@ -325,7 +324,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
       if (log.isDebugEnabled()) {
         log.debug("closing {}", Integer.toHexString(hashCode()));
       }

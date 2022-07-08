@@ -437,10 +437,10 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     static boolean registerSlowSearcherListener = false;
 
     @Override
-    public void prepare(ResponseBuilder rb) throws IOException {}
+    public void prepare(ResponseBuilder rb) {}
 
     @Override
-    public void process(ResponseBuilder rb) throws IOException {}
+    public void process(ResponseBuilder rb) {}
 
     @Override
     public String getDescription() {

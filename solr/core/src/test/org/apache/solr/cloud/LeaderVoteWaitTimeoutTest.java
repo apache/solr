@@ -58,7 +58,7 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
   private static Map<URI, JettySolrRunner> jettys;
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void setupCluster() {
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     System.setProperty("solr.ulog.numRecordsToKeep", "1000");
     System.setProperty("leaderVoteWait", "2000");
@@ -70,7 +70,7 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
   }
 
   @AfterClass
-  public static void tearDownCluster() throws Exception {
+  public static void tearDownCluster() {
     proxies = null;
     jettys = null;
     System.clearProperty("solr.directoryFactory");
@@ -347,7 +347,7 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
     return solr.request(qr);
   }
 
-  protected HttpSolrClient getHttpSolrClient(Replica replica, String coll) throws Exception {
+  protected HttpSolrClient getHttpSolrClient(Replica replica, String coll) {
     ZkCoreNodeProps zkProps = new ZkCoreNodeProps(replica);
     String url = zkProps.getBaseUrl() + "/" + coll;
     return getHttpSolrClient(url);

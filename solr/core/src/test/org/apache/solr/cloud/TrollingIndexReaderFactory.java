@@ -56,7 +56,7 @@ public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
     public abstract boolean hasCaught();
 
     @Override
-    public final void close() throws IOException {
+    public final void close() {
       setTrap(null);
     }
 

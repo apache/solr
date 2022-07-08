@@ -258,7 +258,7 @@ public class TestDistribDocBasedVersion extends AbstractFullDistribZkTestBase {
     solrClient.request(req);
   }
 
-  void vaddFail(String id, long version, int errCode, String... params) throws Exception {
+  void vaddFail(String id, long version, int errCode, String... params) {
     boolean failed = false;
     try {
       vadd(id, version, params);
@@ -271,7 +271,7 @@ public class TestDistribDocBasedVersion extends AbstractFullDistribZkTestBase {
     assertTrue(failed);
   }
 
-  void vdeleteFail(String id, long version, int errCode, String... params) throws Exception {
+  void vdeleteFail(String id, long version, int errCode, String... params) {
     boolean failed = false;
     try {
       vdelete(id, version, params);

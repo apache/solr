@@ -72,7 +72,7 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
   }
 
   @After
-  public void after() throws Exception {
+  public void after() {
     assertU(delQ(fqToExcludeNonTestedDocs));
     assertU(commit());
   }

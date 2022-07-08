@@ -255,7 +255,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     add_doc("id", "2004", "hotel_s1", "b", "airport_s1", "ams", "duration_i1", "5");
   }
 
-  public void testDvMethodNegativeFloatRangeFacet() throws Exception {
+  public void testDvMethodNegativeFloatRangeFacet() {
     String field = "negative_num_f1_dv";
     assertTrue(
         "Unexpected schema configuration",
@@ -294,7 +294,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         String.format(Locale.ROOT, countAssertion, field));
   }
 
-  public void testDefaultsAndAppends() throws Exception {
+  public void testDefaultsAndAppends() {
     // all defaults
     assertQ(
         req("indent", "true", "q", "*:*", "rows", "0", "facet", "true", "qt", "/search-facet-def"),
@@ -336,7 +336,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         "count(//lst[@name='facet_queries']/int)=2");
   }
 
-  public void testInvariants() throws Exception {
+  public void testInvariants() {
     // no matter if we try to use facet.field or facet.query, results shouldn't change
     for (String ff : new String[] {"facet.field", "bogus"}) {
       for (String fq : new String[] {"facet.query", "bogus"}) {
@@ -369,7 +369,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testCachingBigTerms() throws Exception {
+  public void testCachingBigTerms() {
     assertQ(
         req(
             "indent",
@@ -402,7 +402,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSimpleGroupedQueryRangeFacets() throws Exception {
+  public void testSimpleGroupedQueryRangeFacets() {
     // for the purposes of our test data, it shouldn't matter
     // if we use facet.limit -100, -1, or 100 ...
     // our set of values is small enough either way
@@ -518,7 +518,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     testSimpleGroupedFacets("-1");
   }
 
-  private void testSimpleGroupedFacets(String facetLimit) throws Exception {
+  private void testSimpleGroupedFacets(String facetLimit) {
     assertQ(
         "Return 5 docs with id range 1937 till 1940",
         req("id_i1:[2000 TO 2004]"),
@@ -1123,7 +1123,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         "//lst[@name='facet_queries']/int[@name='k'][.='0']");
   }
 
-  public void testBehaviorEquivilenceOfUninvertibleFalse() throws Exception {
+  public void testBehaviorEquivilenceOfUninvertibleFalse() {
     // NOTE: mincount=0 affects method detection/coercion, so we include permutations of it
 
     {
@@ -2655,7 +2655,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testFacetExistsShouldThrowExceptionForMincountGreaterThanOne() throws Exception {
+  public void testFacetExistsShouldThrowExceptionForMincountGreaterThanOne() {
     final String f = "t_s";
     final List<String> msg = Arrays.asList("facet.mincount", "facet.exists", f);
     Collections.shuffle(msg, random());
@@ -4793,7 +4793,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     }
   }
 
-  public void testFacetPrefixWithFacetThreads() throws Exception {
+  public void testFacetPrefixWithFacetThreads() {
     assertQ(
         "Test facet.prefix with facet.thread",
         req(

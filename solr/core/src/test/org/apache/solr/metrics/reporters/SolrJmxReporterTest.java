@@ -62,13 +62,13 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
   private String rootName;
 
   @BeforeClass
-  public static void init() throws Exception {
+  public static void init() {
     TEST_MBEAN_SERVER = MBeanServerFactory.createMBeanServer();
     PREFIX = getSimpleClassName() + "-";
   }
 
   @AfterClass
-  public static void shutdown() throws Exception {
+  public static void shutdown() {
     if (null != TEST_MBEAN_SERVER) {
       MBeanServerFactory.releaseMBeanServer(TEST_MBEAN_SERVER);
       TEST_MBEAN_SERVER = null;

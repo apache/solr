@@ -113,7 +113,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     return false;
   }
 
-  public TestInPlaceUpdatesDistrib() throws Exception {
+  public TestInPlaceUpdatesDistrib() {
     super();
     sliceCount = 1;
     fixShardCount(3);
@@ -1439,8 +1439,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
   // This returns an UpdateRequest with the given fields that represent a document.
   // This request is constructed such that it is a simulation of a request coming from
   // a leader to a replica.
-  UpdateRequest simulatedUpdateRequest(Long prevVersion, Object... fields)
-      throws SolrServerException, IOException {
+  UpdateRequest simulatedUpdateRequest(Long prevVersion, Object... fields) throws IOException {
     SolrInputDocument doc = sdoc(fields);
 
     // get baseUrl of the leader
@@ -1457,8 +1456,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     return ur;
   }
 
-  UpdateRequest simulatedDeleteRequest(int id, long version)
-      throws SolrServerException, IOException {
+  UpdateRequest simulatedDeleteRequest(int id, long version) throws IOException {
     String baseUrl = getBaseUrl("" + id);
 
     UpdateRequest ur = new UpdateRequest();
@@ -1473,8 +1471,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     return ur;
   }
 
-  UpdateRequest simulatedDeleteRequest(String query, long version)
-      throws SolrServerException, IOException {
+  UpdateRequest simulatedDeleteRequest(String query, long version) {
     String baseUrl = getBaseUrl((HttpSolrClient) LEADER);
 
     UpdateRequest ur = new UpdateRequest();
@@ -1485,26 +1482,26 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     return ur;
   }
 
-  private String getBaseUrl(String id) throws IOException {
+  private String getBaseUrl(String id) {
     DocCollection collection = cloudClient.getClusterState().getCollection(DEFAULT_COLLECTION);
     Slice slice = collection.getRouter().getTargetSlice(id, null, null, null, collection);
     return slice.getLeader().getCoreUrl();
   }
 
-  UpdateRequest regularUpdateRequest(Object... fields) throws SolrServerException, IOException {
+  UpdateRequest regularUpdateRequest(Object... fields) {
     UpdateRequest ur = new UpdateRequest();
     SolrInputDocument doc = sdoc(fields);
     ur.add(doc);
     return ur;
   }
 
-  UpdateRequest regularDeleteRequest(int id) throws SolrServerException, IOException {
+  UpdateRequest regularDeleteRequest(int id) {
     UpdateRequest ur = new UpdateRequest();
     ur.deleteById("" + id);
     return ur;
   }
 
-  UpdateRequest regularDeleteByQueryRequest(String q) throws SolrServerException, IOException {
+  UpdateRequest regularDeleteByQueryRequest(String q) {
     UpdateRequest ur = new UpdateRequest();
     ur.deleteByQuery(q);
     return ur;

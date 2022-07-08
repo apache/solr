@@ -159,7 +159,7 @@ public class TestOrdValues extends SolrTestCase {
   }
 
   // LUCENE-1250
-  public void testEqualsNull() throws Exception {
+  public void testEqualsNull() {
     OrdFieldSource ofs = new OrdFieldSource("f");
     assertFalse(ofs.equals(null));
 

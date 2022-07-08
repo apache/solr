@@ -2051,7 +2051,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
         control.getHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
   }
 
-  private void validateCommonQueryParameters() throws Exception {
+  private void validateCommonQueryParameters() {
     ignoreException("parameter cannot be negative");
 
     SolrException e1 =
