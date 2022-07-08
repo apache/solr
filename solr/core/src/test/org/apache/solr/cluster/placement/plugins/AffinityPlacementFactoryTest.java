@@ -276,6 +276,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     final int AZ2_TLOGPULL = 7;
 
     final int AZ3_NRT_LOWCORES = 4;
+    // final int AZ3_NRT_HIGHCORES = 6;
     final int AZ3_TLOGPULL = 8;
 
     final String AZ1 = "AZ1";
@@ -978,6 +979,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     assertEquals("expected 3 placements: " + pp, 3, pp.getReplicaPlacements().size());
     Set<String> type0nodes = nodeNamesByType.get("type_0");
     Set<String> type1nodes = nodeNamesByType.get("type_1");
+    // Set<String> type2nodes = nodeNamesByType.get("type_2");
 
     for (ReplicaPlacement p : pp.getReplicaPlacements()) {
       assertTrue(type0nodes.contains(p.getNode().getName()));

@@ -1391,7 +1391,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   }
 
   /**
-   * Given an ordered list of values to include in a (key) param, randomly groups them (ie: comma
+   * Given an ordered list of values to include in a (key) param, groups them (ie: comma
    * separated) into actual param key=values which are returned as a new SolrParams instance
    */
   private static SolrParams buildCommaSepParams(final String key, Collection<String> values) {

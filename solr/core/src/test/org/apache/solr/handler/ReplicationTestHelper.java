@@ -100,7 +100,6 @@ public final class ReplicationTestHelper {
   }
 
   public static void assertVersions(SolrClient client1, SolrClient client2) throws Exception {
-    NamedList<Object> details = getDetails(client1);
     Long maxVersionClient1 = getVersion(client1);
     Long maxVersionClient2 = getVersion(client2);
 
