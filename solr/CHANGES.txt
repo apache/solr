@@ -35,6 +35,8 @@ New Features
 
 * SOLR-15921: Load jars in <solr-install-dir>/lib/ by default (janhoy)
 
+* SOLR-16005: Support add/update/delete field types in Admin UI Schema page.  (Ahmet Can Kepenek, Eric Pugh)
+
 Improvements
 ---------------------
 * SOLR-15986: CommitUpdateCommand and SplitIndexCommand can write user commit metadata. (Bruno Roustant)
