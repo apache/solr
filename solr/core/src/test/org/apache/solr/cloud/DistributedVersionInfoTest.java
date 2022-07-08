@@ -331,7 +331,9 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
 
         String docId = String.valueOf(d);
         Long leaderVers = assertDocExists(leaderSolr, docId, null);
-        for (HttpSolrClient replicaSolr : replicas) assertDocExists(replicaSolr, docId, leaderVers);
+        for (HttpSolrClient replicaSolr : replicas) {
+          assertDocExists(replicaSolr, docId, leaderVers);
+        }
       }
     } finally {
       if (leaderSolr != null) {
