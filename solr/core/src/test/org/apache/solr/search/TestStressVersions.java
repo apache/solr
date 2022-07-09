@@ -112,6 +112,7 @@ public class TestStressVersions extends TestRTGBase {
                   }
 
                   int id = rand.nextInt(ndocs);
+                  // Object sync = syncArr[id];
 
                   // set the lastId before we actually change it sometimes to try and
                   // uncover more race conditions between writing and reading

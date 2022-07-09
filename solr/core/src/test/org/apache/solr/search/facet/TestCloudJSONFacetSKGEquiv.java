@@ -1181,7 +1181,6 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
      * picks a random value for the "prelim_sort" param, biased in favor of interesting test cases.
      *
      * @return a sort string (w/direction), or null to specify nothing (trigger default behavior)
-     * @see #randomSortParam
      */
     public static String randomPrelimSortParam(final String sort) {
 
