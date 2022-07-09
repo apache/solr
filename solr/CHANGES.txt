@@ -102,6 +102,8 @@ Bug Fixes
 
 * SOLR-16142: Fix Admin UI's spatial parameter generation. (Arsal Jalib, Christine Poerschke)
 
+* SOLR-9661: Fix explanation of select() streaming expression that uses replace() operation  (Ahmet Can Kepenek via Eric Pugh) 
+
 Other Changes
 ---------------------
 * SOLR-16245: Make DenseVectorField codec agnostic (Elia Porciani via Alessandro Benedetti)
