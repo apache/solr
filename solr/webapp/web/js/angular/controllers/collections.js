@@ -23,6 +23,14 @@ solrAdminApp.controller('CollectionsController',
 
           $scope.rootUrl = Constants.ROOT_URL + "#/~collections/" + $routeParams.collection;
 
+          Zookeeper.liveNodes({}, function(data) {
+            $scope.availableNodeSet = [];
+            var children = data.tree[0].children;
+            for (var child in children) {
+              $scope.availableNodeSet.push(children[child].text);
+            }
+          });
+
           Collections.status(function (data) {
               $scope.collections = [];
               for (var name in data.cluster.collections) {
@@ -157,6 +165,7 @@ solrAdminApp.controller('CollectionsController',
             };
             if (coll.shards) params.shards = coll.shards;
             if (coll.routerField) params["router.field"] = coll.routerField;
+            if (coll.createNodeSet) params.createNodeSet = coll.createNodeSet.join(",");
             Collections.add(params, function(data) {
               $scope.cancelAddCollection();
               $scope.resetMenu("collections", Constants.IS_ROOT_PAGE);
@@ -277,13 +286,3 @@ solrAdminApp.controller('CollectionsController',
       $scope.refresh();
     }
 );
-
-var flatten = function(data) {
-    var list = [];
-    for (var name in data) {
-       var entry = data[name];
-        entry.name = name;
-        list.push(entry);
-    }
-    return list;
-}
