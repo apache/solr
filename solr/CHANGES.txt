@@ -39,6 +39,8 @@ New Features
 
 * SOLR-15853: Admin UI support for managing Paramsets and using in Queries. (Betul Ince, Eric Pugh)
 
+* SOLR-16096: Support createNodeSet parameter when creating collecitons in Admin UI.   (Eric Pugh)
+
 
 Improvements
 ---------------------
