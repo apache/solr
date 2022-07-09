@@ -26,14 +26,6 @@ import org.apache.solr.core.CoreDescriptor;
 
 public class MockSimpleZkController extends ZkController {
 
-  /**
-   * @param cc Core container associated with this controller. cannot be null.
-   * @param zkServerAddress where to connect to the zk server
-   * @param zkClientConnectTimeout timeout in ms
-   * @param cloudConfig configuration for this controller. TODO: possibly redundant with
-   *     CoreContainer
-   * @param descriptorsSupplier a supplier of the current core descriptors. used to know which cores
-   */
   public MockSimpleZkController(
       CoreContainer cc,
       String zkServerAddress,
