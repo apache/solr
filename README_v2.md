@@ -219,7 +219,7 @@ You will need the JDK installed, and the $JAVA_HOME/bin (Windows: %JAVA_HOME%\bi
 folder included on your command path. To test this, issue a "java -version" command
 from your shell (command prompt) and verify that the Java version is 11 or later.
 
-Download the Apache Solr distribution, from http://solr.apache.org/.  FIXME link??
+Download the Apache Solr distribution, from https://solr.apache.org/downloads.html.
 Unzip the distribution to a folder of your choice, e.g. C:\solr or ~/solr
 Alternately, you can obtain a copy of the latest Apache Solr source code
 directly from the Git repository:
@@ -230,8 +230,8 @@ Solr uses [Gradle](https://gradle.org/) as the build
 system.  Navigate to the root of your source tree folder and issue the `./gradlew tasks`
 command to see the available options for building, testing, and packaging Solr.
 
-`./gradlew assemble` will create a Solr executable.
-cd to `./solr/packaging/build/solr-9.0.0-SNAPSHOT` and run the `bin/solr` script
+`./gradlew dev` will create a Solr executable suitable for development.
+cd to `./solr/packaging/build/dev` and run the `bin/solr` script
 to start Solr.
 
 NOTE: `gradlew` is the "Gradle Wrapper" and will automatically download and
@@ -252,6 +252,8 @@ is rewritten on each build.
 If you want to build the documentation, type `./gradlew -p solr documentation`.
 
 `./gradlew check` will assemble Solr and run all validation tasks unit tests.
+
+To build the final Solr artifacts run `./gradlew assemble`.
 
 Lastly, there is developer oriented documentation in `./dev-docs/README.adoc` that
 you may find useful in working with Solr.
