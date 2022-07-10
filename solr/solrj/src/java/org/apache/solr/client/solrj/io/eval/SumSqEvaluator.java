@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
-
 import org.apache.commons.math3.stat.StatUtils;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -33,22 +32,26 @@ public class SumSqEvaluator extends RecursiveObjectEvaluator implements OneValue
 
   @Override
   public Object doWork(Object value) throws IOException {
-    if(null == value){
+    if (null == value) {
       return value;
-    }
-    else if(!(value instanceof List<?>)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for value, expecting a List",toExpression(constructingFactory), value.getClass().getSimpleName()));
+    } else if (!(value instanceof List<?>)) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - found type %s for value, expecting a List",
+              toExpression(constructingFactory),
+              value.getClass().getSimpleName()));
     }
 
     @SuppressWarnings({"unchecked"})
-    List<Number> list = (List<Number>)value;
+    List<Number> list = (List<Number>) value;
 
-    if(0 == list.size()){
+    if (0 == list.size()) {
       return list;
     }
 
     double[] vec = new double[list.size()];
-    for(int i=0; i< vec.length; i++) {
+    for (int i = 0; i < vec.length; i++) {
       vec[i] = list.get(i).doubleValue();
     }
 

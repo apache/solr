@@ -21,7 +21,6 @@ import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Iterator;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.value.AnalyticsValue;
 import org.apache.solr.analytics.value.AnalyticsValueStream;
@@ -31,14 +30,6 @@ import org.apache.solr.analytics.value.DateValue;
 import org.apache.solr.analytics.value.DateValueStream;
 import org.apache.solr.analytics.value.DoubleValue;
 import org.apache.solr.analytics.value.DoubleValueStream;
-import org.apache.solr.analytics.value.FloatValue;
-import org.apache.solr.analytics.value.FloatValueStream;
-import org.apache.solr.analytics.value.IntValue;
-import org.apache.solr.analytics.value.IntValueStream;
-import org.apache.solr.analytics.value.LongValue;
-import org.apache.solr.analytics.value.LongValueStream;
-import org.apache.solr.analytics.value.StringValue;
-import org.apache.solr.analytics.value.StringValueStream;
 import org.apache.solr.analytics.value.FillableTestValue.TestAnalyticsValue;
 import org.apache.solr.analytics.value.FillableTestValue.TestAnalyticsValueStream;
 import org.apache.solr.analytics.value.FillableTestValue.TestBooleanValue;
@@ -55,6 +46,14 @@ import org.apache.solr.analytics.value.FillableTestValue.TestLongValue;
 import org.apache.solr.analytics.value.FillableTestValue.TestLongValueStream;
 import org.apache.solr.analytics.value.FillableTestValue.TestStringValue;
 import org.apache.solr.analytics.value.FillableTestValue.TestStringValueStream;
+import org.apache.solr.analytics.value.FloatValue;
+import org.apache.solr.analytics.value.FloatValueStream;
+import org.apache.solr.analytics.value.IntValue;
+import org.apache.solr.analytics.value.IntValueStream;
+import org.apache.solr.analytics.value.LongValue;
+import org.apache.solr.analytics.value.LongValueStream;
+import org.apache.solr.analytics.value.StringValue;
+import org.apache.solr.analytics.value.StringValueStream;
 import org.junit.Test;
 
 public class FilterFunctionTest extends SolrTestCaseJ4 {
@@ -64,7 +63,8 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     TestBooleanValue val = new TestBooleanValue();
     TestBooleanValue filter = new TestBooleanValue();
 
-    AnalyticsValueStream uncasted = FilterFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, filter});
+    AnalyticsValueStream uncasted =
+        FilterFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, filter});
     assertTrue(uncasted instanceof BooleanValue);
     BooleanValue func = (BooleanValue) uncasted;
 
@@ -111,7 +111,8 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     TestIntValue val = new TestIntValue();
     TestBooleanValue filter = new TestBooleanValue();
 
-    AnalyticsValueStream uncasted = FilterFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, filter});
+    AnalyticsValueStream uncasted =
+        FilterFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, filter});
     assertTrue(uncasted instanceof IntValue);
     IntValue func = (IntValue) uncasted;
 
@@ -158,7 +159,8 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     TestLongValue val = new TestLongValue();
     TestBooleanValue filter = new TestBooleanValue();
 
-    AnalyticsValueStream uncasted = FilterFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, filter});
+    AnalyticsValueStream uncasted =
+        FilterFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, filter});
     assertTrue(uncasted instanceof LongValue);
     LongValue func = (LongValue) uncasted;
 
@@ -205,7 +207,8 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     TestFloatValue val = new TestFloatValue();
     TestBooleanValue filter = new TestBooleanValue();
 
-    AnalyticsValueStream uncasted = FilterFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, filter});
+    AnalyticsValueStream uncasted =
+        FilterFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, filter});
     assertTrue(uncasted instanceof FloatValue);
     FloatValue func = (FloatValue) uncasted;
 
@@ -252,7 +255,8 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     TestDoubleValue val = new TestDoubleValue();
     TestBooleanValue filter = new TestBooleanValue();
 
-    AnalyticsValueStream uncasted = FilterFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, filter});
+    AnalyticsValueStream uncasted =
+        FilterFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, filter});
     assertTrue(uncasted instanceof DoubleValue);
     DoubleValue func = (DoubleValue) uncasted;
 
@@ -302,7 +306,8 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     TestDateValue val = new TestDateValue();
     TestBooleanValue filter = new TestBooleanValue();
 
-    AnalyticsValueStream uncasted = FilterFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, filter});
+    AnalyticsValueStream uncasted =
+        FilterFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, filter});
     assertTrue(uncasted instanceof DateValue);
     DateValue func = (DateValue) uncasted;
 
@@ -349,7 +354,8 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     TestStringValue val = new TestStringValue();
     TestBooleanValue filter = new TestBooleanValue();
 
-    AnalyticsValueStream uncasted = FilterFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, filter});
+    AnalyticsValueStream uncasted =
+        FilterFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, filter});
     assertTrue(uncasted instanceof StringValue);
     StringValue func = (StringValue) uncasted;
 
@@ -396,7 +402,8 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     TestAnalyticsValue val = new TestAnalyticsValue();
     TestBooleanValue filter = new TestBooleanValue();
 
-    AnalyticsValueStream uncasted = FilterFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, filter});
+    AnalyticsValueStream uncasted =
+        FilterFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, filter});
     assertTrue(uncasted instanceof AnalyticsValue);
     AnalyticsValue func = (AnalyticsValue) uncasted;
 
@@ -443,73 +450,83 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     TestBooleanValueStream val = new TestBooleanValueStream();
     TestBooleanValue filter = new TestBooleanValue();
 
-    AnalyticsValueStream uncasted = FilterFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, filter});
+    AnalyticsValueStream uncasted =
+        FilterFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, filter});
     assertTrue(uncasted instanceof BooleanValueStream);
     BooleanValueStream func = (BooleanValueStream) uncasted;
 
     // No values
     val.setValues();
     filter.setExists(false);
-    func.streamBooleans( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamBooleans(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     val.setValues(false, true, false);
     filter.setExists(false);
-    func.streamBooleans( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamBooleans(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     val.setValues();
     filter.setValue(true).setExists(true);
-    func.streamBooleans( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamBooleans(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // One value
     val.setValues(true);
 
     filter.setValue(true).setExists(true);
     Iterator<Boolean> values1 = Arrays.asList(true).iterator();
-    func.streamBooleans( value -> {
-      assertTrue(values1.hasNext());
-      assertEquals(values1.next(), value);
-    });
+    func.streamBooleans(
+        value -> {
+          assertTrue(values1.hasNext());
+          assertEquals(values1.next(), value);
+        });
     assertFalse(values1.hasNext());
 
     filter.setValue(false).setExists(true);
-    func.streamBooleans( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamBooleans(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     filter.setValue(true).setExists(true);
     Iterator<Boolean> values2 = Arrays.asList(true).iterator();
-    func.streamBooleans( value -> {
-      assertTrue(values2.hasNext());
-      assertEquals(values2.next(), value);
-    });
+    func.streamBooleans(
+        value -> {
+          assertTrue(values2.hasNext());
+          assertEquals(values2.next(), value);
+        });
     assertFalse(values2.hasNext());
 
     // Multiple values
     val.setValues(false, false, true, true);
 
     filter.setValue(false).setExists(true);
-    func.streamBooleans( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamBooleans(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     filter.setValue(true).setExists(true);
     Iterator<Boolean> values3 = Arrays.asList(false, false, true, true).iterator();
-    func.streamBooleans( value -> {
-      assertTrue(values3.hasNext());
-      assertEquals(values3.next(), value);
-    });
+    func.streamBooleans(
+        value -> {
+          assertTrue(values3.hasNext());
+          assertEquals(values3.next(), value);
+        });
     assertFalse(values3.hasNext());
 
     filter.setValue(false).setExists(true);
-    func.streamBooleans( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamBooleans(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
   }
 
   @Test
@@ -517,73 +534,83 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     TestIntValueStream val = new TestIntValueStream();
     TestBooleanValue filter = new TestBooleanValue();
 
-    AnalyticsValueStream uncasted = FilterFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, filter});
+    AnalyticsValueStream uncasted =
+        FilterFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, filter});
     assertTrue(uncasted instanceof IntValueStream);
     IntValueStream func = (IntValueStream) uncasted;
 
     // No values
     val.setValues();
     filter.setExists(false);
-    func.streamInts( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamInts(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     val.setValues(1, 3, 5);
     filter.setExists(false);
-    func.streamInts( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamInts(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     val.setValues();
     filter.setValue(true).setExists(true);
-    func.streamInts( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamInts(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // One value
     val.setValues(-4);
 
     filter.setValue(true).setExists(true);
     Iterator<Integer> values1 = Arrays.asList(-4).iterator();
-    func.streamInts( value -> {
-      assertTrue(values1.hasNext());
-      assertEquals(values1.next().intValue(), value);
-    });
+    func.streamInts(
+        value -> {
+          assertTrue(values1.hasNext());
+          assertEquals(values1.next().intValue(), value);
+        });
     assertFalse(values1.hasNext());
 
     filter.setValue(false).setExists(true);
-    func.streamInts( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamInts(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     filter.setValue(true).setExists(true);
     Iterator<Integer> values2 = Arrays.asList(-4).iterator();
-    func.streamInts( value -> {
-      assertTrue(values2.hasNext());
-      assertEquals(values2.next().intValue(), value);
-    });
+    func.streamInts(
+        value -> {
+          assertTrue(values2.hasNext());
+          assertEquals(values2.next().intValue(), value);
+        });
     assertFalse(values2.hasNext());
 
     // Multiple values
     val.setValues(4, -10, 50, -74);
 
     filter.setValue(false).setExists(true);
-    func.streamInts( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamInts(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     filter.setValue(true).setExists(true);
     Iterator<Integer> values3 = Arrays.asList(4, -10, 50, -74).iterator();
-    func.streamInts( value -> {
-      assertTrue(values3.hasNext());
-      assertEquals(values3.next().intValue(), value);
-    });
+    func.streamInts(
+        value -> {
+          assertTrue(values3.hasNext());
+          assertEquals(values3.next().intValue(), value);
+        });
     assertFalse(values3.hasNext());
 
     filter.setValue(false).setExists(true);
-    func.streamInts( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamInts(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
   }
 
   @Test
@@ -591,73 +618,83 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     TestLongValueStream val = new TestLongValueStream();
     TestBooleanValue filter = new TestBooleanValue();
 
-    AnalyticsValueStream uncasted = FilterFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, filter});
+    AnalyticsValueStream uncasted =
+        FilterFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, filter});
     assertTrue(uncasted instanceof LongValueStream);
     LongValueStream func = (LongValueStream) uncasted;
 
     // No values
     val.setValues();
     filter.setExists(false);
-    func.streamLongs( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamLongs(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     val.setValues(1L, 3L, 5L);
     filter.setExists(false);
-    func.streamLongs( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamLongs(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     val.setValues();
     filter.setValue(true).setExists(true);
-    func.streamLongs( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamLongs(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // One value
     val.setValues(-4L);
 
     filter.setValue(true).setExists(true);
     Iterator<Long> values1 = Arrays.asList(-4L).iterator();
-    func.streamLongs( value -> {
-      assertTrue(values1.hasNext());
-      assertEquals(values1.next().longValue(), value);
-    });
+    func.streamLongs(
+        value -> {
+          assertTrue(values1.hasNext());
+          assertEquals(values1.next().longValue(), value);
+        });
     assertFalse(values1.hasNext());
 
     filter.setValue(false).setExists(true);
-    func.streamLongs( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamLongs(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     filter.setValue(true).setExists(true);
     Iterator<Long> values2 = Arrays.asList(-4L).iterator();
-    func.streamLongs( value -> {
-      assertTrue(values2.hasNext());
-      assertEquals(values2.next().longValue(), value);
-    });
+    func.streamLongs(
+        value -> {
+          assertTrue(values2.hasNext());
+          assertEquals(values2.next().longValue(), value);
+        });
     assertFalse(values2.hasNext());
 
     // Multiple values
     val.setValues(4L, -10L, 50L, -74L);
 
     filter.setValue(false).setExists(true);
-    func.streamLongs( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamLongs(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     filter.setValue(true).setExists(true);
     Iterator<Long> values3 = Arrays.asList(4L, -10L, 50L, -74L).iterator();
-    func.streamLongs( value -> {
-      assertTrue(values3.hasNext());
-      assertEquals(values3.next().longValue(), value);
-    });
+    func.streamLongs(
+        value -> {
+          assertTrue(values3.hasNext());
+          assertEquals(values3.next().longValue(), value);
+        });
     assertFalse(values3.hasNext());
 
     filter.setValue(false).setExists(true);
-    func.streamLongs( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamLongs(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
   }
 
   @Test
@@ -665,73 +702,83 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     TestFloatValueStream val = new TestFloatValueStream();
     TestBooleanValue filter = new TestBooleanValue();
 
-    AnalyticsValueStream uncasted = FilterFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, filter});
+    AnalyticsValueStream uncasted =
+        FilterFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, filter});
     assertTrue(uncasted instanceof FloatValueStream);
     FloatValueStream func = (FloatValueStream) uncasted;
 
     // No values
     val.setValues();
     filter.setExists(false);
-    func.streamFloats( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamFloats(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     val.setValues(50.343F, -74.9874F, 2342332342.32F);
     filter.setExists(false);
-    func.streamFloats( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamFloats(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     val.setValues();
     filter.setValue(true).setExists(true);
-    func.streamFloats( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamFloats(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // One value
     val.setValues(-4.23423F);
 
     filter.setValue(true).setExists(true);
     Iterator<Float> values1 = Arrays.asList(-4.23423F).iterator();
-    func.streamFloats( value -> {
-      assertTrue(values1.hasNext());
-      assertEquals(values1.next(), value, .0000001);
-    });
+    func.streamFloats(
+        value -> {
+          assertTrue(values1.hasNext());
+          assertEquals(values1.next(), value, .0000001);
+        });
     assertFalse(values1.hasNext());
 
     filter.setValue(false).setExists(true);
-    func.streamFloats( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamFloats(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     filter.setValue(true).setExists(true);
     Iterator<Float> values2 = Arrays.asList(-4.23423F).iterator();
-    func.streamFloats( value -> {
-      assertTrue(values2.hasNext());
-      assertEquals(values2.next(), value, .0000001);
-    });
+    func.streamFloats(
+        value -> {
+          assertTrue(values2.hasNext());
+          assertEquals(values2.next(), value, .0000001);
+        });
     assertFalse(values2.hasNext());
 
     // Multiple values
     val.setValues(4.3F, -10.134F, 50.343F, -74.9874F);
 
     filter.setValue(false).setExists(true);
-    func.streamFloats( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamFloats(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     filter.setValue(true).setExists(true);
     Iterator<Float> values3 = Arrays.asList(4.3F, -10.134F, 50.343F, -74.9874F).iterator();
-    func.streamFloats( value -> {
-      assertTrue(values3.hasNext());
-      assertEquals(values3.next(), value, .0000001);
-    });
+    func.streamFloats(
+        value -> {
+          assertTrue(values3.hasNext());
+          assertEquals(values3.next(), value, .0000001);
+        });
     assertFalse(values3.hasNext());
 
     filter.setValue(false).setExists(true);
-    func.streamFloats( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamFloats(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
   }
 
   @Test
@@ -739,73 +786,83 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     TestDoubleValueStream val = new TestDoubleValueStream();
     TestBooleanValue filter = new TestBooleanValue();
 
-    AnalyticsValueStream uncasted = FilterFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, filter});
+    AnalyticsValueStream uncasted =
+        FilterFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, filter});
     assertTrue(uncasted instanceof DoubleValueStream);
     DoubleValueStream func = (DoubleValueStream) uncasted;
 
     // No values
     val.setValues();
     filter.setExists(false);
-    func.streamDoubles( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamDoubles(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     val.setValues(50.343, -74.9874, 2342332342.32);
     filter.setExists(false);
-    func.streamDoubles( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamDoubles(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     val.setValues();
     filter.setValue(true).setExists(true);
-    func.streamDoubles( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamDoubles(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // One value
     val.setValues(-4.23423);
 
     filter.setValue(true).setExists(true);
     Iterator<Double> values1 = Arrays.asList(-4.23423).iterator();
-    func.streamDoubles( value -> {
-      assertTrue(values1.hasNext());
-      assertEquals(values1.next(), value, .0000001);
-    });
+    func.streamDoubles(
+        value -> {
+          assertTrue(values1.hasNext());
+          assertEquals(values1.next(), value, .0000001);
+        });
     assertFalse(values1.hasNext());
 
     filter.setValue(false).setExists(true);
-    func.streamDoubles( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamDoubles(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     filter.setValue(true).setExists(true);
     Iterator<Double> values2 = Arrays.asList(-4.23423).iterator();
-    func.streamDoubles( value -> {
-      assertTrue(values2.hasNext());
-      assertEquals(values2.next(), value, .0000001);
-    });
+    func.streamDoubles(
+        value -> {
+          assertTrue(values2.hasNext());
+          assertEquals(values2.next(), value, .0000001);
+        });
     assertFalse(values2.hasNext());
 
     // Multiple values
     val.setValues(4.3, -10.134, 50.343, -74.9874);
 
     filter.setValue(false).setExists(true);
-    func.streamDoubles( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamDoubles(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     filter.setValue(true).setExists(true);
     Iterator<Double> values3 = Arrays.asList(4.3, -10.134, 50.343, -74.9874).iterator();
-    func.streamDoubles( value -> {
-      assertTrue(values3.hasNext());
-      assertEquals(values3.next(), value, .0000001);
-    });
+    func.streamDoubles(
+        value -> {
+          assertTrue(values3.hasNext());
+          assertEquals(values3.next(), value, .0000001);
+        });
     assertFalse(values3.hasNext());
 
     filter.setValue(false).setExists(true);
-    func.streamDoubles( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamDoubles(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
   }
 
   @Test
@@ -817,73 +874,84 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     TestDateValueStream val = new TestDateValueStream();
     TestBooleanValue filter = new TestBooleanValue();
 
-    AnalyticsValueStream uncasted = FilterFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, filter});
+    AnalyticsValueStream uncasted =
+        FilterFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, filter});
     assertTrue(uncasted instanceof DateValueStream);
     DateValueStream func = (DateValueStream) uncasted;
 
     // No values
     val.setValues();
     filter.setExists(false);
-    func.streamLongs( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamLongs(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     val.setValues("1810-12-02T10:30:15Z", "1850-12-02T20:30:15Z");
     filter.setExists(false);
-    func.streamLongs( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamLongs(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     val.setValues();
     filter.setValue(true).setExists(true);
-    func.streamLongs( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamLongs(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // One value
     val.setValues("1810-12-02T10:30:15Z");
 
     filter.setValue(true).setExists(true);
     Iterator<Long> values1 = Arrays.asList(date1.getTime()).iterator();
-    func.streamLongs( value -> {
-      assertTrue(values1.hasNext());
-      assertEquals(values1.next().longValue(), value);
-    });
+    func.streamLongs(
+        value -> {
+          assertTrue(values1.hasNext());
+          assertEquals(values1.next().longValue(), value);
+        });
     assertFalse(values1.hasNext());
 
     filter.setValue(false).setExists(true);
-    func.streamLongs( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamLongs(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     filter.setValue(true).setExists(true);
     Iterator<Long> values2 = Arrays.asList(date1.getTime()).iterator();
-    func.streamLongs( value -> {
-      assertTrue(values2.hasNext());
-      assertEquals(values2.next().longValue(), value);
-    });
+    func.streamLongs(
+        value -> {
+          assertTrue(values2.hasNext());
+          assertEquals(values2.next().longValue(), value);
+        });
     assertFalse(values2.hasNext());
 
     // Multiple values
     val.setValues("1810-12-02T10:30:15Z", "1931-03-16T18:15:45Z", "2023-11-01T20:30:15Z");
 
     filter.setValue(false).setExists(true);
-    func.streamLongs( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamLongs(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     filter.setValue(true).setExists(true);
-    Iterator<Long> values3 = Arrays.asList(date1.getTime(), date2.getTime(), date3.getTime()).iterator();
-    func.streamLongs( value -> {
-      assertTrue(values3.hasNext());
-      assertEquals(values3.next().longValue(), value);
-    });
+    Iterator<Long> values3 =
+        Arrays.asList(date1.getTime(), date2.getTime(), date3.getTime()).iterator();
+    func.streamLongs(
+        value -> {
+          assertTrue(values3.hasNext());
+          assertEquals(values3.next().longValue(), value);
+        });
     assertFalse(values3.hasNext());
 
     filter.setValue(false).setExists(true);
-    func.streamLongs( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamLongs(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
   }
 
   @Test
@@ -891,73 +959,83 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     TestStringValueStream val = new TestStringValueStream();
     TestBooleanValue filter = new TestBooleanValue();
 
-    AnalyticsValueStream uncasted = FilterFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, filter});
+    AnalyticsValueStream uncasted =
+        FilterFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, filter});
     assertTrue(uncasted instanceof StringValueStream);
     StringValueStream func = (StringValueStream) uncasted;
 
     // No values
     val.setValues();
     filter.setExists(false);
-    func.streamStrings( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamStrings(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     val.setValues("abc", "123", "def", "456");
     filter.setExists(false);
-    func.streamStrings( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamStrings(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     val.setValues();
     filter.setValue(true).setExists(true);
-    func.streamStrings( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamStrings(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // One value
     val.setValues("abcdef");
 
     filter.setValue(true).setExists(true);
     Iterator<String> values1 = Arrays.asList("abcdef").iterator();
-    func.streamStrings( value -> {
-      assertTrue(values1.hasNext());
-      assertEquals(values1.next(), value);
-    });
+    func.streamStrings(
+        value -> {
+          assertTrue(values1.hasNext());
+          assertEquals(values1.next(), value);
+        });
     assertFalse(values1.hasNext());
 
     filter.setValue(false).setExists(true);
-    func.streamStrings( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamStrings(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     filter.setValue(true).setExists(true);
     Iterator<String> values2 = Arrays.asList("abcdef").iterator();
-    func.streamStrings( value -> {
-      assertTrue(values2.hasNext());
-      assertEquals(values2.next(), value);
-    });
+    func.streamStrings(
+        value -> {
+          assertTrue(values2.hasNext());
+          assertEquals(values2.next(), value);
+        });
     assertFalse(values2.hasNext());
 
     // Multiple values
     val.setValues("abc", "123", "def", "456");
 
     filter.setValue(false).setExists(true);
-    func.streamStrings( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamStrings(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     filter.setValue(true).setExists(true);
     Iterator<String> values3 = Arrays.asList("abc", "123", "def", "456").iterator();
-    func.streamStrings( value -> {
-      assertTrue(values3.hasNext());
-      assertEquals(values3.next(), value);
-    });
+    func.streamStrings(
+        value -> {
+          assertTrue(values3.hasNext());
+          assertEquals(values3.next(), value);
+        });
     assertFalse(values3.hasNext());
 
     filter.setValue(false).setExists(true);
-    func.streamStrings( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamStrings(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
   }
 
   @Test
@@ -965,26 +1043,30 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     TestAnalyticsValueStream val = new TestAnalyticsValueStream();
     TestBooleanValue filter = new TestBooleanValue();
 
-    AnalyticsValueStream func = FilterFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, filter});
+    AnalyticsValueStream func =
+        FilterFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, filter});
 
     // No values
     val.setValues();
     filter.setExists(false);
-    func.streamObjects( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamObjects(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     val.setValues(3, "3", new Date(3));
     filter.setExists(false);
-    func.streamObjects( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamObjects(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     val.setValues();
     filter.setValue(true).setExists(true);
-    func.streamObjects( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamObjects(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // One value
     Object obj = new TestAnalyticsValueStream();
@@ -992,44 +1074,50 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
 
     filter.setValue(true).setExists(true);
     Iterator<Object> values1 = Arrays.<Object>asList(obj).iterator();
-    func.streamObjects( value -> {
-      assertTrue(values1.hasNext());
-      assertEquals(values1.next(), value);
-    });
+    func.streamObjects(
+        value -> {
+          assertTrue(values1.hasNext());
+          assertEquals(values1.next(), value);
+        });
     assertFalse(values1.hasNext());
 
     filter.setValue(false).setExists(true);
-    func.streamObjects( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamObjects(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     filter.setValue(true).setExists(true);
     Iterator<Object> values2 = Arrays.<Object>asList(obj).iterator();
-    func.streamObjects( value -> {
-      assertTrue(values2.hasNext());
-      assertEquals(values2.next(), value);
-    });
+    func.streamObjects(
+        value -> {
+          assertTrue(values2.hasNext());
+          assertEquals(values2.next(), value);
+        });
     assertFalse(values2.hasNext());
 
     // Multiple values
     val.setValues(3, "3", new Date(3));
 
     filter.setValue(false).setExists(true);
-    func.streamObjects( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamObjects(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     filter.setValue(true).setExists(true);
     Iterator<Object> values3 = Arrays.<Object>asList(3, "3", new Date(3)).iterator();
-    func.streamObjects( value -> {
-      assertTrue(values3.hasNext());
-      assertEquals(values3.next(), value);
-    });
+    func.streamObjects(
+        value -> {
+          assertTrue(values3.hasNext());
+          assertEquals(values3.next(), value);
+        });
     assertFalse(values3.hasNext());
 
     filter.setValue(false).setExists(true);
-    func.streamObjects( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamObjects(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
   }
 }

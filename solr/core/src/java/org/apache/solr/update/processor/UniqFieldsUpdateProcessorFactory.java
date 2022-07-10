@@ -16,6 +16,8 @@
  */
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.SELECT_NO_FIELDS;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -24,27 +26,24 @@ import java.util.Set;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.update.processor.FieldMutatingUpdateProcessor.FieldNameSelector;
 
-import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.SELECT_NO_FIELDS;
-
 /**
- * Removes duplicate values found in fields matching the specified conditions.  
- * The existing field values are iterated in order, and values are removed when 
- * they are equal to a value that has already been seen for this field.
- * <p>
- * By default this processor matches no fields.
- * </p>
- * 
- * <p>
- * In the example configuration below, if a document initially contains the values 
- * <code>"Steve","Lucy","Jim",Steve","Alice","Bob","Alice"</code> in a field named 
- * <code>foo_uniq</code> then using this processor will result in the final list of 
- * field values being <code>"Steve","Lucy","Jim","Alice","Bob"</code>
- * </p>
+ * Removes duplicate values found in fields matching the specified conditions. The existing field
+ * values are iterated in order, and values are removed when they are equal to a value that has
+ * already been seen for this field.
+ *
+ * <p>By default this processor matches no fields.
+ *
+ * <p>In the example configuration below, if a document initially contains the values <code>
+ * "Steve","Lucy","Jim",Steve","Alice","Bob","Alice"</code> in a field named <code>foo_uniq</code>
+ * then using this processor will result in the final list of field values being <code>
+ * "Steve","Lucy","Jim","Alice","Bob"</code>
+ *
  * <pre class="prettyprint">
  *  &lt;processor class="solr.UniqFieldsUpdateProcessorFactory"&gt;
  *    &lt;str name="fieldRegex"&gt;.*_uniq&lt;/str&gt;
  *  &lt;/processor&gt;
- * </pre> 
+ * </pre>
+ *
  * @since 3.4.0
  */
 public class UniqFieldsUpdateProcessorFactory extends FieldValueSubsetUpdateProcessorFactory {
@@ -68,6 +67,3 @@ public class UniqFieldsUpdateProcessorFactory extends FieldValueSubsetUpdateProc
     return result;
   }
 }
-
-
-

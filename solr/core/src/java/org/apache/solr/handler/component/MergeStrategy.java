@@ -16,54 +16,43 @@
  */
 package org.apache.solr.handler.component;
 
+import java.io.IOException;
+import java.util.Comparator;
 import org.apache.solr.search.SolrIndexSearcher;
 
-import java.util.Comparator;
-import java.io.IOException;
-
 /**
-* The MergeStrategy class defines custom merge logic for distributed searches.
-*
-*  <b>Note: This API is experimental and may change in non backward-compatible ways in the future</b>
-**/
-
-
+ * The MergeStrategy class defines custom merge logic for distributed searches.
+ *
+ * <p><b>Note: This API is experimental and may change in non backward-compatible ways in the
+ * future</b>
+ */
 public interface MergeStrategy {
 
   /**
-  *  merge defines the merging behaving of results that are collected from the
-  *  shards during a distributed search.
-  *
-  **/
-
+   * merge defines the merging behaving of results that are collected from the shards during a
+   * distributed search.
+   */
   public void merge(ResponseBuilder rb, ShardRequest sreq);
 
   /**
-  * mergesIds must return true if the merge method merges document ids from the shards.
-  * If it merges other output from the shards it must return false.
-  * */
-
+   * mergesIds must return true if the merge method merges document ids from the shards. If it
+   * merges other output from the shards it must return false.
+   */
   public boolean mergesIds();
 
-
   /**
-  * handlesMergeFields must return true if the MergeStrategy
-  * implements a custom handleMergeFields(ResponseBuilder rb, SolrIndexSearch searcher)
-  * */
-
+   * handlesMergeFields must return true if the MergeStrategy implements a custom
+   * handleMergeFields(ResponseBuilder rb, SolrIndexSearch searcher)
+   */
   public boolean handlesMergeFields();
 
-
   /**
-  *  Implement handleMergeFields(ResponseBuilder rb, SolrIndexSearch searcher) if
-  *  your merge strategy needs more complex data then the sort fields provide.
-  * */
-
+   * Implement handleMergeFields(ResponseBuilder rb, SolrIndexSearch searcher) if your merge
+   * strategy needs more complex data then the sort fields provide.
+   */
   public void handleMergeFields(ResponseBuilder rb, SolrIndexSearcher searcher) throws IOException;
 
-  /**
-  *  Defines the order that the mergeStrategies are applied. Lower costs are applied first.
-  * */
+  /** Defines the order that the mergeStrategies are applied. Lower costs are applied first. */
   public int getCost();
 
   Comparator<MergeStrategy> MERGE_COMP = Comparator.comparingInt(MergeStrategy::getCost);

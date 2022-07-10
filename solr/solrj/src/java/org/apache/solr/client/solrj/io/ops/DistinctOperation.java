@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.io.ops;
 
 import java.io.IOException;
 import java.util.UUID;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
@@ -40,8 +39,7 @@ public class DistinctOperation implements ReduceOperation {
     init();
   }
 
-  private void init() {
-  }
+  private void init() {}
 
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
@@ -51,24 +49,24 @@ public class DistinctOperation implements ReduceOperation {
   @Override
   public Explanation toExplanation(StreamFactory factory) throws IOException {
     return new Explanation(operationNodeId.toString())
-      .withExpressionType(ExpressionType.OPERATION)
-      .withFunctionName(factory.getFunctionName(getClass()))
-      .withImplementingClass(getClass().getName())
-      .withExpression(toExpression(factory).toString());
+        .withExpressionType(ExpressionType.OPERATION)
+        .withFunctionName(factory.getFunctionName(getClass()))
+        .withImplementingClass(getClass().getName())
+        .withExpression(toExpression(factory).toString());
   }
 
   public Tuple reduce() {
-    // Return the tuple after setting current to null. This will ensure the next call to 
+    // Return the tuple after setting current to null. This will ensure the next call to
     // operate stores that tuple
     Tuple toReturn = current;
     current = null;
-    
+
     return toReturn;
   }
 
   public void operate(Tuple tuple) {
     // we only care about the first one seen. Drop all but the first
-    if(null == current){
+    if (null == current) {
       current = tuple;
     }
   }

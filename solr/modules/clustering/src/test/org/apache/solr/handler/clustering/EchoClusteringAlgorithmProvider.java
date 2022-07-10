@@ -18,9 +18,7 @@ package org.apache.solr.handler.clustering;
 
 import org.carrot2.clustering.ClusteringAlgorithmProvider;
 
-/**
- * SPI provider of {@link EchoClusteringAlgorithm}.
- */
+/** SPI provider of {@link EchoClusteringAlgorithm}. */
 public class EchoClusteringAlgorithmProvider implements ClusteringAlgorithmProvider {
   @Override
   public String name() {

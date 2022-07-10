@@ -16,9 +16,7 @@
  */
 package org.apache.solr.client.solrj.cloud;
 
-/**
- *
- */
+/** */
 public class NotEmptyException extends Exception {
 
   private final String path;
@@ -31,5 +29,4 @@ public class NotEmptyException extends Exception {
   public String getPath() {
     return path;
   }
-
 }

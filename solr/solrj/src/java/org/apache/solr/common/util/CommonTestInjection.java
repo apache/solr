@@ -26,7 +26,7 @@ import java.util.Map;
  */
 public class CommonTestInjection {
 
-  private volatile static Map<String, String> additionalSystemProps = null;
+  private static volatile Map<String, String> additionalSystemProps = null;
 
   public static void reset() {
     additionalSystemProps = null;
@@ -36,7 +36,7 @@ public class CommonTestInjection {
     CommonTestInjection.additionalSystemProps = additionalSystemProps;
   }
 
-  public static Map<String,String> injectAdditionalProps() {
+  public static Map<String, String> injectAdditionalProps() {
     return additionalSystemProps;
   }
 }

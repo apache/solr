@@ -18,7 +18,6 @@
 package org.apache.solr.search.join;
 
 import java.io.IOException;
-
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.IntPoint;
@@ -34,7 +33,9 @@ import org.apache.solr.search.DocSet;
 import org.apache.solr.util.LongIterator;
 import org.apache.solr.util.LongSet;
 
-/** @lucene.internal */
+/**
+ * @lucene.internal
+ */
 public class GraphPointsCollector extends GraphEdgeCollector {
   final LongSet set = new LongSet(256);
 
@@ -73,7 +74,8 @@ public class GraphPointsCollector extends GraphEdgeCollector {
 
     Query q = null;
 
-    // How we interpret the longs collected depends on the field we collect from (single valued can be diff from multi valued)
+    // How we interpret the longs collected depends on the field we collect from (single valued can
+    // be diff from multi valued)
     // The basic type of the from & to field must match though (int/long/float/double)
     NumberType ntype = collectField.getType().getNumberType();
     boolean multiValued = collectField.multiValued();
@@ -92,7 +94,7 @@ public class GraphPointsCollector extends GraphEdgeCollector {
       int i = 0;
       for (LongIterator iter = set.iterator(); iter.hasNext(); ) {
         long bits = iter.next();
-        int v = (int)bits;
+        int v = (int) bits;
         vals[i++] = v;
       }
       q = IntPoint.newSetQuery(matchField.getName(), vals);
@@ -101,7 +103,8 @@ public class GraphPointsCollector extends GraphEdgeCollector {
       int i = 0;
       for (LongIterator iter = set.iterator(); iter.hasNext(); ) {
         long bits = iter.next();
-        double v = multiValued ? NumericUtils.sortableLongToDouble(bits) : Double.longBitsToDouble(bits);
+        double v =
+            multiValued ? NumericUtils.sortableLongToDouble(bits) : Double.longBitsToDouble(bits);
         vals[i++] = v;
       }
       q = DoublePoint.newSetQuery(matchField.getName(), vals);
@@ -110,7 +113,10 @@ public class GraphPointsCollector extends GraphEdgeCollector {
       int i = 0;
       for (LongIterator iter = set.iterator(); iter.hasNext(); ) {
         long bits = iter.next();
-        float v = multiValued ? NumericUtils.sortableIntToFloat((int) bits) : Float.intBitsToFloat((int) bits);
+        float v =
+            multiValued
+                ? NumericUtils.sortableIntToFloat((int) bits)
+                : Float.intBitsToFloat((int) bits);
         vals[i++] = v;
       }
       q = FloatPoint.newSetQuery(matchField.getName(), vals);
@@ -118,6 +124,4 @@ public class GraphPointsCollector extends GraphEdgeCollector {
 
     return q;
   }
-
-
 }

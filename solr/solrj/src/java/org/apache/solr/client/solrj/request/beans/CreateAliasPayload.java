@@ -16,64 +16,48 @@
  */
 package org.apache.solr.client.solrj.request.beans;
 
-import org.apache.solr.common.annotation.JsonProperty;
-import org.apache.solr.common.util.ReflectMapWriter;
+import static org.apache.solr.client.solrj.request.beans.V2ApiConstants.CREATE_COLLECTION_KEY;
 
 import java.util.List;
 import java.util.Map;
-
-import static org.apache.solr.client.solrj.request.beans.V2ApiConstants.CREATE_COLLECTION_KEY;
+import org.apache.solr.common.annotation.JsonProperty;
+import org.apache.solr.common.util.ReflectMapWriter;
 
 public class CreateAliasPayload implements ReflectMapWriter {
+  @JsonProperty(required = true)
+  public String name;
+
+  @JsonProperty public List<String> collections;
+
+  @JsonProperty public AliasRouter router;
+
+  @JsonProperty public String tz;
+
+  @JsonProperty(CREATE_COLLECTION_KEY)
+  public Map<String, Object> createCollectionParams;
+
+  @JsonProperty public String async;
+
+  public static class AliasRouter implements ReflectMapWriter {
     @JsonProperty(required = true)
     public String name;
 
-    @JsonProperty
-    public List<String> collections;
+    @JsonProperty public String field;
 
-    @JsonProperty
-    public AliasRouter router;
+    @JsonProperty public String start;
 
-    @JsonProperty
-    public String tz;
+    @JsonProperty public String interval;
 
-    @JsonProperty(CREATE_COLLECTION_KEY)
-    public Map<String, Object> createCollectionParams;
+    @JsonProperty public Long maxFutureMs;
 
-    @JsonProperty
-    public String async;
+    @JsonProperty public String preemptiveCreateMath;
 
-    public static class AliasRouter implements ReflectMapWriter {
-        @JsonProperty(required = true)
-        public String name;
+    @JsonProperty public String autoDeleteAge;
 
-        @JsonProperty
-        public String field;
+    @JsonProperty public Integer maxCardinality;
 
-        @JsonProperty
-        public String start;
+    @JsonProperty public String mustMatch;
 
-        @JsonProperty
-        public String interval;
-
-        @JsonProperty
-        public Long maxFutureMs;
-
-        @JsonProperty
-        public String preemptiveCreateMath;
-
-        @JsonProperty
-        public String autoDeleteAge;
-
-        @JsonProperty
-        public Integer maxCardinality;
-
-        @JsonProperty
-        public String mustMatch;
-
-        @JsonProperty
-        public List<Map<String, Object>> routerList;
-    }
+    @JsonProperty public List<Map<String, Object>> routerList;
+  }
 }
-
-

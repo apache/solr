@@ -20,7 +20,6 @@ import java.io.Reader;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.tika.language.LanguageIdentifier;
@@ -28,19 +27,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Identifies the language of a set of input fields using Tika's
- * LanguageIdentifier.
- * The tika-core-x.y.jar must be on the classpath
- * <p>
- * See <a href="https://solr.apache.org/guide/language-detection.html#configuring-tika-language-detection">https://solr.apache.org/guide/language-detection.html#configuring-tika-language-detection</a>
+ * Identifies the language of a set of input fields using Tika's LanguageIdentifier. The
+ * tika-core-x.y.jar must be on the classpath
+ *
+ * <p>See <a
+ * href="https://solr.apache.org/guide/solr/latest/indexing-guide/language-detection.html#configuring-tika-language-detection">https://solr.apache.org/guide/solr/latest/indexing-guide/language-detection.html#configuring-tika-language-detection</a>
+ *
  * @since 3.5
  */
 public class TikaLanguageIdentifierUpdateProcessor extends LanguageIdentifierUpdateProcessor {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public TikaLanguageIdentifierUpdateProcessor(SolrQueryRequest req,
-      SolrQueryResponse rsp, UpdateRequestProcessor next) {
+  public TikaLanguageIdentifierUpdateProcessor(
+      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     super(req, rsp, next);
   }
 
@@ -51,16 +51,21 @@ public class TikaLanguageIdentifierUpdateProcessor extends LanguageIdentifierUpd
     if (content.length() != 0) {
       LanguageIdentifier identifier = new LanguageIdentifier(content);
       // FIXME: Hack - we get the distance from toString and calculate our own certainty score
-      Double distance = Double.parseDouble(tikaSimilarityPattern.matcher(identifier.toString()).replaceFirst("$1"));
-      // This formula gives: 0.02 => 0.8, 0.1 => 0.5 which is a better sweetspot than isReasonablyCertain()
+      Double distance =
+          Double.parseDouble(
+              tikaSimilarityPattern.matcher(identifier.toString()).replaceFirst("$1"));
+      // This formula gives: 0.02 => 0.8, 0.1 => 0.5 which is a better sweetspot than
+      // isReasonablyCertain()
       Double certainty = 1 - (5 * distance);
-      if (certainty < 0)
-        certainty = 0d;
+      if (certainty < 0) certainty = 0d;
       DetectedLanguage language = new DetectedLanguage(identifier.getLanguage(), certainty);
       languages.add(language);
       if (log.isDebugEnabled()) {
-        log.debug("Language detected as {} with a certainty of {} (Tika distance={})"
-            , language, language.getCertainty(), identifier);
+        log.debug(
+            "Language detected as {} with a certainty of {} (Tika distance={})",
+            language,
+            language.getCertainty(),
+            identifier);
       }
     } else {
       log.debug("No input text to detect language from, returning empty list");

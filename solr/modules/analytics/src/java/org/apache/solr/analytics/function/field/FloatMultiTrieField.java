@@ -19,7 +19,6 @@ package org.apache.solr.analytics.function.field;
 import java.io.IOException;
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedSetDocValues;
@@ -31,6 +30,7 @@ import org.apache.solr.schema.TrieFloatField;
 
 /**
  * An analytics wrapper for a multi-valued {@link TrieFloatField} with DocValues enabled.
+ *
  * @deprecated Trie fields are deprecated as of Solr 7.0
  */
 @Deprecated
@@ -55,17 +55,19 @@ public class FloatMultiTrieField extends AnalyticsField implements CastingFloatV
     count = 0;
     if (docValues.advanceExact(doc)) {
       int term;
-      while ((term = (int)docValues.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+      while ((term = (int) docValues.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
         if (count == values.length) {
           resizeValues();
         }
-        values[count++] = NumericUtils.sortableIntToFloat(LegacyNumericUtils.prefixCodedToInt(docValues.lookupOrd(term)));
+        values[count++] =
+            NumericUtils.sortableIntToFloat(
+                LegacyNumericUtils.prefixCodedToInt(docValues.lookupOrd(term)));
       }
     }
   }
 
   private void resizeValues() {
-    float[] newValues = new float[values.length*2];
+    float[] newValues = new float[values.length * 2];
     for (int i = 0; i < count; ++i) {
       newValues[i] = values[i];
     }
@@ -78,14 +80,17 @@ public class FloatMultiTrieField extends AnalyticsField implements CastingFloatV
       cons.accept(values[i]);
     }
   }
+
   @Override
   public void streamDoubles(DoubleConsumer cons) {
-    streamFloats(value -> cons.accept((double)value));
+    streamFloats(value -> cons.accept((double) value));
   }
+
   @Override
   public void streamStrings(Consumer<String> cons) {
     streamFloats(value -> cons.accept(Float.toString(value)));
   }
+
   @Override
   public void streamObjects(Consumer<Object> cons) {
     streamFloats(value -> cons.accept(value));

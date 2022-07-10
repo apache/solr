@@ -23,9 +23,8 @@ public class ZooKeeperException extends SolrException {
   public ZooKeeperException(ErrorCode code, String msg, Throwable th) {
     super(code, msg, th);
   }
-  
+
   public ZooKeeperException(ErrorCode code, String msg) {
     super(code, msg);
   }
-
 }

@@ -15,20 +15,19 @@
  * limitations under the License.
  */
 package org.apache.solr.schema;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 
-/**
- * Simple mock provider with fixed rates and some assertions
- */
+/** Simple mock provider with fixed rates and some assertions */
 public class MockExchangeRateProvider implements ExchangeRateProvider {
-  private static Map<String,Double> map = new HashMap<>();
+  private static Map<String, Double> map = new HashMap<>();
+
   static {
     map.put("USD,EUR", 0.8);
     map.put("EUR,USD", 1.2);
@@ -40,15 +39,17 @@ public class MockExchangeRateProvider implements ExchangeRateProvider {
 
   private boolean gotArgs = false;
   private boolean gotLoader = false;
-  
+
   @Override
   public double getExchangeRate(String sourceCurrencyCode, String targetCurrencyCode) {
-//    System.out.println("***** getExchangeRate("+sourceCurrencyCode+targetCurrencyCode+")");
-    if(sourceCurrencyCode.equals(targetCurrencyCode)) return 1.0;
+    //    System.out.println("***** getExchangeRate("+sourceCurrencyCode+targetCurrencyCode+")");
+    if (sourceCurrencyCode.equals(targetCurrencyCode)) return 1.0;
 
-    Double result = map.get(sourceCurrencyCode+","+targetCurrencyCode);
-    if(result == null) {
-      throw new SolrException(ErrorCode.NOT_FOUND, "No exchange rate found for the pair "+sourceCurrencyCode+","+targetCurrencyCode);
+    Double result = map.get(sourceCurrencyCode + "," + targetCurrencyCode);
+    if (result == null) {
+      throw new SolrException(
+          ErrorCode.NOT_FOUND,
+          "No exchange rate found for the pair " + sourceCurrencyCode + "," + targetCurrencyCode);
     }
     return result;
   }
@@ -57,7 +58,7 @@ public class MockExchangeRateProvider implements ExchangeRateProvider {
   public Set<String> listAvailableCurrencies() {
     Set<String> currenciesPairs = map.keySet();
     Set<String> returnSet;
-    
+
     returnSet = new HashSet<>();
     for (String c : currenciesPairs) {
       String[] pairs = c.split(",");
@@ -69,23 +70,22 @@ public class MockExchangeRateProvider implements ExchangeRateProvider {
 
   @Override
   public boolean reload() throws SolrException {
-    assert(gotArgs == true);
-    assert(gotLoader == true);
+    assert (gotArgs == true);
+    assert (gotLoader == true);
     return true;
   }
 
   @Override
-  public void init(Map<String,String> args) {
-    assert(args.get("foo").equals("bar"));
+  public void init(Map<String, String> args) {
+    assert (args.get("foo").equals("bar"));
     gotArgs = true;
     args.remove("foo");
   }
 
   @Override
   public void inform(ResourceLoader loader) throws SolrException {
-    assert(loader != null);
+    assert (loader != null);
     gotLoader = true;
-    assert(gotArgs == true);
+    assert (gotArgs == true);
   }
-  
 }

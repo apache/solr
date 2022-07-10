@@ -19,23 +19,24 @@ package org.apache.solr.ltr;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.junit.Test;
 
-public class TestParallelWeightCreation extends TestRerankBase{
+public class TestParallelWeightCreation extends TestRerankBase {
 
   @Test
   public void testLTRScoringQueryParallelWeightCreationResultOrder() throws Exception {
     setuptest("solrconfig-ltr_Th10_10.xml", "schema.xml");
 
     assertU(adoc("id", "1", "title", "w1 w3", "description", "w1", "popularity", "1"));
-    assertU(adoc("id", "2", "title", "w2",    "description", "w2", "popularity", "2"));
-    assertU(adoc("id", "3", "title", "w3",    "description", "w3", "popularity", "3"));
+    assertU(adoc("id", "2", "title", "w2", "description", "w2", "popularity", "2"));
+    assertU(adoc("id", "3", "title", "w3", "description", "w3", "popularity", "3"));
     assertU(adoc("id", "4", "title", "w3 w3", "description", "w4", "popularity", "4"));
-    assertU(adoc("id", "5", "title", "w5",    "description", "w5", "popularity", "5"));
+    assertU(adoc("id", "5", "title", "w5", "description", "w5", "popularity", "5"));
     assertU(commit());
 
     loadFeatures("external_features.json");
     loadModels("external_model.json");
 
-    // check to make sure that the order of results will be the same when using parallel weight creation
+    // check to make sure that the order of results will be the same when using parallel weight
+    // creation
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
     query.add("fl", "*,score");
@@ -53,18 +54,20 @@ public class TestParallelWeightCreation extends TestRerankBase{
   public void testLTRQParserThreadInitialization() throws Exception {
     // setting the value of number of threads to -ve should throw an exception
     String msg1 = null;
-    try{
-      new LTRThreadModule(1,-1);
-    }catch(IllegalArgumentException iae){
-      msg1 = iae.getMessage();;
+    try {
+      new LTRThreadModule(1, -1);
+    } catch (IllegalArgumentException iae) {
+      msg1 = iae.getMessage();
+      ;
     }
     assertTrue(msg1.equals("numThreadsPerRequest cannot be less than 1"));
 
-    // set totalPoolThreads to 1 and numThreadsPerRequest to 2 and verify that an exception is thrown
+    // set totalPoolThreads to 1 and numThreadsPerRequest to 2 and verify that an exception is
+    // thrown
     String msg2 = null;
-    try{
-      new LTRThreadModule(1,2);
-    }catch(IllegalArgumentException iae){
+    try {
+      new LTRThreadModule(1, 2);
+    } catch (IllegalArgumentException iae) {
       msg2 = iae.getMessage();
     }
     assertTrue(msg2.equals("numThreadsPerRequest cannot be greater than totalPoolThreads"));

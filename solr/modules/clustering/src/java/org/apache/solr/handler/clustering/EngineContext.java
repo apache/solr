@@ -16,19 +16,6 @@
  */
 package org.apache.solr.handler.clustering;
 
-import org.apache.solr.core.SolrCore;
-import org.carrot2.clustering.ClusteringAlgorithm;
-import org.carrot2.clustering.ClusteringAlgorithmProvider;
-import org.carrot2.clustering.kmeans.BisectingKMeansClusteringAlgorithm;
-import org.carrot2.clustering.lingo.LingoClusteringAlgorithm;
-import org.carrot2.clustering.stc.STCClusteringAlgorithm;
-import org.carrot2.language.LanguageComponents;
-import org.carrot2.language.LanguageComponentsLoader;
-import org.carrot2.language.LoadedLanguages;
-import org.carrot2.util.ChainedResourceLookup;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
@@ -44,24 +31,35 @@ import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.apache.solr.core.SolrCore;
+import org.carrot2.clustering.ClusteringAlgorithm;
+import org.carrot2.clustering.ClusteringAlgorithmProvider;
+import org.carrot2.clustering.kmeans.BisectingKMeansClusteringAlgorithm;
+import org.carrot2.clustering.lingo.LingoClusteringAlgorithm;
+import org.carrot2.clustering.stc.STCClusteringAlgorithm;
+import org.carrot2.language.LanguageComponents;
+import org.carrot2.language.LanguageComponentsLoader;
+import org.carrot2.language.LoadedLanguages;
+import org.carrot2.util.ChainedResourceLookup;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-/**
- * Clustering engine context: algorithms, preloaded language
- * resources and initial validation.
- */
+/** Clustering engine context: algorithms, preloaded language resources and initial validation. */
 final class EngineContext {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final LinkedHashMap<String, LanguageComponents> languages;
   private final Map<String, ClusteringAlgorithmProvider> algorithmProviders;
 
-  private final static Map<String, String> aliasedNames;
+  private static final Map<String, String> aliasedNames;
 
   static {
     aliasedNames = new HashMap<>();
     aliasedNames.put(LingoClusteringAlgorithm.class.getName(), LingoClusteringAlgorithm.NAME);
     aliasedNames.put(STCClusteringAlgorithm.class.getName(), STCClusteringAlgorithm.NAME);
-    aliasedNames.put(BisectingKMeansClusteringAlgorithm.class.getName(), BisectingKMeansClusteringAlgorithm.NAME);
+    aliasedNames.put(
+        BisectingKMeansClusteringAlgorithm.class.getName(),
+        BisectingKMeansClusteringAlgorithm.NAME);
   }
 
   EngineContext(String resourcesPath, SolrCore core) {
@@ -76,8 +74,7 @@ final class EngineContext {
     }
 
     if (!resourceLocations.isEmpty()) {
-      log.info(
-          "Clustering algorithm resources first looked up relative to: {}", resourceLocations);
+      log.info("Clustering algorithm resources first looked up relative to: {}", resourceLocations);
 
       loader.withResourceLookup(
           (provider) ->
@@ -91,8 +88,7 @@ final class EngineContext {
 
     ClassLoader classLoader = getClass().getClassLoader();
     algorithmProviders =
-        ServiceLoader.load(ClusteringAlgorithmProvider.class, classLoader)
-            .stream()
+        ServiceLoader.load(ClusteringAlgorithmProvider.class, classLoader).stream()
             .map(ServiceLoader.Provider::get)
             .collect(Collectors.toMap(ClusteringAlgorithmProvider::name, e -> e));
 
@@ -145,8 +141,7 @@ final class EngineContext {
   }
 
   ClusteringAlgorithm getAlgorithm(String algorithmName) {
-    if (!algorithmProviders.containsKey(algorithmName)
-        && aliasedNames.containsKey(algorithmName)) {
+    if (!algorithmProviders.containsKey(algorithmName) && aliasedNames.containsKey(algorithmName)) {
       algorithmName = aliasedNames.get(algorithmName);
     }
 

@@ -18,13 +18,12 @@ package org.apache.solr.analytics.function.mapping;
 
 import java.util.Arrays;
 import java.util.Iterator;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.value.AnalyticsValueStream;
-import org.apache.solr.analytics.value.StringValue;
-import org.apache.solr.analytics.value.StringValueStream;
 import org.apache.solr.analytics.value.FillableTestValue.TestBooleanValueStream;
 import org.apache.solr.analytics.value.FillableTestValue.TestIntValue;
+import org.apache.solr.analytics.value.StringValue;
+import org.apache.solr.analytics.value.StringValueStream;
 import org.junit.Test;
 
 public class StringCastFunctionTest extends SolrTestCaseJ4 {
@@ -33,7 +32,8 @@ public class StringCastFunctionTest extends SolrTestCaseJ4 {
   public void singleValueParameterTest() {
     TestIntValue val = new TestIntValue();
 
-    AnalyticsValueStream uncasted = StringCastFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
+    AnalyticsValueStream uncasted =
+        StringCastFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
     assertTrue(uncasted instanceof StringValue);
     StringValue func = (StringValue) uncasted;
 
@@ -56,32 +56,36 @@ public class StringCastFunctionTest extends SolrTestCaseJ4 {
   public void multiValueParameterTest() {
     TestBooleanValueStream val = new TestBooleanValueStream();
 
-    AnalyticsValueStream uncasted = StringCastFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
+    AnalyticsValueStream uncasted =
+        StringCastFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
     assertTrue(uncasted instanceof StringValueStream);
     StringValueStream func = (StringValueStream) uncasted;
 
     // No values
     val.setValues();
-    func.streamStrings( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamStrings(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // One value
     val.setValues(true);
     Iterator<String> values1 = Arrays.asList("true").iterator();
-    func.streamObjects( value -> {
-      assertTrue(values1.hasNext());
-      assertEquals(values1.next(), value);
-    });
+    func.streamObjects(
+        value -> {
+          assertTrue(values1.hasNext());
+          assertEquals(values1.next(), value);
+        });
     assertFalse(values1.hasNext());
 
     // Multiple values
     val.setValues(true, true, false, false);
     Iterator<String> values2 = Arrays.asList("true", "true", "false", "false").iterator();
-    func.streamObjects( value -> {
-      assertTrue(values2.hasNext());
-      assertEquals(values2.next(), value);
-    });
+    func.streamObjects(
+        value -> {
+          assertTrue(values2.hasNext());
+          assertEquals(values2.next(), value);
+        });
     assertFalse(values2.hasNext());
   }
 }

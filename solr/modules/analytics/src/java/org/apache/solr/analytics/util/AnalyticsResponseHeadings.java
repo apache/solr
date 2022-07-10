@@ -16,9 +16,7 @@
  */
 package org.apache.solr.analytics.util;
 
-/**
- * Holds the headers for analytics responses.
- */
+/** Holds the headers for analytics responses. */
 public class AnalyticsResponseHeadings {
 
   public static final String COMPLETED_HEADER = "analytics_response";

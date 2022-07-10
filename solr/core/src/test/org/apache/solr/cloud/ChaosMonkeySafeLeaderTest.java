@@ -16,7 +16,7 @@
  */
 package org.apache.solr.cloud;
 
-import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 
 /*
  * Implementation moved to AbstractChaosMonkeySafeLeaderTestBase as is used by HDFS contrib module test
@@ -30,5 +30,4 @@ public class ChaosMonkeySafeLeaderTest extends AbstractChaosMonkeySafeLeaderTest
   protected String getDirectoryFactory() {
     return DIRECTORY_FACTORY;
   }
-
 }

@@ -19,9 +19,7 @@ package org.apache.solr.core;
 import org.apache.lucene.codecs.Codec;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
-/**
- * Factory for plugging in a custom {@link Codec}
- */
+/** Factory for plugging in a custom {@link Codec} */
 public abstract class CodecFactory implements NamedListInitializedPlugin {
   public abstract Codec getCodec();
 }

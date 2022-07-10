@@ -17,11 +17,11 @@
 
 package org.apache.solr.cloud;
 
-/**
- * A lock that can be used across cluster nodes.
- */
+/** A lock that can be used across cluster nodes. */
 public interface DistributedLock {
   void waitUntilAcquired();
+
   void release();
+
   boolean isAcquired();
 }

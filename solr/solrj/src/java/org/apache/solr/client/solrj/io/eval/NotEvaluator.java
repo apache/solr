@@ -19,44 +19,46 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
-
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class NotEvaluator extends RecursiveBooleanEvaluator implements OneValueWorker {
   protected static final long serialVersionUID = 1L;
-  
-  public NotEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+
+  public NotEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
-    
-    if(containedEvaluators.size() < 1){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting at least one value but found %d",expression,containedEvaluators.size()));
+
+    if (containedEvaluators.size() < 1) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting at least one value but found %d",
+              expression,
+              containedEvaluators.size()));
     }
   }
-  
-  protected Checker constructChecker(Object value) throws IOException{
+
+  protected Checker constructChecker(Object value) throws IOException {
     return null;
   }
-  
-  public Object doWork(Object ... values) throws IOException{
-    if(1 != values.length){
-      throw new IOException(String.format(Locale.ROOT, "Expecting 1 value but found %d", values.length));
+
+  public Object doWork(Object... values) throws IOException {
+    if (1 != values.length) {
+      throw new IOException(
+          String.format(Locale.ROOT, "Expecting 1 value but found %d", values.length));
     }
-    
+
     return doWork(values[0]);
   }
 
   public Object doWork(Object value) {
-    if(null == value){
+    if (null == value) {
       return null;
-    }
-    else if(value instanceof List){
-      return ((List<?>)value).stream().map(innerValue -> doWork(innerValue));
-    }
-    else{
+    } else if (value instanceof List) {
+      return ((List<?>) value).stream().map(innerValue -> doWork(innerValue));
+    } else {
       // we know it's a boolean
-      return !((Boolean)value);
+      return !((Boolean) value);
     }
   }
-
 }

@@ -32,16 +32,14 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocketFactory;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Kindly borrowed the idea and base implementation from the ActiveMQ project;
- * useful for blocking traffic on a specified port.
+ * Kindly borrowed the idea and base implementation from the ActiveMQ project; useful for blocking
+ * traffic on a specified port.
  */
 public class SocketProxy {
 
@@ -76,7 +74,7 @@ public class SocketProxy {
     this(0, false);
   }
 
-  public SocketProxy( boolean useSSL) throws Exception {
+  public SocketProxy(boolean useSSL) throws Exception {
     this(0, useSSL);
   }
 
@@ -99,7 +97,7 @@ public class SocketProxy {
   }
 
   public String toString() {
-    return "SocketyProxy: port="+listenPort+"; target="+target;
+    return "SocketyProxy: port=" + listenPort + "; target=" + target;
   }
 
   public void setReceiveBufferSize(int receiveBufferSize) {
@@ -116,8 +114,7 @@ public class SocketProxy {
     if (pauseAtStart) {
       acceptor.pause();
     }
-    new Thread(null, acceptor, "SocketProxy-Acceptor-"
-        + serverSocket.getLocalPort()).start();
+    new Thread(null, acceptor, "SocketProxy-Acceptor-" + serverSocket.getLocalPort()).start();
     closed = new CountDownLatch(1);
   }
 
@@ -175,8 +172,7 @@ public class SocketProxy {
     }
   }
 
-  public boolean waitUntilClosed(long timeoutSeconds)
-      throws InterruptedException {
+  public boolean waitUntilClosed(long timeoutSeconds) throws InterruptedException {
     return closed.await(timeoutSeconds, TimeUnit.SECONDS);
   }
 
@@ -268,12 +264,17 @@ public class SocketProxy {
     this.acceptBacklog = acceptBacklog;
   }
 
-  private URI urlFromSocket(URI uri, ServerSocket serverSocket)
-      throws Exception {
+  private URI urlFromSocket(URI uri, ServerSocket serverSocket) throws Exception {
     int listenPort = serverSocket.getLocalPort();
 
-    return new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(),
-        listenPort, uri.getPath(), uri.getQuery(), uri.getFragment());
+    return new URI(
+        uri.getScheme(),
+        uri.getUserInfo(),
+        uri.getHost(),
+        listenPort,
+        uri.getPath(),
+        uri.getQuery(),
+        uri.getFragment());
   }
 
   public class Bridge {
@@ -289,11 +290,13 @@ public class SocketProxy {
       if (receiveBufferSize > 0) {
         sendSocket.setReceiveBufferSize(receiveBufferSize);
       }
-      sendSocket.connect(new InetSocketAddress(target.getHost(), target
-          .getPort()));
+      sendSocket.connect(new InetSocketAddress(target.getHost(), target.getPort()));
       linkWithThreads(receiveSocket, sendSocket);
       if (log.isInfoEnabled()) {
-        log.info("proxy connection {}, receiveBufferSize={}", sendSocket, sendSocket.getReceiveBufferSize());
+        log.info(
+            "proxy connection {}, receiveBufferSize={}",
+            sendSocket,
+            sendSocket.getReceiveBufferSize());
       }
     }
 
@@ -333,8 +336,7 @@ public class SocketProxy {
       private AtomicReference<CountDownLatch> pause = new AtomicReference<CountDownLatch>();
 
       public Pump(String kind, Socket source, Socket dest) {
-        super("SocketProxy-"+kind+"-" + source.getPort() + ":"
-            + dest.getPort());
+        super("SocketProxy-" + kind + "-" + source.getPort() + ":" + dest.getPort());
         src = source;
         destination = dest;
         pause.set(new CountDownLatch(0));
@@ -358,7 +360,7 @@ public class SocketProxy {
             log.warn("Failed to set socket timeout on {} due to: ", src, e);
             return;
           }
-          log.error("Failed to set socket timeout on {} due to ",src, e);
+          log.error("Failed to set socket timeout on {} due to ", src, e);
           throw new RuntimeException(e);
         }
 
@@ -380,8 +382,7 @@ public class SocketProxy {
               break;
             }
             pause.get().await();
-            if (len > 0)
-              out.write(buf, 0, len);
+            if (len > 0) out.write(buf, 0, len);
           }
         } catch (Exception e) {
           if (log.isDebugEnabled()) {
@@ -393,7 +394,8 @@ public class SocketProxy {
               // remote end will see a close at the same time.
               close();
             }
-          } catch (Exception ignore) {}
+          } catch (Exception ignore) {
+          }
         } finally {
           if (in != null) {
             try {
@@ -451,7 +453,8 @@ public class SocketProxy {
             synchronized (connections) {
               connections.add(new Bridge(source, target));
             }
-          } catch (SocketTimeoutException expected) {}
+          } catch (SocketTimeoutException expected) {
+          }
         }
       } catch (Exception e) {
         if (log.isDebugEnabled()) {
@@ -465,8 +468,8 @@ public class SocketProxy {
         socket.close();
         closed.countDown();
         goOn();
-      } catch (IOException ignored) {}
+      } catch (IOException ignored) {
+      }
     }
   }
-
 }

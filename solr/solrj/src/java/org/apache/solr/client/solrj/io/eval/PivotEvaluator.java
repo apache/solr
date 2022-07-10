@@ -17,33 +17,36 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-
 import java.util.ArrayList;
-import java.util.Locale;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.Map;
-import java.util.HashMap;
-
+import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.apache.solr.client.solrj.io.Tuple;
 
 public class PivotEvaluator extends RecursiveObjectEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
 
-  public  PivotEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public PivotEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
 
-    if(4 != containedEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting exactly 4 values but found %d",expression,containedEvaluators.size()));
+    if (4 != containedEvaluators.size()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting exactly 4 values but found %d",
+              expression,
+              containedEvaluators.size()));
     }
   }
 
   @Override
   public Object doWork(Object... values) throws IOException {
-    if(values.length != 4) {
+    if (values.length != 4) {
       throw new IOException("The pivot function requires four parameters.");
     }
 
@@ -52,21 +55,21 @@ public class PivotEvaluator extends RecursiveObjectEvaluator implements ManyValu
     Object value3 = values[2];
     Object value4 = values[3];
 
-    if(value1 instanceof List) {
+    if (value1 instanceof List) {
       @SuppressWarnings({"unchecked"})
-      List<Tuple> tuples = (List<Tuple>)value1;
-      String x = (String)value2;
+      List<Tuple> tuples = (List<Tuple>) value1;
+      String x = (String) value2;
       x = x.replace("\"", "");
-      String y = (String)value3;
+      String y = (String) value3;
       y = y.replace("\"", "");
 
-      String vlabel = (String)value4;
+      String vlabel = (String) value4;
       vlabel = vlabel.replace("\"", "");
 
       Set<String> xset = new TreeSet<>();
       Set<String> yset = new TreeSet<>();
 
-      for(int i=0; i<tuples.size(); i++) {
+      for (int i = 0; i < tuples.size(); i++) {
         Tuple tuple = tuples.get(i);
         xset.add(tuple.getString(x));
         yset.add(tuple.getString(y));
@@ -77,7 +80,7 @@ public class PivotEvaluator extends RecursiveObjectEvaluator implements ManyValu
       List<String> xlabels = new ArrayList<>(xset.size());
       Map<String, Integer> xindexes = new HashMap<>();
       int xindex = 0;
-      for (String xlabel :xset) {
+      for (String xlabel : xset) {
         xlabels.add(xlabel);
         xindexes.put(xlabel, xindex);
         ++xindex;
@@ -92,7 +95,7 @@ public class PivotEvaluator extends RecursiveObjectEvaluator implements ManyValu
         ++yindex;
       }
 
-      for(Tuple tuple : tuples) {
+      for (Tuple tuple : tuples) {
         String xlabel = tuple.getString(x);
         String ylabel = tuple.getString(y);
         int xi = xindexes.get(xlabel);
@@ -106,7 +109,8 @@ public class PivotEvaluator extends RecursiveObjectEvaluator implements ManyValu
       matrix.setColumnLabels(ylabels);
       return matrix;
     } else {
-      throw new IOException("The getValue function expects a list of tuples as the first parameter");
+      throw new IOException(
+          "The getValue function expects a list of tuples as the first parameter");
     }
   }
 }

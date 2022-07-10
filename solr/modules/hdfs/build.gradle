@@ -17,69 +17,56 @@
 
 apply plugin: 'java-library'
 
-description = 'HDFS Contrib Module'
+description = 'HDFS Module'
 
 dependencies {
-  configurations.all {
-    exclude group: 'log4j', module: 'log4j'
-    exclude group: 'commons-logging', module: 'commons-logging'
-    exclude group: 'org.slf4j', module: 'slf4j-log4j12'
-    exclude group: 'org.apache.yetus', module: 'audience-annotations'
-    exclude group: 'org.codehaus.mojo', module: 'animal-sniffer-annotations'
-   // be conservative on what's added here.  Affects *all* configs, including internal ones.
-  }
-
   implementation project(':solr:core')
+  implementation project(':solr:solrj')
 
-  // Hadoop dependencies
-  implementation ('org.apache.hadoop:hadoop-annotations') { transitive = false }
-  implementation ('org.apache.hadoop:hadoop-auth') { transitive = false }
-  implementation ('org.apache.hadoop:hadoop-common') { transitive = false }
-  // transitive of hadoop-common; used by HDFS
-  runtimeOnly 'commons-collections:commons-collections'
-  runtimeOnly 'com.google.re2j:re2j'
-  runtimeOnly 'org.apache.commons:commons-configuration2'
-  runtimeOnly 'org.apache.htrace:htrace-core4' // note: removed in Hadoop 3.3.2
-  runtimeOnly 'org.apache.kerby:kerb-core'
-  runtimeOnly 'org.apache.kerby:kerb-util'
-  implementation ('org.apache.hadoop:hadoop-hdfs-client') { transitive = false }
+  implementation 'org.apache.lucene:lucene-core'
 
-  // Guava implements the VisibleForTesting annotations
-  implementation ('com.google.guava:guava') { transitive = false }
+  implementation 'org.slf4j:slf4j-api'
+
+  api 'org.apache.hadoop:hadoop-client-api'
+  runtimeOnly 'org.apache.hadoop:hadoop-client-runtime'
+
+  // Guava implements Preconditions, caches, and VisibleForTesting annotations
+  implementation 'com.google.guava:guava'
 
   // Caffeine cache to implement HDFS block caching  
-  implementation ('com.github.ben-manes.caffeine:caffeine')
+  implementation 'com.github.ben-manes.caffeine:caffeine'
 
-  // Many HDFS tests are using/subclassing test framework classes
-  testImplementation project(':solr:solrj')
+  implementation 'commons-cli:commons-cli'
+
   testImplementation project(':solr:test-framework')
+  testImplementation 'org.apache.lucene:lucene-test-framework'
+  testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
+  testImplementation 'junit:junit'
 
   // hadoop dependencies for tests
   testImplementation ('org.apache.hadoop:hadoop-hdfs') { transitive = false }
-  testImplementation ('org.apache.hadoop:hadoop-common::tests') { transitive = false }
   testImplementation ('org.apache.hadoop:hadoop-hdfs::tests') { transitive = false }
-  testImplementation ('org.apache.hadoop:hadoop-minikdc') { transitive = false }
+  testImplementation 'org.apache.hadoop.thirdparty:hadoop-shaded-guava'
+  testRuntimeOnly 'org.apache.hadoop:hadoop-client-minicluster'
 
   testImplementation 'org.slf4j:jcl-over-slf4j'
-  testImplementation 'org.apache.logging.log4j:log4j-1.2-api'
+  testRuntimeOnly 'org.apache.logging.log4j:log4j-1.2-api'
 
   // classes like solr.ICUCollationField, used by NNFailoverTest for example.
-  testImplementation project(':solr:modules:analysis-extras')
-
-  // required for instantiating a Zookeeper server in tests or embedded
-  runtimeOnly ('org.xerial.snappy:snappy-java')
-
-  // commons packages needed by test classes
-  testImplementation('commons-io:commons-io') { transitive = false }
+  testRuntimeOnly project(':solr:modules:analysis-extras')
 
   // used by the hadoop-specific test framework classes
-  testImplementation ('org.apache.commons:commons-compress') { transitive = false }
-  testImplementation ('org.apache.commons:commons-collections4') { transitive = false }
-  testImplementation ('org.apache.commons:commons-lang3') { transitive = false }
-  testImplementation ('com.sun.jersey:jersey-servlet') { transitive = false }
+  testImplementation 'commons-io:commons-io'
+  testImplementation 'org.apache.commons:commons-compress'
+  testImplementation 'org.apache.commons:commons-collections4'
+  testImplementation 'org.apache.commons:commons-lang3'
+  testImplementation 'io.dropwizard.metrics:metrics-core'
 
   // Zookeeper dependency - some tests like HdfsCloudBackupRestore need this
-  implementation ('org.apache.zookeeper:zookeeper')
+  permitTestUnusedDeclared 'org.apache.zookeeper:zookeeper'
+  testImplementation 'org.apache.zookeeper:zookeeper'
+  // required for instantiating a Zookeeper server in tests or embedded
+  testRuntimeOnly 'org.xerial.snappy:snappy-java'
 }
 
 

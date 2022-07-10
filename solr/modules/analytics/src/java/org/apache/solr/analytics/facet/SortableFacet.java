@@ -16,6 +16,7 @@
  */
 package org.apache.solr.analytics.facet;
 
+import com.google.common.collect.Iterables;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -23,16 +24,11 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.analytics.facet.compare.FacetResultsComparator;
 import org.apache.solr.analytics.util.AnalyticsResponseHeadings;
 import org.apache.solr.common.util.NamedList;
 
-import com.google.common.collect.Iterables;
-
-/**
- * A facet that can be sorted by either the facet value or an expression value.
- */
+/** A facet that can be sorted by either the facet value or an expression value. */
 public abstract class SortableFacet extends AnalyticsFacet {
   protected FacetSortSpecification sort = null;
 
@@ -51,8 +47,8 @@ public abstract class SortableFacet extends AnalyticsFacet {
   }
 
   @Override
-  public Iterable<Map<String,Object>> createResponse() {
-    final LinkedList<Map<String,Object>> results = new LinkedList<>();
+  public Iterable<Map<String, Object>> createResponse() {
+    final LinkedList<Map<String, Object>> results = new LinkedList<>();
     // Export each expression in the bucket.
     for (FacetBucket bucket : getBuckets()) {
       Map<String, Object> bucketMap = new HashMap<>();
@@ -65,10 +61,11 @@ public abstract class SortableFacet extends AnalyticsFacet {
 
   private Iterable<FacetBucket> getBuckets() {
     final List<FacetBucket> facetResults = new ArrayList<>();
-    reductionData.forEach((facetVal, dataCol) -> {
-      collectionManager.setData(dataCol);
-      facetResults.add(new FacetBucket(facetVal,expressionCalculator.getResults()));
-    });
+    reductionData.forEach(
+        (facetVal, dataCol) -> {
+          collectionManager.setData(dataCol);
+          facetResults.add(new FacetBucket(facetVal, expressionCalculator.getResults()));
+        });
 
     return applyOptions(facetResults);
   }
@@ -100,9 +97,7 @@ public abstract class SortableFacet extends AnalyticsFacet {
     return facetResultsIter;
   }
 
-  /**
-   * Specifies how to sort the buckets of a sortable facet.
-   */
+  /** Specifies how to sort the buckets of a sortable facet. */
   public static class FacetSortSpecification {
     private FacetResultsComparator comparator;
     protected int limit;
@@ -155,9 +150,9 @@ public abstract class SortableFacet extends AnalyticsFacet {
 
   public static class FacetBucket {
     private final String facetValue;
-    private final Map<String,Object> expressionResults;
+    private final Map<String, Object> expressionResults;
 
-    public FacetBucket(String facetValue, Map<String,Object> expressionResults) {
+    public FacetBucket(String facetValue, Map<String, Object> expressionResults) {
       this.facetValue = facetValue;
       this.expressionResults = expressionResults;
     }
@@ -166,7 +161,7 @@ public abstract class SortableFacet extends AnalyticsFacet {
       return expressionResults.get(expression);
     }
 
-    public Map<String,Object> getResults() {
+    public Map<String, Object> getResults() {
       return expressionResults;
     }
 

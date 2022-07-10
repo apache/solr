@@ -16,43 +16,41 @@
  */
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.update.processor.FieldValueMutatingUpdateProcessor.valueMutator;
+
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-import static org.apache.solr.update.processor.FieldValueMutatingUpdateProcessor.valueMutator;
-
-
 /**
- * Trims leading and trailing whitespace from any CharSequence values 
- * found in fields matching the specified conditions and returns the 
- * resulting String.
- * <p>
- * By default this processor matches all fields
- * </p>
+ * Trims leading and trailing whitespace from any CharSequence values found in fields matching the
+ * specified conditions and returns the resulting String.
  *
- * <p>For example, with the configuration listed all String field values 
- * will have leading and trailing spaces removed except for fields whose 
- * named ends with "<code>_literal</code>".
- * </p>
+ * <p>By default this processor matches all fields
+ *
+ * <p>For example, with the configuration listed all String field values will have leading and
+ * trailing spaces removed except for fields whose named ends with "<code>_literal</code>".
+ *
  * <pre class="prettyprint">
  * &lt;processor class="solr.TrimFieldUpdateProcessorFactory"&gt;
  *   &lt;lst name="exclude"&gt;
  *     &lt;str name="fieldRegex"&gt;.*_literal&lt;/str&gt;
  *   &lt;/lst&gt;
  * &lt;/processor&gt;</pre>
+ *
  * @since 4.0.0
  */
 public final class TrimFieldUpdateProcessorFactory extends FieldMutatingUpdateProcessorFactory {
   @Override
-  public UpdateRequestProcessor getInstance(SolrQueryRequest req,
-                                            SolrQueryResponse rsp,
-                                            UpdateRequestProcessor next) {
-    return valueMutator(getSelector(), next, src -> {
-      if (src instanceof CharSequence) {
-        return src.toString().trim();
-      }
-      return src;
-    });
+  public UpdateRequestProcessor getInstance(
+      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
+    return valueMutator(
+        getSelector(),
+        next,
+        src -> {
+          if (src instanceof CharSequence) {
+            return src.toString().trim();
+          }
+          return src;
+        });
   }
 }
-

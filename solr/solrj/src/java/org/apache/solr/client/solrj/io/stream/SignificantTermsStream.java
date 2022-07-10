@@ -17,6 +17,8 @@
 
 package org.apache.solr.client.solrj.io.stream;
 
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -29,7 +31,6 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
@@ -51,18 +52,16 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 
-import static org.apache.solr.common.params.CommonParams.DISTRIB;
-
 /**
  * @since 6.5.0
  */
-public class SignificantTermsStream extends TupleStream implements Expressible{
+public class SignificantTermsStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
 
   protected String zkHost;
   protected String collection;
-  protected Map<String,String> params;
+  protected Map<String, String> params;
   protected Iterator<Tuple> tupleIterator;
   protected String field;
   protected int numTerms;
@@ -75,55 +74,61 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
   protected transient StreamContext streamContext;
   protected ExecutorService executorService;
 
-  public SignificantTermsStream(String zkHost,
-                                 String collectionName,
-                                 Map<String,String> params,
-                                 String field,
-                                 float minDocFreq,
-                                 float maxDocFreq,
-                                 int minTermLength,
-                                 int numTerms) throws IOException {
+  public SignificantTermsStream(
+      String zkHost,
+      String collectionName,
+      Map<String, String> params,
+      String field,
+      float minDocFreq,
+      float maxDocFreq,
+      int minTermLength,
+      int numTerms)
+      throws IOException {
 
-    init(collectionName,
-         zkHost,
-         params,
-         field,
-         minDocFreq,
-         maxDocFreq,
-         minTermLength,
-         numTerms);
+    init(collectionName, zkHost, params, field, minDocFreq, maxDocFreq, minTermLength, numTerms);
   }
 
-  public SignificantTermsStream(StreamExpression expression, StreamFactory factory) throws IOException{
+  public SignificantTermsStream(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     // grab all parameters out
     String collectionName = factory.getValueOperand(expression, 0);
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
     StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
 
-    // Validate there are no unknown parameters - zkHost and alias are namedParameter so we don't need to count it twice
-    if(expression.getParameters().size() != 1 + namedParams.size()){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - unknown operands found",expression));
+    // Validate there are no unknown parameters - zkHost and alias are namedParameter so we don't
+    // need to count it twice
+    if (expression.getParameters().size() != 1 + namedParams.size()) {
+      throw new IOException(
+          String.format(Locale.ROOT, "invalid expression %s - unknown operands found", expression));
     }
 
     // Collection Name
-    if(null == collectionName){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - collectionName expected as first operand",expression));
+    if (null == collectionName) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "invalid expression %s - collectionName expected as first operand",
+              expression));
     }
 
     // Named parameters - passed directly to solr as solrparams
-    if(0 == namedParams.size()){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - at least one named parameter expected. eg. 'q=*:*'",expression));
+    if (0 == namedParams.size()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "invalid expression %s - at least one named parameter expected. eg. 'q=*:*'",
+              expression));
     }
 
-    Map<String,String> params = new HashMap<>();
-    for(StreamExpressionNamedParameter namedParam : namedParams){
-      if(!namedParam.getName().equals("zkHost")) {
+    Map<String, String> params = new HashMap<>();
+    for (StreamExpressionNamedParameter namedParam : namedParams) {
+      if (!namedParam.getName().equals("zkHost")) {
         params.put(namedParam.getName(), namedParam.getParameter().toString().trim());
       }
     }
 
     String fieldParam = params.get("field");
-    if(fieldParam != null) {
+    if (fieldParam != null) {
       params.remove("field");
     } else {
       throw new IOException("field param cannot be null for SignificantTermsStream");
@@ -131,53 +136,60 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
 
     String numTermsParam = params.get("limit");
     int numTerms = 20;
-    if(numTermsParam != null) {
+    if (numTermsParam != null) {
       numTerms = Integer.parseInt(numTermsParam);
       params.remove("limit");
     }
 
     String minTermLengthParam = params.get("minTermLength");
     int minTermLength = 4;
-    if(minTermLengthParam != null) {
+    if (minTermLengthParam != null) {
       minTermLength = Integer.parseInt(minTermLengthParam);
       params.remove("minTermLength");
     }
 
-
     String minDocFreqParam = params.get("minDocFreq");
     float minDocFreq = 5.0F;
-    if(minDocFreqParam != null) {
+    if (minDocFreqParam != null) {
       minDocFreq = Float.parseFloat(minDocFreqParam);
       params.remove("minDocFreq");
     }
 
     String maxDocFreqParam = params.get("maxDocFreq");
     float maxDocFreq = .3F;
-    if(maxDocFreqParam != null) {
+    if (maxDocFreqParam != null) {
       maxDocFreq = Float.parseFloat(maxDocFreqParam);
       params.remove("maxDocFreq");
     }
 
-
     // zkHost, optional - if not provided then will look into factory list to get
     String zkHost = null;
-    if(null == zkHostExpression){
+    if (null == zkHostExpression) {
       zkHost = factory.getCollectionZkHost(collectionName);
-    } else if(zkHostExpression.getParameter() instanceof StreamExpressionValue) {
-      zkHost = ((StreamExpressionValue)zkHostExpression.getParameter()).getValue();
+    } else if (zkHostExpression.getParameter() instanceof StreamExpressionValue) {
+      zkHost = ((StreamExpressionValue) zkHostExpression.getParameter()).getValue();
     }
 
-    if(zkHost == null){
+    if (zkHost == null) {
       zkHost = factory.getDefaultZkHost();
     }
 
     // We've got all the required items
-    init(collectionName, zkHost, params, fieldParam, minDocFreq, maxDocFreq, minTermLength, numTerms);
+    init(
+        collectionName,
+        zkHost,
+        params,
+        fieldParam,
+        minDocFreq,
+        maxDocFreq,
+        minTermLength,
+        numTerms);
   }
 
   @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
-    // functionName(collectionName, param1, param2, ..., paramN, sort="comp", [aliases="field=alias,..."])
+    // functionName(collectionName, param1, param2, ..., paramN, sort="comp",
+    // [aliases="field=alias,..."])
 
     // function name
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
@@ -186,15 +198,19 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
     expression.addParameter(collection);
 
     // parameters
-    for(Map.Entry<String,String> param : params.entrySet()){
+    for (Map.Entry<String, String> param : params.entrySet()) {
       expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), param.getValue()));
     }
 
     expression.addParameter(new StreamExpressionNamedParameter("field", field));
-    expression.addParameter(new StreamExpressionNamedParameter("minDocFreq", Float.toString(minDocFreq)));
-    expression.addParameter(new StreamExpressionNamedParameter("maxDocFreq", Float.toString(maxDocFreq)));
-    expression.addParameter(new StreamExpressionNamedParameter("numTerms", String.valueOf(numTerms)));
-    expression.addParameter(new StreamExpressionNamedParameter("minTermLength", String.valueOf(minTermLength)));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("minDocFreq", Float.toString(minDocFreq)));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("maxDocFreq", Float.toString(maxDocFreq)));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("numTerms", String.valueOf(numTerms)));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("minTermLength", String.valueOf(minTermLength)));
 
     // zkHost
     expression.addParameter(new StreamExpressionNamedParameter("zkHost", zkHost));
@@ -202,14 +218,16 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
     return expression;
   }
 
-  private void init(String collectionName,
-                    String zkHost,
-                    Map<String,String> params,
-                    String field,
-                    float minDocFreq,
-                    float maxDocFreq,
-                    int minTermLength,
-                    int numTerms) throws IOException {
+  private void init(
+      String collectionName,
+      String zkHost,
+      Map<String, String> params,
+      String field,
+      float minDocFreq,
+      float maxDocFreq,
+      int minTermLength,
+      int numTerms)
+      throws IOException {
     this.zkHost = zkHost;
     this.collection = collectionName;
     this.params = params;
@@ -233,7 +251,9 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
       isCloseCache = false;
     }
 
-    this.executorService = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("SignificantTermsStream"));
+    this.executorService =
+        ExecutorUtil.newMDCAwareCachedThreadPool(
+            new SolrNamedThreadFactory("SignificantTermsStream"));
   }
 
   public List<TupleStream> children() {
@@ -244,13 +264,15 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
 
     List<Future<NamedList<?>>> futures = new ArrayList<>();
     for (String baseUrl : baseUrls) {
-      SignificantTermsCall lc = new SignificantTermsCall(baseUrl,
-          this.params,
-          this.field,
-          this.minDocFreq,
-          this.maxDocFreq,
-          this.minTermLength,
-          this.numTerms);
+      SignificantTermsCall lc =
+          new SignificantTermsCall(
+              baseUrl,
+              this.params,
+              this.field,
+              this.minDocFreq,
+              this.maxDocFreq,
+              this.minTermLength,
+              this.numTerms);
 
       Future<NamedList<?>> future = executorService.submit(lc);
       futures.add(future);
@@ -268,7 +290,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
-  public StreamComparator getStreamSort(){
+  public StreamComparator getStreamSort() {
     return null;
   }
 
@@ -287,17 +309,18 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
         Map<String, int[]> mergeFreqs = new HashMap<>();
         long numDocs = 0;
         long resultCount = 0;
-        for (Future<NamedList<?>> getTopTermsCall : callShards(getShards(zkHost, collection, streamContext))) {
+        for (Future<NamedList<?>> getTopTermsCall :
+            callShards(getShards(zkHost, collection, streamContext))) {
           NamedList<?> fullResp = getTopTermsCall.get();
-          Map<?,?> stResp = (Map<?,?>)fullResp.get("significantTerms");
+          Map<?, ?> stResp = (Map<?, ?>) fullResp.get("significantTerms");
 
           @SuppressWarnings({"unchecked"})
-          List<String> terms = (List<String>)stResp.get("sterms");
+          List<String> terms = (List<String>) stResp.get("sterms");
           @SuppressWarnings({"unchecked"})
-          List<Integer> docFreqs = (List<Integer>)stResp.get("docFreq");
+          List<Integer> docFreqs = (List<Integer>) stResp.get("docFreq");
           @SuppressWarnings({"unchecked"})
-          List<Integer> queryDocFreqs = (List<Integer>)stResp.get("queryDocFreq");
-          numDocs += (Integer)stResp.get("numDocs");
+          List<Integer> queryDocFreqs = (List<Integer>) stResp.get("queryDocFreq");
+          numDocs += (Integer) stResp.get("numDocs");
 
           SolrDocumentList searchResp = (SolrDocumentList) fullResp.get("response");
           resultCount += searchResp.getNumFound();
@@ -306,7 +329,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
             String term = terms.get(i);
             int docFreq = docFreqs.get(i);
             int queryDocFreq = queryDocFreqs.get(i);
-            if(!mergeFreqs.containsKey(term)) {
+            if (!mergeFreqs.containsKey(term)) {
               mergeFreqs.put(term, new int[2]);
             }
 
@@ -318,14 +341,16 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
 
         List<Map<String, Object>> maps = new ArrayList<>();
 
-        for(Map.Entry<String, int[]> entry : mergeFreqs.entrySet()) {
+        for (Map.Entry<String, int[]> entry : mergeFreqs.entrySet()) {
           int[] freqs = entry.getValue();
           Map<String, Object> map = new HashMap<>();
           map.put("term", entry.getKey());
           map.put("background", freqs[0]);
           map.put("foreground", freqs[1]);
 
-          float score = (float)(Math.log(freqs[1])+1.0) * (float) (Math.log(((float)(numDocs + 1)) / (freqs[0] + 1)) + 1.0);
+          float score =
+              (float) (Math.log(freqs[1]) + 1.0)
+                  * (float) (Math.log(((float) (numDocs + 1)) / (freqs[0] + 1)) + 1.0);
 
           map.put("score", score);
           maps.add(map);
@@ -343,15 +368,15 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
       }
 
       return tupleIterator.next();
-    } catch(Exception e) {
+    } catch (Exception e) {
       throw new IOException(e);
     }
   }
 
   private static class ScoreComp implements Comparator<Map<String, ?>> {
     public int compare(Map<String, ?> a, Map<String, ?> b) {
-      Float scorea = (Float)a.get("score");
-      Float scoreb = (Float)b.get("score");
+      Float scorea = (Float) a.get("score");
+      Float scoreb = (Float) b.get("score");
       return scoreb.compareTo(scorea);
     }
   }
@@ -366,13 +391,14 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
     private int minTermLength;
     private Map<String, String> paramsMap;
 
-    public SignificantTermsCall(String baseUrl,
-                                 Map<String, String> paramsMap,
-                                 String field,
-                                 float minDocFreq,
-                                 float maxDocFreq,
-                                 int minTermLength,
-                                 int numTerms) {
+    public SignificantTermsCall(
+        String baseUrl,
+        Map<String, String> paramsMap,
+        String field,
+        float minDocFreq,
+        float maxDocFreq,
+        int minTermLength,
+        int numTerms) {
 
       this.baseUrl = baseUrl;
       this.field = field;
@@ -388,9 +414,9 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
       HttpSolrClient solrClient = cache.getHttpSolrClient(baseUrl);
 
       params.add(DISTRIB, "false");
-      params.add("fq","{!significantTerms}");
+      params.add("fq", "{!significantTerms}");
 
-      for(Map.Entry<String, String> entry : paramsMap.entrySet()) {
+      for (Map.Entry<String, String> entry : paramsMap.entrySet()) {
         params.add(entry.getKey(), entry.getValue());
       }
 
@@ -398,12 +424,12 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
       params.add("maxDocFreq", Float.toString(maxDocFreq));
       params.add("minTermLength", Integer.toString(minTermLength));
       params.add("field", field);
-      params.add("numTerms", String.valueOf(numTerms*5));
+      params.add("numTerms", String.valueOf(numTerms * 5));
       if (streamContext.isLocal()) {
         params.add("distrib", "false");
       }
 
-      QueryRequest request= new QueryRequest(params, SolrRequest.METHOD.POST);
+      QueryRequest request = new QueryRequest(params, SolrRequest.METHOD.POST);
       QueryResponse response = request.process(solrClient);
       NamedList<?> res = response.getResponse();
       return res;
