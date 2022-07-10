@@ -58,11 +58,11 @@ curl --request POST \
 --url http://localhost:8983/api/collections \
 --header 'Content-Type: application/json' \
 --data '{
-"create": {
-	"name": "techproducts",
-	"numShards": 1,
-	"replicationFactor": 1
-}
+  "create": {
+    "name": "techproducts",
+    "numShards": 1,
+    "replicationFactor": 1
+  }
 }'
 ```
 
@@ -75,17 +75,17 @@ curl --request POST \
   --url http://localhost:8983/api/collections/techproducts/schema \
   --header 'Content-Type: application/json' \
   --data '{
-	"add-field": [
-		{"name": "name", "type": "text_general", "multiValued": false},
-		{"name": "cat", "type": "string", "multiValued": true},
-		{"name": "manu", "type": "string"},
-		{"name": "features", "type": "text_general", "multiValued": true},
-		{"name": "weight", "type": "pfloat"},
-		{"name": "price", "type": "pfloat"},
-		{"name": "popularity", "type": "pint"},
-		{"name": "inStock", "type": "boolean", "stored": true},
-		{"name": "store", "type": "location"}
-	]
+  "add-field": [
+    {"name": "name", "type": "text_general", "multiValued": false},
+    {"name": "cat", "type": "string", "multiValued": true},
+    {"name": "manu", "type": "string"},
+    {"name": "features", "type": "text_general", "multiValued": true},
+    {"name": "weight", "type": "pfloat"},
+    {"name": "price", "type": "pfloat"},
+    {"name": "popularity", "type": "pint"},
+    {"name": "inStock", "type": "boolean", "stored": true},
+    {"name": "store", "type": "location"}
+  ]
 }'
 ```
 
