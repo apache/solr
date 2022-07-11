@@ -48,10 +48,6 @@ public class TestStressVersions extends TestRTGBase {
     final int softCommitPercent = 30 + random().nextInt(75); // what percent of the commits are soft
     final int deletePercent = 4 + random().nextInt(25);
     final int deleteByQueryPercent = 1 + random().nextInt(5);
-    final int optimisticPercent =
-        1 + random().nextInt(50); // percent change that an update uses optimistic locking
-    final int optimisticCorrectPercent =
-        25 + random().nextInt(70); // percent change that a version specified will be correct
     final int ndocs = 5 + (random().nextBoolean() ? random().nextInt(25) : random().nextInt(200));
     int nWriteThreads = 5 + random().nextInt(25);
 
@@ -116,7 +112,7 @@ public class TestStressVersions extends TestRTGBase {
                   }
 
                   int id = rand.nextInt(ndocs);
-                  Object sync = syncArr[id];
+                  // Object sync = syncArr[id];
 
                   // set the lastId before we actually change it sometimes to try and
                   // uncover more race conditions between writing and reading

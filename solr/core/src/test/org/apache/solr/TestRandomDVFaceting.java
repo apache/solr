@@ -206,7 +206,6 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
 
       SchemaField sf = req.getSchema().getField(ftype.fname);
       boolean multiValued = sf.getType().multiValuedFieldCache();
-      boolean indexed = sf.indexed();
       boolean numeric = sf.getType().getNumberType() != null;
 
       int offset = 0;

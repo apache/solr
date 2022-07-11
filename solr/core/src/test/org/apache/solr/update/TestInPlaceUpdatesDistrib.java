@@ -656,7 +656,6 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     assert luceneDocids.size() == valuesList.size();
     final long numFoundExpected = luceneDocids.size();
 
-    CLIENT:
     for (SolrClient client : clients) {
       final String clientDebug =
           client.toString() + (LEADER.equals(client) ? " (leader)" : " (not leader)");

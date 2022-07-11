@@ -920,33 +920,4 @@ public class TestSubQueryTransformer extends SolrTestCaseJ4 {
             "" + (deptMultiplier * 2)),
         noMatchAtSubQ);
   }
-
-  static String[] daveMultiValueSearchParams(Random random, int peopleMult, int deptMult) {
-    return new String[] {
-      "q",
-      "name_s:dave",
-      "indent",
-      "true",
-      "fl",
-      (random().nextBoolean() ? "name_s_dv" : "*")
-          + // "dept_ss_dv,
-          ",subq1:[subquery "
-          + ((random.nextBoolean() ? "" : "separator=,"))
-          + "]",
-      "rows",
-      "" + peopleMult,
-      "subq1.q",
-      "{!terms f=dept_id_s v=$row.dept_ss_dv "
-          + ((random.nextBoolean() ? "" : "separator=,"))
-          + "}",
-      "subq1.fl",
-      "text_t",
-      "subq1.indent",
-      "true",
-      "subq1.rows",
-      "" + (deptMult * 2),
-      "subq1.logParamsList",
-      "q,fl,rows,row.dept_ss_dv"
-    };
-  }
 }

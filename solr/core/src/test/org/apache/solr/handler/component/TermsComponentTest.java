@@ -27,7 +27,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.TermsParams;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.PointMerger;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -695,9 +694,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
             "terms.fl", "foo_pi");
     ;
     try {
-      SchemaField sf = req.getSchema().getField("foo_pi");
-
-      /*
+      /* SchemaField sf = req.getSchema().getField("foo_pi");
        * LeafReader r = req.getSearcher().getIndexReader().leaves().get(0).reader(); PointValues pv
        * = r.getPointValues("foo_pi"); System.out.println("pv=" + pv); if (pv instanceof
        * AssertingLeafReader.AssertingPointValues) { pv =

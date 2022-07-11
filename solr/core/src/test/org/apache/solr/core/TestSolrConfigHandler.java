@@ -115,7 +115,6 @@ public class TestSolrConfigHandler extends RestTestBase {
   @Before
   public void before() throws Exception {
     File tmpSolrHome = createTempDir().toFile();
-    File tmpConfDir = new File(tmpSolrHome, confDir);
     FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
 
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
@@ -167,7 +166,6 @@ public class TestSolrConfigHandler extends RestTestBase {
     runConfigCommand(harness, "/config", payload);
 
     MapWriter m = getRespMap("/config/overlay", harness);
-    MapWriter props = null;
     assertEquals("100", m._getStr("overlay/props/updateHandler/autoCommit/maxDocs", null));
     assertEquals("10", m._getStr("overlay/props/updateHandler/autoCommit/maxTime", null));
 

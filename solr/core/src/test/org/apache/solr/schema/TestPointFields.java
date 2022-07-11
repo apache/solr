@@ -632,11 +632,10 @@ public class TestPointFields extends SolrTestCaseJ4 {
   @Test
   public void testIntPointMultiValuedFunctionQuery() throws Exception {
     doTestPointMultiValuedFunctionQuery(
-        "number_p_i_mv", "number_p_i_mv_dv", "int", getSequentialStringArrayWithInts(20));
+        "number_p_i_mv", "number_p_i_mv_dv", getSequentialStringArrayWithInts(20));
     doTestPointMultiValuedFunctionQuery(
         "number_p_i_mv",
         "number_p_i_mv_dv",
-        "int",
         toStringArray(getRandomInts(20, false).stream().sorted().collect(Collectors.toList())));
   }
 
@@ -1272,11 +1271,10 @@ public class TestPointFields extends SolrTestCaseJ4 {
   @Test
   public void testDoublePointMultiValuedFunctionQuery() throws Exception {
     doTestPointMultiValuedFunctionQuery(
-        "number_p_d_mv", "number_p_d_mv_dv", "double", getSequentialStringArrayWithDoubles(20));
+        "number_p_d_mv", "number_p_d_mv_dv", getSequentialStringArrayWithDoubles(20));
     doTestPointMultiValuedFunctionQuery(
         "number_p_d_mv",
         "number_p_d_mv_dv",
-        "double",
         toAscendingStringArray(getRandomFloats(20, false), true));
   }
 
@@ -1887,11 +1885,10 @@ public class TestPointFields extends SolrTestCaseJ4 {
   @Test
   public void testFloatPointMultiValuedFunctionQuery() throws Exception {
     doTestPointMultiValuedFunctionQuery(
-        "number_p_f_mv", "number_p_f_mv_dv", "float", getSequentialStringArrayWithDoubles(20));
+        "number_p_f_mv", "number_p_f_mv_dv", getSequentialStringArrayWithDoubles(20));
     doTestPointMultiValuedFunctionQuery(
         "number_p_f_mv",
         "number_p_f_mv_dv",
-        "float",
         toAscendingStringArray(getRandomFloats(20, false), true));
   }
 
@@ -2449,11 +2446,10 @@ public class TestPointFields extends SolrTestCaseJ4 {
   @Test
   public void testLongPointMultiValuedFunctionQuery() throws Exception {
     doTestPointMultiValuedFunctionQuery(
-        "number_p_l_mv", "number_p_l_mv_dv", "long", getSequentialStringArrayWithInts(20));
+        "number_p_l_mv", "number_p_l_mv_dv", getSequentialStringArrayWithInts(20));
     doTestPointMultiValuedFunctionQuery(
         "number_p_l_mv",
         "number_p_l_mv_dv",
-        "long",
         toStringArray(getRandomLongs(20, false).stream().sorted().collect(Collectors.toList())));
   }
 
@@ -3085,7 +3081,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
   public void testDatePointMultiValuedFunctionQuery() throws Exception {
     String[] dates =
         toStringArray(getRandomInstants(20, false).stream().sorted().collect(Collectors.toList()));
-    doTestPointMultiValuedFunctionQuery("number_p_dt_mv", "number_p_dt_mv_dv", "date", dates);
+    doTestPointMultiValuedFunctionQuery("number_p_dt_mv", "number_p_dt_mv_dv", dates);
   }
 
   @Test
@@ -4593,7 +4589,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
   }
 
   private void doTestPointMultiValuedFunctionQuery(
-      String nonDocValuesField, String docValuesField, String type, String[] numbers) {
+      String nonDocValuesField, String docValuesField, String[] numbers) {
     assert numbers != null && numbers.length == 20;
     for (int i = 0; i < 10; i++) {
       assertU(

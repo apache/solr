@@ -25,7 +25,6 @@ import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_VALUE
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.util.Utils.fromJSONString;
 
-import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -54,11 +53,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.SolrRequestParsers;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class TestCollectionAPIs extends SolrTestCaseJ4 {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Test
   public void testCopyParamsToMap() {
@@ -265,22 +261,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     Map<String, ?> expected = (Map<String, ?>) fromJSONString(expectedOutputMapJson);
     assertMapEqual(expected, output);
     return output;
-  }
-
-  static void assertErrorContains(
-      final ApiBag apiBag,
-      final String path,
-      final SolrRequest.METHOD method,
-      final String payload,
-      String expectedErrorMsg) {
-    RuntimeException e =
-        expectThrows(RuntimeException.class, () -> makeCall(apiBag, path, method, payload));
-    assertTrue(
-        "Expected exception with error message '"
-            + expectedErrorMsg
-            + "' but got: "
-            + e.getMessage(),
-        e.getMessage().contains(expectedErrorMsg));
   }
 
   public static Pair<SolrQueryRequest, SolrQueryResponse> makeCall(

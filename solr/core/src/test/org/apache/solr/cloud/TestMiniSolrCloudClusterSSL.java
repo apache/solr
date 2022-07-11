@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.List;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpHead;
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
@@ -37,7 +36,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -319,10 +317,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
 
       // sanity check the HttpClient used under the hood by our the cluster's CloudSolrClient
       // ensure it has the necessary protocols/credentials for each jetty server
-      //
-      // NOTE: we're not responsible for closing the cloud client
-      final HttpClient cloudClient =
-          ((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient();
+
       try (HttpSolrClient client = getRandomizedHttpSolrClient(baseURL)) {
         assertEquals(0, CoreAdminRequest.getStatus(/* all */ null, client).getStatus());
       }

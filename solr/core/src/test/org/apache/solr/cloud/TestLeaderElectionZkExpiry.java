@@ -38,8 +38,6 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String SOLRXML = "<solr></solr>";
-  private static final int MAX_NODES = 16;
-  private static final int MIN_NODES = 4;
 
   @Test
   public void testLeaderElectionWithZkExpiry() throws Exception {
