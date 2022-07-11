@@ -80,8 +80,6 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   protected static final JSONAuditEventFormatter formatter = new JSONAuditEventFormatter();
 
   protected static final int NUM_SERVERS = 1;
-  protected static final int NUM_SHARDS = 1;
-  protected static final int REPLICATION_FACTOR = 1;
   // Use a harness per thread to be able to beast this test
   private ThreadLocal<AuditTestHarness> testHarness = new ThreadLocal<>();
 

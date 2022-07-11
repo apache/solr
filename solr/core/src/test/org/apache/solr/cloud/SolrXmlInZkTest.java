@@ -26,7 +26,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.NodeConfig;
 import org.junit.Rule;
 import org.junit.Test;
@@ -46,8 +45,6 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
   protected Path zkDir;
 
   private SolrZkClient zkClient;
-
-  private ZkStateReader reader;
 
   private NodeConfig cfg;
 
@@ -100,9 +97,6 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
       zkClient.close();
     }
 
-    if (reader != null) {
-      reader.close();
-    }
     zkServer.shutdown();
   }
 

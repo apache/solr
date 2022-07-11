@@ -46,9 +46,6 @@ public class ClassificationUpdateProcessorIntegrationTest extends SolrTestCaseJ4
   private static final String CHAIN = "classification";
   private static final String BROKEN_CHAIN_FILTER_QUERY = "classification-unsupported-filterQuery";
 
-  private ClassificationUpdateProcessorFactory cFactoryToTest =
-      new ClassificationUpdateProcessorFactory();
-
   @BeforeClass
   public static void beforeClass() throws Exception {
     System.setProperty("enable.update.log", "false");

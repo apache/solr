@@ -43,7 +43,6 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.junit.Test;
 
 public class SolrCoreTest extends SolrTestCaseJ4 {
-  private static final String COLLECTION1 = "collection1";
 
   @Override
   public void setUp() throws Exception {

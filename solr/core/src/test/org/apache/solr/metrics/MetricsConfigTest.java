@@ -22,15 +22,12 @@ import com.codahale.metrics.ExponentiallyDecayingReservoir;
 import com.codahale.metrics.Reservoir;
 import com.codahale.metrics.SlidingTimeWindowReservoir;
 import com.codahale.metrics.UniformReservoir;
-import java.io.File;
 import java.io.InputStream;
 import java.util.Map;
 import java.util.Properties;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrXmlConfig;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -39,19 +36,6 @@ import org.junit.rules.TestRule;
 /** */
 public class MetricsConfigTest extends SolrTestCaseJ4 {
   @Rule public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
-
-  // tmp dir, cleaned up automatically.
-  private static File solrHome = null;
-
-  @BeforeClass
-  public static void setupLoader() {
-    solrHome = createTempDir().toFile();
-  }
-
-  @AfterClass
-  public static void cleanupLoader() {
-    solrHome = null;
-  }
 
   @Test
   public void testDefaults() {

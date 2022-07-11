@@ -21,7 +21,6 @@ import static org.hamcrest.CoreMatchers.is;
 import java.util.List;
 import java.util.Random;
 import org.apache.solr.BaseDistributedSearchTestCase;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
@@ -54,7 +53,7 @@ public class DistributedFacetExistsSmallTest extends BaseDistributedSearchTestCa
     index(id, maxId += 1 + rnd.nextInt(5), FLD, "CCC");
     index(id, maxId += 1 + rnd.nextInt(5), FLD, "CCC");
 
-    final SolrClient shard0 = clients.get(0);
+    // final SolrClient shard0 = clients.get(0);
     // expectedly fails test
     // shard0.add(sdoc("id", 13, FLD, "DDD"));
     commit();

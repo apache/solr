@@ -78,7 +78,6 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
   protected long committedModelClock;
   protected int clientIndexUsedForCommit;
   protected volatile int lastId;
-  protected final String field = "val_l";
 
   private void initModel(int ndocs) {
     for (int i = 0; i < ndocs; i++) {
