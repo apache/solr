@@ -519,10 +519,16 @@ public class TopicStream extends CloudSolrStream implements Expressible {
             SolrDocument doc = httpClient.getById(id);
             if (doc != null) {
               @SuppressWarnings({"unchecked"})
-              List<String> checkpoints = (List<String>) doc.getFieldValue("checkpoint_ss");
-              for (String checkpoint : checkpoints) {
-                String[] pair = checkpoint.split("~");
-                this.checkpoints.put(pair[0], Long.parseLong(pair[1]));
+              List<String> checkpoint_ss = (List<String>) doc.getFieldValue("checkpoint_ss");
+              for (String checkpoint_s : checkpoint_ss) {
+                String[] pair = checkpoint_s.split("~");
+                long checkpoint;
+                if (initialCheckpoint > -1) {
+                  checkpoint = initialCheckpoint;
+                } else {
+                  checkpoint = Long.parseLong(pair[1]);
+                }
+                this.checkpoints.put(pair[0], checkpoint);
               }
             }
           } catch (Exception e) {
