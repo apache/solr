@@ -100,6 +100,11 @@ import org.apache.solr.util.SolrPluginUtils;
  */
 public class MultipleAdditiveTreesModel extends LTRScoringModel {
 
+  enum branchOptions {
+    LEFT,
+    RIGHT
+  }
+
   /**
    * fname2index is filled from constructor arguments (that are already part of the base class
    * hashCode) and therefore here it does not individually influence the class hashCode, equals,
@@ -137,7 +142,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     private Float threshold;
     private RegressionTreeNode left;
     private RegressionTreeNode right;
-    private String missing;
+    private branchOptions whenMissingBranch;
 
 
     public void setValue(float value) {
@@ -165,8 +170,8 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
       this.threshold = Float.parseFloat(threshold) + NODE_SPLIT_SLACK;
     }
 
-    public void setMissing(String direction) {
-      this.missing = direction;
+    public void setWhenMissingBranch(branchOptions direction) {
+      this.whenMissingBranch = direction;
     }
 
     @SuppressWarnings({"unchecked"})
@@ -191,7 +196,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
       } else {
         sb.append("(feature=").append(feature);
         sb.append(",threshold=").append(threshold - NODE_SPLIT_SLACK);
-        sb.append(",missing=").append(missing);
+        sb.append(",missing=").append(whenMissingBranch);
         sb.append(",left=").append(left);
         sb.append(",right=").append(right);
         sb.append(')');
@@ -309,7 +314,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
 
       if ((featureVector[regressionTreeNode.featureIndex] <= regressionTreeNode.threshold) ||
               (Float.isNaN(featureVector[regressionTreeNode.featureIndex]) &&
-                      Objects.equals(regressionTreeNode.missing, "left"))) {
+                      regressionTreeNode.whenMissingBranch == branchOptions.LEFT)) {
         regressionTreeNode = regressionTreeNode.left;
       } else {
         regressionTreeNode = regressionTreeNode.right;
@@ -372,25 +377,21 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
       // each branch and report
       // that here
 
-      if ((featureVector[regressionTreeNode.featureIndex] <= regressionTreeNode.threshold) ||
-              (Float.isNaN(featureVector[regressionTreeNode.featureIndex]) &&
-                      Objects.equals(regressionTreeNode.missing, "left"))) {
-        if (Float.isNaN(featureVector[regressionTreeNode.featureIndex])) {
-          returnValueBuilder.append("'" + regressionTreeNode.feature + "': Nan, Go Left | ");
-        }
-        else {
-          returnValueBuilder.append("'" + regressionTreeNode.feature + "':" + featureVector[regressionTreeNode.featureIndex] + " <= "
-                  + regressionTreeNode.threshold + ", Go Left | ");
-        }
+      if (featureVector[regressionTreeNode.featureIndex] <= regressionTreeNode.threshold) {
+        returnValueBuilder.append("'" + regressionTreeNode.feature + "':" +
+                featureVector[regressionTreeNode.featureIndex] + " <= " +
+                regressionTreeNode.threshold + ", Go Left | ");
+        regressionTreeNode = regressionTreeNode.left;
+      } else if (featureVector[regressionTreeNode.featureIndex] > regressionTreeNode.threshold) {
+        returnValueBuilder.append("'" + regressionTreeNode.feature + "':" +
+                featureVector[regressionTreeNode.featureIndex] + " > " +
+                regressionTreeNode.threshold + ", Go Right | ");
+        regressionTreeNode = regressionTreeNode.right;
+      } else if (regressionTreeNode.whenMissingBranch == branchOptions.LEFT) {
+        returnValueBuilder.append("The feature has null value, Go Left | ");
         regressionTreeNode = regressionTreeNode.left;
       } else {
-        if (Float.isNaN(featureVector[regressionTreeNode.featureIndex])) {
-          returnValueBuilder.append("'" + regressionTreeNode.feature + "': Nan, Go Right | ");
-        }
-        else {
-          returnValueBuilder.append("'" + regressionTreeNode.feature + "':" + featureVector[regressionTreeNode.featureIndex] + " > "
-                  + regressionTreeNode.threshold + ", Go Right | ");
-        }
+        returnValueBuilder.append("The feature has null value, Go Right | ");
         regressionTreeNode = regressionTreeNode.right;
       }
     }
