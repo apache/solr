@@ -16,7 +16,13 @@
  */
 package org.apache.solr.handler;
 
-import static org.apache.solr.handler.ReplicationTestHelper.*;
+import static org.apache.solr.handler.ReplicationTestHelper.SolrInstance;
+import static org.apache.solr.handler.ReplicationTestHelper.createAndStartJetty;
+import static org.apache.solr.handler.ReplicationTestHelper.numFound;
+import static org.apache.solr.handler.ReplicationTestHelper.rQuery;
+import static org.apache.solr.handler.ReplicationTestHelper.invokeReplicationCommand;
+import static org.apache.solr.handler.ReplicationTestHelper.index;
+import static org.apache.solr.handler.ReplicationTestHelper.assertVersions;
 
 import java.io.IOException;
 import org.apache.lucene.tests.util.LuceneTestCase.Slow;
