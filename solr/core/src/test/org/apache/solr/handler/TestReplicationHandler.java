@@ -16,7 +16,11 @@
  */
 package org.apache.solr.handler;
 
-import static org.apache.solr.handler.ReplicationTestHelper.*;
+import static org.apache.solr.handler.ReplicationTestHelper.CONF_DIR;
+import static org.apache.solr.handler.ReplicationTestHelper.SolrInstance;
+import static org.apache.solr.handler.ReplicationTestHelper.assertVersions;
+import static org.apache.solr.handler.ReplicationTestHelper.createNewSolrClient;
+import static org.apache.solr.handler.ReplicationTestHelper.invokeReplicationCommand;
 import static org.junit.matchers.JUnitMatchers.containsString;
 
 import java.io.File;
