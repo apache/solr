@@ -20,6 +20,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
+
 public class TestLinearDecayParser extends SolrTestCaseJ4 {
 
   @BeforeClass

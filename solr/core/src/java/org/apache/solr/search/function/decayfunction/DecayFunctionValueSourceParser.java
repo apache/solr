@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+
 package org.apache.solr.search.function.decayfunction;
 
 import org.apache.lucene.index.LeafReaderContext;
