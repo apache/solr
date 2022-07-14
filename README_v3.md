@@ -68,7 +68,7 @@ For instance, if you want to run the techproducts example, enter:
 ```
 
 There are a number of tutorials to follow.  Start out with [5 Minutes to Indexing and Querying Solr](MOVE TUTORIAL TO REF GUIDE),
-and then move to the ecommerce inspired [Tech Products](https://solr.apache.org/guide/solr/latest/getting-started/tutorial-techproducts.html) tutorial.   Go deep into faceting your data with some [Film data](https://solr.apache.org/guide/solr/latest/getting-started/tutorial-films.html), as well as learn about dynamic schemas.   The third tutorial is built around (Indexing Your Own Data)[https://solr.apache.org/guide/solr/latest/getting-started/tutorial-diy.html] so you develop some hands on experience with Solr.
+and then move to the ecommerce inspired [Tech Products](https://solr.apache.org/guide/solr/latest/getting-started/tutorial-techproducts.html) tutorial.   Go deep into faceting your data with some [Film data](https://solr.apache.org/guide/solr/latest/getting-started/tutorial-films.html), as well as learn about dynamic schemas.   The third tutorial is built around [Indexing Your Own Data](https://solr.apache.org/guide/solr/latest/getting-started/tutorial-diy.html) so you develop some hands on experience with Solr.
 
 You can wrap your learning path by running through [Scaling with SolrCloud](https://solr.apache.org/guide/solr/latest/getting-started/tutorial-solrcloud.html),
 and some practice deploying [Solr on Amazon AWS](https://solr.apache.org/guide/solr/latest/getting-started/tutorial-aws.html).
@@ -76,9 +76,9 @@ and some practice deploying [Solr on Amazon AWS](https://solr.apache.org/guide/s
 
 ## Support
 
-- [Mailing Lists](https://solr.apache.org/community.html#mailing-lists-chat)
+- [Users Mailing List](https://solr.apache.org/community.html#mailing-lists-chat)
 - Slack: Solr Community Channel.  Sign up at https://s.apache.org/solr-slack
-- IRC: `#solr` on (libera.chat)[https://web.libera.chat/?channels=#solr]
+- IRC: `#solr` on [libera.chat](https://web.libera.chat/?channels=#solr)
 
 
 ## Get Involved
@@ -90,6 +90,6 @@ To get involved in the developer community:
 - [Mailing Lists](https://solr.apache.org/community.html#mailing-lists-chat)
 - Slack: `#solr-dev` in the `the-asf` organization.  Sign up at https://the-asf.slack.com/messages/CE70MDPMF
 - [Issue Tracker (JIRA)](https://issues.apache.org/jira/browse/SOLR)
-- IRC: `#solr-dev` on (libera.chat)[https://web.libera.chat/?channels=#solr-dev]
+- IRC: `#solr-dev` on [libera.chat](https://web.libera.chat/?channels=#solr-dev)
 
 Learn more about developing Solr by reading through the developer docs in [./dev-docs](./dev-docs) source tree.
