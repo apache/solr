@@ -31,13 +31,42 @@ Key links
 
 ## Download
 
+Downloads for the Apache Solr distribution are available from https://solr.apache.org/downloads.html.
+
 ## Running Solr
- - link to install docs
- - Solr on Docker
- - Solr on Kubernetes
+
+Solr includes a few examples to help you get started. To run a specific example, enter:
+
+```
+  bin/solr -e <EXAMPLE> where <EXAMPLE> is one of:
+    cloud:         SolrCloud example
+    techproducts:  Comprehensive example illustrating many of Solr's core capabilities
+    schemaless:    Schema-less example (schema is inferred from data during indexing)
+    films:         Example of starting with _default configset and adding explicit fields dynamically    
+```
+
+For instance, if you want to run the techproducts example, enter:
+
+```
+  bin/solr -e techproducts
+```
+
+### Installing Solr
+
+The Reference Guide contains an entire  [Deployment Guide](https://solr.apache.org/guide/solr/latest/deployment-guide/system-requirements.html) to walk you through installing Solr.
+
+### Running Solr in Docker
+
+You can run Solr in Docker via the [official image](https://hub.docker.com/_/solr).
+Learn more about [Solr in Docker](https://solr.apache.org/guide/solr/latest/deployment-guide/solr-in-docker.html)
+
+### Running Solr on Kubernetes
+
+Solr has official support for running on Kubernetes, in the official Docker image.
+Please refer to the [Solr Operator](https://solr.apache.org/operator) home for details, tutorials and instructions.
 
 ## How to Use
-- metnion the examples
+- mention the examples
 - links to tutorials in Ref Guide
 - links to the 5 min to Indexing and Querying Documents (tutorial) artifact in ref Guide
 
@@ -59,5 +88,4 @@ To get involved in the developer community:
 - [Issue Tracker (JIRA)](https://issues.apache.org/jira/browse/SOLR)
 - IRC: `#solr-dev` on (libera.chat)[https://web.libera.chat/?channels=#solr-dev]
 
-## Building
-- Links.
+Learn more about developing Solr by reading through the developer docs in `./dev-docs` source tree.
