@@ -1062,8 +1062,6 @@ update `a_i` by setting it to values from the `collection1` collection for colle
 
 Without the map decorator, the update would simply overwrite any existing document.
 
-----
-
 == merge
 
 The `merge` function merges two or more streaming expressions and maintains the ordering of the underlying streams.
