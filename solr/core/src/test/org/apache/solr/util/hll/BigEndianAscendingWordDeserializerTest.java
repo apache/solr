@@ -16,9 +16,8 @@
  */
 package org.apache.solr.util.hll;
 
-import java.util.Random;
-
 import com.carrotsearch.randomizedtesting.RandomizedTest;
+import java.util.Random;
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 

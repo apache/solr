@@ -20,7 +20,6 @@ import static java.util.Arrays.asList;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
 import com.google.common.collect.ImmutableList;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;

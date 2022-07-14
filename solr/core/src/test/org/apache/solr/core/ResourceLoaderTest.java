@@ -19,7 +19,6 @@ package org.apache.solr.core;
 import static org.apache.solr.core.SolrResourceLoader.SOLR_ALLOW_UNSAFE_RESOURCELOADING_PARAM;
 import static org.apache.solr.core.SolrResourceLoader.assertAwareCompatibility;
 import static org.apache.solr.core.SolrResourceLoader.clearCache;
-
 import static org.hamcrest.core.Is.is;
 
 import java.io.IOException;
