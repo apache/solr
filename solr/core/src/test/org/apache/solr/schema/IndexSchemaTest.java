@@ -90,7 +90,7 @@ public class IndexSchemaTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testProperties() throws Exception {
+  public void testProperties() {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getLatestSchema();
     assertFalse(schema.getField("id").multiValued());

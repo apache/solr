@@ -33,7 +33,7 @@ import org.junit.Test;
 
 /**
  * Confirm that the expected security headers are returned when making requests to solr, regardless
- * of wether the request is interanlly forwared to another node.
+ * of whether the request is internally forwarded to another node.
  */
 @org.apache.lucene.tests.util.LuceneTestCase.AwaitsFix(
     bugUrl = "https://issues.apache.org/jira/browse/SOLR-14903")

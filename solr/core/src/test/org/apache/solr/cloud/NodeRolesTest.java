@@ -17,7 +17,6 @@
 
 package org.apache.solr.cloud;
 
-import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -28,11 +27,8 @@ import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.core.NodeRoles;
 import org.junit.After;
 import org.junit.Before;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class NodeRolesTest extends SolrCloudTestCase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Before
   public void setupCluster() throws Exception {

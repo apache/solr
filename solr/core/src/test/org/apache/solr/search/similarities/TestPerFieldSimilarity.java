@@ -30,7 +30,7 @@ public class TestPerFieldSimilarity extends BaseSimilarityTestCase {
   }
 
   /** test a field where the sim is specified directly */
-  public void testDirect() throws Exception {
+  public void testDirect() {
     assertEquals(SweetSpotSimilarity.class, getSimilarity("sim1text").getClass());
   }
 
@@ -54,10 +54,9 @@ public class TestPerFieldSimilarity extends BaseSimilarityTestCase {
   }
 
   /** test a field where no similarity is specified */
-  public void testDefaults() throws Exception {
+  public void testDefaults() {
     Similarity sim = getSimilarity("sim3text");
     assertEquals(BM25Similarity.class, sim.getClass());
-    ;
   }
 
   /** ... and for a dynamic field */

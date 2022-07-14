@@ -56,7 +56,7 @@ public class TestCloudRecovery extends SolrCloudTestCase {
   private int tlogReplicas;
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void setupCluster() {
     System.setProperty("metricsEnabled", "true");
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     System.setProperty("solr.ulog.numRecordsToKeep", "1000");

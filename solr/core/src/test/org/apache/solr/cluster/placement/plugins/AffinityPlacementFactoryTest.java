@@ -76,12 +76,12 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
   }
 
   /**
-   * When this test places a replica for a new collection, it should pick the node with less cores.
+   * When this test places a replica for a new collection, it should pick the node with fewer cores.
    *
    * <p>
    *
-   * <p>When it places a replica for an existing collection, it should pick the node with less cores
-   * that doesn't already have a replica for the shard.
+   * <p>When it places a replica for an existing collection, it should pick the node with fewer
+   * cores that doesn't already have a replica for the shard.
    */
   private void testBasicPlacementInternal(boolean hasExistingCollection) throws Exception {
     String collectionName = "basicCollection";
@@ -276,7 +276,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     final int AZ2_TLOGPULL = 7;
 
     final int AZ3_NRT_LOWCORES = 4;
-    final int AZ3_NRT_HIGHCORES = 6;
+    // final int AZ3_NRT_HIGHCORES = 6;
     final int AZ3_TLOGPULL = 8;
 
     final String AZ1 = "AZ1";
@@ -292,7 +292,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
 
     // Cluster nodes and their attributes.
     // 3 AZ's with three nodes each, 2 of which can only take NRT, one that can take TLOG or PULL
-    // One of the NRT has less cores than the other
+    // One of the NRT has fewer cores than the other
     // The TLOG/PULL replica on AZ1 doesn't have much free disk space
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(9);
     LinkedList<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
@@ -356,10 +356,10 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     PlacementPlan pp =
         plugin.computePlacement(placementRequest, clusterBuilder.buildPlacementContext());
     // Shard 1: The NRT's should go to the med cores node on AZ2 and low core on az3 (even though a
-    // low core node can take the replica in az1, there's already an NRT replica there and we want
+    // low core node can take the replica in az1, there's already an NRT replica there, and we want
     // spreading across AZ's), the TLOG to the TLOG node on AZ2 (because the tlog node on AZ1 has
     // low free disk)
-    // Shard 2: The NRT's should go to AZ1 and AZ3 lowcores because AZ2 has more cores (and there's
+    // Shard 2: The NRT's should go to AZ1 and AZ3 low cores because AZ2 has more cores (and there's
     // not NRT in any AZ for this shard). The TLOG should go to AZ3 because AZ1 TLOG node has low
     // free disk. Each expected placement is represented as a string "shard replica-type node"
     Set<String> expectedPlacements =
@@ -493,12 +493,12 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
         plugin.computePlacement(placementRequest, clusterBuilder.buildPlacementContext());
 
     // Each expected placement is represented as a string "shard replica-type node"
-    // Node 0 has less cores than node 1 (0 vs 1) so the placement should go there.
+    // Node 0 has fewer cores than node 1 (0 vs 1) so the placement should go there.
     Set<String> expectedPlacements = Set.of("1 PULL 0");
     verifyPlacements(expectedPlacements, pp, collectionBuilder.getShardBuilders(), liveNodes);
 
     // If we placed instead a replica for shard 2 (starting with the same initial cluster state, not
-    // including the first placement above), it should go too to node 0 since it has less cores...
+    // including the first placement above), it should go too to node 0 since it has fewer cores...
     Iterator<Shard> it = solrCollection.iterator();
     it.next(); // skip first shard to do placement for the second one...
     placementRequest =
@@ -903,7 +903,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     try {
       plugin.verifyAllowedModification(deleteReplicasRequest, placementContext);
     } catch (PlacementException pe) {
-      fail("should have succeeded: " + pe.toString());
+      fail("should have succeeded: " + pe);
     }
 
     secondaryCollection
@@ -953,7 +953,6 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
 
     PlacementContext placementContext = clusterBuilder.buildPlacementContext();
     Map<String, Set<String>> nodeNamesByType = new HashMap<>();
-    Cluster cluster = placementContext.getCluster();
     AttributeValues attributeValues =
         placementContext
             .getAttributeFetcher()
@@ -980,7 +979,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     assertEquals("expected 3 placements: " + pp, 3, pp.getReplicaPlacements().size());
     Set<String> type0nodes = nodeNamesByType.get("type_0");
     Set<String> type1nodes = nodeNamesByType.get("type_1");
-    Set<String> type2nodes = nodeNamesByType.get("type_2");
+    // Set<String> type2nodes = nodeNamesByType.get("type_2");
 
     for (ReplicaPlacement p : pp.getReplicaPlacements()) {
       assertTrue(type0nodes.contains(p.getNode().getName()));

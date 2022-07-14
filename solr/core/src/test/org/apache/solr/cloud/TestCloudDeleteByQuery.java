@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -42,12 +41,8 @@ import org.apache.solr.common.params.SolrParams;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class TestCloudDeleteByQuery extends SolrCloudTestCase {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final int NUM_SHARDS = 2;
   private static final int REPLICATION_FACTOR = 2;
@@ -80,7 +75,7 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
   private static final String S_TWO_PRE = "XYZ!";
 
   @AfterClass
-  private static void afterClass() throws Exception {
+  public static void afterClass() throws Exception {
     if (null != CLOUD_CLIENT) {
       CLOUD_CLIENT.close();
       CLOUD_CLIENT = null;
@@ -143,8 +138,8 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
     for (Slice slice : clusterState.getCollection(COLLECTION_NAME).getSlices()) {
       String shardName = slice.getName();
       Replica leader = slice.getLeader();
-      assertNotNull("slice has null leader: " + slice.toString(), leader);
-      assertNotNull("slice leader has null node name: " + slice.toString(), leader.getNodeName());
+      assertNotNull("slice has null leader: " + slice, leader);
+      assertNotNull("slice leader has null node name: " + slice, leader.getNodeName());
       String leaderUrl = urlMap.remove(leader.getNodeName());
       assertNotNull(
           "could not find URL for " + shardName + " leader: " + leader.getNodeName(), leaderUrl);
@@ -173,7 +168,7 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
         fail("unexpected shard: " + shardName);
       }
     }
-    assertEquals("Should be exactly one server left (nost hosting either shard)", 1, urlMap.size());
+    assertEquals("Should be exactly one server left (not hosting either shard)", 1, urlMap.size());
     NO_COLLECTION_CLIENT =
         getHttpSolrClient(urlMap.values().iterator().next() + "/" + COLLECTION_NAME + "/");
 
@@ -224,7 +219,7 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
   }
 
   @Before
-  private void clearCloudCollection() throws Exception {
+  public void clearCloudCollection() throws Exception {
     assertEquals(0, CLOUD_CLIENT.deleteByQuery("*:*").getStatus());
     assertEquals(0, CLOUD_CLIENT.commit().getStatus());
   }

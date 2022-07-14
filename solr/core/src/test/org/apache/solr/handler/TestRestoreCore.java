@@ -32,14 +32,13 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.util.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-@SolrTestCaseJ4.SuppressSSL // Currently unknown why SSL does not work with this test
+@SolrTestCaseJ4.SuppressSSL // Currently, unknown why SSL does not work with this test
 // Backups do checksum validation against a footer value not present in 'SimpleText'
 @LuceneTestCase.SuppressCodecs("SimpleText")
 public class TestRestoreCore extends SolrJettyTestBase {
@@ -69,10 +68,9 @@ public class TestRestoreCore extends SolrJettyTestBase {
 
   private static SolrClient createNewSolrClient(int port) {
     try {
-      // setup the client...
+      // set up the client...
       final String baseUrl = buildUrl(port, context);
-      HttpSolrClient client = getHttpSolrClient(baseUrl, 15000, 60000);
-      return client;
+      return getHttpSolrClient(baseUrl, 15000, 60000);
     } catch (Exception ex) {
       throw new RuntimeException(ex);
     }
@@ -219,7 +217,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
     final String backupDirName = backupStatus.waitForBackupSuccess(snapshotName, 30);
 
     // Remove the segments_n file so that the backup index is corrupted.
-    // Restore should fail and it should automatically rollback to the original index.
+    // Restore should fail, and it should automatically roll back to the original index.
     final Path restoreIndexPath = Paths.get(location, backupDirName);
     assertTrue("Does not exist: " + restoreIndexPath, Files.exists(restoreIndexPath));
     try (DirectoryStream<Path> stream =

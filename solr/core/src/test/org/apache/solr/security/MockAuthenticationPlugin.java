@@ -70,5 +70,5 @@ public class MockAuthenticationPlugin extends AuthenticationPlugin {
   }
 
   @Override
-  public void close() throws IOException {}
+  public void close() {}
 }

@@ -64,7 +64,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
     // positive check that our only existing "healthy" node works with cloud client
     // NOTE: this is using GenericSolrRequest, not HealthCheckRequest which is why it passes
     // as compared with testHealthCheckHandlerWithCloudClient
-    // (Not sure if that's actaully a good thing -- but it's how the existing test worked)
+    // (Not sure if that's actually a good thing -- but it's how the existing test worked)
     assertEquals(
         CommonParams.OK,
         req.process(cluster.getSolrClient()).getResponse().get(CommonParams.STATUS));
@@ -96,14 +96,14 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
     JettySolrRunner newJetty = cluster.startJettySolrRunner();
     try (HttpSolrClient httpSolrClient = getHttpSolrClient(newJetty.getBaseUrl().toString())) {
 
-      // postive check that our (new) "healthy" node works with direct http client
+      // positive check that our (new) "healthy" node works with direct http client
       assertEquals(
           CommonParams.OK, req.process(httpSolrClient).getResponse().get(CommonParams.STATUS));
 
       // now "break" our (new) node
       newJetty.getCoreContainer().getZkController().getZkClient().close();
 
-      // negative check of our (new) "broken" node that we deliberately put into an unhealth state
+      // negative check of our (new) "broken" node that we deliberately put into an unhealthy state
       BaseHttpSolrClient.RemoteSolrException e =
           expectThrows(
               BaseHttpSolrClient.RemoteSolrException.class,
@@ -121,7 +121,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
     newJetty = cluster.startJettySolrRunner();
     try (HttpSolrClient httpSolrClient = getHttpSolrClient(newJetty.getBaseUrl().toString())) {
 
-      // postive check that our (new) "healthy" node works with direct http client
+      // positive check that our (new) "healthy" node works with direct http client
       assertEquals(
           CommonParams.OK, req.process(httpSolrClient).getResponse().get(CommonParams.STATUS));
 
@@ -147,7 +147,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
       newJetty.stop();
     }
 
-    // (redundent) positive check that our (previously) exiting "healthy" node (still) works
+    // (redundant) positive check that our (previously) exiting "healthy" node (still) works
     // after getting negative results from our broken node and failed core container
     try (HttpSolrClient httpSolrClient =
         getHttpSolrClient(cluster.getJettySolrRunner(0).getBaseUrl().toString())) {
@@ -185,7 +185,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
     JettySolrRunner newJetty = cluster.startJettySolrRunner();
     try (HttpSolrClient httpSolrClient = getHttpSolrClient(newJetty.getBaseUrl().toString())) {
 
-      // postive check that our (new) "healthy" node works with direct http client
+      // positive check that our (new) "healthy" node works with direct http client
       assertEquals(
           CommonParams.OK,
           new V2Request.Builder("/node/health")
@@ -197,7 +197,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
       // now "break" our (new) node
       newJetty.getCoreContainer().getZkController().getZkClient().close();
 
-      // negative check of our (new) "broken" node that we deliberately put into an unhealth state
+      // negative check of our (new) "broken" node that we deliberately put into an unhealthy state
       BaseHttpSolrClient.RemoteSolrException e =
           expectThrows(
               BaseHttpSolrClient.RemoteSolrException.class,
@@ -229,7 +229,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
               mockCD("collection1", "slice1_replica1", "slice1", true, Replica.State.ACTIVE),
               mockCD("collection1", "slice1_replica3", "slice1", true, Replica.State.DOWN),
               mockCD("collection2", "slice1_replica5", "slice1", true, Replica.State.RECOVERING),
-              // A dangling core for a non-existant collection will not fail the check
+              // A dangling core for a non-existent collection will not fail the check
               mockCD("invalid", "invalid", "slice1", false, Replica.State.RECOVERING),
               // A core for a slice that is not an active slice will not fail the check
               mockCD("collection1", "invalid_replica1", "invalid", true, Replica.State.DOWN));

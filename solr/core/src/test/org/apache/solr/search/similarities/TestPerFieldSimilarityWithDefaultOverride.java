@@ -33,7 +33,7 @@ public class TestPerFieldSimilarityWithDefaultOverride extends BaseSimilarityTes
   }
 
   /** test a field where the sim is specified directly */
-  public void testDirect() throws Exception {
+  public void testDirect() {
     assertNotNull(getSimilarity("sim1text", SweetSpotSimilarity.class));
   }
 
@@ -55,7 +55,7 @@ public class TestPerFieldSimilarityWithDefaultOverride extends BaseSimilarityTes
   }
 
   /** test a field where no similarity is specified */
-  public void testDefaults() throws Exception {
+  public void testDefaults() {
     MockConfigurableSimilarity sim = getSimilarity("sim3text", MockConfigurableSimilarity.class);
     assertEquals("is there an echo?", sim.getPassthrough());
   }

@@ -28,6 +28,8 @@ import org.apache.solr.client.solrj.io.graph.ShortestPathStream;
 import org.apache.solr.client.solrj.io.ops.DistinctOperation;
 import org.apache.solr.client.solrj.io.ops.GroupOperation;
 import org.apache.solr.client.solrj.io.ops.ReplaceOperation;
+import org.apache.solr.client.solrj.io.ops.ReplaceWithFieldOperation;
+import org.apache.solr.client.solrj.io.ops.ReplaceWithValueOperation;
 import org.apache.solr.client.solrj.io.stream.*;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
@@ -116,6 +118,8 @@ public class Lang {
 
         // tuple manipulation operations
         .withFunctionName("replace", ReplaceOperation.class)
+        .withFunctionName("withValue", ReplaceWithValueOperation.class)
+        .withFunctionName("withField", ReplaceWithFieldOperation.class)
 
         // stream reduction operations
         .withFunctionName("group", GroupOperation.class)

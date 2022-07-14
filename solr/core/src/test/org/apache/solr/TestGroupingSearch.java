@@ -1574,7 +1574,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
   @Test
   public void testRandomGrouping() throws Exception {
-    /**
+    /*
      * updateJ("{\"add\":{\"doc\":{\"id\":\"77\"}}}", params("commit","true"));
      * assertJQ(req("q","id:77"), "/response/numFound==1");
      *
@@ -1859,7 +1859,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testGroupWithMinExactHitCount() throws Exception {
+  public void testGroupWithMinExactHitCount() {
     final int NUM_DOCS = 20;
     for (int i = 0; i < NUM_DOCS; i++) {
       assertU(adoc("id", String.valueOf(i), FOO_STRING_FIELD, "Book1"));

@@ -152,7 +152,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     }
   }
 
-  // 2 times to make sure cleanup is complete and we can create the same collection
+  // 2 times to make sure cleanup is complete, and we can create the same collection
   @Repeat(iterations = 2)
   public void testCreateDelete() throws Exception {
     switch (random().nextInt(3)) {
@@ -203,7 +203,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
       DocCollection docCollection = getCollectionState(collectionName);
       assertNotNull(docCollection);
       assertEquals("Expecting 2 shards", 2, docCollection.getSlices().size());
-      assertEquals("Expecting 4 relpicas per shard", 8, docCollection.getReplicas().size());
+      assertEquals("Expecting 4 replicas per shard", 8, docCollection.getReplicas().size());
       assertEquals(
           "Expecting 8 tlog replicas, 4 per shard",
           8,
@@ -242,7 +242,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
             CollectionAdminRequest.reloadCollection(collectionName)
                 .process(cluster.getSolrClient());
         assertEquals(0, response.getStatus());
-        waitForState("failed waiting for active colletion", collectionName, clusterShape(2, 8));
+        waitForState("failed waiting for active collection", collectionName, clusterShape(2, 8));
         reloaded = true;
       }
     }
@@ -494,12 +494,12 @@ public class TestTlogReplica extends SolrCloudTestCase {
     int maxAttempts = 3;
     for (int i = 0; i < maxAttempts; i++) {
       try {
-        CollectionAdminResponse respone =
+        CollectionAdminResponse response =
             CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.TLOG)
                 .process(cluster.getSolrClient());
         // This is an unfortunate hack. There are cases where the ADDREPLICA fails, will create a
         // Jira to address that separately. for now, we'll retry
-        if (respone.isSuccess()) {
+        if (response.isSuccess()) {
           break;
         }
         log.error("Unsuccessful attempt to add replica. Attempt: {}/{}", i, maxAttempts);
@@ -643,7 +643,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     // non-leader replicas, since we haven't opened a new searcher on the leader yet
 
     // timeout for stale collection state
-    waitForNumDocsInAllReplicas(4, getNonLeaderReplias(collectionName), 10);
+    waitForNumDocsInAllReplicas(4, getNonLeaderReplicas(collectionName), 10);
 
     // If I add the doc immediately, the leader fails to communicate with the follower with broken
     // pipe. Options are, wait or retry...
@@ -668,7 +668,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     solrRunner.start();
     waitForState("Replica didn't recover", collectionName, activeReplicaCount(0, 2, 0));
     // timeout for stale collection state
-    waitForNumDocsInAllReplicas(5, getNonLeaderReplias(collectionName), 10);
+    waitForNumDocsInAllReplicas(5, getNonLeaderReplicas(collectionName), 10);
     checkRTG(3, 7, cluster.getJettySolrRunners());
     cluster.getSolrClient().commit(collectionName);
 
@@ -717,7 +717,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     }
   }
 
-  private List<Replica> getNonLeaderReplias(String collectionName) {
+  private List<Replica> getNonLeaderReplicas(String collectionName) {
     return getCollectionState(collectionName).getReplicas().stream()
         .filter((r) -> !r.getBool("leader", false))
         .collect(Collectors.toList());
@@ -1104,7 +1104,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     };
   }
 
-  private List<SolrCore> getSolrCore(boolean isLeader) throws IOException {
+  private List<SolrCore> getSolrCore(boolean isLeader) {
     List<SolrCore> rs = new ArrayList<>();
 
     CloudSolrClient cloudClient = cluster.getSolrClient();
@@ -1143,7 +1143,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     }
   }
 
-  private List<JettySolrRunner> getSolrRunner(boolean isLeader) throws IOException {
+  private List<JettySolrRunner> getSolrRunner(boolean isLeader) {
     List<JettySolrRunner> rs = new ArrayList<>();
     CloudSolrClient cloudClient = cluster.getSolrClient();
     DocCollection docCollection = cloudClient.getClusterState().getCollection(collectionName);

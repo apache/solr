@@ -63,9 +63,8 @@ public final class ReplicationTestHelper {
 
   public static HttpSolrClient createNewSolrClient(String baseUrl) {
     try {
-      // setup the client...
-      HttpSolrClient client = SolrTestCaseJ4.getHttpSolrClient(baseUrl, 15000, 90000);
-      return client;
+      // set up the client...
+      return SolrTestCaseJ4.getHttpSolrClient(baseUrl, 15000, 90000);
     } catch (Exception ex) {
       throw new RuntimeException(ex);
     }
@@ -101,9 +100,6 @@ public final class ReplicationTestHelper {
   }
 
   public static void assertVersions(SolrClient client1, SolrClient client2) throws Exception {
-    NamedList<Object> details = getDetails(client1);
-    @SuppressWarnings({"unchecked"})
-    ArrayList<NamedList<Object>> commits = (ArrayList<NamedList<Object>>) details.get("commits");
     Long maxVersionClient1 = getVersion(client1);
     Long maxVersionClient2 = getVersion(client2);
 
@@ -204,39 +200,10 @@ public final class ReplicationTestHelper {
     return details;
   }
 
-  public static NamedList<Object> getIndexVersion(SolrClient s) throws Exception {
-
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("command", "indexversion");
-    params.set("_trace", "getIndexVersion");
-    params.set("qt", ReplicationHandler.PATH);
-    QueryRequest req = new QueryRequest(params);
-
-    NamedList<Object> res = s.request(req);
-    assertReplicationResponseSucceeded(res);
-
-    return res;
-  }
-
   public static void assertReplicationResponseSucceeded(NamedList<?> response) {
     assertNotNull("null response from server", response);
     assertNotNull("Expected replication response to have 'status' field", response.get("status"));
     assertEquals("OK", response.get("status"));
-  }
-
-  public static NamedList<Object> reloadCore(SolrClient s, String core) throws Exception {
-
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("action", "reload");
-    params.set("core", core);
-    params.set("qt", "/admin/cores");
-    QueryRequest req = new QueryRequest(params);
-
-    try (HttpSolrClient adminClient = adminClient(s)) {
-      NamedList<Object> res = adminClient.request(req);
-      assertNotNull("null response from server", res);
-      return res;
-    }
   }
 
   public static HttpSolrClient adminClient(SolrClient client) {

@@ -38,8 +38,6 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
 
   private static final long sleepMsBeforeHealPartition = 2000L;
 
-  private final boolean onlyLeaderIndexes = random().nextBoolean();
-
   @BeforeClass
   public static void setupSysProps() {
     System.setProperty("socketTimeout", "5000");

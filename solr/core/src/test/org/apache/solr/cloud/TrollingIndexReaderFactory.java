@@ -56,7 +56,7 @@ public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
     public abstract boolean hasCaught();
 
     @Override
-    public final void close() throws IOException {
+    public final void close() {
       setTrap(null);
     }
 
@@ -124,7 +124,7 @@ public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
     return setTrap(
         new Trap() {
 
-          private boolean trigered;
+          private boolean triggered;
 
           @Override
           protected boolean shouldExit() {
@@ -133,7 +133,7 @@ public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
             StackTraceElement[] stackTrace = e.getStackTrace();
             for (StackTraceElement trace : stackTrace) {
               if (judge.test(trace)) {
-                trigered = true;
+                triggered = true;
                 recordStackTrace(stackTrace);
                 onCaught.run();
                 return true;
@@ -144,7 +144,7 @@ public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
 
           @Override
           public boolean hasCaught() {
-            return trigered;
+            return triggered;
           }
 
           @Override
@@ -165,7 +165,7 @@ public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
             return "" + count.get() + "th tick of " + boundary + " allowed";
           }
 
-          private boolean trigered;
+          private boolean triggered;
 
           @Override
           protected boolean shouldExit() {
@@ -177,14 +177,14 @@ public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
               Exception e = new Exception("stack sniffer");
               e.fillInStackTrace();
               recordStackTrace(e.getStackTrace());
-              trigered = true;
+              triggered = true;
             }
             return trigger;
           }
 
           @Override
           public boolean hasCaught() {
-            return trigered;
+            return triggered;
           }
         });
   }
@@ -199,7 +199,7 @@ public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
       stack.add(stackTrace[l]);
     }
     lastStacktraces.add(stack);
-    // triming queue
+    // trimming queue
     while (lastStacktraces.size() > maxTraces) {
       try {
         lastStacktraces.poll(100, TimeUnit.MILLISECONDS);

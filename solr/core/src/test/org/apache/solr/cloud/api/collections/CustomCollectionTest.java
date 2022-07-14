@@ -54,7 +54,6 @@ public class CustomCollectionTest extends SolrCloudTestCase {
 
     final String collection = "implicitcoll";
     int replicationFactor = TestUtil.nextInt(random(), 0, 3) + 2;
-    int numShards = 3;
 
     CollectionAdminRequest.createCollectionWithImplicitRouter(
             collection, "conf", "a,b,c", replicationFactor)
@@ -146,7 +145,6 @@ public class CustomCollectionTest extends SolrCloudTestCase {
   @Test
   public void testRouteFieldForImplicitRouter() throws Exception {
 
-    int numShards = 4;
     int replicationFactor = TestUtil.nextInt(random(), 0, 3) + 2;
     String shard_fld = "shard_s";
 

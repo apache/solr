@@ -52,7 +52,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
     createIndex();
   }
 
-  public static void createIndex() throws IOException {
+  public static void createIndex() {
     int i = 0;
     List<List<String[]>> blocks = createBlocks();
     for (List<String[]> block : blocks) {
@@ -640,7 +640,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
     assertU(commit());
 
     assertQ(
-        "here we rely on autowarming for cathing cache leak", // cache=false
+        "here we rely on autowarming for catching cache leak", // cache=false
         req(elFilterQuery),
         "//*[@numFound='2']");
 

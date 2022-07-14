@@ -127,7 +127,7 @@ public class TestRawTransformer extends SolrCloudTestCase {
   }
 
   @After
-  public void cleanup() throws Exception {
+  public void cleanup() {
     if (JSR != null) {
       assertU(delQ("*:*"));
       assertU(commit());

@@ -582,7 +582,7 @@ public class TestPackages extends SolrCloudTestCase {
             .withPayload(Collections.singletonMap("add", add))
             .build();
 
-    // the files is not yet there. The command should fail with error saying "No such file"
+    // the files are not yet there. The command should fail with error saying "No such file"
     expectError(req, cluster.getSolrClient(), errPath, "No such file:");
 
     // post the jar file. No signature is sent
@@ -593,7 +593,7 @@ public class TestPackages extends SolrCloudTestCase {
     // now we upload the keys
     byte[] derFile = readFile("cryptokeys/pub_key512.der");
     uploadKey(derFile, PackageStoreAPI.KEYS_DIR + "/pub_key512.der", cluster);
-    // and upload the same file with a different name but it has proper signature
+    // and upload the same file with a different name, but it has proper signature
     postFileAndWait(
         cluster,
         "runtimecode/runtimelibs.jar.bin",
@@ -721,7 +721,7 @@ public class TestPackages extends SolrCloudTestCase {
     static boolean informCalled = false;
 
     @Override
-    public void inform(ResourceLoader loader) throws IOException {
+    public void inform(ResourceLoader loader) {
       informCalled = true;
     }
 

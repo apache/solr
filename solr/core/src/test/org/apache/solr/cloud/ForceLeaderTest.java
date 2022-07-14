@@ -22,7 +22,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -43,7 +42,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Nightly // this test is currently too slow for non nightly
+@Nightly // this test is currently too slow for non-nightly
 public class ForceLeaderTest extends HttpPartitionTest {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -59,7 +58,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
   @Test
   @Override
   @Ignore
-  public void test() throws Exception {}
+  public void test() {}
 
   /**
    * Tests that FORCELEADER can get an active leader even only replicas with term lower than
@@ -95,8 +94,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
       if (log.isInfoEnabled()) {
         log.info("Before put non leaders into lower term: {}", printClusterStateInfo());
       }
-      putNonLeadersIntoLowerTerm(
-          testCollectionName, SHARD1, zkController, leader, notLeaders, cloudClient);
+      putNonLeadersIntoLowerTerm(testCollectionName, SHARD1, zkController, leader, notLeaders);
 
       for (Replica replica : notLeaders) {
         waitForState(testCollectionName, replica.getName(), State.DOWN, 60000);
@@ -201,8 +199,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
       String shard,
       ZkController zkController,
       Replica leader,
-      List<Replica> notLeaders,
-      SolrClient solrClient)
+      List<Replica> notLeaders)
       throws Exception {
     SocketProxy[] nonLeaderProxies = new SocketProxy[notLeaders.size()];
     for (int i = 0; i < notLeaders.size(); i++)

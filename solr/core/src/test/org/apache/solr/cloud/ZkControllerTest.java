@@ -54,15 +54,13 @@ import org.junit.Test;
 @SolrTestCaseJ4.SuppressSSL
 public class ZkControllerTest extends SolrTestCaseJ4 {
 
-  private static final String COLLECTION_NAME = "collection1";
-
   static final int TIMEOUT = 10000;
 
   @BeforeClass
-  public static void beforeClass() throws Exception {}
+  public static void beforeClass() {}
 
   @AfterClass
-  public static void afterClass() throws Exception {}
+  public static void afterClass() {}
 
   public void testNodeNameUrlConversion() throws Exception {
 
@@ -211,8 +209,8 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     /*
     This test asserts that if zkController.publishAndWaitForDownStates uses only core name to check if all local
     cores are down then the method will return immediately but if it uses coreNodeName (as it does after SOLR-6665 then
-    the method will timeout).
-    We setup the cluster state in such a way that two replicas with same core name exist on non-existent nodes
+    the method will time out).
+    We set up the cluster state in such a way that two replicas with same core name exist on non-existent nodes
     and core container also has a dummy core that has the same core name. The publishAndWaitForDownStates before SOLR-6665
     would only check the core names and therefore return immediately but after SOLR-6665 it should time out.
      */

@@ -103,6 +103,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   private static final String ADMIN_PATH = "/admin/cores";
   private static final String COLLECTION_NAME = "mycollection";
   private static final String CONFIG_NAME = "myconfig";
+  private static final int MAX_WAIT_MS = 10000;
 
   private static OverseerTaskQueue workQueueMock;
   private static OverseerTaskQueue stateUpdateQueueMock;
@@ -179,7 +180,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   }
 
   @BeforeClass
-  public static void setUpOnce() throws Exception {
+  public static void setUpOnce() {
     assumeWorkingMockito();
 
     workQueueMock = mock(OverseerTaskQueue.class);
@@ -737,10 +738,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   }
 
   protected void verifySubmitCaptures(
-      Integer numberOfSlices,
-      Integer numberOfReplica,
-      Collection<String> createNodes,
-      boolean dontShuffleCreateNodeSet) {
+      Integer numberOfSlices, Integer numberOfReplica, Collection<String> createNodes) {
     List<String> coreNames = new ArrayList<>();
     Map<String, Map<String, Integer>>
         sliceToNodeUrlsWithoutProtocolPartToNumberOfShardsRunningMapMap = new HashMap<>();
@@ -770,7 +768,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
       ShardRequest shardRequest = shardRequestCaptor.getAllValues().get(i);
       String nodeUrlsWithoutProtocolPartCapture =
           nodeUrlsWithoutProtocolPartCaptor.getAllValues().get(i);
-      ModifiableSolrParams params = paramsCaptor.getAllValues().get(i);
       assertEquals(
           CoreAdminAction.CREATE.toString(), shardRequest.params.get(CoreAdminParams.ACTION));
       // assertEquals(shardRequest.params, submitCapture.params);
@@ -894,10 +891,10 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     }
   }
 
-  protected void waitForEmptyQueue(long maxWait) throws Exception {
-    final TimeOut timeout = new TimeOut(maxWait, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
+  protected void waitForEmptyQueue() throws Exception {
+    final TimeOut timeout = new TimeOut(MAX_WAIT_MS, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
     while (queue.peek() != null) {
-      if (timeout.hasTimedOut()) fail("Queue not empty within " + maxWait + " ms");
+      if (timeout.hasTimedOut()) fail("Queue not empty within " + MAX_WAIT_MS + " ms");
       Thread.sleep(100);
     }
   }
@@ -922,9 +919,9 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
             + numberOfNodesToCreateOn
             + " is not allowed to be higher than numberOfNodes "
             + numberOfNodes,
-        numberOfNodes.intValue() >= numberOfNodesToCreateOn.intValue());
+        numberOfNodes >= numberOfNodesToCreateOn);
     assertTrue(
-        "Wrong usage of testTemplage. createNodeListOption has to be "
+        "Wrong usage of testTemplate. createNodeListOption has to be "
             + CreateNodeListOptions.SEND
             + " when numberOfNodes and numberOfNodesToCreateOn are unequal",
         ((createNodeListOption == CreateNodeListOptions.SEND)
@@ -971,15 +968,14 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
         createNodeListToSend,
         sendCreateNodeList,
         !dontShuffleCreateNodeSet);
-    waitForEmptyQueue(10000);
+    waitForEmptyQueue();
 
     if (collectionExceptedToBeCreated) {
       assertNotNull(lastProcessMessageResult.getResponse().toString(), lastProcessMessageResult);
     }
 
     if (collectionExceptedToBeCreated) {
-      verifySubmitCaptures(
-          numberOfSlices, replicationFactor, createNodeList, dontShuffleCreateNodeSet);
+      verifySubmitCaptures(numberOfSlices, replicationFactor, createNodeList);
     }
   }
 

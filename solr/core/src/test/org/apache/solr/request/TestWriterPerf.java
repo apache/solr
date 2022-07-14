@@ -152,7 +152,7 @@ public class TestWriterPerf extends SolrTestCaseJ4 {
         t1,
         "Great works are performed, not by strength, but by perseverance.",
         tag,
-        "herculese",
+        "hercules",
         tag,
         "strong",
         tag,
@@ -270,8 +270,8 @@ public class TestWriterPerf extends SolrTestCaseJ4 {
     doPerf("json", req, 2, 2);
     doPerf("javabin", req, 2, 2);
 
-    int encIter = 20000;
-    int decIter = 50000;
+    // int encIter = 20000;
+    // int decIter = 50000;
 
     // warm up hotspot
     // doPerf("xml", req, 200,1000);
