@@ -35,6 +35,22 @@ Downloads for the Apache Solr distribution are available from https://solr.apach
 
 ## Running Solr
 
+### Installing Solr
+
+The Reference Guide contains an entire  [Deployment Guide](https://solr.apache.org/guide/solr/latest/deployment-guide/system-requirements.html) to walk you through installing Solr.
+
+### Running Solr in Docker
+
+You can run Solr in Docker via the [official image](https://hub.docker.com/_/solr).
+Learn more about [Solr in Docker](https://solr.apache.org/guide/solr/latest/deployment-guide/solr-in-docker.html)
+
+### Running Solr on Kubernetes
+
+Solr has official support for running on Kubernetes, in the official Docker image.
+Please refer to the [Solr Operator](https://solr.apache.org/operator) home for details, tutorials and instructions.
+
+### How to Use
+
 Solr includes a few examples to help you get started. To run a specific example, enter:
 
 ```
@@ -51,24 +67,12 @@ For instance, if you want to run the techproducts example, enter:
   bin/solr -e techproducts
 ```
 
-### Installing Solr
+There are a number of tutorials to follow.  Start out with [5 Minutes to Indexing and Querying Solr](MOVE TUTORIAL TO REF GUIDE),
+and then move to the ecommerce inspired [Tech Products](https://solr.apache.org/guide/solr/latest/getting-started/tutorial-techproducts.html) tutorial.   Go deep into faceting your data with some [Film data](https://solr.apache.org/guide/solr/latest/getting-started/tutorial-films.html), as well as learn about dynamic schemas.   The third tutorial is built around (Indexing Your Own Data)[https://solr.apache.org/guide/solr/latest/getting-started/tutorial-diy.html] so you develop some hands on experience with Solr.
 
-The Reference Guide contains an entire  [Deployment Guide](https://solr.apache.org/guide/solr/latest/deployment-guide/system-requirements.html) to walk you through installing Solr.
+You can wrap your learning path by running through [Scaling with SolrCloud](https://solr.apache.org/guide/solr/latest/getting-started/tutorial-solrcloud.html),
+and some practice deploying [Solr on Amazon AWS](https://solr.apache.org/guide/solr/latest/getting-started/tutorial-aws.html).
 
-### Running Solr in Docker
-
-You can run Solr in Docker via the [official image](https://hub.docker.com/_/solr).
-Learn more about [Solr in Docker](https://solr.apache.org/guide/solr/latest/deployment-guide/solr-in-docker.html)
-
-### Running Solr on Kubernetes
-
-Solr has official support for running on Kubernetes, in the official Docker image.
-Please refer to the [Solr Operator](https://solr.apache.org/operator) home for details, tutorials and instructions.
-
-## How to Use
-- mention the examples
-- links to tutorials in Ref Guide
-- links to the 5 min to Indexing and Querying Documents (tutorial) artifact in ref Guide
 
 ## Support
 
@@ -88,4 +92,4 @@ To get involved in the developer community:
 - [Issue Tracker (JIRA)](https://issues.apache.org/jira/browse/SOLR)
 - IRC: `#solr-dev` on (libera.chat)[https://web.libera.chat/?channels=#solr-dev]
 
-Learn more about developing Solr by reading through the developer docs in `./dev-docs` source tree.
+Learn more about developing Solr by reading through the developer docs in [./dev-docs](./dev-docs) source tree.
