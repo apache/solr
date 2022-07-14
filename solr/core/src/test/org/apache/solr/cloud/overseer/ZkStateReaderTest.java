@@ -336,19 +336,25 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     assertEquals(2, currentCollections.size());
   }
 
+  /**
+   * Simulates race condition that might arise when state updates triggered by watch notification
+   * contend with removal of collection watches.
+   *
+   * <p>Such race condition should no longer exist with the new code that uses a single map for both
+   * "collection watches" and "latest state of watched collection"
+   */
   public void testWatchRaceCondition() throws Exception {
     ExecutorService executorService =
         ExecutorUtil.newMDCAwareSingleThreadExecutor(
             new SolrNamedThreadFactory("zkStateReaderTest"));
     CommonTestInjection.setDelay(1000);
+    final AtomicBoolean stopMutatingThread = new AtomicBoolean(false);
     try {
       ZkStateWriter writer = fixture.writer;
       final ZkStateReader reader = fixture.reader;
       fixture.zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
 
       // start another thread to constantly updating the state
-      final AtomicBoolean stopMutatingThread = new AtomicBoolean(false);
-
       final AtomicReference<Exception> updateException = new AtomicReference<>();
       executorService.submit(
           () -> {
@@ -370,6 +376,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
                 ZkWriteCommand wc = new ZkWriteCommand("c1", state);
                 writer.enqueueUpdate(clusterState, Collections.singletonList(wc), null);
                 clusterState = writer.writePendingUpdates();
+                TimeUnit.MILLISECONDS.sleep(100);
               }
             } catch (Exception e) {
               updateException.set(e);
@@ -378,6 +385,11 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
           });
       executorService.shutdown();
 
+      reader.waitForState(
+          "c1",
+          10,
+          TimeUnit.SECONDS,
+          slices -> slices != null); // wait for the state to become available
 
       final CountDownLatch latch = new CountDownLatch(2);
 
@@ -389,8 +401,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
           };
       reader.registerDocCollectionWatcher("c1", dummyWatcher);
       assertTrue(
-          "Missing expected collection updates after the wait",
-          latch.await(10, TimeUnit.SECONDS));
+          "Missing expected collection updates after the wait", latch.await(10, TimeUnit.SECONDS));
       reader.removeDocCollectionWatcher("c1", dummyWatcher);
 
       // cluster state might not be updated right the way from the removeDocCollectionWatcher call
@@ -401,12 +412,11 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
           "The ref is not lazily loaded after waiting",
           () -> reader.getClusterState().getCollectionRef("c1").isLazilyLoaded());
 
-
-      stopMutatingThread.set(true);
       if (updateException.get() != null) {
         throw (updateException.get());
       }
     } finally {
+      stopMutatingThread.set(true);
       CommonTestInjection.reset();
       ExecutorUtil.awaitTermination(executorService);
     }

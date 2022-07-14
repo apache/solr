@@ -263,8 +263,7 @@ public class ZkStateReader implements SolrCloseable {
      *     collection.
      */
     private DocCollection getDocCollection(String collection) {
-      StatefulCollectionWatch watch =
-          statefulWatchesByCollectionName.get(collection);
+      StatefulCollectionWatch watch = statefulWatchesByCollectionName.get(collection);
       return watch != null ? watch.currentState : null;
     }
 
@@ -299,8 +298,7 @@ public class ZkStateReader implements SolrCloseable {
       return Collections.unmodifiableSet(statefulWatchesByCollectionName.keySet());
     }
 
-    private Set<Entry<String, StatefulCollectionWatch>>
-        watchedCollectionEntries() {
+    private Set<Entry<String, StatefulCollectionWatch>> watchedCollectionEntries() {
       return Collections.unmodifiableSet(statefulWatchesByCollectionName.entrySet());
     }
 
@@ -365,11 +363,7 @@ public class ZkStateReader implements SolrCloseable {
      */
     private StatefulCollectionWatch compute(
         String collectionName,
-        BiFunction<
-                String,
-                StatefulCollectionWatch,
-                StatefulCollectionWatch>
-            remappingFunction) {
+        BiFunction<String, StatefulCollectionWatch, StatefulCollectionWatch> remappingFunction) {
       return statefulWatchesByCollectionName.compute(collectionName, remappingFunction);
     }
   }
@@ -2057,7 +2051,7 @@ public class ZkStateReader implements SolrCloseable {
           if (v.canBeRemoved()) {
             lazyCollectionStates.put(collection, new LazyCollectionRef(collection));
             reconstructState.set(true);
-            CommonTestInjection.injectDelay();  //To unit test race condition
+            CommonTestInjection.injectDelay(); // To unit test race condition
             return null;
           }
           return v;
