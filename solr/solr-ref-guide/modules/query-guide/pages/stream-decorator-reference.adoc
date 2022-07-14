@@ -1057,8 +1057,11 @@ update( destinationCollection,
 ----
 
 Expression above sends the tuples returned by the `search` function to the `destinationCollection` to be atomically
-updated, assumes the id in `collection1` and `destinationCollection` represent the same thing. Here we atomically
-update `a_i` by setting it to values from the `collection1` collection for collection1.id == destinationCollection.id
+updated, the rest of the document will remain as it was, existing requirements for atomic updates still apply.
+Assumes the id in `collection1` and `destinationCollection` represent the same thing.
+
+Here we atomically update `a_i` by setting it to values from the `collection1` collection for
+`collection1.id == destinationCollection.id`
 
 Without the map decorator, the update would simply overwrite any existing document.
 
