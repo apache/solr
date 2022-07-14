@@ -17,10 +17,10 @@
 
 package org.apache.solr.handler.admin;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 import org.apache.solr.common.SolrException;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class SolrEnvironmentTest {
@@ -32,29 +32,30 @@ public class SolrEnvironmentTest {
 
   @Test
   public void parsePredefined() {
-    assertEquals("prod", SolrEnvironment.parse("prod").getCode());
+    Assert.assertEquals("prod", SolrEnvironment.parse("prod").getCode());
     assertNull(SolrEnvironment.parse("prod").getColor());
     assertNull(SolrEnvironment.parse("prod").getLabel());
 
-    assertEquals("stage", SolrEnvironment.parse("stage").getCode());
+    Assert.assertEquals("stage", SolrEnvironment.parse("stage").getCode());
     assertNull(SolrEnvironment.parse("stage").getColor());
     assertNull(SolrEnvironment.parse("stage").getLabel());
 
-    assertEquals("test", SolrEnvironment.parse("test").getCode());
+    Assert.assertEquals("test", SolrEnvironment.parse("test").getCode());
     assertNull(SolrEnvironment.parse("test").getColor());
     assertNull(SolrEnvironment.parse("test").getLabel());
 
-    assertEquals("dev", SolrEnvironment.parse("dev").getCode());
+    Assert.assertEquals("dev", SolrEnvironment.parse("dev").getCode());
     assertNull(SolrEnvironment.parse("dev").getColor());
     assertNull(SolrEnvironment.parse("dev").getLabel());
   }
 
   @Test
   public void parseCustom() {
-    assertEquals("my Label", SolrEnvironment.parse("prod,label=my+Label,color=blue").getLabel());
-    assertEquals("blue", SolrEnvironment.parse("prod,label=my+Label,color=blue").getColor());
-    assertEquals("my Label", SolrEnvironment.parse("prod,label=my+Label").getLabel());
-    assertEquals("blue", SolrEnvironment.parse("prod,color=blue").getColor());
+    Assert.assertEquals(
+        "my Label", SolrEnvironment.parse("prod,label=my+Label,color=blue").getLabel());
+    Assert.assertEquals("blue", SolrEnvironment.parse("prod,label=my+Label,color=blue").getColor());
+    Assert.assertEquals("my Label", SolrEnvironment.parse("prod,label=my+Label").getLabel());
+    Assert.assertEquals("blue", SolrEnvironment.parse("prod,color=blue").getColor());
   }
 
   @Test(expected = SolrException.class)
