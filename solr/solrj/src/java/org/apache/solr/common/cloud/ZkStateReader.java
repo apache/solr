@@ -308,48 +308,50 @@ public class ZkStateReader implements SolrCloseable {
      *
      * @param collection the collection name
      * @param newState the new DocCollection (state) observed
-     * @return whether an active watch exists for such collection
+     * @return whether the state has changed for the watched collection
      */
     private boolean updateDocCollection(String collection, DocCollection newState) {
-      StatefulCollectionWatch finalWatch =
-          statefulWatchesByCollectionName.computeIfPresent(
-              collection,
-              (col, watch) -> {
-                DocCollection oldState = watch.currentState;
-                if (oldState == null && newState == null) {
-                  // OK, the collection not yet exist in ZK or already deleted
-                } else if (oldState == null) {
-                  if (log.isDebugEnabled()) {
-                    log.debug("Add data for [{}] ver [{}]", collection, newState.getZNodeVersion());
-                  }
-                  watch.currentState = newState;
-                } else if (newState == null) {
-                  log.debug("Removing cached collection state for [{}]", collection);
-                  watch.currentState = null;
-                } else { // both new and old states are non-null
-                  int oldCVersion =
-                      oldState.getPerReplicaStates() == null
-                          ? -1
-                          : oldState.getPerReplicaStates().cversion;
-                  int newCVersion =
-                      newState.getPerReplicaStates() == null
-                          ? -1
-                          : newState.getPerReplicaStates().cversion;
-                  if (oldState.getZNodeVersion() < newState.getZNodeVersion()
-                      || oldCVersion < newCVersion) {
-                    watch.currentState = newState;
-                    if (log.isDebugEnabled()) {
-                      log.debug(
-                          "Updating data for [{}] from [{}] to [{}]",
-                          collection,
-                          oldState.getZNodeVersion(),
-                          newState.getZNodeVersion());
-                    }
-                  }
+      AtomicBoolean stateHasChanged = new AtomicBoolean(false);
+      statefulWatchesByCollectionName.computeIfPresent(
+          collection,
+          (col, watch) -> {
+            DocCollection oldState = watch.currentState;
+            if (oldState == null && newState == null) {
+              // OK, the collection not yet exist in ZK or already deleted
+            } else if (oldState == null) {
+              if (log.isDebugEnabled()) {
+                log.debug("Add data for [{}] ver [{}]", collection, newState.getZNodeVersion());
+              }
+              watch.currentState = newState;
+            } else if (newState == null) {
+              log.debug("Removing cached collection state for [{}]", collection);
+              watch.currentState = null;
+            } else { // both new and old states are non-null
+              int oldCVersion =
+                  oldState.getPerReplicaStates() == null
+                      ? -1
+                      : oldState.getPerReplicaStates().cversion;
+              int newCVersion =
+                  newState.getPerReplicaStates() == null
+                      ? -1
+                      : newState.getPerReplicaStates().cversion;
+              if (oldState.getZNodeVersion() < newState.getZNodeVersion()
+                  || oldCVersion < newCVersion) {
+                watch.currentState = newState;
+                if (log.isDebugEnabled()) {
+                  log.debug(
+                      "Updating data for [{}] from [{}] to [{}]",
+                      collection,
+                      oldState.getZNodeVersion(),
+                      newState.getZNodeVersion());
                 }
-                return watch;
-              });
-      return finalWatch != null;
+              }
+            }
+            stateHasChanged.set(oldState != watch.currentState);
+            return watch;
+          });
+
+      return stateHasChanged.get();
     }
 
     /**
