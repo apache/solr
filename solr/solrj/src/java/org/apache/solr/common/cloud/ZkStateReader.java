@@ -55,6 +55,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.util.CommonTestInjection;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Pair;
@@ -2056,6 +2057,7 @@ public class ZkStateReader implements SolrCloseable {
           if (v.canBeRemoved()) {
             lazyCollectionStates.put(collection, new LazyCollectionRef(collection));
             reconstructState.set(true);
+            CommonTestInjection.injectDelay();  //To unit test race condition
             return null;
           }
           return v;

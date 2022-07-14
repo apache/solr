@@ -42,6 +42,7 @@ import org.apache.solr.common.cloud.DocCollectionWatcher;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.CommonTestInjection;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
@@ -336,11 +337,10 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
   }
 
   public void testWatchRaceCondition() throws Exception {
-    final int RUN_COUNT = 10000;
     ExecutorService executorService =
         ExecutorUtil.newMDCAwareSingleThreadExecutor(
             new SolrNamedThreadFactory("zkStateReaderTest"));
-
+    CommonTestInjection.setDelay(1000);
     try {
       ZkStateWriter writer = fixture.writer;
       final ZkStateReader reader = fixture.reader;
@@ -378,35 +378,36 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
           });
       executorService.shutdown();
 
-      for (int i = 0; i < RUN_COUNT; i++) {
-        final CountDownLatch latch = new CountDownLatch(2);
 
-        // remove itself on 2nd trigger
-        DocCollectionWatcher dummyWatcher =
-            collection -> {
-              latch.countDown();
-              return latch.getCount() == 0;
-            };
-        reader.registerDocCollectionWatcher("c1", dummyWatcher);
-        assertTrue(
-            "Missing expected collection updates after the wait",
-            latch.await(10, TimeUnit.SECONDS));
-        reader.removeDocCollectionWatcher("c1", dummyWatcher);
+      final CountDownLatch latch = new CountDownLatch(2);
 
-        // cluster state might not be updated right the way from the removeDocCollectionWatcher call
-        // above as org.apache.solr.common.cloud.ZkStateReader.Notification might remove the watcher
-        // as well and might still be in the middle of updating the cluster state.
-        TimeOut timeOut = new TimeOut(1000, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
-        timeOut.waitFor(
-            "The ref is not lazily loaded after waiting",
-            () -> reader.getClusterState().getCollectionRef("c1").isLazilyLoaded());
-      }
+      // remove itself on 2nd trigger
+      DocCollectionWatcher dummyWatcher =
+          collection -> {
+            latch.countDown();
+            return latch.getCount() == 0;
+          };
+      reader.registerDocCollectionWatcher("c1", dummyWatcher);
+      assertTrue(
+          "Missing expected collection updates after the wait",
+          latch.await(10, TimeUnit.SECONDS));
+      reader.removeDocCollectionWatcher("c1", dummyWatcher);
+
+      // cluster state might not be updated right the way from the removeDocCollectionWatcher call
+      // above as org.apache.solr.common.cloud.ZkStateReader.Notification might remove the watcher
+      // as well and might still be in the middle of updating the cluster state.
+      TimeOut timeOut = new TimeOut(2000, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
+      timeOut.waitFor(
+          "The ref is not lazily loaded after waiting",
+          () -> reader.getClusterState().getCollectionRef("c1").isLazilyLoaded());
+
 
       stopMutatingThread.set(true);
       if (updateException.get() != null) {
         throw (updateException.get());
       }
     } finally {
+      CommonTestInjection.reset();
       ExecutorUtil.awaitTermination(executorService);
     }
   }
