@@ -17,52 +17,49 @@
 
 package org.apache.solr.client.solrj.io.stream;
 
+import java.io.IOException;
+import java.util.*;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.*;
-
-import java.io.IOException;
-import java.util.*;
 
 public class MapStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
 
-  private TupleStream stream;
-  private StreamContext streamContext;
+  private final TupleStream stream;
 
+  private final Map<String, String> mappings;
 
-  private Map<String, String> mappings;
-
-  public MapStream(TupleStream stream, Map<String, String> mappings){
+  public MapStream(TupleStream stream, Map<String, String> mappings) {
     this.stream = stream;
     this.mappings = mappings;
   }
 
   public MapStream(StreamExpression expression, StreamFactory factory) throws IOException {
     List<StreamExpression> streamExpressions =
-            factory.getExpressionOperandsRepresentingTypes(
-                    expression, Expressible.class, TupleStream.class);
+        factory.getExpressionOperandsRepresentingTypes(
+            expression, Expressible.class, TupleStream.class);
     if (1 != streamExpressions.size()) {
       throw new IOException(
-              String.format(
-                      Locale.ROOT,
-                      "Invalid expression %s - expecting single stream but found %d (must be TupleStream types)",
-                      expression,
-                      streamExpressions.size()));
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting single stream but found %d (must be TupleStream types)",
+              expression,
+              streamExpressions.size()));
     }
 
     stream = factory.constructStream(streamExpressions.get(0));
 
     List<StreamExpressionParameter> mapFieldExpressions =
-            factory.getOperandsOfType(expression, StreamExpressionValue.class);
+        factory.getOperandsOfType(expression, StreamExpressionValue.class);
     if (0 == mapFieldExpressions.size()) {
       throw new IOException(
-              String.format(
-                      Locale.ROOT,
-                      "Invalid expression %s - expecting at least one select field but found %d",
-                      expression,
-                      streamExpressions.size()));
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting at least one select field but found %d",
+              expression,
+              streamExpressions.size()));
     }
 
     mappings = new HashMap<>();
@@ -79,7 +76,6 @@ public class MapStream extends TupleStream implements Expressible {
 
   @Override
   public void setStreamContext(StreamContext context) {
-    this.streamContext = context;
     this.stream.setStreamContext(context);
   }
 
@@ -103,11 +99,14 @@ public class MapStream extends TupleStream implements Expressible {
   @Override
   public Tuple read() throws IOException {
     Tuple original = stream.read();
-    if (original.EOF)
-      return original;
+    if (original.EOF) return original;
     final Tuple workingToReturn = new Tuple();
-    original.getFields().forEach((k,v) ->
-            workingToReturn.put(k,mappings.containsKey(k) ? new Tuple(mappings.get(k),v) : v));
+    original
+        .getFields()
+        .forEach(
+            (k, v) ->
+                workingToReturn.put(
+                    k, mappings.containsKey(k) ? new Tuple(mappings.get(k), v) : v));
     return workingToReturn;
   }
 
@@ -143,10 +142,10 @@ public class MapStream extends TupleStream implements Expressible {
   @Override
   public Explanation toExplanation(StreamFactory factory) throws IOException {
     return new StreamExplanation(getStreamNodeId().toString())
-            .withChildren(new Explanation[] {stream.toExplanation(factory)})
-            .withFunctionName(factory.getFunctionName(this.getClass()))
-            .withImplementingClass(this.getClass().getName())
-            .withExpressionType(Explanation.ExpressionType.STREAM_DECORATOR)
-            .withExpression(toExpression(factory, false).toString());
+        .withChildren(new Explanation[] {stream.toExplanation(factory)})
+        .withFunctionName(factory.getFunctionName(this.getClass()))
+        .withImplementingClass(this.getClass().getName())
+        .withExpressionType(Explanation.ExpressionType.STREAM_DECORATOR)
+        .withExpression(toExpression(factory, false).toString());
   }
 }
