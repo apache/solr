@@ -90,8 +90,6 @@ public class MapStreamTest extends SolrCloudTestCase {
             .withFunctionName("tuple", TupStream.class)
             .withFunctionName("map", MapStream.class);
 
-    String fn = factory.getFunctionName(MapStream.class);
-
     String clause = "map(tuple(a=\"123\",c=\"345\"),\"a=b\")";
     stream = factory.constructStream(clause);
     stream.setStreamContext(streamContext);
