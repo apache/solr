@@ -31,6 +31,7 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.ltr.feature.FieldValueFeature;
 import org.apache.solr.ltr.feature.OriginalScoreFeature;
 import org.apache.solr.ltr.feature.SolrFeature;
@@ -322,6 +323,43 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     assertEquals(result7_features, queryResponse.getResults().get(7).get("features").toString());
   }
 
+  @Test
+  public void testInterleaving() throws Exception {
+    SolrQuery query = new SolrQuery("{!func}sub(8,field(popularity))");
+    query.setRequestHandler("/query");
+    query.setFields("*,score,[interleaving]");
+    query.add(
+        "rq",
+        "{!ltr model=powpularityS-model model=powpularityS-model-for-interleaving reRankDocs=8}");
+
+    solrCluster
+        .getSolrClient()
+        .query(
+            COLLECTION,
+            query); // NullPointerException at LTRInterleavingTransformerFactory.java:103
+  }
+
+  @Test
+  public void testInterleavingWithDistribSinglePass() throws Exception {
+    SolrQuery query = new SolrQuery("{!func}sub(8,field(popularity))");
+    query.setRequestHandler("/query");
+    query.setFields("*,score,[interleaving]");
+    query.add(
+        "rq",
+        "{!ltr model=powpularityS-model model=powpularityS-model-for-interleaving reRankDocs=8}");
+    query.setParam(ShardParams.DISTRIB_SINGLE_PASS, true);
+
+    QueryResponse queryResponse =
+        solrCluster.getSolrClient().query(COLLECTION, query); // works well
+    assertTrue(
+        queryResponse
+            .getResults()
+            .get(0)
+            .getFieldValue("[interleaving]")
+            .toString()
+            .startsWith("powpularityS-model"));
+  }
+
   private void setupSolrCluster(int numShards, int numReplicas, int numServers) throws Exception {
     JettyConfig jc = buildJettyConfig("/solr");
     jc = JettyConfig.builder(jc).build();
@@ -455,6 +493,12 @@ public class TestLTROnSolrCloud extends TestRerankBase {
 
     loadModel(
         "powpularityS-model",
+        LinearModel.class.getName(),
+        featureNames,
+        featureStore,
+        jsonModelParams);
+    loadModel(
+        "powpularityS-model-for-interleaving",
         LinearModel.class.getName(),
         featureNames,
         featureStore,
