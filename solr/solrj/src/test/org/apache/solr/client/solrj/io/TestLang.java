@@ -117,6 +117,7 @@ public class TestLang extends SolrTestCase {
     "copyOfRange",
     "copyOf",
     "cov",
+    "map",
     "corr",
     "describe",
     "distance",
