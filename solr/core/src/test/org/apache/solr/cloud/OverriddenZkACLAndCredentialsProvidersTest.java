@@ -24,6 +24,7 @@ import static org.apache.solr.common.cloud.ZkCredentialsInjector.ZkCredential.Pe
 
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
