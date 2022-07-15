@@ -17,6 +17,9 @@
 
 import org.apache.tools.ant.util.TeeOutputStream
 
+// Validate Java examples in ref-guide
+apply from: file("${projectDir}/java-examples.gradle")
+
 description = 'Solr Reference Guide'
 
 def officialSiteIncludePrerelease = propertyOrEnvOrDefault("refguide.official.includePrereleaseVersions", "SOLR_REF_GUIDE_OFFICIAL_INCLUDE_PRERELEASE", "false").toBoolean()

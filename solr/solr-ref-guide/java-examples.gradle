@@ -1,0 +1,34 @@
+// Compiling, Testing and Validation for the java examples in the Solr Ref Guide
+
+apply plugin: 'java'
+
+sourceSets {
+  test {
+    java {
+      srcDirs = ['modules/configuration-guide/examples', 'modules/deployment-guide/examples', 'modules/getting-started/examples', 'modules/indexing-guide/examples', 'modules/query-guide/examples']
+    }
+  }
+}
+
+dependencies {
+  // For the SolrJ examples
+  testImplementation project(":solr:core")
+  testImplementation project(":solr:solrj")
+  testImplementation project(":solr:test-framework")
+  testImplementation 'junit:junit'
+}
+
+// Copy all the test resource files from core to the build/resources/test directory
+// of the HDFS module so we can avoid duplication of the test resource files like
+// schemas and SolrConfigs. This can be improved later by making the test classes
+// load the resources from core directories directly.
+task copySolrjTestResources(type: Copy) {
+  from(project(':solr:solrj').sourceSets.test.resources.srcDirs) {
+    exclude '**/*.java'
+  }
+  into sourceSets.test.output.resourcesDir
+}
+
+tasks.processTestResources.configure {
+  dependsOn copySolrjTestResources
+}
