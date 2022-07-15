@@ -50,15 +50,6 @@ dependencies {
   implementation 'org.apache.httpcomponents:httpclient'
   implementation 'org.apache.httpcomponents:httpcore'
 
-  implementation('org.apache.zookeeper:zookeeper', {
-    exclude group: "org.apache.yetus", module: "audience-annotations"
-    exclude group: "log4j", module: "log4j"
-    exclude group: "org.slf4j", module: "slf4j-log4j12"
-  })
-  implementation ('org.apache.zookeeper:zookeeper-jute') {
-    exclude group: 'org.apache.yetus', module: 'audience-annotations'
-  }
-
   testImplementation project(':solr:test-framework')
   testImplementation project(':solr:core')
   testImplementation project(':solr:solrj')
