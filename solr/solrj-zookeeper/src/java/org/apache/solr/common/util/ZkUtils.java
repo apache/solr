@@ -1,11 +1,19 @@
 package org.apache.solr.common.util;
 
+import org.apache.solr.client.solrj.cloud.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.VersionedData;
+import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkOperation;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.server.ByteBufferInputStream;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 public class ZkUtils {
     /**
@@ -31,5 +39,46 @@ public class ZkUtils {
         return Collections.emptyMap();
       }
       return Collections.emptyMap();
+    }
+
+    @SuppressWarnings({"unchecked"})
+    public static Map<String, Object> getJson(DistribStateManager distribStateManager, String path)
+        throws InterruptedException, IOException, KeeperException {
+      VersionedData data;
+      try {
+        data = distribStateManager.getData(path);
+      } catch (KeeperException.NoNodeException | NoSuchElementException e) {
+        return Collections.emptyMap();
+      }
+      if (data == null || data.getData() == null || data.getData().length == 0)
+        return Collections.emptyMap();
+      return (Map<String, Object>) Utils.fromJSON(data.getData());
+    }
+
+    public static InputStream toJavabin(Object o) throws IOException {
+        try (final JavaBinCodec jbc = new JavaBinCodec()) {
+            BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
+            jbc.marshal(o, baos);
+            return new ByteBufferInputStream(ByteBuffer.wrap(baos.getbuf(), 0, baos.size()));
+        }
+    }
+
+    public static String parseMetricsReplicaName(String collectionName, String coreName) {
+      if (collectionName == null || !coreName.startsWith(collectionName)) {
+        return null;
+      } else {
+        // split "collection1_shard1_1_replica1" into parts
+        if (coreName.length() > collectionName.length()) {
+          String str = coreName.substring(collectionName.length() + 1);
+          int pos = str.lastIndexOf("_replica");
+          if (pos == -1) { // ?? no _replicaN part ??
+            return str;
+          } else {
+            return str.substring(pos + 1);
+          }
+        } else {
+          return null;
+        }
+      }
     }
 }

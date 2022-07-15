@@ -50,8 +50,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.util.ZkUtils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -163,7 +162,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
                       + "."
                       + r.getShard()
                       + "."
-                      + Utils.parseMetricsReplicaName(r.getCollection(), r.getCoreName())
+                      + ZkUtils.parseMetricsReplicaName(r.getCollection(), r.getCoreName())
                       + ":";
               String perReplicaValue = key;
               perReplicaMetricsKey += perReplicaValue;

@@ -43,6 +43,9 @@ import org.slf4j.LoggerFactory;
 public class Slice extends ZkNodeProps implements Iterable<Replica> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  // nocommit : to move this from ZkStateReader
+  private static final String STATE_PROP = "state";
+
   public final String collection;
 
   /**
@@ -158,11 +161,11 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
     this.collection = collection;
 
     Object rangeObj = propMap.get(RANGE);
-    if (propMap.get(ZkStateReader.STATE_PROP) != null) {
-      this.state = State.getState((String) propMap.get(ZkStateReader.STATE_PROP));
+    if (propMap.get(STATE_PROP) != null) {
+      this.state = State.getState((String) propMap.get(STATE_PROP));
     } else {
       this.state = State.ACTIVE; // Default to ACTIVE
-      propMap.put(ZkStateReader.STATE_PROP, state.toString());
+      propMap.put(STATE_PROP, state.toString());
     }
     DocRouter.Range tmpRange = null;
     if (rangeObj instanceof DocRouter.Range) {

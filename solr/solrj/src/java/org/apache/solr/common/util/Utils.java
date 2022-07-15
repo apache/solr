@@ -48,7 +48,6 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
@@ -66,8 +65,6 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.util.EntityUtils;
-import org.apache.solr.client.solrj.cloud.DistribStateManager;
-import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.LinkedHashMapWriter;
@@ -174,14 +171,6 @@ public class Utils {
       v = getDeepCopy((Collection<?>) v, maxDepth - 1, mutable, sorted);
     }
     return v;
-  }
-
-  public static InputStream toJavabin(Object o) throws IOException {
-    try (final JavaBinCodec jbc = new JavaBinCodec()) {
-      BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
-      jbc.marshal(o, baos);
-      return new ByteBufferInputStream(ByteBuffer.wrap(baos.getbuf(), 0, baos.size()));
-    }
   }
 
   public static Object fromJavabin(byte[] bytes) throws IOException {
@@ -677,20 +666,6 @@ public class Utils {
     while (is.read() != -1) {}
   }
 
-  @SuppressWarnings({"unchecked"})
-  public static Map<String, Object> getJson(DistribStateManager distribStateManager, String path)
-      throws InterruptedException, IOException, KeeperException {
-    VersionedData data;
-    try {
-      data = distribStateManager.getData(path);
-    } catch (KeeperException.NoNodeException | NoSuchElementException e) {
-      return Collections.emptyMap();
-    }
-    if (data == null || data.getData() == null || data.getData().length == 0)
-      return Collections.emptyMap();
-    return (Map<String, Object>) Utils.fromJSON(data.getData());
-  }
-
   public static final Pattern ARRAY_ELEMENT_INDEX = Pattern.compile("(\\S*?)\\[([-]?\\d+)\\]");
 
   public static SpecProvider getSpec(final String name) {
@@ -698,25 +673,6 @@ public class Utils {
       return ValidatingJsonMap.parse(
           CommonParams.APISPEC_LOCATION + name + ".json", CommonParams.APISPEC_LOCATION);
     };
-  }
-
-  public static String parseMetricsReplicaName(String collectionName, String coreName) {
-    if (collectionName == null || !coreName.startsWith(collectionName)) {
-      return null;
-    } else {
-      // split "collection1_shard1_1_replica1" into parts
-      if (coreName.length() > collectionName.length()) {
-        String str = coreName.substring(collectionName.length() + 1);
-        int pos = str.lastIndexOf("_replica");
-        if (pos == -1) { // ?? no _replicaN part ??
-          return str;
-        } else {
-          return str.substring(pos + 1);
-        }
-      } else {
-        return null;
-      }
-    }
   }
 
   /**

@@ -16,12 +16,6 @@
  */
 package org.apache.solr.common.cloud;
 
-import static org.apache.solr.common.cloud.ZkStateReader.CONFIGNAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.READ_ONLY;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
-import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.util.Utils.toJSONString;
 
 import java.lang.invoke.MethodHandles;
@@ -46,6 +40,14 @@ import org.slf4j.LoggerFactory;
  */
 public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  // nocommit : to move these from ZkStateReader
+  private static final String NRT_REPLICAS = "nrtReplicas";
+  private static final String PULL_REPLICAS = "pullReplicas";
+  private static final String READ_ONLY = "readOnly";
+  private static final String REPLICATION_FACTOR = "replicationFactor";
+  private static final String TLOG_REPLICAS = "tlogReplicas";
+  private final static String CONFIGNAME_PROP = "configName";
 
   public static final String DOC_ROUTER = "router";
   public static final String SHARDS = "shards";
@@ -128,7 +130,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     }
     this.activeSlicesArr = activeSlices.values().toArray(new Slice[activeSlices.size()]);
     this.router = router;
-    this.znode = ZkStateReader.getCollectionPath(name);
+    this.znode = "/collections/" + name + "/state.json"; // nocommit : check if this needs to become generic
     assert name != null && slices != null;
   }
 

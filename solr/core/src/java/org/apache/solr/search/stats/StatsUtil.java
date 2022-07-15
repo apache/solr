@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import org.apache.lucene.index.Term;
-import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.util.ZkUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +60,7 @@ public class StatsUtil {
     }
     String[] urlParts = urls[0].split("/");
     String coreName = urlParts[urlParts.length - 1];
-    String replicaName = Utils.parseMetricsReplicaName(collectionName, coreName);
+    String replicaName = ZkUtils.parseMetricsReplicaName(collectionName, coreName);
     String shard;
     if (replicaName != null) {
       shard = coreName.substring(collectionName.length() + 1);
