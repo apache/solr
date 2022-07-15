@@ -19,6 +19,14 @@ package org.apache.solr.common.cloud;
 import java.util.Objects;
 
 public class ZkCoreNodeProps {
+
+  // nocommit : to move these from ZkStateReader
+  private static final String LEADER_PROP = "leader";
+  private static final String NODE_NAME_PROP = "node_name";
+  private static final String STATE_PROP = "state";
+  private static final String CORE_NAME_PROP = "core";
+  private static final String BASE_URL_PROP = "base_url";
+
   private final ZkNodeProps nodeProps;
 
   public ZkCoreNodeProps(ZkNodeProps nodeProps) {
@@ -30,11 +38,11 @@ public class ZkCoreNodeProps {
   }
 
   public String getNodeName() {
-    return nodeProps.getStr(ZkStateReader.NODE_NAME_PROP);
+    return nodeProps.getStr(NODE_NAME_PROP);
   }
 
   public String getState() {
-    return nodeProps.getStr(ZkStateReader.STATE_PROP);
+    return nodeProps.getStr(STATE_PROP);
   }
 
   public String getBaseUrl() {
@@ -42,13 +50,13 @@ public class ZkCoreNodeProps {
   }
 
   public String getCoreName() {
-    return nodeProps.getStr(ZkStateReader.CORE_NAME_PROP);
+    return nodeProps.getStr(CORE_NAME_PROP);
   }
 
   private static String getBaseUrl(ZkNodeProps nodeProps) {
     // if storing baseUrl in ZK is enabled and it's stored, just use what's stored, i.e. no
     // self-healing here
-    String baseUrl = nodeProps.getStr(ZkStateReader.BASE_URL_PROP);
+    String baseUrl = nodeProps.getStr(BASE_URL_PROP);
     if (baseUrl == null) {
       throw new IllegalStateException("base_url not set in: " + nodeProps);
     }
@@ -58,7 +66,7 @@ public class ZkCoreNodeProps {
   public static String getCoreUrl(ZkNodeProps nodeProps) {
     String baseUrl = getBaseUrl(nodeProps);
     return baseUrl != null
-        ? getCoreUrl(baseUrl, nodeProps.getStr(ZkStateReader.CORE_NAME_PROP))
+        ? getCoreUrl(baseUrl, nodeProps.getStr(CORE_NAME_PROP))
         : null;
   }
 
@@ -82,6 +90,6 @@ public class ZkCoreNodeProps {
   }
 
   public boolean isLeader() {
-    return nodeProps.containsKey(ZkStateReader.LEADER_PROP);
+    return nodeProps.containsKey(LEADER_PROP);
   }
 }
