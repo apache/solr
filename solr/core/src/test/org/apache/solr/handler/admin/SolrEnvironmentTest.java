@@ -51,8 +51,7 @@ public class SolrEnvironmentTest {
 
   @Test
   public void parseCustom() {
-    assertEquals(
-        "my Label", SolrEnvironment.parse("prod,label=my+Label,color=blue").getLabel());
+    assertEquals("my Label", SolrEnvironment.parse("prod,label=my+Label,color=blue").getLabel());
     assertEquals("blue", SolrEnvironment.parse("prod,label=my+Label,color=blue").getColor());
     assertEquals("my Label", SolrEnvironment.parse("prod,label=my+Label").getLabel());
     assertEquals("blue", SolrEnvironment.parse("prod,color=blue").getColor());
