@@ -25,7 +25,6 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -37,6 +36,10 @@ import org.apache.solr.common.params.SolrParams;
  * @since solr 1.3
  */
 public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
+
+  // nocommit : to move these from ZkStateReader
+  public static final String NUM_SHARDS_PROP = "numShards";
+  public static final String STATE_PROP = "state";
 
   protected String core = null;
   protected String other = null;
@@ -223,7 +226,7 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
         params.set(CoreAdminParams.COLLECTION, collection);
       }
       if (numShards != null) {
-        params.set(ZkStateReader.NUM_SHARDS_PROP, numShards);
+        params.set(NUM_SHARDS_PROP, numShards);
       }
       if (shardId != null) {
         params.set(CoreAdminParams.SHARD, shardId);
@@ -326,7 +329,7 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
       }
 
       if (state != null) {
-        params.set(ZkStateReader.STATE_PROP, state.toString());
+        params.set(STATE_PROP, state.toString());
       }
 
       if (checkLive != null) {
@@ -426,7 +429,7 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(CoreAdminParams.ACTION, action.toString());
       params.set(CoreAdminParams.CORE, core);
-      params.set(ZkStateReader.STATE_PROP, state);
+      params.set(STATE_PROP, state);
       return params;
     }
 
