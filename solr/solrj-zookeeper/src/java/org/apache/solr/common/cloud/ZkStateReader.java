@@ -1563,7 +1563,7 @@ public class ZkStateReader implements SolrCloseable {
         // old ZK location.
         // TODO in Solr 10 remove that factory method
         ClusterState state =
-            ClusterState.createFromJsonSupportingLegacyConfigName(
+            ZkClientClusterStateProvider.createFromJsonSupportingLegacyConfigName(
                 stat.getVersion(), data, Collections.emptySet(), coll, zkClient);
 
         ClusterState.CollectionRef collectionRef = state.getCollectionStates().get(coll);

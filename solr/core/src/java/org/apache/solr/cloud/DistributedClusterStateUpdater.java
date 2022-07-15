@@ -33,6 +33,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.MO
 import java.lang.invoke.MethodHandles;
 import java.util.*;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
 import org.apache.solr.cloud.overseer.*;
 import org.apache.solr.common.SolrException;
@@ -609,7 +610,7 @@ public class DistributedClusterStateUpdater {
       // old ZK location.
       // TODO in Solr 10 remove that factory method
       ClusterState clusterState =
-          ClusterState.createFromJsonSupportingLegacyConfigName(
+          ZkClientClusterStateProvider.createFromJsonSupportingLegacyConfigName(
               stat.getVersion(),
               data,
               Collections.emptySet(),
