@@ -2925,13 +2925,13 @@ public class StreamExpressionTest extends SolrCloudTestCase {
           .add(id, "13", "a_s", "hello", "a_i", "14", "a_f", "10")
           .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-      // Run the same topic again including the initialCheckpoint. It should start where it left
-      // off. initialCheckpoint should be ignored for all but the first run.
+      // Run the same topic again including the initialCheckpoint.
+      // Since initialCheckpoint=0, this should contain all ids that match the query
       stream = factory.constructStream(expression);
       context = new StreamContext();
       context.setSolrClientCache(cache);
       stream.setStreamContext(context);
-      assertTopicRun(stream, "12", "13");
+      assertTopicRun(stream, "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11","12", "13");
 
       // Test text extraction
 

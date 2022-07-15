@@ -4372,7 +4372,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     classifyStream = new SolrStream(url, paramsLoc);
     idToLabel = getIdToLabel(classifyStream, "probability_d");
-    assertEquals(idToLabel.size(), 2);
+    assertEquals(idToLabel.size(), 4);
     assertEquals(1.0, idToLabel.get("2"), 0.001);
     assertEquals(0, idToLabel.get("3"), 0.001);
 
@@ -4401,7 +4401,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     classifyStream = new SolrStream(url, paramsLoc);
     idToLabel = getIdToLabel(classifyStream, "probability_d");
-    assertEquals(idToLabel.size(), 2);
+    assertEquals(idToLabel.size(), 6);
     assertEquals(0, idToLabel.get("4"), 0.001);
     assertEquals(1.0, idToLabel.get("5"), 0.001);
 
@@ -4419,7 +4419,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     paramsLoc.set("expr", expr);
     classifyStream = new SolrStream(url, paramsLoc);
     idToLabel = getIdToLabel(classifyStream, "probability_d");
-    assertEquals(idToLabel.size(), 2);
+    assertEquals(idToLabel.size(), 8);
     assertEquals(0, idToLabel.get("4"), 0.001);
     assertEquals(1.0, idToLabel.get("5"), 0.001);
 
