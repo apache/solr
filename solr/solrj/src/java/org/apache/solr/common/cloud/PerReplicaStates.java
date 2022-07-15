@@ -179,6 +179,9 @@ public class PerReplicaStates implements ReflectMapWriter {
    */
   public static class State implements MapWriter {
 
+    // nocommit : to move these from ZkStateReader
+    public static final String STATE_PROP = "state";
+
     public final String replica;
 
     public final Replica.State state;
@@ -232,7 +235,7 @@ public class PerReplicaStates implements ReflectMapWriter {
     public void writeMap(EntryWriter ew) throws IOException {
       ew.put(NAME, replica);
       ew.put(VERSION, version);
-      ew.put(ZkStateReader.STATE_PROP, state.toString());
+      ew.put(STATE_PROP, state.toString());
       if (isLeader) ew.put(Slice.LEADER, isLeader);
       ew.putIfNotNull("duplicate", duplicate);
     }
