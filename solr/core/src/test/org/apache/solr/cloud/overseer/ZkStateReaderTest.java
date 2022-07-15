@@ -221,34 +221,36 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
   }
 
   /**
-   * Verifies that znode and child versions are correct and version changes trigger cluster state updates
+   * Verifies that znode and child versions are correct and version changes trigger cluster state
+   * updates
    */
   public void testNodeVersion() throws Exception {
     ZkStateWriter writer = fixture.writer;
     ZkStateReader reader = fixture.reader;
 
     fixture.zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
-    
+
     ClusterState clusterState = reader.getClusterState();
     // create new collection
     DocCollection state =
-            new DocCollection(
-                    "c1",
-                    new HashMap<>(),
-                    Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-                    DocRouter.DEFAULT,
-                    0);
+        new DocCollection(
+            "c1",
+            new HashMap<>(),
+            Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
+            DocRouter.DEFAULT,
+            0);
     ZkWriteCommand wc = new ZkWriteCommand("c1", state);
     writer.enqueueUpdate(clusterState, Collections.singletonList(wc), null);
     clusterState = writer.writePendingUpdates();
 
-    //have to register it here after the updates, otherwise the child node watch will not be inserted
+    // have to register it here after the updates, otherwise the child node watch will not be
+    // inserted
     reader.registerCore("c1");
 
     TimeOut timeOut = new TimeOut(5000, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
     timeOut.waitFor(
-            "Timeout on waiting for c1 to show up in cluster state",
-            () -> reader.getClusterState().getCollectionRef("c1") != null);
+        "Timeout on waiting for c1 to show up in cluster state",
+        () -> reader.getClusterState().getCollectionRef("c1") != null);
 
     ClusterState.CollectionRef ref = reader.getClusterState().getCollectionRef("c1");
     assertNotNull(ref);
@@ -258,67 +260,85 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     assertEquals(-1, ref.get().getChildNodesVersion());
 
     DocCollection collection = ref.get();
-    PerReplicaStates prs = PerReplicaStates.fetch(collection.getZNode(), fixture.zkClient, collection.getPerReplicaStates());
-    PerReplicaStatesOps.addReplica("r1", Replica.State.DOWN, false, prs).persist(collection.getZNode(), fixture.zkClient);
+    PerReplicaStates prs =
+        PerReplicaStates.fetch(
+            collection.getZNode(), fixture.zkClient, collection.getPerReplicaStates());
+    PerReplicaStatesOps.addReplica("r1", Replica.State.DOWN, false, prs)
+        .persist(collection.getZNode(), fixture.zkClient);
     timeOut.waitFor(
-            "Timeout on waiting for c1 updated to have PRS state r1",
-            () -> {
-              DocCollection c = reader.getCollection("c1");
-              return c.getPerReplicaStates() != null && c.getPerReplicaStates().get("r1") != null && c.getPerReplicaStates().get("r1").state == Replica.State.DOWN;
-            });
+        "Timeout on waiting for c1 updated to have PRS state r1",
+        () -> {
+          DocCollection c = reader.getCollection("c1");
+          return c.getPerReplicaStates() != null
+              && c.getPerReplicaStates().get("r1") != null
+              && c.getPerReplicaStates().get("r1").state == Replica.State.DOWN;
+        });
 
     ref = reader.getClusterState().getCollectionRef("c1");
-    assertEquals(0, ref.get().getZNodeVersion()); //no change in Znode version
-    assertEquals(1, ref.get().getChildNodesVersion()); //but child version should be 1 now
+    assertEquals(0, ref.get().getZNodeVersion()); // no change in Znode version
+    assertEquals(1, ref.get().getChildNodesVersion()); // but child version should be 1 now
 
     prs = ref.get().getPerReplicaStates();
-    PerReplicaStatesOps.flipState("r1", Replica.State.ACTIVE, prs).persist(collection.getZNode(), fixture.zkClient);
+    PerReplicaStatesOps.flipState("r1", Replica.State.ACTIVE, prs)
+        .persist(collection.getZNode(), fixture.zkClient);
     timeOut.waitFor(
-            "Timeout on waiting for c1 updated to have PRS state r1 marked as DOWN",
-            () -> reader.getCollection("c1").getPerReplicaStates().get("r1").state == Replica.State.ACTIVE);
-
+        "Timeout on waiting for c1 updated to have PRS state r1 marked as DOWN",
+        () ->
+            reader.getCollection("c1").getPerReplicaStates().get("r1").state
+                == Replica.State.ACTIVE);
 
     ref = reader.getClusterState().getCollectionRef("c1");
-    assertEquals(0, ref.get().getZNodeVersion()); //no change in Znode version
-    assertEquals(3, ref.get().getChildNodesVersion()); //but child version should be 3 now (1 del + 1 add)
+    assertEquals(0, ref.get().getZNodeVersion()); // no change in Znode version
+    // but child version should be 3 now (1 del + 1 add)
+    assertEquals(3, ref.get().getChildNodesVersion());
 
-    //now delete the collection
+    // now delete the collection
     wc = new ZkWriteCommand("c1", null);
     writer.enqueueUpdate(clusterState, Collections.singletonList(wc), null);
     clusterState = writer.writePendingUpdates();
     timeOut.waitFor(
-            "Timeout on waiting for c1 to be removed from cluster state",
-            () -> reader.getClusterState().getCollectionRef("c1").get() == null);
+        "Timeout on waiting for c1 to be removed from cluster state",
+        () -> reader.getClusterState().getCollectionRef("c1").get() == null);
 
     reader.unregisterCore("c1");
-    //re-add the same collection
+    // re-add the same collection
     wc = new ZkWriteCommand("c1", state);
     writer.enqueueUpdate(clusterState, Collections.singletonList(wc), null);
     clusterState = writer.writePendingUpdates();
-    reader.registerCore("c1"); //re-register, otherwise the child watch would be missing from collection deletion
+    // re-register, otherwise the child watch would be missing from collection deletion
+    reader.registerCore("c1");
 
     // reader.forceUpdateCollection("c1");
     timeOut.waitFor(
-            "Timeout on waiting for c1 to show up in cluster state again",
-            () -> reader.getClusterState().getCollectionRef("c1") != null && reader.getClusterState().getCollectionRef("c1").get() != null);
+        "Timeout on waiting for c1 to show up in cluster state again",
+        () ->
+            reader.getClusterState().getCollectionRef("c1") != null
+                && reader.getClusterState().getCollectionRef("c1").get() != null);
     ref = reader.getClusterState().getCollectionRef("c1");
     assertFalse(ref.isLazilyLoaded());
     assertEquals(0, ref.get().getZNodeVersion());
-    assertEquals(-1, ref.get().getChildNodesVersion()); //child node version is reset
+    assertEquals(-1, ref.get().getChildNodesVersion()); // child node version is reset
 
-    //re-add PRS
+    // re-add PRS
     collection = ref.get();
-    prs = PerReplicaStates.fetch(collection.getZNode(), fixture.zkClient, collection.getPerReplicaStates());
-    PerReplicaStatesOps.addReplica("r1", Replica.State.DOWN, false, prs).persist(collection.getZNode(), fixture.zkClient);
+    prs =
+        PerReplicaStates.fetch(
+            collection.getZNode(), fixture.zkClient, collection.getPerReplicaStates());
+    PerReplicaStatesOps.addReplica("r1", Replica.State.DOWN, false, prs)
+        .persist(collection.getZNode(), fixture.zkClient);
     timeOut.waitFor(
-            "Timeout on waiting for c1 updated to have PRS state r1",
-            () -> {
-              DocCollection c = reader.getCollection("c1");
-              return c.getPerReplicaStates() != null && c.getPerReplicaStates().get("r1") != null && c.getPerReplicaStates().get("r1").state == Replica.State.DOWN;
-            });
+        "Timeout on waiting for c1 updated to have PRS state r1",
+        () -> {
+          DocCollection c = reader.getCollection("c1");
+          return c.getPerReplicaStates() != null
+              && c.getPerReplicaStates().get("r1") != null
+              && c.getPerReplicaStates().get("r1").state == Replica.State.DOWN;
+        });
 
     ref = reader.getClusterState().getCollectionRef("c1");
-    assertEquals(1, ref.get().getChildNodesVersion()); //child version should be reset since the state.json node was deleted and re-created
+
+    // child version should be reset since the state.json node was deleted and re-created
+    assertEquals(1, ref.get().getChildNodesVersion());
   }
 
   public void testForciblyRefreshAllClusterState() throws Exception {
