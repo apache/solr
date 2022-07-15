@@ -296,6 +296,7 @@ public class ZkStateReader implements SolrCloseable {
 
     /**
      * Gets a Set of watched collection names. The returned value is thread-safe and unmodifiable.
+     *
      * @return Set of watched collection names
      */
     private Set<String> watchedCollections() {
@@ -366,7 +367,7 @@ public class ZkStateReader implements SolrCloseable {
      *     associated StatefulCollectionWatch will be removed; otherwise, the returned value will be
      *     assigned to such collection
      * @return the new StatefulCollectionWatch associated with the collection
-     * @see ConcurrentHashMap#compute(Object, BiFunction) 
+     * @see ConcurrentHashMap#compute(Object, BiFunction)
      */
     private StatefulCollectionWatch compute(
         String collectionName,
@@ -462,10 +463,11 @@ public class ZkStateReader implements SolrCloseable {
 
       Set<String> updatedCollections = new HashSet<>();
 
-      //Iterate through the actively watched collections. Take note that the returned watched collections
-      //might change during the iteration, but it should not throw exception as it's thread-safe.
-      //If such set is modified elsewhere during the iteration, the code logic should still handle such
-      //missing/extra collection w/o issues.
+      // Iterate through the actively watched collections. Take note that the returned watched
+      // collections might change during the iteration, but it should not throw exception as
+      // it's thread-safe.
+      // If such set is modified elsewhere during the iteration, the code logic should still
+      // handle such missing/extra collection w/o issues.
       for (String coll : collectionWatches.watchedCollections()) {
         DocCollection newState = fetchCollectionState(coll, null);
         if (collectionWatches.updateDocCollection(coll, newState)) {
