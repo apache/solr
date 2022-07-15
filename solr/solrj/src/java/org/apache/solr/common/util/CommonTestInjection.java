@@ -65,9 +65,10 @@ public class CommonTestInjection {
       try {
         log.info("Start: artificial delay for {}ms", delay);
         Thread.sleep(delay);
-        log.info("Finish: artificial delay for {}ms", delay);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
+      } finally {
+        log.info("Finish: artificial delay for {}ms", delay);
       }
     }
     return true;

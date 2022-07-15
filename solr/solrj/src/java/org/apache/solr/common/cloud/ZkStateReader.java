@@ -366,6 +366,7 @@ public class ZkStateReader implements SolrCloseable {
      *     associated StatefulCollectionWatch will be removed; otherwise, the returned value will be
      *     assigned to such collection
      * @return the new StatefulCollectionWatch associated with the collection
+     * @see ConcurrentHashMap#compute(Object, BiFunction) 
      */
     private StatefulCollectionWatch compute(
         String collectionName,
@@ -666,8 +667,7 @@ public class ZkStateReader implements SolrCloseable {
       if (entry.getValue().currentState != null) {
         // if the doc is null for the collection watch, then it should not be inserted into the
         // state
-        result.putIfAbsent(
-            entry.getKey(), new ClusterState.CollectionRef(entry.getValue().currentState));
+        result.put(entry.getKey(), new ClusterState.CollectionRef(entry.getValue().currentState));
       }
     }
 
@@ -2062,7 +2062,7 @@ public class ZkStateReader implements SolrCloseable {
           if (v.canBeRemoved()) {
             lazyCollectionStates.put(collection, new LazyCollectionRef(collection));
             reconstructState.set(true);
-            CommonTestInjection.injectDelay(); // To unit test race condition
+            assert CommonTestInjection.injectDelay(); // To unit test race condition
             return null;
           }
           return v;

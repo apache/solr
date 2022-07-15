@@ -330,9 +330,9 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
     reader.forceUpdateCollection("c1");
     reader.forceUpdateCollection("c2");
-    currentCollections =
-        reader.getCurrentCollections(); // should detect both collections (c1 watched, c2 lazy
-    // loaded)
+
+    // should detect both collections (c1 watched, c2 lazy loaded)
+    currentCollections = reader.getCurrentCollections();
     assertEquals(2, currentCollections.size());
   }
 
