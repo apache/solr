@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.cloud.CloudSolrClientUtils;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.junit.After;
@@ -281,7 +282,7 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
     expectThrows(
         TimeoutException.class,
         () -> {
-          client.waitForState("no-such-collection", 10, TimeUnit.MILLISECONDS, (c) -> (false));
+          CloudSolrClientUtils.waitForState(client, "no-such-collection", 10, TimeUnit.MILLISECONDS, (c) -> (false));
         });
 
     waitFor(

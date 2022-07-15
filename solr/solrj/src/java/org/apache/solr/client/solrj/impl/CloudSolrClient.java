@@ -46,7 +46,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.ResponseParser;
@@ -66,16 +65,12 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.ToleratedUpdateError;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.CollectionStatePredicate;
-import org.apache.solr.common.cloud.CollectionStateWatcher;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.DocCollectionWatcher;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
@@ -94,6 +89,9 @@ import org.slf4j.MDC;
 public abstract class CloudSolrClient extends SolrClient {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  // nocommit : to move these from ZkStateReader
+  private static final String URL_SCHEME = "urlScheme";
 
   private volatile String defaultCollection;
   // no of times collection state to be reloaded if stale state error is received
@@ -386,93 +384,6 @@ public abstract class CloudSolrClient extends SolrClient {
       TimeUnit.MILLISECONDS.sleep(250);
     }
     throw new TimeoutException("Timed out waiting for cluster");
-  }
-
-  private ZkClientClusterStateProvider assertZKStateProvider() {
-    if (getClusterStateProvider() instanceof ZkClientClusterStateProvider) {
-      return (ZkClientClusterStateProvider) getClusterStateProvider();
-    }
-    throw new IllegalArgumentException("This client does not use ZK");
-  }
-
-  /**
-   * Block until a CollectionStatePredicate returns true, or the wait times out
-   *
-   * <p>Note that the predicate may be called again even after it has returned true, so implementors
-   * should avoid changing state within the predicate call itself.
-   *
-   * <p>This implementation utilizes {@link CollectionStateWatcher} internally. Callers that don't
-   * care about liveNodes are encouraged to use a {@link DocCollection} {@link Predicate} instead
-   *
-   * @see #waitForState(String, long, TimeUnit, Predicate)
-   * @see #registerCollectionStateWatcher
-   * @param collection the collection to watch
-   * @param wait how long to wait
-   * @param unit the units of the wait parameter
-   * @param predicate a {@link CollectionStatePredicate} to check the collection state
-   * @throws InterruptedException on interrupt
-   * @throws TimeoutException on timeout
-   */
-  public void waitForState(
-      String collection, long wait, TimeUnit unit, CollectionStatePredicate predicate)
-      throws InterruptedException, TimeoutException {
-    getClusterStateProvider().connect();
-    assertZKStateProvider().zkStateReader.waitForState(collection, wait, unit, predicate);
-  }
-  /**
-   * Block until a Predicate returns true, or the wait times out
-   *
-   * <p>Note that the predicate may be called again even after it has returned true, so implementors
-   * should avoid changing state within the predicate call itself.
-   *
-   * @see #registerDocCollectionWatcher
-   * @param collection the collection to watch
-   * @param wait how long to wait
-   * @param unit the units of the wait parameter
-   * @param predicate a {@link Predicate} to test against the {@link DocCollection}
-   * @throws InterruptedException on interrupt
-   * @throws TimeoutException on timeout
-   */
-  public void waitForState(
-      String collection, long wait, TimeUnit unit, Predicate<DocCollection> predicate)
-      throws InterruptedException, TimeoutException {
-    getClusterStateProvider().connect();
-    assertZKStateProvider().zkStateReader.waitForState(collection, wait, unit, predicate);
-  }
-
-  /**
-   * Register a CollectionStateWatcher to be called when the cluster state for a collection changes
-   * <em>or</em> the set of live nodes changes.
-   *
-   * <p>The Watcher will automatically be removed when it's <code>onStateChanged</code> returns
-   * <code>true</code>
-   *
-   * <p>This implementation utilizes {@link ZkStateReader#registerCollectionStateWatcher}
-   * internally. Callers that don't care about liveNodes are encouraged to use a {@link
-   * DocCollectionWatcher} instead
-   *
-   * @see #registerDocCollectionWatcher(String, DocCollectionWatcher)
-   * @see ZkStateReader#registerCollectionStateWatcher
-   * @param collection the collection to watch
-   * @param watcher a watcher that will be called when the state changes
-   */
-  public void registerCollectionStateWatcher(String collection, CollectionStateWatcher watcher) {
-    getClusterStateProvider().connect();
-    assertZKStateProvider().zkStateReader.registerCollectionStateWatcher(collection, watcher);
-  }
-
-  /**
-   * Register a DocCollectionWatcher to be called when the cluster state for a collection changes.
-   *
-   * <p>The Watcher will automatically be removed when it's <code>onStateChanged</code> returns
-   * <code>true</code>
-   *
-   * @param collection the collection to watch
-   * @param watcher a watcher that will be called when the state changes
-   */
-  public void registerDocCollectionWatcher(String collection, DocCollectionWatcher watcher) {
-    getClusterStateProvider().connect();
-    assertZKStateProvider().zkStateReader.registerDocCollectionWatcher(collection, watcher);
   }
 
   @SuppressWarnings({"unchecked"})
@@ -1155,7 +1066,7 @@ public abstract class CloudSolrClient extends SolrClient {
         requestRLTGenerator.getReplicaListTransformer(reqParams);
 
     final ClusterStateProvider provider = getClusterStateProvider();
-    final String urlScheme = provider.getClusterProperty(ZkStateReader.URL_SCHEME, "http");
+    final String urlScheme = provider.getClusterProperty(URL_SCHEME, "http");
     final Set<String> liveNodes = provider.getLiveNodes();
 
     final List<String> theUrlList = new ArrayList<>(); // we populate this as follows...
