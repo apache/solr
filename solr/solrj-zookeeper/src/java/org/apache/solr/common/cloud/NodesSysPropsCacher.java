@@ -31,7 +31,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
 /** Fetch lazily and cache a node's system properties */
-public class NodesSysPropsCacher implements AutoCloseable {
+public class NodesSysPropsCacher implements NodesSysProps, AutoCloseable {
   private volatile boolean isClosed = false;
   private final Map<String, Map<String, Object>> nodeVsTagsCache = new ConcurrentHashMap<>();
   private ZkStateReader zkStateReader;

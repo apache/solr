@@ -28,4 +28,6 @@ dependencies {
     implementation ('org.apache.zookeeper:zookeeper-jute') {
         exclude group: 'org.apache.yetus', module: 'audience-annotations'
     }
+
+    implementation project(':solr:solrj')
 }
