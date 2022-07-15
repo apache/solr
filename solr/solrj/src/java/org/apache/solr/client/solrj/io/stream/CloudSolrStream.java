@@ -347,10 +347,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
 
   public static Slice[] getSlices(
           String collectionName, CloudSolrClient cloudSolrClient, boolean checkAlias) throws IOException {
-    ClusterState clusterState = cloudSolrClient.getClusterStateProvider().getClusterState();
-
     // check for alias or collection
-
     List<String> allCollections = new ArrayList<>();
     String[] collectionNames = collectionName.split(",");
     Aliases aliases = null; // nocommit :  checkAlias ? zkStateReader.getAliases() :
@@ -364,6 +361,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     }
 
     // Lookup all actives slices for these collections
+    ClusterState clusterState = cloudSolrClient.getClusterState();
     List<Slice> slices =
         allCollections.stream()
             .map(c -> clusterState.getCollectionOrNull(c, true))
