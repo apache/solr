@@ -47,7 +47,7 @@ public class NVectorDistTest extends SolrTestCaseJ4 {
             "nvd","nvdist(52.01966071979866, -0.4983083573742952,nvector)",
             "fl", "dist:$nvd",
             "sort" ,"$nvd asc"),
-            "/response/docs/[0]/dist==0.7706622667641961");
+            "/response/docs/[0]/dist==0.7953814512052634");
     }
 
     @Test
@@ -63,9 +63,9 @@ public class NVectorDistTest extends SolrTestCaseJ4 {
             "sort","nvdist(52.01966071979866, -0.4983083573742952,nvector) asc"),
             "/response/numFound==2",
             "/response/docs/[0]/id=='0'",
-            "/response/docs/[0]/dist==0.7706622667641961",
+            "/response/docs/[0]/dist==0.7953814512052634",
             "/response/docs/[1]/id=='1'",
-            "/response/docs/[1]/dist==22.939789336475414"
+            "/response/docs/[1]/dist==23.675588801562068"
             );
 
         assertJQ(req(
@@ -76,9 +76,9 @@ public class NVectorDistTest extends SolrTestCaseJ4 {
             "sort","$dist asc"),
             "/response/numFound==2",
             "/response/docs/[0]/id=='0'",
-            "/response/docs/[0]/dist==0.7706622667641961",
+            "/response/docs/[0]/dist==0.7953814512052634",
             "/response/docs/[1]/id=='1'",
-            "/response/docs/[1]/dist==22.939789336475414"
+            "/response/docs/[1]/dist==23.675588801562068"
         );
 
         assertJQ(req(
@@ -93,9 +93,9 @@ public class NVectorDistTest extends SolrTestCaseJ4 {
             ),
             "/response/numFound==2",
             "/response/docs/[0]/id=='0'",
-            "/response/docs/[0]/dist==0.7706622667641961",
+            "/response/docs/[0]/dist==0.7953814512052634",
             "/response/docs/[1]/id=='1'",
-            "/response/docs/[1]/dist==22.939789336475414"
+            "/response/docs/[1]/dist==23.675588801562068"
         );
     }
 }
