@@ -3048,7 +3048,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       expression =
           StreamExpressionParser.parse(
               "priority(topic(collection1, collection1, q=\"a_s:hello\", fl=\"id,a_i\", id=1000000, initialCheckpoint=0),"
-                  + "topic(collection1, collection1, q=\"a_s:hello1\", fl=\"id,a_i\", id=2000000, initialCheckpoint=0))");
+                  + "topic(collection1, collection1, q=\"a_s:hello1\", fl=\"id,a_i\", id=2000000))");
       stream = factory.constructStream(expression);
       context = new StreamContext();
       context.setSolrClientCache(cache);
