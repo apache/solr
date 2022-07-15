@@ -179,7 +179,7 @@ public class PerReplicaStates implements ReflectMapWriter {
    */
   public static class State implements MapWriter {
 
-    // nocommit : to move these from ZkStateReader
+    // nocommit : to move this from ZkStateReader
     public static final String STATE_PROP = "state";
 
     public final String replica;

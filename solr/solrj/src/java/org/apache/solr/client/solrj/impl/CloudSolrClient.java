@@ -90,7 +90,7 @@ public abstract class CloudSolrClient extends SolrClient {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  // nocommit : to move these from ZkStateReader
+  // nocommit : to move this from ZkStateReader
   private static final String URL_SCHEME = "urlScheme";
 
   private volatile String defaultCollection;
