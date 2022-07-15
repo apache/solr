@@ -21,7 +21,11 @@ import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.solr.api.AnnotatedApi;

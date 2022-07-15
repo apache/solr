@@ -20,7 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.handler.component.SearchHandler; // jdoc
+import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
