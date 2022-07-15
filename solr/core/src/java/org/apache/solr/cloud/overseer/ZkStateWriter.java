@@ -26,11 +26,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.Stats;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.PerReplicaStates;
-import org.apache.solr.common.cloud.PerReplicaStatesOps;
-import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -234,7 +230,7 @@ public class ZkStateWriter {
                 clusterState.copyWith(
                     name,
                     cmd.collection.copyWith(
-                        PerReplicaStates.fetch(
+                        PerReplicaStatesFetcher.fetch(
                             cmd.collection.getZNode(), reader.getZkClient(), null)));
           }
 
@@ -279,7 +275,7 @@ public class ZkStateWriter {
                   clusterState.copyWith(
                       name,
                       currentCollState.copyWith(
-                          PerReplicaStates.fetch(
+                          PerReplicaStatesFetcher.fetch(
                               currentCollState.getZNode(), reader.getZkClient(), null)));
             }
           }

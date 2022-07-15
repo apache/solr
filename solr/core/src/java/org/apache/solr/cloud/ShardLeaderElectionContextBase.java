@@ -230,7 +230,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
         }
       } else {
         PerReplicaStates prs =
-            PerReplicaStates.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
+            PerReplicaStatesFetcher.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
         PerReplicaStatesOps.flipLeader(
                 zkStateReader
                     .getClusterState()

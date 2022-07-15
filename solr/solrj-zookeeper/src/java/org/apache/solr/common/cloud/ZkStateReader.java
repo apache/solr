@@ -1544,7 +1544,7 @@ public class ZkStateReader implements SolrCloseable {
           () -> {
             try {
               PerReplicaStates replicaStates =
-                  PerReplicaStates.fetch(collectionPath, zkClient, null);
+                  PerReplicaStatesFetcher.fetch(collectionPath, zkClient, null);
               log.debug(
                   "per-replica-state ver: {} fetched for initializing {} ",
                   replicaStates.cversion,
@@ -1718,7 +1718,7 @@ public class ZkStateReader implements SolrCloseable {
   private DocCollection updatePerReplicaState(DocCollection c) {
     if (c == null || !c.isPerReplicaState()) return c;
     PerReplicaStates current = c.getPerReplicaStates();
-    PerReplicaStates newPrs = PerReplicaStates.fetch(c.getZNode(), zkClient, current);
+    PerReplicaStates newPrs = PerReplicaStatesFetcher.fetch(c.getZNode(), zkClient, current);
     if (newPrs != current) {
       if (log.isDebugEnabled()) {
         log.debug("update for a fresh per-replica-state {}", c.getName());

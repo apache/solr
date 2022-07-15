@@ -119,7 +119,7 @@ public class CollectionMutator {
         }
         replicaOps =
             PerReplicaStatesOps.modifyCollection(
-                coll, enable, PerReplicaStates.fetch(coll.getZNode(), zkClient, null));
+                coll, enable, PerReplicaStatesFetcher.fetch(coll.getZNode(), zkClient, null));
       }
 
       if (message.containsKey(prop)) {

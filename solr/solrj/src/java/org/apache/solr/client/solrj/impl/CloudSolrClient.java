@@ -467,7 +467,6 @@ public abstract class CloudSolrClient extends SolrClient {
    * <p>The Watcher will automatically be removed when it's <code>onStateChanged</code> returns
    * <code>true</code>
    *
-   * @see ZkStateReader#registerDocCollectionWatcher
    * @param collection the collection to watch
    * @param watcher a watcher that will be called when the state changes
    */

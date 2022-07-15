@@ -486,7 +486,7 @@ public class DistributedClusterStateUpdater {
             // Fetch the per replica states updates done previously or skip fetching if we already
             // have them
             fetchedPerReplicaStates =
-                PerReplicaStates.fetch(
+                PerReplicaStatesFetcher.fetch(
                     docCollection.getZNode(), zkStateReader.getZkClient(), fetchedPerReplicaStates);
             // Transpose the per replica states into the cluster state
             updatedState =

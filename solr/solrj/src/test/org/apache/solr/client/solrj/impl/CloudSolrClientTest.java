@@ -59,13 +59,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.DocRouter;
-import org.apache.solr.common.cloud.PerReplicaStates;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -1164,7 +1158,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     DocCollection c = cluster.getZkStateReader().getCollection(testCollection);
     c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
     PerReplicaStates prs =
-        PerReplicaStates.fetch(
+        PerReplicaStatesFetcher.fetch(
             ZkStateReader.getCollectionPath(testCollection), cluster.getZkClient(), null);
     assertEquals(4, prs.states.size());
     JettySolrRunner jsr = cluster.startJettySolrRunner();
@@ -1172,7 +1166,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     CollectionAdminRequest.addReplicaToShard(testCollection, "shard1")
         .process(cluster.getSolrClient());
     prs =
-        PerReplicaStates.fetch(
+        PerReplicaStatesFetcher.fetch(
             ZkStateReader.getCollectionPath(testCollection), cluster.getZkClient(), null);
     assertEquals(5, prs.states.size());
 
@@ -1187,7 +1181,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     c = cluster.getZkStateReader().getCollection(testCollection);
     c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
     prs =
-        PerReplicaStates.fetch(
+        PerReplicaStatesFetcher.fetch(
             ZkStateReader.getCollectionPath(testCollection), cluster.getZkClient(), null);
     assertEquals(4, prs.states.size());
   }
