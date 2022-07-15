@@ -49,6 +49,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
    *
    * @param builder a {@link Http2SolrClient.Builder} with the options used to create the client.
    */
+  @SuppressWarnings("rawtypes")
   protected CloudHttp2SolrClient(Builder builder) {
     super(builder.shardLeadersOnly, builder.parallelUpdates, builder.directUpdatesToLeadersOnly);
     if (builder.httpClient == null) {
@@ -68,8 +69,12 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
             "Both zkHost(s) & solrUrl(s) have been specified. Only specify one.");
       }
       if (builder.zkHosts != null) {
-        this.stateProvider = new ZkClientClusterStateProvider(builder.zkHosts, builder.zkChroot);
-      } else if (builder.solrUrls != null && !builder.solrUrls.isEmpty()) {
+        try {
+          Class<?> zkStateProviderClass = Class.forName("org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider");
+          this.stateProvider = (ClusterStateProvider) zkStateProviderClass.getConstructor(new Class[]{Collection.class, String.class}).newInstance(builder.zkHosts, builder.zkChroot);
+        } catch (Exception e) {
+          throw new RuntimeException(e.toString(), e);
+        }      } else if (builder.solrUrls != null && !builder.solrUrls.isEmpty()) {
         try {
           this.stateProvider = new Http2ClusterStateProvider(builder.solrUrls, builder.httpClient);
         } catch (Exception e) {
@@ -247,10 +252,16 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     }
 
     /** Create a {@link CloudHttp2SolrClient} based on the provided configuration. */
+    @SuppressWarnings("rawtypes")
     public CloudHttp2SolrClient build() {
       if (stateProvider == null) {
         if (!zkHosts.isEmpty()) {
-          stateProvider = new ZkClientClusterStateProvider(zkHosts, zkChroot);
+          try {
+            Class<?> zkStateProviderClass = Class.forName("org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider");
+            this.stateProvider = (ClusterStateProvider) zkStateProviderClass.getConstructor(new Class[]{Collection.class, String.class}).newInstance(zkHosts, zkChroot);
+          } catch (Exception e) {
+            throw new RuntimeException(e.toString(), e);
+          }
         } else if (!this.solrUrls.isEmpty()) {
           try {
             stateProvider = new Http2ClusterStateProvider(solrUrls, httpClient);
