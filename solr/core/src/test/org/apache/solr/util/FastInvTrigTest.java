@@ -21,15 +21,13 @@ import org.apache.solr.SolrTestCase;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Random;
-
-import static org.apache.solr.util.NVectorUtil.EARTH_RADIUS;
+import static org.locationtech.spatial4j.distance.DistanceUtils.EARTH_MEAN_RADIUS_KM;
 
 public class FastInvTrigTest extends SolrTestCase {
 
     final static int num_points = 100000;
     final static double EPSILON = 0.0001;
-    static final Random r = new Random();
+    //static final Random r = new Random();
     private static final double TEN_METERS = 0.01;
 
     static double[][] points = new double[num_points][2];
@@ -46,8 +44,8 @@ public class FastInvTrigTest extends SolrTestCase {
     }
 
     public static double[] generateRandomPoint() {
-        double u = r.nextDouble();
-        double v = r.nextDouble();
+        double u = random().nextDouble();
+        double v = random().nextDouble();
 
         double latitude = deg2rad(Math.toDegrees(Math.acos(u * 2 - 1)) - 90);
         double longitude = deg2rad(360 * v - 180);
@@ -67,9 +65,9 @@ public class FastInvTrigTest extends SolrTestCase {
 
         for (int i = 0; i < num_points; i++) {
             double[] b = NVectorUtil.latLongToNVector(points[i][0], points[i][1]);
-            double d1 = EARTH_RADIUS * FastInvTrig.acos(a[0] * b[0] + a[1] * b[1] + a[2] * b[2]);
-            double d2 = EARTH_RADIUS * Math.acos(a[0] * b[0] + a[1] * b[1] + a[2] * b[2]);
-            assertTrue(Math.abs(d1 - d2) <= TEN_METERS);
+            double d1 = EARTH_MEAN_RADIUS_KM * FastInvTrig.acos(a[0] * b[0] + a[1] * b[1] + a[2] * b[2]);
+            double d2 = EARTH_MEAN_RADIUS_KM * Math.acos(a[0] * b[0] + a[1] * b[1] + a[2] * b[2]);
+            assertTrue("Math.acos should be close to FastInvTrig.acos",Math.abs(d1 - d2) <= TEN_METERS);
         }
     }
 }

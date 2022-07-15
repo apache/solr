@@ -17,9 +17,9 @@
 
 package org.apache.solr.util;
 
-public class NVectorUtil {
+import static org.locationtech.spatial4j.distance.DistanceUtils.EARTH_MEAN_RADIUS_KM;
 
-    public static final double EARTH_RADIUS = 6173.008;//km google:standard mean earth radius;
+public class NVectorUtil {
 
     public static double[] latLongToNVector(double lat, double lon) {
         double latRad = lat * (Math.PI / 180);
@@ -51,7 +51,7 @@ public class NVectorUtil {
     }
 
     public static double NVectorDist(double[] a, double[] b) {
-        return NVectorDist(a, b, EARTH_RADIUS);
+        return NVectorDist(a, b, EARTH_MEAN_RADIUS_KM);
     }
 
     public static double NVectorDist(double[] a, double[] b, double radius) {

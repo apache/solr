@@ -35,7 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class NVector extends CoordinateFieldType {
+public class NVectorField extends CoordinateFieldType {
 
     @Override
     protected void init(IndexSchema schema, Map<String, String> args) {

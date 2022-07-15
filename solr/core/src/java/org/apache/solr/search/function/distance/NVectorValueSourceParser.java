@@ -29,6 +29,8 @@ import org.apache.solr.util.NVectorUtil;
 
 import java.util.Arrays;
 
+import static org.locationtech.spatial4j.distance.DistanceUtils.EARTH_MEAN_RADIUS_KM;
+
 public class NVectorValueSourceParser extends ValueSourceParser {
     @Override
     public ValueSource parse(FunctionQParser fp) throws SyntaxError {
@@ -39,18 +41,19 @@ public class NVectorValueSourceParser extends ValueSourceParser {
         if (!(vs1 instanceof MultiValueSource))
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                 "Field must a MultiValueSource");
-        MultiValueSource mvs1 = (MultiValueSource) vs1;
+        MultiValueSource nvector_vs1 = (MultiValueSource) vs1;
 
         double[] nvector = NVectorUtil.latLongToNVector(lat, lon);
-        MultiValueSource mvs2 = new VectorValueSource(
+
+        MultiValueSource nvector_vs2 = new VectorValueSource(
             Arrays.asList(
                 new DoubleConstValueSource(nvector[0]),
                 new DoubleConstValueSource(nvector[1]),
                 new DoubleConstValueSource(nvector[2])
             ));
 
-        double radius = fp.hasMoreArguments() ? fp.parseDouble() : NVectorUtil.EARTH_RADIUS;
+        double radius = fp.hasMoreArguments() ? fp.parseDouble() : EARTH_MEAN_RADIUS_KM;
 
-        return new NVector(mvs1, mvs2, radius);
+        return new NVectorFunction(nvector_vs1, nvector_vs2, radius);
     }
 }
