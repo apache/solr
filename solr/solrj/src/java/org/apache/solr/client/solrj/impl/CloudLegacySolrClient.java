@@ -58,6 +58,7 @@ public class CloudLegacySolrClient extends CloudSolrClient {
    *
    * @param builder a {@link Builder} with the options used to create the client.
    */
+  @SuppressWarnings("rawtypes")
   protected CloudLegacySolrClient(Builder builder) {
     super(builder.shardLeadersOnly, builder.parallelUpdates, builder.directUpdatesToLeadersOnly);
     if (builder.stateProvider == null) {
@@ -325,6 +326,7 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     }
 
     /** Create a {@link CloudLegacySolrClient} based on the provided configuration. */
+    @SuppressWarnings("rawtypes")
     public CloudLegacySolrClient build() {
       if (stateProvider == null) {
         if (!zkHosts.isEmpty()) {
