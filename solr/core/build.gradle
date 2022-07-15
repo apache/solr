@@ -54,7 +54,7 @@ dependencies {
   // We export logging api with dependencies, which is useful for all modules
   api 'org.slf4j:slf4j-api'
 
-  api project(':solr:solrj')
+  api project(':solr:solrj:core')
 
   api 'io.dropwizard.metrics:metrics-core'
   implementation ('io.dropwizard.metrics:metrics-graphite', {

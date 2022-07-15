@@ -167,7 +167,7 @@ allprojects {
                     exclude "films/README.md"
                     break
 
-                case ":solr:solrj":
+                case ":solr:solrj:core":
                     exclude "src/**/*.json"
                     exclude "src/test-files/**/*.cfg"
                     exclude "src/test-files/**/*.xml"

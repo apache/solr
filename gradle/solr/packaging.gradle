@@ -23,7 +23,7 @@
 // There doesn't seem to be one ideal set of rules on how these should be created, but
 // I tried to imitate the current (master) logic present in ivy and ant files in this way:
 //
-// The "solr platform" set of dependencies is a union of all deps for (core, solrj, server).
+// The "solr platform" set of dependencies is a union of all deps for (core, server).
 //
 // Then:
 // lib - these are module's "own" dependencies.
@@ -57,7 +57,6 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr:modules
 
     dependencies {
       solrPlatformLibs project(":solr:core")
-      solrPlatformLibs project(":solr:solrj")
       // libExt has logging libs, which we don't want.  Lets users decide what they want.
       solrPlatformLibs project(path: ":solr:server", configuration: 'libExt')
     }
@@ -173,17 +172,6 @@ configure(project(":solr:core")) {
       return ownDeps
     }, {
       exclude "lucene-*"
-    })
-
-    into "lib"
-  }
-}
-
-configure(project(":solr:solrj")) {
-  evaluationDependsOn(":solr:solrj")
-
-  task resolve(type: Sync) {
-    from({ configurations.runtimeClasspath }, {
     })
 
     into "lib"

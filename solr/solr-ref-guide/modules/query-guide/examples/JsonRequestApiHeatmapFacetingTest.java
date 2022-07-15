@@ -1,1 +1,1 @@
-../../../../solrj/src/test/org/apache/solr/client/ref_guide_examples/JsonRequestApiHeatmapFacetingTest.java
+../../../../solrj/core/src/test/org/apache/solr/client/ref_guide_examples/JsonRequestApiHeatmapFacetingTest.java

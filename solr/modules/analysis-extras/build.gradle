@@ -22,7 +22,7 @@ description = 'Additional analysis components'
 dependencies {
   api project(':solr:core')
 
-  implementation project(':solr:solrj')
+  implementation project(':solr:solrj:core')
 
   implementation 'commons-io:commons-io'
   implementation 'com.ibm.icu:icu4j'

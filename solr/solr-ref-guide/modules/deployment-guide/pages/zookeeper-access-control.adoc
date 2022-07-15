@@ -65,13 +65,13 @@ The credentials are used to get permission to perform operations in ZooKeeper.
 . Control which ACLs Solr will add to znodes (ZooKeeper files/folders) it creates in ZooKeeper.
 . Control it "from the outside", so that you do not have to modify and/or recompile Solr code to turn this on.
 
-Solr nodes, clients, and tools (e.g., ZkCLI) always use a java class called {solr-javadocs}/solrj/org/apache/solr/common/cloud/SolrZkClient.html[`SolrZkClient`] to deal with their ZooKeeper stuff.
+Solr nodes, clients, and tools (e.g., ZkCLI) always use a java class called {solr-javadocs}/solrj/core/org/apache/solr/common/cloud/SolrZkClient.html[`SolrZkClient`] to deal with their ZooKeeper stuff.
 The implementation of the solution described here is all about changing `SolrZkClient`.
 If you use `SolrZkClient` in your application, the descriptions below will be true for your application too.
 
 === Controlling Credentials
 
-You control which credentials provider will be used by configuring the `zkCredentialsProvider` property in the `<solrcloud>` section of xref:configuration-guide:configuring-solr-xml.adoc[`solr.xml`] to the name of a class (on the classpath) implementing the {solr-javadocs}/solrj/org/apache/solr/common/cloud/ZkCredentialsProvider.html[`ZkCredentialsProvider`] interface.
+You control which credentials provider will be used by configuring the `zkCredentialsProvider` property in the `<solrcloud>` section of xref:configuration-guide:configuring-solr-xml.adoc[`solr.xml`] to the name of a class (on the classpath) implementing the {solr-javadocs}/solrj/core/org/apache/solr/common/cloud/ZkCredentialsProvider.html[`ZkCredentialsProvider`] interface.
 
 `solr.xml` defines the `zkCredentialsProvider` such that it will take on the value of the same-named `zkCredentialsProvider` system property if it is defined (in `solr.in.sh/.cmd` - see <<ZooKeeper ACLs in Solr Scripts,below>>), or if not, default to the `DefaultZkCredentialsProvider` implementation.
 
@@ -91,7 +91,7 @@ This set of credentials will be added to the list of credentials returned by `ge
 
 === Controlling ACLs
 
-You control which ACLs will be added by configuring `zkACLProvider` property in the `<solrcloud>` section of xref:configuration-guide:configuring-solr-xml.adoc[`solr.xml`] to the name of a class (on the classpath) implementing the {solr-javadocs}/solrj/org/apache/solr/common/cloud/ZkACLProvider.html[`ZkACLProvider`] interface.
+You control which ACLs will be added by configuring `zkACLProvider` property in the `<solrcloud>` section of xref:configuration-guide:configuring-solr-xml.adoc[`solr.xml`] to the name of a class (on the classpath) implementing the {solr-javadocs}/solrj/core/org/apache/solr/common/cloud/ZkACLProvider.html[`ZkACLProvider`] interface.
 
 `solr.xml` defines the `zkACLProvider` such that it will take on the value of the same-named `zkACLProvider` system property if it is defined (in `solr.in.sh/.cmd` - see <<ZooKeeper ACLs in Solr Scripts,below>>), or if not, default to the `DefaultZkACLProvider` implementation.
 

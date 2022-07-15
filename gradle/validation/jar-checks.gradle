@@ -128,7 +128,7 @@ subprojects {
         def dep = queue.removeFirst()
 
         // Skip any artifacts from other Solr Modules (they will be resolved there).
-        if (dep.moduleGroup == "org.apache.solr") {
+        if (dep.moduleGroup.startsWith("org.apache.solr")) {
           continue
         }
 

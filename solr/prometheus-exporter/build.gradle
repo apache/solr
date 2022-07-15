@@ -21,7 +21,7 @@ apply plugin: 'java-library'
 description = 'Prometheus exporter for exposing metrics from Solr using Metrics API and Search API'
 
 dependencies {
-  implementation project(':solr:solrj')
+  implementation project(':solr:solrj:core')
   implementation('org.apache.zookeeper:zookeeper') { transitive = false } // ideally remove ZK dep
 
   implementation ('io.prometheus:simpleclient')

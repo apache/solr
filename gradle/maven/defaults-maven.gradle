@@ -28,7 +28,7 @@ configure(rootProject) {
         ":solr:solrj",
         ":solr:prometheus-exporter",
         ":solr:test-framework",
-    ] + project(":solr:modules").getChildProjects().values().path
+    ] + project(":solr:modules").getChildProjects().values().path + project(":solr:solrj").getChildProjects().values().path
 
     apacheNexusSnapshots = "https://repository.apache.org/content/repositories/snapshots"
   }

@@ -148,7 +148,7 @@ Inspecting current dependencies
 The tree of dependencies of a project (in all configurations) can
 be dumped by the following command (example):
 
-gradlew -p solr/solrj dependencies
+gradlew -p solr/solrj/core dependencies
 
 But this can be a bit overwhelming; we will most likely be interested
 in just the "publicly visible" and "classpath-visible" configurations.
@@ -156,12 +156,12 @@ in just the "publicly visible" and "classpath-visible" configurations.
 The publicly visible project dependencies (classes shared by other
 modules importing our module) can be displayed with:
 
-gradlew -p solr/solrj dependencies --configuration api
+gradlew -p solr/solrj/core dependencies --configuration api
 
 And the "private" set of dependencies (real classpath) can be dumped
 with:
 
-gradlew -p solr/solrj dependencies --configuration runtimeClasspath
+gradlew -p solr/solrj/core dependencies --configuration runtimeClasspath
 
 
 Excluding a transitive dependency

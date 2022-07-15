@@ -33,7 +33,7 @@ Randomization
 To run tests with the given starting seed pass 'tests.seed'
 property:
 
-gradlew :solr:solrj:test -Ptests.seed=DEADBEEF
+gradlew :solr:solrj:core:test -Ptests.seed=DEADBEEF
 
 There are a lot of other test randomization properties
 available. To list them, their defaults and current values

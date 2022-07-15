@@ -26,9 +26,10 @@ rootProject.name = "solr-root"
 
 includeBuild("dev-tools/solr-missing-doclet")
 
-include "solr:solrj"
 include "solr:core"
 include "solr:server"
+include "solr:solrj"
+include "solr:solrj:core"
 include "solr:modules:analysis-extras"
 include "solr:modules:analytics"
 include "solr:modules:clustering"

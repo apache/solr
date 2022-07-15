@@ -21,7 +21,7 @@ description = 'JWT / OpenID Connect / OAuth2 authentication plugin'
 
 dependencies {
   implementation project(':solr:core')
-  implementation project(':solr:solrj')
+  implementation project(':solr:solrj:core')
 
   implementation 'org.bitbucket.b_c:jose4j'
 
