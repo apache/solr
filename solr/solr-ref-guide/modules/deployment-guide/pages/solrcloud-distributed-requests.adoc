@@ -25,7 +25,7 @@ The chosen replica acts as an aggregator: it creates internal requests to random
 In a SolrCloud cluster each individual node load balances read requests across all the replicas in a collection.
 You may still need a load balancer on the 'outside' that talks to the cluster.
 Or you need a client which understands how to read and interact with Solr's metadata in ZooKeeper and only requests the ZooKeeper ensemble's address to discover which nodes should receive requests.
-Solr provides a smart Java SolrJ client called {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/CloudSolrClient.html[CloudSolrClient] which is capable of this.
+Solr provides a smart Java SolrJ client called {solr-javadocs}/solrj/core/org/apache/solr/client/solrj/impl/CloudSolrClient.html[CloudSolrClient] which is capable of this.
 
 Even if some nodes in the cluster are offline or unreachable, a Solr node will be able to correctly respond to a search request as long as it can communicate with at least one replica of every shard, or one replica of every _relevant_ shard if the user limited the search via the `shards` or `\_route_` parameters.
 The more replicas there are of every shard, the more likely that the Solr cluster will be able to handle search results in the event of node failures.

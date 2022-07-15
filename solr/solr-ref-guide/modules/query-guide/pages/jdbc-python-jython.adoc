@@ -21,7 +21,7 @@ Solr's JDBC driver supports Python and Jython.
 == Python
 
 Python supports accessing JDBC using the https://pypi.python.org/pypi/JayDeBeApi/[JayDeBeApi] library.
-The CLASSPATH variable must be configured to contain the `solr-solrj` jar and the supporting `solrj-lib` jars.
+The CLASSPATH variable must be configured to contain the `solr-solrj-core` jar and the supporting `solrj-lib` jars.
 
 
 === JayDeBeApi
@@ -66,7 +66,7 @@ if __name__ == '__main__':
 == Jython
 
 Jython supports accessing JDBC natively with Java interfaces or with the zxJDBC library.
-The CLASSPATH variable must be configured to contain the solr-solrj jar and the supporting solrj-lib jars.
+The CLASSPATH variable must be configured to contain the `solr-solrj-core` jar and the supporting solrj-core-lib jars.
 
 .run.sh
 [source,bash]
