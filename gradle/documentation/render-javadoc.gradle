@@ -134,7 +134,7 @@ configure(project(":solr:modules:langid")) {
   }
 }
 
-configure(project(":solr:solrj")) {
+configure(project(":solr:solrj:core")) {
   project.tasks.withType(RenderJavadocTask) {
     // TODO: clean up split packages
     javadocMissingIgnore = ["org.apache.solr.client.solrj.embedded"]
@@ -172,7 +172,8 @@ configure(subprojects.findAll {
   it.path in [
       ':solr:solr-ref-guide',
       ':solr:server',
-      ':solr:webapp']
+      ':solr:webapp',
+      ':solr:solrj']
 }) {
   project.tasks.withType(RenderJavadocTask) {
     enabled = false

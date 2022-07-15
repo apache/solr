@@ -21,7 +21,7 @@ description = 'Language Identifier module for extracting language from a documen
 
 dependencies {
   implementation project(':solr:core')
-  implementation project(':solr:solrj')
+  implementation project(':solr:solrj:core')
 
   implementation ('org.apache.tika:tika-core') { transitive = false }
   implementation 'commons-io:commons-io'

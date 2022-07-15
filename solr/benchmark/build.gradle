@@ -46,7 +46,7 @@ task echoCp {
 dependencies {
   implementation project(':solr:test-framework')
   implementation project(':solr:core')
-  implementation project(':solr:solrj')
+  implementation project(':solr:solrj:core')
 
   implementation 'org.apache.lucene:lucene-core'
 

@@ -31,7 +31,7 @@ dependencies {
   }
 
   api project(':solr:core')
-  api project(':solr:solrj')
+  api project(':solr:solrj:core')
 
   api 'org.apache.lucene:lucene-test-framework'
   implementation 'org.apache.lucene:lucene-core'

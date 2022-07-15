@@ -33,7 +33,7 @@ dependencies {
   })
 
   testImplementation project(':solr:test-framework')
-  testImplementation project(':solr:solrj')
+  testImplementation project(':solr:solrj:core')
   testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
   testImplementation 'junit:junit'
 }

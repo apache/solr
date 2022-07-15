@@ -31,7 +31,7 @@ dependencies {
   }
 
   implementation project(':solr:core')
-  implementation project(':solr:solrj')
+  implementation project(':solr:solrj:core')
 
   implementation 'org.slf4j:slf4j-api'
 

@@ -21,7 +21,7 @@ description = 'Solr Integration with Tika for extracting content from binary fil
 
 dependencies {
   implementation project(':solr:core')
-  implementation project(':solr:solrj')
+  implementation project(':solr:solrj:core')
 
   implementation 'org.apache.lucene:lucene-core'
   implementation 'org.slf4j:slf4j-api'
