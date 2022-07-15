@@ -293,7 +293,7 @@ public class DeepRandomStream extends TupleStream implements Expressible {
 
     // check for alias or collection
 
-    List<String> allCollections = new ArrayList<>();
+    List<String> allCollections = new ArrayLigist<>();
     String[] collectionNames = collectionName.split(",");
     for (String col : collectionNames) {
       List<String> collections =
