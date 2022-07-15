@@ -39,7 +39,7 @@ import org.junit.Test;
  * <p>Snippets surrounded by "tag" and "end" comments are extracted and used in the Solr Reference
  * Guide.
  *
- * <p>This class is mostly copied from {@link
+ * <p>This class is mostly copied from {@code
  * org.apache.solr.client.solrj.request.json.JsonQueryRequestHeatmapFacetingTest}. The test was
  * duplicated here as the community has previously decided that it's best to keep all buildable
  * ref-guide snippets together in the same package.
