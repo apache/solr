@@ -67,7 +67,7 @@ public class FastInvTrigTest extends SolrTestCase {
             double[] b = NVectorUtil.latLongToNVector(points[i][0], points[i][1]);
             double d1 = EARTH_MEAN_RADIUS_KM * FastInvTrig.acos(a[0] * b[0] + a[1] * b[1] + a[2] * b[2]);
             double d2 = EARTH_MEAN_RADIUS_KM * Math.acos(a[0] * b[0] + a[1] * b[1] + a[2] * b[2]);
-            assertTrue("Math.acos should be close to FastInvTrig.acos",Math.abs(d1 - d2) <= TEN_METERS);
+            assertEquals("Math.acos should be close to FastInvTrig.acos",d1,d2 , TEN_METERS);
         }
     }
 }
