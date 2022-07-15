@@ -32,7 +32,7 @@ public class SolrEnvironmentTest {
 
   @Test
   public void parsePredefined() {
-    Assert.assertEquals("prod", SolrEnvironment.parse("prod").getCode());
+    assertEquals("prod", SolrEnvironment.parse("prod").getCode());
     assertNull(SolrEnvironment.parse("prod").getColor());
     assertNull(SolrEnvironment.parse("prod").getLabel());
 
