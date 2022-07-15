@@ -17,21 +17,23 @@
 
 package org.apache.solr.common.cloud;
 
+import java.util.SortedSet;
+
 /**
- * Callback registered with {@link ZkStateReader#registerDocCollectionWatcher(String,
- * DocCollectionWatcher)} and called whenever the DocCollection changes.
+ * Listener that can be used with {@code ZkStateReader#registerLiveNodesListener(LiveNodesListener)}
+ * and called whenever the live nodes set changes.
  */
-public interface DocCollectionWatcher {
+public interface LiveNodesListener {
 
   /**
-   * Called when the collection we are registered against has a change of state.
+   * Called when a change in the live nodes set occurs.
    *
    * <p>Note that, due to the way Zookeeper watchers are implemented, a single call may be the
-   * result of several state changes. Also, multiple calls to this method can be made with the same
-   * state, ie. without any new updates.
+   * result of several state changes
    *
-   * @param collection the new collection state (may be null if the collection has been deleted)
-   * @return true if the watcher should be removed
+   * @param oldLiveNodes set of live nodes before the change
+   * @param newLiveNodes set of live nodes after the change
+   * @return true if the listener should be removed
    */
-  boolean onStateChanged(DocCollection collection);
+  boolean onChange(SortedSet<String> oldLiveNodes, SortedSet<String> newLiveNodes);
 }

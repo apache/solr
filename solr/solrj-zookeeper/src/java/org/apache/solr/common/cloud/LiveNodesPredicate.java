@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Interface to determine if live nodes matches a required state
  *
- * @see ZkStateReader#waitForLiveNodes(long, TimeUnit, LiveNodesPredicate)
+ * @code ZkStateReader#waitForLiveNodes(long, TimeUnit, LiveNodesPredicate)
  */
 public interface LiveNodesPredicate {
 

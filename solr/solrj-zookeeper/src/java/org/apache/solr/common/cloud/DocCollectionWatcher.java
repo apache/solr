@@ -17,22 +17,21 @@
 
 package org.apache.solr.common.cloud;
 
-import java.util.Map;
-
 /**
- * Callback registered with {@link ZkStateReader#registerCollectionPropsWatcher(String,
- * CollectionPropsWatcher)} and called whenever the collection properties change.
+ * Callback registered with {@code ZkStateReader#registerDocCollectionWatcher(String,
+ * DocCollectionWatcher)} and called whenever the DocCollection changes.
  */
-public interface CollectionPropsWatcher {
+public interface DocCollectionWatcher {
 
   /**
-   * Called when the collection properties we are registered against has a change of state
+   * Called when the collection we are registered against has a change of state.
    *
    * <p>Note that, due to the way Zookeeper watchers are implemented, a single call may be the
-   * result of several state changes
+   * result of several state changes. Also, multiple calls to this method can be made with the same
+   * state, ie. without any new updates.
    *
-   * @param collectionProperties the new collection properties
+   * @param collection the new collection state (may be null if the collection has been deleted)
    * @return true if the watcher should be removed
    */
-  boolean onStateChanged(Map<String, String> collectionProperties);
+  boolean onStateChanged(DocCollection collection);
 }
