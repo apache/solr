@@ -77,6 +77,27 @@ public class MapStreamTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testNestedMapStream() throws Exception {
+    TupleStream stream;
+    List<Tuple> tuples;
+    StreamContext streamContext = new StreamContext();
+    StreamFactory factory =
+            new StreamFactory()
+                    .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
+                    .withFunctionName("search", CloudSolrStream.class)
+                    .withFunctionName("select", SelectStream.class)
+                    .withFunctionName("tuple", TupStream.class)
+                    .withFunctionName("map", MapStream.class);
+
+    String clause = "map(map(tuple(a=\"123\",c=\"345\"),\"a=inner\"),\"a=outer\")";
+    stream = factory.constructStream(clause);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
+    Tuple outer = (Tuple) tuples.get(0).get("a");
+    assertTupleValue(outer,"outer","inner","123");
+  }
+
+  @Test
   public void testMapStream() throws Exception {
 
     TupleStream stream;
@@ -98,6 +119,7 @@ public class MapStreamTest extends SolrCloudTestCase {
     assertString(tuples.get(0), "c", "345");
   }
 
+  @Test
   public void testMapStreamUpdate() throws Exception {
     UpdateResponse resp =
         new UpdateRequest()
