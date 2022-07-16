@@ -93,8 +93,8 @@ public class MapStreamTest extends SolrCloudTestCase {
     stream = factory.constructStream(clause);
     stream.setStreamContext(streamContext);
     tuples = getTuples(stream);
-    Tuple outer = (Tuple) tuples.get(0).get("a");
-    assertTupleValue(outer,"outer","inner","123");
+    Tuple a = (Tuple) tuples.get(0).get("a");
+    assertTupleValue(a,"outer","inner","123");
   }
 
   @Test
