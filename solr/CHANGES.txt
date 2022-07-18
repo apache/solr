@@ -146,6 +146,8 @@ Build
 
 * SOLR-16264: Set versions for all Antora build tools (Houston Putman)
 
+* SOLR-16298: Clean the javadocs directory before building (Houston Putman, Mike Drob, Uwe Schindler)
+
 ==================  9.0.0 ==================
 
 New Features
