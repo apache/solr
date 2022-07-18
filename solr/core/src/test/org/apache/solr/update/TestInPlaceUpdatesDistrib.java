@@ -113,7 +113,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     return false;
   }
 
-  public TestInPlaceUpdatesDistrib() throws Exception {
+  public TestInPlaceUpdatesDistrib() {
     super();
     sliceCount = 1;
     fixShardCount(3);
@@ -220,9 +220,10 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     leader = shard1.getLeader();
 
     String leaderBaseUrl = zkStateReader.getBaseUrlForNodeName(leader.getNodeName());
-    for (int i = 0; i < clients.size(); i++) {
-      if (((HttpSolrClient) clients.get(i)).getBaseURL().startsWith(leaderBaseUrl))
-        LEADER = clients.get(i);
+    for (SolrClient solrClient : clients) {
+      if (((HttpSolrClient) solrClient).getBaseURL().startsWith(leaderBaseUrl)) {
+        LEADER = solrClient;
+      }
     }
 
     NONLEADERS = new ArrayList<>();
@@ -231,9 +232,10 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
         continue;
       }
       String baseUrl = zkStateReader.getBaseUrlForNodeName(rep.getNodeName());
-      for (int i = 0; i < clients.size(); i++) {
-        if (((HttpSolrClient) clients.get(i)).getBaseURL().startsWith(baseUrl))
-          NONLEADERS.add(clients.get(i));
+      for (SolrClient client : clients) {
+        if (((HttpSolrClient) client).getBaseURL().startsWith(baseUrl)) {
+          NONLEADERS.add(client);
+        }
       }
     }
 
@@ -654,7 +656,6 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     assert luceneDocids.size() == valuesList.size();
     final long numFoundExpected = luceneDocids.size();
 
-    CLIENT:
     for (SolrClient client : clients) {
       final String clientDebug =
           client.toString() + (LEADER.equals(client) ? " (leader)" : " (not leader)");
@@ -1194,10 +1195,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     log.info("Doc in both replica 0: {}", doc0);
     log.info("Doc in both replica 1: {}", doc1);
     // assert both replicas have same effect
-    for (int i = 0;
-        i < NONLEADERS.size();
-        i++) { // 0th is re-ordered replica, 1st is well-ordered replica
-      SolrClient client = NONLEADERS.get(i);
+    for (SolrClient client : NONLEADERS) { // 0th is re-ordered replica, 1st is well-ordered replica
       SolrDocument doc = client.getById(String.valueOf(0), params("distrib", "false"));
       assertNotNull("Client: " + ((HttpSolrClient) client).getBaseURL(), doc);
       assertEquals(
@@ -1441,8 +1439,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
   // This returns an UpdateRequest with the given fields that represent a document.
   // This request is constructed such that it is a simulation of a request coming from
   // a leader to a replica.
-  UpdateRequest simulatedUpdateRequest(Long prevVersion, Object... fields)
-      throws SolrServerException, IOException {
+  UpdateRequest simulatedUpdateRequest(Long prevVersion, Object... fields) throws IOException {
     SolrInputDocument doc = sdoc(fields);
 
     // get baseUrl of the leader
@@ -1459,8 +1456,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     return ur;
   }
 
-  UpdateRequest simulatedDeleteRequest(int id, long version)
-      throws SolrServerException, IOException {
+  UpdateRequest simulatedDeleteRequest(int id, long version) throws IOException {
     String baseUrl = getBaseUrl("" + id);
 
     UpdateRequest ur = new UpdateRequest();
@@ -1475,8 +1471,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     return ur;
   }
 
-  UpdateRequest simulatedDeleteRequest(String query, long version)
-      throws SolrServerException, IOException {
+  UpdateRequest simulatedDeleteRequest(String query, long version) {
     String baseUrl = getBaseUrl((HttpSolrClient) LEADER);
 
     UpdateRequest ur = new UpdateRequest();
@@ -1487,27 +1482,26 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     return ur;
   }
 
-  private String getBaseUrl(String id) throws IOException {
+  private String getBaseUrl(String id) {
     DocCollection collection = cloudClient.getClusterState().getCollection(DEFAULT_COLLECTION);
     Slice slice = collection.getRouter().getTargetSlice(id, null, null, null, collection);
-    String baseUrl = slice.getLeader().getCoreUrl();
-    return baseUrl;
+    return slice.getLeader().getCoreUrl();
   }
 
-  UpdateRequest regularUpdateRequest(Object... fields) throws SolrServerException, IOException {
+  UpdateRequest regularUpdateRequest(Object... fields) {
     UpdateRequest ur = new UpdateRequest();
     SolrInputDocument doc = sdoc(fields);
     ur.add(doc);
     return ur;
   }
 
-  UpdateRequest regularDeleteRequest(int id) throws SolrServerException, IOException {
+  UpdateRequest regularDeleteRequest(int id) {
     UpdateRequest ur = new UpdateRequest();
     ur.deleteById("" + id);
     return ur;
   }
 
-  UpdateRequest regularDeleteByQueryRequest(String q) throws SolrServerException, IOException {
+  UpdateRequest regularDeleteByQueryRequest(String q) {
     UpdateRequest ur = new UpdateRequest();
     ur.deleteByQuery(q);
     return ur;

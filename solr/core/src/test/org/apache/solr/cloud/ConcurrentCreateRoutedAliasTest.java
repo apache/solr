@@ -101,7 +101,7 @@ public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
       int i = num - numStart;
       threads[i] =
           new CreateRoutedAliasThread(
-              "create-delete-search-" + i, aliasName, "NOW/HOUR", solrClient, failure, false);
+              "create-delete-search-" + i, aliasName, "NOW/HOUR", solrClient, failure);
     }
 
     startAll(threads);
@@ -129,8 +129,7 @@ public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
               aliasName,
               "2017-12-25T23:24:25Z",
               solrClient,
-              failure,
-              true);
+              failure);
     }
 
     startAll(threads);
@@ -167,8 +166,7 @@ public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
         String aliasName,
         String start,
         SolrClient solrClient,
-        AtomicReference<Exception> failure,
-        boolean v2) {
+        AtomicReference<Exception> failure) {
       super(name);
       this.aliasName = aliasName;
       this.start = start;

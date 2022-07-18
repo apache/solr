@@ -78,7 +78,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testException() throws Exception {
+  public void testException() {
     String notFoundPath = "/c/" + COLL_NAME + "/abccdef";
     String incorrectPayload = "{rebalance-leaders: {maxAtOnce: abc, maxWaitSeconds: xyz}}";
     testException(new XMLResponseParser(), 404, notFoundPath, incorrectPayload);
@@ -92,15 +92,6 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
         400,
         "/c/" + COLL_NAME,
         incorrectPayload);
-  }
-
-  private long getStatus(V2Response response) {
-    Object header = response.getResponse().get("responseHeader");
-    if (header instanceof NamedList) {
-      return (int) ((NamedList<?>) header).get("status");
-    } else {
-      return (long) ((Map<?, ?>) header).get("status");
-    }
   }
 
   @Test

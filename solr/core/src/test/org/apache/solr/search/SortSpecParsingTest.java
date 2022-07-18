@@ -42,7 +42,7 @@ public class SortSpecParsingTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSort() throws Exception {
+  public void testSort() {
     Sort sort;
     SortSpec spec;
     SolrQueryRequest req = req();
@@ -230,7 +230,7 @@ public class SortSpecParsingTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testBad() throws Exception {
+  public void testBad() {
     Sort sort;
     SolrQueryRequest req = req();
 

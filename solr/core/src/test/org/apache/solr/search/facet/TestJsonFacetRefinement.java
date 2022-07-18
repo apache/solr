@@ -1065,8 +1065,6 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
 
     assertTrue(
         clients.size() >= 3); // we only use 2, but assert at least 3 to also test empty shard
-    final SolrClient c0 = clients.get(0);
-    final SolrClient c1 = clients.get(1);
 
     // during the initial request...
     // - shard1 should return "high" count pX & pY w/o any child buckets (no "more" child)
@@ -1122,8 +1120,6 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     final int numClients = clients.size();
 
     assertTrue(numClients >= 3); // we only use 2, but assert at least 3 to also test empty shard
-    final SolrClient c0 = clients.get(0);
-    final SolrClient c1 = clients.get(1);
 
     // if we do the same request as testSortedSubFacetRefinementWhenParentOnlyReturnedByOneShard,
     // but with processEmpty:true, then ideally we should get the same buckets & counts as before,

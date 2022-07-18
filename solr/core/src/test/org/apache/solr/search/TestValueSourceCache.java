@@ -35,7 +35,7 @@ public class TestValueSourceCache extends SolrTestCaseJ4 {
   static QParser _func;
 
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterClass() {
     _func = null;
   }
 

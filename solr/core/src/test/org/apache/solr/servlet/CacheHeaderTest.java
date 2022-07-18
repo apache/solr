@@ -45,13 +45,13 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
   }
 
   @AfterClass
-  public static void afterTest() throws Exception {}
+  public static void afterTest() {}
 
   protected static final String CONTENTS = "id\n100\n101\n102";
 
   @Test
   public void testCacheVetoHandler() throws Exception {
-    File f = makeFile(CONTENTS);
+    File f = makeFile(CacheHeaderTest.CONTENTS, StandardCharsets.UTF_8.name());
     HttpRequestBase m =
         getUpdateMethod(
             "GET",
@@ -267,10 +267,6 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
       head = response.getFirstHeader("Expires");
       assertNotNull("We got no Expires header in response", head);
     }
-  }
-
-  protected File makeFile(String contents) {
-    return makeFile(contents, StandardCharsets.UTF_8.name());
   }
 
   protected File makeFile(String contents, String charset) {

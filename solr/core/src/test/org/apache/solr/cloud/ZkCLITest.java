@@ -70,7 +70,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void afterClass() throws InterruptedException {
+  public static void afterClass() {
     System.clearProperty("solrcloud.skip.autorecovery");
   }
 
@@ -489,11 +489,5 @@ public class ZkCLITest extends SolrTestCaseJ4 {
       zkServer.shutdown();
     }
     super.tearDown();
-  }
-
-  private void printLayout(String zkHost) throws Exception {
-    SolrZkClient zkClient = new SolrZkClient(zkHost, AbstractZkTestCase.TIMEOUT);
-    zkClient.printLayoutToStream(System.out);
-    zkClient.close();
   }
 }

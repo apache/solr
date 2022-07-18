@@ -21,7 +21,6 @@ import static org.apache.lucene.tests.util.LuceneTestCase.random;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -57,12 +56,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class DocValuesNotIndexedTest extends SolrCloudTestCase {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Rule public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
@@ -158,8 +153,8 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
 
     defineFields(updateList, fieldsToTestSingle, false);
     defineFields(updateList, fieldsToTestMulti, true);
-    defineFields(updateList, fieldsToTestGroupSortFirst, false, "sorMissingFirst", "true");
-    defineFields(updateList, fieldsToTestGroupSortLast, false, "sorMissingLast", "true");
+    defineFields(updateList, fieldsToTestGroupSortFirst, false);
+    defineFields(updateList, fieldsToTestGroupSortLast, false);
 
     MultiUpdate multiUpdateRequest = new MultiUpdate(updateList);
     SchemaResponse.UpdateResponse multipleUpdatesResponse =
@@ -410,8 +405,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
       int nullCount = 0;
       int sevenCount = 0;
       int boolCount = 0;
-      for (int idx = 0; idx < commands.size(); ++idx) {
-        GroupCommand fieldCommand = commands.get(idx);
+      for (GroupCommand fieldCommand : commands) {
         for (Group grp : fieldCommand.getValues()) {
           switch (grp.getResult().size()) {
             case 7:
@@ -485,8 +479,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
     return doc;
   }
 
-  private static void defineFields(
-      List<Update> updateList, List<FieldProps> props, boolean multi, String... extras) {
+  private static void defineFields(List<Update> updateList, List<FieldProps> props, boolean multi) {
     for (FieldProps prop : props) {
       Map<String, Object> fieldAttributes = new LinkedHashMap<>();
       fieldAttributes.put("name", prop.getName());

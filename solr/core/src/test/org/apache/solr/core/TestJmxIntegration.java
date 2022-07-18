@@ -92,7 +92,7 @@ public class TestJmxIntegration extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterClass() {
     if (newMbeanServer != null) {
       MBeanServerFactory.releaseMBeanServer(newMbeanServer);
     }
@@ -101,7 +101,7 @@ public class TestJmxIntegration extends SolrTestCaseJ4 {
   }
 
   @Before
-  public void resetIndex() throws Exception {
+  public void resetIndex() {
     clearIndex();
     assertU("commit", commit());
   }
@@ -158,7 +158,6 @@ public class TestJmxIntegration extends SolrTestCaseJ4 {
       log.info("Mbeans in server: {}", mbeanServer.queryNames(null, null));
     }
 
-    Set<ObjectInstance> objects = mbeanServer.queryMBeans(searcher, null);
     assertFalse(
         "No mbean found for SolrIndexSearcher", mbeanServer.queryMBeans(searcher, null).isEmpty());
 

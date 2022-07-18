@@ -988,6 +988,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
         SolrException.ErrorCode.BAD_REQUEST);
   }
 
+  @SuppressWarnings("SameParameterValue")
   private void assertStringInterval(
       String fieldName, String intervalStr, String expectedStart, String expectedEnd)
       throws SyntaxError {

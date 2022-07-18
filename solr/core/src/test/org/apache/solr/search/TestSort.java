@@ -321,7 +321,6 @@ public class TestSort extends SolrTestCaseJ4 {
                 ? ""
                 : "zzz";
 
-        boolean scoreInOrder = r.nextBoolean();
         final TopFieldCollector topCollector =
             TopFieldCollector.create(sort, top, Integer.MAX_VALUE);
 

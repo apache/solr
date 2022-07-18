@@ -334,8 +334,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
 
     List<Integer> boostedResults = new ArrayList<>();
 
-    for (int i = 0; i < resultsArray.length; i++) {
-      int result = resultsArray[i];
+    for (int result : resultsArray) {
       if (mergeBoost.boost(result)) {
         boostedResults.add(result);
       }
@@ -343,8 +342,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
 
     List<Integer> controlResults = new ArrayList<>();
 
-    for (int i = 0; i < resultsArray.length; i++) {
-      int result = resultsArray[i];
+    for (int result : resultsArray) {
       if (Arrays.binarySearch(boostedArray, result) > -1) {
         controlResults.add(result);
       }
@@ -371,8 +369,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
 
   @Test
   public void testDoubleCollapse() {
-    testDoubleCollapse("group_s", "");
-    testDoubleCollapse("group_i", "");
+    testDoubleCollapse("group_s");
+    testDoubleCollapse("group_i");
   }
 
   /*
@@ -381,7 +379,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
    * the by finally method of the first collapse. This specific test is meant to confirm that any feature
    * that causes searches to not visit each segment (such as early query termination) doesn't break collapse.
    */
-  private void testDoubleCollapse(String group, String hint) {
+  private void testDoubleCollapse(String group) {
     String[] doc = {
       "id", "1", "term_s", "YYYY", group, "1", "test_i", "5", "test_l", "10", "test_f", "2000"
     };
@@ -421,8 +419,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("q", "id:(1 2 5)");
-    params.add("fq", "{!collapse cost=200 field=term_s " + hint + "}");
-    params.add("fq", "{!collapse cost=400 field=" + group + "" + hint + "}");
+    params.add("fq", "{!collapse cost=200 field=term_s }");
+    params.add("fq", "{!collapse cost=400 field=" + group + "}");
 
     params.add("defType", "edismax");
     params.add("bf", "field(test_i)");
@@ -431,8 +429,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
 
     params = new ModifiableSolrParams();
     params.add("q", "id:(1 2 5)");
-    params.add("fq", "{!collapse cost=200 max=test_i field=term_s " + hint + "}");
-    params.add("fq", "{!collapse cost=400 max=test_i field=" + group + "" + hint + "}");
+    params.add("fq", "{!collapse cost=200 max=test_i field=term_s }");
+    params.add("fq", "{!collapse cost=400 max=test_i field=" + group + "}");
 
     params.add("defType", "edismax");
     params.add("bf", "field(test_i)");

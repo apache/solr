@@ -199,7 +199,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
         "/response=={'numFound':3,'start':0,'numFoundExact':true,'docs':[{'id':'1'},{'id':'4'},{'id':'5'}]}");
   }
 
-  public void testNotEquals() throws SyntaxError, IOException {
+  public void testNotEquals() throws SyntaxError {
     try (SolrQueryRequest req = req("*:*")) {
       Query x =
           QParser.getParser("{!join from=dept_id_s to=dept_ss score=none}text_t:develop", req)

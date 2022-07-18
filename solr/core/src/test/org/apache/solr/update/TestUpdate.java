@@ -81,7 +81,6 @@ public class TestUpdate extends SolrTestCaseJ4 {
         req("q", "*:*", "fl", "id,*_i,*_is,copyfield_*"),
         "/response/docs/[0]=={'id':'1', 'val_i':100, 'val_is':[10,5,-1], 'copyfield_source':['a','b'], 'copyfield_dest_ss':['a','b']}");
 
-    long version2;
     SolrException se =
         expectThrows(
             SolrException.class,

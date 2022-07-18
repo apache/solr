@@ -31,7 +31,6 @@ public class TestOverriddenPrefixQueryForCustomFieldType extends SolrTestCaseJ4 
 
   private static int[] counts = new int[2];
   private static int otherCounts;
-  String[] otherTerms = {"this", "that", "those", "randomness"};
 
   @BeforeClass
   public static void beforeClass() throws Exception {

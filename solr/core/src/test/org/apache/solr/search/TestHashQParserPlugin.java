@@ -82,8 +82,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
     params.add("fq", "{!hash worker=0 workers=1 cost=" + getCost(random()) + "}");
     params.add("partitionKeys", "a_i");
     params.add("wt", "xml");
-    ModifiableSolrParams finalParams = params;
-    expectThrows(SolrException.class, () -> h.query(req(finalParams)));
+    expectThrows(SolrException.class, () -> h.query(req(params)));
   }
 
   @Test
@@ -301,10 +300,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
   private void assertNoOverLap(
       @SuppressWarnings({"rawtypes"}) Set setA, @SuppressWarnings({"rawtypes"}) Set setB)
       throws Exception {
-    @SuppressWarnings({"rawtypes"})
-    Iterator it = setA.iterator();
-    while (it.hasNext()) {
-      Object o = it.next();
+    for (Object o : setA) {
       if (setB.contains(o)) {
         throw new Exception("Overlapping sets for value:" + o.toString());
       }

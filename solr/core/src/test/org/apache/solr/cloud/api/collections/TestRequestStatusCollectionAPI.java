@@ -39,7 +39,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
   }
 
   @Test
-  public void test() throws Exception {
+  public void test() {
     ModifiableSolrParams params = new ModifiableSolrParams();
 
     params.set(CollectionParams.ACTION, CollectionParams.CollectionAction.CREATE.toString());

@@ -309,7 +309,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     if (vers == null)
       fail("Failed to get version using query " + query + " from " + replica.getCoreUrl());
 
-    return vers.longValue();
+    return vers;
   }
 
   protected void assertDocsExistInAllReplicas(
@@ -330,9 +330,10 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
         if (deletedDocs != null && deletedDocs.contains(d)) continue;
 
         String docId = String.valueOf(d);
-        Long leaderVers = assertDocExists(leaderSolr, testCollectionName, docId, null);
-        for (HttpSolrClient replicaSolr : replicas)
-          assertDocExists(replicaSolr, testCollectionName, docId, leaderVers);
+        Long leaderVers = assertDocExists(leaderSolr, docId, null);
+        for (HttpSolrClient replicaSolr : replicas) {
+          assertDocExists(replicaSolr, docId, leaderVers);
+        }
       }
     } finally {
       if (leaderSolr != null) {
@@ -344,7 +345,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     }
   }
 
-  protected HttpSolrClient getHttpSolrClient(Replica replica) throws Exception {
+  protected HttpSolrClient getHttpSolrClient(Replica replica) {
     return getHttpSolrClient(replica.getCoreUrl());
   }
 
@@ -360,8 +361,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
    * Query the real-time get handler for a specific doc by ID to verify it exists in the provided
    * server, using distrib=false, so it doesn't route to another replica.
    */
-  protected Long assertDocExists(HttpSolrClient solr, String coll, String docId, Long expVers)
-      throws Exception {
+  protected Long assertDocExists(HttpSolrClient solr, String docId, Long expVers) throws Exception {
     QueryRequest qr =
         new QueryRequest(
             params("qt", "/get", "id", docId, "distrib", "false", "fl", "id,_version_"));

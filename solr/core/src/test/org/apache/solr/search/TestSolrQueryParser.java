@@ -75,7 +75,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   private static final List<String> HAS_NAN_FIELDS = new ArrayList<String>(12);
 
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterClass() {
     HAS_VAL_FIELDS.clear();
     HAS_NAN_FIELDS.clear();
   }

@@ -296,8 +296,8 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
       assertEquals(1, numSuccess.get());
       assertEquals(numThreads - 1, numFailure.get());
     } finally {
-      for (int i = 0; i < clients.length; i++) {
-        clients[i].close();
+      for (SolrClient client : clients) {
+        client.close();
       }
     }
   }

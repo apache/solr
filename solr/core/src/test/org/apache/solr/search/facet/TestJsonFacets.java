@@ -1762,8 +1762,6 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     client.deleteByQuery("*:*", null);
 
-    Client iclient = client;
-
     /* This code was not needed yet, but may be needed if we want to force empty shard results more often.
     // create a new indexing client that doesn't use one shard to better test for empty or non-existent results
     if (!client.local()) {
@@ -1802,10 +1800,10 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "true",
             sparse_s,
             "one");
-    iclient.add(doc, null);
-    iclient.add(doc, null);
-    iclient.add(doc, null); // a couple of deleted docs
-    iclient.add(
+    client.add(doc, null);
+    client.add(doc, null);
+    client.add(doc, null); // a couple of deleted docs
+    client.add(
         sdoc(
             "id",
             "2",
@@ -1840,9 +1838,9 @@ public class TestJsonFacets extends SolrTestCaseHS {
             Z_num_l,
             "0"),
         null);
-    iclient.add(sdoc("id", "3"), null);
-    iclient.commit();
-    iclient.add(
+    client.add(sdoc("id", "3"), null);
+    client.commit();
+    client.add(
         sdoc(
             "id",
             "4",
@@ -1875,7 +1873,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
             Z_num_l,
             Long.MIN_VALUE),
         null);
-    iclient.add(
+    client.add(
         sdoc(
             "id",
             "5",
@@ -1900,8 +1898,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
             multi_ss,
             "a"),
         null);
-    iclient.commit();
-    iclient.add(
+    client.commit();
+    client.add(
         sdoc(
             "id",
             "6",
@@ -1930,7 +1928,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
             Z_num_l,
             Long.MAX_VALUE),
         null);
-    iclient.commit();
+    client.commit();
     client.commit();
 
     // test for presence of debugging info
@@ -5020,7 +5018,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   }
 
   /** test code to ensure TDigest is working as we expect. */
-  public void XtestTDigest() throws Exception {
+  public void XtestTDigest() {
     AVLTreeDigest t1 = new AVLTreeDigest(100);
     t1.add(10, 1);
     t1.add(90, 1);

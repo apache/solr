@@ -98,7 +98,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
   }
 
   @After
-  public void cleanUp() throws Exception {
+  public void cleanUp() {
     clearIndex();
     deleteCore();
   }

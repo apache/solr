@@ -69,14 +69,6 @@ public class WordLengthTaggingFilter extends TokenFilter {
   private int minLength;
 
   /**
-   * TokenFilter only marks tokens to be looked up with equals or more as {@link
-   * #DEFAULT_MIN_LENGTH} characters
-   */
-  public WordLengthTaggingFilter(TokenStream input) {
-    this(input, null);
-  }
-
-  /**
    * TokenFilter only marks tokens to be looked up with equals or more characters as the parsed
    * minimum.
    *

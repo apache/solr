@@ -78,7 +78,6 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
   protected long committedModelClock;
   protected int clientIndexUsedForCommit;
   protected volatile int lastId;
-  protected final String field = "val_l";
 
   private void initModel(int ndocs) {
     for (int i = 0; i < ndocs; i++) {
@@ -262,8 +261,8 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
                     synchronized (model) {
                       DocInfo currInfo = model.get(id);
                       if (null != returnedVersion
-                          && (Math.abs(returnedVersion.longValue()) > Math.abs(currInfo.version))) {
-                        model.put(id, new DocInfo(returnedVersion.longValue(), 0, 0));
+                          && (Math.abs(returnedVersion) > Math.abs(currInfo.version))) {
+                        model.put(id, new DocInfo(returnedVersion, 0, 0));
                       }
                     }
 
@@ -356,8 +355,8 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
                     synchronized (model) {
                       DocInfo currInfo = model.get(id);
                       if (null != returnedVersion
-                          && (Math.abs(returnedVersion.longValue()) > Math.abs(currInfo.version))) {
-                        model.put(id, new DocInfo(returnedVersion.longValue(), nextVal1, nextVal2));
+                          && (Math.abs(returnedVersion) > Math.abs(currInfo.version))) {
+                        model.put(id, new DocInfo(returnedVersion, nextVal1, nextVal2));
                       }
                     }
                   }
@@ -434,9 +433,7 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
 
                     final Long foundVersion = (Long) actual.getFieldValue("_version_");
                     assertNotNull(msg, foundVersion);
-                    assertTrue(
-                        msg + "... solr doc has non-positive version???",
-                        0 < foundVersion.longValue());
+                    assertTrue(msg + "... solr doc has non-positive version???", 0 < foundVersion);
                     final Integer intVal = (Integer) actual.getFieldValue("val1_i_dvo");
                     assertNotNull(msg, intVal);
 
@@ -447,9 +444,9 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
                         msg
                             + " ...solr returned older version then model. "
                             + "should not be possible given the order of operations in writer threads",
-                        Math.abs(expected.version) <= foundVersion.longValue());
+                        Math.abs(expected.version) <= foundVersion);
 
-                    if (foundVersion.longValue() == expected.version) {
+                    if (foundVersion == expected.version) {
                       assertEquals(msg, expected.intFieldValue, intVal.intValue());
                       assertEquals(msg, expected.longFieldValue, longVal.longValue());
                     }
@@ -684,10 +681,11 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
     Slice shard1 = clusterState.getCollection(DEFAULT_COLLECTION).getSlice(SHARD1);
     leader = shard1.getLeader();
 
-    for (int i = 0; i < clients.size(); i++) {
+    for (SolrClient client : clients) {
       String leaderBaseUrl = zkStateReader.getBaseUrlForNodeName(leader.getNodeName());
-      if (((HttpSolrClient) clients.get(i)).getBaseURL().startsWith(leaderBaseUrl))
-        return clients.get(i);
+      if (((HttpSolrClient) client).getBaseURL().startsWith(leaderBaseUrl)) {
+        return client;
+      }
     }
 
     return null;

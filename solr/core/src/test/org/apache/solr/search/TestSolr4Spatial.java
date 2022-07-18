@@ -209,10 +209,9 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
   @Test
   public void checkResultFormat() {
     // Check input and output format is the same
-    String IN = "89.9,-130"; // lat,lon
-    String OUT = IN; // IDENTICAL!
+    final String IN_OUT = "89.9,-130"; // lat,lon
 
-    assertU(adoc("id", "11", fieldName, IN));
+    assertU(adoc("id", "11", fieldName, IN_OUT));
     assertU(commit());
 
     assertQ(
@@ -224,8 +223,8 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
             "rows",
             "1000",
             "fq",
-            "{!bbox sfield=" + fieldName + " pt=" + IN + " d=9}"),
-        "//result/doc/*[@name='" + fieldName + "']//text()='" + OUT + "'");
+            "{!bbox sfield=" + fieldName + " pt=" + IN_OUT + " d=9}"),
+        "//result/doc/*[@name='" + fieldName + "']//text()='" + IN_OUT + "'");
   }
 
   @Test

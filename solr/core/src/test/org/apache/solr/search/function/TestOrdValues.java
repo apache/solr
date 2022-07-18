@@ -29,8 +29,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
-import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -39,7 +37,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.tests.analysis.MockAnalyzer;
 import org.apache.lucene.tests.index.RandomIndexWriter;
 import org.apache.lucene.tests.search.QueryUtils;
-import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.legacy.LegacyFloatField;
@@ -62,7 +59,7 @@ public class TestOrdValues extends SolrTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    createIndex(false);
+    createIndex();
   }
 
   /** Test OrdFieldSource */
@@ -162,7 +159,7 @@ public class TestOrdValues extends SolrTestCase {
   }
 
   // LUCENE-1250
-  public void testEqualsNull() throws Exception {
+  public void testEqualsNull() {
     OrdFieldSource ofs = new OrdFieldSource("f");
     assertFalse(ofs.equals(null));
 
@@ -182,9 +179,6 @@ public class TestOrdValues extends SolrTestCase {
   protected static final String TEXT_FIELD = "text";
   protected static final String INT_FIELD = "iii";
   protected static final String FLOAT_FIELD = "fff";
-
-  protected ValueSource INT_VALUESOURCE = new IntFieldSource(INT_FIELD);
-  protected ValueSource FLOAT_VALUESOURCE = new FloatFieldSource(FLOAT_FIELD);
 
   private static final String DOC_TEXT_LINES[] = {
     "Well, this is just some plain text we use for creating the ",
@@ -215,7 +209,7 @@ public class TestOrdValues extends SolrTestCase {
     analyzer = null;
   }
 
-  protected static void createIndex(boolean doMultiSegment) throws Exception {
+  protected static void createIndex() throws Exception {
     if (VERBOSE) {
       System.out.println("TEST: setUp");
     }
@@ -223,9 +217,6 @@ public class TestOrdValues extends SolrTestCase {
     dir = newDirectory();
     analyzer = new MockAnalyzer(random());
     IndexWriterConfig iwc = newIndexWriterConfig(analyzer).setMergePolicy(newLogMergePolicy());
-    if (doMultiSegment) {
-      iwc.setMaxBufferedDocs(TestUtil.nextInt(random(), 2, 7));
-    }
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     // add docs not exactly in natural ID order, to verify we do check the order of docs by scores
     int remaining = N_DOCS;
@@ -241,12 +232,11 @@ public class TestOrdValues extends SolrTestCase {
       i = (i + 4) % N_DOCS;
       remaining--;
     }
-    if (!doMultiSegment) {
-      if (VERBOSE) {
-        System.out.println("TEST: setUp full merge");
-      }
-      iw.forceMerge(1);
+    if (VERBOSE) {
+      System.out.println("TEST: setUp full merge");
     }
+    iw.forceMerge(1);
+
     iw.close();
     if (VERBOSE) {
       System.out.println("TEST: setUp done close");
@@ -298,11 +288,6 @@ public class TestOrdValues extends SolrTestCase {
   // some text line for regular search
   private static String textLine(int docNum) {
     return DOC_TEXT_LINES[docNum % DOC_TEXT_LINES.length];
-  }
-
-  // extract expected doc score from its ID Field: "ID7" --> 7.0
-  protected static float expectedFieldScore(String docIDFieldVal) {
-    return Float.parseFloat(docIDFieldVal.substring(2));
   }
 
   // debug messages (change DBG to true for anything to print)

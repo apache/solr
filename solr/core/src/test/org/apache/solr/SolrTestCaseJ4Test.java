@@ -53,7 +53,7 @@ public class SolrTestCaseJ4Test extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void AfterClass() throws Exception {}
+  public static void AfterClass() {}
 
   @Test
   public void testCorrectCore() {
@@ -61,7 +61,7 @@ public class SolrTestCaseJ4Test extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testParams() throws Exception {
+  public void testParams() {
     final ModifiableSolrParams params = new ModifiableSolrParams();
     assertEquals(params.toString(), params().toString());
 

@@ -47,8 +47,6 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
   private static final Integer RUN_LENGTH =
       Integer.parseInt(System.getProperty("solr.tests.cloud.cm.runlength", "-1"));
 
-  private final boolean useTlogReplicas = random().nextBoolean();
-
   private final int numPullReplicas;
   private final int numRealtimeOrTlogReplicas;
 

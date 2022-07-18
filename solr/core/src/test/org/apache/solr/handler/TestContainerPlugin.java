@@ -354,7 +354,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     }
 
     @Override
-    public void start() throws Exception {
+    public void start() {
       state = State.STARTING;
       startCalled = true;
       state = State.RUNNING;
@@ -378,7 +378,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     private SolrResourceLoader resourceLoader;
 
     @Override
-    public void inform(ResourceLoader loader) throws IOException {
+    public void inform(ResourceLoader loader) {
       this.resourceLoader = (SolrResourceLoader) loader;
       try {
         InputStream is = resourceLoader.openResource("org/apache/solr/handler/MyPlugin.class");

@@ -302,10 +302,9 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
 
     params.add(cases[random().nextInt(cases.length)]);
     for (; ; creep *= 1.5) {
-      final int boundary = creep;
-      try (Trap catchClass = catchCount(boundary)) {
+      try (Trap catchClass = catchCount(creep)) {
 
-        params.set("boundary", boundary);
+        params.set("boundary", creep);
         QueryResponse rsp = client.query(COLLECTION, params);
         assertEquals("" + rsp, rsp.getStatus(), 0);
         assertNo500s("" + rsp);

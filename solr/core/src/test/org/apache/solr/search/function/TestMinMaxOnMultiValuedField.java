@@ -113,7 +113,7 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
 
   /** Deletes all docs (which may be left over from a previous test */
   @Before
-  public void before() throws Exception {
+  public void before() {
     clearIndex();
     assertU(commit());
   }
@@ -498,7 +498,7 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
         SolrException.ErrorCode.BAD_REQUEST);
   }
 
-  public void testRandom() throws Exception {
+  public void testRandom() {
 
     @SuppressWarnings({"rawtypes"})
     Comparable[] vals = new Comparable[TestUtil.nextInt(random(), 1, 17)];

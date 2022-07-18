@@ -404,7 +404,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
       docsOnThisPage = 0;
       for (SolrDocument doc : rsp.getResults()) {
         docsOnThisPage++;
-        int id_i = ((Integer) doc.get("id_i")).intValue();
+        int id_i = (Integer) doc.get("id_i");
         assertTrue(
             "found id_i bigger then expected " + maxDocIdExpected + ": " + id_i,
             id_i <= maxDocIdExpected);

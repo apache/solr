@@ -52,7 +52,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterClass() {
     if (RESTORE_UFFSQ_PROP == null) {
       System.clearProperty(TEST_UFFSQ_PROPNAME);
     } else {

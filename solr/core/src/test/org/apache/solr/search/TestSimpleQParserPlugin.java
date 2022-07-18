@@ -28,7 +28,7 @@ public class TestSimpleQParserPlugin extends SolrTestCaseJ4 {
     index();
   }
 
-  public static void index() throws Exception {
+  public static void index() {
     assertU(
         adoc("id", "42", "text0", "t0 t0 t0", "text1", "t0 t1 t2", "text-keyword0", "kw0 kw0 kw0"));
     assertU(

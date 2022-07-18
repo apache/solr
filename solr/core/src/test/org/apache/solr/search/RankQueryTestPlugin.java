@@ -79,7 +79,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
       super(query, localParams, params, req);
     }
 
-    public Query parse() throws SyntaxError {
+    public Query parse() {
 
       int mergeStrategy = localParams.getInt("mergeStrategy", 0);
       int collector = localParams.getInt("collector", 0);
@@ -535,13 +535,12 @@ public class RankQueryTestPlugin extends QParserPlugin {
         numFound += docs.getNumFound();
 
         SortSpec ss = rb.getSortSpec();
-        Sort sort = ss.getSort();
 
         @SuppressWarnings({"rawtypes"})
         NamedList sortFieldValues =
             (NamedList) (srsp.getSolrResponse().getResponse().get("merge_values"));
         @SuppressWarnings({"rawtypes"})
-        NamedList unmarshalledSortFieldValues = unmarshalSortValues(ss, sortFieldValues, schema);
+        NamedList unmarshalledSortFieldValues = unmarshalSortValues(ss, sortFieldValues);
         @SuppressWarnings({"rawtypes"})
         List lst = (List) unmarshalledSortFieldValues.getVal(0);
 
@@ -625,8 +624,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private NamedList unmarshalSortValues(
-        SortSpec sortSpec, NamedList sortFieldValues, IndexSchema schema) {
+    private NamedList unmarshalSortValues(SortSpec sortSpec, NamedList sortFieldValues) {
       NamedList unmarshalledSortValsPerField = new NamedList<>();
 
       if (0 == sortFieldValues.size()) return unmarshalledSortValsPerField;

@@ -18,8 +18,6 @@ package org.apache.solr.handler.component;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.spelling.suggest.SuggesterParams;
 import org.junit.BeforeClass;
@@ -28,8 +26,6 @@ import org.junit.Test;
 public class SuggestComponentTest extends SolrTestCaseJ4 {
 
   private static final String rh = "/suggest";
-
-  private static CoreContainer cc;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -821,10 +817,8 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
 
   private void reloadCore(boolean createNewCore) throws Exception {
     if (createNewCore) {
-      CoreContainer cores = h.getCoreContainer();
       SolrCore core = h.getCore();
       String dataDir1 = core.getDataDir();
-      CoreDescriptor cd = core.getCoreDescriptor();
       h.close();
       createCore();
       SolrCore createdCore = h.getCore();
