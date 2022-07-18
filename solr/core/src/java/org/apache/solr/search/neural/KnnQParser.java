@@ -111,7 +111,6 @@ public class KnnQParser extends QParser {
     return null;
   }
 
-
   /**
    * Parses a String vector.
    *
