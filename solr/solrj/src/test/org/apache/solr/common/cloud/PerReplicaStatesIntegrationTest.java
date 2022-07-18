@@ -127,7 +127,8 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
       String collectionPath = ZkStateReader.getCollectionPath(testCollection);
       PerReplicaStates prs =
-          PerReplicaStatesFetcher.fetch(collectionPath, SolrCloudTestCase.cluster.getZkClient(), null);
+          PerReplicaStatesFetcher.fetch(
+              collectionPath, SolrCloudTestCase.cluster.getZkClient(), null);
       assertEquals(1, prs.states.size());
 
       JettySolrRunner jsr = cluster.startJettySolrRunner();
@@ -137,7 +138,9 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       CollectionAdminRequest.addReplicaToShard(testCollection, "shard1")
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(testCollection, 1, 2);
-      prs = PerReplicaStatesFetcher.fetch(collectionPath, SolrCloudTestCase.cluster.getZkClient(), null);
+      prs =
+          PerReplicaStatesFetcher.fetch(
+              collectionPath, SolrCloudTestCase.cluster.getZkClient(), null);
       assertEquals(2, prs.states.size());
       c = cluster.getZkStateReader().getCollection(testCollection);
       prs.states.forEachEntry((s, state) -> assertEquals(Replica.State.ACTIVE, state.state));
@@ -162,12 +165,16 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
         if (log.isInfoEnabled()) {
           log.info("after down node, state.json v: {}", c.getZNodeVersion());
         }
-        prs = PerReplicaStatesFetcher.fetch(collectionPath, SolrCloudTestCase.cluster.getZkClient(), null);
+        prs =
+            PerReplicaStatesFetcher.fetch(
+                collectionPath, SolrCloudTestCase.cluster.getZkClient(), null);
         PerReplicaStates.State st = prs.get(replicaName);
         assertNotEquals(Replica.State.ACTIVE, st.state);
         jsr.start();
         cluster.waitForActiveCollection(testCollection, 1, 2);
-        prs = PerReplicaStatesFetcher.fetch(collectionPath, SolrCloudTestCase.cluster.getZkClient(), null);
+        prs =
+            PerReplicaStatesFetcher.fetch(
+                collectionPath, SolrCloudTestCase.cluster.getZkClient(), null);
         prs.states.forEachEntry((s, state) -> assertEquals(Replica.State.ACTIVE, state.state));
       }
 

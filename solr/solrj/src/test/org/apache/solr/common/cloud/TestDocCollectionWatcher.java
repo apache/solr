@@ -282,7 +282,8 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
     expectThrows(
         TimeoutException.class,
         () -> {
-          CloudSolrClientUtils.waitForState(client, "no-such-collection", 10, TimeUnit.MILLISECONDS, (c) -> (false));
+          CloudSolrClientUtils.waitForState(
+              client, "no-such-collection", 10, TimeUnit.MILLISECONDS, (c) -> (false));
         });
 
     waitFor(

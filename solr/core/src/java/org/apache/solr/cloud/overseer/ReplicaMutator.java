@@ -436,7 +436,8 @@ public class ReplicaMutator {
     log.debug("Collection is now: {}", newCollection);
     if (collection != null && collection.isPerReplicaState()) {
       PerReplicaStates prs =
-          PerReplicaStatesFetcher.fetch(collection.getZNode(), zkClient, collection.getPerReplicaStates());
+          PerReplicaStatesFetcher.fetch(
+              collection.getZNode(), zkClient, collection.getPerReplicaStates());
       return new ZkWriteCommand(
           collectionName,
           newCollection,

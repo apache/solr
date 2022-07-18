@@ -4,5 +4,5 @@ import java.util.Collection;
 import java.util.Map;
 
 public interface NodesSysProps {
-    Map<String, Object> getSysProps(String node, Collection<String> tags);
+  Map<String, Object> getSysProps(String node, Collection<String> tags);
 }

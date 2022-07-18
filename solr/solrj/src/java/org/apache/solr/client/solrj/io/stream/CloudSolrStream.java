@@ -346,7 +346,8 @@ public class CloudSolrStream extends TupleStream implements Expressible {
   }
 
   public static Slice[] getSlices(
-          String collectionName, CloudSolrClient cloudSolrClient, boolean checkAlias) throws IOException {
+      String collectionName, CloudSolrClient cloudSolrClient, boolean checkAlias)
+      throws IOException {
     // check for alias or collection
     List<String> allCollections = new ArrayList<>();
     String[] collectionNames = collectionName.split(",");

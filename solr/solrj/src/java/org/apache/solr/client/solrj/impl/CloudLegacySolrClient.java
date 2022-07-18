@@ -68,11 +68,17 @@ public class CloudLegacySolrClient extends CloudSolrClient {
       }
       if (builder.zkHosts != null) {
         try {
-          Class<?> zkStateProviderClass = Class.forName("org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider");
-          this.stateProvider = (ClusterStateProvider) zkStateProviderClass.getConstructor(new Class[]{Collection.class, String.class}).newInstance(builder.zkHosts, builder.zkChroot);
+          Class<?> zkStateProviderClass =
+              Class.forName("org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider");
+          this.stateProvider =
+              (ClusterStateProvider)
+                  zkStateProviderClass
+                      .getConstructor(new Class[] {Collection.class, String.class})
+                      .newInstance(builder.zkHosts, builder.zkChroot);
         } catch (Exception e) {
           throw new RuntimeException(e.toString(), e);
-        }      } else if (builder.solrUrls != null && !builder.solrUrls.isEmpty()) {
+        }
+      } else if (builder.solrUrls != null && !builder.solrUrls.isEmpty()) {
         try {
           this.stateProvider = new HttpClusterStateProvider(builder.solrUrls, builder.httpClient);
         } catch (Exception e) {
@@ -331,11 +337,17 @@ public class CloudLegacySolrClient extends CloudSolrClient {
       if (stateProvider == null) {
         if (!zkHosts.isEmpty()) {
           try {
-            Class<?> zkStateProviderClass = Class.forName("org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider");
-            this.stateProvider = (ClusterStateProvider) zkStateProviderClass.getConstructor(new Class[]{Collection.class, String.class}).newInstance(zkHosts, zkChroot);
+            Class<?> zkStateProviderClass =
+                Class.forName("org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider");
+            this.stateProvider =
+                (ClusterStateProvider)
+                    zkStateProviderClass
+                        .getConstructor(new Class[] {Collection.class, String.class})
+                        .newInstance(zkHosts, zkChroot);
           } catch (Exception e) {
             throw new RuntimeException(e.toString(), e);
-          }        } else if (!this.solrUrls.isEmpty()) {
+          }
+        } else if (!this.solrUrls.isEmpty()) {
           try {
             stateProvider = new HttpClusterStateProvider(solrUrls, httpClient);
           } catch (Exception e) {

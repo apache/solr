@@ -918,7 +918,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
   public static class ReindexCollection extends AsyncCollectionSpecificAdminRequest {
 
     // nocommit : to move these from ZkStateReader
-    public final static String CONFIGNAME_PROP = "configName";
+    public static final String CONFIGNAME_PROP = "configName";
 
     String target;
     String query;

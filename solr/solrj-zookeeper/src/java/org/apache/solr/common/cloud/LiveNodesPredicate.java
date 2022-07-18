@@ -18,12 +18,11 @@
 package org.apache.solr.common.cloud;
 
 import java.util.SortedSet;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Interface to determine if live nodes matches a required state
  *
- * @code ZkStateReader#waitForLiveNodes(long, TimeUnit, LiveNodesPredicate)
+ * <p>{@code ZkStateReader#waitForLiveNodes(long, TimeUnit, LiveNodesPredicate)}
  */
 public interface LiveNodesPredicate {
 

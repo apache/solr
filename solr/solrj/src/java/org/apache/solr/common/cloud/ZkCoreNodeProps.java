@@ -65,9 +65,7 @@ public class ZkCoreNodeProps {
 
   public static String getCoreUrl(ZkNodeProps nodeProps) {
     String baseUrl = getBaseUrl(nodeProps);
-    return baseUrl != null
-        ? getCoreUrl(baseUrl, nodeProps.getStr(CORE_NAME_PROP))
-        : null;
+    return baseUrl != null ? getCoreUrl(baseUrl, nodeProps.getStr(CORE_NAME_PROP)) : null;
   }
 
   public static String getCoreUrl(String baseUrl, String coreName) {

@@ -49,7 +49,7 @@ public class ClusterState implements JSONWriter.Writable {
   // nocommit : to move these from ZkStateReader
   public static final String NODE_NAME_PROP = "node_name";
   public static final String CORE_NAME_PROP = "core";
-  public final static String CONFIGNAME_PROP = "configName";
+  public static final String CONFIGNAME_PROP = "configName";
   public static final String COLLECTIONS_ZKNODE = "/collections";
 
   private final Map<String, CollectionRef> collectionStates, immutableCollectionStates;
@@ -361,7 +361,8 @@ public class ClusterState implements JSONWriter.Writable {
               consumer.accept(collection);
             }
           } catch (SolrException e) {
-            if (e.getCause() != null && e.getCause().getClass().getName().endsWith("NoNodeException")) {
+            if (e.getCause() != null
+                && e.getCause().getClass().getName().endsWith("NoNodeException")) {
               // don't do anything. This collection does not exist
             } else {
               throw e;

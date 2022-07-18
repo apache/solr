@@ -76,7 +76,8 @@ class StatementImpl implements Statement {
   protected SolrStream constructStream(String sql) throws IOException {
     try {
       Slice[] slices =
-          CloudSolrStream.getSlices(this.connection.getCollection(), this.connection.getClient(), true);
+          CloudSolrStream.getSlices(
+              this.connection.getCollection(), this.connection.getClient(), true);
 
       List<Replica> shuffler = new ArrayList<>();
       for (Slice slice : slices) {

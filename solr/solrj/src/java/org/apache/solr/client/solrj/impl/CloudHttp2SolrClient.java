@@ -70,11 +70,17 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
       }
       if (builder.zkHosts != null) {
         try {
-          Class<?> zkStateProviderClass = Class.forName("org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider");
-          this.stateProvider = (ClusterStateProvider) zkStateProviderClass.getConstructor(new Class[]{Collection.class, String.class}).newInstance(builder.zkHosts, builder.zkChroot);
+          Class<?> zkStateProviderClass =
+              Class.forName("org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider");
+          this.stateProvider =
+              (ClusterStateProvider)
+                  zkStateProviderClass
+                      .getConstructor(new Class[] {Collection.class, String.class})
+                      .newInstance(builder.zkHosts, builder.zkChroot);
         } catch (Exception e) {
           throw new RuntimeException(e.toString(), e);
-        }      } else if (builder.solrUrls != null && !builder.solrUrls.isEmpty()) {
+        }
+      } else if (builder.solrUrls != null && !builder.solrUrls.isEmpty()) {
         try {
           this.stateProvider = new Http2ClusterStateProvider(builder.solrUrls, builder.httpClient);
         } catch (Exception e) {
@@ -257,8 +263,13 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
       if (stateProvider == null) {
         if (!zkHosts.isEmpty()) {
           try {
-            Class<?> zkStateProviderClass = Class.forName("org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider");
-            this.stateProvider = (ClusterStateProvider) zkStateProviderClass.getConstructor(new Class[]{Collection.class, String.class}).newInstance(zkHosts, zkChroot);
+            Class<?> zkStateProviderClass =
+                Class.forName("org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider");
+            this.stateProvider =
+                (ClusterStateProvider)
+                    zkStateProviderClass
+                        .getConstructor(new Class[] {Collection.class, String.class})
+                        .newInstance(zkHosts, zkChroot);
           } catch (Exception e) {
             throw new RuntimeException(e.toString(), e);
           }

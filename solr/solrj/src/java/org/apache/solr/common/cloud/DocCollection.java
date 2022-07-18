@@ -47,7 +47,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private static final String READ_ONLY = "readOnly";
   private static final String REPLICATION_FACTOR = "replicationFactor";
   private static final String TLOG_REPLICAS = "tlogReplicas";
-  private final static String CONFIGNAME_PROP = "configName";
+  private static final String CONFIGNAME_PROP = "configName";
 
   public static final String DOC_ROUTER = "router";
   public static final String SHARDS = "shards";
@@ -130,7 +130,8 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     }
     this.activeSlicesArr = activeSlices.values().toArray(new Slice[activeSlices.size()]);
     this.router = router;
-    this.znode = "/collections/" + name + "/state.json"; // nocommit : check if this needs to become generic
+    this.znode =
+        "/collections/" + name + "/state.json"; // nocommit : check if this needs to become generic
     assert name != null && slices != null;
   }
 
