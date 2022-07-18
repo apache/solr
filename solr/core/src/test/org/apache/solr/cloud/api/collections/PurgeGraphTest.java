@@ -31,6 +31,7 @@ import org.apache.solr.cloud.api.collections.DeleteBackupCmd.PurgeGraph;
 import org.apache.solr.core.backup.*;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
+import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -117,13 +118,13 @@ public class PurgeGraphTest extends SolrTestCaseJ4 {
     // All files associated with backup '0' should be flagged for deletion since the required file
     // 'uniqName3' is missing.
     assertEquals(1, purgeGraph.backupIdDeletes.size());
-    assertThat(purgeGraph.backupIdDeletes, containsInAnyOrder("backup_0.properties"));
+    MatcherAssert.assertThat(purgeGraph.backupIdDeletes, containsInAnyOrder("backup_0.properties"));
     assertEquals(2, purgeGraph.shardBackupMetadataDeletes.size());
-    assertThat(
+    MatcherAssert.assertThat(
         purgeGraph.shardBackupMetadataDeletes,
         containsInAnyOrder("md_shard1_0.json", "md_shard2_0.json"));
     assertEquals(3, purgeGraph.indexFileDeletes.size());
-    assertThat(
+    MatcherAssert.assertThat(
         purgeGraph.indexFileDeletes, containsInAnyOrder("uniqName1", "uniqName2", "uniqName4"));
 
     // If a subsequent backup relies on an index file (uniqName4) that was previously only used by
