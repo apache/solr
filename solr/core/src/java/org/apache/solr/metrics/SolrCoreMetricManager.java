@@ -20,7 +20,7 @@ import com.codahale.metrics.MetricRegistry;
 import java.io.Closeable;
 import java.io.IOException;
 import org.apache.solr.cloud.CloudDescriptor;
-import org.apache.solr.common.util.ZkUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.PluginInfo;
@@ -65,7 +65,7 @@ public class SolrCoreMetricManager implements Closeable {
       shardName = cd.getShardId();
       // replicaName = cd.getCoreNodeName();
       String coreName = core.getName();
-      replicaName = ZkUtils.parseMetricsReplicaName(collectionName, coreName);
+      replicaName = Utils.parseMetricsReplicaName(collectionName, coreName);
       if (replicaName == null) {
         replicaName = cd.getCoreNodeName();
       }
@@ -223,7 +223,7 @@ public class SolrCoreMetricManager implements Closeable {
     CloudDescriptor cd = aCore.getCoreDescriptor().getCloudDescriptor();
     String replicaName = null;
     if (cd != null) {
-      replicaName = ZkUtils.parseMetricsReplicaName(cd.getCollectionName(), coreName);
+      replicaName = Utils.parseMetricsReplicaName(cd.getCollectionName(), coreName);
     }
     return createRegistryName(
         cd != null,

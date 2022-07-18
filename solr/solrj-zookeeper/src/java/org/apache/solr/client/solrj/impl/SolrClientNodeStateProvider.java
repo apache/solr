@@ -17,21 +17,6 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import static java.util.Collections.emptyMap;
-
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
@@ -50,10 +35,28 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ZkUtils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static java.util.Collections.emptyMap;
 
 /** The <em>real</em> {@link NodeStateProvider}, which communicates with Solr via SolrJ. */
 public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter {
@@ -162,7 +165,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
                       + "."
                       + r.getShard()
                       + "."
-                      + ZkUtils.parseMetricsReplicaName(r.getCollection(), r.getCoreName())
+                      + Utils.parseMetricsReplicaName(r.getCollection(), r.getCoreName())
                       + ":";
               String perReplicaValue = key;
               perReplicaMetricsKey += perReplicaValue;
