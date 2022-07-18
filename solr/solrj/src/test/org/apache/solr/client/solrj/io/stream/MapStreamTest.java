@@ -82,19 +82,19 @@ public class MapStreamTest extends SolrCloudTestCase {
     List<Tuple> tuples;
     StreamContext streamContext = new StreamContext();
     StreamFactory factory =
-            new StreamFactory()
-                    .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
-                    .withFunctionName("search", CloudSolrStream.class)
-                    .withFunctionName("select", SelectStream.class)
-                    .withFunctionName("tuple", TupStream.class)
-                    .withFunctionName("map", MapStream.class);
+        new StreamFactory()
+            .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
+            .withFunctionName("search", CloudSolrStream.class)
+            .withFunctionName("select", SelectStream.class)
+            .withFunctionName("tuple", TupStream.class)
+            .withFunctionName("map", MapStream.class);
 
     String clause = "map(map(tuple(a=\"123\",c=\"345\"),\"a=inner\"),\"a=outer\")";
     stream = factory.constructStream(clause);
     stream.setStreamContext(streamContext);
     tuples = getTuples(stream);
     Tuple a = (Tuple) tuples.get(0).get("a");
-    assertTupleValue(a,"outer","inner","123");
+    assertTupleValue(a, "outer", "inner", "123");
   }
 
   @Test
