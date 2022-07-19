@@ -26,7 +26,7 @@ https://solr.apache.org/solr
 How to Use
 ----------
 
-To get started enter
+To get started run
 
 ```
   bin/solr -help
@@ -54,7 +54,6 @@ Support
 Files included in an Apache Solr binary distribution
 ----------------------------------------------------
 
-```
 server/
   A self-contained Solr instance, complete with a sample
   configuration and documents to index. Please see: bin/solr start -help
@@ -84,4 +83,3 @@ docs/index.html
 
 licenses/
   Licenses, notice files and signatures for Solr dependencies.
-```
