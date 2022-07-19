@@ -35,6 +35,7 @@ import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.solr.SolrTestCaseJ4;
@@ -45,7 +46,7 @@ import org.junit.Test;
 
 public class BlobRepositoryMockingTest {
 
-  private static final Charset UTF8 = Charset.forName("UTF-8");
+  private static final Charset UTF8 = StandardCharsets.UTF_8;
   private static final String[][] PARSED =
       new String[][] {{"foo", "bar", "baz"}, {"bang", "boom", "bash"}};
   private static final String BLOBSTR = "foo,bar,baz\nbang,boom,bash";

@@ -32,8 +32,7 @@ public class MetricsDisabledCloudTest extends SolrCloudTestCase {
   public static void startCluster() throws Exception {
     System.setProperty("metricsEnabled", "false");
     configureCluster(2).configure();
-    CollectionAdminRequest.Create create =
-        CollectionAdminRequest.createCollection("test", "config", 1, 2);
+    CollectionAdminRequest.createCollection("test", "config", 1, 2);
   }
 
   @Test

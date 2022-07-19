@@ -49,7 +49,6 @@ public class RequestLoggingTest extends SolrTestCaseJ4 {
 
   @Before
   public void setupAppender() {
-    LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
 
     writer = new StringWriter();
     appender =

@@ -23,7 +23,7 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -108,8 +108,7 @@ public class ResourceSharingTestComponent extends SearchComponent implements Sol
       // baz,bam
 
       try (Stream<String> lines =
-          new BufferedReader(new InputStreamReader(inputStream, Charset.forName("UTF-8")))
-              .lines()) {
+          new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8)).lines()) {
         lines.forEach(this::processSimpleCsvRow);
       } catch (Exception e) {
         log.error("failed to read dictionary {}", getResourceName());

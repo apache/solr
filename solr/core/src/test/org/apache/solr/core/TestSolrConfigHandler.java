@@ -20,7 +20,11 @@ import static java.util.Arrays.asList;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
 import com.google.common.collect.ImmutableList;
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -115,7 +119,6 @@ public class TestSolrConfigHandler extends RestTestBase {
   @Before
   public void before() throws Exception {
     File tmpSolrHome = createTempDir().toFile();
-    File tmpConfDir = new File(tmpSolrHome, confDir);
     FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
 
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
@@ -167,7 +170,6 @@ public class TestSolrConfigHandler extends RestTestBase {
     runConfigCommand(harness, "/config", payload);
 
     MapWriter m = getRespMap("/config/overlay", harness);
-    MapWriter props = null;
     assertEquals("100", m._getStr("overlay/props/updateHandler/autoCommit/maxDocs", null));
     assertEquals("10", m._getStr("overlay/props/updateHandler/autoCommit/maxTime", null));
 

@@ -724,9 +724,8 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
      * picks a random value for the "prelim_sort" param, biased in favor of interesting test cases.
      *
      * @return a sort string (w/direction), or null to specify nothing (trigger default behavior)
-     * @see #randomSortParam
      */
-    public static String randomPrelimSortParam(final Random r, final String sort) {
+    public static String randomPrelimSortParam(final String sort) {
 
       if (null != sort && sort.startsWith("skg") && 1 == TestUtil.nextInt(random(), 0, 3)) {
         return "count desc";
@@ -825,7 +824,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
      *
      * @return a Boolean, may be null
      */
-    public static Boolean randomAllBucketsParam(final Random r, final String sort) {
+    public static Boolean randomAllBucketsParam(final Random r) {
       switch (r.nextInt(4)) {
         case 0:
           return true;
@@ -862,11 +861,11 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
                   facetField,
                   map(
                       "sort", sort,
-                      "prelim_sort", randomPrelimSortParam(random(), sort),
+                      "prelim_sort", randomPrelimSortParam(sort),
                       "limit", randomLimitParam(random(), sort),
                       "overrequest", randomOverrequestParam(random()),
                       "prefix", randomPrefixParam(random(), facetField),
-                      "allBuckets", randomAllBucketsParam(random(), sort),
+                      "allBuckets", randomAllBucketsParam(random()),
                       "perSeg", randomPerSegParam(random())));
 
           results.put("facet_" + keyCounter.incrementAndGet(), facet);

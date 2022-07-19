@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.Set;
 import org.apache.lucene.tests.util.LuceneTestCase.Slow;
@@ -30,12 +29,9 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Slow
 public class ClusterStateUpdateTest extends SolrCloudTestCase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   public void setUp() throws Exception {

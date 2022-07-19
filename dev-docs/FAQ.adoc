@@ -4,7 +4,7 @@
 
 == FAQ
 
-This document provides a quick reference for frequently questioned concepts and features in Credentials.
+This document provides a quick reference for common developer questions.
 
 === What do I do with NOTICE.txt if I don't have one to satisfy Gradle?
 
@@ -44,3 +44,10 @@ The task will output the image name to use at the end of the build.
 For more info on building an image, run:
 
 `./gradlew helpDocker`
+
+=== Whats the fastest build lifecycle for frontend work on Solr Admin?
+
+Run `gradle dev`, and then `cd ./packaging/build/dev/`.  Fire up your cluster
+via `bin/solr start -e cloud -noprompt` and then as you make changes to assets in `/solr/webapp/web`,
+run `gradle dev` to redeploy the web assets. Do a  hard refresh in your browser
+to pick up your changes.

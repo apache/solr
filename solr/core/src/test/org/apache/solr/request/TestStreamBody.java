@@ -40,7 +40,6 @@ public class TestStreamBody extends RestTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String collection = "collection1";
-  private static final String confDir = collection + "/conf";
 
   @Before
   public void before() throws Exception {

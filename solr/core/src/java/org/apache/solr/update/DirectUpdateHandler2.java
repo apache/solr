@@ -744,7 +744,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
           // SolrCore.verbose("writer.commit() start writer=",writer);
 
-          if (writer.hasUncommittedChanges()) {
+          if (shouldCommit(cmd, writer)) {
             SolrIndexWriter.setCommitData(writer, cmd.getVersion(), cmd.commitData);
             writer.commit();
           } else {
@@ -822,6 +822,15 @@ public class DirectUpdateHandler2 extends UpdateHandler
         SolrException.log(log, e);
       }
     }
+  }
+
+  /**
+   * Determines whether the commit command should effectively trigger a commit on the index writer.
+   * This method is called with the commit lock and is the last step before effectively calling
+   * {@link IndexWriter#commit()}.
+   */
+  protected boolean shouldCommit(CommitUpdateCommand cmd, IndexWriter writer) throws IOException {
+    return writer.hasUncommittedChanges() || (cmd.commitData != null && !cmd.commitData.isEmpty());
   }
 
   @Override
