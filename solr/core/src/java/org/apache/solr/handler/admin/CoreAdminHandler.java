@@ -158,8 +158,11 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   /**
    * Registers custom actions defined in {@code solr.xml}. Called from the {@link CoreContainer}
    * during load process.
+   *
+   * @param customActions to register
+   * @throws SolrException in case of action with indicated name is already registered
    */
-  public void registerCustomActions(Map<String, CoreAdminOp> customActions) {
+  public final void registerCustomActions(Map<String, CoreAdminOp> customActions) {
 
     for (Entry<String, CoreAdminOp> entry : customActions.entrySet()) {
 
@@ -213,6 +216,11 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       // Pick the action
       final String action = req.getParams().get(ACTION, STATUS.toString()).toLowerCase(Locale.ROOT);
       CoreAdminOp op = opMap.get(action);
+      log.warn(
+          "action '{}' not found, calling custom action handler. "
+              + "If original intention was to target some custom behaviour "
+              + "use custom actions defined in 'solr.xml' instead",
+          action);
       if (op == null) {
         handleCustomAction(req, rsp);
         return;
