@@ -145,7 +145,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     }
   }
 
-  public void doTestFieldStatisticsResult(String f, SolrParams[] baseParamsSet) throws Exception {
+  public void doTestFieldStatisticsResult(String f, SolrParams[] baseParamsSet) {
     // used when doing key overrides in conjunction with the baseParamsSet
     //
     // even when these aren't included in the request, using them helps us
@@ -325,7 +325,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
         "count(" + kpre + "/*)=1");
   }
 
-  public void doTestMVFieldStatisticsResult(String f) throws Exception {
+  public void doTestMVFieldStatisticsResult(String f) {
     assertU(adoc("id", "1", f, "-10", f, "-100", "active_s", "true"));
     assertU(adoc("id", "2", f, "-20", f, "200", "active_s", "true"));
     assertU(commit());
@@ -462,10 +462,9 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     }
   }
 
-  public void testFieldStatisticsResultsStringField() throws Exception {
+  public void testFieldStatisticsResultsStringField() {
     String f = "active_s";
 
-    SolrCore core = h.getCore();
     assertU(adoc("id", "1", f, "string1"));
     assertU(adoc("id", "2", f, "string2"));
     assertU(adoc("id", "3", f, "string3"));
@@ -553,7 +552,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     }
   }
 
-  public void testFieldStatisticsResultsDateField() throws Exception {
+  public void testFieldStatisticsResultsDateField() {
     SolrCore core = h.getCore();
 
     DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.ROOT);
@@ -595,7 +594,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
   }
 
   // Check for overflow of sumOfSquares
-  public void testFieldStatisticsResultsDateFieldOverflow() throws Exception {
+  public void testFieldStatisticsResultsDateFieldOverflow() {
     SolrCore core = h.getCore();
 
     assertU(adoc("id", "1", "active_dt", "2015-12-14T09:00:00Z"));
@@ -637,8 +636,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
         "//double[@name='stddev'][.='" + Double.toString(3155673599999.999) + "']");
   }
 
-  public void doTestFieldStatisticsMissingResult(String f, SolrParams[] baseParamsSet)
-      throws Exception {
+  public void doTestFieldStatisticsMissingResult(String f, SolrParams[] baseParamsSet) {
     assertU(adoc("id", "1", f, "-10"));
     assertU(adoc("id", "2", f, "-20"));
     assertU(commit());
@@ -646,7 +644,6 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "4", f, "-40"));
     assertU(commit());
 
-    final String fpre = XPRE + "lst[@name='stats_fields']/lst[@name='" + f + "']/";
     final String key = "key_key";
     final String kpre = XPRE + "lst[@name='stats_fields']/lst[@name='" + key + "']/";
 
@@ -716,7 +713,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     }
   }
 
-  public void doTestFacetStatisticsResult(String f, SolrParams[] baseParamsSet) throws Exception {
+  public void doTestFacetStatisticsResult(String f, SolrParams[] baseParamsSet) {
     assertU(adoc("id", "1", f, "10", "active_s", "true", "other_s", "foo"));
     assertU(adoc("id", "2", f, "20", "active_s", "true", "other_s", "bar"));
     assertU(commit());
@@ -846,8 +843,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
         pre + "/lst[@name='false']/long[@name='cardinality'][.='2']");
   }
 
-  public void doTestFacetStatisticsMissingResult(String f, SolrParams[] baseParamsSet)
-      throws Exception {
+  public void doTestFacetStatisticsMissingResult(String f, SolrParams[] baseParamsSet) {
     assertU(adoc("id", "1", f, "10", "active_s", "true"));
     assertU(adoc("id", "2", f, "20", "active_s", "true"));
     assertU(commit());
@@ -902,7 +898,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
         "//lst[@name='active_s']/lst[@name='false']/long[@name='cardinality'][.='1']");
   }
 
-  public void testFieldStatisticsResultsNumericFieldAlwaysMissing() throws Exception {
+  public void testFieldStatisticsResultsNumericFieldAlwaysMissing() {
     SolrCore core = h.getCore();
     assertU(adoc("id", "1"));
     assertU(adoc("id", "2"));
@@ -940,7 +936,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
         "//lst[@name='active_i']/long[@name='cardinality'][.='0']");
   }
 
-  public void testFieldStatisticsResultsStringFieldAlwaysMissing() throws Exception {
+  public void testFieldStatisticsResultsStringFieldAlwaysMissing() {
     SolrCore core = h.getCore();
     assertU(adoc("id", "1"));
     assertU(adoc("id", "2"));
@@ -973,7 +969,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
   }
 
   // SOLR-3160
-  public void testFieldStatisticsResultsDateFieldAlwaysMissing() throws Exception {
+  public void testFieldStatisticsResultsDateFieldAlwaysMissing() {
     SolrCore core = h.getCore();
 
     assertU(adoc("id", "1"));
@@ -1010,7 +1006,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
         "//lst[@name='active_dt']/long[@name='cardinality'][.='0']");
   }
 
-  public void testStatsFacetMultivaluedErrorHandling() throws Exception {
+  public void testStatsFacetMultivaluedErrorHandling() {
     SolrCore core = h.getCore();
     SchemaField foo_ss = core.getLatestSchema().getField("foo_ss");
 
@@ -1038,7 +1034,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
   }
 
   // SOLR-3177
-  public void testStatsExcludeFilterQuery() throws Exception {
+  public void testStatsExcludeFilterQuery() {
     SolrCore core = h.getCore();
     assertU(adoc("id", "1"));
     assertU(adoc("id", "2"));
@@ -1225,7 +1221,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     assertQEx("can not use FieldCache on multivalued field: cat_intDocValues", req, 400);
   }
 
-  public void testMiscQueryStats() throws Exception {
+  public void testMiscQueryStats() {
     final String kpre = XPRE + "lst[@name='stats_fields']/lst[@name='k']/";
 
     assertU(adoc("id", "1", "a_f", "2.3", "b_f", "9.7", "foo_t", "how now brown cow"));
@@ -1265,7 +1261,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
   /**
    * Whitebox test of {@link StatsField} parsing to ensure expected equivalence operations hold up
    */
-  public void testStatsFieldWhitebox() throws Exception {
+  public void testStatsFieldWhitebox() {
     StatsComponent component = new StatsComponent();
     List<SearchComponent> components = new ArrayList<>(1);
     components.add(component);
@@ -1385,7 +1381,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
         "//lst[@name='" + fieldName + "']/long[@name='cardinality'][.='9']");
   }
 
-  public void testEnumFieldTypeStatus() throws Exception {
+  public void testEnumFieldTypeStatus() {
     clearIndex();
 
     String fieldName = "severity";
@@ -1476,8 +1472,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
       List<FldType> types,
       String fieldName,
       String id,
-      @SuppressWarnings({"rawtypes"}) Comparable... values)
-      throws Exception {
+      @SuppressWarnings({"rawtypes"}) Comparable... values) {
     Doc doc = createDoc(types);
     doc.getValues("id").set(0, id);
     initMultyValued(doc.getValues(fieldName), values);
@@ -1533,7 +1528,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     }
   }
 
-  public void testIndividualStatLocalParams() throws Exception {
+  public void testIndividualStatLocalParams() {
     final String kpre = ExpectedStat.KPRE;
 
     assertU(adoc("id", "1", "a_f", "2.3", "b_f", "9.7", "a_i", "9", "foo_t", "how now brown cow"));
@@ -1604,7 +1599,6 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
 
     EnumSet<Stat> allStats = EnumSet.allOf(Stat.class);
 
-    final List<ExpectedStat> expected = new ArrayList<ExpectedStat>(allStats.size());
     ExpectedStat.createSimple(Stat.min, "true", "double", "0.0");
     ExpectedStat.createSimple(Stat.max, "true", "double", "9.0");
     ExpectedStat.createSimple(Stat.missing, "true", "long", "0");
@@ -1727,7 +1721,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
   }
 
   // Test for Solr-6349
-  public void testCalcDistinctStats() throws Exception {
+  public void testCalcDistinctStats() {
     final String kpre = XPRE + "lst[@name='stats_fields']/lst[@name='k']/";
     final String min = "count(" + kpre + "/double[@name='min'])";
     final String countDistinct = "count(" + kpre + "/long[@name='countDistinct'])";
@@ -1916,7 +1910,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
   /**
    * @see #testHllOptions
    */
-  public void testCardinality() throws Exception {
+  public void testCardinality() {
     SolrCore core = h.getCore();
     // insure we have the same hasher a_l would use
     HashFunction hasher =
@@ -2006,7 +2000,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
    * @see #testCardinality
    * @see #testHllOptionsErrors
    */
-  public void testHllOptions() throws Exception {
+  public void testHllOptions() {
     SolrCore core = h.getCore();
 
     SchemaField field_l = core.getLatestSchema().getField("field_l");
@@ -2134,7 +2128,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
    * @see #testCardinality
    * @see #testHllOptions
    */
-  public void testHllOptionsErrors() throws Exception {
+  public void testHllOptionsErrors() {
     String[] baseParams = new String[] {"q", "*:*", "stats", "true", "indent", "true", "rows", "0"};
     SolrCore core = h.getCore();
     SchemaField foo_s = core.getLatestSchema().getField("foo_s");
@@ -2368,8 +2362,8 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
         public EnumSet<Stat> next() {
           EnumSet<Stat> result = EnumSet.noneOf(Stat.class);
           int[] indexes = wrapped.next();
-          for (int i = 0; i < indexes.length; i++) {
-            result.add(all[indexes[i]]);
+          for (int index : indexes) {
+            result.add(all[index]);
           }
           return result;
         }

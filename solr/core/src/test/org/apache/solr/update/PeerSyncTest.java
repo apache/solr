@@ -86,7 +86,6 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
 
     SolrClient client0 = clients.get(0);
     SolrClient client1 = clients.get(1);
-    SolrClient client2 = clients.get(2);
 
     int v = 0;
     add(client0, seenLeader, sdoc("id", "1", "_version_", ++v));

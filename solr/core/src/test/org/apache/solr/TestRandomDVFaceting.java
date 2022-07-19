@@ -206,7 +206,6 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
 
       SchemaField sf = req.getSchema().getField(ftype.fname);
       boolean multiValued = sf.getType().multiValuedFieldCache();
-      boolean indexed = sf.indexed();
       boolean numeric = sf.getType().getNumberType() != null;
 
       int offset = 0;
@@ -292,7 +291,7 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
       // Don't check points if facet.mincount=0
       if (h.getCore().getLatestSchema().getFieldOrNull(facet_field + "_p") != null
           && params.get("facet.mincount") != null
-          && params.getInt("facet.mincount").intValue() > 0) {
+          && params.getInt("facet.mincount") > 0) {
         params.set("facet.field", "{!key=" + facet_field + "}" + facet_field + "_p");
         String strResponse = h.query(req(params));
         responses.add(strResponse);

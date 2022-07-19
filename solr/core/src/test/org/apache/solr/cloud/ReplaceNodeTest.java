@@ -54,7 +54,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void setupCluster() {
     System.setProperty("metricsEnabled", "true");
   }
 
@@ -62,10 +62,6 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
   public void clearPreviousCluster() throws Exception {
     // Clear the previous cluster before each test, since they use different numbers of nodes.
     shutdownCluster();
-  }
-
-  protected String getSolrXml() {
-    return "solr.xml";
   }
 
   @Test

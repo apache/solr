@@ -89,20 +89,6 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
     }
   }
 
-  private void waitForState(String collection, ReindexCollectionCmd.State expected)
-      throws Exception {
-    TimeOut timeOut = new TimeOut(30, TimeUnit.SECONDS, cloudManager.getTimeSource());
-    ReindexCollectionCmd.State current = null;
-    while (!timeOut.hasTimedOut()) {
-      current = getState(collection);
-      if (expected == current) {
-        return;
-      }
-      timeOut.sleep(500);
-    }
-    throw new Exception("timeout waiting for state, current=" + current + ", expected=" + expected);
-  }
-
   @After
   public void doAfter() throws Exception {
     cluster.deleteAllCollections(); // deletes aliases too

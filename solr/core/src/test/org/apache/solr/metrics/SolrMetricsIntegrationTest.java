@@ -128,7 +128,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
   }
 
   @After
-  public void afterTest() throws Exception {
+  public void afterTest() {
     if (null == metricManager) {
       return; // test failed to init, nothing to clean up
     }
@@ -195,7 +195,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testCoreContainerMetrics() throws Exception {
+  public void testCoreContainerMetrics() {
     String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);
     assertTrue(
         cc.getMetricManager().registryNames().toString(),

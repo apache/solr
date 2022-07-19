@@ -47,10 +47,6 @@ public class DeleteNodeTest extends SolrCloudTestCase {
         .configure();
   }
 
-  protected String getSolrXml() {
-    return "solr.xml";
-  }
-
   @Test
   public void test() throws Exception {
     CloudSolrClient cloudClient = cluster.getSolrClient();

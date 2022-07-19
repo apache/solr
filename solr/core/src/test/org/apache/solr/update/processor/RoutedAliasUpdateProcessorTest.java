@@ -90,7 +90,6 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
   private boolean haveCollection(String alias, String collection) {
     // separated into separate lines to make it easier to track down an NPE that occurred once
     // 3000 runs if it shows up again...
-    CloudSolrClient solrClient = cluster.getSolrClient();
     ZkStateReader zkStateReader = cluster.getZkStateReader();
     Aliases aliases = zkStateReader.getAliases();
     Map<String, List<String>> collectionAliasListMap = aliases.getCollectionAliasListMap();
@@ -408,7 +407,7 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     public UpdateRequestProcessor getInstance(
         SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
       return FieldValueMutatingUpdateProcessor.valueMutator(
-          getSelector(), next, (src) -> Integer.valueOf(src.toString()) + 1);
+          getSelector(), next, (src) -> Integer.parseInt(src.toString()) + 1);
     }
   }
 }

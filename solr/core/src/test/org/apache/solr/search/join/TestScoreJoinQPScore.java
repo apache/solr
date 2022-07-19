@@ -19,7 +19,6 @@ package org.apache.solr.search.join;
 import com.codahale.metrics.Metric;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -201,12 +200,6 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
     assertEquals(0, result.scoreDocs[1].doc);*/
 
   }
-
-  static final Comparator<String> lessFloat =
-      (o1, o2) -> {
-        assertTrue(Float.parseFloat(o1) < Float.parseFloat(o2));
-        return 0;
-      };
 
   @Ignore("SOLR-7814, also don't forget cover boost at testCacheHit()")
   public void testBoost() throws Exception {

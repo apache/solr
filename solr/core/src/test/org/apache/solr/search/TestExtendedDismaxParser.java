@@ -64,7 +64,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     index();
   }
 
-  public static void index() throws Exception {
+  public static void index() {
     assertU(
         adoc("id", "42", "trait_ss", "Tool", "trait_ss", "Obnoxious", "name", "Zapp Brannigan"));
     assertU(adoc("id", "43", "title", "Democratic Order op Planets"));
@@ -243,7 +243,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     }
   }
 
-  public void testCharFilter() throws Exception {
+  public void testCharFilter() {
     // test that charfilter was applied by the indexer
     assertQ(
         req("defType", "edismax", "stopwords", "false", "qf", "isocharfilter", "q", "nino"),
@@ -808,7 +808,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertQ(req("defType", "edismax", "uf", "* -id", "q", "42", "qf", "id"), oner);
   }
 
-  public void testAliasing() throws Exception {
+  public void testAliasing() {
     String oner = "*[count(//doc)=1]";
     String twor = "*[count(//doc)=2]";
     String nor = "*[count(//doc)=0]";
@@ -928,7 +928,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         twor);
   }
 
-  public void testAliasingBoost() throws Exception {
+  public void testAliasingBoost() {
     assertQ(
         req(
             "defType",
@@ -956,7 +956,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   }
 
   /** SOLR-13203 * */
-  public void testUfDynamicField() throws Exception {
+  public void testUfDynamicField() {
     try {
       ignoreException("dynamic field");
 
@@ -973,7 +973,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertQ(req("uf", "trait* id", "defType", "edismax"));
   }
 
-  public void testCyclicAliasing() throws Exception {
+  public void testCyclicAliasing() {
     try {
       ignoreException(".*Field aliases lead to a cycle.*");
 
@@ -1406,7 +1406,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testWhitespaceCharacters() throws Exception {
+  public void testWhitespaceCharacters() {
     assertU(adoc("id", "whitespaceChars", "cat_s", "foo\nfoo"));
     assertU(commit());
 
@@ -1428,7 +1428,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testDoubleQuoteCharacters() throws Exception {
+  public void testDoubleQuoteCharacters() {
     assertU(adoc("id", "doubleQuote", "cat_s", "foo\"foo"));
     assertU(commit());
 
@@ -1451,7 +1451,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
    * @see ExtendedDismaxQParser#splitIntoClauses(String, boolean)
    */
   @Test
-  public void testEscapingOfReservedCharacters() throws Exception {
+  public void testEscapingOfReservedCharacters() {
     // create a document that contains all reserved characters
     String allReservedCharacters = "!():^[]{}~*?\"+-\\|&/";
 
@@ -1511,7 +1511,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
   /** Repeating some of test cases as direct calls to splitIntoClauses */
   @Test
-  public void testSplitIntoClauses() throws Exception {
+  public void testSplitIntoClauses() {
     String query = "(\"foo\nfoo\")";
     SolrQueryRequest request = req("q", query, "qf", "cat_s", "defType", "edismax");
     ExtendedDismaxQParser parser =
@@ -1587,7 +1587,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   }
 
   /** SOLR-3589: Edismax parser does not honor mm parameter if analyzer splits a token */
-  public void testCJK() throws Exception {
+  public void testCJK() {
     assertQ(
         "test cjk (disjunction)",
         req(
@@ -1615,7 +1615,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   }
 
   /** test that minShouldMatch works with aliasing for implicit boolean queries */
-  public void testCJKAliasing() throws Exception {
+  public void testCJKAliasing() {
     // single field
     assertQ(
         "test cjk (aliasing+disjunction)",
@@ -1669,7 +1669,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   }
 
   /** Test that we apply boosts correctly */
-  public void testCJKBoosts() throws Exception {
+  public void testCJKBoosts() {
     assertQ(
         "test cjk (disjunction)",
         req(
@@ -1732,7 +1732,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
    * always apply minShouldMatch to the inner booleanqueries created from whitespace, as these are
    * never structured lucene queries but only come from unstructured text
    */
-  public void testCJKStructured() throws Exception {
+  public void testCJKStructured() {
     assertQ(
         "test cjk (disjunction)",
         req(
@@ -1764,7 +1764,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
    * Test that we don't apply minShouldMatch to the inner boolean queries when there are synonyms
    * (these are indicated by coordination factor)
    */
-  public void testSynonyms() throws Exception {
+  public void testSynonyms() {
     // document only contains baraaa, but should still match.
     assertQ(
         "test synonyms",
@@ -1777,7 +1777,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   }
 
   /** Test that the default operator and MM are interacting appropriately when both provided */
-  public void testDefaultOperatorWithMm() throws Exception {
+  public void testDefaultOperatorWithMm() {
     // Text we are searching
     // "line up and fly directly at the enemy death cannons, clogging them with wreckage!"
     assertQ(
@@ -1855,7 +1855,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   }
 
   /** Test that minShouldMatch applies to Optional terms only */
-  public void testMinShouldMatchOptional() throws Exception {
+  public void testMinShouldMatchOptional() {
     for (String sow : Arrays.asList("true", "false")) {
       assertQ(
           "test minShouldMatch (top level optional terms only)",
@@ -2011,7 +2011,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
   /* SOLR-8812 */
   @Test
-  public void testDefaultMM() throws Exception {
+  public void testDefaultMM() {
     // Ensure MM is off when explicit operators (+/-/OR/NOT) are used and no explicit mm spec is
     // specified.
     for (String sow : Arrays.asList("true", "false")) {
@@ -3311,7 +3311,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
   /** SOLR-11512 */
   @Test
-  public void killInfiniteRecursionParse() throws Exception {
+  public void killInfiniteRecursionParse() {
     SolrException exception =
         expectThrows(
             SolrException.class,

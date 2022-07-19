@@ -72,12 +72,12 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
   private String coreName;
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeClass() {
     System.setProperty("solr.allowPaths", "*");
   }
 
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterClass() {
     System.clearProperty("solr.allowPaths");
   }
 
@@ -321,8 +321,6 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
   /**
    * Validates a backup dir exists, passes check index, and contains a number of "real" documents
    * that match its name
-   *
-   * @see #getNumRealDocsFromBackupName
    */
   private void validateBackup(final File backup) throws IOException {
     log.info("Checking Validity of {}", backup);

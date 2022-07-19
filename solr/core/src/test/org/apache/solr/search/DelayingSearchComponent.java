@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search;
 
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
@@ -25,12 +24,12 @@ import org.apache.solr.handler.component.SearchComponent;
 public class DelayingSearchComponent extends SearchComponent {
 
   @Override
-  public void prepare(ResponseBuilder rb) throws IOException {
+  public void prepare(ResponseBuilder rb) {
     rb.rsp.addHttpHeader("Warning", "This is a test warning");
   }
 
   @Override
-  public void process(ResponseBuilder rb) throws IOException {
+  public void process(ResponseBuilder rb) {
     final long totalSleepMillis = rb.req.getParams().getLong("sleep", 0);
     if (totalSleepMillis > 0) {
       final long totalSleepNanos =

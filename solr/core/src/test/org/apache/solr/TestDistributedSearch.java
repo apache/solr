@@ -544,13 +544,6 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     setDistributedParams(minParams);
     QueryResponse minResp = queryServer(minParams);
 
-    ModifiableSolrParams eParams = new ModifiableSolrParams();
-    eParams.set("q", tdate_b + ":[* TO *]");
-    eParams.set("rows", 1000);
-    eParams.set("fl", tdate_b);
-    setDistributedParams(eParams);
-    QueryResponse eResp = queryServer(eParams);
-
     // Check that exactly the right numbers of counts came through
     assertEquals(
         "Should be exactly 2 range facets returned after minCounts taken into account ",
@@ -1935,7 +1928,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     }
     QueryResponse rsp = queryRandomUpServer(params, upClients);
 
-    comparePartialResponses(rsp, controlRsp, upShards);
+    comparePartialResponses(rsp, upShards);
 
     if (stress > 0) {
       log.info("starting stress...");
@@ -1955,7 +1948,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
                   try {
                     QueryResponse rsp = client.query(new ModifiableSolrParams(params));
                     if (verifyStress) {
-                      comparePartialResponses(rsp, controlRsp, upShards);
+                      comparePartialResponses(rsp, upShards);
                     }
                   } catch (SolrServerException | IOException e) {
                     throw new RuntimeException(e);
@@ -1987,12 +1980,10 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       client = upClients.get(which);
     }
 
-    QueryResponse rsp = client.query(params);
-    return rsp;
+    return client.query(params);
   }
 
-  protected void comparePartialResponses(
-      QueryResponse rsp, QueryResponse controlRsp, List<String> upShards) {
+  protected void comparePartialResponses(QueryResponse rsp, List<String> upShards) {
     NamedList<?> sinfo = (NamedList<?>) rsp.getResponse().get(ShardParams.SHARDS_INFO);
 
     assertNotNull("missing shard info", sinfo);
@@ -2005,8 +1996,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       String shard = entry.getKey();
       NamedList<?> info = (NamedList<?>) entry.getValue();
       boolean found = false;
-      for (int i = 0; i < shardsArr.length; i++) {
-        String s = shardsArr[i];
+      for (String s : shardsArr) {
         if (shard.contains(s)) {
           found = true;
           // make sure that it responded if it's up and the landing node didn't error before sending
@@ -2061,7 +2051,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
         control.getHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
   }
 
-  private void validateCommonQueryParameters() throws Exception {
+  private void validateCommonQueryParameters() {
     ignoreException("parameter cannot be negative");
 
     SolrException e1 =

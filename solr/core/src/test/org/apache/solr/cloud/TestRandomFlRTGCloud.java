@@ -197,7 +197,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
    * @see #FL_VALIDATORS
    * @see TransformerFactory#defaultFactories
    */
-  public void testCoverage() throws Exception {
+  public void testCoverage() {
     final Set<String> implicit = new LinkedHashSet<>();
     for (String t : TransformerFactory.defaultFactories.keySet()) {
       implicit.add(t);
@@ -475,7 +475,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       // response
       if (null != knownDocs[docId]) {
         Integer filterVal = (Integer) knownDocs[docId].getFieldValue("aaa_i");
-        if (null == FQ_MAX || ((null != filterVal) && filterVal.intValue() <= FQ_MAX.intValue())) {
+        if (null == FQ_MAX || ((null != filterVal) && filterVal <= FQ_MAX)) {
           docsToExpect.add(knownDocs[docId]);
         }
       }
@@ -496,7 +496,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
           }
         } else {
           // add one or more comma separated ids params
-          params.add(buildCommaSepParams(random(), "ids", idsToRequest));
+          params.add(buildCommaSepParams("ids", idsToRequest));
         }
       }
     } else {
@@ -662,7 +662,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
         params.add(v.getExtraRequestParams());
         fls.add(v.getFlParam());
       }
-      params.add(buildCommaSepParams(random(), "fl", fls));
+      params.add(buildCommaSepParams("fl", fls));
     }
 
     /**
@@ -977,8 +977,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
         }
       }
       assertTrue(
-          USAGE + " must be >= " + minValidDocId + ": " + value,
-          minValidDocId <= ((Integer) value).intValue());
+          USAGE + " must be >= " + minValidDocId + ": " + value, minValidDocId <= (Integer) value);
       return Collections.<String>singleton(resultKey);
     }
   }
@@ -1392,11 +1391,10 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   }
 
   /**
-   * Given an ordered list of values to include in a (key) param, randomly groups them (ie: comma
-   * separated) into actual param key=values which are returned as a new SolrParams instance
+   * Given an ordered list of values to include in a (key) param, groups them (ie: comma separated)
+   * into actual param key=values which are returned as a new SolrParams instance
    */
-  private static SolrParams buildCommaSepParams(
-      final Random rand, final String key, Collection<String> values) {
+  private static SolrParams buildCommaSepParams(final String key, Collection<String> values) {
     ModifiableSolrParams result = new ModifiableSolrParams();
     List<String> copy = new ArrayList<>(values);
     while (!copy.isEmpty()) {

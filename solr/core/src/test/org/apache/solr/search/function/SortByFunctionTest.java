@@ -36,7 +36,7 @@ public class SortByFunctionTest extends SolrTestCaseJ4 {
     assertU(commit());
   }
 
-  public void test() throws Exception {
+  public void test() {
     assertU(
         adoc("id", "1", "x_td1", "0", "y_td1", "2", "w_td1", "25", "z_td1", "5", "f_t", "ipod"));
     assertU(

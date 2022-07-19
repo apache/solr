@@ -40,7 +40,7 @@ public class SpellCheckCollatorWithCollapseTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void test() throws Exception {
+  public void test() {
     for (int i = 0; i < 200; i++) {
       String[] doc = {
         "id", "" + i, "group_i", "" + (i % 10), "a_s", ((i % 2) == 0 ? "love" : "peace")

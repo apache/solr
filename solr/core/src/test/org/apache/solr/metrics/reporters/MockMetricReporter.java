@@ -18,7 +18,6 @@ package org.apache.solr.metrics.reporters;
 
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
-import java.io.IOException;
 import java.util.Locale;
 import java.util.NoSuchElementException;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -42,7 +41,7 @@ public class MockMetricReporter extends SolrMetricReporter {
   }
 
   @Override
-  public void close() throws IOException {
+  public void close() {
     didClose = true;
   }
 

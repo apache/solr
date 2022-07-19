@@ -53,7 +53,6 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
   static final long BIG_PRIME = 982451653L;
 
   static final int MIN_NUM_DOCS = 10000;
-  static final int MAX_NUM_DOCS = MIN_NUM_DOCS * 2;
 
   static final List<String> STAT_FIELDS =
       Collections.unmodifiableList(Arrays.asList("int_i", "long_l", "string_s"));
@@ -180,7 +179,7 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
         // check the relative error of the estimate returned against the known truth
 
         final double relErr = expectedRelativeError(log2m);
-        final long estimate = stats.get(f).getCardinality().longValue();
+        final long estimate = stats.get(f).getCardinality();
         assertTrue(
             f
                 + ": relativeErr="

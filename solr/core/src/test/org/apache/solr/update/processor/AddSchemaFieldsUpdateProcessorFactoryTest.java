@@ -64,8 +64,7 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     doc.addField("id", "1");
     doc.addField(fieldName, null);
 
-    SolrInputDocument finalDoc = doc;
-    expectThrows(AssertionError.class, () -> processAdd("add-fields-no-run-processor", finalDoc));
+    expectThrows(AssertionError.class, () -> processAdd("add-fields-no-run-processor", doc));
 
     expectThrows(
         AssertionError.class,
@@ -222,14 +221,11 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     String field2String2 = "1,234,567,890,123,456,789";
     Long field2Value2 = 1234567890123456789L;
     String field3String1 = "blah-blah";
-    String field3Value1 = field3String1;
     String field3String2 = "-5.28E-3";
-    Double field3Value2 = -5.28E-3;
     String field4String1 = "1999-04-17 17:42";
     DateTimeFormatter dateTimeFormatter =
         DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm", Locale.ROOT).withZone(ZoneOffset.UTC);
     LocalDateTime dateTime = LocalDateTime.parse(field4String1, dateTimeFormatter);
-    Date field4Value1 = Date.from(dateTime.atZone(ZoneOffset.UTC).toInstant());
     DateTimeFormatter dateTimeFormatter2 =
         DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss", Locale.ROOT).withZone(ZoneOffset.UTC);
     String field4Value1String = dateTime.format(dateTimeFormatter2) + "Z";

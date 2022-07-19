@@ -53,8 +53,6 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
   private static String delDoc(int id) {
     return delI(Integer.toString(id));
   }
-  // How long to sleep while checking for commits
-  private static final int COMMIT_CHECKING_SLEEP_TIME_MS = 50;
   // max TLOG file size
   private static final int MAX_FILE_SIZE = 1000;
 
@@ -124,8 +122,7 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
         hardCommitTracker,
         updateHandler,
         () -> {
-          updateRequestHandler.handleRequest(
-              constructBatchAddDocRequest(0, numDocsToAdd), updateResp);
+          updateRequestHandler.handleRequest(constructBatchAddDocRequest(numDocsToAdd), updateResp);
         });
   }
 
@@ -149,8 +146,7 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
         hardCommitTracker,
         updateHandler,
         () -> {
-          updateRequestHandler.handleRequest(
-              constructBatchAddDocRequest(0, numDocsToAdd), updateResp);
+          updateRequestHandler.handleRequest(constructBatchAddDocRequest(numDocsToAdd), updateResp);
         });
 
     // Send a bunch of redundant deletes
@@ -193,8 +189,7 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
         hardCommitTracker,
         updateHandler,
         () -> {
-          updateRequestHandler.handleRequest(
-              constructBatchAddDocRequest(0, numDocsToAdd), updateResp);
+          updateRequestHandler.handleRequest(constructBatchAddDocRequest(numDocsToAdd), updateResp);
         });
 
     // Delete all documents - should trigger a commit
@@ -204,7 +199,7 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
         updateHandler,
         () -> {
           updateRequestHandler.handleRequest(
-              constructBatchDeleteDocRequest(0, numDocsToAdd), updateResp);
+              constructBatchDeleteDocRequest(numDocsToAdd), updateResp);
         });
   }
 
@@ -212,40 +207,37 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
    * Construct a batch add document request with a series of very simple Solr docs with increasing
    * IDs.
    *
-   * @param startId the document ID to begin with
    * @param batchSize the number of documents to include in the batch
    * @return a SolrQueryRequestBase
    */
-  private SolrQueryRequestBase constructBatchAddDocRequest(int startId, int batchSize) {
-    return constructBatchRequestHelper(startId, batchSize, MaxSizeAutoCommitTest::addDoc);
+  private SolrQueryRequestBase constructBatchAddDocRequest(int batchSize) {
+    return constructBatchRequestHelper(batchSize, MaxSizeAutoCommitTest::addDoc);
   }
 
   /**
    * Construct a batch delete document request, with IDs incrementing from startId
    *
-   * @param startId the document ID to begin with
    * @param batchSize the number of documents to include in the batch
    * @return a SolrQueryRequestBase
    */
-  private SolrQueryRequestBase constructBatchDeleteDocRequest(int startId, int batchSize) {
-    return constructBatchRequestHelper(startId, batchSize, MaxSizeAutoCommitTest::delDoc);
+  private SolrQueryRequestBase constructBatchDeleteDocRequest(int batchSize) {
+    return constructBatchRequestHelper(batchSize, MaxSizeAutoCommitTest::delDoc);
   }
 
   /**
    * Helper for constructing a batch update request
    *
-   * @param startId the document ID to begin with
    * @param batchSize the number of documents to include in the batch
    * @param requestFn a function that takes an (int) ID and returns an XML string of the request to
    *     add to the batch request
    * @return a SolrQueryRequestBase
    */
   private SolrQueryRequestBase constructBatchRequestHelper(
-      int startId, int batchSize, Function<Integer, String> requestFn) {
+      int batchSize, Function<Integer, String> requestFn) {
     SolrQueryRequestBase updateReq =
         new SolrQueryRequestBase(core, new MapSolrParams(new HashMap<>())) {};
     List<String> docs = new ArrayList<>();
-    for (int i = startId; i < startId + batchSize; i++) {
+    for (int i = 0; i < batchSize; i++) {
       docs.add(requestFn.apply(i));
     }
     updateReq.setContentStreams(toContentStreams(docs));

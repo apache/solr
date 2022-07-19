@@ -24,6 +24,7 @@ import static org.apache.solr.common.util.ValidatingJsonMap.ENUM_OF;
 import static org.apache.solr.common.util.ValidatingJsonMap.NOT_NULL;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import java.io.IOException;
@@ -378,34 +379,41 @@ public class ApiBag {
     return b.build();
   }
 
-  public static final SpecProvider EMPTY_SPEC = () -> ValidatingJsonMap.EMPTY;
   public static final String HANDLER_NAME = "handlerName";
+  public static final SpecProvider EMPTY_SPEC = () -> ValidatingJsonMap.EMPTY;
   public static final Set<String> KNOWN_TYPES =
-      Set.of("string", "boolean", "list", "int", "double", "object");
+      ImmutableSet.of("string", "boolean", "list", "int", "double", "object");
+  // A Spec template for GET AND POST APIs using the /$handlerName template-variable.
+  public static final SpecProvider HANDLER_NAME_SPEC_PROVIDER =
+      () -> {
+        final ValidatingJsonMap spec = new ValidatingJsonMap();
+        spec.put("methods", Lists.newArrayList("GET", "POST"));
+        final ValidatingJsonMap urlMap = new ValidatingJsonMap();
+        urlMap.put("paths", Collections.singletonList("$" + HANDLER_NAME));
+        spec.put("url", urlMap);
+        return spec;
+      };
 
   public PathTrie<Api> getRegistry(String method) {
     return apis.get(method);
   }
 
   public void registerLazy(PluginBag.PluginHolder<SolrRequestHandler> holder, PluginInfo info) {
-    String specName = info.attributes.get("spec");
-    if (specName == null) specName = "emptySpec";
     register(
-        new LazyLoadedApi(Utils.getSpec(specName), holder),
+        new LazyLoadedApi(HANDLER_NAME_SPEC_PROVIDER, holder),
         Collections.singletonMap(HANDLER_NAME, info.attributes.get(NAME)));
   }
 
   public static SpecProvider constructSpec(PluginInfo info) {
     Object specObj = info == null ? null : info.attributes.get("spec");
-    if (specObj == null) specObj = "emptySpec";
-    if (specObj instanceof Map) {
+    if (specObj != null && specObj instanceof Map) {
       // Value from Map<String,String> can be a Map because in PluginInfo(String, Map) we assign a
       // Map<String, Object>
       // assert false : "got a map when this should only be Strings";
       Map<?, ?> map = (Map<?, ?>) specObj;
       return () -> ValidatingJsonMap.getDeepCopy(map, 4, false);
     } else {
-      return Utils.getSpec((String) specObj);
+      return HANDLER_NAME_SPEC_PROVIDER;
     }
   }
 

@@ -721,7 +721,7 @@ public class TestPackages extends SolrCloudTestCase {
     static boolean informCalled = false;
 
     @Override
-    public void inform(ResourceLoader loader) throws IOException {
+    public void inform(ResourceLoader loader) {
       informCalled = true;
     }
 
