@@ -17,52 +17,52 @@
 
 == Solr Source Directories
 
-[benchmark/](benchmark/):: \
+benchmark/[]::
 Benchmarking module for Solr.
 
-[bin/](bin/):: \
+bin/[]::
 Scripts to startup, manage and interact with Solr instances.
 
-[core/](core/):: \
+core/[]::
 Base Solr code.
 
-[distribution/](distribution/):: \
+distribution/[]::
 Gradle project for building a full release of Solr.
 
-[docker/](docker/)::
+docker/[]::
 Contains a Dockerfile to build a Docker image using the source or binary distribution.
 `docker/scripts` contains scripts that the Docker image uses to manage Solr.
 
-[documentation/](documentation/)::
+documentation/[]::
 Gradle project to build the JavaDocs site.
 
-[example/](example/)::
+example/[]::
 Contains example documents and an alternative Solr home
 directory containing various examples.
 
-[license/](license/)::
+license/[]::
 Licenses, notice files and signatures for Solr dependencies.
 
-[modules/](modules/)::
+modules/[]::
 Contains modules to extend the functionality of Solr.
 
-[packaging/](packaging/)::
+packaging/[]::
 Gradle project to build the binary release of Solr.
 
-[prometheus-exporter/](prometheus-exporter/)::
+prometheus-exporter/[]::
 Contains a separate application to monitor Solr instances and export Prometheus metrics.
 
-[server/](server/)::
+server/[]::
 Gradle project that builds the Jetty server to run Solr.
 
-[solr-ref-guide/](solr-ref-guide/)::
+solr-ref-guide/[]::
 The Solr Reference Guide source files including Java examples.
 
-[solrj/](solrj/)::
+solrj/[]::
 Solr client code for Java applications.
 
-[test-framework/](test-framework/)::
+test-framework/[]::
 Solr test framework for internal tests and external tests integrating Solr.
 
-[webapp/](webapp/)::
+webapp/[]::
 Admin UI Javascript and supporting assets.
