@@ -57,6 +57,10 @@ configure(project(":solr").subprojects) { prj ->
             // Exclude Hadoop copied files to make upgrades easier
             targetExclude "src/**/org/apache/hadoop/**"
             break
+          case ":solr:solr-ref-guide":
+            // Apply to all example Java sources in the ref-guide
+            target "modules/**/examples/*.java"
+            break
         }
       }
     }
