@@ -17,14 +17,13 @@
 
 package org.apache.solr.metrics;
 
+import com.codahale.metrics.Clock;
+import com.codahale.metrics.Snapshot;
+import com.codahale.metrics.Timer;
 import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-
-import com.codahale.metrics.Clock;
-import com.codahale.metrics.Snapshot;
-import com.codahale.metrics.Timer;
 
 public class DelegateRegistryTimer extends Timer {
 

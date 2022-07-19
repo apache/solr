@@ -26,33 +26,48 @@ public class SolrDelegateRegistryMetricsContext extends SolrMetricsContext {
 
   private final String delegateRegistry;
 
-  public SolrDelegateRegistryMetricsContext(SolrMetricManager metricManager, String registry, String tag, String delegateRegistry) {
+  public SolrDelegateRegistryMetricsContext(
+      SolrMetricManager metricManager, String registry, String tag, String delegateRegistry) {
     super(metricManager, registry, tag);
     this.delegateRegistry = delegateRegistry;
   }
 
   @Override
   public Meter meter(String metricName, String... metricPath) {
-    return new DelegateRegistryMeter(super.meter(metricName, metricPath), getMetricManager().meter(this, delegateRegistry, metricName, metricPath));
+    return new DelegateRegistryMeter(
+        super.meter(metricName, metricPath),
+        getMetricManager().meter(this, delegateRegistry, metricName, metricPath));
   }
 
   @Override
   public Counter counter(String metricName, String... metricPath) {
-    return new DelegateRegistryCounter(super.counter(metricName, metricPath), getMetricManager().counter(this, delegateRegistry, metricName, metricPath));
+    return new DelegateRegistryCounter(
+        super.counter(metricName, metricPath),
+        getMetricManager().counter(this, delegateRegistry, metricName, metricPath));
   }
 
   @Override
   public Timer timer(String metricName, String... metricPath) {
-    return new DelegateRegistryTimer(MetricSuppliers.getClock(getMetricManager().getMetricsConfig().getTimerSupplier(), MetricSuppliers.CLOCK), super.timer(metricName, metricPath), getMetricManager().timer(this, delegateRegistry, metricName, metricPath));
+    return new DelegateRegistryTimer(
+        MetricSuppliers.getClock(
+            getMetricManager().getMetricsConfig().getTimerSupplier(), MetricSuppliers.CLOCK),
+        super.timer(metricName, metricPath),
+        getMetricManager().timer(this, delegateRegistry, metricName, metricPath));
   }
 
   @Override
   public Histogram histogram(String metricName, String... metricPath) {
-    return new DelegateRegistryHistogram(super.histogram(metricName, metricPath), getMetricManager().histogram(this, delegateRegistry, metricName, metricPath));
+    return new DelegateRegistryHistogram(
+        super.histogram(metricName, metricPath),
+        getMetricManager().histogram(this, delegateRegistry, metricName, metricPath));
   }
 
   @Override
   public SolrMetricsContext getChildContext(Object child) {
-    return new SolrDelegateRegistryMetricsContext(getMetricManager(), getRegistryName(), SolrMetricProducer.getUniqueMetricTag(child, getTag()), delegateRegistry);
+    return new SolrDelegateRegistryMetricsContext(
+        getMetricManager(),
+        getRegistryName(),
+        SolrMetricProducer.getUniqueMetricTag(child, getTag()),
+        delegateRegistry);
   }
 }

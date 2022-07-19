@@ -134,7 +134,8 @@ public abstract class RequestHandlerBase
     if (initArgs != null) {
       Object caching = initArgs.get("httpCaching");
       httpCaching = caching != null ? Boolean.parseBoolean(caching.toString()) : true;
-      Boolean aggregateNodeLevelMetricsEnabled = initArgs.getBooleanArg("aggregateNodeLevelMetricsEnabled");
+      Boolean aggregateNodeLevelMetricsEnabled =
+          initArgs.getBooleanArg("aggregateNodeLevelMetricsEnabled");
       if (aggregateNodeLevelMetricsEnabled != null) {
         this.aggregateNodeLevelMetricsEnabled = aggregateNodeLevelMetricsEnabled;
       }
@@ -149,8 +150,12 @@ public abstract class RequestHandlerBase
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     if (aggregateNodeLevelMetricsEnabled) {
-      this.solrMetricsContext = new SolrDelegateRegistryMetricsContext(parentContext.getMetricManager(), parentContext.getRegistryName(),
-          SolrMetricProducer.getUniqueMetricTag(this, parentContext.getTag()), SolrMetricManager.getRegistryName(SolrInfoBean.Group.node));
+      this.solrMetricsContext =
+          new SolrDelegateRegistryMetricsContext(
+              parentContext.getMetricManager(),
+              parentContext.getRegistryName(),
+              SolrMetricProducer.getUniqueMetricTag(this, parentContext.getTag()),
+              SolrMetricManager.getRegistryName(SolrInfoBean.Group.node));
     } else {
       this.solrMetricsContext = parentContext.getChildContext(this);
     }
