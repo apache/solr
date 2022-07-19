@@ -74,6 +74,8 @@ public class NodeConfig {
 
   private final String coreAdminHandlerClass;
 
+  private final Map<String, String> coreAdminHandlerActions;
+
   private final String collectionsAdminHandlerClass;
 
   private final String healthCheckHandlerClass;
@@ -106,8 +108,6 @@ public class NodeConfig {
 
   private final PluginInfo tracerConfig;
 
-  private final Map<String, String> coreAdminHandlerActions;
-
   // Track if this config was loaded from zookeeper so that we can skip validating the zookeeper
   // connection later. If it becomes necessary to track multiple potential sources in the future,
   // replace this with an Enum
@@ -124,6 +124,7 @@ public class NodeConfig {
       PluginInfo shardHandlerFactoryConfig,
       UpdateShardHandlerConfig updateShardHandlerConfig,
       String coreAdminHandlerClass,
+      Map<String, String> coreAdminHandlerActions,
       String collectionsAdminHandlerClass,
       String healthCheckHandlerClass,
       String infoHandlerClass,
@@ -147,8 +148,7 @@ public class NodeConfig {
       Set<Path> allowPaths,
       List<String> allowUrls,
       String configSetServiceClass,
-      String modules,
-      Map<String, String> coreAdminHandlerActions) {
+      String modules) {
     // all Path params here are absolute and normalized.
     this.nodeName = nodeName;
     this.coreRootDirectory = coreRootDirectory;
@@ -159,6 +159,7 @@ public class NodeConfig {
     this.shardHandlerFactoryConfig = shardHandlerFactoryConfig;
     this.updateShardHandlerConfig = updateShardHandlerConfig;
     this.coreAdminHandlerClass = coreAdminHandlerClass;
+    this.coreAdminHandlerActions = coreAdminHandlerActions;
     this.collectionsAdminHandlerClass = collectionsAdminHandlerClass;
     this.healthCheckHandlerClass = healthCheckHandlerClass;
     this.infoHandlerClass = infoHandlerClass;
@@ -183,7 +184,6 @@ public class NodeConfig {
     this.allowUrls = allowUrls;
     this.configSetServiceClass = configSetServiceClass;
     this.modules = modules;
-    this.coreAdminHandlerActions = coreAdminHandlerActions;
 
     if (this.cloudConfig != null && this.getCoreLoadThreadCount(false) < 2) {
       throw new SolrException(
@@ -309,6 +309,10 @@ public class NodeConfig {
     return coreAdminHandlerClass;
   }
 
+  public Map<String, String> getCoreAdminHandlerActions() {
+    return coreAdminHandlerActions;
+  }
+
   public String getCollectionsHandlerClass() {
     return collectionsAdminHandlerClass;
   }
@@ -426,10 +430,6 @@ public class NodeConfig {
     return allowUrls;
   }
 
-  public Map<String, String> getCoreAdminHandlerActions() {
-    return coreAdminHandlerActions;
-  }
-
   // Configures SOLR_HOME/lib to the shared class loader
   private void setupSharedLib() {
     // Always add $SOLR_HOME/lib to the shared resource loader
@@ -526,6 +526,7 @@ public class NodeConfig {
     private UpdateShardHandlerConfig updateShardHandlerConfig = UpdateShardHandlerConfig.DEFAULT;
     private String configSetServiceClass;
     private String coreAdminHandlerClass = DEFAULT_ADMINHANDLERCLASS;
+    private Map<String, String> coreAdminHandlerActions = Collections.emptyMap();
     private String collectionsAdminHandlerClass = DEFAULT_COLLECTIONSHANDLERCLASS;
     private String healthCheckHandlerClass = DEFAULT_HEALTHCHECKHANDLERCLASS;
     private String infoHandlerClass = DEFAULT_INFOHANDLERCLASS;
@@ -550,7 +551,6 @@ public class NodeConfig {
     private String defaultZkHost;
     private Set<Path> allowPaths = Collections.emptySet();
     private List<String> allowUrls = Collections.emptyList();
-    private Map<String, String> coreAdminHandlerActions = Collections.emptyMap();
 
     private final Path solrHome;
     private final String nodeName;
@@ -635,6 +635,12 @@ public class NodeConfig {
 
     public NodeConfigBuilder setCoreAdminHandlerClass(String coreAdminHandlerClass) {
       this.coreAdminHandlerClass = coreAdminHandlerClass;
+      return this;
+    }
+
+    public NodeConfigBuilder setCoreAdminHandlerActions(
+        Map<String, String> coreAdminHandlerActions) {
+      this.coreAdminHandlerActions = coreAdminHandlerActions;
       return this;
     }
 
@@ -756,12 +762,6 @@ public class NodeConfig {
       return this;
     }
 
-    public NodeConfigBuilder setCoreAdminHandlerActions(
-        Map<String, String> coreAdminHandlerActions) {
-      this.coreAdminHandlerActions = coreAdminHandlerActions;
-      return this;
-    }
-
     public NodeConfig build() {
       // if some things weren't set then set them now.  Simple primitives are set on the field
       // declaration
@@ -778,6 +778,7 @@ public class NodeConfig {
           shardHandlerFactoryConfig,
           updateShardHandlerConfig,
           coreAdminHandlerClass,
+          coreAdminHandlerActions,
           collectionsAdminHandlerClass,
           healthCheckHandlerClass,
           infoHandlerClass,
@@ -801,8 +802,7 @@ public class NodeConfig {
           allowPaths,
           allowUrls,
           configSetServiceClass,
-          modules,
-          coreAdminHandlerActions);
+          modules);
     }
 
     public NodeConfigBuilder setSolrResourceLoader(SolrResourceLoader resourceLoader) {
