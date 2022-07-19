@@ -41,7 +41,7 @@ to run the techproducts example, enter:
   bin/solr start -e techproducts
 ```
 
-For a more indepth introduction, please check out the tutorials in the Solr Reference
+For a more in-depth introduction, please check out the tutorials in the Solr Reference
 Guide: https://solr.apache.org/guide/solr/latest/getting-started/solr-tutorial.html.
 
 Support
