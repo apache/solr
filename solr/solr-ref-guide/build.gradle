@@ -530,10 +530,9 @@ dependencies {
     testImplementation 'junit:junit'
 }
 
-// Copy all the test resource files from core to the build/resources/test directory
-// of the HDFS module so we can avoid duplication of the test resource files like
-// schemas and SolrConfigs. This can be improved later by making the test classes
-// load the resources from core directories directly.
+// Copy all the test resource files from SolrJ to the build/resources/test directory
+// of the examples so we can avoid duplication of the test resource files like
+// schemas and SolrConfigs.
 task copySolrjTestResources(type: Copy) {
     from(project(':solr:solrj').sourceSets.test.resources.srcDirs) {
         exclude '**/*.java'
