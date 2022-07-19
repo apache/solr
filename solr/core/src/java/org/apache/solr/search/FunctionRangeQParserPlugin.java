@@ -19,10 +19,10 @@ package org.apache.solr.search;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.search.function.*;
+import org.apache.solr.search.function.ValueSourceRangeFilter;
 
 /**
  * Create a range query over a function. <br>

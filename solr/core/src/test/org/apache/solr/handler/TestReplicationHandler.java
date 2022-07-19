@@ -16,7 +16,11 @@
  */
 package org.apache.solr.handler;
 
-import static org.apache.solr.handler.ReplicationTestHelper.*;
+import static org.apache.solr.handler.ReplicationTestHelper.CONF_DIR;
+import static org.apache.solr.handler.ReplicationTestHelper.SolrInstance;
+import static org.apache.solr.handler.ReplicationTestHelper.assertVersions;
+import static org.apache.solr.handler.ReplicationTestHelper.createNewSolrClient;
+import static org.apache.solr.handler.ReplicationTestHelper.invokeReplicationCommand;
 import static org.junit.matchers.JUnitMatchers.containsString;
 
 import java.io.File;
@@ -26,7 +30,12 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;

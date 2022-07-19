@@ -17,7 +17,7 @@
 package org.apache.solr.search;
 
 import java.util.Random;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.Query;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;
