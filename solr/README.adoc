@@ -18,16 +18,16 @@
 Solr Source Directories
 ----------------------------------------------------
 
-[benchmark/](benchmark/)::
+[benchmark/](benchmark/):: \
 Benchmarking module for Solr.
 
-[bin/](bin/)::
+[bin/](bin/):: \
 Scripts to startup, manage and interact with Solr instances.
 
-[core/](core/)::
+[core/](core/):: \
 Base Solr code.
 
-[distribution/](distribution/)::
+[distribution/](distribution/):: \
 Gradle project for building a full release of Solr.
 
 [docker/](docker/)::
