@@ -21,7 +21,6 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
-import org.apache.solr.core.SolrInfoBean;
 
 public class SolrDelegateRegistryMetricsContext extends SolrMetricsContext {
 
