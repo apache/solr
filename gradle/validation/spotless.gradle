@@ -62,6 +62,14 @@ configure(project(":solr").subprojects) { prj ->
             target "modules/**/examples/*.java"
             break
         }
+
+        custom 'Refuse wildcard imports', {
+          // Wildcard imports can't be resolved by spotless itself.
+          // This will require the developer themselves to adhere to best practices.
+          if (it =~ /\nimport .*\*;/) {
+            throw new AssertionError("Do not use wildcard imports.  'spotlessApply' cannot resolve this issue.")
+          }
+        }
       }
     }
 
