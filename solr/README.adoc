@@ -15,8 +15,7 @@
   limitations under the License.
 ////
 
-Solr Source Directories
-----------------------------------------------------
+== Solr Source Directories
 
 [benchmark/](benchmark/):: \
 Benchmarking module for Solr.
