@@ -2172,7 +2172,7 @@ public class CoreContainer {
   // ---------------- Core admin handler operations --------------
 
   protected <A> A createCoreAdminHandlerOperation(String operationClass, Class<A> clazz) {
-    return loader.newInstance(operationClass, clazz, null, null, null);
+    return loader.newInstance(operationClass, clazz);
   }
 
   // ---------------- CoreContainer request handlers --------------
