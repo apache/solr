@@ -35,7 +35,9 @@ import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.metrics.SolrDelegateRegistryMetricsContext;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -60,6 +62,7 @@ public abstract class RequestHandlerBase
   protected SolrParams appends;
   protected SolrParams invariants;
   protected boolean httpCaching = true;
+  protected boolean aggregateNodeLevelMetricsEnabled = false;
 
   protected SolrMetricsContext solrMetricsContext;
   protected HandlerMetrics metrics = HandlerMetrics.NO_OP;
@@ -131,6 +134,10 @@ public abstract class RequestHandlerBase
     if (initArgs != null) {
       Object caching = initArgs.get("httpCaching");
       httpCaching = caching != null ? Boolean.parseBoolean(caching.toString()) : true;
+      Boolean aggregateNodeLevelMetricsEnabled = initArgs.getBooleanArg("aggregateNodeLevelMetricsEnabled");
+      if (aggregateNodeLevelMetricsEnabled != null) {
+        this.aggregateNodeLevelMetricsEnabled = aggregateNodeLevelMetricsEnabled;
+      }
     }
   }
 
@@ -141,7 +148,12 @@ public abstract class RequestHandlerBase
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    this.solrMetricsContext = parentContext.getChildContext(this);
+    if (aggregateNodeLevelMetricsEnabled) {
+      this.solrMetricsContext = new SolrDelegateRegistryMetricsContext(parentContext.getMetricManager(), parentContext.getRegistryName(),
+          SolrMetricProducer.getUniqueMetricTag(this, parentContext.getTag()), SolrMetricManager.getRegistryName(SolrInfoBean.Group.node));
+    } else {
+      this.solrMetricsContext = parentContext.getChildContext(this);
+    }
     metrics = new HandlerMetrics(solrMetricsContext, getCategory().toString(), scope);
     solrMetricsContext.gauge(
         () -> handlerStart, true, "handlerStart", getCategory().toString(), scope);
