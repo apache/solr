@@ -17,7 +17,7 @@
 
 package org.apache.solr.cloud;
 
-import static org.apache.solr.client.solrj.response.schema.SchemaResponse.*;
+import static org.apache.solr.client.solrj.response.schema.SchemaResponse.UpdateResponse;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
