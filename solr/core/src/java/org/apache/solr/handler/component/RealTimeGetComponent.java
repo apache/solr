@@ -81,7 +81,6 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocList;
-import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrDocumentFetcher;
@@ -205,13 +204,8 @@ public class RealTimeGetComponent extends SearchComponent {
       if (fqs != null && fqs.length != 0) {
         List<Query> filters = rb.getFilters();
         // if filters already exists, make a copy instead of modifying the original
-        filters = filters == null ? new ArrayList<Query>(fqs.length) : new ArrayList<>(filters);
-        for (String fq : fqs) {
-          if (fq != null && fq.trim().length() != 0) {
-            QParser fqp = QParser.getParser(fq, req);
-            filters.add(QueryUtils.makeQueryable(fqp.getQuery()));
-          }
-        }
+        filters = filters == null ? new ArrayList<>(fqs.length) : new ArrayList<>(filters);
+        filters.addAll(QueryUtils.parseFilterQueries(req, true));
         if (!filters.isEmpty()) {
           rb.setFilters(filters);
         }
