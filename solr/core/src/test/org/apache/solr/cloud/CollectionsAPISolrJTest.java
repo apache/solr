@@ -646,10 +646,9 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     // Unset ClusterProp that we set.
     CollectionAdminRequest.setClusterProperty(ZkStateReader.MAX_CORES_PER_NODE, null)
         .process(cluster.getSolrClient());
-    assertEquals(
+    assertNull(
         "Cluster property was not unset",
-        props.getClusterProperty(ZkStateReader.MAX_CORES_PER_NODE, null),
-        null);
+        props.getClusterProperty(ZkStateReader.MAX_CORES_PER_NODE, null));
 
     response =
         CollectionAdminRequest.setClusterProperty(ZkStateReader.MAX_CORES_PER_NODE, "1")
