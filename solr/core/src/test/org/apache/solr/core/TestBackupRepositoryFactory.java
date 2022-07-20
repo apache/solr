@@ -38,7 +38,7 @@ import org.junit.rules.TestRule;
 
 public class TestBackupRepositoryFactory extends SolrTestCaseJ4 {
   @Rule public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
-  
+
   // tmp dir, cleaned up automatically.
   private static File solrHome = null;
   private static SolrResourceLoader loader = null;
