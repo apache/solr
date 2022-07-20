@@ -180,8 +180,7 @@ public class SolrTestCase extends LuceneTestCase {
   // This was copied out org.junit.Assert, but does this
   // mean that we are keeping code that SHOULD be deprecated
   // because it's marked that in org.junit.Assert?
-  public static <T> void assertThat(String reason, T actual,
-                                    Matcher<? super T> matcher) {
+  public static <T> void assertThat(String reason, T actual, Matcher<? super T> matcher) {
     MatcherAssert.assertThat(reason, actual, matcher);
   }
 }

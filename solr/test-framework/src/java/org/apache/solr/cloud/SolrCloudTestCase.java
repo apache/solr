@@ -46,8 +46,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
-import org.hamcrest.Matcher;
-import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.slf4j.Logger;
@@ -73,7 +71,6 @@ import org.slf4j.LoggerFactory;
  * </pre>
  */
 public class SolrCloudTestCase extends SolrTestCaseJ4 {
-
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final Boolean USE_PER_REPLICA_STATE =
