@@ -17,7 +17,6 @@
 package org.apache.solr;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import org.hamcrest.MatcherAssert;
 
 import java.io.IOException;
 import java.util.List;
@@ -32,6 +31,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
 /**

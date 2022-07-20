@@ -77,7 +77,8 @@ public class CreateCollectionCleanupTest extends SolrCloudTestCase {
   public void testCreateCollectionCleanup() throws Exception {
     final CloudSolrClient cloudClient = cluster.getSolrClient();
     String collectionName = "foo";
-    MatcherAssert.assertThat(CollectionAdminRequest.listCollections(cloudClient), not(hasItem(collectionName)));
+    MatcherAssert.assertThat(
+        CollectionAdminRequest.listCollections(cloudClient), not(hasItem(collectionName)));
     // Create a collection that would fail
     CollectionAdminRequest.Create create =
         CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 1);
