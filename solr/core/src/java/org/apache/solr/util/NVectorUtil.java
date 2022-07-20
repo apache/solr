@@ -17,6 +17,9 @@
 
 package org.apache.solr.util;
 
+import java.text.NumberFormat;
+import java.text.ParseException;
+
 import static org.locationtech.spatial4j.distance.DistanceUtils.EARTH_MEAN_RADIUS_KM;
 
 public class NVectorUtil {
@@ -41,6 +44,13 @@ public class NVectorUtil {
     return latLongToNVector(latlon[0], latlon[1]);
   }
 
+  public static String[] latLongToNVector(String[] point, NumberFormat formatter) throws ParseException {
+    double[] nvec = latLongToNVector(formatter.parse(point[0]).doubleValue(),formatter.parse(point[1]).doubleValue());
+    return new String[] {
+            Double.toString(nvec[0]), Double.toString(nvec[1]), Double.toString(nvec[2])
+    };
+  }
+
   public static double[] NVectorToLatLong(double[] n) {
     return new double[] {
       Math.asin(n[2]) * (180 / Math.PI), Math.atan(n[1] / n[0]) * (180 / Math.PI)
@@ -61,4 +71,6 @@ public class NVectorUtil {
   public static double NVectorDist(double[] a, double[] b, double radius) {
     return radius * FastInvTrig.acos(a[0] * b[0] + a[1] * b[1] + a[2] * b[2]);
   }
+
+
 }
