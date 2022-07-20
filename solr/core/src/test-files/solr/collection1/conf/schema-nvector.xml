@@ -38,38 +38,19 @@
   <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   <fieldType name="double" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   <fieldType name="tlong" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="nvector" class="solr.NVectorField" subFieldSuffix="_d1" docValues="true"/>
-
-
-
-  <field name="nvector" type="nvector" docValues="true" indexed="true" stored="true" multiValued="false"/>
-
-
-
-
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
 
+  <fieldType name="nvector" class="solr.NVectorField" subFieldSuffix="_d1" docValues="true"/>
 
-
-<!--  <fieldType name="latLonPointSpatial" class="solr.LatLonPointSpatialField" />-->
-
-
-
-  <field name="id" type="string" indexed="true" stored="${solr.tests.id.stored:true}" multiValued="false" required="false" docValues="${solr.tests.id.docValues:false}"/>
-<!--  <field name="_root_" type="string" indexed="true" stored="false"/>-->
-
-  <field name="tlong" type="tlong" indexed="true" stored="true"/>
-  <field name="_version_" type="long" indexed="false" stored="false" docValues="true" multiValued="false" useDocValuesAsStored="true"/>
-
-<!--  <field name="lower" type="lowerfilt" indexed="false" stored="true" multiValued="true"/>-->
-  <field name="_route_" type="string" indexed="true" stored="true" multiValued="false"/>
-
-
+  <field name="nvector" type="nvector" docValues="true" indexed="true" stored="true" multiValued="false"/>
   <dynamicField name="*_d1" type="double" indexed="true" stored="true" multiValued="false"/>
 
+  <field name="id" type="string" indexed="true" stored="${solr.tests.id.stored:true}" multiValued="false" required="false" docValues="${solr.tests.id.docValues:false}"/>
+  <field name="tlong" type="tlong" indexed="true" stored="true"/>
+  <field name="_version_" type="long" indexed="false" stored="false" docValues="true" multiValued="false" useDocValuesAsStored="true"/>
+  <field name="_route_" type="string" indexed="true" stored="true" multiValued="false"/>
 
   <uniqueKey>id</uniqueKey>
-
 
   <!-- example of a custom similarity -->
   <similarity class="solr.CustomSimilarityFactory">

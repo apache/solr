@@ -27,7 +27,6 @@ public class FastInvTrigTest extends SolrTestCase {
 
   static final int num_points = 100000;
   static final double EPSILON = 0.0001;
-  // static final Random r = new Random();
   private static final double TEN_METERS = 0.01;
 
   static double[][] points = new double[num_points][2];
