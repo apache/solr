@@ -2586,7 +2586,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       tuples = getTuples(stream);
       assertEquals(tuples.size(), 1);
       List<String> checkpoints = tuples.get(0).getStrings("checkpoint_ss");
-      assertEquals(checkpoints.size(), 2);
+      assertEquals(checkpoints.size(), 2); // one checkpoint for each shard
 
       expression =
           StreamExpressionParser.parse(
