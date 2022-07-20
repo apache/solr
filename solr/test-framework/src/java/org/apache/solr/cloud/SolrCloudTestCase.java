@@ -75,10 +75,6 @@ import org.slf4j.LoggerFactory;
 public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
 
-  public static <T> void assertThat(T actual, Matcher<? super T> matcher) {
-    MatcherAssert.assertThat("", actual, matcher);
-  }
-
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final Boolean USE_PER_REPLICA_STATE =
       Boolean.parseBoolean(System.getProperty("use.per-replica", "false"));

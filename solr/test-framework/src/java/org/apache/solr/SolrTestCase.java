@@ -33,6 +33,8 @@ import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 import org.apache.solr.util.StartupLoggingUtils;
+import org.hamcrest.Matcher;
+import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -169,5 +171,17 @@ public class SolrTestCase extends LuceneTestCase {
       ObjectReleaseTracker.tryClose();
     }
     StartupLoggingUtils.shutdown();
+  }
+
+  public static <T> void assertThat(T actual, Matcher<? super T> matcher) {
+    MatcherAssert.assertThat("", actual, matcher);
+  }
+
+  // This was copied out org.junit.Assert, but does this
+  // mean that we are keeping code that SHOULD be deprecated
+  // because it's marked that in org.junit.Assert?
+  public static <T> void assertThat(String reason, T actual,
+                                    Matcher<? super T> matcher) {
+    MatcherAssert.assertThat(reason, actual, matcher);
   }
 }
