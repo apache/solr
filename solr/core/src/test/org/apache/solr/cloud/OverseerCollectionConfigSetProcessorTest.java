@@ -788,7 +788,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
           "Shard " + coreName + " created on wrong node " + shardRequest.shards[0],
           nodeUrlWithoutProtocolPartForLiveNodes.contains(shardRequest.shards[0]));
       coreName_TO_nodeUrlWithoutProtocolPartForLiveNodes_map.put(coreName, shardRequest.shards[0]);
-      assertEquals(shardRequest.shards, shardRequest.actualShards);
+      assertArrayEquals(shardRequest.shards, shardRequest.actualShards);
 
       String sliceName = shardRequest.params.get(CoreAdminParams.SHARD);
       if (!sliceToNodeUrlsWithoutProtocolPartToNumberOfShardsRunningMapMap.containsKey(sliceName)) {
