@@ -50,6 +50,9 @@ Improvements
 
 * SOLR-16225: Upgrade dependencies (Carrot2, HPPC) (Dawid Weiss)
 
+* SOLR-16257: Improve ZkStateReader to avoid race condition between collectionWatches and watchedCollectionStates
+  (Patson Luk, Houston Putman, Mike Drob)
+
 Optimizations
 ---------------------
 * SOLR-16120: Optimise hl.fl expansion. (Christine Poerschke, David Smiley, Mike Drob)
