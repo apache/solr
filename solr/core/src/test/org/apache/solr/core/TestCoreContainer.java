@@ -17,11 +17,11 @@
 package org.apache.solr.core;
 
 import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.matchers.JUnitMatchers.containsString;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;

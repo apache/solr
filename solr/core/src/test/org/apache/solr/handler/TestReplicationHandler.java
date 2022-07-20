@@ -17,7 +17,7 @@
 package org.apache.solr.handler;
 
 import static org.apache.solr.handler.ReplicationTestHelper.*;
-import static org.junit.matchers.JUnitMatchers.containsString;
+import static org.hamcrest.CoreMatchers.containsString;
 
 import java.io.File;
 import java.io.FilenameFilter;
