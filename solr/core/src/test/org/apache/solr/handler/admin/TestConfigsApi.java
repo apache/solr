@@ -17,19 +17,11 @@
 
 package org.apache.solr.handler.admin;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
-import static org.apache.solr.handler.admin.TestCollectionAPIs.compareOutput;
-
-import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.api.ApiBag;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.handler.ClusterAPI;
-import org.apache.solr.response.SolrQueryResponse;
 
 public class TestConfigsApi extends SolrTestCaseJ4 {
 
+    /*
   public void testCommands() throws Exception {
 
     try (ConfigSetsHandler handler =
@@ -49,10 +41,12 @@ public class TestConfigsApi extends SolrTestCaseJ4 {
 
       ClusterAPI o = new ClusterAPI(null, handler);
       apiBag.registerObject(o);
+
       apiBag.registerObject(o.configSetCommands);
       //      for (Api api : handler.getApis()) apiBag.register(api, emptyMap());
       compareOutput(
           apiBag, "/cluster/configs/sample", DELETE, null, "{name :sample, operation:delete}");
     }
-  }
+    }
+     */
 }

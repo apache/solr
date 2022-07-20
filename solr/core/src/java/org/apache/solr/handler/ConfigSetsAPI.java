@@ -17,27 +17,29 @@
 
 package org.apache.solr.handler;
 
-import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
-import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.CreateConfigPayload;
-import org.apache.solr.cloud.ConfigSetCmds;
+import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.cloud.OverseerSolrResponse;
+import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.common.params.DefaultSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.ConfigSetService;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.PUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
@@ -48,26 +50,16 @@ import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_P
 public class ConfigSetsAPI {
 
     private final ConfigSetsHandler configSetsHandler;
-    public final ConfigSetCommands createConfigset = new ConfigSetCommands();
+    private final CoreContainer coreContainer;
+    private final ConfigSetService configSetService;
+    private final Optional<DistributedCollectionConfigSetCommandRunner>
+            distributedCollectionConfigSetCommandRunner;
 
-    public ConfigSetsAPI(ConfigSetsHandler configSetsHandler) {
+    public ConfigSetsAPI(ConfigSetsHandler configSetsHandler, CoreContainer coreContainer) {
         this.configSetsHandler = configSetsHandler;
-    }
-
-    @EndPoint(method = POST, path = "/cluster/configs", permission = CONFIG_EDIT_PERM)
-    public class ConfigSetCommands {
-
-        @Command(name = "create")
-        @SuppressWarnings("unchecked")
-        public void create(PayloadObj<CreateConfigPayload> obj) throws Exception {
-            Map<String, Object> mapVals = obj.get().toMap(new HashMap<>());
-            Map<String, Object> customProps = obj.get().properties;
-            if (customProps != null) {
-                customProps.forEach((k, o) -> mapVals.put(ConfigSetCmds.CONFIG_SET_PROPERTY_PREFIX + k, o));
-            }
-            mapVals.put("action", ConfigSetParams.ConfigSetAction.CREATE.toString());
-            configSetsHandler.handleRequestBody(wrapParams(obj.getRequest(), mapVals), obj.getResponse());
-        }
+        this.coreContainer = coreContainer;
+        this.configSetService = coreContainer.getConfigSetService();
+        this.distributedCollectionConfigSetCommandRunner = coreContainer.getDistributedCollectionCommandRunner();
     }
 
     @EndPoint(method = PUT, path = "/cluster/configs/{name}", permission = CONFIG_EDIT_PERM)
@@ -88,6 +80,7 @@ public class ConfigSetsAPI {
 
     @EndPoint(method = PUT, path = "/cluster/configs/{name}/*", permission = CONFIG_EDIT_PERM)
     public void insertIntoConfigSet(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+
         String path = req.getPathTemplateValues().get("*");
         if (path == null || path.isBlank()) {
             throw new SolrException(
@@ -113,8 +106,11 @@ public class ConfigSetsAPI {
 
     @EndPoint(method = GET, path = "/cluster/configs", permission = CONFIG_READ_PERM)
     public void listConfigSet(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-        req = wrapParams(req, "action", ConfigSetParams.ConfigSetAction.LIST.toString());
-        configSetsHandler.handleRequestBody(req, rsp);
+        final NamedList<Object> results = new NamedList<>();
+        List<String> configSetsList = configSetService.listConfigs();
+        results.add("configSets", configSetsList);
+        SolrResponse response = new OverseerSolrResponse(results);
+        rsp.getValues().addAll(response.getResponse());
     }
 
     @EndPoint(method = DELETE, path = "/cluster/configs/{name}", permission = CONFIG_EDIT_PERM)

@@ -17,24 +17,10 @@
 
 package org.apache.solr.handler;
 
-import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
-import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.REQUESTID;
-import static org.apache.solr.common.params.CommonParams.ACTION;
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-
 import com.google.common.collect.Maps;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
-import org.apache.solr.cloud.ConfigSetCmds;
 import org.apache.solr.common.params.CollectionParams;
-import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -47,6 +33,20 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.REQUESTID;
+import static org.apache.solr.common.params.CommonParams.ACTION;
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 /** Unit tests for the v2 to v1 API mappings found in {@link ClusterAPI} */
 public class V2ClusterAPIMappingTest {
@@ -70,7 +70,7 @@ public class V2ClusterAPIMappingTest {
     final ClusterAPI clusterAPI = new ClusterAPI(mockCollectionsHandler, mockConfigSetHandler);
     apiBag.registerObject(clusterAPI);
     apiBag.registerObject(clusterAPI.commands);
-    apiBag.registerObject(clusterAPI.configSetCommands);
+    //apiBag.registerObject(clusterAPI.configSetCommands);
   }
 
   @Test
@@ -112,6 +112,7 @@ public class V2ClusterAPIMappingTest {
     assertEquals("someId", v1Params.get(REQUESTID));
   }
 
+  /*
   // TODO This should probably really get its own class.
   @Test
   public void testDeleteConfigetAllParams() throws Exception {
@@ -175,6 +176,8 @@ public class V2ClusterAPIMappingTest {
     assertEquals(true, v1Params.getPrimitiveBool(ConfigSetParams.OVERWRITE));
     assertEquals(false, v1Params.getPrimitiveBool(ConfigSetParams.CLEANUP));
   }
+
+   */
 
   @Test
   public void testAddRoleAllParams() throws Exception {

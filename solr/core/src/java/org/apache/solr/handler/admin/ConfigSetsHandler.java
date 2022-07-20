@@ -16,29 +16,11 @@
  */
 package org.apache.solr.handler.admin;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
-import static org.apache.solr.cloud.OverseerConfigSetMessageHandler.CONFIGSETS_ACTION_PREFIX;
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.params.ConfigSetParams.ConfigSetAction.CREATE;
-import static org.apache.solr.common.params.ConfigSetParams.ConfigSetAction.DELETE;
-import static org.apache.solr.common.params.ConfigSetParams.ConfigSetAction.LIST;
-import static org.apache.solr.common.params.ConfigSetParams.ConfigSetAction.UPLOAD;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.request.beans.CreateConfigPayload;
 import org.apache.solr.cloud.ConfigSetCmds;
 import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.cloud.OverseerSolrResponseSerializer;
@@ -56,6 +38,8 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.handler.ConfigSetsAPI;
+import org.apache.solr.handler.CreateConfigSetAPI;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -65,6 +49,28 @@ import org.apache.solr.security.PermissionNameProvider;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+
+import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
+import static org.apache.solr.cloud.OverseerConfigSetMessageHandler.CONFIGSETS_ACTION_PREFIX;
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.ConfigSetParams.ConfigSetAction.CREATE;
+import static org.apache.solr.common.params.ConfigSetParams.ConfigSetAction.DELETE;
+import static org.apache.solr.common.params.ConfigSetParams.ConfigSetAction.LIST;
+import static org.apache.solr.common.params.ConfigSetParams.ConfigSetAction.UPLOAD;
 
 /** A {@link org.apache.solr.request.SolrRequestHandler} for ConfigSets API requests. */
 public class ConfigSetsHandler extends RequestHandlerBase implements PermissionNameProvider {
@@ -103,21 +109,52 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     checkErrors();
 
     // Pick the action
-    SolrParams params = req.getParams();
-    String a = params.get(ConfigSetParams.ACTION);
-    if (a != null) {
-      ConfigSetAction action = ConfigSetAction.get(a);
-      if (action == null)
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown action: " + a);
-      if (action == ConfigSetAction.UPLOAD) {
-        handleConfigUploadRequest(req, rsp);
-        return;
-      }
-      invokeAction(req, rsp, action);
-    } else {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "action is a required param");
+    final SolrParams requiredSolrParams = req.getParams().required();
+    final String actionStr = requiredSolrParams.get(ConfigSetParams.ACTION);
+    ConfigSetAction action = ConfigSetAction.get(actionStr);
+    if (action == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown action: " + actionStr);
     }
 
+    // TODO:upload, delete
+    final ConfigSetsAPI configSetsApi = new ConfigSetsAPI(this, coreContainer);
+
+    switch (action) {
+      case DELETE:
+        configSetsApi.deleteConfigSet(req, rsp);
+        break;
+      case UPLOAD:
+        handleConfigUploadRequest(req, rsp);
+        break;
+      case LIST:
+        configSetsApi.listConfigSet(req, rsp);
+        break;
+      case CREATE:
+        final String baseConfigSetName =
+                req.getParams().get(ConfigSetCmds.BASE_CONFIGSET, DEFAULT_CONFIGSET_NAME);
+        final String newConfigSetName = req.getParams().get(NAME);
+        if (newConfigSetName == null || newConfigSetName.length() == 0) {
+          throw new SolrException(ErrorCode.BAD_REQUEST, "ConfigSet name not specified");
+        }
+
+        // Map v1 parameters into v2 format and process request
+        final CreateConfigPayload createPayload = new CreateConfigPayload();
+        createPayload.name = newConfigSetName;
+        createPayload.baseConfigSet = baseConfigSetName;
+        createPayload.properties = new HashMap<>();
+        req.getParams().stream()
+                .filter(entry -> entry.getKey().startsWith(ConfigSetCmds.CONFIG_SET_PROPERTY_PREFIX))
+                .forEach(entry -> {
+                  final String newKey = entry.getKey().substring(ConfigSetCmds.CONFIG_SET_PROPERTY_PREFIX.length()); // TODO check off by 1 math
+                  createPayload.properties.put(newKey, entry.getValue());
+                });
+        final CreateConfigSetAPI createConfigSetAPI = new CreateConfigSetAPI(this, coreContainer);
+        createConfigSetAPI.create(new PayloadObj<>("create", null, createPayload, req, rsp));
+        break;
+      default:
+        invokeAction(req, rsp, action);
+        break;
+    }
     rsp.setHttpCaching(false);
   }
 
@@ -411,36 +448,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
       @Override
       public Map<String, Object> call(
           SolrQueryRequest req, SolrQueryResponse rsp, ConfigSetsHandler h) throws Exception {
-        String baseConfigSetName =
-            req.getParams().get(ConfigSetCmds.BASE_CONFIGSET, DEFAULT_CONFIGSET_NAME);
-        String newConfigSetName = req.getParams().get(NAME);
-        if (newConfigSetName == null || newConfigSetName.length() == 0) {
-          throw new SolrException(ErrorCode.BAD_REQUEST, "ConfigSet name not specified");
-        }
-
-        if (h.coreContainer.getConfigSetService().checkConfigExists(newConfigSetName)) {
-          throw new SolrException(
-              ErrorCode.BAD_REQUEST, "ConfigSet already exists: " + newConfigSetName);
-        }
-
-        // is there a base config that already exists
-        if (!h.coreContainer.getConfigSetService().checkConfigExists(baseConfigSetName)) {
-          throw new SolrException(
-              ErrorCode.BAD_REQUEST, "Base ConfigSet does not exist: " + baseConfigSetName);
-        }
-
-        Map<String, Object> props = CollectionsHandler.copy(req.getParams().required(), null, NAME);
-        props.put(ConfigSetCmds.BASE_CONFIGSET, baseConfigSetName);
-        if (!DISABLE_CREATE_AUTH_CHECKS
-            && !isTrusted(req, h.coreContainer.getAuthenticationPlugin())
-            && isCurrentlyTrusted(h.coreContainer.getConfigSetService(), baseConfigSetName)) {
-          throw new SolrException(
-              ErrorCode.UNAUTHORIZED,
-              "Can't create a configset with an unauthenticated request from a trusted "
-                  + ConfigSetCmds.BASE_CONFIGSET);
-        }
-        return copyPropertiesWithPrefix(
-            req.getParams(), props, ConfigSetCmds.CONFIG_SET_PROPERTY_PREFIX);
+        return null;
       }
     },
     DELETE_OP(DELETE) {
