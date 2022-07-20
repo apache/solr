@@ -2610,7 +2610,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       stream.setStreamContext(context);
       tuples = getTuples(stream);
 
-      // Should be zero because the checkpoints will be set to the highest vesion on the shards.
+      // Should be zero because the checkpoints will be set to the highest version on the shards.
       assertEquals(0, tuples.size());
 
     } finally {
