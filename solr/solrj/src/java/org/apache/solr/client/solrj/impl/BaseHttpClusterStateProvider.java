@@ -17,7 +17,7 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import static org.apache.solr.client.solrj.impl.BaseHttpSolrClient.*;
+import static org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
