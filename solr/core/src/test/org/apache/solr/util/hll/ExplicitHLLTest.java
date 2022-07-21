@@ -16,7 +16,7 @@
  */
 package org.apache.solr.util.hll;
 
-import static com.carrotsearch.randomizedtesting.RandomizedTest.*;
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomLong;
 
 import com.carrotsearch.hppc.LongHashSet;
 import java.util.HashSet;
