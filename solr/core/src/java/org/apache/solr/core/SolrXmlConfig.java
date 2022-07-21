@@ -256,6 +256,7 @@ public class SolrXmlConfig {
     assertSingleInstance("logging", config);
     assertSingleInstance("logging/watcher", config);
     assertSingleInstance("backup", config);
+    assertSingleInstance("coreAdminHandlerActions", config);
   }
 
   private static void assertSingleInstance(String section, XmlConfigFile config) {
