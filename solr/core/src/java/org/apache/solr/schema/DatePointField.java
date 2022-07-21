@@ -31,8 +31,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortedNumericSelector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.mutable.MutableValueDate;
-import org.apache.lucene.util.mutable.MutableValueLong;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.update.processor.TimestampUpdateProcessorFactory;
@@ -226,11 +224,6 @@ public class DatePointField extends PointField implements DateValueFieldType {
     @Override
     public String description() {
       return "date(" + field + ')';
-    }
-
-    @Override
-    protected MutableValueLong newMutableValueLong() {
-      return new MutableValueDate();
     }
 
     @Override

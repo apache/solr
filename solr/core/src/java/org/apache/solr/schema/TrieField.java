@@ -42,8 +42,6 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.util.mutable.MutableValueDate;
-import org.apache.lucene.util.mutable.MutableValueLong;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.legacy.LegacyDoubleField;
 import org.apache.solr.legacy.LegacyFieldType;
@@ -723,11 +721,6 @@ class TrieDateFieldSource extends LongFieldSource {
   @Override
   public String description() {
     return "date(" + field + ')';
-  }
-
-  @Override
-  protected MutableValueLong newMutableValueLong() {
-    return new MutableValueDate();
   }
 
   @Override
