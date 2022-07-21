@@ -17,6 +17,8 @@
 
 package org.apache.solr.cloud;
 
+import static org.hamcrest.core.StringContains.containsString;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
@@ -122,20 +124,17 @@ public class SplitShardTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void multipleOptionsSplitTest() throws IOException, SolrServerException {
+  public void multipleOptionsSplitTest() {
     CollectionAdminRequest.SplitShard splitShard =
         CollectionAdminRequest.splitShard(COLLECTION_NAME)
             .setNumSubShards(5)
             .setRanges("0-c,d-7fffffff")
             .setShardName("shard1");
-    boolean expectedException = false;
-    try {
-      splitShard.process(cluster.getSolrClient());
-      fail("An exception should have been thrown");
-    } catch (SolrException ex) {
-      expectedException = true;
-    }
-    assertTrue("Expected SolrException but it didn't happen", expectedException);
+    SolrException thrown =
+        assertThrows(SolrException.class, () -> splitShard.process(cluster.getSolrClient()));
+    assertThat(
+        thrown.getMessage(),
+        containsString("numSubShards can not be specified with split.key or ranges parameters"));
   }
 
   @Test
