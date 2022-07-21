@@ -16,8 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import java.io.IOException;
-import java.util.Map;
 import org.apache.solr.client.solrj.*;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -31,10 +29,11 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/**
- * Most of the tests for {@link org.apache.solr.handler.component.SearchHandler} are in {@link
- * org.apache.solr.ConvertedLegacyTest}.
- */
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 public class RequestHandlerMetricsTest extends SolrCloudTestCase {
 
   @BeforeClass
@@ -112,46 +111,51 @@ public class RequestHandlerMetricsTest extends SolrCloudTestCase {
     final double[] maxQueryTime = {-1.0};
     final double[] minUpdateTime = {Double.MAX_VALUE};
     final double[] maxUpdateTime = {-1.0};
+    Set<NamedList<Object>> coreMetrics = new HashSet<>();
     metrics.forEachKey(
         (key) -> {
           if (key.startsWith("solr.core.testRequestHandlerMetrics")) {
-            NamedList<Object> coreMetrics = (NamedList<Object>) metrics.get(key);
-            assertEquals(
-                1L,
-                ((Map<String, Number>) coreMetrics.get("QUERY./select.requestTimes"))
-                    .get("count")
-                    .longValue());
-            minQueryTime[0] =
-                Math.min(
-                    minQueryTime[0],
-                    ((Map<String, Number>) coreMetrics.get("QUERY./select.requestTimes"))
-                        .get("min_ms")
-                        .doubleValue());
-            maxQueryTime[0] =
-                Math.max(
-                    maxQueryTime[0],
-                    ((Map<String, Number>) coreMetrics.get("QUERY./select.requestTimes"))
-                        .get("max_ms")
-                        .doubleValue());
-            assertEquals(
-                1L,
-                ((Map<String, Number>) coreMetrics.get("UPDATE./update.requestTimes"))
-                    .get("count")
-                    .longValue());
-            minUpdateTime[0] =
-                Math.min(
-                    minUpdateTime[0],
-                    ((Map<String, Number>) coreMetrics.get("UPDATE./update.requestTimes"))
-                        .get("min_ms")
-                        .doubleValue());
-            maxUpdateTime[0] =
-                Math.max(
-                    maxUpdateTime[0],
-                    ((Map<String, Number>) coreMetrics.get("UPDATE./update.requestTimes"))
-                        .get("max_ms")
-                        .doubleValue());
+            NamedList<Object> coreMetric = (NamedList<Object>) metrics.get(key);
+            coreMetrics.add(coreMetric);
           }
         });
+    assertEquals(2, coreMetrics.size());
+    coreMetrics.forEach(metric -> {
+      assertEquals(
+              1L,
+              ((Map<String, Number>) metric.get("QUERY./select.requestTimes"))
+                      .get("count")
+                      .longValue());
+      minQueryTime[0] =
+              Math.min(
+                      minQueryTime[0],
+                      ((Map<String, Number>) metric.get("QUERY./select.requestTimes"))
+                              .get("min_ms")
+                              .doubleValue());
+      maxQueryTime[0] =
+              Math.max(
+                      maxQueryTime[0],
+                      ((Map<String, Number>) metric.get("QUERY./select.requestTimes"))
+                              .get("max_ms")
+                              .doubleValue());
+      assertEquals(
+              1L,
+              ((Map<String, Number>) metric.get("UPDATE./update.requestTimes"))
+                      .get("count")
+                      .longValue());
+      minUpdateTime[0] =
+              Math.min(
+                      minUpdateTime[0],
+                      ((Map<String, Number>) metric.get("UPDATE./update.requestTimes"))
+                              .get("min_ms")
+                              .doubleValue());
+      maxUpdateTime[0] =
+              Math.max(
+                      maxUpdateTime[0],
+                      ((Map<String, Number>) metric.get("UPDATE./update.requestTimes"))
+                              .get("max_ms")
+                              .doubleValue());
+    });
 
     NamedList<Object> nodeMetrics = (NamedList<Object>) metrics.get("solr.node");
     assertEquals(
