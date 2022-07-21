@@ -77,7 +77,6 @@ public class TestBackupRepositoryFactory extends SolrTestCaseJ4 {
 
     SolrException thrown =
         assertThrows(SolrException.class, () -> new BackupRepositoryFactory(plugins));
-
     assertEquals("More than one backup repository is configured as default", thrown.getMessage());
   }
 
