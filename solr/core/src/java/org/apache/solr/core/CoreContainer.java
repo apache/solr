@@ -829,7 +829,7 @@ public class CoreContainer {
             .collect(
                 Collectors.toMap(
                     item -> item.getKey(),
-                    item -> createCoreAdminHandlerOperation(item.getValue(), CoreAdminOp.class)));
+                    item -> loader.newInstance(item.getValue(), CoreAdminOp.class)));
 
     // Register custom actions for CoreAdminHandler
     coreAdminHandler.registerCustomActions(coreAdminHandlerActions);
@@ -2167,12 +2167,6 @@ public class CoreContainer {
 
   public void waitForLoadingCore(String name, long timeoutMs) {
     solrCores.waitForLoadingCoreToFinish(name, timeoutMs);
-  }
-
-  // ---------------- Core admin handler operations --------------
-
-  protected <A> A createCoreAdminHandlerOperation(String operationClass, Class<A> clazz) {
-    return loader.newInstance(operationClass, clazz);
   }
 
   // ---------------- CoreContainer request handlers --------------
