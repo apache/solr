@@ -34,9 +34,7 @@ import org.apache.solr.update.processor.NestedUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
 
@@ -100,8 +98,6 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
           + "        }\n"
           + "    }\n"
           + "}";
-
-  @Rule public ExpectedException thrown = ExpectedException.none();
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -265,9 +261,8 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
   public void testDeeplyNestedURPFieldNameException() throws Exception {
     final String errMsg =
         "contains: '" + PATH_SEP_CHAR + "' , which is reserved for the nested URP";
-    thrown.expect(SolrException.class);
-    indexSampleData(errDoc);
-    thrown.expectMessage(errMsg);
+    SolrException thrown = assertThrows(SolrException.class, () -> indexSampleData(errDoc));
+    assertEquals(errMsg, thrown.getMessage());
   }
 
   private void indexSampleData(String cmd) throws Exception {

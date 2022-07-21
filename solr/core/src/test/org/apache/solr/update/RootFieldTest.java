@@ -28,17 +28,13 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 public class RootFieldTest extends EmbeddedSolrServerTestBase {
   private static boolean useRootSchema;
   private static final String MESSAGE =
       "Update handler should create and process _root_ field "
           + "unless there is no such a field in schema";
-
-  @Rule public ExpectedException thrown = ExpectedException.none();
 
   private static boolean expectRoot() {
     return useRootSchema;
@@ -110,13 +106,22 @@ public class RootFieldTest extends EmbeddedSolrServerTestBase {
     child.addField("name", "child doc");
     docToUpdate.addChildDocument(child);
     if (!useRootSchema) {
-      thrown.expect(SolrException.class);
-      thrown.expectMessage(
+      String message =
           "Unable to index docs with children:"
               + " the schema must include definitions for both a uniqueKey field"
-              + " and the '_root_' field, using the exact same fieldType");
+              + " and the '_root_' field, using the exact same fieldType";
+      SolrException thrown =
+          assertThrows(
+              SolrException.class,
+              () -> {
+                client.add(docToUpdate);
+                client.commit();
+              });
+      assertEquals(message, thrown.getMessage());
+
+    } else {
+      client.add(docToUpdate);
+      client.commit();
     }
-    client.add(docToUpdate);
-    client.commit();
   }
 }

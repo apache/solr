@@ -81,9 +81,7 @@ import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -834,8 +832,6 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       }
     }
   }
-
-  @Rule public ExpectedException exception = ExpectedException.none();
 
   @Test
   public void testWrongZkChrootTest() throws IOException {
