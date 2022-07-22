@@ -33,19 +33,22 @@ public class CoreAdminHandlerActionTest extends SolrTestCaseJ4 {
 
   private static CoreAdminHandler admin = null;
 
+  private static final String SOLRXML =
+      "<solr><coreAdminHandlerActions>"
+          + "<str name='action1'>"
+          + CoreAdminHandlerActionTest.CoreAdminHandlerTestAction1.class.getName()
+          + "</str>"
+          + "<str name='action2'>"
+          + CoreAdminHandlerActionTest.CoreAdminHandlerTestAction2.class.getName()
+          + "</str>"
+          + "</coreAdminHandlerActions></solr>";
+
   @BeforeClass
   public static void beforeClass() throws Exception {
 
-    setupNoCoreTest(createTempDir(), null);
+    setupNoCoreTest(createTempDir(), SOLRXML);
 
     admin = new CoreAdminHandler(h.getCoreContainer());
-
-    admin.registerCustomActions(
-        Map.of(
-            "action1",
-            new CoreAdminHandlerTestAction1(),
-            "action2",
-            new CoreAdminHandlerTestAction2()));
   }
 
   @Test
