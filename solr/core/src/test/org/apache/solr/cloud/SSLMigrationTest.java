@@ -21,16 +21,15 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.tests.util.LuceneTestCase.AwaitsFix;
 import org.apache.lucene.tests.util.LuceneTestCase.Slow;
-import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -39,8 +38,6 @@ import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.util.SSLTestConfig;
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
 import org.junit.Test;
 
 /**
@@ -52,10 +49,7 @@ import org.junit.Test;
 @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12028") // 17-Mar-2018
 public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
 
-  private static final int NUM_REPLICAS = 2;
-
   @Test
-  @BaseDistributedSearchTestCase.ShardsFixed(num = NUM_REPLICAS)
   public void test() throws Exception {
     // Migrate from HTTP -> HTTPS -> HTTP
     assertReplicaInformation("http");
@@ -100,11 +94,11 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
 
   private void assertReplicaInformation(String urlScheme) {
     List<Replica> replicas = getReplicas();
-    assertEquals("Wrong number of replicas found", NUM_REPLICAS, replicas.size());
+    assertEquals("Wrong number of replicas found", 4, replicas.size());
     for (Replica replica : replicas) {
-      MatcherAssert.assertThat(
+      assertTrue(
           "Replica didn't have the proper urlScheme in the ClusterState",
-          replica.getStr(ZkStateReader.BASE_URL_PROP), Matchers.startsWith(urlScheme));
+          StringUtils.startsWith(replica.getStr(ZkStateReader.BASE_URL_PROP), urlScheme));
     }
   }
 
@@ -121,9 +115,12 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
   private void setUrlScheme(String value) throws Exception {
     Map<String, String> m =
         Map.of(
-            "action", CollectionAction.CLUSTERPROP.toString().toLowerCase(Locale.ROOT),
-            "name", "urlScheme",
-            "val", value);
+            "action",
+            CollectionAction.CLUSTERPROP.toString().toLowerCase(Locale.ROOT),
+            "name",
+            "urlScheme",
+            "val",
+            value);
     SolrParams params = new MapSolrParams(m);
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
@@ -134,8 +131,7 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
     }
     // Create new SolrServer to configure new HttpClient w/ SSL config
     try (SolrClient client = getLBHttpSolrClient(urls.toArray(new String[] {}))) {
-      QueryResponse response = request.process(client);
-      assertEquals(0, response.getStatus());
+      client.request(request);
     }
   }
 }
