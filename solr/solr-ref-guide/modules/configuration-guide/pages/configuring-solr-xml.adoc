@@ -107,6 +107,10 @@ For example, `<str name="adminHandler">com.myorg.MyAdminHandler</str>` would con
 +
 If this attribute isn't set, Solr uses the default admin handler, `org.apache.solr.handler.admin.CoreAdminHandler`.
 
+`coreAdminHandlerActions`::
+
+TODO
+
 `collectionsHandler`::
 +
 [%autowidth,frame=none]
