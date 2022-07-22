@@ -115,13 +115,12 @@ public class RootFieldTest extends EmbeddedSolrServerTestBase {
               SolrException.class,
               () -> {
                 client.add(docToUpdate);
-                client.commit();
               });
       assertEquals(message, thrown.getMessage());
 
     } else {
       client.add(docToUpdate);
-      client.commit();
     }
+    client.commit();
   }
 }
