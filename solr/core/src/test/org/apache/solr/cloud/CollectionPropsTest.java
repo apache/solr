@@ -42,8 +42,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@LuceneTestCase.Slow
-@SolrTestCaseJ4.SuppressSSL
 public class CollectionPropsTest extends SolrCloudTestCase {
   private static final int TIMEOUT = 5000;
   private String collectionName;

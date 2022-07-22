@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import java.util.Map;
 import java.util.Set;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.ClusterState;
@@ -30,7 +29,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@Slow
 public class ClusterStateUpdateTest extends SolrCloudTestCase {
 
   @Override

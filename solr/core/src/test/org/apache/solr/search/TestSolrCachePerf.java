@@ -35,7 +35,6 @@ import org.junit.Test;
 import org.junit.runners.model.MultipleFailureException;
 
 /** */
-@LuceneTestCase.Slow
 public class TestSolrCachePerf extends SolrTestCaseJ4 {
 
   @SuppressWarnings({"unchecked", "rawtypes"})

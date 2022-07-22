@@ -24,7 +24,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -40,12 +39,11 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 /**
- * A very simple sanity check that Phrase Identification works across a cloud cluster using
+ * A very simple check that Phrase Identification works across a cloud cluster using
  * distributed term stat collection.
  *
  * @see org.apache.solr.handler.component.PhrasesIdentificationComponentTest
  */
-@Slow
 public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
 
   private static final String DEBUG_LABEL = MethodHandles.lookup().lookupClass().getName();
