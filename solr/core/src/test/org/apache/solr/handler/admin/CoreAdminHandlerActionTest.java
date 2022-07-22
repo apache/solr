@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.admin;
 
+import java.util.Locale;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -59,13 +60,16 @@ public class CoreAdminHandlerActionTest extends SolrTestCaseJ4 {
 
     assertTrue(
         String.format(
+            Locale.ROOT,
             "Action response should contain %s property",
             CoreAdminHandlerTestAction1.PROPERTY_NAME),
         actionResponse.containsKey(CoreAdminHandlerTestAction1.PROPERTY_NAME));
     assertEquals(
         String.format(
+            Locale.ROOT,
             "Action response should contain %s value for %s property",
-            CoreAdminHandlerTestAction1.PROPERTY_VALUE, CoreAdminHandlerTestAction1.PROPERTY_NAME),
+            CoreAdminHandlerTestAction1.PROPERTY_VALUE,
+            CoreAdminHandlerTestAction1.PROPERTY_NAME),
         CoreAdminHandlerTestAction1.PROPERTY_VALUE,
         actionResponse.get(CoreAdminHandlerTestAction1.PROPERTY_NAME));
   }
@@ -82,13 +86,16 @@ public class CoreAdminHandlerActionTest extends SolrTestCaseJ4 {
 
     assertTrue(
         String.format(
+            Locale.ROOT,
             "Action response should contain %s property",
             CoreAdminHandlerTestAction2.PROPERTY_NAME),
         actionResponse.containsKey(CoreAdminHandlerTestAction2.PROPERTY_NAME));
     assertEquals(
         String.format(
+            Locale.ROOT,
             "Action response should contain %s value for %s property",
-            CoreAdminHandlerTestAction2.PROPERTY_VALUE, CoreAdminHandlerTestAction2.PROPERTY_NAME),
+            CoreAdminHandlerTestAction2.PROPERTY_VALUE,
+            CoreAdminHandlerTestAction2.PROPERTY_NAME),
         CoreAdminHandlerTestAction2.PROPERTY_VALUE,
         actionResponse.get(CoreAdminHandlerTestAction2.PROPERTY_NAME));
   }
