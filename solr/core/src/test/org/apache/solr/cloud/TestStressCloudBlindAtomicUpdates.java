@@ -68,7 +68,6 @@ import org.slf4j.LoggerFactory;
  * Optimistic Concurrency is not used here because of SOLR-8733, instead we just throw lots of "inc"
  * operations at a numeric field and check that the math works out at the end.
  */
-@Slow
 @SuppressSSL(bugUrl = "SSL overhead seems to cause OutOfMemory when stress testing")
 public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
 

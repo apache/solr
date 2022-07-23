@@ -39,7 +39,6 @@ import org.junit.Test;
  *
  * @since solr 4.0
  */
-@Slow
 @SuppressPointFields(bugUrl = "https://issues.apache.org/jira/browse/SOLR-10844")
 public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
 

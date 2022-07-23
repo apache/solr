@@ -324,7 +324,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     doDBIdWithRetry(2, 5, "deletes should have propagated to 2 replicas", 1);
 
     // SOLR-13599 sanity check if problem is related to sending a batch
-    List<SolrInputDocument> batch = new ArrayList<SolrInputDocument>(10);
+    List<SolrInputDocument> batch = new ArrayList<SolrInputDocument>(15);
     for (int i = 30; i < 45; i++) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField(id, String.valueOf(i));
