@@ -31,76 +31,37 @@ import org.junit.Test;
 
 public class CoreAdminHandlerActionTest extends SolrTestCaseJ4 {
 
-  private static CoreAdminHandler admin = null;
-
-  private static final String SOLRXML =
+  private static final String SOLR_XML =
       "<solr><coreAdminHandlerActions>"
           + "<str name='action1'>"
-          + CoreAdminHandlerActionTest.CoreAdminHandlerTestAction1.class.getName()
+          + CoreAdminHandlerTestAction1.class.getName()
           + "</str>"
           + "<str name='action2'>"
-          + CoreAdminHandlerActionTest.CoreAdminHandlerTestAction2.class.getName()
+          + CoreAdminHandlerTestAction2.class.getName()
           + "</str>"
           + "</coreAdminHandlerActions></solr>";
+
+  private static CoreAdminHandler admin = null;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
 
-    setupNoCoreTest(createTempDir(), SOLRXML);
+    setupNoCoreTest(createTempDir(), SOLR_XML);
 
     admin = new CoreAdminHandler(h.getCoreContainer());
   }
 
   @Test
-  @SuppressWarnings("unchecked")
-  public void testAction1() throws Exception {
+  public void testRegisteredAction() throws Exception {
 
-    SolrQueryResponse response = new SolrQueryResponse();
-
-    admin.handleRequestBody(req(CoreAdminParams.ACTION, "action1"), response);
-
-    Map<String, Object> actionResponse = ((NamedList<Object>) response.getResponse()).asMap();
-
-    assertTrue(
-        String.format(
-            Locale.ROOT,
-            "Action response should contain %s property",
-            CoreAdminHandlerTestAction1.PROPERTY_NAME),
-        actionResponse.containsKey(CoreAdminHandlerTestAction1.PROPERTY_NAME));
-    assertEquals(
-        String.format(
-            Locale.ROOT,
-            "Action response should contain %s value for %s property",
-            CoreAdminHandlerTestAction1.PROPERTY_VALUE,
-            CoreAdminHandlerTestAction1.PROPERTY_NAME),
-        CoreAdminHandlerTestAction1.PROPERTY_VALUE,
-        actionResponse.get(CoreAdminHandlerTestAction1.PROPERTY_NAME));
-  }
-
-  @Test
-  @SuppressWarnings("unchecked")
-  public void testAction2() throws Exception {
-
-    SolrQueryResponse response = new SolrQueryResponse();
-
-    admin.handleRequestBody(req(CoreAdminParams.ACTION, "action2"), response);
-
-    Map<String, Object> actionResponse = ((NamedList<Object>) response.getResponse()).asMap();
-
-    assertTrue(
-        String.format(
-            Locale.ROOT,
-            "Action response should contain %s property",
-            CoreAdminHandlerTestAction2.PROPERTY_NAME),
-        actionResponse.containsKey(CoreAdminHandlerTestAction2.PROPERTY_NAME));
-    assertEquals(
-        String.format(
-            Locale.ROOT,
-            "Action response should contain %s value for %s property",
-            CoreAdminHandlerTestAction2.PROPERTY_VALUE,
-            CoreAdminHandlerTestAction2.PROPERTY_NAME),
-        CoreAdminHandlerTestAction2.PROPERTY_VALUE,
-        actionResponse.get(CoreAdminHandlerTestAction2.PROPERTY_NAME));
+    testAction(
+        "action1",
+        CoreAdminHandlerTestAction1.PROPERTY_NAME,
+        CoreAdminHandlerTestAction1.PROPERTY_VALUE);
+    testAction(
+        "action2",
+        CoreAdminHandlerTestAction2.PROPERTY_NAME,
+        CoreAdminHandlerTestAction2.PROPERTY_VALUE);
   }
 
   @Test
@@ -114,29 +75,33 @@ public class CoreAdminHandlerActionTest extends SolrTestCaseJ4 {
         () -> admin.handleRequestBody(req(CoreAdminParams.ACTION, "action3"), response));
   }
 
-  public static String randomString() {
+  @SuppressWarnings("unchecked")
+  private void testAction(String action, String propertyName, String properytValue)
+      throws Exception {
 
-    int leftBound = 97; // a
-    int rightBound = 122; // z
-    int length = random().nextInt(6) + 5;
+    SolrQueryResponse response = new SolrQueryResponse();
 
-    String randomString =
-        random()
-            .ints(leftBound, rightBound + 1)
-            .limit(length)
-            .collect(
-                () -> new StringBuilder(),
-                (item, value) -> item.appendCodePoint(value),
-                (item1, item2) -> item1.append(item2))
-            .toString();
+    admin.handleRequestBody(req(CoreAdminParams.ACTION, action), response);
 
-    return randomString;
+    Map<String, Object> actionResponse = ((NamedList<Object>) response.getResponse()).asMap();
+
+    assertTrue(
+        String.format(Locale.ROOT, "Action response should contain %s property", propertyName),
+        actionResponse.containsKey(propertyName));
+    assertEquals(
+        String.format(
+            Locale.ROOT,
+            "Action response should contain %s value for %s property",
+            properytValue,
+            propertyName),
+        properytValue,
+        actionResponse.get(propertyName));
   }
 
   public static class CoreAdminHandlerTestAction1 implements CoreAdminOp {
 
-    public static final String PROPERTY_NAME = randomString();
-    public static final String PROPERTY_VALUE = randomString();
+    public static final String PROPERTY_NAME = "property" + random().nextInt();
+    public static final String PROPERTY_VALUE = "value" + random().nextInt();
 
     @Override
     public void execute(CallInfo it) throws Exception {
@@ -151,8 +116,8 @@ public class CoreAdminHandlerActionTest extends SolrTestCaseJ4 {
 
   public static class CoreAdminHandlerTestAction2 implements CoreAdminOp {
 
-    public static final String PROPERTY_NAME = randomString();
-    public static final String PROPERTY_VALUE = randomString();
+    public static final String PROPERTY_NAME = "property" + random().nextInt();
+    public static final String PROPERTY_VALUE = "value" + random().nextInt();
 
     @Override
     public void execute(CallInfo it) throws Exception {
