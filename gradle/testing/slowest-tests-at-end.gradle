@@ -63,8 +63,6 @@ gradle.buildFinished { result ->
     if (allTests) {
       def slowest = allTests
           .sort { a, b -> b.duration.compareTo(a.duration) }
-          .take(10)
-          .findAll { e -> e.duration >= 500 }
           .collect { e -> String.format(Locale.ROOT, "%5.2fs %s", e.duration / 1000d, e.name) }
 
       if (slowest) {
@@ -76,8 +74,6 @@ gradle.buildFinished { result ->
     if (allSuites) {
       def slowest = allSuites
           .sort { a, b -> b.duration.compareTo(a.duration) }
-          .take(10)
-          .findAll { e -> e.duration >= 1000 }
           .collect { e -> String.format(Locale.ROOT, "%5.2fs %s", e.duration / 1000d, e.name) }
 
       if (slowest) {

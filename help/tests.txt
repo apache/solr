@@ -78,7 +78,7 @@ gradlew -p solr/core test -Ptests.filter=@Slow
 
 Test group filters can be combined into Boolean expressions:
 
-gradlew -p solr/core test "default and not(@awaitsfix or @slow)"
+gradlew -p solr/core test -Ptests.filter="default and not(@awaitsfix)"
 
 
 Reiteration ("beasting")
