@@ -37,7 +37,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -69,19 +68,18 @@ import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.TimeOut;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@LuceneTestCase.Slow
 public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   private static final int TIMEOUT = 3000;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  @Before
-  public void beforeTest() throws Exception {
+  @BeforeClass
+  public static void beforeTest() throws Exception {
     // System.setProperty("metricsEnabled", "true");
     configureCluster(4)
         .addConfig("conf", configset("cloud-minimal"))
@@ -89,8 +87,8 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         .configure();
   }
 
-  @After
-  public void afterTest() throws Exception {
+  @AfterClass
+  public static void afterTest() throws Exception {
     shutdownCluster();
   }
 
@@ -99,7 +97,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
    */
   @Test
   public void testCreateWithDefaultConfigSet() throws Exception {
-    String collectionName = "solrj_default_configset";
+    String collectionName = getSaferTestName();
     CollectionAdminResponse response =
         CollectionAdminRequest.createCollection(collectionName, 2, 2)
             .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
@@ -347,7 +345,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
   @Test
   public void testCreateAndDeleteCollection() throws Exception {
-    String collectionName = "solrj_test";
+    String collectionName = getSaferTestName();
     CollectionAdminResponse response =
         CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
             .process(cluster.getSolrClient());
@@ -392,7 +390,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
   @Test
   public void testCloudInfoInCoreStatus() throws IOException, SolrServerException {
-    String collectionName = "corestatus_test";
+    String collectionName = getSaferTestName();
     CollectionAdminResponse response =
         CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
             .process(cluster.getSolrClient());
@@ -492,8 +490,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
   @Test
   public void testSplitShard() throws Exception {
-
-    final String collectionName = "solrj_test_splitshard";
+    String collectionName = getSaferTestName();
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1)
         .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
@@ -546,8 +543,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
   @Test
   public void testCreateCollectionWithPropertyParam() throws Exception {
-
-    String collectionName = "solrj_test_core_props";
+    String collectionName = getSaferTestName();
 
     Path tmpDir = createTempDir("testPropertyParamsForCreate");
     Path dataDir = tmpDir.resolve("dataDir-" + TestUtil.randomSimpleString(random(), 1, 5));
@@ -579,8 +575,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
   @Test
   public void testAddAndDeleteReplica() throws Exception {
-
-    final String collectionName = "solrj_replicatests";
+    String collectionName = getSaferTestName();
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2)
         .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
@@ -663,7 +658,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
   @Test
   public void testCollectionProp() throws InterruptedException, IOException, SolrServerException {
-    final String collectionName = "collectionPropTest";
+    String collectionName = getSaferTestName();
     final String propName = "testProperty";
 
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
@@ -700,7 +695,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
   @Test
   public void testColStatus() throws Exception {
-    final String collectionName = "collectionStatusTest";
+    String collectionName = getSaferTestName();
     CollectionAdminRequest.createCollection(collectionName, "conf2", 2, 2)
         .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
@@ -831,7 +826,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
   @Test
   public void testReadOnlyCollection() throws Exception {
-    final String collectionName = "readOnlyTest";
+    String collectionName = getSaferTestName();
     CloudSolrClient solrClient = cluster.getSolrClient();
 
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2).process(solrClient);

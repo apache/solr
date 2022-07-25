@@ -31,19 +31,15 @@ import org.junit.Test;
 
 public class ClusterStateUpdateTest extends SolrCloudTestCase {
 
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    System.setProperty("solrcloud.skip.autorecovery", "true");
     configureCluster(3).addConfig("conf", configset("cloud-minimal")).configure();
   }
 
-  @BeforeClass
-  public static void beforeClass() {
-    System.setProperty("solrcloud.skip.autorecovery", "true");
-  }
-
   @AfterClass
-  public static void afterClass() {
+  public static void afterClass() throws Exception {
+    shutdownCluster();
     System.clearProperty("solrcloud.skip.autorecovery");
     System.clearProperty("genericCoreNodeNames");
   }
