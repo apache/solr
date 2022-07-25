@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import junit.framework.Assert;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
@@ -52,7 +51,6 @@ import org.slf4j.LoggerFactory;
  *
  * @since solr 1.4
  */
-@Slow
 public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
