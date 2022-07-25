@@ -139,7 +139,7 @@ http://localhost:8983/solr/admin/cores?action=foo
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: none
+|Optional |Default: `org.apache.solr.handler.admin.CollectionsHandler`
 |===
 +
 As above, for custom CollectionsHandler implementations.
@@ -148,7 +148,7 @@ As above, for custom CollectionsHandler implementations.
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: none
+|Optional |Default: `org.apache.solr.handler.admin.InfoHandler`
 |===
 +
 As above, for custom InfoHandler implementations.
