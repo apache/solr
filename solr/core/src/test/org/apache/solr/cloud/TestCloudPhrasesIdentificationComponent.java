@@ -39,8 +39,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 /**
- * A very simple check that Phrase Identification works across a cloud cluster using
- * distributed term stat collection.
+ * A very simple check that Phrase Identification works across a cloud cluster using distributed
+ * term stat collection.
  *
  * @see org.apache.solr.handler.component.PhrasesIdentificationComponentTest
  */

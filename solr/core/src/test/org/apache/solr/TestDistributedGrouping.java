@@ -20,7 +20,6 @@ import static org.hamcrest.CoreMatchers.containsString;
 
 import java.io.IOException;
 import java.util.List;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressPointFields;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
