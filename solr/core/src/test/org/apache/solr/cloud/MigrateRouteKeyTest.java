@@ -27,7 +27,6 @@ import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
@@ -112,7 +111,8 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
 
     final String splitKey = "a";
     final int BIT_SEP = 1;
-    int splitKeyCount = 0;;
+    int splitKeyCount = 0;
+    ;
     for (int id = 0; id < 26 * 3; id++) {
       String shardKey =
           "" + (char) ('a' + (id % 26)); // See comment in ShardRoutingTest for hash distribution

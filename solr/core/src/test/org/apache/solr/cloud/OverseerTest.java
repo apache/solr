@@ -1868,8 +1868,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
     return zkClient;
   }
 
-
-
   private ZkController createMockZkController(
       String zkAddress, SolrZkClient zkClient, ZkStateReader reader)
       throws InterruptedException, NoSuchFieldException, SecurityException, SessionExpiredException,
