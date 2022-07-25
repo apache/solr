@@ -47,7 +47,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Test split phase that occurs when a Collection API split call is made. */
-@Slow
 @Ignore("SOLR-4944")
 public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
 

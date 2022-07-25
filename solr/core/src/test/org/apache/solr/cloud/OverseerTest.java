@@ -1185,7 +1185,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       ZkController.createClusterZkNodes(zkClient);
 
       killer = new OverseerRestarter(server.getZkAddress());
-      killerThread = new Thread(killer);
+      killerThread = new Thread(killer, "OverseerRestarter");
       killerThread.start();
 
       reader = new ZkStateReader(zkClient);
@@ -1867,6 +1867,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
     overseerElector.joinElection(ec, false);
     return zkClient;
   }
+
+
 
   private ZkController createMockZkController(
       String zkAddress, SolrZkClient zkClient, ZkStateReader reader)
