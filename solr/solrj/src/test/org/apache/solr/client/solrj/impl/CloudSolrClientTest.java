@@ -436,8 +436,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     int liveNodes = cluster.getJettySolrRunners().size();
 
-    // For this case every shard should have
-    // all its cores on the same node.
+    // For this case every shard should have all its cores on the same node.
     // Hence the below configuration for our collection
     CollectionAdminRequest.createCollection(collectionName, "conf", liveNodes, liveNodes)
         .setPerReplicaState(USE_PER_REPLICA_STATE)
@@ -1156,6 +1155,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     String testCollection = "perReplicaState_test";
+    String collectionPath = ZkStateReader.getCollectionPath(testCollection);
+
     int liveNodes = cluster.getJettySolrRunners().size();
     CollectionAdminRequest.createCollection(testCollection, "conf", 2, 2)
         .setPerReplicaState(Boolean.TRUE)
@@ -1164,34 +1165,41 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     final SolrClient clientUnderTest = getRandomClient();
     final SolrPingResponse response = clientUnderTest.ping(testCollection);
     assertEquals("This should be OK", 0, response.getStatus());
+
     DocCollection c = cluster.getZkStateReader().getCollection(testCollection);
     c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
-    PerReplicaStates prs =
-        PerReplicaStates.fetch(
-            ZkStateReader.getCollectionPath(testCollection), cluster.getZkClient(), null);
+    PerReplicaStates prs = PerReplicaStates.fetch(collectionPath, cluster.getZkClient(), null);
     assertEquals(4, prs.states.size());
-    JettySolrRunner jsr = cluster.startJettySolrRunner();
-    // Now let's do an add replica
-    CollectionAdminRequest.addReplicaToShard(testCollection, "shard1")
-        .process(cluster.getSolrClient());
-    prs =
-        PerReplicaStates.fetch(
-            ZkStateReader.getCollectionPath(testCollection), cluster.getZkClient(), null);
-    assertEquals(5, prs.states.size());
 
-    testCollection = "perReplicaState_testv2";
-    new V2Request.Builder("/collections")
-        .withMethod(POST)
-        .withPayload(
-            "{create: {name: perReplicaState_testv2, config : conf, numShards : 2, nrtReplicas : 2, perReplicaState : true, maxShardsPerNode : 5}}")
-        .build()
-        .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(testCollection, 2, 4);
-    c = cluster.getZkStateReader().getCollection(testCollection);
-    c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
-    prs =
-        PerReplicaStates.fetch(
-            ZkStateReader.getCollectionPath(testCollection), cluster.getZkClient(), null);
-    assertEquals(4, prs.states.size());
+    JettySolrRunner jsr = null;
+    try {
+      jsr = cluster.startJettySolrRunner();
+
+      // Now let's do an add replica
+      CollectionAdminRequest.addReplicaToShard(testCollection, "shard1")
+          .process(cluster.getSolrClient());
+      prs = PerReplicaStates.fetch(collectionPath, cluster.getZkClient(), null);
+      assertEquals(5, prs.states.size());
+
+      // create a collection with PRS and v2 API
+      testCollection = "perReplicaState_testv2";
+      collectionPath = ZkStateReader.getCollectionPath(testCollection);
+
+      new V2Request.Builder("/collections")
+          .withMethod(POST)
+          .withPayload(
+              "{create: {name: perReplicaState_testv2, config : conf, numShards : 2, nrtReplicas : 2, perReplicaState : true, maxShardsPerNode : 5}}")
+          .build()
+          .process(cluster.getSolrClient());
+      cluster.waitForActiveCollection(testCollection, 2, 4);
+      c = cluster.getZkStateReader().getCollection(testCollection);
+      c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
+      prs = PerReplicaStates.fetch(collectionPath, cluster.getZkClient(), null);
+      assertEquals(4, prs.states.size());
+    } finally {
+      if (jsr != null) {
+        cluster.stopJettySolrRunner(jsr);
+      }
+    }
   }
 }
