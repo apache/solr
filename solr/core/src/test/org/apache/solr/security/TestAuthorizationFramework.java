@@ -63,7 +63,6 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
   @Test
   public void authorizationFrameworkTest() throws Exception {
     MockAuthorizationPlugin.denyUsers.add("user1");
-    MockAuthorizationPlugin.denyUsers.add("user1");
 
     try {
       waitForThingsToLevelOut(10, TimeUnit.SECONDS);
