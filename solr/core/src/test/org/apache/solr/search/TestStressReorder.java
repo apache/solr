@@ -17,7 +17,6 @@
 package org.apache.solr.search;
 
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
-import static org.junit.Assert.fail;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;

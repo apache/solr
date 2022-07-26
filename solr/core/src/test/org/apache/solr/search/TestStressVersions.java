@@ -17,7 +17,6 @@
 package org.apache.solr.search;
 
 import static org.apache.solr.core.SolrCore.verbose;
-import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.HashMap;

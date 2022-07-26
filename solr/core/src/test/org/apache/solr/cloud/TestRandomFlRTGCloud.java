@@ -16,8 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import static org.junit.Assert.assertNull;
-
 import java.io.IOException;
 import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
