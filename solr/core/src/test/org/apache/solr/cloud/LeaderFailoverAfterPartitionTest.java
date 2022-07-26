@@ -68,14 +68,15 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
 
     List<Replica> notLeaders =
         ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 3, maxWaitSecsToSeeAllActive);
-    assertTrue(
+    assertEquals(
         "Expected 2 replicas for collection "
             + testCollectionName
             + " but found "
             + notLeaders.size()
             + "; clusterState: "
             + printClusterStateInfo(testCollectionName),
-        notLeaders.size() == 2);
+        2,
+        notLeaders.size());
 
     // ok, now introduce a network partition between the leader and the replica
     SocketProxy proxy0 = null;
@@ -161,12 +162,12 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
             + printClusterStateInfo(testCollectionName),
         newLeader);
 
-    assertTrue(
+    assertFalse(
         "Expected node "
             + shouldNotBeNewLeaderNode
             + " to NOT be the new leader b/c it was out-of-sync with the old leader! ClusterState: "
             + printClusterStateInfo(testCollectionName),
-        !shouldNotBeNewLeaderNode.equals(newLeader.getNodeName()));
+        shouldNotBeNewLeaderNode.equals(newLeader.getNodeName()));
 
     proxy0.reopen();
 

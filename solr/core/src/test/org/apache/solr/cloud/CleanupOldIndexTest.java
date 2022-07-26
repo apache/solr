@@ -123,7 +123,7 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
             TimeUnit.SECONDS,
             (n, c) -> DocCollection.isFullyActive(n, c, 1, 2));
 
-    assertTrue(!oldIndexDir1.isDirectory());
-    assertTrue(!oldIndexDir2.isDirectory());
+    assertFalse(oldIndexDir1.isDirectory());
+    assertFalse(oldIndexDir2.isDirectory());
   }
 }

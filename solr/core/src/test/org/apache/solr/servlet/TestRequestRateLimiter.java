@@ -184,7 +184,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
 
       for (Future<?> future : futures) {
         try {
-          assertTrue(future.get() != null);
+          assertNotNull(future.get());
         } catch (Exception e) {
           assertThat(
               e.getMessage(), containsString("non ok status: 429, message:Too Many Requests"));

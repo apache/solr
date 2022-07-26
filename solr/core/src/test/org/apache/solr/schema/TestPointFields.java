@@ -5749,34 +5749,34 @@ public class TestPointFields extends SolrTestCaseJ4 {
                     PointValues.size(ir, field));
               }
               if (ignoredField) {
-                assertTrue(
+                assertEquals(
                     "Field " + field + " should not have docValues",
-                    DocValues.getSortedNumeric(leafReaderForCheckingDVs, field).nextDoc()
-                        == DocIdSetIterator.NO_MORE_DOCS);
-                assertTrue(
+                    DocIdSetIterator.NO_MORE_DOCS,
+                    DocValues.getSortedNumeric(leafReaderForCheckingDVs, field).nextDoc());
+                assertEquals(
                     "Field " + field + " should not have docValues",
-                    DocValues.getNumeric(leafReaderForCheckingDVs, field).nextDoc()
-                        == DocIdSetIterator.NO_MORE_DOCS);
-                assertTrue(
+                    DocIdSetIterator.NO_MORE_DOCS,
+                    DocValues.getNumeric(leafReaderForCheckingDVs, field).nextDoc());
+                assertEquals(
                     "Field " + field + " should not have docValues",
-                    DocValues.getSorted(leafReaderForCheckingDVs, field).nextDoc()
-                        == DocIdSetIterator.NO_MORE_DOCS);
-                assertTrue(
+                    DocIdSetIterator.NO_MORE_DOCS,
+                    DocValues.getSorted(leafReaderForCheckingDVs, field).nextDoc());
+                assertEquals(
                     "Field " + field + " should not have docValues",
-                    DocValues.getBinary(leafReaderForCheckingDVs, field).nextDoc()
-                        == DocIdSetIterator.NO_MORE_DOCS);
+                    DocIdSetIterator.NO_MORE_DOCS,
+                    DocValues.getBinary(leafReaderForCheckingDVs, field).nextDoc());
               } else {
                 if (sf.hasDocValues()) {
                   if (sf.multiValued()) {
-                    assertFalse(
+                    assertNotEquals(
                         "Field " + field + " should have docValues",
-                        DocValues.getSortedNumeric(leafReaderForCheckingDVs, field).nextDoc()
-                            == DocIdSetIterator.NO_MORE_DOCS);
+                        DocIdSetIterator.NO_MORE_DOCS,
+                        DocValues.getSortedNumeric(leafReaderForCheckingDVs, field).nextDoc());
                   } else {
-                    assertFalse(
+                    assertNotEquals(
                         "Field " + field + " should have docValues",
-                        DocValues.getNumeric(leafReaderForCheckingDVs, field).nextDoc()
-                            == DocIdSetIterator.NO_MORE_DOCS);
+                        DocIdSetIterator.NO_MORE_DOCS,
+                        DocValues.getNumeric(leafReaderForCheckingDVs, field).nextDoc());
                   }
                 } else {
                   expectThrows(

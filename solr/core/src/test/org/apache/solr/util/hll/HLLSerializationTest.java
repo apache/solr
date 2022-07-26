@@ -213,13 +213,13 @@ public class HLLSerializationTest extends SolrTestCase {
     HLL copy = HLL.fromBytes(hllBytes);
     assertEquals(copy.cardinality(), hllCardinality);
     assertEquals(copy.getType(), hllType);
-    assertTrue(Arrays.equals(copy.toBytes(), hllBytes));
+    assertArrayEquals(copy.toBytes(), hllBytes);
 
     HLL clone = copy.clone();
     copy = null; // allow some GC
 
     assertEquals(clone.cardinality(), hllCardinality);
     assertEquals(clone.getType(), hllType);
-    assertTrue(Arrays.equals(clone.toBytes(), hllBytes));
+    assertArrayEquals(clone.toBytes(), hllBytes);
   }
 }

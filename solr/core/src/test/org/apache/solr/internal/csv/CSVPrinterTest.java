@@ -131,7 +131,7 @@ public class CSVPrinterTest extends TestCase {
 
     if (!equals(lines, parseResult)) {
       System.out.println("Printer output :" + printable(result));
-      assertTrue(false);
+      fail();
     }
   }
 

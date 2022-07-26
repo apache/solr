@@ -320,9 +320,10 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
     final int max = atLeast(100);
     BitSet bits = new BitSet(max + 1);
     for (int i = 0; i <= max; i++) {
-      assertFalse(
+      assertNotEquals(
           "how is bitset already full? iter=" + i + " card=" + bits.cardinality() + "/max=" + max,
-          bits.cardinality() == max + 1);
+          bits.cardinality(),
+          max + 1);
       final int nextBit = randomUnsetBit(random(), bits, max);
       assertTrue("nextBit shouldn't be negative yet: " + nextBit, 0 <= nextBit);
       assertTrue("nextBit can't exceed max: " + nextBit, nextBit <= max);

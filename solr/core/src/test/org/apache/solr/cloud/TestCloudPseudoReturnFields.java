@@ -177,10 +177,8 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
             Boolean.TRUE,
             frsp.getField().get("multiValued"));
       } catch (SolrServerException e) {
-        assertEquals(
-            "Couldn't fetch field for '" + name + "' ... schema changed out from under us?",
-            null,
-            e);
+        assertNull(
+            "Couldn't fetch field for '" + name + "' ... schema changed out from under us?", e);
       }
     }
 

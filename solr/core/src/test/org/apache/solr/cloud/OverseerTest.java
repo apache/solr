@@ -977,9 +977,9 @@ public class OverseerTest extends SolrTestCaseJ4 {
       assertTrue(
           COLLECTION + " should remain after removal of the last core",
           reader.getClusterState().hasCollection(COLLECTION));
-      assertTrue(
+      assertNull(
           core_node + " should be gone after publishing the null state",
-          null == reader.getClusterState().getCollection(COLLECTION).getReplica(core_node));
+          reader.getClusterState().getCollection(COLLECTION).getReplica(core_node));
     } finally {
       close(mockController);
       close(overseerClient);
@@ -1152,8 +1152,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
         Thread.sleep(50);
       }
 
-      assertTrue(showQpeek(workQueue), workQueue.peek() == null);
-      assertTrue(showQpeek(q), q.peek() == null);
+      assertNull(showQpeek(workQueue), workQueue.peek());
+      assertNull(showQpeek(q), q.peek());
     } finally {
       close(overseerClient);
       close(reader);

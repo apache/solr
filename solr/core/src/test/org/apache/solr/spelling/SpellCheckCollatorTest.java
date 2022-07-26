@@ -140,7 +140,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
   public void testCollationWithRangeQuery() {
     SolrCore core = h.getCore();
     SearchComponent speller = core.getSearchComponent("spellcheck");
-    assertTrue("speller is null and it shouldn't be", speller != null);
+    assertNotNull("speller is null and it shouldn't be", speller);
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(SpellCheckComponent.COMPONENT_NAME, "true");
@@ -160,11 +160,11 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
       NamedList spellCheck = (NamedList) values.get("spellcheck");
       NamedList collationHolder = (NamedList) spellCheck.get("collations");
       List<String> collations = collationHolder.getAll("collation");
-      assertTrue(collations.size() == 1);
+      assertEquals(1, collations.size());
       String collation = collations.iterator().next();
       System.out.println(collation);
-      assertTrue(
-          "Incorrect collation: " + collation, "id:[1 TO 10] AND lowerfilt:love".equals(collation));
+      assertEquals(
+          "Incorrect collation: " + collation, "id:[1 TO 10] AND lowerfilt:love", collation);
     }
   }
 
@@ -173,7 +173,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
   public void testCollationWithHypens() {
     SolrCore core = h.getCore();
     SearchComponent speller = core.getSearchComponent("spellcheck");
-    assertTrue("speller is null and it shouldn't be", speller != null);
+    assertNotNull("speller is null and it shouldn't be", speller);
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(SpellCheckComponent.COMPONENT_NAME, "true");
@@ -193,10 +193,9 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
       NamedList spellCheck = (NamedList) values.get("spellcheck");
       NamedList collationHolder = (NamedList) spellCheck.get("collations");
       List<String> collations = collationHolder.getAll("collation");
-      assertTrue(collations.size() == 1);
+      assertEquals(1, collations.size());
       String collation = collations.iterator().next();
-      assertTrue(
-          "Incorrect collation: " + collation, "lowerfilt:(hyphenated-word)".equals(collation));
+      assertEquals("Incorrect collation: " + collation, "lowerfilt:(hyphenated-word)", collation);
     }
 
     params.remove(CommonParams.Q);
@@ -214,9 +213,9 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
       NamedList spellCheck = (NamedList) values.get("spellcheck");
       NamedList collationHolder = (NamedList) spellCheck.get("collations");
       List<String> collations = collationHolder.getAll("collation");
-      assertTrue(collations.size() == 1);
+      assertEquals(1, collations.size());
       String collation = collations.iterator().next();
-      assertTrue("Incorrect collation: " + collation, "hyphenated-word".equals(collation));
+      assertEquals("Incorrect collation: " + collation, "hyphenated-word", collation);
     }
   }
 
@@ -280,7 +279,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
   public void testCollateWithFilter() {
     SolrCore core = h.getCore();
     SearchComponent speller = core.getSearchComponent("spellcheck");
-    assertTrue("speller is null and it shouldn't be", speller != null);
+    assertNotNull("speller is null and it shouldn't be", speller);
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(SpellCheckComponent.COMPONENT_NAME, "true");
@@ -307,7 +306,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     List<String> collations = collationHolder.getAll("collation");
     assertTrue(collations.size() > 0);
     for (String collation : collations) {
-      assertTrue(!collation.equals("lowerfilt:(+faith +hope +loaves)"));
+      assertFalse(collation.equals("lowerfilt:(+faith +hope +loaves)"));
     }
   }
 
@@ -316,7 +315,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
   public void testCollateWithMultipleRequestHandlers() {
     SolrCore core = h.getCore();
     SearchComponent speller = core.getSearchComponent("spellcheck");
-    assertTrue("speller is null and it shouldn't be", speller != null);
+    assertNotNull("speller is null and it shouldn't be", speller);
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(SpellCheckComponent.COMPONENT_NAME, "true");
@@ -363,7 +362,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
   public void testExtendedCollate() {
     SolrCore core = h.getCore();
     SearchComponent speller = core.getSearchComponent("spellcheck");
-    assertTrue("speller is null and it shouldn't be", speller != null);
+    assertNotNull("speller is null and it shouldn't be", speller);
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(CommonParams.QT, "spellCheckCompRH");
@@ -423,7 +422,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     spellCheck = (NamedList) values.get("spellcheck");
     collationHolder = (NamedList) spellCheck.get("collations");
     List<String> collations = collationHolder.getAll("collation");
-    assertTrue(collations.size() == 2);
+    assertEquals(2, collations.size());
     for (String multipleCollation : collations) {
       assertTrue(
           multipleCollation.equals("lowerfilt:(+faith +hope +love)")
@@ -444,26 +443,26 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     collationHolder = (NamedList) spellCheck.get("collations");
     List<NamedList> expandedCollationList = collationHolder.getAll("collation");
     Set<String> usedcollations = new HashSet<>();
-    assertTrue(expandedCollationList.size() == 2);
+    assertEquals(2, expandedCollationList.size());
     for (NamedList expandedCollation : expandedCollationList) {
       String multipleCollation = (String) expandedCollation.get("collationQuery");
       assertTrue(
           multipleCollation.equals("lowerfilt:(+faith +hope +love)")
               || multipleCollation.equals("lowerfilt:(+faith +hope +loaves)"));
-      assertTrue(!usedcollations.contains(multipleCollation));
+      assertFalse(usedcollations.contains(multipleCollation));
       usedcollations.add(multipleCollation);
 
       assertEquals(1L, expandedCollation.get("hits"));
 
       NamedList misspellingsAndCorrections =
           (NamedList) expandedCollation.get("misspellingsAndCorrections");
-      assertTrue(misspellingsAndCorrections.size() == 3);
+      assertEquals(3, misspellingsAndCorrections.size());
 
       String correctionForFauth = (String) misspellingsAndCorrections.get("fauth");
       String correctionForHome = (String) misspellingsAndCorrections.get("home");
       String correctionForLoane = (String) misspellingsAndCorrections.get("loane");
-      assertTrue(correctionForFauth.equals("faith"));
-      assertTrue(correctionForHome.equals("hope"));
+      assertEquals("faith", correctionForFauth);
+      assertEquals("hope", correctionForHome);
       assertTrue(correctionForLoane.equals("love") || correctionForLoane.equals("loaves"));
     }
   }
@@ -473,7 +472,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
   public void testCollateWithGrouping() {
     SolrCore core = h.getCore();
     SearchComponent speller = core.getSearchComponent("spellcheck");
-    assertTrue("speller is null and it shouldn't be", speller != null);
+    assertNotNull("speller is null and it shouldn't be", speller);
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(SpellCheckComponent.COMPONENT_NAME, "true");
@@ -499,7 +498,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     NamedList spellCheck = (NamedList) values.get("spellcheck");
     NamedList collationHolder = (NamedList) spellCheck.get("collations");
     List<String> collations = collationHolder.getAll("collation");
-    assertTrue(collations.size() == 1);
+    assertEquals(1, collations.size());
   }
 
   @Test
@@ -707,7 +706,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
   public void testZeroTries() {
     SolrCore core = h.getCore();
     SearchComponent speller = core.getSearchComponent("spellcheck");
-    assertTrue("speller is null and it shouldn't be", speller != null);
+    assertNotNull("speller is null and it shouldn't be", speller);
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(SpellCheckComponent.COMPONENT_NAME, "true");
@@ -727,7 +726,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     NamedList spellCheck = (NamedList) values.get("spellcheck");
     NamedList collationList = (NamedList) spellCheck.get("collations");
     List<?> collations = (List<?>) collationList.getAll("collation");
-    assertTrue(collations.size() == 2);
+    assertEquals(2, collations.size());
   }
 
   @Test
@@ -735,7 +734,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
   public void testWithCursorMark() {
     SolrCore core = h.getCore();
     SearchComponent speller = core.getSearchComponent("spellcheck");
-    assertTrue("speller is null and it shouldn't be", speller != null);
+    assertNotNull("speller is null and it shouldn't be", speller);
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(SpellCheckComponent.COMPONENT_NAME, "true");
@@ -757,6 +756,6 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     NamedList spellCheck = (NamedList) values.get("spellcheck");
     NamedList collationList = (NamedList) spellCheck.get("collations");
     List<?> collations = (List<?>) collationList.getAll("collation");
-    assertTrue(collations.size() == 1);
+    assertEquals(1, collations.size());
   }
 }

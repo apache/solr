@@ -164,7 +164,7 @@ public class TestConfig extends SolrTestCaseJ4 {
     SolrIndexConfig sic = sc.indexConfig;
 
     ++numDefaultsTested;
-    assertEquals("default useCompoundFile", false, sic.useCompoundFile);
+    assertFalse("default useCompoundFile", sic.useCompoundFile);
 
     ++numDefaultsTested;
     assertEquals("default maxBufferedDocs", -1, sic.maxBufferedDocs);

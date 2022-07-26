@@ -291,10 +291,10 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   public void testSanityCheckDomainMethods() {
     {
       final JoinDomain empty = new JoinDomain(null, null, null);
-      assertEquals(null, empty.toJSONFacetParamValue());
+      assertNull(empty.toJSONFacetParamValue());
       final SolrParams out = empty.applyDomainToQuery("safe_key", params("q", "qqq"));
       assertNotNull(out);
-      assertEquals(null, out.get("safe_key"));
+      assertNull(out.get("safe_key"));
       assertEquals("qqq", out.get("q"));
     }
     {
@@ -310,7 +310,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
       assertEquals("domain:{filter:'zzz'}", filter.toJSONFacetParamValue().toString());
       final SolrParams out = filter.applyDomainToQuery("safe_key", params("q", "qqq"));
       assertNotNull(out);
-      assertEquals(null, out.get("safe_key"));
+      assertNull(out.get("safe_key"));
       assertEquals("zzz AND qqq", out.get("q"));
     }
     {

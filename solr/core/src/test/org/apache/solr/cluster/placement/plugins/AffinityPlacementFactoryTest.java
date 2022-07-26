@@ -806,7 +806,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
     assertEquals(4, pp.getReplicaPlacements().size());
     for (ReplicaPlacement rp : pp.getReplicaPlacements()) {
-      assertFalse("should not put any replicas on " + smallNode, rp.getNode().equals(smallNode));
+      assertNotEquals("should not put any replicas on " + smallNode, rp.getNode(), smallNode);
     }
   }
 

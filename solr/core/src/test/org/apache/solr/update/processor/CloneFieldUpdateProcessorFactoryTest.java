@@ -100,11 +100,11 @@ public class CloneFieldUpdateProcessorFactoryTest extends UpdateProcessorTestBas
     assertEquals("category should have a value", "test", doc.getFieldValue("category"));
 
     Collection<Object> auths = doc.getFieldValues("authors");
-    assertTrue(auths.size() == 2);
+    assertEquals(2, auths.size());
     assertTrue(auths.contains("author1"));
     assertTrue(auths.contains("author2"));
     Collection<Object> eds = doc.getFieldValues("editors");
-    assertTrue(eds.size() == 2);
+    assertEquals(2, eds.size());
     assertTrue(eds.contains("ed1"));
     assertTrue(eds.contains("ed2"));
 
@@ -113,7 +113,7 @@ public class CloneFieldUpdateProcessorFactoryTest extends UpdateProcessorTestBas
     assertEquals("list_price should have a value", 6.0, doc.getFieldValue("list_price"));
 
     Collection<Object> features = doc.getFieldValues("features");
-    assertTrue(features.size() == 3);
+    assertEquals(3, features.size());
     assertTrue(features.contains("hill"));
     assertTrue(features.contains("valley"));
     assertTrue(features.contains("dune"));
@@ -122,14 +122,14 @@ public class CloneFieldUpdateProcessorFactoryTest extends UpdateProcessorTestBas
     assertEquals("category_s should have a value", "test", doc.getFieldValue("category_s"));
 
     Collection<Object> contribs = doc.getFieldValues("contributors");
-    assertTrue(contribs.size() == 4);
+    assertEquals(4, contribs.size());
     assertTrue(contribs.contains("author1"));
     assertTrue(contribs.contains("author2"));
     assertTrue(contribs.contains("ed1"));
     assertTrue(contribs.contains("ed2"));
 
     Collection<Object> prices = doc.getFieldValues("all_prices");
-    assertTrue(prices.size() == 2);
+    assertEquals(2, prices.size());
     assertTrue(prices.contains(5.0));
     assertTrue(prices.contains(4.0));
     assertFalse(prices.contains(6.0));
@@ -139,13 +139,13 @@ public class CloneFieldUpdateProcessorFactoryTest extends UpdateProcessorTestBas
     // itself
 
     Collection<Object> keyf = doc.getFieldValues("key_feature");
-    assertTrue(keyf.size() == 3);
+    assertEquals(3, keyf.size());
     assertTrue(keyf.contains("hill"));
     assertTrue(keyf.contains("valley"));
     assertTrue(keyf.contains("dune"));
 
     Collection<Object> bestf = doc.getFieldValues("best_feature");
-    assertTrue(bestf.size() == 3);
+    assertEquals(3, bestf.size());
     assertTrue(bestf.contains("hill"));
     assertTrue(bestf.contains("valley"));
     assertTrue(bestf.contains("dune"));

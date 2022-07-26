@@ -3568,7 +3568,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
           "facets=={ 'count':6, " + "f1:{  buckets:[{ val:batman, count:1, x:1}]}" + " } ");
 
       assertEquals(1, DebugAgg.Acc.creates.get() - creates);
-      assertTrue(DebugAgg.Acc.resets.get() - resets == 0);
+      assertEquals(0, DebugAgg.Acc.resets.get() - resets);
       // all slots should be done in a single shot. there may be more than 5 due to special slots or
       // hashing.
       assertTrue(DebugAgg.Acc.last.numSlots >= 5);
@@ -3586,7 +3586,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
           "facets==");
 
       assertEquals(1, DebugAgg.Acc.creates.get() - creates);
-      assertTrue(DebugAgg.Acc.resets.get() - resets == 0);
+      assertEquals(0, DebugAgg.Acc.resets.get() - resets);
       // all slots should be done in a single shot. there may be more than 5 due to special slots or
       // hashing.
       assertTrue(DebugAgg.Acc.last.numSlots >= 5);
@@ -3605,7 +3605,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
           "facets==");
 
       assertEquals(1, DebugAgg.Acc.creates.get() - creates);
-      assertTrue(DebugAgg.Acc.resets.get() - resets == 0);
+      assertEquals(0, DebugAgg.Acc.resets.get() - resets);
       // all slots should be done in a single shot. there may be more than 5 due to special slots or
       // hashing.
       assertTrue(DebugAgg.Acc.last.numSlots >= 5);

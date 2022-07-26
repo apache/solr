@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import static org.apache.solr.core.SolrCore.verbose;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
+import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -346,7 +347,7 @@ public class TestStressRecovery extends TestRTGBase {
                         || (foundVer == info.version
                             && foundVal != info.val)) { // if the version matches, the val must
                       verbose("ERROR, id=", id, "found=", response, "model", info);
-                      assertTrue(false);
+                      fail();
                     }
                   }
                 }
@@ -373,7 +374,7 @@ public class TestStressRecovery extends TestRTGBase {
 
     int bufferedAddsApplied = 0;
     do {
-      assertTrue(uLog.getState() == UpdateLog.State.ACTIVE);
+      assertSame(uLog.getState(), UpdateLog.State.ACTIVE);
 
       // before we start buffering updates, we want to point
       // visibleModel away from the live model.
@@ -384,7 +385,7 @@ public class TestStressRecovery extends TestRTGBase {
         uLog.bufferUpdates();
       }
 
-      assertTrue(uLog.getState() == UpdateLog.State.BUFFERING);
+      assertSame(uLog.getState(), UpdateLog.State.BUFFERING);
 
       // sometimes wait for a second to allow time for writers to write something
       if (random().nextBoolean()) Thread.sleep(random().nextInt(10) + 1);

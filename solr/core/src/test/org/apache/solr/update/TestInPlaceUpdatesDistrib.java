@@ -760,9 +760,10 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     assertTrue(currentVersion > version);
     version = currentVersion;
     LEADER.commit();
-    assertTrue(
+    assertEquals(
         "Earlier: " + docids + ", now: " + getInternalDocIds("100"),
-        docids.equals(getInternalDocIds("100")));
+        docids,
+        getInternalDocIds("100"));
 
     SolrDocument sdoc = LEADER.getById("100"); // RTG straight from the index
     assertEquals(sdoc.toString(), inplace_updatable_float, sdoc.get("inplace_updatable_float"));
@@ -797,9 +798,10 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     assertTrue(currentVersion > version);
     version = currentVersion;
     LEADER.commit();
-    assertTrue(
+    assertEquals(
         "Earlier: " + docids + ", now: " + getInternalDocIds("100"),
-        docids.equals(getInternalDocIds("100")));
+        docids,
+        getInternalDocIds("100"));
 
     currentVersion = addDocAndGetVersion("id", 100, "inplace_updatable_int", map("set", "100"));
     assertTrue(currentVersion > version);

@@ -329,7 +329,7 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
   private void assertDocExists(HttpSolrClient solr, String docId) throws Exception {
     NamedList<?> rsp = realTimeGetDocId(solr, docId);
     String match = JSONTestUtil.matchObj("/id", rsp.get("doc"), docId);
-    assertTrue(
+    assertNull(
         "Doc with id="
             + docId
             + " not found in "
@@ -338,7 +338,7 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
             + match
             + "; rsp="
             + rsp,
-        match == null);
+        match);
   }
 
   private NamedList<Object> realTimeGetDocId(HttpSolrClient solr, String docId)

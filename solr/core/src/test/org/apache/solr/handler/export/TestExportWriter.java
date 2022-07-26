@@ -1048,11 +1048,11 @@ public class TestExportWriter extends SolrTestCaseJ4 {
           String field = "number_" + type + mv + indexed;
           SchemaField sf = h.getCore().getLatestSchema().getField(field + "_t");
           assertTrue(sf.hasDocValues());
-          assertTrue(sf.getType().getNumberType() != null);
+          assertNotNull(sf.getType().getNumberType());
 
           sf = h.getCore().getLatestSchema().getField(field + "_p");
           assertTrue(sf.hasDocValues());
-          assertTrue(sf.getType().getNumberType() != null);
+          assertNotNull(sf.getType().getNumberType());
           assertTrue(sf.getType().isPointField());
 
           trieFields.add(field + "_t");

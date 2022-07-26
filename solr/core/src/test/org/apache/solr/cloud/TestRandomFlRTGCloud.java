@@ -16,6 +16,8 @@
  */
 package org.apache.solr.cloud;
 
+import static org.junit.Assert.assertNull;
+
 import java.io.IOException;
 import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
@@ -1359,7 +1361,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
         final SolrInputDocument expected,
         final SolrDocument actual,
         final String wt) {
-      assertEquals(fl, null, actual.getFirstValue(fieldName));
+      assertNull(fl, actual.getFirstValue(fieldName));
       return Collections.emptySet();
     }
   }

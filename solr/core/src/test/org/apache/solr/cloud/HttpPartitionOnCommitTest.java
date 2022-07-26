@@ -77,14 +77,15 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
     cloudClient.setDefaultCollection(testCollectionName);
 
     List<Replica> notLeaders = ensureAllReplicasAreActive(testCollectionName, "shard1", 2, 2, 30);
-    assertTrue(
+    assertEquals(
         "Expected 1 replicas for collection "
             + testCollectionName
             + " but found "
             + notLeaders.size()
             + "; clusterState: "
             + printClusterStateInfo(),
-        notLeaders.size() == 1);
+        1,
+        notLeaders.size());
 
     if (log.isInfoEnabled()) {
       log.info("All replicas active for {}", testCollectionName);
@@ -131,14 +132,15 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
     cloudClient.setDefaultCollection(testCollectionName);
 
     List<Replica> notLeaders = ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 3, 30);
-    assertTrue(
+    assertEquals(
         "Expected 2 replicas for collection "
             + testCollectionName
             + " but found "
             + notLeaders.size()
             + "; clusterState: "
             + printClusterStateInfo(),
-        notLeaders.size() == 2);
+        2,
+        notLeaders.size());
 
     log.info("All replicas active for {}", testCollectionName);
 

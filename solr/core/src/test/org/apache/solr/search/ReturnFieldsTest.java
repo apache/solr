@@ -96,7 +96,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
   public void testToString() {
     for (Method m : SolrReturnFields.class.getMethods()) {
       if (m.getName().equals("toString")) {
-        assertTrue(m + " is not overridden ! ", m.getDeclaringClass() == SolrReturnFields.class);
+        assertSame(m + " is not overridden ! ", m.getDeclaringClass(), SolrReturnFields.class);
         break;
       }
     }

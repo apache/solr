@@ -189,14 +189,15 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
                 continue;
               }
 
-              assertFalse(
+              assertNotEquals(
                   groupHeadId
                       + " has null collapseVal but nullPolicy==ignore; "
                       + "mainP: "
                       + mainP
                       + ", collapseP: "
                       + collapseP,
-                  nullPolicy.equals(CollapsingQParserPlugin.NullPolicy.IGNORE.getName()));
+                  nullPolicy,
+                  CollapsingQParserPlugin.NullPolicy.IGNORE.getName());
             }
 
             // workaround for SOLR-8082...
@@ -219,9 +220,9 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
 
             final QueryResponse checkRsp = SOLR.query(SolrParams.wrapDefaults(checkP, mainP));
 
-            assertTrue(
+            assertFalse(
                 "not even 1 match for sanity check query? expected: " + doc,
-                !checkRsp.getResults().isEmpty());
+                checkRsp.getResults().isEmpty());
             final SolrDocument firstMatch = checkRsp.getResults().get(0);
             final Object firstMatchId = firstMatch.getFieldValue("id");
             assertEquals(

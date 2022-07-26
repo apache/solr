@@ -109,7 +109,7 @@ public class TestManagedResourceStorage extends AbstractZkTestCase {
     assertEquals("true", storedArgs.get("ignoreCase"));
     List<String> storedList = (List<String>) storedMap.get(ManagedResource.MANAGED_JSON_LIST_FIELD);
     assertNotNull(storedList);
-    assertTrue(storedList.size() == managedList.size());
+    assertEquals(storedList.size(), managedList.size());
     assertTrue(storedList.contains("a"));
 
     // now verify you can update existing data
@@ -125,7 +125,7 @@ public class TestManagedResourceStorage extends AbstractZkTestCase {
     assertEquals("someValue", storedArgs.get("anotherArg"));
     storedList = (List<String>) storedMap.get(ManagedResource.MANAGED_JSON_LIST_FIELD);
     assertNotNull(storedList);
-    assertTrue(storedList.size() == managedList.size());
+    assertEquals(storedList.size(), managedList.size());
     assertTrue(storedList.contains("e"));
   }
 }

@@ -462,7 +462,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
               otherVersions, completeList, ourUpdates, ourLowThreshold);
       // no updates requested since other has nothing
       assertEquals(0L, mur.totalRequestedUpdates);
-      assertEquals(null, mur.versionsAndRanges);
+      assertNull(mur.versionsAndRanges);
     }
   }
 
@@ -477,7 +477,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
               otherVersions, completeList, ourUpdates, ourLowThreshold);
       // no updates requested since us and other have the same versions
       assertEquals(0L, mur.totalRequestedUpdates);
-      assertEquals(null, mur.versionsAndRanges);
+      assertNull(mur.versionsAndRanges);
     }
   }
 
@@ -511,7 +511,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
          */
         assertTrue(missing < ourLowThreshold);
         assertEquals(0L, mur.totalRequestedUpdates);
-        assertEquals(null, mur.versionsAndRanges);
+        assertNull(mur.versionsAndRanges);
       }
     }
   }
@@ -547,7 +547,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
            */
           assertTrue(missing < ourLowThreshold);
           assertEquals(0L, mur.totalRequestedUpdates);
-          assertEquals(null, mur.versionsAndRanges);
+          assertNull(mur.versionsAndRanges);
         }
       }
     }
@@ -582,7 +582,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
         } else {
           // request no updates because ???
           assertEquals(0L, mur.totalRequestedUpdates);
-          assertEquals(null, mur.versionsAndRanges);
+          assertNull(mur.versionsAndRanges);
         }
       }
       {
@@ -597,7 +597,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
         } else {
           // request no updates because ???
           assertEquals(0L, mur.totalRequestedUpdates);
-          assertEquals(null, mur.versionsAndRanges);
+          assertNull(mur.versionsAndRanges);
         }
       }
       {
@@ -612,7 +612,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
         } else {
           // request no updates since we don't need a complete list ...
           assertEquals(0L, mur.totalRequestedUpdates);
-          assertEquals(null, mur.versionsAndRanges);
+          assertNull(mur.versionsAndRanges);
           // ... and all the missing versions are older/lower than our 'low' threshold
           for (Long version : otherVersions) {
             if (!ourUpdates.contains(version)) {
@@ -655,7 +655,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
         } else {
           // request no updates because ???
           assertEquals(0L, mur.totalRequestedUpdates);
-          assertEquals(null, mur.versionsAndRanges);
+          assertNull(mur.versionsAndRanges);
         }
       }
       {
@@ -670,7 +670,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
         } else {
           // request no updates since we don't need a complete list ...
           assertEquals(0L, mur.totalRequestedUpdates);
-          assertEquals(null, mur.versionsAndRanges);
+          assertNull(mur.versionsAndRanges);
           // ... and all the missing versions are older/lower than our 'low' threshold
           for (Long version : otherVersions) {
             if (!ourUpdates.contains(version)) {

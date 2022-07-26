@@ -252,7 +252,7 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
     if (indexed && stored) suffix = "_dv";
     else if (indexed && !stored) suffix = "_dvo";
     else if (!indexed && !stored) suffix = "_dvo2";
-    else assertTrue("unsupported dv string field combination: stored and not indexed", false);
+    else fail("unsupported dv string field combination: stored and not indexed");
     return base + suffix;
   }
 

@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import static org.apache.solr.core.SolrCore.verbose;
+import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -254,7 +255,7 @@ public class TestStressVersions extends TestRTGBase {
                         || (foundVer == info.version
                             && foundVal != info.val)) { // if the version matches, the val must
                       verbose("ERROR, id=", id, "found=", response, "model", info);
-                      assertTrue(false);
+                      fail();
                     }
                   }
                 }

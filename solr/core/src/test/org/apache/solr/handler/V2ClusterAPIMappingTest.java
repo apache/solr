@@ -22,6 +22,8 @@ import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.REQU
 import static org.apache.solr.common.params.CommonParams.ACTION;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -157,8 +159,8 @@ public class V2ClusterAPIMappingTest {
     assertEquals("someConfigSetName", v1Params.get(NAME));
     // Why does ClusterAPI set the values below as defaults?  They disagree with the v1 defaults in
     // ConfigSetsHandler.handleConfigUploadRequest
-    assertEquals(true, v1Params.getPrimitiveBool(ConfigSetParams.OVERWRITE));
-    assertEquals(false, v1Params.getPrimitiveBool(ConfigSetParams.CLEANUP));
+    assertTrue(v1Params.getPrimitiveBool(ConfigSetParams.OVERWRITE));
+    assertFalse(v1Params.getPrimitiveBool(ConfigSetParams.CLEANUP));
   }
 
   @Test
@@ -173,8 +175,8 @@ public class V2ClusterAPIMappingTest {
         "/some/file/path",
         v1Params.get(
             ConfigSetParams.FILE_PATH)); // Note the leading '/' that makes the path appear absolute
-    assertEquals(true, v1Params.getPrimitiveBool(ConfigSetParams.OVERWRITE));
-    assertEquals(false, v1Params.getPrimitiveBool(ConfigSetParams.CLEANUP));
+    assertTrue(v1Params.getPrimitiveBool(ConfigSetParams.OVERWRITE));
+    assertFalse(v1Params.getPrimitiveBool(ConfigSetParams.CLEANUP));
   }
 
   @Test

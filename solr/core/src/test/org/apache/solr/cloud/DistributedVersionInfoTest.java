@@ -368,7 +368,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     NamedList<?> rsp = solr.request(qr);
     SolrDocument doc = (SolrDocument) rsp.get("doc");
     String match = JSONTestUtil.matchObj("/id", doc, docId);
-    assertTrue(
+    assertNull(
         "Doc with id="
             + docId
             + " not found in "
@@ -377,7 +377,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
             + match
             + "; rsp="
             + rsp,
-        match == null);
+        match);
 
     Long vers = (Long) doc.getFirstValue("_version_");
     assertNotNull(vers);

@@ -27,7 +27,6 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -165,11 +164,12 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
       assertEquals(
           "Should have been able to read 3 bytes from bomStream", 3, bomStream.read(firstBytes));
 
-      assertTrue(
+      assertArrayEquals(
           "This test only works if "
               + fileWithBom
               + " contains a BOM -- it appears someone removed it.",
-          Arrays.equals(bomExpected, firstBytes));
+          bomExpected,
+          firstBytes);
     } finally {
       try {
         bomStream.close();

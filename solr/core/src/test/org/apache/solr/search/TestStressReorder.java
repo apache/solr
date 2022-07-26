@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
+import static org.junit.Assert.fail;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -347,7 +348,7 @@ public class TestStressReorder extends TestRTGBase {
                         || (foundVer == info.version
                             && foundVal != info.val)) { // if the version matches, the val must
                       log.error("ERROR, id={} found={} model {}", id, response, info);
-                      assertTrue(false);
+                      fail();
                     }
                   }
                 }
