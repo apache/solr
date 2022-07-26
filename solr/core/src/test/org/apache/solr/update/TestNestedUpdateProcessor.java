@@ -17,6 +17,8 @@
 
 package org.apache.solr.update;
 
+import static org.hamcrest.Matchers.containsString;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -262,7 +264,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
     final String errMsg =
         "contains: '" + PATH_SEP_CHAR + "' , which is reserved for the nested URP";
     SolrException thrown = assertThrows(SolrException.class, () -> indexSampleData(errDoc));
-    assertEquals(errMsg, thrown.getMessage());
+    assertThat(thrown.getMessage(), containsString(errMsg));
   }
 
   private void indexSampleData(String cmd) throws Exception {
