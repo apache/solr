@@ -42,10 +42,7 @@ public class RequestHandlerMetricsTest extends SolrCloudTestCase {
     configureCluster(1)
         .addConfig(
             "conf1",
-            TEST_PATH()
-                .resolve("configsets")
-                .resolve("cloud-aggregate-node-metrics")
-                .resolve("conf"))
+                configset("cloud-aggregate-node-metrics"))
         .configure();
   }
 
