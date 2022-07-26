@@ -95,7 +95,7 @@ public class TestMaxScoreQueryParser extends SolrTestCaseJ4 {
     assertEquals(2, qa.size());
     final Collection<String> qaStrings =
         qa.stream().map(q -> q.toString()).collect(Collectors.toList());
-    org.hamcrest.MatcherAssert.assertThat(qaStrings, hasItem("text:foo"));
+    assertThat(qaStrings, hasItem("text:foo"));
   }
 
   @Test

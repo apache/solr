@@ -35,7 +35,6 @@ import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.util.LogLevel;
-import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -166,12 +165,11 @@ public class TestDistributedTracing extends SolrCloudTestCase {
   }
 
   private void assertDbInstanceColl(MockSpan mockSpan) {
-    MatcherAssert.assertThat(mockSpan.tags().get("db.instance"), Matchers.equalTo("collection1"));
+    assertThat(mockSpan.tags().get("db.instance"), Matchers.equalTo("collection1"));
   }
 
   private void assertDbInstanceCore(MockSpan mockSpan) {
-    MatcherAssert.assertThat(
-        (String) mockSpan.tags().get("db.instance"), Matchers.startsWith("collection1_"));
+    assertThat((String) mockSpan.tags().get("db.instance"), Matchers.startsWith("collection1_"));
   }
 
   private void assertOneSpanIsChildOfAnother(List<MockSpan> finishedSpans) {

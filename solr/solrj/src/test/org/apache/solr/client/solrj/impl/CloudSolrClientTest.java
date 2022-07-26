@@ -76,7 +76,6 @@ import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.util.LogLevel;
-import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -841,11 +840,11 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
           ZkClientClusterStateProvider.from(client)) {
         zkClientClusterStateProvider.setZkConnectTimeout(1000 * 60);
         SolrException ex = expectThrows(SolrException.class, client::connect);
-        MatcherAssert.assertThat(
+        assertThat(
             "Wrong error message for empty chRoot",
             ex.getMessage(),
             Matchers.containsString("cluster not found/not ready"));
-        MatcherAssert.assertThat(
+        assertThat(
             "Wrong node missing message for empty chRoot",
             ex.getMessage(),
             Matchers.containsString(
