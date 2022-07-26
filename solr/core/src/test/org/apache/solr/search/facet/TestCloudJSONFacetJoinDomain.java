@@ -88,7 +88,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   private static final ArrayList<HttpSolrClient> CLIENTS = new ArrayList<>(5);
 
   @BeforeClass
-  private static void createMiniSolrCloudCluster() throws Exception {
+  public static void createMiniSolrCloudCluster() throws Exception {
     // sanity check constants
     assertTrue(
         "bad test constants: some suffixes will never be tested",
@@ -189,7 +189,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   }
 
   @AfterClass
-  private static void afterClass() throws Exception {
+  public static void afterClass() throws Exception {
     if (null != CLOUD_CLIENT) {
       CLOUD_CLIENT.close();
       CLOUD_CLIENT = null;

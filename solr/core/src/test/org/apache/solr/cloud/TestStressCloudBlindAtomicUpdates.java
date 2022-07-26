@@ -110,7 +110,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
 
   @BeforeClass
   @SuppressWarnings({"unchecked"})
-  private static void createMiniSolrCloudCluster() throws Exception {
+  public static void createMiniSolrCloudCluster() throws Exception {
     // NOTE: numDocsToCheck uses atLeast, so nightly & multiplier are already a factor in index size
     // no need to redundantly factor them in here as well
     DOC_ID_INCR = TestUtil.nextInt(random(), 1, 7);
@@ -160,7 +160,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
   }
 
   @AfterClass
-  private static void afterClass() {
+  public static void afterClass() {
     TestInjection.reset();
     if (null != EXEC_SERVICE) {
       ExecutorUtil.shutdownAndAwaitTermination(EXEC_SERVICE);
@@ -180,7 +180,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
   }
 
   @Before
-  private void clearCloudCollection() throws Exception {
+  public void clearCloudCollection() throws Exception {
     TestInjection.reset();
     waitForRecoveriesToFinish(CLOUD_CLIENT);
 
