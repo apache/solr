@@ -18,7 +18,9 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import org.apache.solr.client.solrj.cloud.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.BadVersionException;
@@ -29,6 +31,7 @@ import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
@@ -43,6 +46,21 @@ public class ZkDistribStateManager implements DistribStateManager {
 
   public ZkDistribStateManager(SolrZkClient zkClient) {
     this.zkClient = zkClient;
+  }
+
+  @SuppressWarnings({"unchecked"})
+  @Override
+  public Map<String, Object> getJson(String path)
+      throws InterruptedException, IOException, KeeperException {
+    VersionedData data;
+    try {
+      data = getData(path);
+    } catch (KeeperException.NoNodeException | NoSuchElementException e) {
+      return Collections.emptyMap();
+    }
+    if (data == null || data.getData() == null || data.getData().length == 0)
+      return Collections.emptyMap();
+    return (Map<String, Object>) Utils.fromJSON(data.getData());
   }
 
   @Override
