@@ -20,6 +20,23 @@ apply plugin: 'java-library'
 description = 'Solrj-ZooKeeper - ZooKeeper Java Client'
 
 dependencies {
+    // Spotbugs Annotations are only needed for old findbugs
+    // annotation usage like in Zookeeper during compilation time.
+    // It is not included in the release so exclude from checks.
+    compileOnly 'com.github.spotbugs:spotbugs-annotations'
+    permitUnusedDeclared 'com.github.spotbugs:spotbugs-annotations'
+    // Exclude these from jar validation and license checks.
+    configurations.jarValidation {
+        exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
+    }
+
+    implementation project(':solr:solrj')
+
+    // declare dependencies we use even though already declared by solrj-core
+    implementation 'org.slf4j:slf4j-api'
+    implementation 'org.apache.httpcomponents:httpclient'
+    implementation 'org.apache.httpcomponents:httpcore'
+
     implementation('org.apache.zookeeper:zookeeper', {
         exclude group: "org.apache.yetus", module: "audience-annotations"
         exclude group: "log4j", module: "log4j"
@@ -29,5 +46,4 @@ dependencies {
         exclude group: 'org.apache.yetus', module: 'audience-annotations'
     }
 
-    implementation project(':solr:solrj')
 }
