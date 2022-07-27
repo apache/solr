@@ -57,7 +57,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.common.util.ZkUtils;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.CreateMode;
@@ -618,7 +617,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
     String path = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + REINDEXING_STATE_PATH;
     DistribStateManager stateManager = ccc.getSolrCloudManager().getDistribStateManager();
     if (props == null) { // retrieve existing props, if any
-      props = ZkUtils.getJson(stateManager, path);
+      props = stateManager.getJson(path);
     }
     Map<String, Object> copyProps = new HashMap<>(props);
     copyProps.put("state", state.toLower());
@@ -643,7 +642,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       DistribStateManager stateManager, String collection) throws Exception {
     String path = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + REINDEXING_STATE_PATH;
     // make it modifiable
-    return new TreeMap<>(ZkUtils.getJson(stateManager, path));
+    return new TreeMap<>(stateManager.getJson(path));
   }
 
   private long getNumberOfDocs(String collection) {

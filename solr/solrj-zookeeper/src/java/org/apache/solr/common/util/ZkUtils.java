@@ -5,9 +5,6 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Map;
-import java.util.NoSuchElementException;
-import org.apache.solr.client.solrj.cloud.DistribStateManager;
-import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkOperation;
@@ -38,20 +35,6 @@ public class ZkUtils {
       return Collections.emptyMap();
     }
     return Collections.emptyMap();
-  }
-
-  @SuppressWarnings({"unchecked"})
-  public static Map<String, Object> getJson(DistribStateManager distribStateManager, String path)
-      throws InterruptedException, IOException, KeeperException {
-    VersionedData data;
-    try {
-      data = distribStateManager.getData(path);
-    } catch (KeeperException.NoNodeException | NoSuchElementException e) {
-      return Collections.emptyMap();
-    }
-    if (data == null || data.getData() == null || data.getData().length == 0)
-      return Collections.emptyMap();
-    return (Map<String, Object>) Utils.fromJSON(data.getData());
   }
 
   public static InputStream toJavabin(Object o) throws IOException {

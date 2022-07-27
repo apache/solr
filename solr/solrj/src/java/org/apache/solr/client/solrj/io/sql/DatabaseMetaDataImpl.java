@@ -119,7 +119,7 @@ class DatabaseMetaDataImpl implements DatabaseMetaData {
     for (String node : liveNodes) {
       try {
         String nodeURL =
-            Utils.getBaseUrlForNodeName(node, /*getClusterProperty(URL_SCHEME, "http")*/ "http");
+            Utils.getBaseUrlForNodeName(node, /*getClusterProperty(URL_SCHEME, "http")*/ "http"); //nocommit
         solrClient = new Builder(nodeURL).build();
 
         QueryResponse rsp = solrClient.query(sysQuery);
