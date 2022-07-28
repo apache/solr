@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.handler;
+package org.apache.solr.handler.configsets;
 
 import com.google.common.collect.Maps;
 import org.apache.commons.collections4.MapUtils;
@@ -25,8 +25,8 @@ import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.request.beans.CreateConfigPayload;
 import org.apache.solr.cloud.ConfigSetCmds;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.admin.ConfigSetsHandler;
 
 import java.util.Map;
 
@@ -37,10 +37,14 @@ import static org.apache.solr.handler.admin.ConfigSetsHandler.DISABLE_CREATE_AUT
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_PERM;
 
 /**
- * V2 API to create a new configset based on an existing one.
+ * V2 API for creating a new configset as a copy of an existing one.
+ *
+ * <p>This API (POST /v2/cluster/configs {"create": {...}}) is analogous to
+ * the v1 /admin/configs?action=CREATE command.
+ *
  */
 @EndPoint(method = POST, path = "/cluster/configs", permission = CONFIG_EDIT_PERM)
-public class CreateConfigSetAPI extends ConfigSetAPI{
+public class CreateConfigSetAPI extends ConfigSetAPIBase {
 
     public CreateConfigSetAPI(CoreContainer coreContainer) {
         super(coreContainer);
@@ -80,6 +84,6 @@ public class CreateConfigSetAPI extends ConfigSetAPI{
             }
         }
 
-        runConfigSetCommand(obj.getResponse(), ConfigSetsHandler.ConfigSetOperation.CREATE_OP, configsetCommandMsg);
+        runConfigSetCommand(obj.getResponse(), ConfigSetParams.ConfigSetAction.CREATE, configsetCommandMsg);
     }
 }

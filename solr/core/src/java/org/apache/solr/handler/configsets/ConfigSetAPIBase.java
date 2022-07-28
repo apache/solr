@@ -1,4 +1,4 @@
-package org.apache.solr.handler;
+package org.apache.solr.handler.configsets;
 
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.OverseerSolrResponseSerializer;
@@ -6,12 +6,12 @@ import org.apache.solr.cloud.OverseerTaskQueue;
 import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthenticationPlugin;
@@ -33,7 +33,13 @@ import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.cloud.OverseerConfigSetMessageHandler.CONFIGSETS_ACTION_PREFIX;
 import static org.apache.solr.handler.admin.ConfigSetsHandler.CONFIG_SET_TIMEOUT;
 
-public class ConfigSetAPI {
+/**
+ * Parent class for all APIs that manipulate configsets
+ *
+ * Contains utilities for tasks common in configset manipulation, including running configset "commands" and checking
+ * configset "trusted-ness".
+ */
+public class ConfigSetAPIBase {
 
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -42,25 +48,25 @@ public class ConfigSetAPI {
 
     protected final ConfigSetService configSetService;
 
-    public ConfigSetAPI(CoreContainer coreContainer) {
+    public ConfigSetAPIBase(CoreContainer coreContainer) {
         this.coreContainer = coreContainer;
         this.distributedCollectionConfigSetCommandRunner = coreContainer.getDistributedCollectionCommandRunner();
         this.configSetService = coreContainer.getConfigSetService();
     }
 
-    protected void runConfigSetCommand(SolrQueryResponse rsp, ConfigSetsHandler.ConfigSetOperation operation,
+    protected void runConfigSetCommand(SolrQueryResponse rsp, ConfigSetParams.ConfigSetAction action,
                                      Map<String, Object> messageToSend) throws Exception {
         if (log.isInfoEnabled()) {
             log.info(
-                    "Invoked ConfigSet Action :{} with params {} ", operation.getAction().toLower(), messageToSend);
+                    "Invoked ConfigSet Action :{} with params {} ", action.toLower(), messageToSend);
         }
 
         if (distributedCollectionConfigSetCommandRunner.isPresent()) {
             distributedCollectionConfigSetCommandRunner
                     .get()
-                    .runConfigSetCommand(rsp, operation, messageToSend, CONFIG_SET_TIMEOUT);
+                    .runConfigSetCommand(rsp, action, messageToSend, CONFIG_SET_TIMEOUT);
         } else {
-            sendToOverseer(rsp, operation, messageToSend);
+            sendToOverseer(rsp, action, messageToSend);
         }
     }
 
@@ -130,13 +136,13 @@ public class ConfigSetAPI {
     }
 
     private void sendToOverseer(
-            SolrQueryResponse rsp, ConfigSetsHandler.ConfigSetOperation operation, Map<String, Object> result)
+            SolrQueryResponse rsp, ConfigSetParams.ConfigSetAction action, Map<String, Object> result)
             throws KeeperException, InterruptedException {
         // We need to differentiate between collection and configsets actions since they currently
         // use the same underlying queue.
-        result.put(QUEUE_OPERATION, CONFIGSETS_ACTION_PREFIX + operation.getAction().toLower());
+        result.put(QUEUE_OPERATION, CONFIGSETS_ACTION_PREFIX + action.toLower());
         ZkNodeProps props = new ZkNodeProps(result);
-        handleResponse(operation.getAction().toLower(), props, rsp, CONFIG_SET_TIMEOUT);
+        handleResponse(action.toLower(), props, rsp, CONFIG_SET_TIMEOUT);
     }
 
     private void handleResponse(String operation, ZkNodeProps m, SolrQueryResponse rsp, long timeout)

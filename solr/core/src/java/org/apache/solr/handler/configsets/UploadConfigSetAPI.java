@@ -1,4 +1,20 @@
-package org.apache.solr.handler;
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.solr.handler.configsets;
 
 
 import org.apache.commons.io.IOUtils;
@@ -25,7 +41,17 @@ import java.util.zip.ZipInputStream;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.PUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_PERM;
 
-public class UploadConfigSetAPI extends ConfigSetAPI {
+/**
+ * V2 API for uploading a new configset (or overwriting an existing one).
+ *
+ * <p>This API (PUT /v2/cluster/configs/configsetName) is analogous to the v1
+ * /admin/configs?action=UPLOAD command.
+ *
+ */
+public class UploadConfigSetAPI extends ConfigSetAPIBase {
+
+    public static final String CONFIGSET_NAME_PLACEHOLDER = "name";
+
 
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -37,13 +63,10 @@ public class UploadConfigSetAPI extends ConfigSetAPI {
     public void uploadConfigSet(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
         ensureConfigSetUploadEnabled();
 
-        ConfigSetService configSetService = coreContainer.getConfigSetService();
-
         final String configSetName = req.getPathTemplateValues().get("name");
         boolean overwritesExisting = configSetService.checkConfigExists(configSetName);
         boolean requestIsTrusted = isTrusted(req.getUserPrincipal(), coreContainer.getAuthenticationPlugin());
         // Get upload parameters
-        String singleFilePath = req.getParams().get(ConfigSetParams.FILE_PATH, "");
         boolean allowOverwrite = req.getParams().getBool(ConfigSetParams.OVERWRITE, false);
         boolean cleanup = req.getParams().getBool(ConfigSetParams.CLEANUP, false);
         final InputStream inputStream = ensureNonEmptyInputStream(req);

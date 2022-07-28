@@ -70,13 +70,8 @@ import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.handler.ClusterAPI;
 import org.apache.solr.handler.CollectionBackupsAPI;
 import org.apache.solr.handler.CollectionsAPI;
-import org.apache.solr.handler.CreateConfigSetAPI;
-import org.apache.solr.handler.DeleteConfigSetAPI;
-import org.apache.solr.handler.ListConfigSetsAPI;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SnapShooter;
-import org.apache.solr.handler.UpdateConfigSetFileAPI;
-import org.apache.solr.handler.UploadConfigSetAPI;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.ContainerPluginsApi;
@@ -92,6 +87,11 @@ import org.apache.solr.handler.admin.ZookeeperReadAPI;
 import org.apache.solr.handler.admin.ZookeeperStatusHandler;
 import org.apache.solr.handler.api.ApiRegistrar;
 import org.apache.solr.handler.component.ShardHandlerFactory;
+import org.apache.solr.handler.configsets.CreateConfigSetAPI;
+import org.apache.solr.handler.configsets.DeleteConfigSetAPI;
+import org.apache.solr.handler.configsets.ListConfigSetsAPI;
+import org.apache.solr.handler.configsets.UploadConfigSetAPI;
+import org.apache.solr.handler.configsets.UploadConfigSetFileAPI;
 import org.apache.solr.handler.designer.SchemaDesignerAPI;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -819,7 +819,7 @@ public class CoreContainer {
     containerHandlers.getApiBag().registerObject(new DeleteConfigSetAPI(this));
     containerHandlers.getApiBag().registerObject(new ListConfigSetsAPI(this));
     containerHandlers.getApiBag().registerObject(new UploadConfigSetAPI(this));
-    containerHandlers.getApiBag().registerObject(new UpdateConfigSetFileAPI(this));
+    containerHandlers.getApiBag().registerObject(new UploadConfigSetFileAPI(this));
 
     if (isZooKeeperAware()) {
       containerHandlers.getApiBag().registerObject(new SchemaDesignerAPI(this));

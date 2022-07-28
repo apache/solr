@@ -1,10 +1,25 @@
-package org.apache.solr.handler;
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.solr.handler.configsets;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ConfigSetParams;
-import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -14,17 +29,27 @@ import java.io.InputStream;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.PUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_PERM;
 
-public class UpdateConfigSetFileAPI extends ConfigSetAPI {
+/**
+ * V2 API for adding or updating a single file within a configset.
+ *
+ * <p>This API (PUT /v2/cluster/configs/configsetName/someFilePath) is analogous to
+ * the v1 /admin/configs?action=UPLOAD&filePath=someFilePath command.
+ *
+ */
+public class UploadConfigSetFileAPI extends ConfigSetAPIBase {
 
-    public UpdateConfigSetFileAPI(CoreContainer coreContainer) {
+    public static final String CONFIGSET_NAME_PLACEHOLDER = UploadConfigSetAPI.CONFIGSET_NAME_PLACEHOLDER;
+    public static final String FILEPATH_PLACEHOLDER = "*";
+
+    private static final String API_PATH = "/cluster/configs/{" + CONFIGSET_NAME_PLACEHOLDER + "}/" + FILEPATH_PLACEHOLDER;
+
+    public UploadConfigSetFileAPI(CoreContainer coreContainer) {
         super(coreContainer);
     }
 
-    @EndPoint(method = PUT, path = "/cluster/configs/{name}/*", permission = CONFIG_EDIT_PERM)
+    @EndPoint(method = PUT, path = API_PATH, permission = CONFIG_EDIT_PERM)
     public void updateConfigSetFile(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
         ensureConfigSetUploadEnabled();
-
-        ConfigSetService configSetService = coreContainer.getConfigSetService();
 
         final String configSetName = req.getPathTemplateValues().get("name");
         boolean overwritesExisting = configSetService.checkConfigExists(configSetName);

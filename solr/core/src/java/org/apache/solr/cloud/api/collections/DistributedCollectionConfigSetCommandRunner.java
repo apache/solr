@@ -17,22 +17,6 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.apache.solr.common.params.CommonParams.NAME;
-
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.ConfigSetApiLockFactory;
 import org.apache.solr.cloud.ConfigSetCmds;
@@ -52,11 +36,27 @@ import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonParams.NAME;
 
 /**
  * Class for execution Collection API and Config Set API commands in a distributed way, without
@@ -186,7 +186,7 @@ public class DistributedCollectionConfigSetCommandRunner {
    */
   public void runConfigSetCommand(
       SolrQueryResponse rsp,
-      ConfigSetsHandler.ConfigSetOperation operation,
+      ConfigSetParams.ConfigSetAction action,
       Map<String, Object> result,
       long timeoutMs)
       throws Exception {
@@ -197,8 +197,6 @@ public class DistributedCollectionConfigSetCommandRunner {
           SolrException.ErrorCode.CONFLICT,
           "Solr is shutting down, no more Config Set API tasks may be executed");
     }
-
-    ConfigSetParams.ConfigSetAction action = operation.getAction();
 
     // never null
     String configSetName = (String) result.get(NAME);
