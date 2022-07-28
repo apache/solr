@@ -23,16 +23,16 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
+
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -170,9 +170,6 @@ public abstract class AbstractSyncSliceTestBase extends AbstractFullDistribZkTes
     }
 
     commit();
-
-    Thread.sleep(1000);
-
     waitForRecoveriesToFinish(false);
 
     // shard should be inconsistent
@@ -205,28 +202,14 @@ public abstract class AbstractSyncSliceTestBase extends AbstractFullDistribZkTes
     success = true;
   }
 
-  private void waitTillAllNodesActive() throws Exception {
-    for (int i = 0; i < 60; i++) {
-      Thread.sleep(3000);
-      ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
-      ClusterState clusterState = zkStateReader.getClusterState();
-      DocCollection collection1 = clusterState.getCollection("collection1");
-      Slice slice = collection1.getSlice("shard1");
-      Collection<Replica> replicas = slice.getReplicas();
-      boolean allActive = true;
-      for (Replica replica : replicas) {
-        if (!clusterState.liveNodesContain(replica.getNodeName())
-            || replica.getState() != Replica.State.ACTIVE) {
-          allActive = false;
-          break;
-        }
-      }
-      if (allActive) {
-        return;
-      }
-    }
-    printLayout();
-    fail("timeout waiting to see all nodes active");
+  private void waitTillAllNodesActive() throws InterruptedException, TimeoutException {
+    ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
+
+    zkStateReader.waitForState("collection1", 3, TimeUnit.MINUTES, (n, c) -> {
+      Collection<Replica> replicas = c.getSlice("shard1").getReplicas();
+      Set<String> nodes = replicas.stream().map(Replica::getNodeName).collect(Collectors.toSet());
+      return replicas.stream().map(Replica::getState).allMatch(Replica.State.ACTIVE::equals) && n.containsAll(nodes);
+    });
   }
 
   private String waitTillInconsistent() throws Exception, InterruptedException {
