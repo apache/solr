@@ -16,18 +16,16 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.junit.BeforeClass;
 
 /** Tests the Cloud Collections API. */
-@Slow
 public class CollectionsAPIDistributedZkTest extends AbstractCollectionsAPIDistributedZkTestBase {
   @BeforeClass
-      public static void createCluster() throws Exception {
-  configureCluster(4)
+  public static void createCluster() throws Exception {
+    configureCluster(4)
         .addConfig("conf", configset("cloud-minimal"))
-      .addConfig("conf2", configset("cloud-minimal"))
-      .withSolrXml(TEST_PATH().resolve("solr.xml"))
-      .configure();
+        .addConfig("conf2", configset("cloud-minimal"))
+        .withSolrXml(TEST_PATH().resolve("solr.xml"))
+        .configure();
   }
 }
