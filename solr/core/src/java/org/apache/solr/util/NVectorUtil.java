@@ -17,12 +17,16 @@
 
 package org.apache.solr.util;
 
+import org.apache.lucene.util.SloppyMath;
+
 import java.text.NumberFormat;
 import java.text.ParseException;
 
 import static org.locationtech.spatial4j.distance.DistanceUtils.EARTH_MEAN_RADIUS_KM;
 
 public class NVectorUtil {
+
+  private static final double pip2 = Math.PI/2;
 
   public static double[] latLongToNVector(double lat, double lon) {
     double latRad = lat * (Math.PI / 180);
@@ -64,12 +68,20 @@ public class NVectorUtil {
         });
   }
 
+  public static double NVectorDotProduct(double[] a, double[] b) {
+    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  }
+
   public static double NVectorDist(double[] a, double[] b) {
     return NVectorDist(a, b, EARTH_MEAN_RADIUS_KM);
   }
 
   public static double NVectorDist(double[] a, double[] b, double radius) {
-    return radius * FastInvTrig.acos(a[0] * b[0] + a[1] * b[1] + a[2] * b[2]);
+    return radius * (pip2 - SloppyMath.asin(a[0] * b[0] + a[1] * b[1] + a[2] * b[2]));
+  }
+
+  public static double NVectorDist(double dotProduct, double radius){
+    return radius * (pip2 - SloppyMath.asin(dotProduct));
   }
 
 
