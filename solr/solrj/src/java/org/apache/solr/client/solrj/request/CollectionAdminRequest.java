@@ -231,6 +231,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      */
     public RequestStatusState processAndWait(String asyncId, SolrClient client, long timeoutSeconds)
         throws IOException, SolrServerException, InterruptedException {
+      // This is kind of slow, see SOLR-16313
       processAsync(asyncId, client);
       return propagateBasicAuthCreds(requestStatus(asyncId)).waitFor(client, timeoutSeconds);
     }
@@ -1801,6 +1802,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
           propagateBasicAuthCreds(deleteAsyncId(requestId)).process(client);
           return state;
         }
+        // This is kind of slow, see SOLR-16313
         TimeUnit.SECONDS.sleep(1);
       }
       return state;
