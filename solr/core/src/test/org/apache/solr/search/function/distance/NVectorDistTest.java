@@ -21,12 +21,22 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.Locale;
+
 public class NVectorDistTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     initCore("solrconfig-nvector.xml", "schema-nvector.xml");
+  }
+
+  @Override
+  public void setUp() throws Exception {
+    Locale.setDefault(Locale.ENGLISH);//for parsing lat/log correctly in this test
+    super.setUp();
+    assertU(delQ("*:*"));
+    assertU(commit());
   }
 
   @Test
@@ -58,6 +68,73 @@ public class NVectorDistTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "1", "nvector", "51.927619, -0.186636"));
     assertU(adoc("id", "2", "nvector", "51.480043,  -0.196508"));
     assertU(commit());
+
+    assertJQ(
+            req(
+                    "defType", "lucene",
+                    "lat", "52.01966071979866",
+                    "lon", "-0.4983083573742952",
+                    "dist", "nvdist($lat,$lon,nvector)",
+                    "q", "*:*",
+                    "fl","id",
+                    "sort", "$dist asc"),
+            "/response/numFound==3",
+            "/response/docs/[0]/id=='0'",
+            "/response/docs/[1]/id=='1'"
+    );
+
+    assertJQ(
+            req(
+                    "defType", "lucene",
+                    "lat", "52.01966071979866",
+                    "lon", "-0.4983083573742952",
+                    "dist", "nvdist($lat,$lon,nvector)",
+                    "q", "*:*",
+                    "fl","id",
+                    "sort", "$dist desc"),
+            "/response/numFound==3",
+            "/response/docs/[0]/id=='2'",
+            "/response/docs/[1]/id=='1'"
+    );
+
+    assertJQ(
+            req(
+                    "defType", "lucene",
+                    "lat", "52.01966071979866",
+                    "lon", "-0.4983083573742952",
+                    "dist", "nvdist($lat,$lon,nvector)",
+                    "q", "*:*",
+                    "fl","id,dist:$dist",
+                    "sort", "$dist asc"),
+            "/response/numFound==3",
+            "/response/docs/[0]/id=='0'",
+            "/response/docs/[0]/dist==0.7953814512052634",
+            "/response/docs/[1]/id=='1'",
+            "/response/docs/[1]/dist==23.675588801593264",
+            "/response/docs/[2]/id=='2'",
+            "/response/docs/[2]/dist==63.49776326818523"
+    );
+
+    assertJQ(
+            req(
+                    "defType", "lucene",
+                    "lat", "52.01966071979866",
+                    "lon", "-0.4983083573742952",
+                    "dist", "nvdist($lat,$lon,nvector)",
+                    "q", "*:*",
+                    "fl","id,dist:$dist",
+                    "sort", "$dist desc"),
+            "/response/numFound==3",
+            "/response/docs/[0]/id=='2'",
+            "/response/docs/[0]/dist==63.49776326818523",
+            "/response/docs/[1]/id=='1'",
+            "/response/docs/[1]/dist==23.675588801593264",
+            "/response/docs/[2]/id=='0'",
+            "/response/docs/[2]/dist==0.7953814512052634"
+
+
+            );
+
     assertJQ(
         req(
             "defType", "lucene",
@@ -98,5 +175,6 @@ public class NVectorDistTest extends SolrTestCaseJ4 {
         "/response/docs/[0]/dist==0.7953814512052634",
         "/response/docs/[1]/id=='1'",
         "/response/docs/[1]/dist==23.675588801562068");
+
   }
 }
