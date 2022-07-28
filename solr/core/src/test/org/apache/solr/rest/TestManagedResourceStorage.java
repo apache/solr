@@ -17,7 +17,6 @@
 package org.apache.solr.rest;
 
 import java.nio.file.Path;
-
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.common.util.NamedList;

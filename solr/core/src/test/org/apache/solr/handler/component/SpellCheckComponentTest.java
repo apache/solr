@@ -71,10 +71,9 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
 
   @Override
   public void tearDown() throws Exception {
-    super.tearDown();
     assertU(delQ("*:*"));
-    optimize();
     assertU((commit()));
+    super.tearDown();
   }
 
   @Test

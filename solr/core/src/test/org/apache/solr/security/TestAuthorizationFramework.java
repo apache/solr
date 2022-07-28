@@ -43,6 +43,10 @@ import org.slf4j.LoggerFactory;
 public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  public static final byte[] SECURITY_JSON =
+      "{\"authorization\":{\"class\":\"org.apache.solr.security.MockAuthorizationPlugin\"}}"
+          .getBytes(StandardCharsets.UTF_8);
+
   static final int TIMEOUT = 10000;
 
   public void distribSetUp() throws Exception {
@@ -52,11 +56,7 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
       zkStateReader
           .getZkClient()
           .create(
-              ZkStateReader.SOLR_SECURITY_CONF_PATH,
-              "{\"authorization\":{\"class\":\"org.apache.solr.security.MockAuthorizationPlugin\"}}"
-                  .getBytes(StandardCharsets.UTF_8),
-              CreateMode.PERSISTENT,
-              true);
+              ZkStateReader.SOLR_SECURITY_CONF_PATH, SECURITY_JSON, CreateMode.PERSISTENT, true);
     }
   }
 
@@ -64,40 +64,36 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
   public void authorizationFrameworkTest() throws Exception {
     MockAuthorizationPlugin.denyUsers.add("user1");
 
-    try {
-      waitForThingsToLevelOut(10, TimeUnit.SECONDS);
-      String baseUrl = jettys.get(0).getBaseUrl().toString();
-      verifySecurityStatus(
-          ((CloudLegacySolrClient) cloudClient).getHttpClient(),
-          baseUrl + "/admin/authorization",
-          "authorization/class",
-          MockAuthorizationPlugin.class.getName(),
-          20);
-      log.info("Starting test");
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      params.add("q", "*:*");
-      // This should work fine.
-      cloudClient.query(params);
-      MockAuthorizationPlugin.protectedResources.add("/select");
+    waitForThingsToLevelOut(10, TimeUnit.SECONDS);
+    String baseUrl = jettys.get(0).getBaseUrl().toString();
+    verifySecurityStatus(
+        ((CloudLegacySolrClient) cloudClient).getHttpClient(),
+        baseUrl + "/admin/authorization",
+        "authorization/class",
+        s -> MockAuthorizationPlugin.class.getName().equals(s),
+        20);
+    log.info("Starting test");
 
-      // This user is disallowed in the mock. The request should return a 403.
-      params.add("uname", "user1");
-      expectThrows(Exception.class, () -> cloudClient.query(params));
-      log.info("Ending test");
-    } finally {
-      MockAuthorizationPlugin.denyUsers.clear();
-      MockAuthorizationPlugin.protectedResources.clear();
-    }
+    // This should work fine.
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    cloudClient.query(params);
+
+    // This user is disallowed in the mock. The request should return a 403.
+    MockAuthorizationPlugin.protectedResources.add("/select");
+    params.add("uname", "user1");
+    expectThrows(Exception.class, () -> cloudClient.query(params));
   }
 
   @Override
   public void distribTearDown() throws Exception {
-    super.distribTearDown();
+    MockAuthorizationPlugin.protectedResources.clear();
     MockAuthorizationPlugin.denyUsers.clear();
+    super.distribTearDown();
   }
 
   public static void verifySecurityStatus(
-      HttpClient cl, String url, String objPath, Object expected, int count) throws Exception {
+      HttpClient cl, String url, String objPath, Predicate<Object> expected, int count) throws Exception {
     boolean success = false;
     String s = null;
     List<String> hierarchy = StrUtils.splitSmart(objPath, '/');
@@ -109,14 +105,7 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
       Map<?, ?> m = (Map<?, ?>) Utils.fromJSONString(s);
 
       Object actual = Utils.getObjectByPath(m, true, hierarchy);
-      if (expected instanceof Predicate) {
-        @SuppressWarnings("unchecked")
-        Predicate<Object> predicate = (Predicate<Object>) expected;
-        if (predicate.test(actual)) {
-          success = true;
-          break;
-        }
-      } else if (Objects.equals(String.valueOf(actual), expected)) {
+      if (expected.test(actual)) {
         success = true;
         break;
       }

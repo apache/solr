@@ -16,6 +16,12 @@
  */
 package org.apache.solr.rest;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
@@ -23,13 +29,6 @@ import org.apache.solr.rest.ManagedResourceStorage.FileStorageIO;
 import org.apache.solr.rest.ManagedResourceStorage.JsonStorage;
 import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
 import org.junit.Test;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public class TestManagedFileStorage extends SolrTestCaseJ4 {
 
@@ -52,7 +51,8 @@ public class TestManagedFileStorage extends SolrTestCaseJ4 {
    * resource.
    */
   @SuppressWarnings("unchecked")
-  public static void doStorageTests(SolrResourceLoader loader, StorageIO storageIO) throws Exception {
+  public static void doStorageTests(SolrResourceLoader loader, StorageIO storageIO)
+      throws Exception {
     String resourceId = "/test/foo";
 
     JsonStorage jsonStorage = new JsonStorage(storageIO, loader);

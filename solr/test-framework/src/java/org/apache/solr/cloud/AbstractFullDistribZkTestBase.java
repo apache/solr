@@ -303,8 +303,13 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   public AbstractFullDistribZkTestBase() {
-    sliceCount = 2;
-    fixShardCount(4);
+    if (TEST_NIGHTLY) {
+      sliceCount = 2;
+      fixShardCount(4);
+    } else {
+      sliceCount = 1;
+      fixShardCount(2);
+    }
 
     // TODO: for now, turn off stress because it uses regular clients, and we
     // need the cloud client because we kill servers

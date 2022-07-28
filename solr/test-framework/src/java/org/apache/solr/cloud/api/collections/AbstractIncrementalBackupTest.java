@@ -208,7 +208,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
           CollectionAdminRequest.backupCollection(backupCollectionName, backupName)
               .setLocation(backupLocation)
               .setRepositoryName(BACKUP_REPO_NAME)
-              .processAndWait(cluster.getSolrClient(), 10 * 1000);
+              .processAndWait(cluster.getSolrClient(), 10);
       assertEquals(RequestStatusState.COMPLETED, result);
     }
     final int secondBatchNumDocs = indexDocs(backupCollectionName, true);
@@ -223,7 +223,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
           CollectionAdminRequest.restoreCollection(backupCollectionName, backupName)
               .setLocation(backupLocation)
               .setRepositoryName(BACKUP_REPO_NAME)
-              .processAndWait(cluster.getSolrClient(), 20 * 1000);
+              .processAndWait(cluster.getSolrClient(), 20);
       assertEquals(RequestStatusState.COMPLETED, result);
     }
     assertEquals(firstBatchNumDocs, getNumDocsInCollection(backupCollectionName));
