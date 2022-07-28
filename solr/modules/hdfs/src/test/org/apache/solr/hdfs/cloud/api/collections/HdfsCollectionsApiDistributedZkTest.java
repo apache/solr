@@ -45,6 +45,12 @@ public class HdfsCollectionsApiDistributedZkTest
   @BeforeClass
   public static void setupClass() throws Exception {
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
+
+    configureCluster(4)
+        .addConfig("conf", configset("cloud-hdfs"))
+        .addConfig("conf2", configset("cloud-hdfs"))
+        .withSolrXml(TEST_PATH().resolve("solr.xml"))
+        .configure();
   }
 
   @AfterClass
@@ -54,10 +60,5 @@ public class HdfsCollectionsApiDistributedZkTest
     } finally {
       dfsCluster = null;
     }
-  }
-
-  @Override
-  protected String getConfigSet() {
-    return "cloud-hdfs";
   }
 }
