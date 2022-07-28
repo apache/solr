@@ -70,10 +70,13 @@ import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.handler.ClusterAPI;
 import org.apache.solr.handler.CollectionBackupsAPI;
 import org.apache.solr.handler.CollectionsAPI;
-import org.apache.solr.handler.ConfigSetsAPI;
 import org.apache.solr.handler.CreateConfigSetAPI;
+import org.apache.solr.handler.DeleteConfigSetAPI;
+import org.apache.solr.handler.ListConfigSetsAPI;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SnapShooter;
+import org.apache.solr.handler.UpdateConfigSetFileAPI;
+import org.apache.solr.handler.UploadConfigSetAPI;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.ContainerPluginsApi;
@@ -810,11 +813,13 @@ public class CoreContainer {
         createHandler(
             CONFIGSETS_HANDLER_PATH, cfg.getConfigSetsHandlerClass(), ConfigSetsHandler.class);
     ClusterAPI clusterAPI = new ClusterAPI(collectionsHandler, configSetsHandler);
-    final ConfigSetsAPI configsetsApi = new ConfigSetsAPI(configSetsHandler, this);
     containerHandlers.getApiBag().registerObject(clusterAPI);
     containerHandlers.getApiBag().registerObject(clusterAPI.commands);
-    containerHandlers.getApiBag().registerObject(configsetsApi);
-    containerHandlers.getApiBag().registerObject(new CreateConfigSetAPI(configSetsHandler, this));
+    containerHandlers.getApiBag().registerObject(new CreateConfigSetAPI(this));
+    containerHandlers.getApiBag().registerObject(new DeleteConfigSetAPI(this));
+    containerHandlers.getApiBag().registerObject(new ListConfigSetsAPI(this));
+    containerHandlers.getApiBag().registerObject(new UploadConfigSetAPI(this));
+    containerHandlers.getApiBag().registerObject(new UpdateConfigSetFileAPI(this));
 
     if (isZooKeeperAware()) {
       containerHandlers.getApiBag().registerObject(new SchemaDesignerAPI(this));
