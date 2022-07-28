@@ -18,10 +18,6 @@
 package org.apache.solr.cloud.api.collections;
 
 import com.codahale.metrics.Timer;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import org.apache.solr.cloud.OverseerTaskProcessor;
 import org.apache.solr.cloud.Stats;
 import org.apache.solr.common.cloud.ClusterState;
@@ -33,6 +29,11 @@ import org.apache.solr.util.stats.MetricUtils;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * This command returns stats about the Overseer, the cluster state updater and collection API
@@ -70,8 +71,7 @@ import org.slf4j.LoggerFactory;
  *       <ul>
  *         <li>{@code am_i_leader} (Overseer checking it is still the elected Overseer as it
  *             processes cluster state update messages)
- *         <li>{@code configset_}<i>{@code <config set operation>}</i> (from {@link
- *             org.apache.solr.handler.admin.ConfigSetsHandler.ConfigSetOperation})
+ *         <li>{@code configset_}<i>{@code <config set operation>}</i>
  *         <li>Cluster state change operation names from {@link
  *             org.apache.solr.common.params.CollectionParams.CollectionAction} (not all of them!)
  *             and {@link org.apache.solr.cloud.overseer.OverseerAction} (the complete list: {@code

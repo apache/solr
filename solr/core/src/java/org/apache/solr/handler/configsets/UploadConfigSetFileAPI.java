@@ -33,7 +33,7 @@ import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_P
  * V2 API for adding or updating a single file within a configset.
  *
  * <p>This API (PUT /v2/cluster/configs/configsetName/someFilePath) is analogous to
- * the v1 /admin/configs?action=UPLOAD&filePath=someFilePath command.
+ * the v1 /admin/configs?action=UPLOAD&amp;filePath=someFilePath command.
  *
  */
 public class UploadConfigSetFileAPI extends ConfigSetAPIBase {
@@ -56,8 +56,9 @@ public class UploadConfigSetFileAPI extends ConfigSetAPIBase {
         boolean requestIsTrusted = isTrusted(req.getUserPrincipal(), coreContainer.getAuthenticationPlugin());
 
         // Get upload parameters
-        String singleFilePath = req.getParams().get(ConfigSetParams.FILE_PATH, "");
-        boolean allowOverwrite = req.getParams().getBool(ConfigSetParams.OVERWRITE, false);
+
+        String singleFilePath = req.getPathTemplateValues().getOrDefault(FILEPATH_PLACEHOLDER, "");
+        boolean allowOverwrite = req.getParams().getBool(ConfigSetParams.OVERWRITE, true);
         boolean cleanup = req.getParams().getBool(ConfigSetParams.CLEANUP, false);
         final InputStream inputStream = ensureNonEmptyInputStream(req);
 

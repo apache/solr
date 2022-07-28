@@ -24,6 +24,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.common.params.ConfigSetParams.ConfigSetAction;
+import org.apache.solr.common.params.DefaultSolrParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -108,6 +110,15 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
               templateValsByName.put(FILEPATH_PLACEHOLDER, req.getParams().get(ConfigSetParams.FILE_PATH));
             }
             return templateValsByName;
+          }
+
+          // Set the v1 default vals where they differ from v2's
+          @Override
+          public SolrParams getParams() {
+            final ModifiableSolrParams v1Defaults = new ModifiableSolrParams();
+            v1Defaults.add(ConfigSetParams.OVERWRITE, "false");
+            v1Defaults.add(ConfigSetParams.CLEANUP, "false");
+            return new DefaultSolrParams(super.getParams(), v1Defaults);
           }
         };
         if (req.getParams().get(ConfigSetParams.FILE_PATH, "").isEmpty()) { // Uploading a whole configset

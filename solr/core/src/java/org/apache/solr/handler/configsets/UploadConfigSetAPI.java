@@ -67,7 +67,7 @@ public class UploadConfigSetAPI extends ConfigSetAPIBase {
         boolean overwritesExisting = configSetService.checkConfigExists(configSetName);
         boolean requestIsTrusted = isTrusted(req.getUserPrincipal(), coreContainer.getAuthenticationPlugin());
         // Get upload parameters
-        boolean allowOverwrite = req.getParams().getBool(ConfigSetParams.OVERWRITE, false);
+        boolean allowOverwrite = req.getParams().getBool(ConfigSetParams.OVERWRITE, true);
         boolean cleanup = req.getParams().getBool(ConfigSetParams.CLEANUP, false);
         final InputStream inputStream = ensureNonEmptyInputStream(req);
 
