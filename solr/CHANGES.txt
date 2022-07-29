@@ -30,6 +30,8 @@ Other Changes
 
 New Features
 ---------------------
+* SOLR-16246: Introduced pre-filtering in KnnQParser (Elia Porciani via Alessandro Benedetti).
+
 * SOLR-16111: Add hl.queryFieldPattern support, an advanced alternative to the hl.requireFieldMatch boolean flag.
   (Christine Poerschke, David Smiley)
 
@@ -56,6 +58,9 @@ Improvements
 * SOLR-16181: Initialize the LogWatcher earlier in CoreContainer#load() (janhoy)
 
 * SOLR-16225: Upgrade dependencies (Carrot2, HPPC) (Dawid Weiss)
+
+* SOLR-16257: Improve ZkStateReader to avoid race condition between collectionWatches and watchedCollectionStates
+  (Patson Luk, Houston Putman, Mike Drob)
 
 Optimizations
 ---------------------
@@ -145,6 +150,8 @@ Build
 * SOLR-16258: Gradle no longer uses "errorprone" by default (Dawid Weiss, Uwe Schindler, hossman)
 
 * SOLR-16264: Set versions for all Antora build tools (Houston Putman)
+
+* SOLR-16299: Ref-guide examples are no longer symlinked from SolrJ, they live in the ref-guide module (Houston Putman)
 
 ==================  9.0.0 ==================
 
