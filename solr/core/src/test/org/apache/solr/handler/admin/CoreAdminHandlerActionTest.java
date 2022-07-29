@@ -76,7 +76,7 @@ public class CoreAdminHandlerActionTest extends SolrTestCaseJ4 {
   }
 
   @SuppressWarnings("unchecked")
-  private void testAction(String action, String propertyName, String properytValue)
+  private void testAction(String action, String propertyName, String propertyValue)
       throws Exception {
 
     SolrQueryResponse response = new SolrQueryResponse();
@@ -92,9 +92,9 @@ public class CoreAdminHandlerActionTest extends SolrTestCaseJ4 {
         String.format(
             Locale.ROOT,
             "Action response should contain %s value for %s property",
-            properytValue,
+            propertyValue,
             propertyName),
-        properytValue,
+        propertyValue,
         actionResponse.get(propertyName));
   }
 
