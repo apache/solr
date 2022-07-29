@@ -43,6 +43,7 @@ New Features
 
 * SOLR-16096: Support createNodeSet parameter when creating collecitons in Admin UI.   (Eric Pugh)
 
+* SOLR-16282: CoreAdminHandler supports custom actions via solr.xml configuration. (Artem Abeleshev, Christine Poerschke)
 
 Improvements
 ---------------------
