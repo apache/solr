@@ -51,10 +51,8 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
     try (CloudSolrClient client = createCloudClient(null)) {
       // Mix up a bunch of different combinations of shards and replicas in order to exercise
       // boundary cases. shards, replicationFactor
-      int shards = random().nextInt(7);
-      if (shards < 2) shards = 2;
-      int replicationFactor = random().nextInt(4);
-      if (replicationFactor < 2) replicationFactor = 2;
+      int shards = random().nextInt(5) + 2;
+      int replicationFactor = random().nextInt(2) + 2;
       createCollection(null, COLLECTION_NAME, shards, replicationFactor, client, null, "conf1");
     }
 
@@ -156,7 +154,7 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
       String c1_s1_r1 = replicasList.get(0);
       String c1_s1_r2 = replicasList.get(1);
 
-      addProperty(
+      ReplicaPropertiesBase.doPropertyAction(
           client,
           "action",
           CollectionParams.CollectionAction.ADDREPLICAPROP.toString(),
@@ -171,7 +169,7 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
           "property.value",
           "true");
 
-      addProperty(
+      ReplicaPropertiesBase.doPropertyAction(
           client,
           "action",
           CollectionParams.CollectionAction.ADDREPLICAPROP.toString(),
@@ -190,7 +188,7 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
           assertThrows(
               SolrException.class,
               () ->
-                  doPropertyAction(
+                  ReplicaPropertiesBase.doPropertyAction(
                       client,
                       "action",
                       CollectionParams.CollectionAction.BALANCESHARDUNIQUE.toString(),
@@ -280,19 +278,5 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
       Thread.sleep(100);
     }
     fail(lastFailMsg);
-  }
-
-  private void addProperty(CloudSolrClient client, String... paramsIn)
-      throws IOException, SolrServerException {
-    assertTrue(
-        "paramsIn must be an even multiple of 2, it is: " + paramsIn.length,
-        (paramsIn.length % 2) == 0);
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    for (int idx = 0; idx < paramsIn.length; idx += 2) {
-      params.set(paramsIn[idx], paramsIn[idx + 1]);
-    }
-    QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
-    client.request(request);
   }
 }

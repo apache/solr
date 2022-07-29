@@ -25,7 +25,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -36,9 +35,11 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.util.LogLevel;
 import org.junit.Test;
 
 /** Test sync phase that occurs when Leader goes down and a new Leader is elected. */
+@LogLevel("org.apache.solr.update.processor.DistributedZkUpdateProcessor=WARN")
 public abstract class AbstractSyncSliceTestBase extends AbstractFullDistribZkTestBase {
   private boolean success = false;
 
@@ -205,11 +206,17 @@ public abstract class AbstractSyncSliceTestBase extends AbstractFullDistribZkTes
   private void waitTillAllNodesActive() throws InterruptedException, TimeoutException {
     ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
 
-    zkStateReader.waitForState("collection1", 3, TimeUnit.MINUTES, (n, c) -> {
-      Collection<Replica> replicas = c.getSlice("shard1").getReplicas();
-      Set<String> nodes = replicas.stream().map(Replica::getNodeName).collect(Collectors.toSet());
-      return replicas.stream().map(Replica::getState).allMatch(Replica.State.ACTIVE::equals) && n.containsAll(nodes);
-    });
+    zkStateReader.waitForState(
+        "collection1",
+        3,
+        TimeUnit.MINUTES,
+        (n, c) -> {
+          Collection<Replica> replicas = c.getSlice("shard1").getReplicas();
+          Set<String> nodes =
+              replicas.stream().map(Replica::getNodeName).collect(Collectors.toSet());
+          return replicas.stream().map(Replica::getState).allMatch(Replica.State.ACTIVE::equals)
+              && n.containsAll(nodes);
+        });
   }
 
   private String waitTillInconsistent() throws Exception, InterruptedException {

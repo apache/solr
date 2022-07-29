@@ -1539,7 +1539,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     long num = -1;
     long lastNum = -1;
     String failMessage = null;
-    if (verbose) System.err.println("check const of " + shard);
+    log.debug("check const of {}", shard);
     int cnt = 0;
     ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
     assertEquals(
@@ -1555,8 +1555,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     CloudJettyRunner lastJetty = null;
     for (CloudJettyRunner cjetty : solrJetties) {
       ZkNodeProps props = cjetty.info;
-      if (verbose) System.err.println("client" + cnt++);
-      if (verbose) System.err.println("PROPS:" + props);
+      log.debug("client{}", cnt++);
+      log.debug("PROPS:{}", props);
 
       try {
         SolrParams query =
@@ -1572,7 +1572,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         // echoed in logs
         num = cjetty.client.solrClient.query(query).getResults().getNumFound();
       } catch (SolrException | SolrServerException e) {
-        if (verbose) System.err.println("error contacting client: " + e.getMessage() + "\n");
+        log.debug("error contacting client: {}", e.getMessage());
         continue;
       }
 
@@ -1581,8 +1581,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       if (zkStateReader.getClusterState().liveNodesContain(nodeName)) {
         live = true;
       }
-      if (verbose) System.err.println(" live:" + live);
-      if (verbose) System.err.println(" num:" + num + "\n");
+      log.debug(" live:{}", live);
+      log.debug(" num:{}", num);
 
       boolean active =
           Replica.State.getState(props.getStr(ZkStateReader.STATE_PROP)) == Replica.State.ACTIVE;
@@ -1630,7 +1630,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
       for (CloudJettyRunner cjetty : solrJetties) {
         ZkNodeProps props = cjetty.info;
-        System.err.println("PROPS:" + props);
+        log.debug("PROPS:{}", props);
 
         try {
           SolrParams query =
@@ -1647,7 +1647,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           // anything except be
           // echoed in logs
           long num = cjetty.client.solrClient.query(query).getResults().getNumFound();
-          System.err.println("DOCS:" + num);
+          log.debug("DOCS:{}", num);
         } catch (SolrServerException | SolrException | IOException e) {
           System.err.println("error contacting client: " + e.getMessage() + "\n");
           continue;
