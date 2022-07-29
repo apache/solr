@@ -32,7 +32,7 @@ public class CloudSolrClientUtils {
    *
    * @see ZkStateReader#waitForState(String, long, TimeUnit, Predicate)
    * @see #registerCollectionStateWatcher
-   * @param cloudSolrClient
+   * @param cloudSolrClient the client to wait with
    * @param collection the collection to watch
    * @param wait how long to wait
    * @param unit the units of the wait parameter
@@ -60,7 +60,7 @@ public class CloudSolrClientUtils {
    * should avoid changing state within the predicate call itself.
    *
    * @see #registerDocCollectionWatcher
-   * @param cloudSolrClient
+   * @param cloudSolrClient the client to wait with
    * @param collection the collection to watch
    * @param wait how long to wait
    * @param unit the units of the wait parameter
@@ -94,7 +94,7 @@ public class CloudSolrClientUtils {
    *
    * @see ZkStateReader#registerDocCollectionWatcher(String, DocCollectionWatcher)
    * @see ZkStateReader#registerCollectionStateWatcher
-   * @param cloudSolrClient
+   * @param cloudSolrClient the client to register with
    * @param collection the collection to watch
    * @param watcher a watcher that will be called when the state changes
    */
@@ -112,7 +112,7 @@ public class CloudSolrClientUtils {
    * <p>The Watcher will automatically be removed when it's <code>onStateChanged</code> returns
    * <code>true</code>
    *
-   * @param cloudSolrClient
+   * @param cloudSolrClient the client to register with
    * @param collection the collection to watch
    * @param watcher a watcher that will be called when the state changes
    */
