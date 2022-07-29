@@ -230,7 +230,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Slow
+  @Nightly
   public void testBackupIncremental() throws Exception {
     setTestSuffix("testbackupinc");
     CloudSolrClient solrClient = cluster.getSolrClient();

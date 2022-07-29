@@ -91,7 +91,6 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
   public static void verifySecurityStatus(
       HttpClient cl, String url, String objPath, Predicate<Object> expected, int count)
       throws Exception {
-    boolean success = false;
     String s = null;
     List<String> hierarchy = StrUtils.splitSmart(objPath, '/');
     for (int i = 0; i < count; i++) {
@@ -103,11 +102,10 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
 
       Object actual = Utils.getObjectByPath(m, true, hierarchy);
       if (expected.test(actual)) {
-        success = true;
-        break;
+        return;
       }
       Thread.sleep(50);
     }
-    assertTrue("No match for " + objPath + " = " + expected + ", full response = " + s, success);
+    fail("No match for " + objPath + " = " + expected + ", full response = " + s);
   }
 }
