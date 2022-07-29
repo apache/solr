@@ -89,7 +89,8 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   }
 
   /**
-   * Call this to configure a cluster of n nodes. It will be shut down automatically after the tests.
+   * Call this to configure a cluster of n nodes. It will be shut down automatically after the
+   * tests.
    *
    * <p>NB you must call {@link MiniSolrCloudCluster.Builder#configure()} to start the cluster
    *

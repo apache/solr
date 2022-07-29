@@ -24,5 +24,4 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
  * contrib module tests.
  */
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-public class UnloadDistributedZkTest extends AbstractUnloadDistributedZkTestBase {
-}
+public class UnloadDistributedZkTest extends AbstractUnloadDistributedZkTestBase {}

@@ -20,7 +20,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import org.apache.http.client.HttpClient;
@@ -93,7 +92,8 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
   }
 
   public static void verifySecurityStatus(
-      HttpClient cl, String url, String objPath, Predicate<Object> expected, int count) throws Exception {
+      HttpClient cl, String url, String objPath, Predicate<Object> expected, int count)
+      throws Exception {
     boolean success = false;
     String s = null;
     List<String> hierarchy = StrUtils.splitSmart(objPath, '/');

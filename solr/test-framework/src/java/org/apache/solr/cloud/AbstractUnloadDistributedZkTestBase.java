@@ -54,8 +54,7 @@ import org.slf4j.LoggerFactory;
  * This test simply does a bunch of basic things in solrcloud mode and asserts things work as
  * expected.
  */
-public abstract class AbstractUnloadDistributedZkTestBase
-    extends AbstractFullDistribZkTestBase {
+public abstract class AbstractUnloadDistributedZkTestBase extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public AbstractUnloadDistributedZkTestBase() {

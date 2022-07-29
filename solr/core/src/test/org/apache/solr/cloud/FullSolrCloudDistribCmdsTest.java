@@ -82,8 +82,10 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
   public static String createAndSetNewDefaultCollection() throws Exception {
     final CloudSolrClient cloudClient = cluster.getSolrClient();
     final String name = "test_collection_" + NAME_COUNTER.getAndIncrement();
-    assertTrue(CollectionAdminRequest.createCollection(name, "_default", 2, 2)
-            .process(cloudClient).isSuccess());
+    assertTrue(
+        CollectionAdminRequest.createCollection(name, "_default", 2, 2)
+            .process(cloudClient)
+            .isSuccess());
     ZkStateReader.from(cloudClient)
         .waitForState(
             name,

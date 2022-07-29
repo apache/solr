@@ -68,7 +68,6 @@ import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.TimeOut;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -641,7 +640,9 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     // Unset ClusterProp that we set.
     CollectionAdminRequest.setClusterProperty(ZkStateReader.MAX_CORES_PER_NODE, null)
         .process(cluster.getSolrClient());
-    assertNull("Cluster property was not unset", props.getClusterProperty(ZkStateReader.MAX_CORES_PER_NODE, null));
+    assertNull(
+        "Cluster property was not unset",
+        props.getClusterProperty(ZkStateReader.MAX_CORES_PER_NODE, null));
 
     response =
         CollectionAdminRequest.setClusterProperty(ZkStateReader.MAX_CORES_PER_NODE, "1")
