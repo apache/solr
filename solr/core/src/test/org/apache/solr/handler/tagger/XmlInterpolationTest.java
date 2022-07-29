@@ -59,7 +59,7 @@ public class XmlInterpolationTest extends TaggerTestCase {
   }
 
   @AfterClass
-  public static void cleanUpAfterClass() throws Exception {
+  public static void cleanUpAfterClass() {
     xmlDocBuilder = null;
   }
 

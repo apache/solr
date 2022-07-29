@@ -69,7 +69,6 @@ import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.TimeOut;
-import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -78,6 +77,7 @@ import org.slf4j.LoggerFactory;
 
 @LuceneTestCase.Slow
 public class CollectionsAPISolrJTest extends SolrCloudTestCase {
+  private static final int TIMEOUT = 3000;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Before
@@ -629,7 +629,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testClusterProp() throws InterruptedException, IOException, SolrServerException {
+  public void testClusterProp() throws IOException, SolrServerException {
 
     // sanity check our expected default
     final ClusterProperties props = new ClusterProperties(zkClient());
@@ -675,18 +675,17 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     // Check for value change
     CollectionAdminRequest.setCollectionProperty(collectionName, propName, "false")
         .process(cluster.getSolrClient());
-    checkCollectionProperty(collectionName, propName, "false", 3000);
+    checkCollectionProperty(collectionName, propName, "false");
 
     // Check for removing value
     CollectionAdminRequest.setCollectionProperty(collectionName, propName, null)
         .process(cluster.getSolrClient());
-    checkCollectionProperty(collectionName, propName, null, 3000);
+    checkCollectionProperty(collectionName, propName, null);
   }
 
-  private void checkCollectionProperty(
-      String collection, String propertyName, String propertyValue, long timeoutMs)
+  private void checkCollectionProperty(String collection, String propertyName, String propertyValue)
       throws InterruptedException {
-    TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
+    TimeOut timeout = new TimeOut(TIMEOUT, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
     while (!timeout.hasTimedOut()) {
       Thread.sleep(10);
       if (Objects.equals(
@@ -1212,7 +1211,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         new CollectionAdminRequest.OverseerStatus().process(cluster.getSolrClient());
     assertEquals(0, response.getStatus());
     // When running with Distributed Collection API, no real data in Overseer status, but the
-    // Collection API call above shouldn't fail
+    // Collection API calls above shouldn't fail
     if (new CollectionAdminRequest.RequestApiDistributedProcessing()
         .process(cluster.getSolrClient())
         .getIsCollectionApiDistributed()) {
@@ -1231,8 +1230,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testAddAndDeleteReplicaProp()
-      throws InterruptedException, IOException, SolrServerException {
+  public void testAddAndDeleteReplicaProp() throws IOException, SolrServerException {
 
     final String collection = "replicaProperties";
     CollectionAdminRequest.createCollection(collection, "conf", 2, 2)
@@ -1265,8 +1263,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testBalanceShardUnique()
-      throws IOException, SolrServerException, KeeperException, InterruptedException {
+  public void testBalanceShardUnique() throws IOException, SolrServerException {
 
     final String collection = "balancedProperties";
     CollectionAdminRequest.createCollection(collection, "conf", 2, 2)

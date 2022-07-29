@@ -40,7 +40,6 @@ public class TestStreamBody extends RestTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String collection = "collection1";
-  private static final String confDir = collection + "/conf";
 
   @Before
   public void before() throws Exception {
@@ -85,7 +84,7 @@ public class TestStreamBody extends RestTestBase {
   // SOLR-3161
   @Test
   public void testQtUpdateFails() throws Exception {
-    enableStreamBody(true);
+    enableStreamBody();
     SolrQuery query = new SolrQuery();
     query.setQuery("*:*"); // for anything
     query.add("echoHandler", "true");
@@ -127,17 +126,15 @@ public class TestStreamBody extends RestTestBase {
     SolrException se =
         expectThrows(SolrException.class, () -> queryRequest.process(getSolrClient()));
     assertTrue(se.getMessage(), se.getMessage().contains("Stream Body is disabled"));
-    enableStreamBody(true);
+    enableStreamBody();
     queryRequest.process(getSolrClient());
   }
 
-  // Enables/disables stream.body through Config API
-  private void enableStreamBody(boolean enable) throws Exception {
+  // Enables stream.body through Config API
+  private void enableStreamBody() throws Exception {
     RestTestHarness harness = restTestHarness;
     String payload =
-        "{ 'set-property' : { 'requestDispatcher.requestParsers.enableStreamBody':"
-            + enable
-            + "} }";
+        "{ 'set-property' : { 'requestDispatcher.requestParsers.enableStreamBody':" + true + "} }";
     runConfigCommand(harness, "/config?wt=json", payload);
   }
 }

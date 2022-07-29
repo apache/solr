@@ -273,7 +273,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
               if (fixedScore == null) {
                 expectedScore = 1f;
               } else {
-                expectedScore = fixedScore.floatValue();
+                expectedScore = fixedScore;
                 cmd.setQuery(new FixedScoreReRankQuery(cmd.getQuery(), expectedScore));
               }
 
@@ -462,8 +462,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
-        throws IOException {
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
       throw new UnsupportedOperationException(
           "This class is only intended to be used as a PostFilter");
     }

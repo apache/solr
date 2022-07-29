@@ -19,7 +19,9 @@ package org.apache.solr.handler;
 import java.util.ArrayList;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.*;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.MoreLikeThisParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.core.SolrCore;
@@ -38,7 +40,7 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testInterface() throws Exception {
+  public void testInterface() {
     SolrCore core = h.getCore();
 
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -237,7 +239,7 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testMultifieldSimilarity() throws Exception {
+  public void testMultifieldSimilarity() {
     SolrCore core = h.getCore();
     ModifiableSolrParams params = new ModifiableSolrParams();
 

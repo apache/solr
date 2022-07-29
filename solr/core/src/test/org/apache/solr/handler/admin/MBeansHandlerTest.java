@@ -125,7 +125,7 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testXMLDiffWithExternalEntity() throws Exception {
+  public void testXMLDiffWithExternalEntity() {
     String file = getFile("mailing_lists.pdf").toURI().toASCIIString();
     String xml =
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
@@ -204,7 +204,7 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
                 } catch (Exception e) {
                   runSnapshots = false;
                   e.printStackTrace();
-                  fail("Exception getting metrics snapshot: " + e.toString());
+                  fail("Exception getting metrics snapshot: " + e);
                 }
                 try {
                   Thread.sleep(53);

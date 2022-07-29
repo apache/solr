@@ -29,7 +29,7 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
     lrf =
         h.getRequestFactory(
             "/dismax", 0, 20, CommonParams.VERSION, "2.2", "facet", "true", "facet.field", "t_s");
-    /** Add some documents to the index */
+    // Add some documents to the index
     assertNull(
         h.validateUpdate(
             adoc(
@@ -104,11 +104,11 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSomeStuff() throws Exception {
+  public void testSomeStuff() {
     doTestSomeStuff("/dismax");
   }
 
-  public void doTestSomeStuff(final String qt) throws Exception {
+  public void doTestSomeStuff(final String qt) {
 
     assertQ(
         "basic match",

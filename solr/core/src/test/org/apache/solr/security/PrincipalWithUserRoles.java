@@ -33,9 +33,9 @@ public class PrincipalWithUserRoles implements Principal, VerifiedUserRoles {
   private final Set<String> roles;
 
   /**
-   * User principal with user name as well as one or more roles that he/she belong to
+   * User principal with username as well as one or more roles that he/she belong to
    *
-   * @param username string with user name for user
+   * @param username string with username for user
    * @param roles a set of roles that we know this user belongs to, or empty list for no roles
    */
   public PrincipalWithUserRoles(final String username, Set<String> roles) {

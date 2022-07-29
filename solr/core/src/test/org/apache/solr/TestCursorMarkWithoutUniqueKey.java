@@ -43,11 +43,11 @@ public class TestCursorMarkWithoutUniqueKey extends SolrTestCaseJ4 {
   }
 
   @After
-  public void afterDestroyCore() throws Exception {
+  public void afterDestroyCore() {
     deleteCore();
   }
 
-  public void test() throws Exception {
+  public void test() {
 
     assertU(adoc("fld", "val"));
     assertU(commit());

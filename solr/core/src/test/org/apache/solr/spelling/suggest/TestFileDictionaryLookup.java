@@ -38,7 +38,7 @@ public class TestFileDictionaryLookup extends SolrTestCaseJ4 {
             "true"));
   }
 
-  public void testDefault() throws Exception {
+  public void testDefault() {
 
     // tests to demonstrate default maxEdit parameter (value: 1), control for testWithMaxEdit2
     assertQ(

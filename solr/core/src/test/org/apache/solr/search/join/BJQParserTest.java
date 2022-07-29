@@ -52,7 +52,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
     createIndex();
   }
 
-  public static void createIndex() throws IOException, Exception {
+  public static void createIndex() {
     int i = 0;
     List<List<String[]>> blocks = createBlocks();
     for (List<String[]> block : blocks) {
@@ -141,7 +141,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testFull() throws IOException, Exception {
+  public void testFull() {
     String childb = "{!parent which=\"parent_s:[* TO *]\"}child_s:l";
     assertQ(req("q", childb), sixParents);
   }
@@ -158,12 +158,12 @@ public class BJQParserTest extends SolrTestCaseJ4 {
       };
 
   @Test
-  public void testJustParentsFilter() throws IOException {
+  public void testJustParentsFilter() {
     assertQ(req("q", "{!parent which=\"parent_s:[* TO *]\"}"), sixParents);
   }
 
   @Test
-  public void testJustParentsFilterInChild() throws IOException {
+  public void testJustParentsFilterInChild() {
     assertQ(
         req(
             "q",
@@ -225,7 +225,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
         beParents);
   }
 
-  public void testScoreNoneScoringForParent() throws Exception {
+  public void testScoreNoneScoringForParent() {
     assertQ(
         "score=none yields 0.0 score",
         req(
@@ -239,7 +239,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
         "(//float[@name='score'])[" + (random().nextInt(6) + 1) + "]=0.0");
   }
 
-  public void testWrongScoreExceptionForParent() throws Exception {
+  public void testWrongScoreExceptionForParent() {
     final String aMode = ScoreMode.values()[random().nextInt(ScoreMode.values().length)].name();
     final String wrongMode =
         rarely()
@@ -320,7 +320,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testIntersectParentBqChildBq() throws IOException {
+  public void testIntersectParentBqChildBq() {
 
     assertQ(
         req(
@@ -334,7 +334,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testGrandChildren() throws IOException {
+  public void testGrandChildren() {
     assertQ(
         req(
             "q",
@@ -387,7 +387,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testCacheHit() throws IOException {
+  public void testCacheHit() {
 
     MetricsMap parentFilterCache =
         (MetricsMap)
@@ -640,7 +640,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
     assertU(commit());
 
     assertQ(
-        "here we rely on autowarming for cathing cache leak", // cache=false
+        "here we rely on autowarming for catching cache leak", // cache=false
         req(elFilterQuery),
         "//*[@numFound='2']");
 

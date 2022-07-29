@@ -82,7 +82,7 @@ public class TestStandardQParsers extends SolrTestCase {
 
   /** Test that "lucene" is the default query parser. */
   @Test
-  public void testDefaultQType() throws Exception {
+  public void testDefaultQType() {
     assertEquals(LuceneQParserPlugin.NAME, QParserPlugin.DEFAULT_QTYPE);
     assertEquals("lucene", LuceneQParserPlugin.NAME);
   }

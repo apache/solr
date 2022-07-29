@@ -99,7 +99,7 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testOnlyMorePopularWithExtendedResults() throws Exception {
+  public void testOnlyMorePopularWithExtendedResults() {
     assertQ(
         req(
             "q",

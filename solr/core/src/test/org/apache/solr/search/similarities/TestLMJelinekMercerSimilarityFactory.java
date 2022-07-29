@@ -28,12 +28,12 @@ public class TestLMJelinekMercerSimilarityFactory extends BaseSimilarityTestCase
   }
 
   /** jelinek-mercer with default parameters */
-  public void test() throws Exception {
+  public void test() {
     assertEquals(LMJelinekMercerSimilarity.class, getSimilarity("text").getClass());
   }
 
   /** jelinek-mercer with parameters */
-  public void testParameters() throws Exception {
+  public void testParameters() {
     Similarity sim = getSimilarity("text_params");
     assertEquals(LMJelinekMercerSimilarity.class, sim.getClass());
     LMJelinekMercerSimilarity lm = (LMJelinekMercerSimilarity) sim;

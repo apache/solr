@@ -43,7 +43,11 @@ import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.cloud.CollectionStatePredicate;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.junit.After;
@@ -234,7 +238,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
 
       { // Send a delete request to core hosting shard1 with NO route param for a document that is
         // actually in shard2. Shouldn't delete, since deleteById requests are not broadcast to all
-        // shard leaders. (This is effictively a request to delete "5" if an only if it is on
+        // shard leaders. (This is effectively a request to delete "5" if and only if it is on
         // shard1)
         final UpdateRequest deleteRequest = new UpdateRequest();
         deleteRequest.deleteById("5");
@@ -373,7 +377,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     final String collectionName = "test_collection_" + NAME_COUNTER.getAndIncrement();
     cloudClient.setDefaultCollection(collectionName);
 
-    // get a random node for use in our collection before creating the one we'll partition..
+    // get a random node for use in our collection before creating the one we'll partition
     final JettySolrRunner otherLeader = cluster.getRandomJetty(random());
     // pick a (second) random node (which may be the same) for sending updates to
     // (if it's the same, we're testing routing from another shard, if diff we're testing routing
@@ -425,7 +429,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
               "Sanity check: leaderProps isn't a leader?: " + leaderProps.toString(),
               leaderProps.getStr(Slice.LEADER));
           assertTrue(
-              "Sanity check: leaderProps isn't using the proxy port?: " + leaderProps.toString(),
+              "Sanity check: leaderProps isn't using the proxy port?: " + leaderProps,
               leaderProps.getCoreUrl().contains("" + proxy.getListenPort()));
         }
 
@@ -441,7 +445,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
           }
 
           log.info("Closing leaderToPartition's proxy: {}", proxy);
-          proxy.close(); // NOTE: can't use halfClose, won't ensure a garunteed failure
+          proxy.close(); // NOTE: can't use halfClose, won't ensure a guaranteed failure
 
           final SolrException e =
               expectThrows(
@@ -462,7 +466,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
                                   i,
                                   "text_t",
                                   TestUtil.randomRealisticUnicodeString(random(), 200)));
-                      // if the update didn't throw an exception, it better be a success..
+                      // if the update didn't throw an exception, it better be a success
                       assertEquals(0, rsp.getStatus());
                     }
                   });
@@ -477,7 +481,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     }
   }
 
-  /** NOTE: uses the cluster's CloudSolrClient and asumes default collection has been set */
+  /** NOTE: uses the cluster's CloudSolrClient and assumes default collection has been set */
   private void addTwoDocsInOneRequest(String docIdA, String docIdB) throws Exception {
     final CloudSolrClient cloudClient = cluster.getSolrClient();
 
@@ -494,7 +498,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     checkShardConsistency(params("q", "*:*", "rows", "99", "_trace", "two_docs"));
   }
 
-  /** NOTE: uses the cluster's CloudSolrClient and asumes default collection has been set */
+  /** NOTE: uses the cluster's CloudSolrClient and assumes default collection has been set */
   private void addUpdateDelete(String docId) throws Exception {
     final CloudSolrClient cloudClient = cluster.getSolrClient();
 
@@ -518,7 +522,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     assertEquals(0, cloudClient.add(sdoc("id", docId, "content_t", "updatedcontent")).getStatus());
     assertEquals(0, cloudClient.commit().getStatus());
 
-    // confirm we can query the doc by updated content and not original...
+    // confirm we can query the doc by updated content and not original
     assertEquals(
         0, cloudClient.query(params("q", "content_t:originalcontent")).getResults().getNumFound());
     assertEquals(
@@ -530,7 +534,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
             .getResults()
             .getNumFound());
 
-    // delete the doc, confim it no longer matches in queries...
+    // delete the doc, confirm it no longer matches in queries
     assertEquals(0, cloudClient.deleteById(docId).getStatus());
     assertEquals(0, cloudClient.commit().getStatus());
 
@@ -575,15 +579,15 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     assertEquals(
         topDocsNum, cloudClient.query(new SolrQuery("type_s:parent")).getResults().getNumFound());
 
-    // childs
+    // children
     assertEquals(
         topDocsNum * childsNum,
         cloudClient.query(new SolrQuery("type_s:child")).getResults().getNumFound());
 
-    // grandchilds
+    // grandchildren
     //
-    // each topDoc has t childs where each child has x = 0 + 2 + 4 + ..(t-1)*2 grands
-    // x = 2 * (1 + 2 + 3 +.. (t-1)) => arithmetic summ of t-1
+    // each topDoc has t children where each child has x = 0 + 2 + 4 + ..(t-1)*2 grandchildren
+    // x = 2 * (1 + 2 + 3 +.. (t-1)) => arithmetic sum of t-1
     // x = 2 * ((t-1) * t / 2) = t * (t - 1)
     assertEquals(
         topDocsNum * childsNum * (childsNum - 1),
@@ -728,7 +732,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
   /**
    * Inspects the cluster to determine all active shards/replicas for the default collection then,
    * executes a <code>distrib=false</code> query using the specified params, and compares the
-   * resulting {@link SolrDocumentList}, failing if any replica does not agree with it's leader.
+   * resulting {@link SolrDocumentList}, failing if any replica does not agree with its leader.
    *
    * @see #cluster
    * @see CloudInspectUtil#showDiff

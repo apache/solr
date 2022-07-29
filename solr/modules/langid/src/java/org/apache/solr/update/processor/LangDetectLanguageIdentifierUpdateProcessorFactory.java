@@ -50,7 +50,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * </pre>
  *
  * See <a
- * href="https://solr.apache.org/guide/language-detection.html">https://solr.apache.org/guide/language-detection.html</a>
+ * href="https://solr.apache.org/guide/solr/latest/indexing-guide/language-detection.html">https://solr.apache.org/guide/solr/latest/indexing-guide/language-detection.html</a>
  *
  * @since 3.5
  */

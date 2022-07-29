@@ -31,7 +31,7 @@ public class OverseerSolrResponseUnsafeSerializationTest extends OverseerSolrRes
     System.clearProperty("solr.useUnsafeOverseerResponse");
   }
 
-  public void testUnsafeSerializartionToggles() {
+  public void testUnsafeSerializationToggles() {
     assertToggles("true", true, true);
     assertToggles("deserialization", false, true);
     assertToggles(null, false, false); // By default, don't use unsafe

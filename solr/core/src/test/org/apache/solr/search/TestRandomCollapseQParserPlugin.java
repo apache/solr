@@ -63,7 +63,7 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
     }
     assertU(commit());
 
-    // Don't close this client, it would shutdown the CoreContainer
+    // Don't close this client, it would shut down the CoreContainer
     SOLR = new EmbeddedSolrServer(h.getCoreContainer(), h.coreName);
 
     ALL_SORT_FIELD_NAMES =
@@ -81,7 +81,7 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void cleanupStatics() throws Exception {
+  public static void cleanupStatics() {
     deleteCore();
     SOLR = null;
     ALL_SORT_FIELD_NAMES = ALL_COLLAPSE_FIELD_NAMES = null;
@@ -92,7 +92,7 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
     for (String sortField : ALL_SORT_FIELD_NAMES) {
       for (String dir : Arrays.asList(" asc", " desc")) {
 
-        final String sort = sortField + dir + ", id" + dir; // need id for tie breaker
+        final String sort = sortField + dir + ", id" + dir; // need id for tiebreaker
         final String q = random().nextBoolean() ? "*:*" : CursorPagingTest.buildRandomQuery();
 
         final SolrParams sortedP = params("q", q, "rows", "1", "sort", sort);
@@ -108,9 +108,10 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
             for (String fq :
                 Arrays.asList(
                     p + "same_for_all_docs sort='" + sort + "'}",
-                    // nullPolicy=expand shouldn't change anything since every doc has field
+                    // nullPolicy=expand shouldn't change anything since every doc has the field
                     p + "same_for_all_docs sort='" + sort + "' nullPolicy=expand}",
-                    // a field in no docs with nullPolicy=collapse should have same effect as
+                    // a field in no docs with nullPolicy=collapse should have had the same effect
+                    // as
                     // collapsing on a field in every doc
                     p + "not_in_any_docs sort='" + sort + "' nullPolicy=collapse}")) {
               final SolrParams collapseP = params("q", q, "rows", "1", "fq", fq);
@@ -135,7 +136,7 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
     }
   }
 
-  public void testRandomCollpaseWithSort() throws Exception {
+  public void testRandomCollapseWithSort() {
 
     final int numMainQueriesPerCollapseField = atLeast(5);
 
@@ -208,7 +209,7 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
             final String checkFQ =
                 ((null == collapseVal)
                     ? ("-" + checkField + ":[* TO *]")
-                    : ("{!field f=" + checkField + "}" + collapseVal.toString()));
+                    : ("{!field f=" + checkField + "}" + collapseVal));
 
             final SolrParams checkP =
                 params(

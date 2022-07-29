@@ -112,7 +112,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     assertEquals(input.toString(), output.toString());
     req.close();
 
-    // set the contentType and make sure tat gets set
+    // set the contentType and make sure that it gets set
     String ctype = "text/xxx";
     streams = new ArrayList<>();
     args.put(CommonParams.STREAM_CONTENTTYPE, new String[] {ctype});
@@ -171,7 +171,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testUrlParamParsing() throws Exception {
+  public void testUrlParamParsing() {
     final String[][] teststr =
         new String[][] {
           {"this is simple", "this%20is%20simple"},
@@ -512,7 +512,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     when(request.getContentLength()).thenReturn(contentLength);
 
     when(request.getMethod()).thenReturn(method);
-    // we dont pass a content-length to let the security mechanism limit it:
+    // we don't pass a content-length to let the security mechanism limit it:
     when(request.getQueryString()).thenReturn("foo=1&bar=2");
     when(request.getInputStream())
         .thenReturn(new ByteServletInputStream(body.getBytes(StandardCharsets.US_ASCII)));

@@ -84,7 +84,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
   }
 
   @AfterClass
-  public static void cleanUpAfterClass() throws Exception {
+  public static void cleanUpAfterClass() {
     solrClient = null;
   }
 
@@ -127,7 +127,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
         new ConfigSetAdminRequest.List().process(solrClient).getConfigSets();
     List<String> expectedConfigSetNames = Arrays.asList("_default", configName);
 
-    // config sets leak between tests so we can't be any more specific than this on the next 2
+    // config sets leak between tests, so we can't be any more specific than this on the next 2
     // asserts
     assertTrue(
         "We expect at least 2 configSets",
@@ -182,7 +182,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
 
     // Start with one collection manually created (and use higher numShards & replicas than we'll
     // use for others)
-    //  This tests we may pre-create the collection and it's acceptable.
+    // This tests we may pre-create the collection, and it's acceptable.
     final String colVogon = getAlias() + "__CRA__" + SHIPS[0];
 
     // we expect changes ensuring a legal collection name.
@@ -195,7 +195,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
         new ConfigSetAdminRequest.List().process(solrClient).getConfigSets();
     List<String> expectedConfigSetNames = Arrays.asList("_default", configName);
 
-    // config sets leak between tests so we can't be any more specific than this on the next 2
+    // config sets leak between tests, so we can't be any more specific than this on the next 2
     // asserts
     assertTrue(
         "We expect at least 2 configSets",
@@ -218,7 +218,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
 
     // important to test that we don't try to delete the temp collection on the first document. If
     // we did so we would be at risk of out of order execution of the deletion/creation which would
-    // leave a window of time where there were no collections in the alias. That would likely break
+    // leave a window of time when there were no collections in the alias. That would likely break
     // all manner of other parts of solr.
     assertInvariants(colVogon, uninitialized);
 
@@ -256,7 +256,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
 
     // Start with one collection manually created (and use higher numShards & replicas than we'll
     // use for others)
-    //  This tests we may pre-create the collection and it's acceptable.
+    //  This tests we may pre-create the collection, and it's acceptable.
     final String colVogon = getAlias() + "__CRA__" + noSpaces("HHS " + SHIPS[0]) + "_solr";
 
     // we expect changes ensuring a legal collection name.
@@ -266,7 +266,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
         new ConfigSetAdminRequest.List().process(solrClient).getConfigSets();
     List<String> expectedConfigSetNames = Arrays.asList("_default", configName);
 
-    // config sets leak between tests so we can't be any more specific than this on the next 2
+    // config sets leak between tests, so we can't be any more specific than this on the next 2
     // asserts
     assertTrue(
         "We expect at least 2 configSets",
@@ -313,7 +313,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
         new ConfigSetAdminRequest.List().process(solrClient).getConfigSets();
     List<String> expectedConfigSetNames = Arrays.asList("_default", configName);
 
-    // config sets leak between tests so we can't be any more specific than this on the next 2
+    // config sets leak between tests, so we can't be any more specific than this on the next 2
     // asserts
     assertTrue(
         "We expect at least 2 configSets",
@@ -349,7 +349,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
 
     // Start with one collection manually created (and use higher numShards & replicas than we'll
     // use for others)
-    //  This tests we may pre-create the collection and it's acceptable.
+    //  This tests we may pre-create the collection, and it's acceptable.
     final String colVogon = getAlias() + "__CRA__" + SHIPS[0];
 
     // we expect changes ensuring a legal collection name.
@@ -359,7 +359,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
         new ConfigSetAdminRequest.List().process(solrClient).getConfigSets();
     List<String> expectedConfigSetNames = Arrays.asList("_default", configName);
 
-    // config sets leak between tests so we can't be any more specific than this on the next 2
+    // config sets leak between tests, so we can't be any more specific than this on the next 2
     // asserts
     assertTrue(
         "We expect at least 2 configSets",
@@ -457,9 +457,9 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
 
   /*
    * We expect the following invariants:
-   *    1.) to see all the supplied collections
-   *    2.) Independently Querying all collections we can find to yield the same number of docs as querying the alias
-   *    3.) find as many docs as have been added but not deleted/failed
+   *    1. to see all the supplied collections
+   *    2. Independently Querying all collections we can find to yield the same number of docs as querying the alias
+   *    3. find as many docs as have been added but not deleted/failed
    */
   private void assertInvariants(String... expectedColls) throws IOException, SolrServerException {
     final int expectNumFound =
@@ -547,7 +547,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
     public UpdateRequestProcessor getInstance(
         SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
       return FieldValueMutatingUpdateProcessor.valueMutator(
-          getSelector(), next, (src) -> Integer.valueOf(src.toString()) + 1);
+          getSelector(), next, (src) -> Integer.parseInt(src.toString()) + 1);
     }
   }
 
@@ -555,11 +555,11 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
       throws SolrServerException, IOException {
     try {
       final UpdateResponse resp = solrClient.add(getAlias(), sdoc);
-      // if we have a TolerantUpdateProcessor then we see it there)
+      // if we have a TolerantUpdateProcessor then we see it there
       final Object errors = resp.getResponseHeader().get("errors"); // Tolerant URP
       assertNotNull(errors);
       assertTrue(
-          "Expected to find " + errorMsg + " in errors: " + errors.toString(),
+          "Expected to find " + errorMsg + " in errors: " + errors,
           errors.toString().contains(errorMsg));
     } catch (SolrException e) {
       assertTrue(e.getMessage().contains(errorMsg));

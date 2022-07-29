@@ -18,13 +18,22 @@
 package org.apache.solr.api;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.*;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
 
-import com.google.common.collect.ImmutableSet;
 import io.opentracing.Span;
 import io.opentracing.tag.Tags;
 import java.lang.invoke.MethodHandles;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -61,8 +70,7 @@ public class V2HttpCall extends HttpSolrCall {
   private List<String> pathSegments;
   private String prefix;
   HashMap<String, String> parts = new HashMap<>();
-  static final Set<String> knownPrefixes =
-      ImmutableSet.of("cluster", "node", "collections", "cores", "c");
+  static final Set<String> knownPrefixes = Set.of("cluster", "node", "collections", "cores", "c");
 
   public V2HttpCall(
       SolrDispatchFilter solrDispatchFilter,
@@ -88,7 +96,9 @@ public class V2HttpCall extends HttpSolrCall {
             new Api(null) {
               @Override
               public void call(SolrQueryRequest req, SolrQueryResponse rsp) {
-                rsp.add("documentation", "https://solr.apache.org/guide/v2-api.html");
+                rsp.add(
+                    "documentation",
+                    "https://solr.apache.org/guide/solr/latest/configuration-guide/v2-api.html");
                 rsp.add("description", "V2 API root path");
               }
             };

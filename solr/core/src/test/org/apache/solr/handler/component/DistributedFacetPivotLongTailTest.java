@@ -82,8 +82,8 @@ public class DistributedFacetPivotLongTailTest extends BaseDistributedSearchTest
     List<PivotField> pivots = null;
 
     List<List<PivotField>> shardPivots = new ArrayList<>(clients.size());
-    for (int i = 0; i < clients.size(); i++) {
-      shardPivots.add(clients.get(i).query(req).getFacetPivot().get("foo_s,bar_s"));
+    for (org.apache.solr.client.solrj.SolrClient client : clients) {
+      shardPivots.add(client.query(req).getFacetPivot().get("foo_s,bar_s"));
     }
 
     // top 5 same on all shards
@@ -253,7 +253,7 @@ public class DistributedFacetPivotLongTailTest extends BaseDistributedSearchTest
       assertEquals(pivot.toString(), 14, pivot.getCount());
     }
 
-    // however with a lower limit and overrequesting disabled,
+    // however, with a lower limit and overrequesting disabled,
     // we're going to miss out on tailB
 
     pivots =

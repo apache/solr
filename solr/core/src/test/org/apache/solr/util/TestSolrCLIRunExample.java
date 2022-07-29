@@ -61,7 +61,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
-  public static void beforeClass() throws IOException {
+  public static void beforeClass() {
     assumeFalse(
         "FIXME: This test does not work with whitespace in CWD (https://issues.apache.org/jira/browse/SOLR-8877)",
         Paths.get(".").toAbsolutePath().toString().contains(" "));
@@ -70,7 +70,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void cleanupDirectoryFactory() throws IOException {
+  public static void cleanupDirectoryFactory() {
     System.clearProperty("solr.directoryFactory");
   }
 
@@ -273,7 +273,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
       if (solrCloudCluster != null) {
         try {
           solrCloudCluster.shutdown();
@@ -462,7 +462,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     String collectionName = "testCloudExamplePrompt";
 
-    // sthis test only support launching one SolrCloud node due to how MiniSolrCloudCluster works
+    // this test only support launching one SolrCloud node due to how MiniSolrCloudCluster works
     // and the need for setting the host and port system properties ...
     String userInput = "1\n" + bindPort + "\n" + collectionName + "\n2\n2\n_default\n";
 

@@ -81,7 +81,7 @@ public class TestFoldingMultitermQuery extends SolrTestCaseJ4 {
               "content_keyword",
               docs[i]));
     }
-    // Mixing and matching amongst various languages is probalby a bad thing, so add some tests for
+    // Mixing and matching amongst various languages is probably a bad thing, so add some tests for
     // various special filters
     int idx = docs.length;
     // Greek
@@ -118,7 +118,7 @@ public class TestFoldingMultitermQuery extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testPrefixCaseAccentFolding() throws Exception {
+  public void testPrefixCaseAccentFolding() {
     String matchOneDocPrefixUpper[][] = {
       {"A*", "ÁB*", "ABÇ*"}, // these should find only doc 0
       {"H*", "HÏ*", "HìJ*"}, // these should find only doc 1
@@ -168,7 +168,7 @@ public class TestFoldingMultitermQuery extends SolrTestCaseJ4 {
 
   // test the wildcard queries find only one doc  where the query is uppercased and/or accented.
   @Test
-  public void testWildcardCaseAccentFolding() throws Exception {
+  public void testWildcardCaseAccentFolding() {
     String matchOneDocWildUpper[][] = {
       {"Á*C*", "ÁB*1", "ABÇ*g1", "Á*FG1"}, // these should find only doc 0
       {"H*k*", "HÏ*l?*", "HìJ*n*", "HìJ*m*"}, // these should find only doc 1
@@ -197,7 +197,7 @@ public class TestFoldingMultitermQuery extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testFuzzy() throws Exception {
+  public void testFuzzy() {
     assertQ(req("q", "content:ZiLLx~1"), "//result[@numFound='1']");
     assertQ(
         req("q", "content_straight:ZiLLx~1"), // case preserving field shouldn't match
@@ -208,7 +208,7 @@ public class TestFoldingMultitermQuery extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRegex() throws Exception {
+  public void testRegex() {
     assertQ(req("q", "content:/Zill[a-z]/"), "//result[@numFound='1']");
     assertQ(
         req("q", "content:/Zill[A-Z]/"), // everything in the regex gets lowercased?
@@ -228,7 +228,7 @@ public class TestFoldingMultitermQuery extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testGeneral() throws Exception {
+  public void testGeneral() {
     assertQ(
         req("q", "content_stemming:fings*"),
         "//result[@numFound='0']"); // should not match (but would if fings* was stemmed to fing*

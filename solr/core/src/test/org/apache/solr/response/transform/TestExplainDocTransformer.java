@@ -97,13 +97,13 @@ public class TestExplainDocTransformer extends SolrTestCaseJ4 {
   }
 
   @After
-  public void cleanup() throws Exception {
+  public void cleanup() {
     assertU(delQ("*:*"));
     assertU(commit());
   }
 
   @Test
-  public void testStyle() throws Exception {
+  public void testStyle() {
     // this doesn't validate the explain response but checks if explain response is returned in
     // expected format
 

@@ -79,7 +79,7 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testCurrencySchema() throws Exception {
+  public void testCurrencySchema() {
     IndexSchema schema = h.getCore().getLatestSchema();
 
     SchemaField amount = schema.getField(fieldName);
@@ -117,7 +117,7 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testCurrencyFieldType() throws Exception {
+  public void testCurrencyFieldType() {
     assumeTrue(
         "This test is only applicable to the XML file based exchange rate provider",
         expectedProviderClass.equals(FileExchangeRateProvider.class));
@@ -154,7 +154,7 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testMockExchangeRateProvider() throws Exception {
+  public void testMockExchangeRateProvider() {
     assumeTrue(
         "This test is only applicable to the mock exchange rate provider",
         expectedProviderClass.equals(MockExchangeRateProvider.class));
@@ -172,7 +172,7 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testCurrencyRangeSearch() throws Exception {
+  public void testCurrencyRangeSearch() {
     assumeTrue(
         "This test is only applicable to the XML file based exchange rate provider",
         expectedProviderClass.equals(FileExchangeRateProvider.class));
@@ -220,36 +220,36 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
     assertQ(
         req("fl", "*,score", "q", fieldName + ":[24.99,EUR TO 25.01,EUR]"), "//*[@numFound='1']");
 
-    // Open ended ranges without currency
+    // Open-ended ranges without currency
     assertQ(
         req("fl", "*,score", "q", fieldName + ":[* TO *]"),
         "//*[@numFound='" + (2 + 10 + negDocs) + "']");
 
-    // Open ended ranges without currency
+    // Open-ended ranges without currency
     assertQ(
         req("fl", "*,score", "q", fieldName + ":*"), "//*[@numFound='" + (2 + 10 + negDocs) + "']");
 
-    // Open ended ranges with currency
+    // Open-ended ranges with currency
     assertQ(
         req("fl", "*,score", "q", fieldName + ":[*,EUR TO *,EUR]"),
         "//*[@numFound='" + (2 + 10 + negDocs) + "']");
 
-    // Open ended start range without currency
+    // Open-ended start range without currency
     assertQ(
         req("fl", "*,score", "q", fieldName + ":[* TO 5,USD]"),
         "//*[@numFound='" + (2 + 5 + negDocs) + "']");
 
-    // Open ended start range with currency (currency for the * won't matter)
+    // Open-ended start range with currency (currency for the * won't matter)
     assertQ(
         req("fl", "*,score", "q", fieldName + ":[*,USD TO 5,USD]"),
         "//*[@numFound='" + (2 + 5 + negDocs) + "']");
 
-    // Open ended end range
+    // Open-ended end range
     assertQ(req("fl", "*,score", "q", fieldName + ":[3 TO *]"), "//*[@numFound='8']");
   }
 
   @Test
-  public void testBogusCurrency() throws Exception {
+  public void testBogusCurrency() {
     ignoreException("HOSS");
 
     // bogus currency
@@ -260,7 +260,7 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testCurrencyPointQuery() throws Exception {
+  public void testCurrencyPointQuery() {
     assumeTrue(
         "This test is only applicable to the XML file based exchange rate provider",
         expectedProviderClass.equals(FileExchangeRateProvider.class));
@@ -279,7 +279,7 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
   }
 
   @Ignore
-  public void testPerformance() throws Exception {
+  public void testPerformance() {
     clearIndex();
 
     Random r = random();
@@ -345,7 +345,7 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testCurrencySort() throws Exception {
+  public void testCurrencySort() {
     assumeTrue(
         "This test is only applicable to the XML file based exchange rate provider",
         expectedProviderClass.equals(FileExchangeRateProvider.class));
@@ -376,7 +376,7 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
     assertEquals(expectedProviderClass, provider.getClass());
   }
 
-  public void testFunctionUsage() throws Exception {
+  public void testFunctionUsage() {
     assumeTrue(
         "This test is only applicable to the XML file based exchange rate provider",
         expectedProviderClass.equals(FileExchangeRateProvider.class));
@@ -392,8 +392,8 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
 
     assertU(commit());
 
-    // direct value source usage, gets "raw" form od default currency
-    // default==USD, so raw==penies
+    // direct value source usage, gets "raw" form of default currency
+    // default==USD, so raw==pennies
     assertQ(
         req(
             "fl", "id,func:field($f)",
@@ -504,7 +504,7 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testStringValue() throws Exception {
+  public void testStringValue() {
     assertEquals("3.14,USD", new CurrencyValue(314, "USD").strValue());
     assertEquals("-3.14,GBP", new CurrencyValue(-314, "GBP").strValue());
     assertEquals("3.14,GBP", new CurrencyValue(314, "GBP").strValue());
@@ -514,15 +514,15 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRangeFacet() throws Exception {
+  public void testRangeFacet() {
     assumeTrue(
         "This test is only applicable to the XML file based exchange rate provider "
-            + "because it excercies the asymetric exchange rates option it supports",
+            + "because it exercises the asymmetric exchange rates option it supports",
         expectedProviderClass.equals(FileExchangeRateProvider.class));
 
     clearIndex();
 
-    // NOTE: in our test conversions EUR uses an asynetric echange rate
+    // NOTE: in our test conversions EUR uses an asymmetric exchange rate
     // these are the equivalent values when converting to:     USD        EUR        GBP
     assertU(adoc("id", "" + 1, fieldName, "10.00,USD")); // 10.00,USD  25.00,EUR   5.00,GBP
     assertU(adoc("id", "" + 2, fieldName, "15.00,EUR")); //  7.50,USD  15.00,EUR   7.50,GBP
@@ -650,7 +650,8 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
         "//lst[@name='xxx']/lst[@name='after'  ]/long[@name='count'][.='1']",
         "//lst[@name='xxx']/lst[@name='between']/long[@name='count'][.='4']");
 
-    // NOTE: because of asymetric EUR exchange rate, these buckets are diff then the similar looking
+    // NOTE: because of asymmetric EUR exchange rate, these buckets are diff from the similar
+    // looking
     // USD based request above
     // This request converts the values in each doc into EUR to decide what range buck it's in.
     assertQ(
@@ -710,8 +711,8 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
         "//lst[@name='xxx']/lst[@name='after'  ]/long[@name='count'][.='1']",
         "//lst[@name='xxx']/lst[@name='between']/long[@name='count'][.='2']");
 
-    // GBP has a symetric echange rate with USD, so these counts are *similar* to the USD based
-    // request above... but the asymetric EUR/USD rate means that when computing counts realtive to
+    // GBP has a symmetric exchange rate with USD, so these counts are *similar* to the USD based
+    // request above... but the asymmetric EUR/USD rate means that when computing counts relative to
     // GBP the EUR based docs wind up in diff buckets
     assertQ(
         "Ensure that we get correct facet counts back in GBP (facet.range)",
@@ -857,7 +858,7 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testMockFieldType() throws Exception {
+  public void testMockFieldType() {
     assumeTrue(
         "This test is only applicable to the mock exchange rate provider",
         expectedProviderClass.equals(MockExchangeRateProvider.class));
@@ -885,7 +886,7 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testAsymmetricPointQuery() throws Exception {
+  public void testAsymmetricPointQuery() {
     assumeTrue(
         "This test is only applicable to the XML file based exchange rate provider",
         expectedProviderClass.equals(FileExchangeRateProvider.class));

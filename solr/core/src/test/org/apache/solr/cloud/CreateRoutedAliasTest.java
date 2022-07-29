@@ -75,7 +75,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   private CloudSolrClient solrClient;
 
   @Before
-  public void doBefore() throws Exception {
+  public void doBefore() {
     solrClient = getCloudSolrClient(cluster);
   }
 
@@ -118,7 +118,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
                 + "    },\n"
                 +
                 // TODO should we use "NOW=" param?  Won't work with v2 and is kinda a hack any way
-                // since intended for distrib
+                // since intended for distributed search
                 "    \"create-collection\" : {\n"
                 + "      \"router\": {\n"
                 + "        \"name\":\"implicit\",\n"
@@ -524,7 +524,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
     }
   }
 
-  private void assertCollectionExists(String name) throws IOException, SolrServerException {
+  private void assertCollectionExists(String name) {
     solrClient.getClusterStateProvider().connect(); // TODO get rid of this
     //  https://issues.apache.org/jira/browse/SOLR-9784?focusedCommentId=16332729
 

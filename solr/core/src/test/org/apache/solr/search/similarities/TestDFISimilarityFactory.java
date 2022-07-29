@@ -30,7 +30,7 @@ public class TestDFISimilarityFactory extends BaseSimilarityTestCase {
   }
 
   /** dfi with no parameters */
-  public void test() throws Exception {
+  public void test() {
     Similarity sim = getSimilarity("text");
     assertEquals(DFISimilarity.class, sim.getClass());
     DFISimilarity dfi = (DFISimilarity) sim;
@@ -39,7 +39,7 @@ public class TestDFISimilarityFactory extends BaseSimilarityTestCase {
   }
 
   /** dfi with discountOverlaps parameter set to false */
-  public void testParameters() throws Exception {
+  public void testParameters() {
     Similarity sim = getSimilarity("text_params");
     assertEquals(DFISimilarity.class, sim.getClass());
     DFISimilarity dfr = (DFISimilarity) sim;

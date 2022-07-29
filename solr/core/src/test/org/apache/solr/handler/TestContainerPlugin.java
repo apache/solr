@@ -39,7 +39,6 @@ import org.apache.solr.api.ConfigurablePlugin;
 import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteExecutionException;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -261,7 +260,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
             ":result:packages:mypkg[0]:files[0]",
             FILE1));
 
-    // Now lets create a plugin using v1 jar file
+    // Now let's create a plugin using v1 jar file
     PluginMeta plugin = new PluginMeta();
     plugin.name = "myplugin";
     plugin.klass = "mypkg:org.apache.solr.handler.MyPlugin";
@@ -355,7 +354,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     }
 
     @Override
-    public void start() throws Exception {
+    public void start() {
       state = State.STARTING;
       startCalled = true;
       state = State.RUNNING;
@@ -379,7 +378,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     private SolrResourceLoader resourceLoader;
 
     @Override
-    public void inform(ResourceLoader loader) throws IOException {
+    public void inform(ResourceLoader loader) {
       this.resourceLoader = (SolrResourceLoader) loader;
       try {
         InputStream is = resourceLoader.openResource("org/apache/solr/handler/MyPlugin.class");
@@ -457,15 +456,13 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     }
   }
 
-  private void expectError(V2Request req, String expectErrorMsg)
-      throws IOException, SolrServerException {
+  private void expectError(V2Request req, String expectErrorMsg) {
     String errPath = "/error/details[0]/errorMessages[0]";
     expectError(req, cluster.getSolrClient(), errPath, expectErrorMsg);
   }
 
   private static void expectError(
-      V2Request req, SolrClient client, String errPath, String expectErrorMsg)
-      throws IOException, SolrServerException {
+      V2Request req, SolrClient client, String errPath, String expectErrorMsg) {
     RemoteExecutionException e =
         expectThrows(RemoteExecutionException.class, () -> req.process(client));
     String msg = e.getMetaData()._getStr(errPath, "");

@@ -16,7 +16,6 @@
  */
 package org.apache.solr.spelling;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.regex.Pattern;
 import org.apache.lucene.analysis.Analyzer;
@@ -33,13 +32,13 @@ import org.apache.lucene.tests.analysis.MockTokenizer;
 public class TestSuggestSpellingConverter extends BaseTokenStreamTestCase {
   SuggestQueryConverter converter = new SuggestQueryConverter();
 
-  public void testSimple() throws Exception {
+  public void testSimple() {
     // lowercases only!
     converter.setAnalyzer(new MockAnalyzer(random(), MockTokenizer.KEYWORD, true));
     assertConvertsTo("This is a test", new String[] {"this is a test"});
   }
 
-  public void testComplicated() throws Exception {
+  public void testComplicated() {
     // lowercases, removes field names, other syntax, collapses runs of whitespace, etc.
     converter.setAnalyzer(
         new Analyzer() {
@@ -66,7 +65,7 @@ public class TestSuggestSpellingConverter extends BaseTokenStreamTestCase {
     assertConvertsTo("Foo (field:bar) text_hi:हिन्दी    ", new String[] {"foo bar हिन्दी"});
   }
 
-  public void assertConvertsTo(String text, String expected[]) throws IOException {
+  public void assertConvertsTo(String text, String expected[]) {
     Collection<Token> tokens = converter.convert(text);
     assertEquals(tokens.size(), expected.length);
     int i = 0;

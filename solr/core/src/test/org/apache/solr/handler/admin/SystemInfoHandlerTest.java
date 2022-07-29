@@ -26,7 +26,7 @@ import org.apache.solr.util.stats.MetricUtils;
 
 public class SystemInfoHandlerTest extends SolrTestCase {
 
-  public void testMagickGetter() throws Exception {
+  public void testMagickGetter() {
 
     OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
 

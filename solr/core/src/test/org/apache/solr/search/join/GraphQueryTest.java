@@ -143,7 +143,7 @@ public class GraphQueryTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testGraphQueryParserValidation() throws Exception {
+  public void testGraphQueryParserValidation() {
     // from schema field existence
     doGraphQuery(
         params(
@@ -169,7 +169,7 @@ public class GraphQueryTest extends SolrTestCaseJ4 {
             String.valueOf(SolrException.ErrorCode.BAD_REQUEST.code)));
   }
 
-  public void doGraphQuery(SolrParams p) throws Exception {
+  public void doGraphQuery(SolrParams p) {
     String message = p.get("message");
     int errorCode = p.getInt("errorCode", SolrException.ErrorCode.UNKNOWN.code);
 

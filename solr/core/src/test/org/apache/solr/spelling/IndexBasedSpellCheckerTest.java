@@ -81,7 +81,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testComparator() throws Exception {
+  public void testComparator() {
     SpellCheckComponent component =
         (SpellCheckComponent) h.getCore().getSearchComponent("spellcheck");
     assertNotNull(component);
@@ -319,9 +319,9 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     File altIndexDir = new File(tmpDir, "alternateIdx" + new Date().getTime());
     Directory dir = newFSDirectory(altIndexDir.toPath());
     IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(new WhitespaceAnalyzer()));
-    for (int i = 0; i < ALT_DOCS.length; i++) {
+    for (String alt_doc : ALT_DOCS) {
       Document doc = new Document();
-      doc.add(new TextField("title", ALT_DOCS[i], Field.Store.YES));
+      doc.add(new TextField("title", alt_doc, Field.Store.YES));
       iw.addDocument(doc);
     }
     iw.forceMerge(1);

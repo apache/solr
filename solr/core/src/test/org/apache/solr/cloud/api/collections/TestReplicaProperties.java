@@ -32,7 +32,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
 
 @Slow
@@ -51,12 +50,12 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
 
     try (CloudSolrClient client = createCloudClient(null)) {
       // Mix up a bunch of different combinations of shards and replicas in order to exercise
-      // boundary cases. shards, replicationfactor
+      // boundary cases. shards, replicationFactor
       int shards = random().nextInt(7);
       if (shards < 2) shards = 2;
-      int rFactor = random().nextInt(4);
-      if (rFactor < 2) rFactor = 2;
-      createCollection(null, COLLECTION_NAME, shards, rFactor, client, null, "conf1");
+      int replicationFactor = random().nextInt(4);
+      if (replicationFactor < 2) replicationFactor = 2;
+      createCollection(null, COLLECTION_NAME, shards, replicationFactor, client, null, "conf1");
     }
 
     waitForCollection(ZkStateReader.from(cloudClient), COLLECTION_NAME, 2);
@@ -240,7 +239,7 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
   }
 
   private void verifyLeaderAssignment(CloudSolrClient client, String collectionName)
-      throws InterruptedException, KeeperException {
+      throws InterruptedException {
     String lastFailMsg = "";
     // Keep trying while Overseer writes the ZK state for up to 30 seconds.
     for (int idx = 0; idx < 300; ++idx) {

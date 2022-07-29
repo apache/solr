@@ -25,7 +25,11 @@ import java.util.Map;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.*;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.NoOpResponseParser;
+import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.DelegationTokenResponse;
@@ -63,8 +67,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
   }
 
   private void testException(
-      ResponseParser responseParser, int expectedCode, String path, String payload)
-      throws IOException, SolrServerException {
+      ResponseParser responseParser, int expectedCode, String path, String payload) {
     V2Request v2Request =
         new V2Request.Builder(path)
             .withMethod(SolrRequest.METHOD.POST)
@@ -79,7 +82,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testException() throws Exception {
+  public void testException() {
     String notFoundPath = "/c/" + COLL_NAME + "/abccdef";
     String incorrectPayload = "{rebalance-leaders: {maxAtOnce: abc, maxWaitSeconds: xyz}}";
     testException(new XMLResponseParser(), 404, notFoundPath, incorrectPayload);
@@ -93,15 +96,6 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
         400,
         "/c/" + COLL_NAME,
         incorrectPayload);
-  }
-
-  private long getStatus(V2Response response) {
-    Object header = response.getResponse().get("responseHeader");
-    if (header instanceof NamedList) {
-      return (int) ((NamedList<?>) header).get("status");
-    } else {
-      return (long) ((Map<?, ?>) header).get("status");
-    }
   }
 
   @Test

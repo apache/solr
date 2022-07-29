@@ -21,7 +21,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -158,7 +157,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     verifyZkLocalPathsMatch(
         Paths.get(tmp.toAbsolutePath().toString(), "conf"), "/configs/downconfig1");
 
-    // Insure that empty files don't become directories (SOLR-11198)
+    // Ensure that empty files don't become directories (SOLR-11198)
 
     Path emptyFile = Paths.get(tmp.toAbsolutePath().toString(), "conf", "stopwords", "emptyfile");
     Files.createFile(emptyFile);
@@ -223,7 +222,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
           "-src",
           "zk:/configs/cp1",
           "-dst",
-          "file:" + tmp.toAbsolutePath().toString(),
+          "file:" + tmp.toAbsolutePath(),
           "-recurse",
           "true",
           "-zkHost",
@@ -282,7 +281,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     args =
         new String[] {
           "-src",
-          "file:" + srcPathCheck.toAbsolutePath().toString(),
+          "file:" + srcPathCheck.toAbsolutePath(),
           "-dst",
           "zk:/cp4",
           "-recurse",
@@ -301,12 +300,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     // try with recurse not specified
     args =
         new String[] {
-          "-src",
-          "file:" + srcPathCheck.toAbsolutePath().toString(),
-          "-dst",
-          "zk:/cp5Fail",
-          "-zkHost",
-          zkAddr,
+          "-src", "file:" + srcPathCheck.toAbsolutePath(), "-dst", "zk:/cp5Fail", "-zkHost", zkAddr,
         };
 
     res =
@@ -319,7 +313,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     args =
         new String[] {
           "-src",
-          "file:" + srcPathCheck.toAbsolutePath().toString(),
+          "file:" + srcPathCheck.toAbsolutePath(),
           "-dst",
           "zk:/cp6Fail",
           "-recurse",
@@ -359,10 +353,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     args =
         new String[] {
           "-src",
-          "file:"
-              + srcPathCheck.normalize().toAbsolutePath().toString()
-              + File.separator
-              + "solrconfig.xml",
+          "file:" + srcPathCheck.normalize().toAbsolutePath() + File.separator + "solrconfig.xml",
           "-dst",
           "zk:/powerup/",
           "-recurse",
@@ -385,10 +376,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     args =
         new String[] {
           "-src",
-          "file:"
-              + srcPathCheck.normalize().toAbsolutePath().toString()
-              + File.separator
-              + "solrconfig.xml",
+          "file:" + srcPathCheck.normalize().toAbsolutePath() + File.separator + "solrconfig.xml",
           "-dst",
           "zk:/copyUpFile.xml",
           "-recurse",
@@ -410,7 +398,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     // src and cp3 are valid
 
     String localNamed =
-        tmp.normalize().toString() + File.separator + "localnamed" + File.separator + "renamed.txt";
+        tmp.normalize() + File.separator + "localnamed" + File.separator + "renamed.txt";
     args =
         new String[] {
           "-src",
@@ -433,7 +421,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     assertTrue("Should be an individual file", Files.isRegularFile(locPath));
     assertTrue("File should have some data", Files.size(locPath) > 100);
     boolean foundApache = false;
-    for (String line : Files.readAllLines(locPath, Charset.forName("UTF-8"))) {
+    for (String line : Files.readAllLines(locPath, StandardCharsets.UTF_8)) {
       if (line.contains("Apache Software Foundation")) {
         foundApache = true;
         break;
@@ -463,7 +451,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     args =
         new String[] {
           "-src",
-          "file:" + srcPathCheck.toAbsolutePath().toString(),
+          "file:" + srcPathCheck.toAbsolutePath(),
           "-dst",
           "zk:/cp7/",
           "-recurse",
@@ -484,12 +472,12 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     Path file = Paths.get(tmp.toAbsolutePath().toString(), "zknode.data");
     List<String> lines = new ArrayList<>();
     lines.add("{Some Arbitrary Data}");
-    Files.write(file, lines, Charset.forName("UTF-8"));
+    Files.write(file, lines, StandardCharsets.UTF_8);
     // First, just copy the data up the cp7 since it's a directory.
     args =
         new String[] {
           "-src",
-          "file:" + file.toAbsolutePath().toString(),
+          "file:" + file.toAbsolutePath(),
           "-dst",
           "zk:/cp7/conf/stopwords/",
           "-recurse",
@@ -521,7 +509,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
           "-src",
           "zk:/cp7",
           "-dst",
-          "file:" + tmp.toAbsolutePath().toString(),
+          "file:" + tmp.toAbsolutePath(),
           "-recurse",
           "true",
           "-zkHost",
@@ -541,7 +529,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     args =
         new String[] {
           "-src",
-          "file:" + tmp.toAbsolutePath().toString(),
+          "file:" + tmp.toAbsolutePath(),
           "-dst",
           "zk:/cp9",
           "-recurse",
@@ -568,7 +556,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     args =
         new String[] {
           "-src",
-          "file:" + emptyFile.toAbsolutePath().toString(),
+          "file:" + emptyFile.toAbsolutePath(),
           "-dst",
           "zk:/cp7/conf/stopwords/emptyfile",
           "-recurse",
@@ -590,7 +578,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
           "-src",
           "zk:/cp7/conf/stopwords/emptyfile",
           "-dst",
-          "file:" + emptyDest.toAbsolutePath().toString(),
+          "file:" + emptyDest.toAbsolutePath(),
           "-recurse",
           "false",
           "-zkHost",
@@ -631,7 +619,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
           "-src",
           "zk:/cp10",
           "-dst",
-          "file:" + tmp2.toAbsolutePath().toString(),
+          "file:" + tmp2.toAbsolutePath(),
           "-recurse",
           "true",
           "-zkHost",
@@ -815,7 +803,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     assertTrue("Return should contain the conf directory", content.contains("lister"));
     assertTrue("Return should contain a child node", content.contains("solrconfig.xml"));
 
-    // Saw a case where going from root foo'd, so test it.
+    // Saw a case where going from root didn't work, so test it.
     args =
         new String[] {
           "-path", "/",
@@ -846,7 +834,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     assertEquals("List should have succeeded", res, 0);
     assertFalse("Return should not contain /zookeeper", content.contains("/zookeeper"));
 
-    // Saw a case where ending in slash foo'd, so test it.
+    // Saw a case where ending in slash didn't work, so test it.
     args =
         new String[] {
           "-path", "/configs/",
@@ -977,10 +965,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
       Path thisPath = Paths.get(fileRoot.toAbsolutePath().toString(), child);
       assertTrue(
-          "Znode "
-              + child
-              + " should have been found on disk at "
-              + fileRoot.toAbsolutePath().toString(),
+          "Znode " + child + " should have been found on disk at " + fileRoot.toAbsolutePath(),
           Files.exists(thisPath));
       verifyAllZNodesAreFiles(thisPath, zkRoot + child);
     }
@@ -992,7 +977,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
         new SimpleFileVisitor<Path>() {
           void checkPathOnZk(Path path) {
             String znode = ZkMaintenanceUtils.createZkNodeName(zkRoot, fileRoot, path);
-            try { // It's easier to catch this exception and fail than catch it everywher eles.
+            try { // It's easier to catch this exception and fail than catch it everywhere else.
               assertTrue(
                   "Should have found " + znode + " on Zookeeper", zkClient.exists(znode, true));
             } catch (Exception e) {
@@ -1005,16 +990,14 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
           }
 
           @Override
-          public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-              throws IOException {
+          public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
             assertTrue("Path should start at proper place!", file.startsWith(fileRoot));
             checkPathOnZk(file);
             return FileVisitResult.CONTINUE;
           }
 
           @Override
-          public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
-              throws IOException {
+          public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
 
             checkPathOnZk(dir);
             return FileVisitResult.CONTINUE;
@@ -1022,14 +1005,14 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
         });
   }
 
-  // Insure that all znodes in first are in second and vice-versa
+  // Ensure that all znodes in first are in second and vice-versa
   private void verifyZnodesMatch(String first, String second)
       throws KeeperException, InterruptedException {
     verifyFirstZNodesInSecond(first, second);
     verifyFirstZNodesInSecond(second, first);
   }
 
-  // Note, no folderol here with Windows path names.
+  // Note, no fuss here with Windows path names.
   private void verifyFirstZNodesInSecond(String first, String second)
       throws KeeperException, InterruptedException {
     for (String node : zkClient.getChildren(first, null, true)) {

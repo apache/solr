@@ -35,12 +35,12 @@ public class TestMissingGroups extends SolrTestCaseJ4 {
   }
 
   @After
-  public void cleanup() throws Exception {
+  public void cleanup() {
     clearIndex();
     assertU(optimize());
   }
 
-  public void testGroupsOnMissingValues() throws Exception {
+  public void testGroupsOnMissingValues() {
 
     final int numDocs = atLeast(500);
 

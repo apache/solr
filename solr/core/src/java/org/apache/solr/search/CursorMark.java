@@ -16,7 +16,9 @@
  */
 package org.apache.solr.search;
 
-import static org.apache.solr.common.params.CursorMarkParams.*;
+import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_NEXT;
+import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_PARAM;
+import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

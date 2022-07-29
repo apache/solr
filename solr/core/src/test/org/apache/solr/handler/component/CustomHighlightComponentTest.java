@@ -245,8 +245,7 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
   }
 
   protected void checkHighlightingResponseMap(
-      Map<String, Map<String, List<String>>> highlightingMap, String highlightedField)
-      throws Exception {
+      Map<String, Map<String, List<String>>> highlightingMap, String highlightedField) {
     assertEquals(
         "too few or too many keys: " + highlightingMap.keySet(), 3, highlightingMap.size());
     checkHighlightingResponseMapElement(
@@ -261,8 +260,7 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
       Map<String, List<String>> docHighlights,
       String highlightedField,
       String preHighlightText,
-      String highlightedText)
-      throws Exception {
+      String highlightedText) {
     if (highlightedField == null) {
       assertEquals(0, docHighlights.size());
     } else {
@@ -278,8 +276,7 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
   }
 
   protected void checkHighlightingResponseList(
-      ArrayList<SimpleOrderedMap<Object>> highlightingList, String highlightedField)
-      throws Exception {
+      ArrayList<SimpleOrderedMap<Object>> highlightingList, String highlightedField) {
     assertEquals(
         "too few or too many elements: " + highlightingList.size(), 3, highlightingList.size());
     final Set<String> seenDocIds = new HashSet<>();

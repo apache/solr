@@ -41,7 +41,7 @@ public class SysPropSSLCredentialProviderTest {
           SSLConfigurations.SysProps.SSL_CLIENT_TRUST_STORE_PASSWORD);
 
   @Test
-  public void testGetCredentials() throws Exception {
+  public void testGetCredentials() {
     int cnt = 0;
     SysPropSSLCredentialProvider sut = new SysPropSSLCredentialProvider();
     for (Map.Entry<SSLCredentialProvider.CredentialType, String> set :
@@ -53,7 +53,7 @@ public class SysPropSSLCredentialProviderTest {
   }
 
   @Test
-  public void testGetCredentialsWithoutSetup() throws Exception {
+  public void testGetCredentialsWithoutSetup() {
     SysPropSSLCredentialProvider sut = new SysPropSSLCredentialProvider();
     // assuming not to fail
     sut.getCredential(SSLCredentialProvider.CredentialType.SSL_KEY_STORE_PASSWORD);

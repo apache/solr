@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -141,12 +140,11 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     private volatile boolean electionDone = false;
     private final ZkNodeProps props;
 
-    public ClientThread(String shard, int nodeNumber) throws Exception {
+    public ClientThread(String shard, int nodeNumber) {
       this(null, shard, nodeNumber, 0);
     }
 
-    public ClientThread(ElectorSetup es, String shard, int nodeNumber, long runLeaderDelay)
-        throws Exception {
+    public ClientThread(ElectorSetup es, String shard, int nodeNumber, long runLeaderDelay) {
       super("Thread-" + shard + nodeNumber);
       this.shard = shard;
       this.nodeName = shard + nodeNumber + ":80_solr";
@@ -174,7 +172,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
       }
     }
 
-    private void setupOnConnect() throws InterruptedException, KeeperException, IOException {
+    private void setupOnConnect() throws InterruptedException, KeeperException {
       assertNotNull(es);
       TestLeaderElectionContext context =
           new TestLeaderElectionContext(
@@ -597,9 +595,5 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     zkStateReader.close();
     server.shutdown();
     super.tearDown();
-  }
-
-  private void printLayout() throws Exception {
-    zkClient.printLayoutToStream(System.out);
   }
 }

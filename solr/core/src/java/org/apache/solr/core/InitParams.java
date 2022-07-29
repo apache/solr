@@ -22,7 +22,6 @@ import static org.apache.solr.core.PluginInfo.APPENDS;
 import static org.apache.solr.core.PluginInfo.DEFAULTS;
 import static org.apache.solr.core.PluginInfo.INVARIANTS;
 
-import com.google.common.collect.ImmutableSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +38,7 @@ public class InitParams {
   public final NamedList<?> invariants;
   public final NamedList<?> appends;
   private final PluginInfo pluginInfo;
-  private final Set<String> KNOWN_KEYS = ImmutableSet.of(DEFAULTS, INVARIANTS, APPENDS);
+  private static final Set<String> KNOWN_KEYS = Set.of(DEFAULTS, INVARIANTS, APPENDS);
 
   public InitParams(PluginInfo p) {
     this.pluginInfo = p;

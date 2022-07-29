@@ -59,7 +59,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void setupCluster() {
     System.setProperty("solr.zkclienttimeout", "45000");
     System.setProperty("distribUpdateSoTimeout", "15000");
   }
@@ -71,7 +71,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     System.setProperty("solr.zkclienttimeout", "45000");
     System.setProperty("distribUpdateSoTimeout", "15000");
 
-    // these tests need to be isolated, so we dont share the minicluster
+    // these tests need to be isolated, so we don't share the minicluster
     configureCluster(4)
         .addConfig("conf", configset("cloud-minimal"))
         .useOtherCollectionConfigSetExecution()
@@ -100,7 +100,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     DocCollection state = getCollectionState(collectionName);
     Slice shard = getRandomShard(state);
 
-    // don't choose the leader to shutdown, it just complicates things unneccessarily
+    // don't choose the leader to shutdown, it just complicates things unnecessarily
     Replica replica =
         getRandomReplica(
             shard, (r) -> (r.getState() == Replica.State.ACTIVE && !r.equals(shard.getLeader())));
@@ -537,8 +537,8 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     CollectionAdminRequest.deleteReplica(collectionName, "shard1", nonLeader.getName())
         .process(cluster.getSolrClient());
     closed.set(true);
-    for (int i = 0; i < threads.length; i++) {
-      threads[i].join();
+    for (Thread thread : threads) {
+      thread.join();
     }
 
     try {
@@ -567,8 +567,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
    * same node. Instead tests should only assert that the number of watchers has decreased by 1 per
    * known replica removed)
    */
-  private static final long countUnloadCoreOnDeletedWatchers(
-      final Set<DocCollectionWatcher> watchers) {
+  private static long countUnloadCoreOnDeletedWatchers(final Set<DocCollectionWatcher> watchers) {
     return watchers.stream()
         .filter(w -> w instanceof ZkController.UnloadCoreOnDeletedWatcher)
         .count();

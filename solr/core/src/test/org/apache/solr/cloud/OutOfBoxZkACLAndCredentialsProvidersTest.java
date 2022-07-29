@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,7 +39,7 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final Charset DATA_ENCODING = Charset.forName("UTF-8");
+  private static final Charset DATA_ENCODING = StandardCharsets.UTF_8;
 
   protected ZkTestServer zkServer;
 
@@ -50,7 +51,7 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void afterClass() throws InterruptedException {
+  public static void afterClass() {
     System.clearProperty("solrcloud.skip.autorecovery");
   }
 
@@ -142,7 +143,7 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
       // Treat this node specially, from the ZK docs:
       // The dynamic configuration is stored in a special znode ZooDefs.CONFIG_NODE =
       // /zookeeper/config.
-      // This node by default is read only for all users, except super user and
+      // This node by default is read only for all users, except superuser and
       // users that's explicitly configured for write access.
       assertEquals(
           "Path " + path + " does not have READ_ACL_UNSAFE", ZooDefs.Ids.READ_ACL_UNSAFE, acls);

@@ -53,7 +53,6 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
   static final long BIG_PRIME = 982451653L;
 
   static final int MIN_NUM_DOCS = 10000;
-  static final int MAX_NUM_DOCS = MIN_NUM_DOCS * 2;
 
   static final List<String> STAT_FIELDS =
       Collections.unmodifiableList(Arrays.asList("int_i", "long_l", "string_s"));
@@ -91,7 +90,7 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
 
                   final String strValue = "s" + currentLong;
 
-                  // with these values, we know that every doc indexed has a unique value in all of
+                  // with these values, we know that every doc indexed has a unique value in all
                   // the fields we will compute cardinality against. which means the number of docs
                   // matching a query is the true cardinality for each field
                   return sdoc(
@@ -141,8 +140,8 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
     for (int i = 0; i < NUM_QUERIES; i++) {
 
       // testing shows that on random data, at the size we're dealing with,
-      // MINIMUM_LOG2M_PARAM is just too absurdly small to give anything remotely close the
-      // the theoretically expected relative error.
+      // MINIMUM_LOG2M_PARAM is just too absurdly small to give anything remotely close to the
+      // theoretically expected relative error.
       //
       // So we have to use a slightly higher lower bound on what log2m values we randomly test
       final int log2m =
@@ -180,7 +179,7 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
         // check the relative error of the estimate returned against the known truth
 
         final double relErr = expectedRelativeError(log2m);
-        final long estimate = stats.get(f).getCardinality().longValue();
+        final long estimate = stats.get(f).getCardinality();
         assertTrue(
             f
                 + ": relativeErr="
@@ -204,11 +203,11 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
 
       // WTF? - https://github.com/aggregateknowledge/java-hll/issues/15
       //
-      // aparently we can't rely on estimates always being more accurate with higher log2m values?
+      // apparently we can't rely on estimates always being more accurate with higher log2m values?
       // so for now, just try testing accuracy values that differ by at least 0.5
       //
       // (that should give us a significant enough log2m diff that the "highAccuracy" is always
-      // more accurate -- if, not then the entire premise of the float value is fundementally bogus)
+      // more accurate -- if, not then the entire premise of the float value is fundamentally bogus)
       //
       final double lowAccuracy = random().nextDouble() / 2;
       // final double highAccuracy = Math.min(1.0D, lowAccuracy + (random().nextDouble() / 2));
@@ -222,8 +221,8 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
 
       // can't use STAT_FIELDS here ...
       //
-      // hueristic differences for regwidth on 32 bit values mean we get differences
-      // between estimates for the normal field vs the prehashed (long) field
+      // heuristic differences for regwidth on 32 bit values mean we get differences
+      // between estimates for the normal field vs the prehashed (long) field,
       //
       // so we settle for only testing things where the regwidth is consistent
       // w/the prehashed long...

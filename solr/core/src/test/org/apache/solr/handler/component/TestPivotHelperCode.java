@@ -23,7 +23,7 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.SuppressForbidden;
 
-/** A light weight test of various helper methods used in pivot faceting */
+/** A lightweight test of various helper methods used in pivot faceting */
 public class TestPivotHelperCode extends SolrTestCaseJ4 {
 
   /**
@@ -82,7 +82,7 @@ public class TestPivotHelperCode extends SolrTestCaseJ4 {
 
   @SuppressForbidden(reason = "Checking object equality for Long instance")
   @SuppressWarnings("BoxedPrimitiveConstructor")
-  public void testCompareWithNullLast() throws Exception {
+  public void testCompareWithNullLast() {
     Long a = random().nextLong();
     Long b = random().nextLong();
 

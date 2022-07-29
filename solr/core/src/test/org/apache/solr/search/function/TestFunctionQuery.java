@@ -42,8 +42,6 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     initCore("solrconfig-functionquery.xml", "schema11.xml");
   }
 
-  String base = "external_foo_extf";
-
   static long start = System.nanoTime();
 
   void makeExternalFile(String field, String contents) {
@@ -220,7 +218,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
     createIndex(null, ids);
 
-    // Unsorted field, largest first
+    // Unsorted field, the largest first
     makeExternalFile(field, "54321=543210\n0=-999\n25=250");
     // test identity (straight field value)
     singleTest(field, "\0", 54321, 543210, 0, 0, 25, 250, 100, 1);
@@ -286,7 +284,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testExternalFileFieldStringKeys() throws Exception {
+  public void testExternalFileFieldStringKeys() {
     clearIndex();
 
     final String extField = "foo_extfs";
@@ -300,7 +298,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testExternalFileFieldNumericKey() throws Exception {
+  public void testExternalFileFieldNumericKey() {
     clearIndex();
 
     final String extField = "eff_trie";
@@ -314,7 +312,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testOrdAndRordOverPointsField() throws Exception {
+  public void testOrdAndRordOverPointsField() {
     assumeTrue("Skipping test when points=false", Boolean.getBoolean(NUMERIC_POINTS_SYSPROP));
     clearIndex();
 
@@ -338,7 +336,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testGeneral() throws Exception {
+  public void testGeneral() {
     clearIndex();
 
     assertU(
@@ -655,7 +653,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
   /** test collection-level term stats (new in 4.x indexes) */
   @Test
-  public void testTotalTermFreq() throws Exception {
+  public void testTotalTermFreq() {
     clearIndex();
 
     assertU(
@@ -896,7 +894,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testDegreeRads() throws Exception {
+  public void testDegreeRads() {
     clearIndex();
 
     assertU(adoc("id", "1", "x_td", "0", "y_td", "0"));
@@ -926,7 +924,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testStrDistance() throws Exception {
+  public void testStrDistance() {
     clearIndex();
 
     assertU(adoc("id", "1", "x_s", "foil"));
@@ -942,7 +940,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
         "//float[@name='score']='0.875'");
 
     // strdist on a missing valuesource should itself by missing, so the ValueSourceAugmenter
-    // should supress it...
+    // should suppress it...
     assertQ(
         req(
             "q", "id:1",
@@ -969,7 +967,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
         "//float[@name='score']='0.0'");
   }
 
-  public void dofunc(String func, double val) throws Exception {
+  public void dofunc(String func, double val) {
     // String sval = Double.toString(val);
     String sval = Float.toString((float) val);
 
@@ -979,7 +977,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testFuncs() throws Exception {
+  public void testFuncs() {
     clearIndex();
 
     assertU(adoc("id", "1", "foo_d", "9"));
@@ -1037,7 +1035,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
     createIndex(null, ids);
 
-    // Unsorted field, largest first
+    // Unsorted field, the largest first
     makeExternalFile(field, "54321=543210\n0=-999\n25=250");
     // test identity (straight field value)
     singleTest(fieldAsFunc, "\0", 54321, 543210, 0, 0, 25, 250, 100, 1);
@@ -1240,7 +1238,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testMissingFieldFunctionBehavior() throws Exception {
+  public void testMissingFieldFunctionBehavior() {
     clearIndex();
     // add a doc that has no values in any interesting fields
     assertU(adoc("id", "1"));

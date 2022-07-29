@@ -31,7 +31,7 @@ public class TestAnalyzeInfixSuggestions extends SolrTestCaseJ4 {
     assertQ(req("qt", URI_SUGGEST_DEFAULT, "q", "", SuggesterParams.SUGGEST_BUILD_ALL, "true"));
   }
 
-  public void testSingle() throws Exception {
+  public void testSingle() {
 
     assertQ(
         req("qt", URI_DEFAULT, "q", "japan", SpellingParams.SPELLCHECK_COUNT, "1"),
@@ -71,7 +71,7 @@ public class TestAnalyzeInfixSuggestions extends SolrTestCaseJ4 {
         "//lst[@name='suggest']/lst[@name='analyzing_infix_suggest_default']/lst[@name='high']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='Japanese Autocomplete and Japanese <b>High</b>lighter broken']");
   }
 
-  public void testMultiple() throws Exception {
+  public void testMultiple() {
 
     assertQ(
         req("qt", URI_DEFAULT, "q", "japan", SpellingParams.SPELLCHECK_COUNT, "2"),
@@ -121,7 +121,7 @@ public class TestAnalyzeInfixSuggestions extends SolrTestCaseJ4 {
         "//lst[@name='suggest']/lst[@name='analyzing_infix_suggest_default']/lst[@name='japanese ka']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='Add decompose compound <b>Japanese</b> <b>Ka</b>takana token capability to Kuromoji']");
   }
 
-  public void testWithoutHighlight() throws Exception {
+  public void testWithoutHighlight() {
     assertQ(
         req(
             "qt",
@@ -137,7 +137,7 @@ public class TestAnalyzeInfixSuggestions extends SolrTestCaseJ4 {
         "//lst[@name='suggest']/lst[@name='analyzing_infix_suggest_without_highlight']/lst[@name='japan']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='Add Japanese Kanji number normalization to Kuromoji']");
   }
 
-  public void testNotAllTermsRequired() throws Exception {
+  public void testNotAllTermsRequired() {
     assertQ(
         req(
             "qt",

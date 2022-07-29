@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
 @LuceneTestCase.Slow
 @SolrTestCaseJ4.SuppressSSL
 public class CollectionPropsTest extends SolrCloudTestCase {
+  private static final int TIMEOUT = 5000;
   private String collectionName;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -63,11 +64,11 @@ public class CollectionPropsTest extends SolrCloudTestCase {
     CollectionAdminRequest.Create request =
         CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2);
     CollectionAdminResponse response = request.process(cluster.getSolrClient());
-    assertTrue("Unable to create collection: " + response.toString(), response.isSuccess());
+    assertTrue("Unable to create collection: " + response, response.isSuccess());
   }
 
   @Test
-  public void testReadWriteNoCache() throws InterruptedException, IOException {
+  public void testReadWriteNoCache() throws IOException {
     CollectionProperties collectionProps = new CollectionProperties(zkClient());
 
     collectionProps.setCollectionProperty(collectionName, "property1", "value1");
@@ -117,8 +118,8 @@ public class CollectionPropsTest extends SolrCloudTestCase {
     cluster.getZkStateReader().registerCollectionPropsWatcher(collectionName, w);
     collectionProps.setCollectionProperty(collectionName, "property1", "value1");
     collectionProps.setCollectionProperty(collectionName, "property2", "value2");
-    waitForValue("property1", "value1", 5000);
-    waitForValue("property2", "value2", 5000);
+    waitForValue("property1", "value1");
+    waitForValue("property2", "value2");
 
     // HACK: don't let our watcher be removed until we're sure it's "up to date"
     // with the final prop values expected below...
@@ -129,11 +130,11 @@ public class CollectionPropsTest extends SolrCloudTestCase {
 
     collectionProps.setCollectionProperty(collectionName, "property1", null);
     collectionProps.setCollectionProperty(collectionName, "property2", "newValue");
-    waitForValue("property1", null, 5000);
-    waitForValue("property2", "newValue", 5000);
+    waitForValue("property1", null);
+    waitForValue("property2", "newValue");
 
     collectionProps.setCollectionProperty(collectionName, "property2", null);
-    waitForValue("property2", null, 5000);
+    waitForValue("property2", null);
 
     collectionProps.setCollectionProperty(collectionName, "property2", null); // no change
     checkValue("property2", null);
@@ -147,18 +148,17 @@ public class CollectionPropsTest extends SolrCloudTestCase {
     checkValue("property1", "value1");
   }
 
-  private void checkValue(String propertyName, String expectedValue) throws InterruptedException {
+  private void checkValue(String propertyName, String expectedValue) {
     final Object value =
         cluster.getZkStateReader().getCollectionProperties(collectionName).get(propertyName);
     assertEquals("Unexpected value for collection property: " + propertyName, expectedValue, value);
   }
 
-  private void waitForValue(String propertyName, String expectedValue, int timeout)
-      throws InterruptedException {
+  private void waitForValue(String propertyName, String expectedValue) throws InterruptedException {
     final ZkStateReader zkStateReader = cluster.getZkStateReader();
 
     Object lastValueSeen = null;
-    for (int i = 0; i < timeout; i += 10) {
+    for (int i = 0; i < TIMEOUT; i += 10) {
       final Object value = zkStateReader.getCollectionProperties(collectionName).get(propertyName);
       if ((expectedValue == null && value == null)
           || (expectedValue != null && expectedValue.equals(value))) {

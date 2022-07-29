@@ -54,10 +54,6 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
     private SolrZkClient zkClient = null;
 
     ZkConnection() throws Exception {
-      this(true);
-    }
-
-    ZkConnection(boolean makeRoot) throws Exception {
       Path zkDir = createTempDir("zkData");
       server = new ZkTestServer(zkDir);
       server.run();
@@ -82,7 +78,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
 
   @SuppressWarnings({"try"})
   public void testConnect() throws Exception {
-    try (ZkConnection conn = new ZkConnection(false)) {
+    try (ZkConnection conn = new ZkConnection()) {
       // do nothing
     }
   }
@@ -214,7 +210,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
     }
   }
 
-  public void testZkCmdExectutor() throws Exception {
+  public void testZkCmdExecutor() throws Exception {
     Path zkDir = createTempDir("zkData");
     ZkTestServer server = null;
 

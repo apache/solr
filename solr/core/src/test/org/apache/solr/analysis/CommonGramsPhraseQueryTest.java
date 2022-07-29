@@ -50,7 +50,7 @@ public class CommonGramsPhraseQueryTest extends SolrTestCaseJ4 {
     assertU(commit());
   }
 
-  public void testCommonGrams() throws Exception {
+  public void testCommonGrams() {
     testCommonQueries("x_commongrams");
     // individual stop words should also match in this field....
     for (String word : Arrays.asList("the", "and")) {
@@ -68,7 +68,7 @@ public class CommonGramsPhraseQueryTest extends SolrTestCaseJ4 {
     assertQ(req("x_commongrams:not"), "//*[@numFound='1']", "//str[@name='id' and .='3']");
   }
 
-  public void testCommonGramsStop() throws Exception {
+  public void testCommonGramsStop() {
     testCommonQueries("x_commongrams_stop");
     // individual stop words should not match anything in this field...
     for (String word : Arrays.asList("the", "and", "not", "a")) {
@@ -76,7 +76,7 @@ public class CommonGramsPhraseQueryTest extends SolrTestCaseJ4 {
     }
   }
 
-  protected void testCommonQueries(final String f) throws Exception {
+  protected void testCommonQueries(final String f) {
     // match 2...
     for (String phrase :
         Arrays.asList(

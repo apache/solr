@@ -42,7 +42,7 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
   }
 
   @After
-  public void cleanup() throws Exception {
+  public void cleanup() {
     assertU(delQ("*:*"));
     assertU(commit());
   }
@@ -72,7 +72,7 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
     testChildReturnFields();
   }
 
-  private void testChildDoctransformerXML() throws Exception {
+  private void testChildDoctransformerXML() {
     String test1[] =
         new String[] {
           "//*[@numFound='1']",
@@ -102,7 +102,7 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
 
     assertQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ", "fl", "*,[child]"), test1);
 
-    // shows parentFilter specified (not necessary any more) and also child
+    // shows parentFilter specified (not necessary anymore) and also child
     assertQ(
         req(
             "q",

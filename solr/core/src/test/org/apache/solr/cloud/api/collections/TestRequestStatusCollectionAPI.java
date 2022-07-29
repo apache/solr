@@ -39,7 +39,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
   }
 
   @Test
-  public void test() throws Exception {
+  public void test() {
     ModifiableSolrParams params = new ModifiableSolrParams();
 
     params.set(CollectionParams.ACTION, CollectionParams.CollectionAction.CREATE.toString());
@@ -119,7 +119,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     }
 
     assertEquals("found [1001] in completed tasks", message);
-    // create * 2 + preprecovery *2 + split + req_apply_upd * 2 =7
+    // create * 2 + preprecovery * 2 + split + req_apply_upd * 2 = 7
     assertEquals(
         "expecting " + (2 + 2 + 1 + 2) + " shard responses at " + splitResponse,
         (2 + 2 + 1 + 2),

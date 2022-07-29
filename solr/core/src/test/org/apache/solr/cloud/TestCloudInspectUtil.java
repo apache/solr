@@ -41,7 +41,7 @@ public class TestCloudInspectUtil extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testCheckIfDiffIsLegal() throws Exception {
+  public void testCheckIfDiffIsLegal() {
     Set<String> addFails = null;
     Set<String> deleteFails = null;
     SolrDocumentList a = getDocList("2", "3");

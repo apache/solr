@@ -52,7 +52,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
       "a long days night this should be a piece of text which is is is is is is is is is is is is is is is is is is is "
           + "is is is is is isis is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is "
           + "is is is is is is is is is is is is is "
-          + "is is is is is is is is is is is is is is is is is is is is sufficiently lengthly to produce multiple fragments which are not concatenated "
+          + "is is is is is is is is is is is is is is is is is is is is sufficiently lengthily to produce multiple fragments which are not concatenated "
           + "at all--we want two disjoint long fragments.";
 
   @BeforeClass
@@ -89,7 +89,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testMergeContiguous() throws Exception {
+  public void testMergeContiguous() {
     HashMap<String, String> args = new HashMap<>();
     args.put(HighlightParams.HIGHLIGHT, "true");
     args.put("df", "t_text");
@@ -201,7 +201,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testTermVecMultiValuedHighlight() throws Exception {
+  public void testTermVecMultiValuedHighlight() {
 
     // do summarization using term vectors on multivalued field
     HashMap<String, String> args = new HashMap<>();
@@ -228,7 +228,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   // more than just the first value of a multi-valued field is
   // considered for highlighting.
   @Test
-  public void testTermVecMultiValuedHighlight2() throws Exception {
+  public void testTermVecMultiValuedHighlight2() {
 
     // do summarization using term vectors on multivalued field
     HashMap<String, String> args = new HashMap<>();
@@ -551,7 +551,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
 
   // Test multi-valued together with hl.maxAnalyzedChars
   @Test
-  public void testMultiValuedMaxAnalyzedChars() throws Exception {
+  public void testMultiValuedMaxAnalyzedChars() {
     String shortText = "some short blah blah blah blah";
     final String field = random().nextBoolean() ? "tv_mv_text" : "textgap"; // term vecs or not
     assertU(adoc(field, shortText, field, LONG_TEXT, "id", "1"));
