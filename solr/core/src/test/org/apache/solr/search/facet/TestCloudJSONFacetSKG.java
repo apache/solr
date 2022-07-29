@@ -115,7 +115,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
 
   @BeforeClass
   public static void createMiniSolrCloudCluster() throws Exception {
-    // sanity check constants
+    // check constants
     assertTrue(
         "bad test constants: some suffixes will never be tested",
         (MULTI_STR_FIELD_SUFFIXES.length < MAX_FIELD_NUM)

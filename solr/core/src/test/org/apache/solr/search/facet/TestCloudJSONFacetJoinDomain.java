@@ -89,7 +89,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
 
   @BeforeClass
   public static void createMiniSolrCloudCluster() throws Exception {
-    // sanity check constants
+    // check constants
     assertTrue(
         "bad test constants: some suffixes will never be tested",
         (STR_FIELD_SUFFIXES.length < MAX_FIELD_NUM) && (INT_FIELD_SUFFIXES.length < MAX_FIELD_NUM));
