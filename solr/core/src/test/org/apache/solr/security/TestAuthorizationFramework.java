@@ -25,7 +25,6 @@ import java.util.function.Predicate;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
-import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
@@ -38,7 +37,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@LuceneTestCase.Slow
 public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -71,7 +69,6 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
         "authorization/class",
         s -> MockAuthorizationPlugin.class.getName().equals(s),
         20);
-    log.info("Starting test");
 
     // This should work fine.
     ModifiableSolrParams params = new ModifiableSolrParams();

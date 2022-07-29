@@ -100,6 +100,6 @@ public class TestManagedFileStorage extends SolrTestCaseJ4 {
     storedList = (List<String>) storedMap.get(ManagedResource.MANAGED_JSON_LIST_FIELD);
     assertNotNull(storedList);
     assertEquals(managedList.size(), storedList.size());
-    assertTrue(storedList.contains("e"));
+    assertTrue(storedList.contains("f"));
   }
 }
