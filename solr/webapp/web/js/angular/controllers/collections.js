@@ -171,7 +171,7 @@ solrAdminApp.controller('CollectionsController',
             if (coll.shards) params.shards = coll.shards;
             if (coll.routerField) params["router.field"] = coll.routerField;
             if (coll.createNodeSet) params.createNodeSet = coll.createNodeSet.join(",");
-            if (coll.nrtReplicas + coll.tlogReplicas + coll.pullReplicas > 0) {
+            if ($scope.replicaTypesChosen()) {
               params["nrtReplicas"] = coll.nrtReplicas;
               params["tlogReplicas"] = coll.tlogReplicas;
               params["pullReplicas"] = coll.pullReplicas;
@@ -293,6 +293,12 @@ solrAdminApp.controller('CollectionsController',
 
       $scope.toggleReplica = function(replica) {
           replica.show = !replica.show;
+      }
+
+      $scope.replicaTypesChosen = function () {
+          if ($scope.newCollection) {
+            return ( $scope.newCollection.nrtReplicas + $scope.newCollection.tlogReplicas + $scope.newCollection.pullReplicas > 0 );
+          }
       }
 
       $scope.refresh();
