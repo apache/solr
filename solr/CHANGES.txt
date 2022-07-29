@@ -109,7 +109,7 @@ Bug Fixes
 
 * SOLR-9661: Fix explanation of select() streaming expression that uses replace() operation  (Ahmet Can Kepenek via Eric Pugh) 
 
-* SOLR-16316: Fix debugQuery clicking on the Query UI does not show the debug.explain.structured option. (Shiming Li)
+* SOLR-16316: Fix debugQuery clicking on the Query UI does not show the debug.explain.structured option. (Shiming Li via Eric Pugh)
 
 Other Changes
 ---------------------
