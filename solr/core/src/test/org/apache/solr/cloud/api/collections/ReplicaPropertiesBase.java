@@ -40,7 +40,8 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
 
   public static NamedList<Object> doPropertyAction(CloudSolrClient client, String... paramsIn)
       throws IOException, SolrServerException {
-    assertEquals("paramsIn must be a multiple of 2, it is: " + paramsIn.length, 0, (paramsIn.length % 2));
+    assertEquals(
+        "paramsIn must be a multiple of 2, it is: " + paramsIn.length, 0, (paramsIn.length % 2));
     ModifiableSolrParams params = new ModifiableSolrParams();
     for (int idx = 0; idx < paramsIn.length; idx += 2) {
       params.set(paramsIn[idx], paramsIn[idx + 1]);

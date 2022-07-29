@@ -1555,8 +1555,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     CloudJettyRunner lastJetty = null;
     for (CloudJettyRunner cjetty : solrJetties) {
       ZkNodeProps props = cjetty.info;
-      log.debug("client{}", cnt++);
+      log.debug("client{}", cnt);
       log.debug("PROPS:{}", props);
+      cnt++;
 
       try {
         SolrParams query =
@@ -1572,7 +1573,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         // echoed in logs
         num = cjetty.client.solrClient.query(query).getResults().getNumFound();
       } catch (SolrException | SolrServerException e) {
-        log.debug("error contacting client: {}", e.getMessage());
+        log.debug("error contacting client: {}", e);
         continue;
       }
 

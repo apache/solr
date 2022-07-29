@@ -231,7 +231,6 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
 
   @Test
   @Slow
-  @SuppressWarnings("rawtypes")
   public void testBackupIncremental() throws Exception {
     setTestSuffix("testbackupinc");
     CloudSolrClient solrClient = cluster.getSolrClient();
