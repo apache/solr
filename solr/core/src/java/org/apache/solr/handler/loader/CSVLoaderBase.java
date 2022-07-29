@@ -16,7 +16,10 @@
  */
 package org.apache.solr.handler.loader;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -33,7 +36,7 @@ import org.apache.solr.internal.csv.CSVParser;
 import org.apache.solr.internal.csv.CSVStrategy;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.update.*;
+import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 
 public abstract class CSVLoaderBase extends ContentStreamLoader {
