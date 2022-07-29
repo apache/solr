@@ -22,7 +22,9 @@ import static org.apache.solr.common.params.CommonParams.ACTION;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.google.common.collect.Maps;
 import java.util.Arrays;
@@ -52,7 +54,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
-/** Unit tests for the v2 to v1 mapping for Solr's /node/ APIs */
+/** Unit tests for the v2 to v1 mapping for /node/ APIs. */
 public class V2NodeAPIMappingTest {
   private ApiBag apiBag;
   private ArgumentCaptor<SolrQueryRequest> queryRequestCaptor;

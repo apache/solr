@@ -135,7 +135,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
         for (int v = 0; v < numValsThisDoc; v++) {
           final String fieldValue = randFieldValue(fieldNum);
 
-          // for each fieldNum, there are actaully two fields: one string, and one integer
+          // for each fieldNum, there are actually two fields: one string, and one integer
           doc.addField(field(STR_FIELD_SUFFIXES, fieldNum), fieldValue);
           doc.addField(field(INT_FIELD_SUFFIXES, fieldNum), fieldValue);
         }
@@ -153,7 +153,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
 
   /**
    * Given a (random) number, and a (static) array of possible suffixes returns a consistent field
-   * name that uses that number and one of hte specified suffixes in it's name.
+   * name that uses that number and one of the specified suffixes in its name.
    *
    * @see #STR_FIELD_SUFFIXES
    * @see #INT_FIELD_SUFFIXES
@@ -325,9 +325,9 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   }
 
   /**
-   * Test some small, hand crafted, but non-trivial queries that are easier to trace/debug then a
+   * Test some small, handcrafted, but non-trivial queries that are easier to trace/debug then a
    * pure random monstrosity. (ie: if something obvious gets broken, this test may fail faster and
-   * in a more obvious way then testRandom)
+   * in a more obvious way than testRandom)
    */
   public void testBespoke() throws Exception {
 
@@ -563,7 +563,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
     // relatively small facets, so be it, but if we get a really big one early on, we can test as
     // much as possible, skip other iterations.
     //
-    // (deeply nested facets may contain more buckets then the max, but we won't *check* all of
+    // (deeply nested facets may contain more buckets than the max, but we won't *check* all of
     // them)
     final int maxBucketsAllowed = atLeast(2000);
     final AtomicInteger maxBucketsToCheck = new AtomicInteger(maxBucketsAllowed);
@@ -703,7 +703,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
     }
     assertTrue(
         "facets have unexpected keys left over: " + actualFacetResponse,
-        // should alwasy be a count, maybe a 'val' if we're a subfacet
+        // should always be a count, maybe a 'val' if we're a subfacet
         (actualFacetResponse.size() == expected.size() + 1)
             || (actualFacetResponse.size() == expected.size() + 2));
   }
@@ -738,9 +738,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
       this.refine = refine;
       if (isRefinementNeeded(limit, overrequest)) {
         assertEquals(
-            "Invalid refine param based on limit & overrequest: " + this.toString(),
-            Boolean.TRUE,
-            refine);
+            "Invalid refine param based on limit & overrequest: " + this, Boolean.TRUE, refine);
       }
     }
 
@@ -811,7 +809,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
     /**
      * Factory method for generating some random (nested) facets.
      *
-     * <p>For simplicity, each facet will have a unique key name, regardless of it's depth under
+     * <p>For simplicity, each facet will have a unique key name, regardless of its depth under
      * other facets
      *
      * @see JoinDomain
@@ -859,16 +857,16 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
           return r.nextInt(UNIQUE_FIELD_VALS); // 20% ask for less them what's needed
         case 6:
           return r.nextInt(
-              Integer.MAX_VALUE); // 10%: completley random value, statisticaly more then enough
+              Integer.MAX_VALUE); // 10%: completely random value, statistically more than enough
         default:
           break;
       }
-      // else.... either leave param unspecified (or redundently specify the -1 default)
+      // else.... either leave param unspecified (or redundantly specify the -1 default)
       return r.nextBoolean() ? null : -1;
     }
 
     /**
-     * picks a random value for the "refine" param, that is garunteed to be suitable for the
+     * picks a random value for the "refine" param, that is guaranteed to be suitable for the
      * specified limit &amp; overrequest params.
      *
      * @return a value to specify in the request, or null to specify nothing (trigger default
@@ -893,7 +891,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
 
     /**
      * Deterministicly identifies if the specified limit &amp; overrequest params <b>require</b> a
-     * "refine:true" param be used in the the request, in order for the counts to be 100% accurate.
+     * "refine:true" param be used in the request, in order for the counts to be 100% accurate.
      *
      * @see #UNIQUE_FIELD_VALS
      */
@@ -918,7 +916,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
      * recursive helper method for building random facets
      *
      * @param keyCounter used to ensure every generated facet has a unique key name
-     * @param maxDepth max possible depth allowed for the recusion, a lower value may be used
+     * @param maxDepth max possible depth allowed for the recursion, a lower value may be used
      *     depending on how many facets are returned at the current level.
      */
     private static Map<String, TermFacet> buildRandomFacets(
@@ -956,7 +954,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   private static final class JoinDomain {
     public final String from;
     public final String to;
-    public final String filter; // not bothering with more then 1 filter, not the point of the test
+    public final String filter; // not bothering with more than 1 filter, not the point of the test
 
     /**
      * @param from left side of join field name, null if domain involves no joining
@@ -1032,7 +1030,8 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
         if (noJoin) break;
         from = field(suffixes, random().nextInt(MAX_FIELD_NUM));
         to = field(suffixes, random().nextInt(MAX_FIELD_NUM));
-        // HACK: joined numeric point fields need docValues.. for now just skip _is fields if we are
+        // HACK: joined numeric point fields need docValues... for now just skip _is fields if we
+        // are
         // dealing with points.
         if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)
             && (from.endsWith("_is") || to.endsWith("_is"))) {

@@ -17,8 +17,18 @@
 package org.apache.solr.client.solrj.request;
 
 import static org.apache.solr.common.cloud.DocCollection.PER_REPLICA_STATE;
-import static org.apache.solr.common.cloud.ZkStateReader.*;
-import static org.apache.solr.common.params.CollectionAdminParams.*;
+import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.READ_ONLY;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
+import static org.apache.solr.common.params.CollectionAdminParams.ALIAS;
+import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
+import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
+import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM;
+import static org.apache.solr.common.params.CollectionAdminParams.ROUTER_PREFIX;
+import static org.apache.solr.common.params.CollectionAdminParams.SKIP_NODE_ASSIGNMENT;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -3314,7 +3324,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      * Sets the collection attribute to the given value
      *
      * @param key a string attribute key, must be one of the entries documented in the <a
-     *     href="https://solr.apache.org/guide/collections-api.html#modifycollection">Modify
+     *     href="https://solr.apache.org/guide/solr/latest/deployment-guide/collection-management.html#modifycollection">Modify
      *     Collection API documentation</a>
      * @param value the attribute value for the given key
      */
@@ -3344,7 +3354,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      * Removes the given key from the collection
      *
      * @param key the string attribute key, must be one of the entries documented in the <a
-     *     href="https://solr.apache.org/guide/collections-api.html#modifycollection">Modify
+     *     href="https://solr.apache.org/guide/solr/latest/deployment-guide/collection-management.html#modifycollection">Modify
      *     Collection API documentation</a>
      */
     public Modify unsetAttribute(String key) {

@@ -56,11 +56,9 @@ import org.slf4j.LoggerFactory;
 public class TestBulkSchemaAPI extends RestTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static File tmpSolrHome;
-
   @Before
   public void before() throws Exception {
-    tmpSolrHome = createTempDir().toFile();
+    File tmpSolrHome = createTempDir().toFile();
     FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
 
     System.setProperty("managed.schema.mutable", "true");
@@ -1469,7 +1467,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
       Similarity mainSim = core.getLatestSchema().getSimilarity();
       assertNotNull(mainSim);
 
-      // sanity check simfac vs sim in use - also verify infom called on simfac, otherwise exception
+      // check simfac vs sim in use - also verify inform called on simfac, otherwise exception
       assertEquals(mainSim, simfac.getSimilarity());
 
       assertTrue(

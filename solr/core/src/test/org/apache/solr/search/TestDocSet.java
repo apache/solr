@@ -41,8 +41,6 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.util.BitSetIterator;
@@ -54,7 +52,6 @@ import org.apache.solr.SolrTestCase;
 /** */
 public class TestDocSet extends SolrTestCase {
   Random rand;
-  private Object IndexSearcher;
 
   @Override
   public void setUp() throws Exception {
@@ -215,7 +212,7 @@ public class TestDocSet extends SolrTestCase {
   }
 
   public void testRandomDocSets() {
-    // Make the size big enough to go over certain limits (such as one set
+    // Make the size big enough to go over certain limits, such as one set
     // being 8 times the size of another in the int set, or going over 2 times
     // 64 bits for the bit doc set.  Smaller sets can hit more boundary conditions though.
 
@@ -235,7 +232,7 @@ public class TestDocSet extends SolrTestCase {
       }
     }
 
-    if (n <= smallSetCuttoff) {
+    if (n <= smallSetCutoff) {
       if (smallSetType == 0) {
         Arrays.sort(a);
         return new SortedIntDocSet(a);
@@ -260,7 +257,7 @@ public class TestDocSet extends SolrTestCase {
   }
 
   public static int smallSetType = 0; // 0==sortedint, 2==FixedBitSet
-  public static int smallSetCuttoff = 3000;
+  public static int smallSetCutoff = 3000;
 
   /*
   public void testIntersectionSizePerformance() {
@@ -406,8 +403,7 @@ public class TestDocSet extends SolrTestCase {
       subs[i] = dummyIndexReader(rand.nextInt(maxDoc));
     }
 
-    MultiReader mr = new MultiReader(subs);
-    return mr;
+    return new MultiReader(subs);
   }
 
   private static boolean checkNullOrEmpty(DocIdSetIterator[] disis) throws IOException {
@@ -609,12 +605,6 @@ public class TestDocSet extends SolrTestCase {
       IndexReader r = dummyMultiReader(maxSeg, maxDoc);
       doFilterTest(r);
     }
-  }
-
-  private DocIdSetIterator getDocIdSetIteratorFromQuery(
-      DocSetQuery dsq, LeafReaderContext readerContext) throws IOException {
-    Scorer scorer = dsq.createWeight(null, ScoreMode.COMPLETE_NO_SCORES, 0).scorer(readerContext);
-    return scorer != null ? scorer.iterator() : null;
   }
 
   private static final int MAX_SRC_SIZE = 130; // push _just_ into 3 `long` "words"

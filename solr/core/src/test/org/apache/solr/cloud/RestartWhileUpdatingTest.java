@@ -20,12 +20,12 @@ import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
 import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.junit.Test;
 
-@Slow
-@Nightly
 /**
  * Implementation moved to AbstractRestartWhileUpdatingTestBase because it is used by HDFS contrib
  * module tests
  */
+@Slow
+@Nightly
 public class RestartWhileUpdatingTest extends AbstractRestartWhileUpdatingTestBase {
 
   public RestartWhileUpdatingTest() throws Exception {

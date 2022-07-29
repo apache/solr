@@ -19,7 +19,6 @@ package org.apache.solr.core;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Locale;
-import org.apache.lucene.backward_codecs.lucene90.Lucene90HnswVectorsFormat;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.KnnVectorsFormat;
@@ -124,20 +123,16 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
             FieldType fieldType = (schemaField == null ? null : schemaField.getType());
             if (fieldType instanceof DenseVectorField) {
               DenseVectorField vectorType = (DenseVectorField) fieldType;
-              String knnVectorFormatName = vectorType.getCodecFormat();
-              if (knnVectorFormatName != null) {
-                if (knnVectorFormatName.equals(Lucene91HnswVectorsFormat.class.getSimpleName())) {
+              String knnAlgorithm = vectorType.getKnnAlgorithm();
+              if (knnAlgorithm != null) {
+                if (knnAlgorithm.equals(DenseVectorField.HNSW_ALGORITHM)) {
                   int maxConn = vectorType.getHnswMaxConn();
                   int beamWidth = vectorType.getHnswBeamWidth();
                   return new Lucene91HnswVectorsFormat(maxConn, beamWidth);
-                } else if (knnVectorFormatName.equals(
-                    Lucene90HnswVectorsFormat.class.getSimpleName())) {
-                  int maxConn = vectorType.getHnswMaxConn();
-                  int beamWidth = vectorType.getHnswBeamWidth();
-                  return new Lucene90HnswVectorsFormat(maxConn, beamWidth);
-                } else {
-                  return KnnVectorsFormat.forName(knnVectorFormatName);
                 }
+              } else {
+                throw new SolrException(
+                    ErrorCode.SERVER_ERROR, knnAlgorithm + " KNN algorithm is not supported");
               }
             }
             return super.getKnnVectorsFormatForField(field);

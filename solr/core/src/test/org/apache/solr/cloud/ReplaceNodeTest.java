@@ -54,7 +54,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void setupCluster() {
     System.setProperty("metricsEnabled", "true");
   }
 
@@ -62,10 +62,6 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
   public void clearPreviousCluster() throws Exception {
     // Clear the previous cluster before each test, since they use different numbers of nodes.
     shutdownCluster();
-  }
-
-  protected String getSolrXml() {
-    return "solr.xml";
   }
 
   @Test
@@ -84,7 +80,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     ArrayList<String> l = new ArrayList<>(liveNodes);
     Collections.shuffle(l, random());
     String emptyNode = l.remove(0);
-    String node2bdecommissioned = l.get(0);
+    String nodeToBeDecommissioned = l.get(0);
     CollectionAdminRequest.Create create;
     // NOTE: always using the createCollection that takes in 'int' for all types of replicas, so we
     // never have to worry about null checking when comparing the Create command with the final
@@ -117,11 +113,11 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     DocCollection collection = cloudClient.getClusterState().getCollection(coll);
     log.debug("### Before decommission: {}", collection);
     log.info("excluded_node : {}  ", emptyNode);
-    createReplaceNodeRequest(node2bdecommissioned, emptyNode, null)
+    createReplaceNodeRequest(nodeToBeDecommissioned, emptyNode, null)
         .processAndWait("000", cloudClient, 15);
     try (HttpSolrClient coreclient =
         getHttpSolrClient(
-            ZkStateReader.from(cloudClient).getBaseUrlForNodeName(node2bdecommissioned))) {
+            ZkStateReader.from(cloudClient).getBaseUrlForNodeName(nodeToBeDecommissioned))) {
       CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreclient);
       assertEquals(0, status.getCoreStatus().size());
     }
@@ -130,7 +126,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     collection = cloudClient.getClusterState().getCollection(coll);
     log.debug("### After decommission: {}", collection);
     // check what are replica states on the decommissioned node
-    List<Replica> replicas = collection.getReplicas(node2bdecommissioned);
+    List<Replica> replicas = collection.getReplicas(nodeToBeDecommissioned);
     if (replicas == null) {
       replicas = Collections.emptyList();
     }
@@ -138,7 +134,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
 
     // let's do it back - this time wait for recoveries
     CollectionAdminRequest.AsyncCollectionAdminRequest replaceNodeRequest =
-        createReplaceNodeRequest(emptyNode, node2bdecommissioned, Boolean.TRUE);
+        createReplaceNodeRequest(emptyNode, nodeToBeDecommissioned, Boolean.TRUE);
     replaceNodeRequest.setWaitForFinalState(true);
     replaceNodeRequest.processAndWait("001", cloudClient, 10);
 
@@ -165,7 +161,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
           s.getReplicas(EnumSet.of(Replica.Type.PULL)).size());
     }
     // make sure all newly created replicas on node are active
-    List<Replica> newReplicas = collection.getReplicas(node2bdecommissioned);
+    List<Replica> newReplicas = collection.getReplicas(nodeToBeDecommissioned);
     replicas.forEach(r -> newReplicas.removeIf(nr -> nr.getName().equals(r.getName())));
     assertFalse(newReplicas.isEmpty());
     for (Replica r : newReplicas) {
@@ -235,7 +231,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     Collections.shuffle(l, random());
     List<String> emptyNodes = l.subList(0, 2);
     l = l.subList(2, l.size());
-    String node2bdecommissioned = l.get(0);
+    String nodeToBeDecommissioned = l.get(0);
 
     // TODO: tlog replicas do not work correctly in tests due to fault
     // TestInjection#waitForInSyncWithLeader
@@ -259,13 +255,13 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
         l.stream()
             .map(node -> initialCollection.getReplicas(node).size())
             .collect(Collectors.toList());
-    createReplaceNodeRequest(node2bdecommissioned, null, true)
+    createReplaceNodeRequest(nodeToBeDecommissioned, null, true)
         .processAndWait("000", cloudClient, 15);
 
     DocCollection collection = cloudClient.getClusterState().getCollection(coll);
     log.debug("### After decommission: {}", collection);
     // check what are replica states on the decommissioned node
-    List<Replica> replicas = collection.getReplicas(node2bdecommissioned);
+    List<Replica> replicas = collection.getReplicas(nodeToBeDecommissioned);
     if (replicas == null) {
       replicas = Collections.emptyList();
     }

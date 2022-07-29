@@ -44,7 +44,7 @@ public class TriLevelCompositeIdRoutingTest extends ShardRoutingTest {
     // TODO: we use an fs based dir because something
     // like a ram dir will not recover correctly right now
     // because tran log will still exist on restart and ram
-    // dir will not persist - perhaps translog can empty on
+    // dir will not persist - perhaps transaction log can empty on
     // start if using an EphemeralDirectoryFactory
     useFactory(null);
   }
@@ -118,7 +118,7 @@ public class TriLevelCompositeIdRoutingTest extends ShardRoutingTest {
           actualUniqueKeys.addAll(uniqueKeysInShard);
         }
 
-        // foreach uniqueKey, extract it's route prefix and confirm those aren't spread across
+        // foreach uniqueKey, extract its route prefix and confirm those aren't spread across
         // multiple shards
         for (String uniqueKey : uniqueKeysInShard) {
           final String routePrefix = uniqueKey.substring(0, uniqueKey.lastIndexOf('!'));
@@ -159,7 +159,7 @@ public class TriLevelCompositeIdRoutingTest extends ShardRoutingTest {
     Set<String> uniqueKeys = new HashSet<>();
     for (SolrDocument doc : rsp.getResults()) {
       final String id = (String) doc.get("id");
-      assertNotNull("null id WTF? " + doc.toString(), id);
+      assertNotNull("null id WTF? " + doc, id);
       uniqueKeys.add(id);
     }
     return uniqueKeys;

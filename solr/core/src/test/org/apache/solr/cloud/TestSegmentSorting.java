@@ -33,19 +33,23 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class TestSegmentSorting extends SolrCloudTestCase {
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final int NUM_SERVERS = 5;
   private static final int NUM_SHARDS = 2;
   private static final int REPLICATION_FACTOR = 2;
   private static final String configName = MethodHandles.lookup().lookupClass() + "_configSet";
 
+  private static boolean compoundMergePolicySort = false;
+
   @BeforeClass
   public static void setupCluster() throws Exception {
+    compoundMergePolicySort = random().nextBoolean();
+    if (compoundMergePolicySort) {
+      System.setProperty("mergePolicySort", "timestamp_i_dvo desc, id desc");
+      System.setProperty("solr.tests.id.docValues", "true");
+    }
     configureCluster(NUM_SERVERS)
         .addConfig(configName, Paths.get(TEST_HOME(), "collection1", "conf"))
         .configure();
@@ -57,6 +61,8 @@ public class TestSegmentSorting extends SolrCloudTestCase {
   public void ensureClusterEmpty() throws Exception {
     cluster.deleteAllCollections();
     cluster.getSolrClient().setDefaultCollection(null);
+    System.clearProperty("mergePolicySort");
+    System.clearProperty("solr.tests.id.docValues");
   }
 
   @Before
@@ -100,18 +106,38 @@ public class TestSegmentSorting extends SolrCloudTestCase {
     tstes.addDocuments(cloudSolrClient, 2, 10, false);
 
     // CommonParams.SEGMENT_TERMINATE_EARLY parameter now present
-    tstes.queryTimestampDescendingSegmentTerminateEarlyYes(cloudSolrClient);
-    tstes.queryTimestampDescendingSegmentTerminateEarlyNo(cloudSolrClient);
+    tstes.queryTimestampDescendingSegmentTerminateEarlyYes(
+        cloudSolrClient, false /* appendKeyDescendingToSort */);
+    tstes.queryTimestampDescendingSegmentTerminateEarlyNo(
+        cloudSolrClient, false /* appendKeyDescendingToSort */);
 
-    // CommonParams.SEGMENT_TERMINATE_EARLY parameter present but it won't be used
-    tstes.queryTimestampDescendingSegmentTerminateEarlyYesGrouped(cloudSolrClient);
+    // CommonParams.SEGMENT_TERMINATE_EARLY parameter present, but it won't be used
+    tstes.queryTimestampDescendingSegmentTerminateEarlyYesGrouped(
+        cloudSolrClient, false /* appendKeyDescendingToSort */);
     // uses a sort order that is _not_ compatible with the merge sort order
-    tstes.queryTimestampAscendingSegmentTerminateEarlyYes(cloudSolrClient);
+    tstes.queryTimestampAscendingSegmentTerminateEarlyYes(
+        cloudSolrClient, false /* appendKeyDescendingToSort */);
+
+    if (compoundMergePolicySort) {
+      // CommonParams.SEGMENT_TERMINATE_EARLY parameter now present
+      tstes.queryTimestampDescendingSegmentTerminateEarlyYes(
+          cloudSolrClient, true /* appendKeyDescendingToSort */);
+      tstes.queryTimestampDescendingSegmentTerminateEarlyNo(
+          cloudSolrClient, true /* appendKeyDescendingToSort */);
+
+      // CommonParams.SEGMENT_TERMINATE_EARLY parameter present but it won't be used
+      tstes.queryTimestampDescendingSegmentTerminateEarlyYesGrouped(
+          cloudSolrClient, true /* appendKeyDescendingToSort */);
+      // uses a sort order that is _not_ compatible with the merge sort order
+      tstes.queryTimestampAscendingSegmentTerminateEarlyYes(
+          cloudSolrClient, true /* appendKeyDescendingToSort */);
+    }
   }
 
   /**
    * Verify that atomic updates against our (DVO) segment sort field doesn't cause errors. In this
-   * situation, the updates should *NOT* be done inplace, because that would break the index sorting
+   * situation, the updates should *NOT* be done in-place, because that would break the index
+   * sorting
    */
   @Test
   // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 26-Mar-2018
@@ -121,7 +147,7 @@ public class TestSegmentSorting extends SolrCloudTestCase {
     final String updateField = SegmentTerminateEarlyTestState.TIMESTAMP_FIELD;
 
     // sanity check that updateField is in fact a DocValues only field, meaning it
-    // would normally be eligable for inplace updates -- if it weren't also used for merge sorting
+    // would normally be eligible for in-place updates -- if it weren't also used for merge sorting
     final Map<String, Object> schemaOpts =
         new Field(
                 updateField,

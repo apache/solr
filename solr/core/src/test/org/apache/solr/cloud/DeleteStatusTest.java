@@ -40,7 +40,7 @@ public class DeleteStatusTest extends SolrCloudTestCase {
   }
 
   // Basically equivalent to RequestStatus.waitFor(), but doesn't delete the id from the queue
-  private static RequestStatusState waitForRequestState(String id, SolrClient client, int timeout)
+  private static RequestStatusState waitForRequestState(String id, SolrClient client)
       throws IOException, SolrServerException, InterruptedException {
     RequestStatusState state = RequestStatusState.SUBMITTED;
     long endTime = System.nanoTime() + TimeUnit.SECONDS.toNanos(MAX_WAIT_TIMEOUT);
@@ -64,7 +64,7 @@ public class DeleteStatusTest extends SolrCloudTestCase {
     final String asyncId =
         CollectionAdminRequest.createCollection(collection, "conf1", 1, 1).processAsync(client);
 
-    waitForRequestState(asyncId, client, MAX_WAIT_TIMEOUT);
+    waitForRequestState(asyncId, client);
 
     assertEquals(
         RequestStatusState.COMPLETED,
@@ -116,8 +116,8 @@ public class DeleteStatusTest extends SolrCloudTestCase {
     String id2 =
         CollectionAdminRequest.createCollection("flush2", "conf1", 1, 1).processAsync(client);
 
-    assertEquals(RequestStatusState.COMPLETED, waitForRequestState(id1, client, MAX_WAIT_TIMEOUT));
-    assertEquals(RequestStatusState.COMPLETED, waitForRequestState(id2, client, MAX_WAIT_TIMEOUT));
+    assertEquals(RequestStatusState.COMPLETED, waitForRequestState(id1, client));
+    assertEquals(RequestStatusState.COMPLETED, waitForRequestState(id2, client));
 
     CollectionAdminRequest.deleteAllAsyncIds().process(client);
 

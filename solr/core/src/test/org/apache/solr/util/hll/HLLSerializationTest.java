@@ -16,8 +16,13 @@
  */
 package org.apache.solr.util.hll;
 
-import static com.carrotsearch.randomizedtesting.RandomizedTest.*;
-import static org.apache.solr.util.hll.HLL.*;
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomLong;
+import static org.apache.solr.util.hll.HLL.MAXIMUM_EXPTHRESH_PARAM;
+import static org.apache.solr.util.hll.HLL.MAXIMUM_LOG2M_PARAM;
+import static org.apache.solr.util.hll.HLL.MAXIMUM_REGWIDTH_PARAM;
+import static org.apache.solr.util.hll.HLL.MINIMUM_EXPTHRESH_PARAM;
+import static org.apache.solr.util.hll.HLL.MINIMUM_LOG2M_PARAM;
+import static org.apache.solr.util.hll.HLL.MINIMUM_REGWIDTH_PARAM;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -92,7 +97,7 @@ public class HLLSerializationTest extends SolrTestCase {
   @Test
   @Slow
   @Monster("may require as much as -Dtests.heapsize=4g depending on random values picked")
-  public void manyValuesHLLSerializationTest() throws Exception {
+  public void manyValuesHLLSerializationTest() {
 
     final HLLType[] ALL_TYPES = EnumSet.allOf(HLLType.class).toArray(new HLLType[0]);
     Arrays.sort(ALL_TYPES);
@@ -137,7 +142,7 @@ public class HLLSerializationTest extends SolrTestCase {
   @Test
   @Slow
   @Monster("can require as much as -Dtests.heapsize=4g because of the massive data structs")
-  public void manyValuesMonsterHLLSerializationTest() throws Exception {
+  public void manyValuesMonsterHLLSerializationTest() {
 
     final HLLType[] ALL_TYPES = EnumSet.allOf(HLLType.class).toArray(new HLLType[0]);
     Arrays.sort(ALL_TYPES);
@@ -171,8 +176,8 @@ public class HLLSerializationTest extends SolrTestCase {
   }
 
   /**
-   * Iterates over all possible constructor args, with the exception of log2m, which is only
-   * iterated up to the specified max so the test runs in a "reasonable" amount of time and ram.
+   * Iterates over all possible constructor args, except for log2m, which is only iterated up to the
+   * specified max so the test runs in a "reasonable" amount of time and RAM.
    */
   private static void assertCardinality(
       final HLLType hllType, final int maxLog2m, final Collection<Long> items)
@@ -189,7 +194,7 @@ public class HLLSerializationTest extends SolrTestCase {
   }
 
   /**
-   * Adds all of the items to the specified hll, then does a round trip serialize/deserialize and
+   * Adds all the items to the specified hll, then does a round trip serialize/deserialize and
    * confirms equality of several properties (including the byte serialization). Repeats process
    * with a clone.
    */

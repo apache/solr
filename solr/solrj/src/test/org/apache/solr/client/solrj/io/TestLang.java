@@ -103,6 +103,8 @@ public class TestLang extends SolrTestCase {
     "sum",
     "count",
     "replace",
+    "withValue",
+    "withField",
     "concat",
     "group",
     "distinct",

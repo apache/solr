@@ -94,13 +94,13 @@ public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
     // dot-separated names are treated like class names and collapsed
     // in regular log output, but here we get the full name
     if (history.stream().filter(d -> "solr.node".equals(d.getFirstValue("logger"))).count() == 0) {
-      fail("No 'solr.node' logs in: " + history.toString());
+      fail("No 'solr.node' logs in: " + history);
     }
     if (history.stream().filter(d -> "foobar".equals(d.getFirstValue("logger"))).count() == 0) {
-      fail("No 'foobar' logs in: " + history.toString());
+      fail("No 'foobar' logs in: " + history);
     }
     if (history.stream().filter(d -> "collection1".equals(d.getFirstValue("core"))).count() == 0) {
-      fail("No 'solr.core' or MDC context in logs: " + history.toString());
+      fail("No 'solr.core' or MDC context in logs: " + history);
     }
   }
 

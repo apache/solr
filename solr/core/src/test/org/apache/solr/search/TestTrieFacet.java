@@ -134,7 +134,7 @@ public class TestTrieFacet extends SolrTestCaseJ4 {
     return 0 != TestUtil.nextInt(random(), 0, 9);
   }
 
-  private static void doTestNoZeros(final String field, final String method) throws Exception {
+  private static void doTestNoZeros(final String field, final String method) {
 
     assertQ(
         "sanity check # docs in index: " + NUM_DOCS,

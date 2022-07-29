@@ -20,7 +20,6 @@ package org.apache.solr.update;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketException;
-import java.util.HashSet;
 import java.util.Set;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -34,23 +33,21 @@ import org.apache.solr.common.util.NamedList;
 
 public class MockingHttp2SolrClient extends Http2SolrClient {
 
+  protected MockingHttp2SolrClient(String serverBaseUrl, Http2SolrClient.Builder builder) {
+    super(serverBaseUrl, builder);
+  }
+
   public enum Exp {
     CONNECT_EXCEPTION,
     SOCKET_EXCEPTION,
     BAD_REQUEST
-  };
+  }
 
   private volatile Exp exp = null;
   private boolean oneExpPerReq;
 
   @SuppressWarnings({"rawtypes"})
   private Set<SolrRequest> reqGotException;
-
-  public MockingHttp2SolrClient(String baseSolrUrl, Builder builder) {
-    super(baseSolrUrl, builder);
-    this.oneExpPerReq = builder.oneExpPerReq;
-    this.reqGotException = new HashSet<>();
-  }
 
   public static class Builder extends Http2SolrClient.Builder {
     private boolean oneExpPerReq = false;
@@ -64,16 +61,6 @@ public class MockingHttp2SolrClient extends Http2SolrClient {
     public MockingHttp2SolrClient build() {
       return new MockingHttp2SolrClient(null, this);
     }
-
-    // DBQ won't cause exception
-    Builder oneExpPerReq() {
-      oneExpPerReq = true;
-      return this;
-    }
-  }
-
-  public void setExp(Exp exp) {
-    this.exp = exp;
   }
 
   private Exception exception() {

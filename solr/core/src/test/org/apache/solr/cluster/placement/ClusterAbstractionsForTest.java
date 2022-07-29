@@ -17,9 +17,17 @@
 
 package org.apache.solr.cluster.placement;
 
-import java.util.*;
-import java.util.stream.Collectors;
-import org.apache.solr.cluster.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import org.apache.solr.cluster.Cluster;
+import org.apache.solr.cluster.Node;
+import org.apache.solr.cluster.Replica;
+import org.apache.solr.cluster.Shard;
+import org.apache.solr.cluster.SolrCollection;
 
 /**
  * Cluster abstractions independent of any internal SolrCloud abstractions to use in tests (of
@@ -64,11 +72,6 @@ class ClusterAbstractionsForTest {
 
   static class NodeImpl implements Node {
     public final String nodeName;
-
-    /** Transforms a collection of node names into a set of {@link Node} instances. */
-    static Set<Node> getNodes(Collection<String> nodeNames) {
-      return nodeNames.stream().map(NodeImpl::new).collect(Collectors.toSet());
-    }
 
     NodeImpl(String nodeName) {
       this.nodeName = nodeName;

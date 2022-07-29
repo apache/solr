@@ -24,7 +24,7 @@ import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 
-/** Test both XInclude as well as more old school "entity includes" */
+/** Test both XInclude and old school "entity includes" */
 public class TestXIncludeConfig extends SolrTestCaseJ4 {
 
   @BeforeClass
@@ -52,7 +52,7 @@ public class TestXIncludeConfig extends SolrTestCaseJ4 {
 
     UpdateRequestProcessorChain chain = core.getUpdateProcessingChain("special-include");
     assertNotNull("chain is missing included processor", chain);
-    assertEquals("chain with inclued processor is wrong size", 1, chain.getProcessors().size());
+    assertEquals("chain with included processor is wrong size", 1, chain.getProcessors().size());
     assertEquals(
         "chain has wrong included processor",
         RegexReplaceProcessorFactory.class,

@@ -35,7 +35,7 @@ public class TestMissingGroups extends SolrTestCaseJ4 {
   }
 
   @After
-  public void cleanup() throws Exception {
+  public void cleanup() {
     clearIndex();
     assertU(optimize());
   }

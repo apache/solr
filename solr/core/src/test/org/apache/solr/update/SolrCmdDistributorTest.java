@@ -73,7 +73,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   private AtomicInteger id = new AtomicInteger();
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeClass() {
     // we can't use the Randomized merge policy because the test depends on
     // being able to call optimize to have all deletes expunged.
     systemSetPropertySolrTestsMergePolicyFactory(LogDocMergePolicyFactory.class.getName());

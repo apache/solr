@@ -55,7 +55,7 @@ import org.mockito.Mock;
  * {@link #createUnderlyingRequestHandler()} to properly use this harness. See the method-level
  * Javadocs on each for more information. With these methods implemented, subclasses can test their
  * API mappings by calling any of the 'capture' methods included on this harness, which take in the
- * v2 API path, method, etc. and use them to lookup and run the matching API (if a match can be
+ * v2 API path, method, etc. and use them to look up and run the matching API (if a match can be
  * found). Most of these helper methods return the (post-v1-conversion) {@link SolrParams} seen by
  * the mocked RequestHandler.
  */
@@ -204,11 +204,12 @@ public abstract class V2ApiMappingTest<T extends RequestHandlerBase> extends Sol
     return queryRequestCaptor.getValue().getParams();
   }
 
-  protected void assertAnnotatedApiExistsFor(String method, String path) {
+  protected AnnotatedApi assertAnnotatedApiExistsFor(String method, String path) {
     final AnnotatedApi api = getAnnotatedApiFor(method, path);
     assertTrue(
         "Expected to find API mapping for [" + method + " " + path + "] but none found!",
         api != null);
+    return api;
   }
 
   protected AnnotatedApi getAnnotatedApiFor(String method, String path) {

@@ -32,13 +32,13 @@ import org.apache.lucene.tests.analysis.MockTokenizer;
 public class TestSuggestSpellingConverter extends BaseTokenStreamTestCase {
   SuggestQueryConverter converter = new SuggestQueryConverter();
 
-  public void testSimple() throws Exception {
+  public void testSimple() {
     // lowercases only!
     converter.setAnalyzer(new MockAnalyzer(random(), MockTokenizer.KEYWORD, true));
     assertConvertsTo("This is a test", new String[] {"this is a test"});
   }
 
-  public void testComplicated() throws Exception {
+  public void testComplicated() {
     // lowercases, removes field names, other syntax, collapses runs of whitespace, etc.
     converter.setAnalyzer(
         new Analyzer() {

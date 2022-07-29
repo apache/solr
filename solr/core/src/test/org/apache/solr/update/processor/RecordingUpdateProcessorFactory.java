@@ -80,7 +80,7 @@ public final class RecordingUpdateProcessorFactory extends UpdateRequestProcesso
     private void record(UpdateCommand cmd) {
       if (!commandQueue.offer(cmd)) {
         throw new RuntimeException(
-            "WTF: commandQueue should be unbounded but offer failed: " + cmd.toString());
+            "WTF: commandQueue should be unbounded but offer failed: " + cmd);
       }
     }
 

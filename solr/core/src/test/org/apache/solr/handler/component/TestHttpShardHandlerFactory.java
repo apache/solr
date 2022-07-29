@@ -48,7 +48,7 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
   private static float expectedLoadBalancerRequestsMaximumFraction = 1.0f;
 
   @BeforeClass
-  public static void beforeTests() throws Exception {
+  public static void beforeTests() {
     expectedLoadBalancerRequestsMinimumAbsolute = random().nextInt(3); // 0 .. 2
     expectedLoadBalancerRequestsMaximumFraction = (1 + random().nextInt(10)) / 10f; // 0.1 .. 1.0
     System.setProperty(

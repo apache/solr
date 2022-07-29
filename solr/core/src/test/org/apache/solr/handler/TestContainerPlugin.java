@@ -260,7 +260,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
             ":result:packages:mypkg[0]:files[0]",
             FILE1));
 
-    // Now lets create a plugin using v1 jar file
+    // Now let's create a plugin using v1 jar file
     PluginMeta plugin = new PluginMeta();
     plugin.name = "myplugin";
     plugin.klass = "mypkg:org.apache.solr.handler.MyPlugin";
@@ -354,7 +354,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     }
 
     @Override
-    public void start() throws Exception {
+    public void start() {
       state = State.STARTING;
       startCalled = true;
       state = State.RUNNING;
@@ -378,7 +378,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     private SolrResourceLoader resourceLoader;
 
     @Override
-    public void inform(ResourceLoader loader) throws IOException {
+    public void inform(ResourceLoader loader) {
       this.resourceLoader = (SolrResourceLoader) loader;
       try {
         InputStream is = resourceLoader.openResource("org/apache/solr/handler/MyPlugin.class");

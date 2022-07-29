@@ -79,7 +79,6 @@ public class DirectoryFactoryTest extends SolrTestCase {
       throws Exception {
     NodeConfig config = loadNodeConfig("/solr/solr-solrDataHome.xml");
     CoreContainer cc = new CoreContainer(config);
-    Properties cp = cc.getContainerProperties();
     DirectoryFactory df = directoryFactoryClass.getConstructor().newInstance();
     df.initCoreContainer(cc);
     df.init(new NamedList<>());

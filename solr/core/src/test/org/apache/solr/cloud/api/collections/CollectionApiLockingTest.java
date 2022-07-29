@@ -169,7 +169,7 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
     new Thread(
             () -> {
               replicaShard1Lock.waitUntilAcquired();
-              // countDown() will not be called if waitUntilAcquired() threw exception of any kind
+              // countDown() will not be called if waitUntilAcquired() threw any kind of exception
               latch.countDown();
             })
         .start();

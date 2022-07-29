@@ -36,16 +36,13 @@ import org.junit.Test;
  * <p>PUT: add some words to the current list
  */
 public class TestManagedStopFilterFactory extends RestTestBase {
-  private static File tmpSolrHome;
-  private static File tmpConfDir;
 
   private static final String collection = "collection1";
   private static final String confDir = collection + "/conf";
 
   @Before
   public void before() throws Exception {
-    tmpSolrHome = createTempDir().toFile();
-    tmpConfDir = new File(tmpSolrHome, confDir);
+    File tmpSolrHome = createTempDir().toFile();
     FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
 
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();

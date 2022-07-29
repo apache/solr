@@ -98,7 +98,7 @@ Solr's `modules` directory includes 1st-party add-ons for specialized features t
 See the section xref:configuration-guide:solr-modules.adoc[] for more information.
 
 prometheus-exporter/::
-A standalone application, included under `bin/`, that montiors Solr instances and produces Prometheus metrics.
+A standalone application, included under `bin/`, that monitors Solr instances and produces Prometheus metrics.
 See the section xref:deployment-guide:monitoring-with-prometheus-and-grafana.adoc[] for more information.
 
 docker/::

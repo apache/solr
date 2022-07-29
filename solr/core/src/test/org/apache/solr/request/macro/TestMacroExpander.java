@@ -168,9 +168,9 @@ public class TestMacroExpander extends SolrTestCase {
     assertEquals("${${b}}", meSkipOnMissingParams.expand("${${b}}"));
     assertNull(meFailOnMissingParams.expand("${${b}}"));
 
-    // Does not register as a syntax failure, although may subjectively look like it.
-    //   Consequently, the expression is replaced with nothing in default mode.
-    //   It'd be nice if there was a mode to leave un-resolved macros as-is when they don't resolve.
+    // Does not register as a syntax failure, although it may subjectively look like it.
+    // Consequently, the expression is replaced with nothing in default mode.
+    // It'd be nice if there was a mode to leave un-resolved macros as-is when they don't resolve.
     assertEquals("preamble ", meSkipOnMissingParams.expand("preamble ${exp${bad}"));
     assertNull(meFailOnMissingParams.expand("preamble ${exp${bad}"));
   }

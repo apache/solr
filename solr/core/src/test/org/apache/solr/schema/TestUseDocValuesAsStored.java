@@ -49,9 +49,6 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
 
   private int id = 1;
 
-  private static File tmpSolrHome;
-  private static File tmpConfDir;
-
   private static final String collection = "collection1";
   private static final String confDir = collection + "/conf";
 
@@ -61,7 +58,7 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
 
   // http://www.w3.org/TR/2006/REC-xml-20060816/#charsets
   private static final String NON_XML_CHARS = "\u0000-\u0008\u000B-\u000C\u000E-\u001F\uFFFE\uFFFF";
-  // Avoid single quotes (problematic in XPath literals) and carriage returns (XML roundtripping
+  // Avoid single quotes (problematic in XPath literals) and carriage returns (XML round tripping
   // fails)
   private static final Pattern BAD_CHAR_PATTERN = Pattern.compile("[\'\r" + NON_XML_CHARS + "]");
   private static final Pattern STORED_FIELD_NAME_PATTERN = Pattern.compile("_dv$");
@@ -98,8 +95,8 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
 
   @Before
   private void initManagedSchemaCore() throws Exception {
-    tmpSolrHome = createTempDir().toFile();
-    tmpConfDir = new File(tmpSolrHome, confDir);
+    File tmpSolrHome = createTempDir().toFile();
+    File tmpConfDir = new File(tmpSolrHome, confDir);
     File testHomeConfDir = new File(TEST_HOME(), confDir);
     FileUtils.copyFileToDirectory(
         new File(testHomeConfDir, "solrconfig-managed-schema.xml"), tmpConfDir);

@@ -333,9 +333,6 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
     CommitTracker softTracker = updater.softCommitTracker;
     updater.setCommitWithinSoftCommit(commitWithinType.equals(CommitWithinType.SOFT));
 
-    int startingHardCommits = hardTracker.getCommitCount();
-    int startingSoftCommits = softTracker.getCommitCount();
-
     softTracker.setTimeUpperBound(
         commitWithinType.equals(CommitWithinType.SOFT) ? -1 : softCommitWaitMillis);
     softTracker.setDocsUpperBound(-1);
@@ -522,9 +519,6 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
       throws InterruptedException {
 
     assert 0 < maxNumCommits;
-
-    // do all our math/comparisons in Nanos...
-    final long commitWaitNanos = NANOSECONDS.convert(commitWaitMillis, MILLISECONDS);
 
     // these will be modified in each iteration of our assertion loop
     long prevTimestampNanos = startTimestampNanos;

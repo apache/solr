@@ -21,7 +21,9 @@ import static org.apache.solr.common.cloud.ZkStateReader.SOLR_PKGS_PATH;
 import static org.apache.solr.common.params.CommonParams.JAVABIN;
 import static org.apache.solr.common.params.CommonParams.WT;
 import static org.apache.solr.core.TestSolrConfigHandler.getFileContent;
-import static org.apache.solr.filestore.TestDistribPackageStore.*;
+import static org.apache.solr.filestore.TestDistribPackageStore.checkAllNodesForFile;
+import static org.apache.solr.filestore.TestDistribPackageStore.readFile;
+import static org.apache.solr.filestore.TestDistribPackageStore.uploadKey;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -46,7 +48,11 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.request.*;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.Package;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
@@ -582,7 +588,7 @@ public class TestPackages extends SolrCloudTestCase {
             .withPayload(Collections.singletonMap("add", add))
             .build();
 
-    // the files is not yet there. The command should fail with error saying "No such file"
+    // the files are not yet there. The command should fail with error saying "No such file"
     expectError(req, cluster.getSolrClient(), errPath, "No such file:");
 
     // post the jar file. No signature is sent
@@ -593,7 +599,7 @@ public class TestPackages extends SolrCloudTestCase {
     // now we upload the keys
     byte[] derFile = readFile("cryptokeys/pub_key512.der");
     uploadKey(derFile, PackageStoreAPI.KEYS_DIR + "/pub_key512.der", cluster);
-    // and upload the same file with a different name but it has proper signature
+    // and upload the same file with a different name, but it has proper signature
     postFileAndWait(
         cluster,
         "runtimecode/runtimelibs.jar.bin",
@@ -721,7 +727,7 @@ public class TestPackages extends SolrCloudTestCase {
     static boolean informCalled = false;
 
     @Override
-    public void inform(ResourceLoader loader) throws IOException {
+    public void inform(ResourceLoader loader) {
       informCalled = true;
     }
 
