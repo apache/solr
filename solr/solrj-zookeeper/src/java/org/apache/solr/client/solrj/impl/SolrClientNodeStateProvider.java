@@ -52,7 +52,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.common.util.ZkUtils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -347,8 +346,19 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
 
     @Override
     public Map<?, ?> getZkJson(String path) throws KeeperException, InterruptedException {
-      return ZkUtils.getJson(
-          zkClientClusterStateProvider.getZkStateReader().getZkClient(), path, true);
+      try {
+        byte[] bytes =
+            zkClientClusterStateProvider
+                .getZkStateReader()
+                .getZkClient()
+                .getData(path, null, null, true);
+        if (bytes != null && bytes.length > 0) {
+          return (Map<String, Object>) Utils.fromJSON(bytes);
+        }
+      } catch (KeeperException.NoNodeException e) {
+        return emptyMap();
+      }
+      return emptyMap();
     }
 
     /**

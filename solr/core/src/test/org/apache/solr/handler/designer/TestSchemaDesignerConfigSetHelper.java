@@ -17,7 +17,7 @@
 
 package org.apache.solr.handler.designer;
 
-import static org.apache.solr.common.util.ZkUtils.toJavabin;
+import static org.apache.solr.common.util.JavaBinCodec.toJavabin;
 import static org.apache.solr.handler.admin.ConfigSetsHandler.DEFAULT_CONFIGSET_NAME;
 import static org.apache.solr.handler.designer.SchemaDesignerAPI.getMutableId;
 import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;

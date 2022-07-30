@@ -18,8 +18,8 @@
 package org.apache.solr.handler.designer;
 
 import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
+import static org.apache.solr.common.util.JavaBinCodec.toJavabin;
 import static org.apache.solr.common.util.Utils.fromJSONString;
-import static org.apache.solr.common.util.ZkUtils.toJavabin;
 import static org.apache.solr.handler.admin.ConfigSetsHandler.DEFAULT_CONFIGSET_NAME;
 import static org.apache.solr.handler.designer.SchemaDesignerAPI.getConfigSetZkPath;
 import static org.apache.solr.handler.designer.SchemaDesignerAPI.getMutableId;
