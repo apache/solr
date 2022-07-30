@@ -141,6 +141,18 @@ configure(project(":solr:solrj")) {
   }
 }
 
+configure(project(":solr:solrj-zookeeper")) {
+  project.tasks.withType(RenderJavadocTask) {
+    // TODO: clean up split packages
+    javadocMissingIgnore = [
+            "org.apache.solr.common",
+            "org.apache.solr.common.cloud",
+            "org.apache.solr.client.solrj.impl",
+            "org.apache.solr.client.solrj.cloud"
+    ]
+  }
+}
+
 configure(project(":solr:test-framework")) {
   project.tasks.withType(RenderJavadocTask) {
     // TODO: clean up split packages
@@ -148,6 +160,7 @@ configure(project(":solr:test-framework")) {
         "org.apache.solr",
         "org.apache.solr.analysis",
         "org.apache.solr.cloud",
+        "org.apache.solr.common.cloud",
         "org.apache.solr.core",
         "org.apache.solr.handler",
         "org.apache.solr.handler.component",
