@@ -345,6 +345,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     }
 
     @Override
+    @SuppressWarnings({"unchecked"})
     public Map<?, ?> getZkJson(String path) throws KeeperException, InterruptedException {
       try {
         byte[] bytes =
