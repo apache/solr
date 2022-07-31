@@ -17,7 +17,7 @@
 
 apply plugin: 'java-library'
 
-description = 'Solrj-ZooKeeper - ZooKeeper Java Client'
+description = 'Solrj-ZooKeeper - SolrJ requiring ZooKeeper'
 
 dependencies {
     // Spotbugs Annotations are only needed for old findbugs
@@ -45,5 +45,12 @@ dependencies {
     implementation ('org.apache.zookeeper:zookeeper-jute') {
         exclude group: 'org.apache.yetus', module: 'audience-annotations'
     }
+
+    testImplementation project(':solr:test-framework')
+    testImplementation project(':solr:core')
+
+    testImplementation 'junit:junit'
+    testImplementation 'commons-io:commons-io'
+    testImplementation 'com.google.guava:guava'
 
 }
