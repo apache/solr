@@ -17,7 +17,7 @@
 
 package org.apache.solr.handler.designer;
 
-import static org.apache.solr.common.util.JavaBinCodec.toJavabin;
+import static org.apache.solr.common.util.JavaBinCodec.serializeToInputStream;
 import static org.apache.solr.handler.admin.ConfigSetsHandler.DEFAULT_CONFIGSET_NAME;
 import static org.apache.solr.handler.designer.SchemaDesignerAPI.getMutableId;
 import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
@@ -256,7 +256,7 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
     helper.postDataToBlobStore(
         cluster.getSolrClient(),
         configSet + "_sample",
-        DefaultSampleDocumentsLoader.streamAsBytes(toJavabin(Collections.singletonList(doc))));
+        DefaultSampleDocumentsLoader.streamAsBytes(serializeToInputStream(Collections.singletonList(doc))));
 
     List<SolrInputDocument> docs = helper.getStoredSampleDocs(configSet);
     assertTrue(docs != null && docs.size() == 1);

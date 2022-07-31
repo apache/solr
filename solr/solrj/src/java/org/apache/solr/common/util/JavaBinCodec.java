@@ -127,7 +127,7 @@ public class JavaBinCodec implements PushWriter {
     writableDocFields = null;
   }
 
-  public static InputStream toJavabin(Object o) throws IOException {
+  public static InputStream serializeToInputStream(Object o) throws IOException {
     try (final JavaBinCodec jbc = new JavaBinCodec()) {
       BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
       jbc.marshal(o, baos);

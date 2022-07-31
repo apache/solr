@@ -43,7 +43,7 @@ public class OverseerSolrResponseSerializer {
       return SolrResponse.serializable(responseObject);
     }
     try {
-      return JavaBinCodec.toJavabin(responseObject.getResponse()).readAllBytes();
+      return JavaBinCodec.serializeToInputStream(responseObject.getResponse()).readAllBytes();
     } catch (IOException | RuntimeException e) {
       throw new SolrException(
           ErrorCode.SERVER_ERROR, "Exception serializing response to Javabin", e);
