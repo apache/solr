@@ -110,7 +110,6 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
     final String splitKey = "a";
     final int BIT_SEP = 1;
     int splitKeyCount = 0;
-    ;
     for (int id = 0; id < 26 * 3; id++) {
       String shardKey =
           "" + (char) ('a' + (id % 26)); // See comment in ShardRoutingTest for hash distribution
