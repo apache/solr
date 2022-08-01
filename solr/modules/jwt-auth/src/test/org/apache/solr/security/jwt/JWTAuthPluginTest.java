@@ -16,7 +16,13 @@
  */
 package org.apache.solr.security.jwt;
 
-import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.*;
+import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.AUTZ_HEADER_PROBLEM;
+import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.CLAIM_MISMATCH;
+import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.JWT_VALIDATION_EXCEPTION;
+import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.NO_AUTZ_HEADER;
+import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.PASS_THROUGH;
+import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.PRINCIPAL_MISSING;
+import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.SCOPE_MISSING;
 
 import java.io.IOException;
 import java.io.InputStream;

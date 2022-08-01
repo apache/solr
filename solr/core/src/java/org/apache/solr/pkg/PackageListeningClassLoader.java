@@ -18,7 +18,9 @@
 package org.apache.solr.pkg;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import org.apache.lucene.util.ResourceLoaderAware;

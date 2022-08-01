@@ -23,7 +23,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -43,6 +42,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -55,6 +55,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.util.CommonTestInjection;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Pair;
@@ -171,10 +172,6 @@ public class ZkStateReader implements SolrCloseable {
   public static final String SHARD_LEADERS_ZKNODE = "leaders";
   public static final String ELECTION_NODE = "election";
 
-  /** "Interesting" and actively watched Collections. */
-  private final ConcurrentHashMap<String, DocCollection> watchedCollectionStates =
-      new ConcurrentHashMap<>();
-
   /** "Interesting" but not actively watched Collections. */
   private final ConcurrentHashMap<String, LazyCollectionRef> lazyCollectionStates =
       new ConcurrentHashMap<>();
@@ -195,8 +192,11 @@ public class ZkStateReader implements SolrCloseable {
 
   private final Runnable securityNodeListener;
 
-  private ConcurrentHashMap<String, CollectionWatch<DocCollectionWatcher>> collectionWatches =
-      new ConcurrentHashMap<>();
+  /**
+   * Collections with active watches. The {@link StatefulCollectionWatch} inside for each collection
+   * might also contain the latest DocCollection (state) observed
+   */
+  private DocCollectionWatches collectionWatches = new DocCollectionWatches();
 
   // named this observers so there's less confusion between CollectionPropsWatcher map and the
   // PropsWatcher map.
@@ -244,6 +244,140 @@ public class ZkStateReader implements SolrCloseable {
     public boolean canBeRemoved() {
       return coreRefCount + stateWatchers.size() == 0;
     }
+  }
+
+  /**
+   * A ConcurrentHashMap of active watcher by collection name
+   *
+   * <p>Each watcher DocCollectionWatch also contains the latest DocCollection (state) observed
+   */
+  private static class DocCollectionWatches {
+    private final ConcurrentHashMap<String, StatefulCollectionWatch>
+        statefulWatchesByCollectionName = new ConcurrentHashMap<>();
+
+    /**
+     * Gets the DocCollection (state) of the collection which the corresponding watch last observed
+     *
+     * @param collection the collection name to get DocCollection on
+     * @return The last observed DocCollection(state). if null, that means there's no such
+     *     collection.
+     */
+    private DocCollection getDocCollection(String collection) {
+      StatefulCollectionWatch watch = statefulWatchesByCollectionName.get(collection);
+      return watch != null ? watch.currentState : null;
+    }
+
+    /**
+     * Gets the active collections (collections that exist) being watched
+     *
+     * @return an immutable set of active collection names
+     */
+    private Set<String> activeCollections() {
+      return statefulWatchesByCollectionName.entrySet().stream()
+          .filter(
+              (Entry<String, StatefulCollectionWatch> entry) ->
+                  entry.getValue().currentState != null)
+          .map(Entry::getKey)
+          .collect(Collectors.toUnmodifiableSet());
+    }
+
+    /**
+     * Gets the count of active collections (collections that exist) being watched
+     *
+     * @return the count of active collections
+     */
+    private long activeCollectionCount() {
+      return statefulWatchesByCollectionName.entrySet().stream()
+          .filter(
+              (Entry<String, StatefulCollectionWatch> entry) ->
+                  entry.getValue().currentState != null)
+          .count();
+    }
+
+    /**
+     * Gets a Set of watched collection names. The returned value is thread-safe and unmodifiable.
+     *
+     * @return Set of watched collection names
+     */
+    private Set<String> watchedCollections() {
+      return Collections.unmodifiableSet(statefulWatchesByCollectionName.keySet());
+    }
+
+    private Set<Entry<String, StatefulCollectionWatch>> watchedCollectionEntries() {
+      return Collections.unmodifiableSet(statefulWatchesByCollectionName.entrySet());
+    }
+
+    /**
+     * Updates the latest observed DocCollection (state) of the {@link StatefulCollectionWatch} if
+     * the collection is being watched
+     *
+     * @param collection the collection name
+     * @param newState the new DocCollection (state) observed
+     * @return whether the state has changed for the watched collection
+     */
+    private boolean updateDocCollection(String collection, DocCollection newState) {
+      AtomicBoolean stateHasChanged = new AtomicBoolean(false);
+      statefulWatchesByCollectionName.computeIfPresent(
+          collection,
+          (col, watch) -> {
+            DocCollection oldState = watch.currentState;
+            if (oldState == null && newState == null) {
+              // OK, the collection not yet exist in ZK or already deleted
+            } else if (oldState == null) {
+              if (log.isDebugEnabled()) {
+                log.debug("Add data for [{}] ver [{}]", collection, newState.getZNodeVersion());
+              }
+              watch.currentState = newState;
+            } else if (newState == null) {
+              log.debug("Removing cached collection state for [{}]", collection);
+              watch.currentState = null;
+            } else { // both new and old states are non-null
+              int oldCVersion =
+                  oldState.getPerReplicaStates() == null
+                      ? -1
+                      : oldState.getPerReplicaStates().cversion;
+              int newCVersion =
+                  newState.getPerReplicaStates() == null
+                      ? -1
+                      : newState.getPerReplicaStates().cversion;
+              if (oldState.getZNodeVersion() < newState.getZNodeVersion()
+                  || oldCVersion < newCVersion) {
+                watch.currentState = newState;
+                if (log.isDebugEnabled()) {
+                  log.debug(
+                      "Updating data for [{}] from [{}] to [{}]",
+                      collection,
+                      oldState.getZNodeVersion(),
+                      newState.getZNodeVersion());
+                }
+              }
+            }
+            stateHasChanged.set(oldState != watch.currentState);
+            return watch;
+          });
+
+      return stateHasChanged.get();
+    }
+
+    /**
+     * Computes the new StatefulCollectionWatch by the supplied remappingFunction.
+     *
+     * @param collectionName collection name
+     * @param remappingFunction remaps the StatefulCollectionWatch. If this returns null, the
+     *     associated StatefulCollectionWatch will be removed; otherwise, the returned value will be
+     *     assigned to such collection
+     * @return the new StatefulCollectionWatch associated with the collection
+     * @see ConcurrentHashMap#compute(Object, BiFunction)
+     */
+    private StatefulCollectionWatch compute(
+        String collectionName,
+        BiFunction<String, StatefulCollectionWatch, StatefulCollectionWatch> remappingFunction) {
+      return statefulWatchesByCollectionName.compute(collectionName, remappingFunction);
+    }
+  }
+
+  private static class StatefulCollectionWatch extends CollectionWatch<DocCollectionWatcher> {
+    private DocCollection currentState;
   }
 
   public static final Set<String> KNOWN_CLUSTER_PROPS =
@@ -326,12 +460,17 @@ public class ZkStateReader implements SolrCloseable {
       // No need to set watchers because we should already have watchers registered for everything.
       refreshCollectionList(null);
       refreshLiveNodes(null);
-      // Need a copy so we don't delete from what we're iterating over.
-      Collection<String> safeCopy = new ArrayList<>(watchedCollectionStates.keySet());
+
       Set<String> updatedCollections = new HashSet<>();
-      for (String coll : safeCopy) {
+
+      // Iterate through the actively watched collections. Take note that the returned watched
+      // collections might change during the iteration, but it should not throw exception as
+      // it's thread-safe.
+      // If such set is modified elsewhere during the iteration, the code logic should still
+      // handle such missing/extra collection w/o issues.
+      for (String coll : collectionWatches.watchedCollections()) {
         DocCollection newState = fetchCollectionState(coll, null);
-        if (updateWatchedCollection(coll, newState)) {
+        if (collectionWatches.updateDocCollection(coll, newState)) {
           updatedCollections.add(coll);
         }
       }
@@ -370,11 +509,11 @@ public class ZkStateReader implements SolrCloseable {
         if (ref.get() != null) {
           return;
         }
-      } else if (watchedCollectionStates.containsKey(collection)) {
+      } else if (collectionWatches.watchedCollections().contains(collection)) {
         // Exists as a watched collection, force a refresh.
         log.debug("Forcing refresh of watched collection state for {}", collection);
         DocCollection newState = fetchCollectionState(collection, null);
-        if (updateWatchedCollection(collection, newState)) {
+        if (collectionWatches.updateDocCollection(collection, newState)) {
           constructState(Collections.singleton(collection));
         }
       } else {
@@ -398,7 +537,7 @@ public class ZkStateReader implements SolrCloseable {
       DocCollection nu = getCollectionLive(coll);
       if (nu == null) return -1;
       if (nu.getZNodeVersion() > collection.getZNodeVersion()) {
-        if (updateWatchedCollection(coll, nu)) {
+        if (collectionWatches.updateDocCollection(coll, nu)) {
           synchronized (getUpdateLock()) {
             constructState(Collections.singleton(coll));
           }
@@ -525,8 +664,13 @@ public class ZkStateReader implements SolrCloseable {
     Map<String, ClusterState.CollectionRef> result = new LinkedHashMap<>();
 
     // Add collections
-    for (Map.Entry<String, DocCollection> entry : watchedCollectionStates.entrySet()) {
-      result.put(entry.getKey(), new ClusterState.CollectionRef(entry.getValue()));
+    for (Entry<String, StatefulCollectionWatch> entry :
+        collectionWatches.watchedCollectionEntries()) {
+      if (entry.getValue().currentState != null) {
+        // if the doc is null for the collection watch, then it should not be inserted into the
+        // state
+        result.put(entry.getKey(), new ClusterState.CollectionRef(entry.getValue().currentState));
+      }
     }
 
     // Finally, add any lazy collections that aren't already accounted for.
@@ -539,8 +683,8 @@ public class ZkStateReader implements SolrCloseable {
     if (log.isDebugEnabled()) {
       log.debug(
           "clusterStateSet: interesting [{}] watched [{}] lazy [{}] total [{}]",
-          collectionWatches.keySet().size(),
-          watchedCollectionStates.keySet().size(),
+          collectionWatches.watchedCollections().size(),
+          collectionWatches.activeCollectionCount(),
           lazyCollectionStates.keySet().size(),
           clusterState.getCollectionStates().size());
     }
@@ -548,8 +692,8 @@ public class ZkStateReader implements SolrCloseable {
     if (log.isTraceEnabled()) {
       log.trace(
           "clusterStateSet: interesting [{}] watched [{}] lazy [{}] total [{}]",
-          collectionWatches.keySet(),
-          watchedCollectionStates.keySet(),
+          collectionWatches.watchedCollections(),
+          collectionWatches.activeCollections(),
           lazyCollectionStates.keySet(),
           clusterState.getCollectionStates());
     }
@@ -563,7 +707,7 @@ public class ZkStateReader implements SolrCloseable {
 
   /** Refresh collections. */
   private void refreshCollections() {
-    for (String coll : collectionWatches.keySet()) {
+    for (String coll : collectionWatches.watchedCollections()) {
       new StateWatcher(coll).refreshAndWatch();
     }
   }
@@ -593,7 +737,7 @@ public class ZkStateReader implements SolrCloseable {
       this.lazyCollectionStates.keySet().retainAll(children);
       for (String coll : children) {
         // We will create an eager collection for any interesting collections, so don't add to lazy.
-        if (!collectionWatches.containsKey(coll)) {
+        if (!collectionWatches.watchedCollections().contains(coll)) {
           // Double check contains just to avoid allocating an object.
           LazyCollectionRef existing = lazyCollectionStates.get(coll);
           if (existing == null) {
@@ -642,9 +786,9 @@ public class ZkStateReader implements SolrCloseable {
     }
   }
 
-  private Set<String> getCurrentCollections() {
+  public Set<String> getCurrentCollections() {
     Set<String> collections = new HashSet<>();
-    collections.addAll(watchedCollectionStates.keySet());
+    collections.addAll(collectionWatches.activeCollections());
     collections.addAll(lazyCollectionStates.keySet());
     return collections;
   }
@@ -1270,7 +1414,7 @@ public class ZkStateReader implements SolrCloseable {
         return;
       }
 
-      if (!collectionWatches.containsKey(coll)) {
+      if (!collectionWatches.watchedCollections().contains(coll)) {
         // This collection is no longer interesting, stop watching.
         log.debug("Uninteresting collection {}", coll);
         return;
@@ -1294,8 +1438,8 @@ public class ZkStateReader implements SolrCloseable {
 
     /**
      * Refresh collection state from ZK and leave a watch for future changes. As a side effect,
-     * updates {@link #clusterState} and {@link #watchedCollectionStates} with the results of the
-     * refresh.
+     * updates {@link #clusterState} and collection ref within {@link #collectionWatches} with the
+     * results of the refresh.
      */
     public void refreshAndWatch(EventType eventType) {
       try {
@@ -1308,7 +1452,7 @@ public class ZkStateReader implements SolrCloseable {
         }
 
         DocCollection newState = fetchCollectionState(coll, this);
-        updateWatchedCollection(coll, newState);
+        collectionWatches.updateDocCollection(coll, newState);
         synchronized (getUpdateLock()) {
           constructState(Collections.singleton(coll));
         }
@@ -1332,10 +1476,10 @@ public class ZkStateReader implements SolrCloseable {
         replicaStates = zkClient.getChildren(collectionPath, this, stat, true);
         PerReplicaStates newStates =
             new PerReplicaStates(collectionPath, stat.getCversion(), replicaStates);
-        DocCollection oldState = watchedCollectionStates.get(coll);
+        DocCollection oldState = collectionWatches.getDocCollection(coll);
         final DocCollection newState =
             oldState != null ? oldState.copyWith(newStates) : fetchCollectionState(coll, null);
-        updateWatchedCollection(coll, newState);
+        collectionWatches.updateDocCollection(coll, newState);
         synchronized (getUpdateLock()) {
           constructState(Collections.singleton(coll));
         }
@@ -1612,7 +1756,7 @@ public class ZkStateReader implements SolrCloseable {
         (k, v) -> {
           if (v == null) {
             reconstructState.set(true);
-            v = new CollectionWatch<>();
+            v = new StatefulCollectionWatch();
           }
           v.coreRefCount++;
           return v;
@@ -1640,7 +1784,6 @@ public class ZkStateReader implements SolrCloseable {
           if (v == null) return null;
           if (v.coreRefCount > 0) v.coreRefCount--;
           if (v.canBeRemoved()) {
-            watchedCollectionStates.remove(collection);
             lazyCollectionStates.put(collection, new LazyCollectionRef(collection));
             reconstructState.set(true);
             return null;
@@ -1697,7 +1840,7 @@ public class ZkStateReader implements SolrCloseable {
         collection,
         (k, v) -> {
           if (v == null) {
-            v = new CollectionWatch<>();
+            v = new StatefulCollectionWatch();
             watchSet.set(true);
           }
           v.stateWatchers.add(stateWatcher);
@@ -1724,7 +1867,7 @@ public class ZkStateReader implements SolrCloseable {
         log.debug("update for a fresh per-replica-state {}", c.getName());
       }
       DocCollection modifiedColl = c.copyWith(newPrs);
-      updateWatchedCollection(c.getName(), modifiedColl);
+      collectionWatches.updateDocCollection(c.getName(), modifiedColl);
       return modifiedColl;
     } else {
       return c;
@@ -1919,9 +2062,9 @@ public class ZkStateReader implements SolrCloseable {
           if (v == null) return null;
           v.stateWatchers.remove(watcher);
           if (v.canBeRemoved()) {
-            watchedCollectionStates.remove(collection);
             lazyCollectionStates.put(collection, new LazyCollectionRef(collection));
             reconstructState.set(true);
+            assert CommonTestInjection.injectDelay(); // To unit test race condition
             return null;
           }
           return v;
@@ -1945,65 +2088,6 @@ public class ZkStateReader implements SolrCloseable {
           return v;
         });
     return watchers;
-  }
-
-  // returns true if the state has changed
-  private boolean updateWatchedCollection(String coll, DocCollection newState) {
-
-    if (newState == null) {
-      log.debug("Removing cached collection state for [{}]", coll);
-      watchedCollectionStates.remove(coll);
-      return true;
-    }
-
-    boolean updated = false;
-    // CAS update loop
-    while (true) {
-      if (!collectionWatches.containsKey(coll)) {
-        break;
-      }
-      DocCollection oldState = watchedCollectionStates.get(coll);
-      if (oldState == null) {
-        if (watchedCollectionStates.putIfAbsent(coll, newState) == null) {
-          if (log.isDebugEnabled()) {
-            log.debug("Add data for [{}] ver [{}]", coll, newState.getZNodeVersion());
-          }
-          updated = true;
-          break;
-        }
-      } else {
-        int oldCVersion =
-            oldState.getPerReplicaStates() == null ? -1 : oldState.getPerReplicaStates().cversion;
-        int newCVersion =
-            newState.getPerReplicaStates() == null ? -1 : newState.getPerReplicaStates().cversion;
-        if (oldState.getZNodeVersion() >= newState.getZNodeVersion()
-            && oldCVersion >= newCVersion) {
-          // no change to state, but we might have been triggered by the addition of a
-          // state watcher, so run notifications
-          updated = true;
-          break;
-        }
-        if (watchedCollectionStates.replace(coll, oldState, newState)) {
-          if (log.isDebugEnabled()) {
-            log.debug(
-                "Updating data for [{}] from [{}] to [{}]",
-                coll,
-                oldState.getZNodeVersion(),
-                newState.getZNodeVersion());
-          }
-          updated = true;
-          break;
-        }
-      }
-    }
-
-    // Resolve race with unregisterCore.
-    if (!collectionWatches.containsKey(coll)) {
-      watchedCollectionStates.remove(coll);
-      log.debug("Removing uninteresting collection [{}]", coll);
-    }
-
-    return updated;
   }
 
   public void registerCollectionPropsWatcher(
