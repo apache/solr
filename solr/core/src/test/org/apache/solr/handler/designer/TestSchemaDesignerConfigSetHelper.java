@@ -256,7 +256,8 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
     helper.postDataToBlobStore(
         cluster.getSolrClient(),
         configSet + "_sample",
-        DefaultSampleDocumentsLoader.streamAsBytes(serializeToInputStream(Collections.singletonList(doc))));
+        DefaultSampleDocumentsLoader.streamAsBytes(
+            serializeToInputStream(Collections.singletonList(doc))));
 
     List<SolrInputDocument> docs = helper.getStoredSampleDocs(configSet);
     assertTrue(docs != null && docs.size() == 1);
