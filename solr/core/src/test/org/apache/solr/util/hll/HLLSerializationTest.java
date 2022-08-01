@@ -16,8 +16,13 @@
  */
 package org.apache.solr.util.hll;
 
-import static com.carrotsearch.randomizedtesting.RandomizedTest.*;
-import static org.apache.solr.util.hll.HLL.*;
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomLong;
+import static org.apache.solr.util.hll.HLL.MAXIMUM_EXPTHRESH_PARAM;
+import static org.apache.solr.util.hll.HLL.MAXIMUM_LOG2M_PARAM;
+import static org.apache.solr.util.hll.HLL.MAXIMUM_REGWIDTH_PARAM;
+import static org.apache.solr.util.hll.HLL.MINIMUM_EXPTHRESH_PARAM;
+import static org.apache.solr.util.hll.HLL.MINIMUM_LOG2M_PARAM;
+import static org.apache.solr.util.hll.HLL.MINIMUM_REGWIDTH_PARAM;
 
 import java.util.ArrayList;
 import java.util.Arrays;

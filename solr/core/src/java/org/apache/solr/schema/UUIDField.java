@@ -24,7 +24,7 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
-import org.apache.solr.update.processor.UUIDUpdateProcessorFactory; // jdoc
+import org.apache.solr.update.processor.UUIDUpdateProcessorFactory;
 
 /**
  * This FieldType accepts UUID string values, as well as the special value of "NEW" which triggers
