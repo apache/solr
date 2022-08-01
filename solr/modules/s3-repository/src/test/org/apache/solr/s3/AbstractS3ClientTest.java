@@ -19,7 +19,6 @@ package org.apache.solr.s3;
 import com.adobe.testing.s3mock.junit4.S3MockRule;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import org.apache.commons.io.IOUtils;
@@ -59,7 +58,8 @@ public class AbstractS3ClientTest extends SolrTestCaseJ4 {
   }
 
   /**
-   * Use this to make sure that we don't pollute the test environment with defaults from the local user's ~/.aws/config or credentials
+   * Use this to make sure that we don't pollute the test environment with defaults from the local
+   * user's ~/.aws/config or credentials
    */
   public static void setS3ConfFile() throws URISyntaxException {
     String emptyFile =
