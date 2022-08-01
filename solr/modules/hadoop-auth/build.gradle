@@ -95,6 +95,7 @@ dependencies {
   testImplementation ('org.apache.hadoop:hadoop-minikdc', {
     exclude group:'org.apache.kerby', module:'kerby-xdr'
     exclude group:'org.apache.kerby', module:'token-provider'
+    exclude group:'org.slf4j', module:'slf4j-reload4j'
   })
 
   // Zookeeper dependency - some tests like HdfsCloudBackupRestore need this
