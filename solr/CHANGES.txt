@@ -155,6 +155,8 @@ Build
 
 * SOLR-16299: Ref-guide examples are no longer symlinked from SolrJ, they live in the ref-guide module (Houston Putman)
 
+* SOLR-16298: Clean the javadocs directory before building (Houston Putman, Mike Drob, Uwe Schindler)
+
 ==================  9.0.0 ==================
 
 New Features
