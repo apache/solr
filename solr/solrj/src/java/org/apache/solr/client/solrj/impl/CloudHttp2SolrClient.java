@@ -50,7 +50,6 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
    *
    * @param builder a {@link Http2SolrClient.Builder} with the options used to create the client.
    */
-  @SuppressWarnings("rawtypes")
   protected CloudHttp2SolrClient(Builder builder) {
     super(builder.shardLeadersOnly, builder.parallelUpdates, builder.directUpdatesToLeadersOnly);
     if (builder.httpClient == null) {
@@ -71,13 +70,17 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
       }
       if (builder.zkHosts != null) {
         try {
-          Class<?> zkStateProviderClass =
-              Class.forName("org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider");
-          this.stateProvider =
-              (ClusterStateProvider)
-                  zkStateProviderClass
-                      .getConstructor(new Class[] {Collection.class, String.class})
-                      .newInstance(builder.zkHosts, builder.zkChroot);
+          var constructor =
+              Class.forName("org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider")
+                  .asSubclass(ClusterStateProvider.class)
+                  .getConstructor(Collection.class, String.class);
+          this.stateProvider = constructor.newInstance(builder.zkHosts, builder.zkChroot);
+        } catch (InvocationTargetException e) {
+          if (e.getCause() instanceof RuntimeException) {
+            throw (RuntimeException) e.getCause();
+          } else {
+            throw new RuntimeException(e.getCause());
+          }
         } catch (Exception e) {
           throw new RuntimeException(e.toString(), e);
         }
