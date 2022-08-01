@@ -1558,9 +1558,10 @@ public class SolrCLI implements CLIO {
                 + "there is at least 1 live node in the cluster.");
 
       String baseUrl = cli.getOptionValue("solrUrl");
+      ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
       if (baseUrl == null) {
         String firstLiveNode = liveNodes.iterator().next();
-        baseUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
+        baseUrl = zkStateReader.getBaseUrlForNodeName(firstLiveNode);
       }
 
       String collectionName = cli.getOptionValue(NAME);
@@ -1576,9 +1577,7 @@ public class SolrCLI implements CLIO {
       boolean configExistsInZk =
           confname != null
               && !"".equals(confname.trim())
-              && ZkStateReader.from(cloudSolrClient)
-                  .getZkClient()
-                  .exists("/configs/" + confname, true);
+              && zkStateReader.getZkClient().exists("/configs/" + confname, true);
 
       if (CollectionAdminParams.SYSTEM_COLL.equals(collectionName)) {
         // do nothing
@@ -1599,7 +1598,7 @@ public class SolrCLI implements CLIO {
                 + cloudSolrClient.getClusterStateProvider().getQuorumHosts(),
             cli);
         ZkMaintenanceUtils.uploadToZK(
-            ZkStateReader.from(cloudSolrClient).getZkClient(),
+            zkStateReader.getZkClient(),
             confPath,
             ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confname,
             ZkMaintenanceUtils.UPLOAD_FILENAME_EXCLUDE_PATTERN);

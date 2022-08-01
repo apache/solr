@@ -334,7 +334,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
               new SliceMutator(ccc.getSolrCloudManager()).addReplica(clusterState, props);
           byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, command.collection));
           //        log.info("collection updated : {}", new String(data, StandardCharsets.UTF_8));
-          ccc.getZkStateReader().getZkClient().setData(collectionPath, data, true);
+          zkStateReader.getZkClient().setData(collectionPath, data, true);
           clusterState = clusterState.copyWith(collectionName, command.collection);
           newColl = command.collection;
         } else {
