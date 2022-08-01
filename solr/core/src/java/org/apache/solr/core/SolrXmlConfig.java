@@ -133,6 +133,8 @@ public class SolrXmlConfig {
     String nodeName = (String) entries.remove("nodeName");
     if (Strings.isNullOrEmpty(nodeName) && cloudConfig != null) nodeName = cloudConfig.getHost();
 
+    // It should goes inside the fillSolrSection method but
+    // since it is arranged as a separate section it is placed here
     Map<String, String> coreAdminHandlerActions =
         readNodeListAsNamedList(
                 config, "solr/coreAdminHandlerActions/*[@name]", "<coreAdminHandlerActions>")
