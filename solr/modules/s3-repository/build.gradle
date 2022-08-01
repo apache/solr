@@ -49,6 +49,7 @@ dependencies {
   testImplementation 'org.apache.lucene:lucene-test-framework'
   testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
   testImplementation 'junit:junit'
+  testImplementation 'software.amazon.awssdk:profiles'
 
   testImplementation 'org.hamcrest:hamcrest'
 
