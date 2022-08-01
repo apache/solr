@@ -91,7 +91,8 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
     System.setProperty("aws.secretAccessKey", "bar");
 
     // Make sure we don't pollute with defaults from ~/.aws/config or credentials
-    String emptyFile = S3IncrementalBackupTest.class.getClassLoader().getResource("s3.conf").toURI().getPath();
+    String emptyFile =
+        S3IncrementalBackupTest.class.getClassLoader().getResource("s3.conf").toURI().getPath();
     System.setProperty(ProfileFileSystemSetting.AWS_CONFIG_FILE.property(), emptyFile);
     System.setProperty(ProfileFileSystemSetting.AWS_SHARED_CREDENTIALS_FILE.property(), emptyFile);
 
