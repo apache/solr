@@ -90,11 +90,7 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
     System.setProperty("aws.accessKeyId", "foo");
     System.setProperty("aws.secretAccessKey", "bar");
 
-    // Make sure we don't pollute with defaults from ~/.aws/config or credentials
-    String emptyFile =
-        S3IncrementalBackupTest.class.getClassLoader().getResource("s3.conf").toURI().getPath();
-    System.setProperty(ProfileFileSystemSetting.AWS_CONFIG_FILE.property(), emptyFile);
-    System.setProperty(ProfileFileSystemSetting.AWS_SHARED_CREDENTIALS_FILE.property(), emptyFile);
+    AbstractS3ClientTest.setS3ConfFile();
 
     configureCluster(NUM_SHARDS) // nodes
         .addConfig("conf1", getFile("conf/solrconfig.xml").getParentFile().toPath())
