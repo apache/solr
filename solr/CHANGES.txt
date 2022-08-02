@@ -147,6 +147,8 @@ Build
 ---------------------
 * SOLR-16204: Change Lucene dependency to Lucene 9.1.0 (Elia Porciani via Alessandro Benedetti)
 
+* SOLR-16303: Change Lucene dependency to Lucene 9.3.0 (Mike Drob)
+
 * SOLR-16053: Upgrade scriptDepVersions (Kevin Risden)
 
 * SOLR-16050: Upgrade to errorprone 2.11.0 (Kevin Risden)

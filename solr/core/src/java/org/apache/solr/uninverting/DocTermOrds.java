@@ -809,7 +809,7 @@ public class DocTermOrds implements Accountable {
     }
 
     @Override
-    public long docValueCount() {
+    public int docValueCount() {
       return 1; // docs are dedup'd so each ord will only have a single entry here
     }
 
