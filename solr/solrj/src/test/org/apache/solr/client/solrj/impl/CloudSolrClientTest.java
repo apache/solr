@@ -38,7 +38,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -78,9 +77,8 @@ import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.util.LogLevel;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -88,15 +86,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** This test would be faster if we simulated the zk state instead. */
-@Slow
 @LogLevel(
     "org.apache.solr.cloud.Overseer=INFO;org.apache.solr.common.cloud=INFO;org.apache.solr.cloud.api.collections=INFO;org.apache.solr.cloud.overseer=INFO")
 public class CloudSolrClientTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  private static final String COLLECTION = "collection1";
-  private static final String COLLECTION2 = "2nd_collection";
 
   private static final String id = "id";
 
@@ -105,8 +99,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   private static CloudSolrClient httpBasedCloudSolrClient = null;
 
-  @Before
-  public void setupCluster() throws Exception {
+  @BeforeClass
+  public static void setupCluster() throws Exception {
     System.setProperty("metricsEnabled", "true");
     configureCluster(NODE_COUNT)
         .addConfig(
@@ -124,8 +118,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     httpBasedCloudSolrClient = new CloudLegacySolrClient.Builder(solrUrls).build();
   }
 
-  @After
-  public void tearDown() throws Exception {
+  @AfterClass
+  public static void tearDownAfterClass() throws Exception {
     if (httpBasedCloudSolrClient != null) {
       try {
         httpBasedCloudSolrClient.close();
@@ -133,14 +127,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         throw new RuntimeException(e);
       }
     }
+    httpBasedCloudSolrClient = null;
 
     shutdownCluster();
-    super.tearDown();
-  }
-
-  @AfterClass
-  public static void cleanUpAfterClass() throws Exception {
-    httpBasedCloudSolrClient = null;
   }
 
   /** Randomly return the cluster's ZK based CSC, or HttpClusterProvider based CSC. */
@@ -150,6 +139,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void testParallelUpdateQTime() throws Exception {
+    String COLLECTION = getSaferTestName();
+
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
         .setPerReplicaState(USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
@@ -196,6 +187,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void testAliasHandling() throws Exception {
+    String COLLECTION = getSaferTestName();
+    String COLLECTION2 = "2nd_collection";
+
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
         .setPerReplicaState(USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
@@ -289,7 +283,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       try (HttpSolrClient solrClient = getHttpSolrClient(url)) {
         QueryResponse queryResponse = queryRequest.process(solrClient);
         SolrDocumentList docList = queryResponse.getResults();
-        assertTrue(docList.getNumFound() == 1);
+        assertEquals(1, docList.getNumFound());
       }
     }
 
@@ -335,7 +329,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         try (HttpSolrClient solrClient = getHttpSolrClient(url)) {
           QueryResponse queryResponse = queryRequest.process(solrClient);
           SolrDocumentList docList = queryResponse.getResults();
-          assertTrue(docList.getNumFound() == 1);
+          assertEquals(1, docList.getNumFound());
         }
       }
     }
@@ -442,8 +436,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     int liveNodes = cluster.getJettySolrRunners().size();
 
-    // For this case every shard should have
-    // all its cores on the same node.
+    // For this case every shard should have all its cores on the same node.
     // Hence the below configuration for our collection
     CollectionAdminRequest.createCollection(collectionName, "conf", liveNodes, liveNodes)
         .setPerReplicaState(USE_PER_REPLICA_STATE)
@@ -632,14 +625,16 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void testNonRetryableRequests() throws Exception {
+    String collection = getSaferTestName();
+
     try (CloudSolrClient client = getCloudSolrClient(cluster.getZkServer().getZkAddress())) {
       // important to have one replica on each node
       RequestStatusState state =
-          CollectionAdminRequest.createCollection("foo", "conf", 1, NODE_COUNT)
+          CollectionAdminRequest.createCollection(collection, "conf", 1, NODE_COUNT)
               .processAndWait(client, 60);
       if (state == RequestStatusState.COMPLETED) {
-        cluster.waitForActiveCollection("foo", 1, NODE_COUNT);
-        client.setDefaultCollection("foo");
+        cluster.waitForActiveCollection(collection, 1, NODE_COUNT);
+        client.setDefaultCollection(collection);
 
         Map<String, String> adminPathToMbean = new HashMap<>(CommonParams.ADMIN_PATHS.size());
         adminPathToMbean.put(
@@ -655,7 +650,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
             Long numRequests =
                 getNumRequests(
                     runner.getBaseUrl().toString(),
-                    "foo",
+                    collection,
                     "ADMIN",
                     adminPathToMbean.get(adminPath),
                     adminPath,
@@ -682,7 +677,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
             Long numRequests =
                 getNumRequests(
                     runner.getBaseUrl().toString(),
-                    "foo",
+                    collection,
                     "ADMIN",
                     adminPathToMbean.get(adminPath),
                     adminPath,
@@ -750,6 +745,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void stateVersionParamTest() throws Exception {
+    String COLLECTION = getSaferTestName();
+
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 2);
@@ -873,18 +870,19 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void testVersionsAreReturned() throws Exception {
-    CollectionAdminRequest.createCollection("versions_collection", "conf", 2, 1)
+    String collection = getSaferTestName();
+
+    CollectionAdminRequest.createCollection(collection, "conf", 2, 1)
         .setPerReplicaState(USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection("versions_collection", 2, 2);
+    cluster.waitForActiveCollection(collection, 2, 2);
 
     // assert that "adds" are returned
     UpdateRequest updateRequest =
         new UpdateRequest().add("id", "1", "a_t", "hello1").add("id", "2", "a_t", "hello2");
     updateRequest.setParam(UpdateParams.VERSIONS, Boolean.TRUE.toString());
 
-    NamedList<Object> response =
-        updateRequest.commit(getRandomClient(), "versions_collection").getResponse();
+    NamedList<Object> response = updateRequest.commit(getRandomClient(), collection).getResponse();
     Object addsObject = response.get("adds");
 
     assertNotNull("There must be a adds parameter", addsObject);
@@ -903,7 +901,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     assertTrue("Version for id 2 must be a long", object instanceof Long);
     versions.put("2", (Long) object);
 
-    QueryResponse resp = getRandomClient().query("versions_collection", new SolrQuery("*:*"));
+    QueryResponse resp = getRandomClient().query(collection, new SolrQuery("*:*"));
     assertEquals(
         "There should be one document because overwrite=true", 2, resp.getResults().getNumFound());
 
@@ -916,7 +914,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     // assert that "deletes" are returned
     UpdateRequest deleteRequest = new UpdateRequest().deleteById("1");
     deleteRequest.setParam(UpdateParams.VERSIONS, Boolean.TRUE.toString());
-    response = deleteRequest.commit(getRandomClient(), "versions_collection").getResponse();
+    response = deleteRequest.commit(getRandomClient(), collection).getResponse();
     Object deletesObject = response.get("deletes");
     assertNotNull("There must be a deletes parameter", deletesObject);
     NamedList<?> deletes = (NamedList<?>) deletesObject;
@@ -925,6 +923,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void testInitializationWithSolrUrls() throws Exception {
+    String COLLECTION = getSaferTestName();
+
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
         .setPerReplicaState(USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
@@ -1125,7 +1125,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       assertNotNull(
           ShardParams.SHARDS_INFO + " did not return 'shardAddress' parameter", shardAddress);
       assertTrue(replicaTypeMap.containsKey(shardAddress));
-      assertTrue(preferredTypes.indexOf(replicaTypeMap.get(shardAddress)) == 0);
+      assertEquals(0, preferredTypes.indexOf(replicaTypeMap.get(shardAddress)));
       shardAddresses.add(shardAddress);
     }
     assertTrue("No responses", shardAddresses.size() > 0);
@@ -1149,10 +1149,14 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   }
 
   public void testPerReplicaStateCollection() throws Exception {
-    CollectionAdminRequest.createCollection("versions_collection", "conf", 2, 1)
+    String collection = getSaferTestName();
+
+    CollectionAdminRequest.createCollection(collection, "conf", 2, 1)
         .process(cluster.getSolrClient());
 
     String testCollection = "perReplicaState_test";
+    String collectionPath = ZkStateReader.getCollectionPath(testCollection);
+
     int liveNodes = cluster.getJettySolrRunners().size();
     CollectionAdminRequest.createCollection(testCollection, "conf", 2, 2)
         .setPerReplicaState(Boolean.TRUE)
@@ -1161,34 +1165,41 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     final SolrClient clientUnderTest = getRandomClient();
     final SolrPingResponse response = clientUnderTest.ping(testCollection);
     assertEquals("This should be OK", 0, response.getStatus());
+
     DocCollection c = cluster.getZkStateReader().getCollection(testCollection);
     c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
-    PerReplicaStates prs =
-        PerReplicaStates.fetch(
-            ZkStateReader.getCollectionPath(testCollection), cluster.getZkClient(), null);
+    PerReplicaStates prs = PerReplicaStates.fetch(collectionPath, cluster.getZkClient(), null);
     assertEquals(4, prs.states.size());
-    JettySolrRunner jsr = cluster.startJettySolrRunner();
-    // Now let's do an add replica
-    CollectionAdminRequest.addReplicaToShard(testCollection, "shard1")
-        .process(cluster.getSolrClient());
-    prs =
-        PerReplicaStates.fetch(
-            ZkStateReader.getCollectionPath(testCollection), cluster.getZkClient(), null);
-    assertEquals(5, prs.states.size());
 
-    testCollection = "perReplicaState_testv2";
-    new V2Request.Builder("/collections")
-        .withMethod(POST)
-        .withPayload(
-            "{create: {name: perReplicaState_testv2, config : conf, numShards : 2, nrtReplicas : 2, perReplicaState : true, maxShardsPerNode : 5}}")
-        .build()
-        .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(testCollection, 2, 4);
-    c = cluster.getZkStateReader().getCollection(testCollection);
-    c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
-    prs =
-        PerReplicaStates.fetch(
-            ZkStateReader.getCollectionPath(testCollection), cluster.getZkClient(), null);
-    assertEquals(4, prs.states.size());
+    JettySolrRunner jsr = null;
+    try {
+      jsr = cluster.startJettySolrRunner();
+
+      // Now let's do an add replica
+      CollectionAdminRequest.addReplicaToShard(testCollection, "shard1")
+          .process(cluster.getSolrClient());
+      prs = PerReplicaStates.fetch(collectionPath, cluster.getZkClient(), null);
+      assertEquals(5, prs.states.size());
+
+      // create a collection with PRS and v2 API
+      testCollection = "perReplicaState_testv2";
+      collectionPath = ZkStateReader.getCollectionPath(testCollection);
+
+      new V2Request.Builder("/collections")
+          .withMethod(POST)
+          .withPayload(
+              "{create: {name: perReplicaState_testv2, config : conf, numShards : 2, nrtReplicas : 2, perReplicaState : true, maxShardsPerNode : 5}}")
+          .build()
+          .process(cluster.getSolrClient());
+      cluster.waitForActiveCollection(testCollection, 2, 4);
+      c = cluster.getZkStateReader().getCollection(testCollection);
+      c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
+      prs = PerReplicaStates.fetch(collectionPath, cluster.getZkClient(), null);
+      assertEquals(4, prs.states.size());
+    } finally {
+      if (jsr != null) {
+        cluster.stopJettySolrRunner(jsr);
+      }
+    }
   }
 }

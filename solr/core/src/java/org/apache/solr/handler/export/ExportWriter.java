@@ -238,7 +238,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     // obscure a condition to handle as part of this patch, if someone wants to pursue it can be
     // reproduced with:
     // ant test  -Dtestcase=StreamingTest -Dtests.method=testAllValidExportTypes
-    // -Dtests.seed=10F13879D0D1D6AD -Dtests.slow=true -Dtests.locale=es-PA
+    // -Dtests.seed=10F13879D0D1D6AD -Dtests.locale=es-PA
     // -Dtests.timezone=America/Bahia_Banderas -Dtests.asserts=true -Dtests.file.encoding=ISO-8859-1
     // You'll have to uncomment the if below to hit the null pointer exception.
     // This is such an unusual case (i.e. an empty index) that catching this concdition here is

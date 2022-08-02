@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import junit.framework.Assert;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.lucene.tests.util.LuceneTestCase.SuppressTempFileChecks;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrClient;
@@ -37,17 +36,9 @@ import org.junit.Test;
  * @since solr 1.5
  * @see org.apache.solr.handler.component.SpellCheckComponent
  */
-@Slow
 @SuppressTempFileChecks(
     bugUrl = "https://issues.apache.org/jira/browse/SOLR-1877 Spellcheck IndexReader leak bug?")
 public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTestCase {
-
-  public DistributedSpellCheckComponentTest() {
-    // Helpful for debugging
-    // fixShardCount=true;
-    // shardCount=2;
-    // stress=0;
-  }
 
   @BeforeClass
   public static void beforeClass() throws Exception {
