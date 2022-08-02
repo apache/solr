@@ -122,7 +122,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
       // can't use LuceneTestCase.random() because we're not in the runner context yet
       String seed = System.getProperty("tests.seed", "");
-      return Collections.singleton(new Object[] {methods[seed.hashCode() % methods.length]});
+      return Collections.singleton(
+          new Object[] {methods[Math.abs(seed.hashCode()) % methods.length]});
     }
   }
 
