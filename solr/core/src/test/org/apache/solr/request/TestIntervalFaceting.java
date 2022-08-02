@@ -309,7 +309,6 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Slow
   public void testRandom() throws Exception {
     // All field values will be a number between 0 and cardinality
     int cardinality = 10000;
@@ -350,7 +349,8 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
           "test_ds_p",
           "test_dts_p"
         };
-    for (int i = 0; i < atLeast(500); i++) {
+    int docs = atLeast(500);
+    for (int i = 0; i < docs; i++) {
       if (random().nextInt(50) == 0) {
         // have some empty docs
         assertU(adoc("id", String.valueOf(i)));
@@ -399,7 +399,9 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     }
     assertU(commit());
 
-    for (int i = 0; i < atLeast(10000); i++) {
+    // Scale higher for nightlies than typically
+    int queries = TEST_NIGHTLY ? atLeast(10000) : atLeast(1000);
+    for (int i = 0; i < queries; i++) {
       doTestQuery(cardinality, fields);
     }
   }

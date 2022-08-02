@@ -78,8 +78,9 @@ import org.slf4j.LoggerFactory;
 /**
  * Helper base class for distributed search test cases
  *
- * <p>By default, all tests in sub-classes will be executed with 1, 2, ... DEFAULT_MAX_SHARD_COUNT
- * number of shards set up repeatedly.
+ * <p>By default, for Nightly runs, all tests in sub-classes will execute with 1, 2, ...
+ * DEFAULT_MAX_SHARD_COUNT number of shards set up repeatedly. For non-nightly tests, they will
+ * execute with 2 shards, to speed up total execution time.
  *
  * <p>In general, it's preferable to annotate the tests in sub-classes with a
  * {@literal @}ShardsFixed(num = N) or a {@literal @}ShardsRepeat(min = M, max = N) to indicate
@@ -222,6 +223,11 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     this.context = context;
     this.deadServers =
         new String[] {DEAD_HOST_1 + context, DEAD_HOST_2 + context, DEAD_HOST_3 + context};
+
+    // Speed up the test cycle by only running a single configuration instead of the repeat rule
+    if (TEST_NIGHTLY == false) {
+      fixShardCount(2);
+    }
   }
 
   private static final int DEFAULT_MAX_SHARD_COUNT = 3;

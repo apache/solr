@@ -141,6 +141,8 @@ Other Changes
 
 * SOLR-16231: Fix ref-guide links across the codebase (Houston Putman)
 
+* SOLR-16304: No more @Slow annotation for tests! (Mike Drob)
+
 Build
 ---------------------
 * SOLR-16204: Change Lucene dependency to Lucene 9.1.0 (Elia Porciani via Alessandro Benedetti)

@@ -111,12 +111,19 @@ public class TestJsonFacets extends SolrTestCaseHS {
   @ParametersFactory
   public static Iterable<Object[]> parameters() {
     if (null != TEST_ONLY_ONE_FACET_METHOD) {
-      return Arrays.<Object[]>asList(new Object[] {TEST_ONLY_ONE_FACET_METHOD});
-    }
+      return Collections.singleton(new Object[] {TEST_ONLY_ONE_FACET_METHOD});
+    } else if (TEST_NIGHTLY) {
+      // wrap each enum val in an Object[] and return as Iterable
+      return () ->
+          Arrays.stream(FacetField.FacetMethod.values()).map(it -> new Object[] {it}).iterator();
+    } else {
+      // pick a single random method and test it
+      FacetField.FacetMethod[] methods = FacetField.FacetMethod.values();
 
-    // wrap each enum val in an Object[] and return as Iterable
-    return () ->
-        Arrays.stream(FacetField.FacetMethod.values()).map(it -> new Object[] {it}).iterator();
+      // can't use LuceneTestCase.random() because we're not in the runner context yet
+      String seed = System.getProperty("tests.seed", "");
+      return Collections.singleton(new Object[] {methods[seed.hashCode() % methods.length]});
+    }
   }
 
   public TestJsonFacets(FacetField.FacetMethod defMethod) {

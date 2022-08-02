@@ -25,7 +25,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -43,7 +42,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.Test;
 
 /** Test of the Collections API with the MiniSolrCloudCluster. */
-@LuceneTestCase.Slow
 public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
 
   private static final int numShards = 2;

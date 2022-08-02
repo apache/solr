@@ -25,7 +25,6 @@ import java.util.Optional;
 import java.util.Set;
 import org.apache.hadoop.util.Time;
 import org.apache.http.HttpStatus;
-import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -54,7 +53,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Test the delegation token support in the {@link KerberosPlugin}. */
-@LuceneTestCase.Slow
 public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final int NUM_SERVERS = 2;
