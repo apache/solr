@@ -810,7 +810,13 @@ public class DocTermOrds implements Accountable {
 
     @Override
     public int docValueCount() {
-      return 1; // docs are dedup'd so each ord will only have a single entry here
+      if (arr == null) {
+        // This value was inlined, and then read into a single buffer
+        return bufferLength;
+      } else {
+        // Do we need to scan the array looking for 0?
+        return arr.length - 1;
+      }
     }
 
     /**
@@ -836,7 +842,7 @@ public class DocTermOrds implements Accountable {
           code >>>= 8;
         }
       } else {
-        // code is a pointer
+        // upto is a pointer into the array
         for (; ; ) {
           int delta = 0;
           for (; ; ) {
