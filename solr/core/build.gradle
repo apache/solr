@@ -15,9 +15,34 @@
  * limitations under the License.
  */
 
+plugins {
+  id 'io.swagger.core.v3.swagger-gradle-plugin' version '2.2.2'
+  id "org.openapi.generator" version "6.0.1"
+}
+
 apply plugin: 'java-library'
 
 description = 'Apache Solr Core'
+
+resolve {
+  classpath = sourceSets.main.runtimeClasspath
+  outputDir = file("build")
+  prettyPrint = true
+}
+
+openApiGenerate {
+  generatorName = "python"
+  inputSpec = file("build/openapi.json").toString()
+  outputDir = file("build/jegerlowgenerated").toString()
+  packageName = "generatedstuff"
+  apiPackage = "generatedapistuff"
+  modelPackage = "generatedmodelstuff"
+}
+
+openApiValidate {
+   inputSpec = file("build/openapi.json").toString()
+   recommend = true
+}
 
 configurations {
   // jettyClientImplementation should be used for all jetty client libraries used by the Solr Server.
@@ -32,6 +57,10 @@ configurations {
 }
 
 dependencies {
+  // TODO JEGERLOW: Can we get aware with compileOnly here?  And to we need other swagger libs?
+  compileOnly 'io.swagger.core.v3:swagger-core'
+  compileOnly 'javax.ws.rs:jsr311-api'
+
   // Spotbugs Annotations are only needed for old findbugs
   // annotation usage like in Zookeeper during compilation time.
   // It is not included in the release so exclude from checks.
