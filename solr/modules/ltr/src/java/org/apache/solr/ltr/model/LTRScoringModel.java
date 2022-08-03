@@ -78,7 +78,7 @@ import org.apache.solr.util.SolrPluginUtils;
  * </pre>
  *
  * <p>{@link LTRScoringModel} is an abstract class and concrete classes must implement the {@link
- * #score(Float[])} and {@link #explain(LeafReaderContext, int, float, List)} methods.
+ * #score(float[])} and {@link #explain(LeafReaderContext, int, float, List)} methods.
  */
 public abstract class LTRScoringModel implements Accountable {
   private static final long BASE_RAM_BYTES =
@@ -291,7 +291,7 @@ public abstract class LTRScoringModel implements Accountable {
    *     identified by its id, which is the index in the array
    * @return The final score for a document
    */
-  public abstract float score(Float[] modelFeatureValuesNormalized);
+  public abstract float score(float[] modelFeatureValuesNormalized);
 
   /**
    * Similar to the score() function, except it returns an explanation of how the features were used
@@ -315,16 +315,14 @@ public abstract class LTRScoringModel implements Accountable {
    * Goes through all the stored feature values, and calculates the normalized values for all the
    * features that will be used for scoring.
    */
-  public void normalizeFeaturesInPlace(Float[] modelFeatureValues) {
-    Float[] modelFeatureValuesNormalized = modelFeatureValues;
+  public void normalizeFeaturesInPlace(float[] modelFeatureValues) {
+    float[] modelFeatureValuesNormalized = modelFeatureValues;
     if (modelFeatureValues.length != norms.size()) {
       throw new FeatureException("Must have normalizer for every feature");
     }
     for (int idx = 0; idx < modelFeatureValuesNormalized.length; ++idx) {
-      if (!Float.isNaN(modelFeatureValuesNormalized[idx])) {
-        modelFeatureValuesNormalized[idx] =
-                norms.get(idx).normalize(modelFeatureValuesNormalized[idx]);
-      }
+      modelFeatureValuesNormalized[idx] = norms.get(idx).normalize(modelFeatureValuesNormalized[idx]);
+
     }
   }
 

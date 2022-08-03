@@ -341,12 +341,9 @@ public class NeuralNetworkModel extends LTRScoringModel {
   }
 
   @Override
-  public float score(Float[] inputFeatures) {
-    float[] outputVec = new float[inputFeatures.length];
-    int index = 0;
-    for (final Float value: inputFeatures) {
-      outputVec[index++] = value;
-    }
+  public float score(float[] inputFeatures) {
+
+    float[] outputVec = inputFeatures;
 
     for (Layer layer : layers) {
       outputVec = layer.calculateOutput(outputVec);

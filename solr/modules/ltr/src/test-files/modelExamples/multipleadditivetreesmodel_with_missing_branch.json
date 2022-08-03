@@ -3,7 +3,8 @@
     "name":"multipleadditivetreesmodel",
     "features":[
         { "name": "matchedTitle"},
-        { "name": "constantScoreToForceMultipleAdditiveTreesScoreAllDocs"}
+        { "name": "constantScoreToForceMultipleAdditiveTreesScoreAllDocs"},
+        { "name": "userDevice"}
     ],
     "params":{
         "trees": [
@@ -12,14 +13,24 @@
                 "root": {
                     "feature": "matchedTitle",
                     "threshold": "0.5f",
+                    "missing": "right",
                     "left" : {
                         "value" : "-100"
                     },
                     "right": {
                         "feature" : "constantScoreToForceMultipleAdditiveTreesScoreAllDocs",
                         "threshold": "10.0f",
+                        "missing": "left",
                         "left" : {
-                            "value" : "50"
+                            "feature" : "userDevice",
+                            "threshold": "0f",
+                            "missing": "left",
+                            "left" : {
+                                "value" : "50"
+                            },
+                            "right" : {
+                                "value" : "65"
+                            }
                         },
                         "right" : {
                             "value" : "75"

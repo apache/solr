@@ -148,7 +148,7 @@ public abstract class WrapperModel extends AdapterModel {
   }
 
   @Override
-  public float score(Float[] modelFeatureValuesNormalized) {
+  public float score(float[] modelFeatureValuesNormalized) {
     return model.score(modelFeatureValuesNormalized);
   }
 
@@ -159,7 +159,7 @@ public abstract class WrapperModel extends AdapterModel {
   }
 
   @Override
-  public void normalizeFeaturesInPlace(Float[] modelFeatureValues) {
+  public void normalizeFeaturesInPlace(float[] modelFeatureValues) {
     model.normalizeFeaturesInPlace(modelFeatureValues);
   }
 

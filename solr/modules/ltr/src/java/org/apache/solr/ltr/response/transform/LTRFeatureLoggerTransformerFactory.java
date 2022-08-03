@@ -408,7 +408,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     }
 
     @Override
-    public float score(Float[] modelFeatureValuesNormalized) {
+    public float score(float[] modelFeatureValuesNormalized) {
       return 0;
     }
 

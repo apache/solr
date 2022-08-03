@@ -90,7 +90,7 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
     }
 
     @Override
-    public float score(Float[] modelFeatureValuesNormalized) {
+    public float score(float[] modelFeatureValuesNormalized) {
       return modelFeatureValuesNormalized[2];
     }
 

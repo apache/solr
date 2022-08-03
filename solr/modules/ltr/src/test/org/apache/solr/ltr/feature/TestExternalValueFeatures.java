@@ -69,7 +69,7 @@ public class TestExternalValueFeatures extends TestRerankBase {
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/docs/[0]/features=='" + docs0features_default_csv + "'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==115.0");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==65.0");
   }
 
   @Test
@@ -95,6 +95,6 @@ public class TestExternalValueFeatures extends TestRerankBase {
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/docs/[0]/features=='" + docs0features_default_csv + "'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==50.0");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==0.0");
   }
 }
