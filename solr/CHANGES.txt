@@ -62,6 +62,8 @@ Improvements
 * SOLR-16257: Improve ZkStateReader to avoid race condition between collectionWatches and watchedCollectionStates
   (Patson Luk, Houston Putman, Mike Drob)
 
+* SOLR-16323: The Docker image now uses the Solr User ID instead of the User Name, helps with non-root checks (Houston Putman)
+
 Optimizations
 ---------------------
 * SOLR-16120: Optimise hl.fl expansion. (Christine Poerschke, David Smiley, Mike Drob)
