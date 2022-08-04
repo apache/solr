@@ -808,7 +808,7 @@ public class CoreContainer {
     ClusterAPI clusterAPI = new ClusterAPI(collectionsHandler, configSetsHandler);
     containerHandlers.getApiBag().registerObject(clusterAPI);
     containerHandlers.getApiBag().registerObject(clusterAPI.commands);
-    containerHandlers.getApiBag().registerObject(clusterAPI.configSetCommands);
+    ApiRegistrar.registerConfigsetApis(containerHandlers.getApiBag(), this);
 
     if (isZooKeeperAware()) {
       containerHandlers.getApiBag().registerObject(new SchemaDesignerAPI(this));
