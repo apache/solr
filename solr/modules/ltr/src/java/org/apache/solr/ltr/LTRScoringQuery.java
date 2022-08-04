@@ -76,21 +76,27 @@ public class LTRScoringQuery extends Query implements Accountable {
   // Original solr request
   private SolrQueryRequest request;
 
-  public LTRScoringQuery(LTRScoringModel ltrScoringModel) {
-    this(ltrScoringModel, Collections.<String, String[]>emptyMap(), false, null);
+  private boolean missingFeatures;
+
+  public LTRScoringQuery(LTRScoringModel ltrScoringModel, boolean missingFeatures) {
+    this(ltrScoringModel, Collections.<String, String[]>emptyMap(), missingFeatures, false, null);
   }
 
-  public LTRScoringQuery(LTRScoringModel ltrScoringModel, boolean extractAllFeatures) {
-    this(ltrScoringModel, Collections.<String, String[]>emptyMap(), extractAllFeatures, null);
+  public LTRScoringQuery(LTRScoringModel ltrScoringModel, boolean missingFeatures, boolean extractAllFeatures) {
+    this(ltrScoringModel, Collections.<String, String[]>emptyMap(), missingFeatures, extractAllFeatures, null);
   }
+
+
 
   public LTRScoringQuery(
       LTRScoringModel ltrScoringModel,
       Map<String, String[]> externalFeatureInfo,
+      boolean missingFeatures,
       boolean extractAllFeatures,
       LTRThreadModule ltrThreadMgr) {
     this.ltrScoringModel = ltrScoringModel;
     this.efi = externalFeatureInfo;
+    this.missingFeatures = missingFeatures;
     this.extractAllFeatures = extractAllFeatures;
     this.ltrThreadMgr = ltrThreadMgr;
     if (this.ltrThreadMgr != null) {

@@ -20,8 +20,8 @@ public final class OriginalRankingLTRScoringQuery extends LTRInterleavingScoring
 
   private final String originalRankingModelName;
 
-  public OriginalRankingLTRScoringQuery(String originalRankingModelName) {
-    super(null /* LTRScoringModel */);
+  public OriginalRankingLTRScoringQuery(String originalRankingModelName, boolean missingFeatures) {
+    super(null /* LTRScoringModel */, missingFeatures);
     this.originalRankingModelName = originalRankingModelName;
   }
 

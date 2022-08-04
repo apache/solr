@@ -73,6 +73,8 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
   private static String DEFAULT_LOGGING_MODEL_NAME = "logging-model";
 
+  public static final String MISSING_FEATURES = "missingFeatures";
+
   private String fvCacheName;
   private String loggingModelName = DEFAULT_LOGGING_MODEL_NAME;
   private String defaultStore;
@@ -135,8 +137,14 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     SolrQueryRequestContextUtils.setFeatureLogger(
         req, createFeatureLogger(localparams.get(FV_FORMAT)));
 
+    boolean missingFeatures = false;
+    String missingFeatureExternalParameter = localparams.get(MISSING_FEATURES);
+    if (missingFeatureExternalParameter != null) {
+      missingFeatures = Boolean.parseBoolean(missingFeatureExternalParameter);
+    }
+
     return new FeatureTransformer(
-        name, localparams, req, (fvStoreName != null) /* hasExplicitFeatureStore */);
+        name, localparams, req, (fvStoreName != null) /* hasExplicitFeatureStore */, missingFeatures);
   }
 
   /**
@@ -184,6 +192,8 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     private FeatureLogger featureLogger;
     private boolean docsWereNotReranked;
 
+    private boolean missingFeatures;
+
     /**
      * @param name Name of the field to be added in a document representing the feature vectors
      */
@@ -191,11 +201,13 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
         String name,
         SolrParams localparams,
         SolrQueryRequest req,
-        boolean hasExplicitFeatureStore) {
+        boolean hasExplicitFeatureStore,
+        boolean missingFeatures) {
       this.name = name;
       this.localparams = localparams;
       this.req = req;
       this.hasExplicitFeatureStore = hasExplicitFeatureStore;
+      this.missingFeatures = missingFeatures;
     }
 
     @Override
@@ -232,7 +244,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
       final LoggingModel loggingModel = createLoggingModel(transformerFeatureStore);
       setupRerankingQueriesForLogging(
-          transformerFeatureStore, transformerExternalFeatureInfo, loggingModel);
+          transformerFeatureStore, transformerExternalFeatureInfo, missingFeatures, loggingModel);
       setupRerankingWeightsForLogging(context);
     }
 
@@ -278,12 +290,14 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     private void setupRerankingQueriesForLogging(
         String transformerFeatureStore,
         Map<String, String[]> transformerExternalFeatureInfo,
+        boolean missingFeatures,
         LoggingModel loggingModel) {
       if (docsWereNotReranked) { // no reranking query
         LTRScoringQuery loggingQuery =
             new LTRScoringQuery(
                 loggingModel,
                 transformerExternalFeatureInfo,
+                missingFeatures,
                 true /* extractAllFeatures */,
                 threadManager);
         rerankingQueries = new LTRScoringQuery[] {loggingQuery};
@@ -313,6 +327,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
                     (!transformerExternalFeatureInfo.isEmpty()
                         ? transformerExternalFeatureInfo
                         : rerankingQueries[i].getExternalFeatureInfo()),
+                    missingFeatures,
                     true /* extractAllFeatures */,
                     threadManager);
           }

@@ -27,20 +27,21 @@ public class LTRInterleavingScoringQuery extends LTRScoringQuery {
   // Model was picked for this Docs
   private Set<Integer> pickedInterleavingDocIds;
 
-  public LTRInterleavingScoringQuery(LTRScoringModel ltrScoringModel) {
-    super(ltrScoringModel);
+  public LTRInterleavingScoringQuery(LTRScoringModel ltrScoringModel, boolean missingFeatures) {
+    super(ltrScoringModel, missingFeatures);
   }
 
-  public LTRInterleavingScoringQuery(LTRScoringModel ltrScoringModel, boolean extractAllFeatures) {
-    super(ltrScoringModel, extractAllFeatures);
+  public LTRInterleavingScoringQuery(LTRScoringModel ltrScoringModel, boolean missingFeatures, boolean extractAllFeatures) {
+    super(ltrScoringModel, missingFeatures, extractAllFeatures);
   }
 
   public LTRInterleavingScoringQuery(
       LTRScoringModel ltrScoringModel,
       Map<String, String[]> externalFeatureInfo,
+      boolean missingFeatures,
       boolean extractAllFeatures,
       LTRThreadModule ltrThreadMgr) {
-    super(ltrScoringModel, externalFeatureInfo, extractAllFeatures, ltrThreadMgr);
+    super(ltrScoringModel, externalFeatureInfo, missingFeatures, extractAllFeatures, ltrThreadMgr);
   }
 
   public Set<Integer> getPickedInterleavingDocIds() {

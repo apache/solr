@@ -80,6 +80,8 @@ public class LTRQParserPlugin extends QParserPlugin
   /** query parser plugin:the param that selects the interleaving algorithm to use */
   public static final String INTERLEAVING_ALGORITHM = "interleavingAlgorithm";
 
+  public static final String MISSING_FEATURES = "missingFeatures";
+
   @Override
   public void init(NamedList<?> args) {
     super.init(args);
@@ -159,6 +161,12 @@ public class LTRQParserPlugin extends QParserPlugin
       final String tranformerFeatureStoreName = SolrQueryRequestContextUtils.getFvStoreName(req);
       final Map<String, String[]> externalFeatureInfo = extractEFIParams(localParams);
 
+      boolean missingFeatures = false;
+      String[] missingFeatureExternalParameter = localParams.getParams(LTRQParserPlugin.MISSING_FEATURES);
+      if (missingFeatureExternalParameter != null) {
+        missingFeatures = Boolean.parseBoolean(missingFeatureExternalParameter[0]);
+      }
+
       LTRScoringQuery rerankingQuery = null;
       LTRInterleavingScoringQuery[] rerankingQueries =
           new LTRInterleavingScoringQuery[modelNames.length];
@@ -190,6 +198,7 @@ public class LTRQParserPlugin extends QParserPlugin
                     new LTRInterleavingScoringQuery(
                         ltrScoringModel,
                         externalFeatureInfo,
+                        missingFeatures,
                         featuresRequestedFromSameStore,
                         threadManager);
           } else {
@@ -197,6 +206,7 @@ public class LTRQParserPlugin extends QParserPlugin
                 new LTRScoringQuery(
                     ltrScoringModel,
                     externalFeatureInfo,
+                    missingFeatures,
                     featuresRequestedFromSameStore,
                     threadManager);
             rerankingQueries[i] = null;
@@ -209,7 +219,7 @@ public class LTRQParserPlugin extends QParserPlugin
           }
         } else {
           rerankingQuery =
-              rerankingQueries[i] = new OriginalRankingLTRScoringQuery(ORIGINAL_RANKING);
+              rerankingQueries[i] = new OriginalRankingLTRScoringQuery(ORIGINAL_RANKING, missingFeatures);
         }
 
         // External features
