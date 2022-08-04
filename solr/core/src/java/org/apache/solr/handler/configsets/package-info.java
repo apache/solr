@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,19 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.request.beans;
 
-import java.util.Map;
-import org.apache.solr.common.annotation.JsonProperty;
-import org.apache.solr.common.util.ReflectMapWriter;
-
-public class CreateConfigPayload implements ReflectMapWriter {
-  public static final String DEFAULT_CONFIGSET =
-      "_default"; // TODO Better location for this in SolrJ?
-
-  @JsonProperty(required = true)
-  public String name;
-
-  @JsonProperty public String baseConfigSet = DEFAULT_CONFIGSET;
-  @JsonProperty public Map<String, Object> properties;
-}
+/** V2 API classes for performing CRUD operations on configsets. */
+package org.apache.solr.handler.configsets;
