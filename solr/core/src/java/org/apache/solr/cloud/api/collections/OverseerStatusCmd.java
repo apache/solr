@@ -18,6 +18,10 @@
 package org.apache.solr.cloud.api.collections;
 
 import com.codahale.metrics.Timer;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import org.apache.solr.cloud.OverseerTaskProcessor;
 import org.apache.solr.cloud.Stats;
 import org.apache.solr.common.cloud.ClusterState;
@@ -29,11 +33,6 @@ import org.apache.solr.util.stats.MetricUtils;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 /**
  * This command returns stats about the Overseer, the cluster state updater and collection API

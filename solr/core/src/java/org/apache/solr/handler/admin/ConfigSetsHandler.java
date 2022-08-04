@@ -16,7 +16,13 @@
  */
 package org.apache.solr.handler.admin;
 
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.handler.configsets.UploadConfigSetFileAPI.FILEPATH_PLACEHOLDER;
+
 import com.google.common.collect.Maps;
+import java.lang.invoke.MethodHandles;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.request.beans.CreateConfigPayload;
 import org.apache.solr.cloud.ConfigSetCmds;
@@ -41,13 +47,6 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.handler.configsets.UploadConfigSetFileAPI.FILEPATH_PLACEHOLDER;
 
 /** A {@link org.apache.solr.request.SolrRequestHandler} for ConfigSets API requests. */
 public class ConfigSetsHandler extends RequestHandlerBase implements PermissionNameProvider {
@@ -91,37 +90,46 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     switch (action) {
       case DELETE:
         final DeleteConfigSetAPI deleteConfigSetAPI = new DeleteConfigSetAPI(coreContainer);
-        final SolrQueryRequest v2DeleteReq = new DelegatingSolrQueryRequest(req) {
-          @Override
-          public Map<String, String> getPathTemplateValues() {
-            return Map.of(DeleteConfigSetAPI.CONFIGSET_NAME_PLACEHOLDER, req.getParams().required().get(NAME));
-          }
-        };
+        final SolrQueryRequest v2DeleteReq =
+            new DelegatingSolrQueryRequest(req) {
+              @Override
+              public Map<String, String> getPathTemplateValues() {
+                return Map.of(
+                    DeleteConfigSetAPI.CONFIGSET_NAME_PLACEHOLDER,
+                    req.getParams().required().get(NAME));
+              }
+            };
         deleteConfigSetAPI.deleteConfigSet(v2DeleteReq, rsp);
         break;
       case UPLOAD:
-        final SolrQueryRequest v2UploadReq = new DelegatingSolrQueryRequest(req) {
-          @Override
-          public Map<String, String> getPathTemplateValues() {
-            final Map<String, String> templateValsByName = Maps.newHashMap();
+        final SolrQueryRequest v2UploadReq =
+            new DelegatingSolrQueryRequest(req) {
+              @Override
+              public Map<String, String> getPathTemplateValues() {
+                final Map<String, String> templateValsByName = Maps.newHashMap();
 
-            templateValsByName.put(UploadConfigSetAPI.CONFIGSET_NAME_PLACEHOLDER, req.getParams().required().get(NAME));
-            if (! req.getParams().get(ConfigSetParams.FILE_PATH, "").isEmpty()) {
-              templateValsByName.put(FILEPATH_PLACEHOLDER, req.getParams().get(ConfigSetParams.FILE_PATH));
-            }
-            return templateValsByName;
-          }
+                templateValsByName.put(
+                    UploadConfigSetAPI.CONFIGSET_NAME_PLACEHOLDER,
+                    req.getParams().required().get(NAME));
+                if (!req.getParams().get(ConfigSetParams.FILE_PATH, "").isEmpty()) {
+                  templateValsByName.put(
+                      FILEPATH_PLACEHOLDER, req.getParams().get(ConfigSetParams.FILE_PATH));
+                }
+                return templateValsByName;
+              }
 
-          // Set the v1 default vals where they differ from v2's
-          @Override
-          public SolrParams getParams() {
-            final ModifiableSolrParams v1Defaults = new ModifiableSolrParams();
-            v1Defaults.add(ConfigSetParams.OVERWRITE, "false");
-            v1Defaults.add(ConfigSetParams.CLEANUP, "false");
-            return new DefaultSolrParams(super.getParams(), v1Defaults);
-          }
-        };
-        if (req.getParams().get(ConfigSetParams.FILE_PATH, "").isEmpty()) { // Uploading a whole configset
+              // Set the v1 default vals where they differ from v2's
+              @Override
+              public SolrParams getParams() {
+                final ModifiableSolrParams v1Defaults = new ModifiableSolrParams();
+                v1Defaults.add(ConfigSetParams.OVERWRITE, "false");
+                v1Defaults.add(ConfigSetParams.CLEANUP, "false");
+                return new DefaultSolrParams(super.getParams(), v1Defaults);
+              }
+            };
+        if (req.getParams()
+            .get(ConfigSetParams.FILE_PATH, "")
+            .isEmpty()) { // Uploading a whole configset
           new UploadConfigSetAPI(coreContainer).uploadConfigSet(v2UploadReq, rsp);
         } else { // Uploading a single file
           new UploadConfigSetFileAPI(coreContainer).updateConfigSetFile(v2UploadReq, rsp);
@@ -144,10 +152,13 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
         }
         createPayload.properties = new HashMap<>();
         req.getParams().stream()
-                .filter(entry -> entry.getKey().startsWith(ConfigSetCmds.CONFIG_SET_PROPERTY_PREFIX))
-                .forEach(entry -> {
-                  final String newKey = entry.getKey().substring(ConfigSetCmds.CONFIG_SET_PROPERTY_PREFIX.length());
-                  final Object value = (entry.getValue().length == 1) ? entry.getValue()[0] : entry.getValue();
+            .filter(entry -> entry.getKey().startsWith(ConfigSetCmds.CONFIG_SET_PROPERTY_PREFIX))
+            .forEach(
+                entry -> {
+                  final String newKey =
+                      entry.getKey().substring(ConfigSetCmds.CONFIG_SET_PROPERTY_PREFIX.length());
+                  final Object value =
+                      (entry.getValue().length == 1) ? entry.getValue()[0] : entry.getValue();
                   createPayload.properties.put(newKey, value);
                 });
         final CreateConfigSetAPI createConfigSetAPI = new CreateConfigSetAPI(coreContainer);

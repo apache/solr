@@ -16,6 +16,10 @@
  */
 package org.apache.solr.handler.configsets;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
+import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
+
+import java.util.List;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.OverseerSolrResponse;
@@ -24,28 +28,22 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-import java.util.List;
-
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
-import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
-
 /**
  * V2 API for adding or updating a single file within a configset.
  *
- * <p>This API (GET /v2/cluster/configs) is analogous to
- * the v1 /admin/configs?action=LIST command.
+ * <p>This API (GET /v2/cluster/configs) is analogous to the v1 /admin/configs?action=LIST command.
  */
 public class ListConfigSetsAPI extends ConfigSetAPIBase {
-    public ListConfigSetsAPI(CoreContainer coreContainer) {
-        super(coreContainer);
-    }
+  public ListConfigSetsAPI(CoreContainer coreContainer) {
+    super(coreContainer);
+  }
 
-    @EndPoint(method = GET, path = "/cluster/configs", permission = CONFIG_READ_PERM)
-    public void listConfigSet(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-        final NamedList<Object> results = new NamedList<>();
-        List<String> configSetsList = configSetService.listConfigs();
-        results.add("configSets", configSetsList);
-        SolrResponse response = new OverseerSolrResponse(results);
-        rsp.getValues().addAll(response.getResponse());
-    }
+  @EndPoint(method = GET, path = "/cluster/configs", permission = CONFIG_READ_PERM)
+  public void listConfigSet(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    final NamedList<Object> results = new NamedList<>();
+    List<String> configSetsList = configSetService.listConfigs();
+    results.add("configSets", configSetsList);
+    SolrResponse response = new OverseerSolrResponse(results);
+    rsp.getValues().addAll(response.getResponse());
+  }
 }

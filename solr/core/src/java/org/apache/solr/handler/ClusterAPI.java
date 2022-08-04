@@ -17,7 +17,30 @@
 
 package org.apache.solr.handler;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.REQUESTID;
+import static org.apache.solr.common.params.CollectionParams.ACTION;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERPROP;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESTATUS;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.LIST;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.OVERSEERSTATUS;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.REQUESTSTATUS;
+import static org.apache.solr.core.RateLimiterConfig.RL_CONFIG_KEY;
+import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
+import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
+
 import com.google.common.collect.Maps;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Set;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
@@ -40,30 +63,6 @@ import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.zookeeper.KeeperException;
-
-import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Set;
-
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.REQUESTID;
-import static org.apache.solr.common.params.CollectionParams.ACTION;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERPROP;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESTATUS;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.LIST;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.OVERSEERSTATUS;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.REQUESTSTATUS;
-import static org.apache.solr.core.RateLimiterConfig.RL_CONFIG_KEY;
-import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
-import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 
 /** All V2 APIs that have a prefix of /api/cluster/ */
 public class ClusterAPI {

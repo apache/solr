@@ -16,13 +16,13 @@
  */
 package org.apache.solr.client.solrj.request.beans;
 
+import java.util.Map;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 
-import java.util.Map;
-
 public class CreateConfigPayload implements ReflectMapWriter {
-  public static final String DEFAULT_CONFIGSET = "_default"; // TODO Better location for this in SolrJ?
+  public static final String DEFAULT_CONFIGSET =
+      "_default"; // TODO Better location for this in SolrJ?
 
   @JsonProperty(required = true)
   public String name;
