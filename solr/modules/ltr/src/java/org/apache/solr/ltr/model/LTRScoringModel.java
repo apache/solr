@@ -293,6 +293,10 @@ public abstract class LTRScoringModel implements Accountable {
    */
   public abstract float score(float[] modelFeatureValuesNormalized);
 
+  public float scoreWithMissingBranch(Float[] modelFeatureValuesNormalized) {
+    return 0;
+  }
+
   /**
    * Similar to the score() function, except it returns an explanation of how the features were used
    * to calculate the score.
@@ -323,6 +327,19 @@ public abstract class LTRScoringModel implements Accountable {
     for (int idx = 0; idx < modelFeatureValuesNormalized.length; ++idx) {
       modelFeatureValuesNormalized[idx] = norms.get(idx).normalize(modelFeatureValuesNormalized[idx]);
 
+    }
+  }
+
+  public void normalizeFeaturesInPlaceWithMissingBranch(Float[] modelFeatureValues) {
+    Float[] modelFeatureValuesNormalized = modelFeatureValues;
+    if (modelFeatureValues.length != norms.size()) {
+      throw new FeatureException("Must have normalizer for every feature");
+    }
+    for (int idx = 0; idx < modelFeatureValuesNormalized.length; ++idx) {
+      if (!Float.isNaN(modelFeatureValuesNormalized[idx])) {
+        modelFeatureValuesNormalized[idx] =
+                norms.get(idx).normalize(modelFeatureValuesNormalized[idx]);
+      }
     }
   }
 

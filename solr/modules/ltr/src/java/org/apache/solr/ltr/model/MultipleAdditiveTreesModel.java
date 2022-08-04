@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Stack;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
@@ -135,6 +136,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     private Float threshold;
     private RegressionTreeNode left;
     private RegressionTreeNode right;
+    private String missing;
 
     public void setValue(float value) {
       this.value = value;
@@ -142,6 +144,10 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
 
     public void setValue(String value) {
       this.value = Float.parseFloat(value);
+    }
+
+    public void setMissing(String direction) {
+      this.missing = direction;
     }
 
     public void setFeature(String feature) {
@@ -183,6 +189,9 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
       } else {
         sb.append("(feature=").append(feature);
         sb.append(",threshold=").append(threshold.floatValue() - NODE_SPLIT_SLACK);
+        if (missing != null) {
+          sb.append(",missing=").append(missing);
+        }
         sb.append(",left=").append(left);
         sb.append(",right=").append(right);
         sb.append(')');
@@ -213,6 +222,10 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
 
     public float score(float[] featureVector) {
       return weight.floatValue() * scoreNode(featureVector, root);
+    }
+
+    public float scoreWithMissingBranch(Float[] featureVector) {
+      return weight.floatValue() * scoreNodeWithMissingBranch(featureVector, root);
     }
 
     public String explain(float[] featureVector) {
@@ -287,6 +300,15 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     return score;
   }
 
+  @Override
+  public float scoreWithMissingBranch(Float[] modelFeatureValuesNormalized) {
+    float score = 0;
+    for (final RegressionTree t : trees) {
+      score += t.scoreWithMissingBranch(modelFeatureValuesNormalized);
+    }
+    return score;
+  }
+
   private static float scoreNode(float[] featureVector, RegressionTreeNode regressionTreeNode) {
     while (true) {
       if (regressionTreeNode.isLeaf()) {
@@ -299,6 +321,27 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
       }
 
       if (featureVector[regressionTreeNode.featureIndex] <= regressionTreeNode.threshold) {
+        regressionTreeNode = regressionTreeNode.left;
+      } else {
+        regressionTreeNode = regressionTreeNode.right;
+      }
+    }
+  }
+
+  private static float scoreNodeWithMissingBranch(Float[] featureVector, RegressionTreeNode regressionTreeNode) {
+    while (true) {
+      if (regressionTreeNode.isLeaf()) {
+        return regressionTreeNode.value;
+      }
+      // unsupported feature (tree is looking for a feature that does not exist)
+      if ((regressionTreeNode.featureIndex < 0)
+              || (regressionTreeNode.featureIndex >= featureVector.length)) {
+        return 0f;
+      }
+
+      if ((featureVector[regressionTreeNode.featureIndex] <= regressionTreeNode.threshold) ||
+              (Float.isNaN(featureVector[regressionTreeNode.featureIndex]) &&
+                      Objects.equals(regressionTreeNode.missing, "left"))) {
         regressionTreeNode = regressionTreeNode.left;
       } else {
         regressionTreeNode = regressionTreeNode.right;

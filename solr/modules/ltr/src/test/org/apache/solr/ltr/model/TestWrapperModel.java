@@ -255,11 +255,23 @@ public class TestWrapperModel extends TestRerankBase {
     ++methodCount;
     Mockito.verify(wrappedModel, Mockito.times(1)).score(null);
 
+    // scoreWithMissingBranch : delegate
+    Mockito.reset(wrappedModel);
+    wrapperModel.scoreWithMissingBranch(null);
+    ++methodCount;
+    Mockito.verify(wrappedModel, Mockito.times(0)).score(null);
+
     // normalizeFeaturesInPlace : delegate
     Mockito.reset(wrappedModel);
     wrapperModel.normalizeFeaturesInPlace(null);
     ++methodCount;
     Mockito.verify(wrappedModel, Mockito.times(1)).normalizeFeaturesInPlace(null);
+
+    // normalizeFeaturesInPlaceWithMissingBranch : delegate
+    Mockito.reset(wrappedModel);
+    wrapperModel.normalizeFeaturesInPlaceWithMissingBranch(null);
+    ++methodCount;
+    Mockito.verify(wrappedModel, Mockito.times(0)).normalizeFeaturesInPlace(null);
 
     // getNormalizerExplanation : delegate
     Mockito.reset(wrappedModel);

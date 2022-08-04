@@ -380,6 +380,8 @@ public class LTRScoringQuery extends Query implements Accountable {
     // features used for logging.
     private final Feature.FeatureWeight[] modelFeatureWeights;
     private final float[] modelFeatureValuesNormalized;
+
+    private final Float[] modelFeatureValuesNormalizedWithMissingBranch;
     private final Feature.FeatureWeight[] extractedFeatureWeights;
 
     // List of all the feature names, values - used for both scoring and logging
@@ -412,6 +414,7 @@ public class LTRScoringQuery extends Query implements Accountable {
       this.extractedFeatureWeights = extractedFeatureWeights;
       this.modelFeatureWeights = modelFeatureWeights;
       this.modelFeatureValuesNormalized = new float[modelFeatureWeights.length];
+      this.modelFeatureValuesNormalizedWithMissingBranch = new Float[modelFeatureWeights.length];
       this.featuresInfo = new FeatureInfo[allFeaturesSize];
       setFeaturesInfo();
     }
@@ -463,6 +466,23 @@ public class LTRScoringQuery extends Query implements Accountable {
       }
       ltrScoringModel.normalizeFeaturesInPlace(modelFeatureValuesNormalized);
       return ltrScoringModel.score(modelFeatureValuesNormalized);
+    }
+
+    private float makeNormalizedFeaturesAndScoreWithMissingBranch() {
+      int pos = 0;
+      for (final Feature.FeatureWeight feature : modelFeatureWeights) {
+        final int featureId = feature.getIndex();
+        FeatureInfo fInfo = featuresInfo[featureId];
+        // not checking for finfo == null as that would be a bug we should catch
+        if (fInfo.isUsed()) {
+          modelFeatureValuesNormalizedWithMissingBranch[pos] = fInfo.getValue();
+        } else {
+          modelFeatureValuesNormalizedWithMissingBranch[pos] = feature.getDefaultValue();
+        }
+        pos++;
+      }
+      ltrScoringModel.normalizeFeaturesInPlaceWithMissingBranch(modelFeatureValuesNormalizedWithMissingBranch);
+      return ltrScoringModel.scoreWithMissingBranch(modelFeatureValuesNormalizedWithMissingBranch);
     }
 
     @Override
@@ -700,7 +720,12 @@ public class LTRScoringQuery extends Query implements Accountable {
               }
             }
           }
-          return makeNormalizedFeaturesAndScore();
+          if (missingFeatures) {
+            return makeNormalizedFeaturesAndScoreWithMissingBranch();
+          }
+          else {
+            return makeNormalizedFeaturesAndScore();
+          }
         }
 
         @Override

@@ -153,6 +153,11 @@ public abstract class WrapperModel extends AdapterModel {
   }
 
   @Override
+  public float scoreWithMissingBranch(Float[] modelFeatureValuesNormalizedWithMissingBranch) {
+    return model.scoreWithMissingBranch(modelFeatureValuesNormalizedWithMissingBranch);
+  }
+
+  @Override
   public Explanation explain(
       LeafReaderContext context, int doc, float finalScore, List<Explanation> featureExplanations) {
     return model.explain(context, doc, finalScore, featureExplanations);
@@ -161,6 +166,11 @@ public abstract class WrapperModel extends AdapterModel {
   @Override
   public void normalizeFeaturesInPlace(float[] modelFeatureValues) {
     model.normalizeFeaturesInPlace(modelFeatureValues);
+  }
+
+  @Override
+  public void normalizeFeaturesInPlaceWithMissingBranch(Float[] modelFeatureValues) {
+    model.normalizeFeaturesInPlaceWithMissingBranch(modelFeatureValues);
   }
 
   @Override
