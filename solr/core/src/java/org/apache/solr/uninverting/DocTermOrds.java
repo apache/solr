@@ -814,8 +814,20 @@ public class DocTermOrds implements Accountable {
         // This value was inlined, and then read into a single buffer
         return bufferLength;
       } else {
-        // Do we need to scan the array looking for 0?
-        return arr.length - 1;
+        // scan logic taken from read()
+        int start = index[doc] & 0x7fffffff;
+        int cursor = start;
+        for (; ; ) {
+          int delta = 0;
+          for (; ; ) {
+            byte b = arr[cursor++];
+            delta = (delta << 7) | (b & 0x7f);
+            if ((b & 0x80) == 0) break;
+          }
+          if (delta == 0) break;
+        }
+
+        return cursor - start - 1;
       }
     }
 
