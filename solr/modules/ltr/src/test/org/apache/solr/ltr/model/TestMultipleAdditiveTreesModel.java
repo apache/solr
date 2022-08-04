@@ -49,7 +49,9 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     loadModels("multipleadditivetreesmodel.json");
 
     doTestMultipleAdditiveTreesScoringWithAndWithoutEfiFeatureMatches();
+    doTestMultipleAdditiveTreesWithoutMissingFeatures();
     doTestMultipleAdditiveTreesExplain();
+    doTestMultipleAdditiveTreesExplainWithoutMissingFeatures();
   }
 
   private void doTestMultipleAdditiveTreesScoringWithAndWithoutEfiFeatureMatches()
@@ -84,6 +86,22 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/score==-120.0");
   }
 
+  private void doTestMultipleAdditiveTreesWithoutMissingFeatures()
+          throws Exception {
+
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("*:*");
+    query.add("rows", "3");
+    query.add("fl", "*,score");
+
+    query.add(
+            "rq", "{!ltr reRankDocs=3 model=multipleadditivetreesmodel missingFeatures=false efi.user_query=dsjkafljjk}");
+
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==-120.0");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==-120.0");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/score==-120.0");
+  }
+
   private void doTestMultipleAdditiveTreesExplain() throws Exception {
 
     final SolrQuery query = new SolrQuery();
@@ -92,6 +110,40 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     query.add("rows", "3");
 
     query.add("rq", "{!ltr reRankDocs=3 model=multipleadditivetreesmodel efi.user_query=w3}");
+
+    // test out the explain feature, make sure it returns something
+    query.setParam("debugQuery", "on");
+
+    String qryResult = JQ("/query" + query.toQueryString());
+    qryResult = qryResult.replaceAll("\n", " ");
+
+    assertThat(qryResult, containsString("\"debug\":{"));
+    qryResult = qryResult.substring(qryResult.indexOf("debug"));
+
+    assertThat(qryResult, containsString("\"explain\":{"));
+    qryResult = qryResult.substring(qryResult.indexOf("explain"));
+
+    assertThat(qryResult, containsString("multipleadditivetreesmodel"));
+    assertThat(qryResult, containsString(MultipleAdditiveTreesModel.class.getSimpleName()));
+
+    assertThat(qryResult, containsString("-100.0 = tree 0"));
+    assertThat(qryResult, containsString("50.0 = tree 0"));
+    assertThat(qryResult, containsString("-20.0 = tree 1"));
+    assertThat(qryResult, containsString("'matchedTitle':1.0 > 0.5"));
+    assertThat(qryResult, containsString("'matchedTitle':0.0 <= 0.5"));
+
+    assertThat(qryResult, containsString(" Go Right "));
+    assertThat(qryResult, containsString(" Go Left "));
+  }
+
+  private void doTestMultipleAdditiveTreesExplainWithoutMissingFeatures() throws Exception {
+
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("*:*");
+    query.add("fl", "*,score,[fv]");
+    query.add("rows", "3");
+
+    query.add("rq", "{!ltr reRankDocs=3 model=multipleadditivetreesmodel missingFeatures=false efi.user_query=w3}");
 
     // test out the explain feature, make sure it returns something
     query.setParam("debugQuery", "on");
@@ -293,5 +345,64 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
                               "multipleadditivetreesmodel_features.json");
                     });
     assertEquals(expectedException.toString(), ex.toString());
+  }
+
+  @Test
+  public void testMultipleAdditiveTreesWithMissingFeatures() throws Exception {
+    loadFeatures("multipleadditivetreesmodel_features_with_missing_branch.json");
+    loadModels("multipleadditivetreesmodel_with_missing_branch.json");
+
+    //doTestMultipleAdditiveTreesWithMissingFeatures();
+    doTestMultipleAdditiveTreesExplainWithMissingFeatures();
+  }
+
+  private void doTestMultipleAdditiveTreesWithMissingFeatures()
+          throws Exception {
+
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("*:*");
+    query.add("rows", "3");
+    query.add("fl", "*,score");
+
+    query.add(
+            "rq", "{!ltr reRankDocs=3 model=multipleadditivetreesmodel missingFeatures=true efi.user_query=w3}");
+
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==30.0");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==30.0");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/score==30.0");
+  }
+
+  private void doTestMultipleAdditiveTreesExplainWithMissingFeatures() throws Exception {
+
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("*:*");
+    query.add("fl", "*,score,[fv]");
+    query.add("rows", "3");
+
+    query.add("rq", "{!ltr reRankDocs=3 model=multipleadditivetreesmodel missingFeatures=true efi.user_query=w3}");
+
+    // test out the explain feature, make sure it returns something
+    query.setParam("debugQuery", "on");
+
+    String qryResult = JQ("/query" + query.toQueryString());
+    qryResult = qryResult.replaceAll("\n", " ");
+
+    assertThat(qryResult, containsString("\"debug\":{"));
+    qryResult = qryResult.substring(qryResult.indexOf("debug"));
+
+    assertThat(qryResult, containsString("\"explain\":{"));
+    qryResult = qryResult.substring(qryResult.indexOf("explain"));
+
+    assertThat(qryResult, containsString("multipleadditivetreesmodel"));
+    assertThat(qryResult, containsString(MultipleAdditiveTreesModel.class.getSimpleName()));
+
+    assertThat(qryResult, containsString("-100.0 = tree 0"));
+    assertThat(qryResult, containsString("50.0 = tree 0"));
+    assertThat(qryResult, containsString("-20.0 = tree 1"));
+    assertThat(qryResult, containsString("'matchedTitle':1.0 > 0.5"));
+    assertThat(qryResult, containsString("'matchedTitle':0.0 <= 0.5"));
+
+    assertThat(qryResult, containsString(" Go Right "));
+    assertThat(qryResult, containsString(" Go Left "));
   }
 }

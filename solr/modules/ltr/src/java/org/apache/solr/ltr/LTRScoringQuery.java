@@ -477,7 +477,7 @@ public class LTRScoringQuery extends Query implements Accountable {
         if (fInfo.isUsed()) {
           modelFeatureValuesNormalizedWithMissingBranch[pos] = fInfo.getValue();
         } else {
-          modelFeatureValuesNormalizedWithMissingBranch[pos] = feature.getDefaultValue();
+          modelFeatureValuesNormalizedWithMissingBranch[pos] = Float.NaN;
         }
         pos++;
       }
@@ -634,7 +634,12 @@ public class LTRScoringQuery extends Query implements Accountable {
               featuresInfo[featureId].setUsed(true);
             }
           }
-          return makeNormalizedFeaturesAndScore();
+          if (missingFeatures) {
+            return makeNormalizedFeaturesAndScoreWithMissingBranch();
+          }
+          else {
+            return makeNormalizedFeaturesAndScore();
+          }
         }
 
         @Override

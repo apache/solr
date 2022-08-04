@@ -20,7 +20,7 @@
                     "right": {
                         "feature" : "constantScoreToForceMultipleAdditiveTreesScoreAllDocs",
                         "threshold": "10.0f",
-                        "missing": "left",
+                        "missing": "right",
                         "left" : {
                             "feature" : "userDevice",
                             "threshold": "0f",
