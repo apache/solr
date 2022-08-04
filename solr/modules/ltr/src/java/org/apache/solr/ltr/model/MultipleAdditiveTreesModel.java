@@ -232,6 +232,10 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
       return explainNode(featureVector, root);
     }
 
+    public String explainWithMissingBranch(Float[] featureVector) {
+      return explainNodeWithMissingBranch(featureVector, root);
+    }
+
     @Override
     public String toString() {
       final StringBuilder sb = new StringBuilder();
@@ -428,6 +432,68 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     }
   }
 
+  private static String explainNodeWithMissingBranch(Float[] featureVector, RegressionTreeNode regressionTreeNode) {
+    final StringBuilder returnValueBuilder = new StringBuilder();
+    while (true) {
+      if (regressionTreeNode.isLeaf()) {
+        returnValueBuilder.append("val: " + regressionTreeNode.value);
+        return returnValueBuilder.toString();
+      }
+
+      // unsupported feature (tree is looking for a feature that does not exist)
+      if ((regressionTreeNode.featureIndex < 0)
+              || (regressionTreeNode.featureIndex >= featureVector.length)) {
+        returnValueBuilder.append(
+                "'" + regressionTreeNode.feature + "' does not exist in FV, Return Zero");
+        return returnValueBuilder.toString();
+      }
+
+      // could store extra information about how much training data supported
+      // each branch and report
+      // that here
+
+      if ((featureVector[regressionTreeNode.featureIndex] <= regressionTreeNode.threshold) ||
+              (Float.isNaN(featureVector[regressionTreeNode.featureIndex]) &&
+                      Objects.equals(regressionTreeNode.missing, "left"))) {
+        if (Float.isNaN(featureVector[regressionTreeNode.featureIndex])) {
+          returnValueBuilder.append(
+                  "'"
+                          + regressionTreeNode.feature
+                          + "': NaN, Go Left | ");
+        }
+        else {
+          returnValueBuilder.append(
+                  "'"
+                          + regressionTreeNode.feature
+                          + "':"
+                          + featureVector[regressionTreeNode.featureIndex]
+                          + " <= "
+                          + regressionTreeNode.threshold
+                          + ", Go Left | ");
+        }
+        regressionTreeNode = regressionTreeNode.left;
+      } else {
+        if (Float.isNaN(featureVector[regressionTreeNode.featureIndex])) {
+          returnValueBuilder.append(
+                  "'"
+                          + regressionTreeNode.feature
+                          + "': NaN, Go Right | ");
+        }
+        else {
+          returnValueBuilder.append(
+                  "'"
+                          + regressionTreeNode.feature
+                          + "':"
+                          + featureVector[regressionTreeNode.featureIndex]
+                          + " > "
+                          + regressionTreeNode.threshold
+                          + ", Go Right | ");
+        }
+        regressionTreeNode = regressionTreeNode.right;
+      }
+    }
+  }
+
   // /////////////////////////////////////////
   // produces a string that looks like:
   // 40.0 = multipleadditivetreesmodel [ org.apache.solr.ltr.model.MultipleAdditiveTreesModel ]
@@ -440,21 +506,48 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
   @Override
   public Explanation explain(
           LeafReaderContext context, int doc, float finalScore, List<Explanation> featureExplanations) {
-    final float[] fv = new float[featureExplanations.size()];
-    int index = 0;
-    for (final Explanation featureExplain : featureExplanations) {
-      fv[index] = featureExplain.getValue().floatValue();
-      index++;
+    boolean missingFeatures = false;
+    for (Explanation explain : featureExplanations) {
+      if (Float.isNaN((Float) explain.getValue())) {
+        missingFeatures = true;
+        break;
+      }
     }
 
     final List<Explanation> details = new ArrayList<>();
-    index = 0;
 
-    for (final RegressionTree t : trees) {
-      final float score = t.score(fv);
-      final Explanation p = Explanation.match(score, "tree " + index + " | " + t.explain(fv));
-      details.add(p);
-      index++;
+    if (missingFeatures) {
+      final Float[] fv = new Float[featureExplanations.size()];
+      int index = 0;
+      for (final Explanation featureExplain : featureExplanations) {
+        fv[index] = (Float) featureExplain.getValue();
+        index++;
+      }
+
+      index = 0;
+
+      for (final RegressionTree t : trees) {
+        final float score = t.scoreWithMissingBranch(fv);
+        final Explanation p = Explanation.match(score, "tree " + index + " | " + t.explainWithMissingBranch(fv));
+        details.add(p);
+        index++;
+      }
+    } else {
+      final float[] fv = new float[featureExplanations.size()];
+      int index = 0;
+      for (final Explanation featureExplain : featureExplanations) {
+        fv[index] = featureExplain.getValue().floatValue();
+        index++;
+      }
+
+      index = 0;
+
+      for (final RegressionTree t : trees) {
+        final float score = t.score(fv);
+        final Explanation p = Explanation.match(score, "tree " + index + " | " + t.explain(fv));
+        details.add(p);
+        index++;
+      }
     }
 
     return Explanation.match(

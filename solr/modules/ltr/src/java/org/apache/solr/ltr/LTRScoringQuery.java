@@ -490,7 +490,12 @@ public class LTRScoringQuery extends Query implements Accountable {
 
       final Explanation[] explanations = new Explanation[this.featuresInfo.length];
       for (final Feature.FeatureWeight feature : extractedFeatureWeights) {
-        explanations[feature.getIndex()] = feature.explain(context, doc);
+        if (missingFeatures) {
+          explanations[feature.getIndex()] = feature.explainWithMissingBranch(context, doc);
+        }
+        else {
+          explanations[feature.getIndex()] = feature.explain(context, doc);
+        }
       }
       final List<Explanation> featureExplanations = new ArrayList<>();
       for (int idx = 0; idx < modelFeatureWeights.length; ++idx) {

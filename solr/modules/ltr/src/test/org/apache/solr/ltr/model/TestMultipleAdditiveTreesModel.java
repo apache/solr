@@ -396,11 +396,11 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     assertThat(qryResult, containsString("multipleadditivetreesmodel"));
     assertThat(qryResult, containsString(MultipleAdditiveTreesModel.class.getSimpleName()));
 
-    assertThat(qryResult, containsString("-100.0 = tree 0"));
     assertThat(qryResult, containsString("50.0 = tree 0"));
     assertThat(qryResult, containsString("-20.0 = tree 1"));
+    assertThat(qryResult, containsString("'matchedTitle': NaN"));
     assertThat(qryResult, containsString("'matchedTitle':1.0 > 0.5"));
-    assertThat(qryResult, containsString("'matchedTitle':0.0 <= 0.5"));
+    assertThat(qryResult, containsString("'userDevice': NaN"));
 
     assertThat(qryResult, containsString(" Go Right "));
     assertThat(qryResult, containsString(" Go Left "));

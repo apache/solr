@@ -290,6 +290,20 @@ public abstract class Feature extends Query implements Accountable {
       }
     }
 
+    public Explanation explainWithMissingBranch(LeafReaderContext context, int doc) throws IOException {
+      final FeatureScorer r = scorer(context);
+      float score = Float.NaN;
+      if (r != null) {
+        r.iterator().advance(doc);
+        if (r.docID() == doc) {
+          score = r.score();
+        }
+        return Explanation.match(score, toString());
+      } else {
+        return Explanation.match(score, "The feature has no value");
+      }
+    }
+
     /**
      * Used in the FeatureWeight's explain. Each feature should implement this returning properties
      * of the specific scorer useful for an explain. For example "MyCustomClassFeature [name=" +
