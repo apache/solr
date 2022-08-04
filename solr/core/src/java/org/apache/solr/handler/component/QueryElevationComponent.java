@@ -44,14 +44,11 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.function.Consumer;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -79,7 +76,6 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceNotFoundException;
-import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.ElevatedMarkerFactory;
 import org.apache.solr.response.transform.ExcludedMarkerFactory;
@@ -90,11 +86,14 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.util.RefCounted;
+import org.apache.solr.util.SafeXMLParsing;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Node;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 /**
  * A component to elevate some documents to the top of the result set.
@@ -376,19 +375,19 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    *
    * @return The loaded {@link ElevationProvider}; not null.
    */
-  private ElevationProvider loadElevationProvider(SolrCore core) throws Exception {
-    XmlConfigFile cfg;
-    try {
-      cfg = new XmlConfigFile(core.getResourceLoader(), configFileName);
+  private ElevationProvider loadElevationProvider(SolrCore core) throws IOException, SAXException {
+    try (var inputStream = core.getResourceLoader().openResource(configFileName)) {
+      return Objects.requireNonNull(
+          loadElevationProvider(SafeXMLParsing.parseUntrustedXML(log, inputStream)));
     } catch (SolrResourceNotFoundException e) {
-      String msg = "Missing config file \"" + configFileName + "\"";
+      var msg = "Missing config file \"" + configFileName + "\"";
       if (Files.exists(Path.of(core.getDataDir(), configFileName))) {
         msg += ". Found it in the data dir but this is no longer supported since 9.0.";
       }
       throw new InitializationException(msg, InitializationExceptionCause.MISSING_CONFIG_FILE);
     } catch (Exception e) {
       // See if it's because the file is empty; wrap it if so.
-      boolean isEmpty = false;
+      var isEmpty = false;
       try (var input = core.getResourceLoader().openResource(configFileName)) {
         if (input.read() == -1) { // thus empty file
           isEmpty = true;
@@ -402,9 +401,6 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       }
       throw e;
     }
-    ElevationProvider elevationProvider = loadElevationProvider(cfg);
-    assert elevationProvider != null;
-    return elevationProvider;
   }
 
   /**
@@ -413,35 +409,30 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    * @throws RuntimeException If the config does not provide an XML content of the expected format
    *     (either {@link RuntimeException} or {@link org.apache.solr.common.SolrException}).
    */
-  protected ElevationProvider loadElevationProvider(XmlConfigFile config) {
+  protected ElevationProvider loadElevationProvider(Document doc) {
     Map<ElevatingQuery, ElevationBuilder> elevationBuilderMap = new LinkedHashMap<>();
-    XPath xpath = XPathFactory.newInstance().newXPath();
-    NodeList nodes = (NodeList) config.evaluate("elevate/query", XPathConstants.NODESET);
-    for (int i = 0; i < nodes.getLength(); i++) {
-      Node node = nodes.item(i);
-      String queryString = DOMUtil.getAttr(node, "text", "missing query 'text'");
-      String matchString = DOMUtil.getAttr(node, "match");
-      ElevatingQuery elevatingQuery =
-          new ElevatingQuery(queryString, isSubsetMatchPolicy(matchString));
+    if (!doc.getDocumentElement().getNodeName().equals("elevate")) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "Root element must be <elevate>");
+    }
+    NodeList queryNodes = doc.getDocumentElement().getElementsByTagName("query");
+    for (int i = 0; i < queryNodes.getLength(); i++) {
+      var queryNode = (Element) queryNodes.item(i);
+      var queryString = DOMUtil.getAttr(queryNode, "text", "missing query 'text'");
+      var matchString = DOMUtil.getAttr(queryNode, "match");
+      var elevatingQuery = new ElevatingQuery(queryString, isSubsetMatchPolicy(matchString));
 
-      NodeList children;
-      try {
-        children = (NodeList) xpath.evaluate("doc", node, XPathConstants.NODESET);
-      } catch (XPathExpressionException e) {
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR, "query requires '<doc .../>' child");
-      }
-
-      if (children.getLength() == 0) { // weird
+      NodeList docNodes = queryNode.getElementsByTagName("doc");
+      if (docNodes.getLength() == 0) { // weird
         continue;
       }
-      ElevationBuilder elevationBuilder = new ElevationBuilder();
-      for (int j = 0; j < children.getLength(); j++) {
-        Node child = children.item(j);
-        String id = DOMUtil.getAttr(child, "id", "missing 'id'");
-        String e = DOMUtil.getAttr(child, EXCLUDE, null);
+      var elevationBuilder = new ElevationBuilder();
+      for (int j = 0; j < docNodes.getLength(); j++) {
+        var docNode = (Element) docNodes.item(j);
+        var id = DOMUtil.getAttr(docNode, "id", "missing 'id'");
+        var e = DOMUtil.getAttr(docNode, EXCLUDE, null);
         if (e != null) {
-          if (Boolean.valueOf(e)) {
+          if (Boolean.parseBoolean(e)) {
             elevationBuilder.addExcludedIds(Collections.singleton(id));
             continue;
           }
@@ -452,7 +443,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       // It is allowed to define multiple times different elevations for the same query. In this
       // case the elevations are merged in the ElevationBuilder (they will be triggered at the same
       // time).
-      ElevationBuilder previousElevationBuilder = elevationBuilderMap.get(elevatingQuery);
+      var previousElevationBuilder = elevationBuilderMap.get(elevatingQuery);
       if (previousElevationBuilder == null) {
         elevationBuilderMap.put(elevatingQuery, elevationBuilder);
       } else {
