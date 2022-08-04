@@ -87,11 +87,6 @@ import org.apache.solr.handler.admin.ZookeeperReadAPI;
 import org.apache.solr.handler.admin.ZookeeperStatusHandler;
 import org.apache.solr.handler.api.ApiRegistrar;
 import org.apache.solr.handler.component.ShardHandlerFactory;
-import org.apache.solr.handler.configsets.CreateConfigSetAPI;
-import org.apache.solr.handler.configsets.DeleteConfigSetAPI;
-import org.apache.solr.handler.configsets.ListConfigSetsAPI;
-import org.apache.solr.handler.configsets.UploadConfigSetAPI;
-import org.apache.solr.handler.configsets.UploadConfigSetFileAPI;
 import org.apache.solr.handler.designer.SchemaDesignerAPI;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -815,11 +810,7 @@ public class CoreContainer {
     ClusterAPI clusterAPI = new ClusterAPI(collectionsHandler, configSetsHandler);
     containerHandlers.getApiBag().registerObject(clusterAPI);
     containerHandlers.getApiBag().registerObject(clusterAPI.commands);
-    containerHandlers.getApiBag().registerObject(new CreateConfigSetAPI(this));
-    containerHandlers.getApiBag().registerObject(new DeleteConfigSetAPI(this));
-    containerHandlers.getApiBag().registerObject(new ListConfigSetsAPI(this));
-    containerHandlers.getApiBag().registerObject(new UploadConfigSetAPI(this));
-    containerHandlers.getApiBag().registerObject(new UploadConfigSetFileAPI(this));
+    ApiRegistrar.registerConfigsetApis(containerHandlers.getApiBag(), this);
 
     if (isZooKeeperAware()) {
       containerHandlers.getApiBag().registerObject(new SchemaDesignerAPI(this));

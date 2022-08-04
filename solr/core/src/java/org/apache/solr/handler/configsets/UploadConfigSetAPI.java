@@ -74,7 +74,7 @@ public class UploadConfigSetAPI extends ConfigSetAPIBase {
         if (overwritesExisting && !allowOverwrite) {
             throw new SolrException(
                     SolrException.ErrorCode.BAD_REQUEST,
-                    "The configuration " + configSetName + " already exists in zookeeper");
+                    "The configuration " + configSetName + " already exists");
         }
 
         List<String> filesToDelete;

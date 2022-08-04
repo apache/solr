@@ -131,8 +131,6 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
         new ListConfigSetsAPI(coreContainer).listConfigSet(req, rsp);
         break;
       case CREATE:
-        final String baseConfigSetName =
-                req.getParams().get(ConfigSetCmds.BASE_CONFIGSET, DEFAULT_CONFIGSET_NAME);
         final String newConfigSetName = req.getParams().get(NAME);
         if (newConfigSetName == null || newConfigSetName.length() == 0) {
           throw new SolrException(ErrorCode.BAD_REQUEST, "ConfigSet name not specified");
@@ -141,7 +139,9 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
         // Map v1 parameters into v2 format and process request
         final CreateConfigPayload createPayload = new CreateConfigPayload();
         createPayload.name = newConfigSetName;
-        createPayload.baseConfigSet = baseConfigSetName;
+        if (req.getParams().get(ConfigSetCmds.BASE_CONFIGSET) != null) {
+          createPayload.baseConfigSet = req.getParams().get(ConfigSetCmds.BASE_CONFIGSET);
+        }
         createPayload.properties = new HashMap<>();
         req.getParams().stream()
                 .filter(entry -> entry.getKey().startsWith(ConfigSetCmds.CONFIG_SET_PROPERTY_PREFIX))
