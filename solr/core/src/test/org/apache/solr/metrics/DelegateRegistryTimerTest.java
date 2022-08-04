@@ -17,17 +17,16 @@
 
 package org.apache.solr.metrics;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import com.codahale.metrics.Clock;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
-import org.junit.Test;
-
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import org.junit.Test;
 
 public class DelegateRegistryTimerTest {
 
@@ -55,8 +54,7 @@ public class DelegateRegistryTimerTest {
     delegateRegistryTimer.update(Duration.ofNanos(200));
     delegateRegistryTimer.update(Duration.ofNanos(300));
     assertEquals(3, delegateRegistryTimer.getPrimaryTimer().getCount());
-    assertEquals(
-        200.0, delegateRegistryTimer.getPrimaryTimer().getSnapshot().getMean(), 0.0);
+    assertEquals(200.0, delegateRegistryTimer.getPrimaryTimer().getSnapshot().getMean(), 0.0);
     assertEquals(200.0, delegateRegistryTimer.getPrimaryTimer().getSnapshot().getMedian(), 0.0);
     assertEquals(300L, delegateRegistryTimer.getPrimaryTimer().getSnapshot().getMax());
     assertEquals(200.0, delegateRegistryTimer.getSnapshot().getMean(), 0.0);
@@ -89,19 +87,15 @@ public class DelegateRegistryTimerTest {
     delegateRegistryTimer.update(200, TimeUnit.NANOSECONDS);
     delegateRegistryTimer.update(300, TimeUnit.NANOSECONDS);
     assertEquals(3, delegateRegistryTimer.getPrimaryTimer().getCount());
-    assertEquals(
-        200, delegateRegistryTimer.getPrimaryTimer().getSnapshot().getMean(), 0.0);
-    assertEquals(
-        200, delegateRegistryTimer.getPrimaryTimer().getSnapshot().getMedian(), 0.0);
+    assertEquals(200, delegateRegistryTimer.getPrimaryTimer().getSnapshot().getMean(), 0.0);
+    assertEquals(200, delegateRegistryTimer.getPrimaryTimer().getSnapshot().getMedian(), 0.0);
     assertEquals(300L, delegateRegistryTimer.getPrimaryTimer().getSnapshot().getMax());
     assertEquals(200, delegateRegistryTimer.getSnapshot().getMean(), 0.0);
     assertEquals(200, delegateRegistryTimer.getSnapshot().getMedian(), 0.0);
     assertEquals(300L, delegateRegistryTimer.getSnapshot().getMax());
     assertEquals(3, delegateRegistryTimer.getDelegateTimer().getCount());
-    assertEquals(
-        200, delegateRegistryTimer.getDelegateTimer().getSnapshot().getMean(), 0.0);
-    assertEquals(
-        200, delegateRegistryTimer.getDelegateTimer().getSnapshot().getMedian(), 0.0);
+    assertEquals(200, delegateRegistryTimer.getDelegateTimer().getSnapshot().getMean(), 0.0);
+    assertEquals(200, delegateRegistryTimer.getDelegateTimer().getSnapshot().getMedian(), 0.0);
     assertEquals(300L, delegateRegistryTimer.getDelegateTimer().getSnapshot().getMax());
   }
 

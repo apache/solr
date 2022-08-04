@@ -16,6 +16,10 @@
  */
 package org.apache.solr.handler;
 
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import org.apache.solr.client.solrj.*;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -29,21 +33,12 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
 public class RequestHandlerMetricsTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
     System.setProperty("metricsEnabled", "true");
-    configureCluster(1)
-        .addConfig(
-            "conf1",
-                configset("cloud-aggregate-node-metrics"))
-        .configure();
+    configureCluster(1).addConfig("conf1", configset("cloud-aggregate-node-metrics")).configure();
   }
 
   @Before
@@ -117,42 +112,43 @@ public class RequestHandlerMetricsTest extends SolrCloudTestCase {
           }
         });
     assertEquals(2, coreMetrics.size());
-    coreMetrics.forEach(metric -> {
-      assertEquals(
+    coreMetrics.forEach(
+        metric -> {
+          assertEquals(
               1L,
               ((Map<String, Number>) metric.get("QUERY./select.requestTimes"))
-                      .get("count")
-                      .longValue());
-      minQueryTime[0] =
+                  .get("count")
+                  .longValue());
+          minQueryTime[0] =
               Math.min(
-                      minQueryTime[0],
-                      ((Map<String, Number>) metric.get("QUERY./select.requestTimes"))
-                              .get("min_ms")
-                              .doubleValue());
-      maxQueryTime[0] =
+                  minQueryTime[0],
+                  ((Map<String, Number>) metric.get("QUERY./select.requestTimes"))
+                      .get("min_ms")
+                      .doubleValue());
+          maxQueryTime[0] =
               Math.max(
-                      maxQueryTime[0],
-                      ((Map<String, Number>) metric.get("QUERY./select.requestTimes"))
-                              .get("max_ms")
-                              .doubleValue());
-      assertEquals(
+                  maxQueryTime[0],
+                  ((Map<String, Number>) metric.get("QUERY./select.requestTimes"))
+                      .get("max_ms")
+                      .doubleValue());
+          assertEquals(
               1L,
               ((Map<String, Number>) metric.get("UPDATE./update.requestTimes"))
-                      .get("count")
-                      .longValue());
-      minUpdateTime[0] =
+                  .get("count")
+                  .longValue());
+          minUpdateTime[0] =
               Math.min(
-                      minUpdateTime[0],
-                      ((Map<String, Number>) metric.get("UPDATE./update.requestTimes"))
-                              .get("min_ms")
-                              .doubleValue());
-      maxUpdateTime[0] =
+                  minUpdateTime[0],
+                  ((Map<String, Number>) metric.get("UPDATE./update.requestTimes"))
+                      .get("min_ms")
+                      .doubleValue());
+          maxUpdateTime[0] =
               Math.max(
-                      maxUpdateTime[0],
-                      ((Map<String, Number>) metric.get("UPDATE./update.requestTimes"))
-                              .get("max_ms")
-                              .doubleValue());
-    });
+                  maxUpdateTime[0],
+                  ((Map<String, Number>) metric.get("UPDATE./update.requestTimes"))
+                      .get("max_ms")
+                      .doubleValue());
+        });
 
     NamedList<Object> nodeMetrics = (NamedList<Object>) metrics.get("solr.node");
     assertEquals(
