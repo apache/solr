@@ -17,14 +17,13 @@
 
 package org.apache.solr.security.jwt.api;
 
+import java.util.HashMap;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.HashMap;
 
 public class V2JWTSecurityApiMappingTest extends SolrTestCaseJ4 {
 
