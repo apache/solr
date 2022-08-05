@@ -76,50 +76,85 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
 
   protected void loadFeaturesAndModels() throws Exception {
     loadFeature(
-        "featureA1", SolrFeature.class.getName(), "{\"fq\":[\"{!terms f=popularity}88888\"]}");
+            "featureA1", SolrFeature.class.getName(), "{\"fq\":[\"{!terms f=popularity}88888\"]}");
     loadFeature(
-        "featureA2", SolrFeature.class.getName(), "{\"fq\":[\"{!terms f=title}${user_query}\"]}");
+            "featureA2", SolrFeature.class.getName(), "{\"fq\":[\"{!terms f=title}${user_query}\"]}");
     loadFeature(
-        "featureAB", SolrFeature.class.getName(), "{\"fq\":[\"{!terms f=title}${user_query}\"]}");
+            "featureAB", SolrFeature.class.getName(), "{\"fq\":[\"{!terms f=title}${user_query}\"]}");
     loadFeature("featureB1", SolrFeature.class.getName(), "{\"fq\":[\"{!terms f=popularity}6\"]}");
     loadFeature(
-        "featureB2",
-        SolrFeature.class.getName(),
-        "{\"fq\":[\"{!terms f=description}${user_query}\"]}");
+            "featureB2",
+            SolrFeature.class.getName(),
+            "{\"fq\":[\"{!terms f=description}${user_query}\"]}");
     loadFeature(
-        "featureC1",
-        SolrFeature.class.getName(),
-        "featureStore2",
-        "{\"fq\":[\"{!terms f=popularity}6\"]}");
+            "featureC1",
+            SolrFeature.class.getName(),
+            "featureStore2",
+            "{\"fq\":[\"{!terms f=popularity}6\"]}");
     loadFeature(
-        "featureC2",
-        SolrFeature.class.getName(),
-        "featureStore2",
-        "{\"fq\":[\"{!terms f=description}${user_query}\"]}");
+            "featureC2",
+            SolrFeature.class.getName(),
+            "featureStore2",
+            "{\"fq\":[\"{!terms f=description}${user_query}\"]}");
     loadFeature(
-        "featureC3",
-        SolrFeature.class.getName(),
-        "featureStore2",
-        "{\"fq\":[\"{!terms f=description}${user_query}\"]}");
+            "featureC3",
+            SolrFeature.class.getName(),
+            "featureStore2",
+            "{\"fq\":[\"{!terms f=description}${user_query}\"]}");
 
     loadModel(
-        "modelA",
-        LinearModel.class.getName(),
-        new String[] {"featureA1", "featureA2", "featureAB"},
-        "{\"weights\":{\"featureA1\":3.0, \"featureA2\":9.0, \"featureAB\":27.0}}");
+            "modelA",
+            LinearModel.class.getName(),
+            new String[]{"featureA1", "featureA2", "featureAB"},
+            "{\"weights\":{\"featureA1\":3.0, \"featureA2\":9.0, \"featureAB\":27.0}}");
 
     loadModel(
-        "modelB",
-        LinearModel.class.getName(),
-        new String[] {"featureB1", "featureB2", "featureAB"},
-        "{\"weights\":{\"featureB1\":2.0, \"featureB2\":4.0, \"featureAB\":8.0}}");
+            "modelB",
+            LinearModel.class.getName(),
+            new String[]{"featureB1", "featureB2", "featureAB"},
+            "{\"weights\":{\"featureB1\":2.0, \"featureB2\":4.0, \"featureAB\":8.0}}");
 
     loadModel(
-        "modelC",
-        LinearModel.class.getName(),
-        new String[] {"featureC1", "featureC2"},
-        "featureStore2",
-        "{\"weights\":{\"featureC1\":5.0, \"featureC2\":25.0}}");
+            "modelC",
+            LinearModel.class.getName(),
+            new String[]{"featureC1", "featureC2"},
+            "featureStore2",
+            "{\"weights\":{\"featureC1\":5.0, \"featureC2\":25.0}}");
+  }
+
+  protected void loadFeaturesAndModelsWithMissingBranch() throws Exception {
+    loadFeatures("multipleadditivetreesmodel_features_with_missing_branch.json");
+    loadModels("multipleadditivetreesmodel_with_missing_branch.json");
+  }
+
+  @Test
+  public void featureTransformer_sparseFormat_withMissingBranch() throws Exception {
+    loadFeaturesAndModelsWithMissingBranch();
+
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("*:*");
+    query.add("fl", "*, score,features:[fv format=sparse]");
+    query.add("rows", "10");
+    query.add("debugQuery", "true");
+    query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
+    query.add("rq", "{!ltr model=multipleadditivetreesmodel missingFeatures=true reRankDocs=10 efi.user_query='w5'}");
+
+    String[] expectedFeatureVectors =
+            new String[] {
+                    "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0",
+                    "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0",
+                    "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0",
+                    "matchedTitle\\=1.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0",
+                    "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0"
+            };
+
+    String[] tests = new String[11];
+    tests[0] = "/response/numFound/==5";
+    for (int i = 1; i <= 5; i++) {
+      tests[i + 5] =
+              "/response/docs/[" + (i - 1) + "]/features==" + expectedFeatureVectors[(i - 1)];
+    }
+    assertJQ("/query" + query.toQueryString(), tests);
   }
 
   @Test
