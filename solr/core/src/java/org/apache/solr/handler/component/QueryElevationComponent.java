@@ -92,6 +92,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
@@ -380,14 +381,14 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       return Objects.requireNonNull(
           loadElevationProvider(SafeXMLParsing.parseUntrustedXML(log, inputStream)));
     } catch (SolrResourceNotFoundException e) {
-      var msg = "Missing config file \"" + configFileName + "\"";
+      String msg = "Missing config file \"" + configFileName + "\"";
       if (Files.exists(Path.of(core.getDataDir(), configFileName))) {
         msg += ". Found it in the data dir but this is no longer supported since 9.0.";
       }
       throw new InitializationException(msg, InitializationExceptionCause.MISSING_CONFIG_FILE);
     } catch (Exception e) {
       // See if it's because the file is empty; wrap it if so.
-      var isEmpty = false;
+      boolean isEmpty = false;
       try (var input = core.getResourceLoader().openResource(configFileName)) {
         if (input.read() == -1) { // thus empty file
           isEmpty = true;
@@ -418,8 +419,8 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     NodeList queryNodes = doc.getDocumentElement().getElementsByTagName("query");
     for (int i = 0; i < queryNodes.getLength(); i++) {
       var queryNode = (Element) queryNodes.item(i);
-      var queryString = DOMUtil.getAttr(queryNode, "text", "missing query 'text'");
-      var matchString = DOMUtil.getAttr(queryNode, "match");
+      String queryString = DOMUtil.getAttr(queryNode, "text", "missing query 'text'");
+      String matchString = DOMUtil.getAttr(queryNode, "match");
       var elevatingQuery = new ElevatingQuery(queryString, isSubsetMatchPolicy(matchString));
 
       NodeList docNodes = queryNode.getElementsByTagName("doc");
@@ -428,11 +429,11 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       }
       var elevationBuilder = new ElevationBuilder();
       for (int j = 0; j < docNodes.getLength(); j++) {
-        var docNode = (Element) docNodes.item(j);
-        var id = DOMUtil.getAttr(docNode, "id", "missing 'id'");
-        var e = DOMUtil.getAttr(docNode, EXCLUDE, null);
+        Node docNode = docNodes.item(j);
+        String id = DOMUtil.getAttr(docNode, "id", "missing 'id'");
+        String e = DOMUtil.getAttr(docNode, EXCLUDE, null);
         if (e != null) {
-          if (Boolean.parseBoolean(e)) {
+          if (Boolean.valueOf(e)) {
             elevationBuilder.addExcludedIds(Collections.singleton(id));
             continue;
           }
@@ -443,7 +444,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       // It is allowed to define multiple times different elevations for the same query. In this
       // case the elevations are merged in the ElevationBuilder (they will be triggered at the same
       // time).
-      var previousElevationBuilder = elevationBuilderMap.get(elevatingQuery);
+      ElevationBuilder previousElevationBuilder = elevationBuilderMap.get(elevatingQuery);
       if (previousElevationBuilder == null) {
         elevationBuilderMap.put(elevatingQuery, elevationBuilder);
       } else {
