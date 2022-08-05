@@ -27,6 +27,7 @@ import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.ObjectArrays;
 import com.google.common.collect.Sets;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.lang.ref.WeakReference;
 import java.nio.file.Files;
@@ -377,9 +378,11 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    * @return The loaded {@link ElevationProvider}; not null.
    */
   private ElevationProvider loadElevationProvider(SolrCore core) throws IOException, SAXException {
-    try (var inputStream = core.getResourceLoader().openResource(configFileName)) {
-      return Objects.requireNonNull(
-          loadElevationProvider(SafeXMLParsing.parseUntrustedXML(log, inputStream)));
+    InputStream inputStream = null;
+    Document xmlDocument;
+    try {
+      inputStream = core.getResourceLoader().openResource(configFileName);
+      xmlDocument = SafeXMLParsing.parseUntrustedXML(log, inputStream);
     } catch (SolrResourceNotFoundException e) {
       String msg = "Missing config file \"" + configFileName + "\"";
       if (Files.exists(Path.of(core.getDataDir(), configFileName))) {
@@ -389,8 +392,8 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     } catch (Exception e) {
       // See if it's because the file is empty; wrap it if so.
       boolean isEmpty = false;
-      try (var input = core.getResourceLoader().openResource(configFileName)) {
-        if (input.read() == -1) { // thus empty file
+      try {
+        if (inputStream.read() == -1) { // thus empty file
           isEmpty = true;
         }
       } catch (Exception ignored) {
@@ -402,6 +405,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       }
       throw e;
     }
+    return Objects.requireNonNull(loadElevationProvider(xmlDocument));
   }
 
   /**
