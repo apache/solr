@@ -62,6 +62,8 @@ public class LTRScoringQuery extends Query implements Accountable {
   private final boolean extractAllFeatures;
   private final LTRThreadModule ltrThreadMgr;
 
+  private final boolean missingFeatures;
+
   // limits the number of threads per query, so that multiple requests can be serviced
   // simultaneously
   private final Semaphore querySemaphore;
@@ -76,7 +78,6 @@ public class LTRScoringQuery extends Query implements Accountable {
   // Original solr request
   private SolrQueryRequest request;
 
-  private boolean missingFeatures;
 
   public LTRScoringQuery(LTRScoringModel ltrScoringModel, boolean missingFeatures) {
     this(ltrScoringModel, Collections.<String, String[]>emptyMap(), missingFeatures, false, null);
