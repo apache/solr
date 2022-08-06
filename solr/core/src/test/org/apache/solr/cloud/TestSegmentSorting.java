@@ -41,8 +41,15 @@ public class TestSegmentSorting extends SolrCloudTestCase {
   private static final int REPLICATION_FACTOR = 2;
   private static final String configName = MethodHandles.lookup().lookupClass() + "_configSet";
 
+  private static boolean compoundMergePolicySort = false;
+
   @BeforeClass
   public static void setupCluster() throws Exception {
+    compoundMergePolicySort = random().nextBoolean();
+    if (compoundMergePolicySort) {
+      System.setProperty("mergePolicySort", "timestamp_i_dvo desc, id desc");
+      System.setProperty("solr.tests.id.docValues", "true");
+    }
     configureCluster(NUM_SERVERS)
         .addConfig(configName, Paths.get(TEST_HOME(), "collection1", "conf"))
         .configure();
@@ -54,6 +61,8 @@ public class TestSegmentSorting extends SolrCloudTestCase {
   public void ensureClusterEmpty() throws Exception {
     cluster.deleteAllCollections();
     cluster.getSolrClient().setDefaultCollection(null);
+    System.clearProperty("mergePolicySort");
+    System.clearProperty("solr.tests.id.docValues");
   }
 
   @Before
@@ -97,13 +106,32 @@ public class TestSegmentSorting extends SolrCloudTestCase {
     tstes.addDocuments(cloudSolrClient, 2, 10, false);
 
     // CommonParams.SEGMENT_TERMINATE_EARLY parameter now present
-    tstes.queryTimestampDescendingSegmentTerminateEarlyYes(cloudSolrClient);
-    tstes.queryTimestampDescendingSegmentTerminateEarlyNo(cloudSolrClient);
+    tstes.queryTimestampDescendingSegmentTerminateEarlyYes(
+        cloudSolrClient, false /* appendKeyDescendingToSort */);
+    tstes.queryTimestampDescendingSegmentTerminateEarlyNo(
+        cloudSolrClient, false /* appendKeyDescendingToSort */);
 
     // CommonParams.SEGMENT_TERMINATE_EARLY parameter present, but it won't be used
-    tstes.queryTimestampDescendingSegmentTerminateEarlyYesGrouped(cloudSolrClient);
+    tstes.queryTimestampDescendingSegmentTerminateEarlyYesGrouped(
+        cloudSolrClient, false /* appendKeyDescendingToSort */);
     // uses a sort order that is _not_ compatible with the merge sort order
-    tstes.queryTimestampAscendingSegmentTerminateEarlyYes(cloudSolrClient);
+    tstes.queryTimestampAscendingSegmentTerminateEarlyYes(
+        cloudSolrClient, false /* appendKeyDescendingToSort */);
+
+    if (compoundMergePolicySort) {
+      // CommonParams.SEGMENT_TERMINATE_EARLY parameter now present
+      tstes.queryTimestampDescendingSegmentTerminateEarlyYes(
+          cloudSolrClient, true /* appendKeyDescendingToSort */);
+      tstes.queryTimestampDescendingSegmentTerminateEarlyNo(
+          cloudSolrClient, true /* appendKeyDescendingToSort */);
+
+      // CommonParams.SEGMENT_TERMINATE_EARLY parameter present but it won't be used
+      tstes.queryTimestampDescendingSegmentTerminateEarlyYesGrouped(
+          cloudSolrClient, true /* appendKeyDescendingToSort */);
+      // uses a sort order that is _not_ compatible with the merge sort order
+      tstes.queryTimestampAscendingSegmentTerminateEarlyYes(
+          cloudSolrClient, true /* appendKeyDescendingToSort */);
+    }
   }
 
   /**

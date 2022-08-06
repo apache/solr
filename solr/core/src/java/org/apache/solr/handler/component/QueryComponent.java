@@ -85,6 +85,7 @@ import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.QueryCommand;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.QueryResult;
+import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.RankQuery;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -201,13 +202,8 @@ public class QueryComponent extends SearchComponent {
         List<Query> filters = rb.getFilters();
         // if filters already exists, make a copy instead of modifying the original
         filters = filters == null ? new ArrayList<>(fqs.length) : new ArrayList<>(filters);
-        for (String fq : fqs) {
-          if (fq != null && fq.trim().length() != 0) {
-            QParser fqp = QParser.getParser(fq, req);
-            fqp.setIsFilter(true);
-            filters.add(fqp.getQuery());
-          }
-        }
+        filters.addAll(QueryUtils.parseFilterQueries(req, false));
+
         // only set the filters if they are not empty otherwise
         // fq=&someotherParam= will trigger all docs filter for every request
         // if filter cache is disabled

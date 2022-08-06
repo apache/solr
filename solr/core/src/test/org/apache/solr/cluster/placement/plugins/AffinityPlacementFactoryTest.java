@@ -18,7 +18,14 @@
 package org.apache.solr.cluster.placement.plugins;
 
 import java.lang.invoke.MethodHandles;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -29,8 +36,14 @@ import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
 import org.apache.solr.cluster.Shard;
 import org.apache.solr.cluster.SolrCollection;
-import org.apache.solr.cluster.placement.*;
+import org.apache.solr.cluster.placement.AttributeValues;
 import org.apache.solr.cluster.placement.Builders;
+import org.apache.solr.cluster.placement.DeleteReplicasRequest;
+import org.apache.solr.cluster.placement.PlacementContext;
+import org.apache.solr.cluster.placement.PlacementException;
+import org.apache.solr.cluster.placement.PlacementPlan;
+import org.apache.solr.cluster.placement.PlacementPlugin;
+import org.apache.solr.cluster.placement.ReplicaPlacement;
 import org.apache.solr.cluster.placement.impl.ModificationRequestImpl;
 import org.apache.solr.cluster.placement.impl.PlacementRequestImpl;
 import org.apache.solr.common.util.Pair;
@@ -1054,7 +1067,6 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Slow
   public void testScalability() throws Exception {
     // for non-nightly we scale a bit, but retain test speed - for nightly test speed can be 2+
     // minutes
@@ -1076,8 +1088,10 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     runTestScalability(numNodes, 100, nrtReplicas, tlogReplicas, pullReplicas);
     runTestScalability(numNodes, 200, nrtReplicas, tlogReplicas, pullReplicas);
     runTestScalability(numNodes, 500, nrtReplicas, tlogReplicas, pullReplicas);
-    runTestScalability(numNodes, 1000, nrtReplicas, tlogReplicas, pullReplicas);
-    runTestScalability(numNodes, 2000, nrtReplicas, tlogReplicas, pullReplicas);
+    if (TEST_NIGHTLY) {
+      runTestScalability(numNodes, 1000, nrtReplicas, tlogReplicas, pullReplicas);
+      runTestScalability(numNodes, 2000, nrtReplicas, tlogReplicas, pullReplicas);
+    }
 
     log.info("==== numReplicas ====");
     runTestScalability(numNodes, numShards, TEST_NIGHTLY ? 100 : 10, 0, 0);

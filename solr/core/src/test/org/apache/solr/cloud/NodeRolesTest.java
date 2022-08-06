@@ -25,21 +25,17 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.core.NodeRoles;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class NodeRolesTest extends SolrCloudTestCase {
 
-  @Before
-  public void setupCluster() throws Exception {
+  @BeforeClass
+  public static void setupCluster() throws Exception {
     configureCluster(1).addConfig("conf", configset("cloud-minimal")).configure();
   }
 
-  @After
-  public void tearDownCluster() throws Exception {
-    shutdownCluster();
-  }
-
+  @Test
   public void testRoleIntegration() throws Exception {
     JettySolrRunner j0 = cluster.getJettySolrRunner(0);
     testSupportedRolesAPI();

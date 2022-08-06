@@ -30,6 +30,8 @@ Other Changes
 
 New Features
 ---------------------
+* SOLR-16246: Introduced pre-filtering in KnnQParser (Elia Porciani via Alessandro Benedetti).
+
 * SOLR-16111: Add hl.queryFieldPattern support, an advanced alternative to the hl.requireFieldMatch boolean flag.
   (Christine Poerschke, David Smiley)
 
@@ -39,7 +41,9 @@ New Features
 
 * SOLR-15853: Admin UI support for managing Paramsets and using in Queries. (Betul Ince, Eric Pugh)
 
-* SOLR-16096: Support createNodeSet parameter when creating collecitons in Admin UI.   (Eric Pugh)
+* SOLR-16096: Support createNodeSet parameter when creating collections in Admin UI.   (Eric Pugh)
+
+* SOLR-14319: Add ability to specify replica types when creating collections in Admin UI. (Richard Goodman, Eric Pugh)
 
 
 Improvements
@@ -56,6 +60,11 @@ Improvements
 * SOLR-16181: Initialize the LogWatcher earlier in CoreContainer#load() (janhoy)
 
 * SOLR-16225: Upgrade dependencies (Carrot2, HPPC) (Dawid Weiss)
+
+* SOLR-16257: Improve ZkStateReader to avoid race condition between collectionWatches and watchedCollectionStates
+  (Patson Luk, Houston Putman, Mike Drob)
+
+* SOLR-16323: The Docker image now uses the Solr User ID instead of the User Name, helps with non-root checks (Houston Putman)
 
 * SOLR-16192: Add ZK credentials injectors support (Lamine Idjeraoui with review by Anshum Gupta, Jason Gerlowski, Mike Drob and Houston Putman)
 

@@ -17,8 +17,18 @@
 package org.apache.solr.client.solrj.request;
 
 import static org.apache.solr.common.cloud.DocCollection.PER_REPLICA_STATE;
-import static org.apache.solr.common.cloud.ZkStateReader.*;
-import static org.apache.solr.common.params.CollectionAdminParams.*;
+import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.READ_ONLY;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
+import static org.apache.solr.common.params.CollectionAdminParams.ALIAS;
+import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
+import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
+import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM;
+import static org.apache.solr.common.params.CollectionAdminParams.ROUTER_PREFIX;
+import static org.apache.solr.common.params.CollectionAdminParams.SKIP_NODE_ASSIGNMENT;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -221,6 +231,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      */
     public RequestStatusState processAndWait(String asyncId, SolrClient client, long timeoutSeconds)
         throws IOException, SolrServerException, InterruptedException {
+      // This is kind of slow, see SOLR-16313
       processAsync(asyncId, client);
       return propagateBasicAuthCreds(requestStatus(asyncId)).waitFor(client, timeoutSeconds);
     }
@@ -1791,6 +1802,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
           propagateBasicAuthCreds(deleteAsyncId(requestId)).process(client);
           return state;
         }
+        // This is kind of slow, see SOLR-16313
         TimeUnit.SECONDS.sleep(1);
       }
       return state;

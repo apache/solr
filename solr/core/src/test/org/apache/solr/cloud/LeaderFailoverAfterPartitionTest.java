@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -38,7 +37,6 @@ import org.slf4j.LoggerFactory;
  * Tests leader-initiated recovery scenarios after a leader node fails and one of the replicas is
  * out-of-sync.
  */
-@Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
 
