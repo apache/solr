@@ -16,7 +16,9 @@
  */
 package org.apache.solr.cloud;
 
-import static org.apache.solr.common.cloud.VMParamsZkCredentialsInjector.*;
+import static org.apache.solr.common.cloud.VMParamsZkCredentialsInjector.DEFAULT_DIGEST_FILE_VM_PARAM_NAME;
+import static org.apache.solr.common.cloud.VMParamsZkCredentialsInjector.DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME;
+import static org.apache.solr.common.cloud.VMParamsZkCredentialsInjector.DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME;
 import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
 
 import java.io.FileWriter;
@@ -25,9 +27,18 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Properties;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.cloud.DigestZkACLProvider;
+import org.apache.solr.common.cloud.DigestZkCredentialsProvider;
+import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.VMParamsZkCredentialsInjector;
+import org.apache.solr.common.cloud.ZkCredentialsInjector;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException.NoAuthException;
 import org.junit.AfterClass;
@@ -65,6 +76,9 @@ public class AbstractDigestZkACLAndCredentialsProvidersTestBase extends SolrTest
 
   @Override
   public void setUp() throws Exception {
+    // TODO: Does all of this setup need to happen for each test case, or can it be done once for
+    // the class? (i.e. @BeforeClass) and maybe some minor reset logic in setup, instead of full
+    // startup and teardown of a new ZkTestServer in each cycle?
     super.setUp();
     if (log.isInfoEnabled()) {
       log.info("####SETUP_START {}", getTestName());

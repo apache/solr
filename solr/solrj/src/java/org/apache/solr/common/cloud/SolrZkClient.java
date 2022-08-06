@@ -239,15 +239,17 @@ public class SolrZkClient implements Closeable {
       try {
         log.info("Using ZkCredentialsProvider: {}", zkCredentialsProviderClassName);
         ZkCredentialsProvider zkCredentialsProvider =
-            (ZkCredentialsProvider)
-                Class.forName(zkCredentialsProviderClassName).getConstructor().newInstance();
+            Class.forName(zkCredentialsProviderClassName)
+                .asSubclass(ZkCredentialsProvider.class)
+                .getConstructor()
+                .newInstance();
         zkCredentialsProvider.setZkCredentialsInjector(zkCredentialsInjector);
         return zkCredentialsProvider;
-      } catch (Throwable t) {
+      } catch (Exception e) {
         // just ignore - go default
         log.warn(
             "VM param zkCredentialsProvider does not point to a class implementing ZkCredentialsProvider and with a non-arg constructor",
-            t);
+            e);
       }
     }
     log.debug("Using default ZkCredentialsProvider");
@@ -262,14 +264,17 @@ public class SolrZkClient implements Closeable {
       try {
         log.info("Using ZkACLProvider: {}", zkACLProviderClassName);
         ZkACLProvider zkACLProvider =
-            (ZkACLProvider) Class.forName(zkACLProviderClassName).getConstructor().newInstance();
+            Class.forName(zkACLProviderClassName)
+                .asSubclass(ZkACLProvider.class)
+                .getConstructor()
+                .newInstance();
         zkACLProvider.setZkCredentialsInjector(zkCredentialsInjector);
         return zkACLProvider;
-      } catch (Throwable t) {
+      } catch (Exception e) {
         // just ignore - go default
         log.warn(
             "VM param zkACLProvider does not point to a class implementing ZkACLProvider and with a non-arg constructor",
-            t);
+            e);
       }
     }
     log.warn(
@@ -286,16 +291,20 @@ public class SolrZkClient implements Closeable {
     if (!StringUtils.isEmpty(zkCredentialsInjectorClassName)) {
       try {
         log.info("Using ZkCredentialsInjector: {}", zkCredentialsInjectorClassName);
-        return (ZkCredentialsInjector)
-            Class.forName(zkCredentialsInjectorClassName).getConstructor().newInstance();
-      } catch (Throwable t) {
+        return Class.forName(zkCredentialsInjectorClassName)
+            .asSubclass(ZkCredentialsInjector.class)
+            .getConstructor()
+            .newInstance();
+      } catch (Exception e) {
         // just ignore - go default
         log.warn(
             "VM param ZkCredentialsInjector does not point to a class implementing ZkCredentialsInjector and with a non-arg constructor",
-            t);
+            e);
       }
     }
-    log.warn("Using default ZkCredentialsInjector");
+    log.warn(
+        "Using default ZkCredentialsInjector. ZkCredentialsInjector is not secure, it creates an empty list of "
+            + "credentials which leads to 'OPEN_ACL_UNSAFE' ACLs to Zookeeper nodes");
     return new DefaultZkCredentialsInjector();
   }
 

@@ -62,13 +62,14 @@ The default behavior in Solr is to add one ACL on all the content it creates - o
 
 * Solr to Zookeeper credentials and ACLs are controlled through 3 interfaces: {solr-javadocs}/solrj/org/apache/solr/common/cloud/ZkCredentialsInjector.html[`ZkCredentialsInjector`],  {solr-javadocs}/solrj/org/apache/solr/common/cloud/ZkCredentialsProvider.html[`ZkCredentialsProvider`] and {solr-javadocs}/solrj/org/apache/solr/common/cloud/ZkACLProvider.html[`ZkACLProvider`].
 
-* The classes implementing these 3 interfaces are passed to Solr via System Properties using the following properties names:
+* The classes implementing these 3 interfaces are passed to Solr via System Properties using the properties names
+defined in `solr.xml` (see xref:configuration-guide:configuring-solr-xml.adoc[] for details). The following are the default properties names:
 `zkCredentialsInjector`, `zkACLProvider` and `zkCredentialsProvider`. See below sections for details.
 
 * The dataflow is as follow: Credentials source → `ZkCredentialsInjector` → `ZkCredentialsProvider/ZkACLProvider` → Zookeeper.
 
 `ZkCredentialsInjector` gets the credentials from some source which in turn get injected into `ZkCredentialsProvider`
-and `ZkACLProvider`. The source" here can be System Properties, a file, a Secret Manager, or any other local or remote source.
+and `ZkACLProvider`. The "source" here can be System Properties, a file, a Secret Manager, or any other local or remote source.
 
 * Two sets of roles are supported:
 ** `ALL` user: A user that is allowed to do everything (corresponding to all of `CREATE`, `READ`, `WRITE`, `DELETE`, and `ADMIN`).

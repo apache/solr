@@ -76,13 +76,15 @@ public class DigestZkACLProvider extends SecurityAwareZkACLProvider {
       int perms;
       if (zkCredential.isAll()) {
         // Not to have to provide too much credentials and ACL information to the process it is
-        // assumed that you want "ALL"-acls
-        // added to the user you are using to connect to ZK
+        // assumed that you want "ALL"-acls added to the user you are using to connect to ZK
         perms = ZooDefs.Perms.ALL;
       } else if (includeReadOnly && zkCredential.isReadonly()) {
         // Besides, that support for adding additional "READONLY"-acls for another user
         perms = ZooDefs.Perms.READ;
-      } else continue;
+      } else {
+        // ignore unsupported perms (neither All nor READONLY)
+        continue;
+      }
       result.add(new ACL(perms, id));
     }
     if (result.isEmpty()) {
