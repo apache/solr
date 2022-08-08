@@ -38,7 +38,7 @@ import org.junit.Before;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// @LuceneTestCase.Nightly
+@LuceneTestCase.Nightly
 @LuceneTestCase.SuppressCodecs({"SimpleText"})
 public class TestStressIncrementalBackup extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -56,10 +56,7 @@ public class TestStressIncrementalBackup extends SolrCloudTestCase {
     // bring myself to deal with the nonsense that is SolrJettyTestBase.
 
     // We do however explicitly want a fresh "cluster" every time a test is run
-    configureCluster(1)
-        .addConfig(
-            "conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
-        .configure();
+    configureCluster(1).addConfig("conf1", configset("cloud-minimal")).configure();
 
     assertEquals(
         0,

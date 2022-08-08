@@ -41,7 +41,6 @@ import java.util.concurrent.TimeUnit;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
 import javax.management.ObjectName;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -73,43 +72,35 @@ import org.apache.solr.core.SolrInfoBean.Category;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Tests the Cloud Collections API. */
-@Slow
+/**
+ * Tests the Cloud Collections API.
+ *
+ * <p>Because the different setups require distinct config-sets, we have to push down cluster
+ * creation to subclasses
+ */
 public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  protected abstract String getConfigSet();
-
-  @Before
-  public void setupCluster() throws Exception {
+  @BeforeClass
+  public static void setupCluster() {
     // we don't want this test to have zk timeouts
     System.setProperty("zkClientTimeout", "60000");
     System.setProperty("createCollectionWaitTimeTillActive", "5");
     TestInjection.randomDelayInCoreCreation = "true:5";
     System.setProperty("validateAfterInactivity", "200");
     System.setProperty("solr.allowPaths", "*");
-
-    configureCluster(4)
-        .addConfig("conf", configset(getConfigSet()))
-        .addConfig("conf2", configset(getConfigSet()))
-        .withSolrXml(TEST_PATH().resolve("solr.xml"))
-        .configure();
   }
 
+  @Override
   @After
-  public void tearDownCluster() throws Exception {
-    try {
-      shutdownCluster();
-    } finally {
-      System.clearProperty("createCollectionWaitTimeTillActive");
-      System.clearProperty("solr.allowPaths");
-      super.tearDown();
-    }
+  public void tearDown() throws Exception {
+    cluster.deleteAllCollections();
+    super.tearDown();
   }
 
   @Test

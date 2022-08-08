@@ -20,7 +20,6 @@ package org.apache.solr.handler;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.PUT;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.REQUESTID;
 import static org.apache.solr.common.params.CollectionParams.ACTION;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
@@ -33,8 +32,6 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.RE
 import static org.apache.solr.core.RateLimiterConfig.RL_CONFIG_KEY;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
-import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_PERM;
-import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
 
 import com.google.common.collect.Maps;
 import java.io.IOException;
@@ -49,16 +46,12 @@ import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.request.beans.ClusterPropPayload;
-import org.apache.solr.client.solrj.request.beans.CreateConfigPayload;
 import org.apache.solr.client.solrj.request.beans.RateLimiterPayload;
-import org.apache.solr.cloud.ConfigSetCmds;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.common.params.DefaultSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ReflectMapWriter;
@@ -77,7 +70,6 @@ public class ClusterAPI {
   private final ConfigSetsHandler configSetsHandler;
 
   public final Commands commands = new Commands();
-  public final ConfigSetCommands configSetCommands = new ConfigSetCommands();
 
   public ClusterAPI(CollectionsHandler ch, ConfigSetsHandler configSetsHandler) {
     this.collectionsHandler = ch;
@@ -233,81 +225,6 @@ public class ClusterAPI {
   @EndPoint(method = DELETE, path = "/cluster/command-status", permission = COLL_EDIT_PERM)
   public void flushCommandStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     CollectionsHandler.CollectionOperation.DELETESTATUS_OP.execute(req, rsp, collectionsHandler);
-  }
-
-  @EndPoint(method = DELETE, path = "/cluster/configs/{name}", permission = CONFIG_EDIT_PERM)
-  public void deleteConfigSet(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    req =
-        wrapParams(
-            req,
-            "action",
-            ConfigSetParams.ConfigSetAction.DELETE.toString(),
-            CommonParams.NAME,
-            req.getPathTemplateValues().get("name"));
-    configSetsHandler.handleRequestBody(req, rsp);
-  }
-
-  @EndPoint(method = GET, path = "/cluster/configs", permission = CONFIG_READ_PERM)
-  public void listConfigSet(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    req = wrapParams(req, "action", ConfigSetParams.ConfigSetAction.LIST.toString());
-    configSetsHandler.handleRequestBody(req, rsp);
-  }
-
-  @EndPoint(method = POST, path = "/cluster/configs", permission = CONFIG_EDIT_PERM)
-  public class ConfigSetCommands {
-
-    @Command(name = "create")
-    @SuppressWarnings("unchecked")
-    public void create(PayloadObj<CreateConfigPayload> obj) throws Exception {
-      Map<String, Object> mapVals = obj.get().toMap(new HashMap<>());
-      Map<String, Object> customProps = obj.get().properties;
-      if (customProps != null) {
-        customProps.forEach((k, o) -> mapVals.put(ConfigSetCmds.CONFIG_SET_PROPERTY_PREFIX + k, o));
-      }
-      mapVals.put("action", ConfigSetParams.ConfigSetAction.CREATE.toString());
-      configSetsHandler.handleRequestBody(wrapParams(obj.getRequest(), mapVals), obj.getResponse());
-    }
-  }
-
-  @EndPoint(method = PUT, path = "/cluster/configs/{name}", permission = CONFIG_EDIT_PERM)
-  public void uploadConfigSet(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    req =
-        wrapParams(
-            req,
-            "action",
-            ConfigSetParams.ConfigSetAction.UPLOAD.toString(),
-            CommonParams.NAME,
-            req.getPathTemplateValues().get("name"),
-            ConfigSetParams.OVERWRITE,
-            true,
-            ConfigSetParams.CLEANUP,
-            false);
-    configSetsHandler.handleRequestBody(req, rsp);
-  }
-
-  @EndPoint(method = PUT, path = "/cluster/configs/{name}/*", permission = CONFIG_EDIT_PERM)
-  public void insertIntoConfigSet(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    String path = req.getPathTemplateValues().get("*");
-    if (path == null || path.isBlank()) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          "In order to insert a file in a configSet, a filePath must be provided in the url after the name of the configSet.");
-    }
-    req =
-        wrapParams(
-            req,
-            Map.of(
-                "action",
-                ConfigSetParams.ConfigSetAction.UPLOAD.toString(),
-                CommonParams.NAME,
-                req.getPathTemplateValues().get("name"),
-                ConfigSetParams.FILE_PATH,
-                path,
-                ConfigSetParams.OVERWRITE,
-                true,
-                ConfigSetParams.CLEANUP,
-                false));
-    configSetsHandler.handleRequestBody(req, rsp);
   }
 
   public static SolrQueryRequest wrapParams(SolrQueryRequest req, Object... def) {

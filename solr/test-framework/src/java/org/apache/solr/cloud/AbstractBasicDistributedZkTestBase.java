@@ -1084,7 +1084,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
   }
 
   /** Create a collection in single node */
-  protected void createCollectionInOneInstance(
+  public static void createCollectionInOneInstance(
       final SolrClient client,
       String nodeName,
       ThreadPoolExecutor executor,
