@@ -329,7 +329,7 @@ public class Utils {
             | JSONParser.ALLOW_MISSING_COLON_COMMA_BEFORE_OBJECT
             | JSONParser.OPTIONAL_OUTER_BRACES);
     try {
-      return STANDARDOBJBUILDER.apply(parser).getValStrict();
+      return fun.apply(parser).getValStrict();
     } catch (IOException e) {
       throw new RuntimeException(e); // should never happen w/o using real IO
     }
