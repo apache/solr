@@ -77,6 +77,8 @@ Optimizations
 
 * SOLR-16266: Eliminate unneccessary byte[] copy in Http2SolrClient (hossman)
 
+* SOLR-9359: Enable warming queries to be managed using Config API (Andy Webb, Eric Pugh)
+
 Bug Fixes
 ---------------------
 * SOLR-15918: Skip repetitive parent znode creation on config set upload (Mike Drob)
