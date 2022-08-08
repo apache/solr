@@ -29,8 +29,8 @@ public class NVectorUtil {
   private static final double pip2 = Math.PI/2;
 
   public static double[] latLongToNVector(double lat, double lon) {
-    double latRad = lat * (Math.PI / 180);
-    double lonRad = lon * (Math.PI / 180);
+    double latRad = Math.toRadians(lat);
+    double lonRad = Math.toRadians(lon);
     double x = Math.cos(latRad) * Math.cos(lonRad);
     double y = Math.cos(latRad) * Math.sin(lonRad);
     double z = Math.sin(latRad);
@@ -77,7 +77,7 @@ public class NVectorUtil {
   }
 
   public static double NVectorDist(double[] a, double[] b, double radius) {
-    return radius * (pip2 - SloppyMath.asin(a[0] * b[0] + a[1] * b[1] + a[2] * b[2]));
+    return NVectorDist(NVectorDotProduct(a, b), radius);
   }
 
   public static double NVectorDist(double dotProduct, double radius){

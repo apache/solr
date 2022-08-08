@@ -40,7 +40,7 @@ import java.util.Map;
 
 public class NVectorField extends CoordinateFieldType {
 
-    String DEFAULT_SEPARATOR = ",";
+    private static final String DEFAULT_SEPARATOR = ",";
     String separator = DEFAULT_SEPARATOR;
 
     @Override
