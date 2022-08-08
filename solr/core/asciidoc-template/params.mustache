@@ -1,0 +1,19 @@
+===== Parameters
+
+{{#hasQueryParams}}
+{{^useTableTitles}}
+====== Query Parameters
+{{/useTableTitles}}
+
+[cols="2,3,1,1,1"]
+{{#useTableTitles}}
+.Query Parameters
+{{/useTableTitles}}
+|===
+|Name| Description| Required| Default| Pattern
+
+{{#queryParams}}
+{{>param}}
+{{/queryParams}}
+|===
+{{/hasQueryParams}}

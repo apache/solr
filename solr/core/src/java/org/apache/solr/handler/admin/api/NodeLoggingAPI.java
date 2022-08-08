@@ -60,11 +60,8 @@ public class NodeLoggingAPI {
           tags = {"logs", "node"},
           description = "API to either retrieve log levels (when GET verb is used), or update the log level on the receiving node.",
           parameters = {
-                  @Parameter(name = "set",
-                          description = "A string containing the logger name and new level, separated by a colon",
-                          example = "set=org.apache.solr.handler.CollectionsHandler:WARN",
-                          schema=@Schema(type="string"),
-                          in = ParameterIn.QUERY)
+                  @Parameter(name = "set", description = "desc2", schema=@Schema(type="string"), in = ParameterIn.QUERY),
+                  @Parameter(name="fakeParam", description = "desc1", required = true, in = ParameterIn.QUERY)
           },
           requestBody = @RequestBody(
                   description = "asdf",

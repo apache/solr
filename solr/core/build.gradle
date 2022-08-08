@@ -28,12 +28,34 @@ resolve {
   classpath = sourceSets.main.runtimeClasspath
   outputDir = file("build")
   prettyPrint = true
+  readAllResources = false
 }
 
+/*
 openApiGenerate {
   generatorName = "python"
   inputSpec = file("build/openapi.json").toString()
   outputDir = file("build/jegerlowgenerated").toString()
+  packageName = "generatedstuff"
+  apiPackage = "generatedapistuff"
+  modelPackage = "generatedmodelstuff"
+}
+*/
+
+task openApiGeneratePython(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+  generatorName = "python"
+  inputSpec = file("build/openapi.json").toString()
+  outputDir = file("build/jegerlowgenerated-python").toString()
+  packageName = "generatedstuff"
+  apiPackage = "generatedapistuff"
+  modelPackage = "generatedmodelstuff"
+}
+
+task openApiGenerateAsciidoc(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+  generatorName = "asciidoc"
+  inputSpec = file("build/openapi.json").toString()
+  outputDir = file("build/jegerlowgenerated-asciidoc").toString()
+  templateDir = file("asciidoc-template/").toString()
   packageName = "generatedstuff"
   apiPackage = "generatedapistuff"
   modelPackage = "generatedmodelstuff"
