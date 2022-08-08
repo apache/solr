@@ -311,6 +311,10 @@ public class Utils {
   }
 
   public static Object fromJSON(byte[] utf8, int offset, int length) {
+    return fromJSON(utf8, offset, length, STANDARDOBJBUILDER);
+  }
+
+  public static Object fromJSON(byte[] utf8, int offset, int length, Function<JSONParser, ObjectBuilder> fun) {
     if (utf8 == null || utf8.length == 0 || length == 0) {
       return Collections.emptyMap();
     }
