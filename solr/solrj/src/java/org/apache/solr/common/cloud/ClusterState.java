@@ -224,22 +224,28 @@ public class ClusterState implements JSONWriter.Writable {
       return new ClusterState(liveNodes, Collections.<String, DocCollection>emptyMap());
     }
     @SuppressWarnings({"unchecked"})
-    Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(bytes, 0, bytes.length, parser -> {
-      try {
-        return new ObjectBuilder(parser) {
-          @Override
-          public void addKeyVal(Object map, Object key, Object val) throws IOException {
-            key = key.toString().intern();
-            if (val instanceof String) {
-              val = ((String) val).intern();
-            }
-            super.addKeyVal(map, key, val);
-          }
-        };
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    });
+    Map<String, Object> stateMap =
+        (Map<String, Object>)
+            Utils.fromJSON(
+                bytes,
+                0,
+                bytes.length,
+                parser -> {
+                  try {
+                    return new ObjectBuilder(parser) {
+                      @Override
+                      public void addKeyVal(Object map, Object key, Object val) throws IOException {
+                        key = key.toString().intern();
+                        if (val instanceof String) {
+                          val = ((String) val).intern();
+                        }
+                        super.addKeyVal(map, key, val);
+                      }
+                    };
+                  } catch (IOException e) {
+                    throw new RuntimeException(e);
+                  }
+                });
     return createFromCollectionMap(version, stateMap, liveNodes);
   }
 
