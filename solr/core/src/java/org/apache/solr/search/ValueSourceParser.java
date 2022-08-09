@@ -81,6 +81,7 @@ import org.apache.solr.search.function.distance.HaversineFunction;
 import org.apache.solr.search.function.distance.SquaredEuclideanFunction;
 import org.apache.solr.search.function.distance.StringDistanceFunction;
 import org.apache.solr.search.function.distance.VectorDistanceFunction;
+import org.apache.solr.search.function.distance.NVectorValueSourceParser;
 import org.apache.solr.search.join.ChildFieldValueSourceParser;
 import org.apache.solr.util.DateMathParser;
 import org.apache.solr.util.PayloadUtils;
@@ -385,6 +386,8 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         });
 
     addParser("geodist", new GeoDistValueSourceParser());
+
+    addParser("nvdist", new NVectorValueSourceParser());
 
     addParser(
         "hsin",
