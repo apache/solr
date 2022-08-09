@@ -196,17 +196,17 @@ public class LTRQParserPlugin extends QParserPlugin
             rerankingQuery =
                 rerankingQueries[i] =
                     new LTRInterleavingScoringQuery(
+                        missingFeatures,
                         ltrScoringModel,
                         externalFeatureInfo,
-                        missingFeatures,
                         featuresRequestedFromSameStore,
                         threadManager);
           } else {
             rerankingQuery =
                 new LTRScoringQuery(
+                    missingFeatures,
                     ltrScoringModel,
                     externalFeatureInfo,
-                    missingFeatures,
                     featuresRequestedFromSameStore,
                     threadManager);
             rerankingQueries[i] = null;
@@ -219,7 +219,7 @@ public class LTRQParserPlugin extends QParserPlugin
           }
         } else {
           rerankingQuery =
-              rerankingQueries[i] = new OriginalRankingLTRScoringQuery(ORIGINAL_RANKING, missingFeatures);
+              rerankingQueries[i] = new OriginalRankingLTRScoringQuery(ORIGINAL_RANKING);
         }
 
         // External features

@@ -139,7 +139,7 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
               allFeatures,
               TestLinearModel.makeFeatureWeights(features));
 
-      LTRScoringQuery ltrScoringQuery = new LTRScoringQuery(ltrScoringModel, false);
+      LTRScoringQuery ltrScoringQuery = new LTRScoringQuery(ltrScoringModel);
       ltrScoringQuery.setRequest(solrQueryRequest);
       final LTRRescorer rescorer = new LTRRescorer(ltrScoringQuery);
       hits = rescorer.rescore(searcher, hits, 2);
@@ -195,7 +195,7 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
               allFeatures,
               TestLinearModel.makeFeatureWeights(features, featureWeight));
 
-      LTRScoringQuery scoringQuery = new LTRScoringQuery(ltrScoringModel, false);
+      LTRScoringQuery scoringQuery = new LTRScoringQuery(ltrScoringModel);
       scoringQuery.setRequest(solrQueryRequest);
       final LTRRescorer rescorer = new LTRRescorer(scoringQuery);
 
@@ -238,7 +238,7 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
               Collections.nCopies(features.size(), IdentityNormalizer.INSTANCE));
       List<Feature> allFeatures = makeFieldValueFeatures(new int[] {0}, "finalScore");
       MockModel ltrScoringModel = new MockModel("test", features, norms, "test", allFeatures, null);
-      LTRScoringQuery query = new LTRScoringQuery(ltrScoringModel, false);
+      LTRScoringQuery query = new LTRScoringQuery(ltrScoringModel);
       query.setRequest(solrQueryRequest);
       LTRScoringQuery.ModelWeight wgt = query.createWeight(null, ScoreMode.COMPLETE, 1f);
       LTRScoringQuery.ModelWeight.ModelScorer modelScr = wgt.scorer(null);
@@ -254,7 +254,7 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
               Collections.nCopies(features.size(), IdentityNormalizer.INSTANCE));
       allFeatures = makeFieldValueFeatures(new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, "finalScore");
       ltrScoringModel = new MockModel("test", features, norms, "test", allFeatures, null);
-      query = new LTRScoringQuery(ltrScoringModel, false);
+      query = new LTRScoringQuery(ltrScoringModel);
       query.setRequest(solrQueryRequest);
       wgt = query.createWeight(null, ScoreMode.COMPLETE, 1f);
       modelScr = wgt.scorer(null);

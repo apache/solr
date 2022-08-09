@@ -125,12 +125,12 @@ public class TestLTRScoringQuery extends SolrTestCase {
         TestLinearModel.createLinearModel(
             "testModelName", features, norms, "testStoreName", allFeatures, modelParams);
 
-    final LTRScoringQuery m0 = new LTRScoringQuery(algorithm1, false);
+    final LTRScoringQuery m0 = new LTRScoringQuery(algorithm1);
 
     final HashMap<String, String[]> externalFeatureInfo = new HashMap<>();
     externalFeatureInfo.put("queryIntent", new String[] {"company"});
     externalFeatureInfo.put("user_query", new String[] {"abc"});
-    final LTRScoringQuery m1 = new LTRScoringQuery(algorithm1, externalFeatureInfo, false, false, null);
+    final LTRScoringQuery m1 = new LTRScoringQuery(algorithm1, externalFeatureInfo, false, null);
 
     final HashMap<String, String[]> externalFeatureInfo2 = new HashMap<>();
     externalFeatureInfo2.put("user_query", new String[] {"abc"});
@@ -138,7 +138,7 @@ public class TestLTRScoringQuery extends SolrTestCase {
     int totalPoolThreads = 10, numThreadsPerRequest = 10;
     LTRThreadModule threadManager = new LTRThreadModule(totalPoolThreads, numThreadsPerRequest);
     final LTRScoringQuery m2 =
-        new LTRScoringQuery(algorithm1, externalFeatureInfo2, false, false, threadManager);
+        new LTRScoringQuery(algorithm1, externalFeatureInfo2, false, threadManager);
 
     // Models with same algorithm and efis, just in different order should be the same
     assertEquals(m1, m2);
@@ -151,7 +151,7 @@ public class TestLTRScoringQuery extends SolrTestCase {
     final LTRScoringModel algorithm2 =
         TestLinearModel.createLinearModel(
             "testModelName2", features, norms, "testStoreName", allFeatures, modelParams);
-    final LTRScoringQuery m3 = new LTRScoringQuery(algorithm2, false);
+    final LTRScoringQuery m3 = new LTRScoringQuery(algorithm2);
 
     assertFalse(m1.equals(m3));
     assertFalse(m1.hashCode() == m3.hashCode());
@@ -159,7 +159,7 @@ public class TestLTRScoringQuery extends SolrTestCase {
     final LTRScoringModel algorithm3 =
         TestLinearModel.createLinearModel(
             "testModelName", features, norms, "testStoreName3", allFeatures, modelParams);
-    final LTRScoringQuery m4 = new LTRScoringQuery(algorithm3, false);
+    final LTRScoringQuery m4 = new LTRScoringQuery(algorithm3);
 
     assertFalse(m1.equals(m4));
     assertFalse(m1.hashCode() == m4.hashCode());
@@ -212,7 +212,7 @@ public class TestLTRScoringQuery extends SolrTestCase {
             TestLinearModel.makeFeatureWeights(features));
 
     LTRScoringQuery.ModelWeight modelWeight =
-        performQuery(hits, searcher, hits.scoreDocs[0].doc, new LTRScoringQuery(ltrScoringModel, false));
+        performQuery(hits, searcher, hits.scoreDocs[0].doc, new LTRScoringQuery(ltrScoringModel));
     assertEquals(3, modelWeight.getModelFeatureValuesNormalized().length);
 
     for (int i = 0; i < 3; i++) {
@@ -244,7 +244,7 @@ public class TestLTRScoringQuery extends SolrTestCase {
             TestLinearModel.makeFeatureWeights(features));
 
     modelWeight =
-        performQuery(hits, searcher, hits.scoreDocs[0].doc, new LTRScoringQuery(ltrScoringModel, false));
+        performQuery(hits, searcher, hits.scoreDocs[0].doc, new LTRScoringQuery(ltrScoringModel));
     assertEquals(mixPositions.length, modelWeight.getModelFeatureWeights().length);
 
     for (int i = 0; i < mixPositions.length; i++) {
@@ -269,7 +269,7 @@ public class TestLTRScoringQuery extends SolrTestCase {
               TestLinearModel.makeFeatureWeights(features));
       fail("unexpectedly got here instead of catching " + expectedModelException);
       modelWeight =
-          performQuery(hits, searcher, hits.scoreDocs[0].doc, new LTRScoringQuery(ltrScoringModel, false));
+          performQuery(hits, searcher, hits.scoreDocs[0].doc, new LTRScoringQuery(ltrScoringModel));
       assertEquals(0, modelWeight.getModelFeatureWeights().length);
     } catch (ModelException actualModelException) {
       assertEquals(expectedModelException.toString(), actualModelException.toString());
@@ -304,7 +304,7 @@ public class TestLTRScoringQuery extends SolrTestCase {
             TestLinearModel.makeFeatureWeights(features));
 
     modelWeight =
-        performQuery(hits, searcher, hits.scoreDocs[0].doc, new LTRScoringQuery(normMeta, false));
+        performQuery(hits, searcher, hits.scoreDocs[0].doc, new LTRScoringQuery(normMeta));
     normMeta.normalizeFeaturesInPlace(modelWeight.getModelFeatureValuesNormalized());
     assertEquals(mixPositions.length, modelWeight.getModelFeatureWeights().length);
     for (int i = 0; i < mixPositions.length; i++) {

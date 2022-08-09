@@ -79,25 +79,48 @@ public class LTRScoringQuery extends Query implements Accountable {
   private SolrQueryRequest request;
 
 
-  public LTRScoringQuery(LTRScoringModel ltrScoringModel, boolean missingFeatures) {
-    this(ltrScoringModel, Collections.<String, String[]>emptyMap(), missingFeatures, false, null);
+  public LTRScoringQuery(LTRScoringModel ltrScoringModel) {
+    this(false, ltrScoringModel, Collections.<String, String[]>emptyMap(), false, null);
   }
 
-  public LTRScoringQuery(LTRScoringModel ltrScoringModel, boolean missingFeatures, boolean extractAllFeatures) {
-    this(ltrScoringModel, Collections.<String, String[]>emptyMap(), missingFeatures, extractAllFeatures, null);
+  public LTRScoringQuery(LTRScoringModel ltrScoringModel, boolean extractAllFeatures) {
+    this(false, ltrScoringModel, Collections.<String, String[]>emptyMap(), extractAllFeatures, null);
   }
 
+  public LTRScoringQuery(boolean missingFeatures, LTRScoringModel ltrScoringModel) {
+    this(missingFeatures, ltrScoringModel, Collections.<String, String[]>emptyMap(), false, null);
+  }
 
+  public LTRScoringQuery(boolean missingFeatures, LTRScoringModel ltrScoringModel, boolean extractAllFeatures) {
+    this(missingFeatures, ltrScoringModel, Collections.<String, String[]>emptyMap(), extractAllFeatures, null);
+  }
 
   public LTRScoringQuery(
-      LTRScoringModel ltrScoringModel,
-      Map<String, String[]> externalFeatureInfo,
-      boolean missingFeatures,
-      boolean extractAllFeatures,
-      LTRThreadModule ltrThreadMgr) {
+          LTRScoringModel ltrScoringModel,
+          Map<String, String[]> externalFeatureInfo,
+          boolean extractAllFeatures,
+          LTRThreadModule ltrThreadMgr) {
+    this.missingFeatures = false;
     this.ltrScoringModel = ltrScoringModel;
     this.efi = externalFeatureInfo;
+    this.extractAllFeatures = extractAllFeatures;
+    this.ltrThreadMgr = ltrThreadMgr;
+    if (this.ltrThreadMgr != null) {
+      this.querySemaphore = this.ltrThreadMgr.createQuerySemaphore();
+    } else {
+      this.querySemaphore = null;
+    }
+  }
+
+  public LTRScoringQuery(
+      boolean missingFeatures,
+      LTRScoringModel ltrScoringModel,
+      Map<String, String[]> externalFeatureInfo,
+      boolean extractAllFeatures,
+      LTRThreadModule ltrThreadMgr) {
     this.missingFeatures = missingFeatures;
+    this.ltrScoringModel = ltrScoringModel;
+    this.efi = externalFeatureInfo;
     this.extractAllFeatures = extractAllFeatures;
     this.ltrThreadMgr = ltrThreadMgr;
     if (this.ltrThreadMgr != null) {
