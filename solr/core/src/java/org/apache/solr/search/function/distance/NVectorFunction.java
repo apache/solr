@@ -17,8 +17,8 @@
 
 package org.apache.solr.search.function.distance;
 
-import static org.apache.solr.util.NVectorUtil.NVectorDist;
-import static org.apache.solr.util.NVectorUtil.NVectorDotProduct;
+import static org.apache.solr.util.NVectorUtil.nVectorDist;
+import static org.apache.solr.util.NVectorUtil.nVectorDotProduct;
 
 import java.io.IOException;
 import java.util.Map;
@@ -57,7 +57,7 @@ public class NVectorFunction extends ValueSource {
       @Override
       public double doubleVal(int doc) throws IOException {
         double dotProduct = fv.doubleVal(doc);
-        return NVectorDist(dotProduct, radius);
+        return nVectorDist(dotProduct, radius);
       }
 
       @Override
@@ -78,7 +78,7 @@ public class NVectorFunction extends ValueSource {
         double[] nvector_dv2 = new double[nvector2.dimension()];
         nvector_v1.doubleVal(doc, nvector_dv1);
         nvector_v2.doubleVal(doc, nvector_dv2);
-        return NVectorDotProduct(nvector_dv1, nvector_dv2);
+        return nVectorDotProduct(nvector_dv1, nvector_dv2);
       }
 
       @Override
