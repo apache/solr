@@ -3030,14 +3030,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assertEquals(tuples.size(), 4);
       assertOrder(tuples, 5, 6, 7, 8);
 
-      expression =
-          StreamExpressionParser.parse(
-              "priority(topic(collection1, collection1, q=\"a_s:hello\", fl=\"id,a_i\", id=1000000, initialCheckpoint=0),"
-                  + "topic(collection1, collection1, q=\"a_s:hello1\", fl=\"id,a_i\", id=2000000, initialCheckpoint=0))");
-      stream = factory.constructStream(expression);
-      context = new StreamContext();
-      context.setSolrClientCache(cache);
-      stream.setStreamContext(context);
       tuples = getTuples(stream);
       Collections.sort(tuples, comp);
 
