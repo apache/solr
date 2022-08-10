@@ -147,6 +147,8 @@ Other Changes
 
 * SOLR-16304: No more @Slow annotation for tests! (Mike Drob)
 
+* SOLR-16331: Migrate remaining managed-schema files to be managed-schema.xml.  (Eric Pugh)
+
 Build
 ---------------------
 * SOLR-16204: Change Lucene dependency to Lucene 9.1.0 (Elia Porciani via Alessandro Benedetti)
