@@ -17,26 +17,8 @@
 
 package org.apache.solr.api;
 
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
-
 import io.opentracing.Span;
 import io.opentracing.tag.Tags;
-import java.lang.invoke.MethodHandles;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Supplier;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.SolrThreadSafe;
@@ -49,9 +31,11 @@ import org.apache.solr.common.util.PathTrie;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.JettyBasedResponseWriter;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerUtils;
+import org.apache.solr.jersey.SolrRequestAuthorizer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -59,8 +43,33 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.servlet.HttpSolrCall;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.servlet.SolrRequestParsers;
+import org.glassfish.jersey.internal.MapPropertiesDelegate;
+import org.glassfish.jersey.server.ApplicationHandler;
+import org.glassfish.jersey.server.ContainerRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.core.SecurityContext;
+import java.lang.invoke.MethodHandles;
+import java.net.URI;
+import java.security.Principal;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Supplier;
+
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
 
 // class that handle the '/v2' path
 @SolrThreadSafe
@@ -88,6 +97,7 @@ public class V2HttpCall extends HttpSolrCall {
     queryParams = SolrRequestParsers.parseQueryString(req.getQueryString());
     String path = this.path;
     final String fullPath = path = path.substring(7); // strip off '/____v2'
+
     try {
       pathSegments = PathTrie.getPathSegments(path);
       if (pathSegments.size() == 0
@@ -124,8 +134,6 @@ public class V2HttpCall extends HttpSolrCall {
           return;
         }
         assert core == null;
-        throw new SolrException(
-            SolrException.ErrorCode.NOT_FOUND, "Could not load plugin at " + path);
       }
 
       if ("c".equals(prefix) || "collections".equals(prefix)) {
@@ -157,20 +165,16 @@ public class V2HttpCall extends HttpSolrCall {
         origCorename = pathSegments.get(1);
         core = cores.getCore(origCorename);
       }
+
+      // We didn't find a core, so we're either an error or a Jersey 'ADMIN' api
       if (core == null) {
-        log.error(">> path: '{}'", path);
-        if (path.endsWith(CommonParams.INTROSPECT)) {
-          initAdminRequest(path);
-          return;
-        } else {
-          throw new SolrException(
-              SolrException.ErrorCode.NOT_FOUND,
-              "no core retrieved for core name: " + origCorename + ". Path: " + path);
-        }
-      } else {
-        Thread.currentThread().setContextClassLoader(core.getResourceLoader().getClassLoader());
+        // This codepath needs to cover custom plugin Jersey APIs, as well as in-built ones
+        log.info("Hoping this path is covered by the Jersey-admin case: {}", path);
+        initAdminRequest(path);
+        return;
       }
 
+      Thread.currentThread().setContextClassLoader(core.getResourceLoader().getClassLoader());
       this.path = path = path.substring(prefix.length() + pathSegments.get(1).length() + 2);
       Api apiInfo = getApiInfo(core.getRequestHandlers(), path, req.getMethod(), fullPath, parts);
       if (isCompositeApi && apiInfo instanceof CompositeApi) {
@@ -179,7 +183,6 @@ public class V2HttpCall extends HttpSolrCall {
         api = apiInfo == null ? api : apiInfo;
       }
       parseRequest();
-
       addCollectionParamIfNeeded(getCollectionsList());
 
       action = PROCESS;
@@ -312,6 +315,7 @@ public class V2HttpCall extends HttpSolrCall {
       String fullPath,
       CompositeApi compositeApi) {
 
+    log.info("JEGERLOW In getSubPathApi with path=[{}] and fullPath=[{}]", path, fullPath);
     String newPath =
         path.endsWith(CommonParams.INTROSPECT)
             ? path.substring(0, path.length() - CommonParams.INTROSPECT.length())
@@ -388,33 +392,71 @@ public class V2HttpCall extends HttpSolrCall {
     }
   }
 
+  // We don't rely on any of Jersey's authc/z features so we pass in this empty context for
+  // all requests.
+  private static final SecurityContext DEFAULT_SECURITY_CONTEXT = new SecurityContext() {
+    public boolean isUserInRole(String role) { return false; }
+    public boolean isSecure() { return false; }
+    public Principal getUserPrincipal() { return null; }
+    public String getAuthenticationScheme() { return null; }
+  };
+
+  private void invokeJerseyRequest(CoreContainer cores, SolrCore core, ApplicationHandler jerseyHandler) {
+    final String basePath = "/____v2/";
+    final String path = req.getServletPath();
+    try {
+      // TODO Cleanup or replace these hacky URIs altogether
+      final URI baseUri = new URI(req.getScheme(), null, "somehostname",
+              req.getServerPort(), basePath, null, null);
+      final URI fullUri = new URI(req.getScheme(), null, "somehostname", req.getServerPort(), path, null, null);
+      final ContainerRequest containerRequest = new ContainerRequest(baseUri, fullUri, req.getMethod(),
+              DEFAULT_SECURITY_CONTEXT, new MapPropertiesDelegate(), cores.getResourceConfig());
+
+      // Set properties that may be used by Jersey filters downstream
+      containerRequest.setProperty(SolrRequestAuthorizer.CORE_CONTAINER_PROP_NAME, cores);
+      containerRequest.setProperty(SolrRequestAuthorizer.HTTP_SERVLET_REQ_PROP_NAME, req);
+      containerRequest.setProperty(SolrRequestAuthorizer.REQUEST_TYPE_PROP_NAME, requestType);
+      containerRequest.setProperty(SolrRequestAuthorizer.SOLR_PARAMS_PROP_NAME, queryParams);
+      containerRequest.setProperty(SolrRequestAuthorizer.COLLECTION_LIST_PROP_NAME, collectionsList);
+      containerRequest.setProperty(SolrRequestAuthorizer.HTTP_SERVLET_RSP_PROP_NAME, response);
+      if (core != null) {
+        containerRequest.setProperty(SolrRequestAuthorizer.SOLR_CORE_PROP_NAME, core);
+      }
+      // Execute the request
+      containerRequest.setWriter(new JettyBasedResponseWriter(req, response));
+      jerseyHandler.handle(containerRequest);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+    log.info("JEGERLOW Finished call to 'handle'; response is: {} with code {}", response, response.getStatus());
+  }
+
   @Override
   protected void handleAdmin(SolrQueryResponse solrResp) {
     try {
-      api.call(this.solrReq, solrResp);
+      if (api == null) {
+        invokeJerseyRequest(cores, null, cores.getAppHandler());
+      } else {
+        api.call(this.solrReq, solrResp);
+      }
     } catch (Exception e) {
       solrResp.setException(e);
     }
   }
 
   @Override
-  protected void execute(SolrQueryResponse rsp) {
-    SolrCore.preDecorateResponse(solrReq, rsp);
+  protected void executeCoreRequest(SolrQueryResponse rsp) {
     if (api == null) {
-      rsp.setException(
-          new SolrException(
-              SolrException.ErrorCode.NOT_FOUND,
-              "Cannot find correspond api for the path : "
-                  + solrReq.getContext().get(CommonParams.PATH)));
+      invokeJerseyRequest(cores, core, core.getRequestHandlers().getApplicationHandler());
     } else {
+      SolrCore.preDecorateResponse(solrReq, rsp);
       try {
         api.call(solrReq, rsp);
       } catch (Exception e) {
         rsp.setException(e);
       }
+      SolrCore.postDecorateResponse(handler, solrReq, rsp);
     }
-
-    SolrCore.postDecorateResponse(handler, solrReq, rsp);
   }
 
   @Override

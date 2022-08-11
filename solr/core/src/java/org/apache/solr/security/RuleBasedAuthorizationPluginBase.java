@@ -16,9 +16,14 @@
  */
 package org.apache.solr.security;
 
-import static java.util.function.Function.identity;
-import static java.util.stream.Collectors.toMap;
-import static org.apache.solr.handler.admin.SecurityConfHandler.getListValue;
+import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.api.Api;
+import org.apache.solr.common.SpecProvider;
+import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.ValidatingJsonMap;
+import org.apache.solr.handler.admin.api.ModifyRuleBasedAuthConfigAPI;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -32,14 +37,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.apache.solr.api.AnnotatedApi;
-import org.apache.solr.api.Api;
-import org.apache.solr.common.SpecProvider;
-import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.common.util.ValidatingJsonMap;
-import org.apache.solr.handler.admin.api.ModifyRuleBasedAuthConfigAPI;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.toMap;
+import static org.apache.solr.handler.admin.SecurityConfHandler.getListValue;
 
 /** Base class for rule based authorization plugins */
 public abstract class RuleBasedAuthorizationPluginBase
@@ -95,6 +96,7 @@ public abstract class RuleBasedAuthorizationPluginBase
           context.getRequestType(),
           collectionRequests);
     }
+
 
     if (context.getRequestType() == AuthorizationContext.RequestType.ADMIN) {
       log.debug("Authorizing an ADMIN request, checking admin permissions");
@@ -197,7 +199,9 @@ public abstract class RuleBasedAuthorizationPluginBase
     if (predefinedPermission.wellknownName == PermissionNameProvider.Name.ALL) {
       log.trace("'ALL' perm applies to all requests; perm applies.");
       return true; // 'ALL' applies to everything!
-    } else if (!(context.getHandler() instanceof PermissionNameProvider)) {
+    }
+
+    if (!(context.getHandler() instanceof PermissionNameProvider)) {
       // TODO: Is this code path needed anymore, now that all handlers implement the interface?
       // context.getHandler returns Object and is not documented
       if (log.isTraceEnabled()) {

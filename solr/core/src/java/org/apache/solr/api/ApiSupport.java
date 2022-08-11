@@ -18,6 +18,7 @@
 package org.apache.solr.api;
 
 import java.util.Collection;
+import java.util.Collections;
 
 /** The interface that is implemented by a request handler to support the V2 end point */
 public interface ApiSupport {
@@ -28,6 +29,10 @@ public interface ApiSupport {
    * @return the list of v2 api implementations
    */
   Collection<Api> getApis();
+
+  default Collection<Class<? extends JerseyResource>> getJerseyResources() {
+    return Collections.emptySet();
+  }
 
   /** Whether this should be made available at the regular legacy path */
   default Boolean registerV1() {

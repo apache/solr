@@ -16,8 +16,28 @@
  */
 package org.apache.solr.core;
 
-import static java.util.Collections.singletonMap;
-import static org.apache.solr.api.ApiBag.HANDLER_NAME;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoaderAware;
+import org.apache.solr.api.Api;
+import org.apache.solr.api.ApiBag;
+import org.apache.solr.api.ApiSupport;
+import org.apache.solr.api.JerseyResource;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.component.SearchComponent;
+import org.apache.solr.jersey.CoreContainerApp;
+import org.apache.solr.jersey.SolrCoreApp;
+import org.apache.solr.pkg.PackagePluginHolder;
+import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.util.plugin.NamedListInitializedPlugin;
+import org.apache.solr.util.plugin.PluginInfoInitialized;
+import org.apache.solr.util.plugin.SolrCoreAware;
+import org.glassfish.jersey.server.ApplicationHandler;
+import org.glassfish.jersey.server.ResourceConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -32,22 +52,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import org.apache.lucene.util.ResourceLoader;
-import org.apache.lucene.util.ResourceLoaderAware;
-import org.apache.solr.api.Api;
-import org.apache.solr.api.ApiBag;
-import org.apache.solr.api.ApiSupport;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.handler.component.SearchComponent;
-import org.apache.solr.pkg.PackagePluginHolder;
-import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.util.plugin.NamedListInitializedPlugin;
-import org.apache.solr.util.plugin.PluginInfoInitialized;
-import org.apache.solr.util.plugin.SolrCoreAware;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import static java.util.Collections.singletonMap;
+import static org.apache.solr.api.ApiBag.HANDLER_NAME;
 
 /** This manages the lifecycle of a set of plugin of the same type . */
 public class PluginBag<T> implements AutoCloseable {
@@ -60,10 +67,22 @@ public class PluginBag<T> implements AutoCloseable {
   private SolrCore core;
   private final SolrConfig.SolrPluginInfo meta;
   private final ApiBag apiBag;
+  private final ResourceConfig jerseyResources;
+  // TODO Need to work out the lifecycle for this.  I _think_ that if I create the appHandler _before_ registering
+  //  components, then Jersey spits out the message: "The resource configuration is not modifiable in this context."
+  //  But I need to understand better when the resourceConfig CAN be modified, and how to start/stop them.
+  private ApplicationHandler appHandler;
 
   /** Pass needThreadSafety=true if plugins can be added and removed concurrently with lookups. */
   public PluginBag(Class<T> klass, SolrCore core, boolean needThreadSafety) {
-    this.apiBag = klass == SolrRequestHandler.class ? new ApiBag(core != null) : null;
+    if (klass == SolrRequestHandler.class) {
+      this.apiBag = new ApiBag(core != null);
+      this.jerseyResources = (core == null) ? new CoreContainerApp() : new SolrCoreApp();
+    } else {
+      this.apiBag = null;
+      this.jerseyResources = null;
+      this.appHandler = null;
+    }
     this.core = core;
     this.klass = klass;
     // TODO: since reads will dominate writes, we could also think about creating a new instance of
@@ -213,6 +232,17 @@ public class PluginBag<T> implements AutoCloseable {
                 apiBag.register(api, nameSubstitutes);
               }
             }
+
+            // TODO Should we use <requestHandler name="/blah"> to override the path that each
+            //  resource registers under?
+            Collection<Class<? extends JerseyResource>> jerseyApis = apiSupport.getJerseyResources();
+            if (! CollectionUtils.isEmpty(jerseyApis)) {
+              for (Class<? extends JerseyResource> jerseyClazz : jerseyApis) {
+                log.info("JEGERLOW: Plugin Bag {} is registering a jersey resource class: {}", jerseyClazz.getName());
+                jerseyResources.register(jerseyClazz);
+              }
+
+            }
           }
         }
       } else {
@@ -293,6 +323,11 @@ public class PluginBag<T> implements AutoCloseable {
         put(e.getKey(), new PluginHolder<T>(null, e.getValue()));
       }
     }
+    if (jerseyResources != null) {
+      log.info("Instantiating new AppHandler in PluginBag");
+      this.appHandler = new ApplicationHandler(jerseyResources);
+
+    }
   }
 
   /** To check if a plugin by a specified name is already loaded */
@@ -321,6 +356,7 @@ public class PluginBag<T> implements AutoCloseable {
         log.error("Error closing plugin {} of type : {}", e.getKey(), meta.getCleanTag(), exp);
       }
     }
+
   }
 
   public static void closeQuietly(Object inst) {
@@ -489,5 +525,9 @@ public class PluginBag<T> implements AutoCloseable {
 
   public ApiBag getApiBag() {
     return apiBag;
+  }
+
+  public ApplicationHandler getApplicationHandler() {
+    return appHandler;
   }
 }
