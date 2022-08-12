@@ -39,6 +39,7 @@ dependencies {
   implementation 'commons-cli:commons-cli'
 
   testImplementation project(':solr:test-framework')
+  testImplementation project(':solr:solrj-zookeeper')
   testImplementation 'org.apache.lucene:lucene-test-framework'
   testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
   testImplementation 'junit:junit'
