@@ -242,19 +242,19 @@ class NumericDecayFunctionValueSource extends ValueSource {
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-
     NumericDecayFunctionValueSource that = (NumericDecayFunctionValueSource) o;
-    return Objects.equals(origin, that.origin)
-        && Objects.equals(scale, that.scale)
-        && Objects.equals(offset, that.offset)
-        && Objects.equals(decayStrategy, that.decayStrategy)
-        && Objects.equals(vs, that.vs)
-        && Objects.equals(name, that.name);
+    return Double.compare(that.origin, origin) == 0 &&
+            Double.compare(that.scale, scale) == 0 &&
+            Double.compare(that.decay, decay) == 0 &&
+            Double.compare(that.offset, offset) == 0 &&
+            Objects.equals(decayStrategy, that.decayStrategy) &&
+            Objects.equals(vs, that.vs) &&
+            Objects.equals(name, that.name);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(origin, scale, offset, decayStrategy, vs, name);
+    return Objects.hash(origin, scale, decay, offset, decayStrategy, vs, name);
   }
 
   @Override
