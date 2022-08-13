@@ -96,7 +96,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
   }
 
   public void testAbleToLoadMultilingual() {
-    ManagedIndexSchema multilingualSchema  = schemaDesignerAPI.getSchemaForConfigSet("multilingual");
+    ManagedIndexSchema multilingualSchema  = schemaDesignerAPI.getSchemaForConfigSet("_multilingual");
     assertNotNull(multilingualSchema);
 
   }
