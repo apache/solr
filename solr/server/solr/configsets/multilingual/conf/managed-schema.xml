@@ -290,14 +290,14 @@
 
     <!-- A general text field that has reasonable, generic
          cross-language defaults: it tokenizes with StandardTokenizer,
-         removes stop words from case-insensitive "stopwords.txt"
+         removes stop words from case-insensitive "lang/stopwords_en.txt"
          (empty by default), and down cases.  At query time only, it
          also applies synonyms.
     -->
     <fieldType name="text_general" class="solr.TextField" positionIncrementGap="100" multiValued="true">
       <analyzer type="index">
         <tokenizer name="standard"/>
-        <filter name="stop" ignoreCase="true" words="stopwords.txt" />
+        <filter name="stop" ignoreCase="true" words="lang/stopwords_en.txt" />
         <!-- in this example, we will only use synonyms at query time
         <filter name="synonymGraph" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/>
         <filter name="flattenGraph"/>
@@ -306,8 +306,8 @@
       </analyzer>
       <analyzer type="query">
         <tokenizer name="standard"/>
-        <filter name="stop" ignoreCase="true" words="stopwords.txt" />
-        <filter name="synonymGraph" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+        <filter name="stop" ignoreCase="true" words="lang/stopwords_en.txt" />
+        <filter name="synonymGraph" synonyms="lang/synonyms_en.txt" ignoreCase="true" expand="true"/>
         <filter name="lowercase"/>
       </analyzer>
     </fieldType>
@@ -326,13 +326,13 @@
     <fieldType name="text_gen_sort" class="solr.SortableTextField" positionIncrementGap="100" multiValued="true">
       <analyzer type="index">
         <tokenizer name="standard"/>
-        <filter name="stop" ignoreCase="true" words="stopwords.txt" />
+        <filter name="stop" ignoreCase="true" words="lang/stopwords_en.txt" />
         <filter name="lowercase"/>
       </analyzer>
       <analyzer type="query">
         <tokenizer name="standard"/>
-        <filter name="stop" ignoreCase="true" words="stopwords.txt" />
-        <filter name="synonymGraph" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+        <filter name="stop" ignoreCase="true" words="lang/stopwords_en.txt" />
+        <filter name="synonymGraph" synonyms="lang/synonyms_en.txt" ignoreCase="true" expand="true"/>
         <filter name="lowercase"/>
       </analyzer>
     </fieldType>
@@ -356,7 +356,7 @@
             />
         <filter name="lowercase"/>
         <filter name="englishPossessive"/>
-        <filter name="keywordMarker" protected="protwords.txt"/>
+        <filter name="keywordMarker" protected="lang/protwords_en.txt"/>
         <!-- Optionally you may want to use this less aggressive stemmer instead of PorterStemFilterFactory:
         <filter name="englishMinimalStem"/>
         -->
@@ -364,14 +364,14 @@
       </analyzer>
       <analyzer type="query">
         <tokenizer name="standard"/>
-        <filter name="synonymGraph" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+        <filter name="synonymGraph" synonyms="lang/synonyms_en.txt" ignoreCase="true" expand="true"/>
         <filter name="stop"
                 ignoreCase="true"
                 words="lang/stopwords_en.txt"
         />
         <filter name="lowercase"/>
         <filter name="englishPossessive"/>
-        <filter name="keywordMarker" protected="protwords.txt"/>
+        <filter name="keywordMarker" protected="lang/protwords_en.txt"/>
         <!-- Optionally you may want to use this less aggressive stemmer instead of PorterStemFilterFactory:
         <filter name="englishMinimalStem"/>
         -->
@@ -403,20 +403,20 @@
         />
         <filter name="wordDelimiterGraph" generateWordParts="1" generateNumberParts="1" catenateWords="1" catenateNumbers="1" catenateAll="0" splitOnCaseChange="1"/>
         <filter name="lowercase"/>
-        <filter name="keywordMarker" protected="protwords.txt"/>
+        <filter name="keywordMarker" protected="lang/protwords_en.txt"/>
         <filter name="porterStem"/>
         <filter name="flattenGraph" />
       </analyzer>
       <analyzer type="query">
         <tokenizer name="whitespace"/>
-        <filter name="synonymGraph" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+        <filter name="synonymGraph" synonyms="lang/synonyms_en.txt" ignoreCase="true" expand="true"/>
         <filter name="stop"
                 ignoreCase="true"
                 words="lang/stopwords_en.txt"
         />
         <filter name="wordDelimiterGraph" generateWordParts="1" generateNumberParts="1" catenateWords="0" catenateNumbers="0" catenateAll="0" splitOnCaseChange="1"/>
         <filter name="lowercase"/>
-        <filter name="keywordMarker" protected="protwords.txt"/>
+        <filter name="keywordMarker" protected="lang/protwords_en.txt"/>
         <filter name="porterStem"/>
       </analyzer>
     </fieldType>
@@ -427,11 +427,11 @@
     <fieldType name="text_en_splitting_tight" class="solr.TextField" positionIncrementGap="100" autoGeneratePhraseQueries="true">
       <analyzer type="index">
         <tokenizer name="whitespace"/>
-        <filter name="synonymGraph" synonyms="synonyms.txt" ignoreCase="true" expand="false"/>
+        <filter name="synonymGraph" synonyms="lang/synonyms_en.txt" ignoreCase="true" expand="false"/>
         <filter name="stop" ignoreCase="true" words="lang/stopwords_en.txt"/>
         <filter name="wordDelimiterGraph" generateWordParts="0" generateNumberParts="0" catenateWords="1" catenateNumbers="1" catenateAll="0"/>
         <filter name="lowercase"/>
-        <filter name="keywordMarker" protected="protwords.txt"/>
+        <filter name="keywordMarker" protected="lang/protwords_en.txt"/>
         <filter name="englishMinimalStem"/>
         <!-- this filter can remove any duplicate tokens that appear at the same position - sometimes
              possible with WordDelimiterGraphFilter in conjuncton with stemming. -->
@@ -440,11 +440,11 @@
       </analyzer>
       <analyzer type="query">
         <tokenizer name="whitespace"/>
-        <filter name="synonymGraph" synonyms="synonyms.txt" ignoreCase="true" expand="false"/>
+        <filter name="synonymGraph" synonyms="lang/synonyms_en.txt" ignoreCase="true" expand="false"/>
         <filter name="stop" ignoreCase="true" words="lang/stopwords_en.txt"/>
         <filter name="wordDelimiterGraph" generateWordParts="0" generateNumberParts="0" catenateWords="1" catenateNumbers="1" catenateAll="0"/>
         <filter name="lowercase"/>
-        <filter name="keywordMarker" protected="protwords.txt"/>
+        <filter name="keywordMarker" protected="lang/protwords_en.txt"/>
         <filter name="englishMinimalStem"/>
         <!-- this filter can remove any duplicate tokens that appear at the same position - sometimes
              possible with WordDelimiterGraphFilter in conjuncton with stemming. -->
@@ -459,15 +459,15 @@
     <fieldType name="text_general_rev" class="solr.TextField" positionIncrementGap="100">
       <analyzer type="index">
         <tokenizer name="standard"/>
-        <filter name="stop" ignoreCase="true" words="stopwords.txt" />
+        <filter name="stop" ignoreCase="true" words="lang/stopwords_en.txt" />
         <filter name="lowercase"/>
         <filter name="reversedWildcard" withOriginal="true"
                 maxPosAsterisk="3" maxPosQuestion="2" maxFractionAsterisk="0.33"/>
       </analyzer>
       <analyzer type="query">
         <tokenizer name="standard"/>
-        <filter name="synonymGraph" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
-        <filter name="stop" ignoreCase="true" words="stopwords.txt" />
+        <filter name="synonymGraph" synonyms="lang/synonyms_en.txt" ignoreCase="true" expand="true"/>
+        <filter name="stop" ignoreCase="true" words="lang/stopwords_en.txt" />
         <filter name="lowercase"/>
       </analyzer>
     </fieldType>
