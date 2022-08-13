@@ -54,6 +54,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
   public static final Boolean DISABLE_CREATE_AUTH_CHECKS =
       Boolean.getBoolean("solr.disableConfigSetsCreateAuthChecks"); // this is for back compat only
   public static final String DEFAULT_CONFIGSET_NAME = "_default";
+  public static final String MULTILINGUAL_CONFIGSET_NAME = "multilingual";
   public static final String AUTOCREATED_CONFIGSET_SUFFIX = ".AUTOCREATED";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected final CoreContainer coreContainer;

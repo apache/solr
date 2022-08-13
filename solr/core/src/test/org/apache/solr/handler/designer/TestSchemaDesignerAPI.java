@@ -19,6 +19,7 @@ package org.apache.solr.handler.designer;
 
 import static org.apache.solr.common.params.CommonParams.JSON_MIME;
 import static org.apache.solr.handler.admin.ConfigSetsHandler.DEFAULT_CONFIGSET_NAME;
+import static org.apache.solr.handler.admin.ConfigSetsHandler.MULTILINGUAL_CONFIGSET_NAME;
 import static org.apache.solr.handler.designer.SchemaDesignerAPI.getMutableId;
 import static org.apache.solr.response.RawResponseWriter.CONTENT;
 import static org.mockito.Mockito.mock;
@@ -70,6 +71,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     System.setProperty("managed.schema.mutable", "true");
     configureCluster(1)
         .addConfig(DEFAULT_CONFIGSET_NAME, new File(ExternalPaths.DEFAULT_CONFIGSET).toPath())
+            .addConfig(MULTILINGUAL_CONFIGSET_NAME, new File(ExternalPaths.MULTILINGUAL_CONFIGSET).toPath())
         .configure();
     // SchemaDesignerAPI depends on the blob store
     CollectionAdminRequest.createCollection(BLOB_STORE_ID, 1, 1).process(cluster.getSolrClient());
@@ -92,6 +94,13 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     assertNotNull(cc);
     schemaDesignerAPI = new SchemaDesignerAPI(cc);
   }
+
+  public void testAbleToLoadMultilingual() {
+    ManagedIndexSchema multilingualSchema  = schemaDesignerAPI.getSchemaForConfigSet("multilingual");
+    assertNotNull(multilingualSchema);
+
+  }
+
 
   public void testTSV() throws Exception {
     String configSet = "testTSV";
@@ -459,8 +468,8 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     assertDesignerSettings(expSettings, rsp.getValues());
 
     List<String> filesInResp = (List<String>) rsp.getValues().get("files");
-    assertEquals(5, filesInResp.size());
-    assertTrue(filesInResp.contains("lang/stopwords_en.txt"));
+    assertEquals(4, filesInResp.size());
+ //   assertTrue(filesInResp.contains("lang/stopwords_en.txt"));
 
     rspData = rsp.getValues().toSolrParams();
     schemaVersion = rspData.getInt(SCHEMA_VERSION_PARAM);
