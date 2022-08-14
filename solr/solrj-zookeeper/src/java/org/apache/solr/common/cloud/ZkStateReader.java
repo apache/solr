@@ -1256,7 +1256,7 @@ public class ZkStateReader implements SolrCloseable {
    * @param cacheForMillis The minimum number of milliseconds to maintain a cache for the specified
    *     collection's properties. Setting a {@code CollectionPropsWatcher} will override this value
    *     and retain the cache for the life of the watcher. A lack of changes in zookeeper may allow
-   *     the caching to remain for a greater duration up to the cycle time of {@link CacheCleaner}.
+   *     the caching to remain for a greater duration up to the cycle time of {@code CacheCleaner}.
    *     Passing zero for this value will explicitly remove the cached copy if and only if it is due
    *     to expire and no watch exists. Any positive value will extend the expiration time if
    *     required.
