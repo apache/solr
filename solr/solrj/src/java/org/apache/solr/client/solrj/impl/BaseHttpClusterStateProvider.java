@@ -45,9 +45,6 @@ import org.slf4j.LoggerFactory;
 public abstract class BaseHttpClusterStateProvider implements ClusterStateProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  // nocommit : to move these from ZkStateReader
-  public static final String URL_SCHEME = "urlScheme";
-
   private String urlScheme;
   volatile Set<String> liveNodes;
   long liveNodesTimestamp = 0;
@@ -341,7 +338,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
 
   @Override
   public Object getClusterProperty(String propertyName) {
-    if (propertyName.equals(URL_SCHEME)) {
+    if (propertyName.equals(ClusterState.URL_SCHEME)) {
       return this.urlScheme;
     }
     return getClusterProperties().get(propertyName);

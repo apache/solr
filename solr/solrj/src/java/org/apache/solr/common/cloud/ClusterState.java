@@ -45,6 +45,10 @@ import org.slf4j.LoggerFactory;
  * @lucene.experimental
  */
 public class ClusterState implements JSONWriter.Writable {
+
+  /** Cluster Prop that is http or https. */
+  public static final String URL_SCHEME = "urlScheme";
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map<String, CollectionRef> collectionStates, immutableCollectionStates;

@@ -90,9 +90,6 @@ public abstract class CloudSolrClient extends SolrClient {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  // nocommit : to move this from ZkStateReader
-  private static final String URL_SCHEME = "urlScheme";
-
   private volatile String defaultCollection;
   // no of times collection state to be reloaded if stale state error is received
   private static final int MAX_STALE_RETRIES =
@@ -1066,7 +1063,7 @@ public abstract class CloudSolrClient extends SolrClient {
         requestRLTGenerator.getReplicaListTransformer(reqParams);
 
     final ClusterStateProvider provider = getClusterStateProvider();
-    final String urlScheme = provider.getClusterProperty(URL_SCHEME, "http");
+    final String urlScheme = provider.getClusterProperty(ClusterState.URL_SCHEME, "http");
     final Set<String> liveNodes = provider.getLiveNodes();
 
     final List<String> theUrlList = new ArrayList<>(); // we populate this as follows...
