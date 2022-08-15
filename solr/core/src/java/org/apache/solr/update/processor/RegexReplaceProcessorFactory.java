@@ -16,10 +16,11 @@
  */
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.update.processor.FieldValueMutatingUpdateProcessor.valueMutator;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
@@ -27,32 +28,21 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-import static org.apache.solr.update.processor.FieldValueMutatingUpdateProcessor.valueMutator;
-
-
 /**
- * An updated processor that applies a configured regex to any 
- * CharSequence values found in the selected fields, and replaces 
- * any matches with the configured replacement string.
+ * An updated processor that applies a configured regex to any CharSequence values found in the
+ * selected fields, and replaces any matches with the configured replacement string.
  *
- * <p>
- * By default this processor applies itself to no fields.
- * </p>
+ * <p>By default this processor applies itself to no fields.
  *
- * <p>
- * By default, <code>literalReplacement</code> is set to true, in which
- * case, the <code>replacement</code> string will be treated literally by
- * quoting via {@link Matcher#quoteReplacement(String)}. And hence, '\'
- * and '$' signs will not be processed. When <code>literalReplacement</code>
- * is set to false, one can perform backreference operations and capture
- * group substitutions.
- * </p>
+ * <p>By default, <code>literalReplacement</code> is set to true, in which case, the <code>
+ * replacement</code> string will be treated literally by quoting via {@link
+ * Matcher#quoteReplacement(String)}. And hence, '\' and '$' signs will not be processed. When
+ * <code>literalReplacement</code> is set to false, one can perform backreference operations and
+ * capture group substitutions.
  *
- * <p>
- * For example, with the configuration listed below, any sequence of multiple 
- * whitespace characters found in values for field named <code>title</code> 
- * or <code>content</code> will be replaced by a single space character.
- * </p>
+ * <p>For example, with the configuration listed below, any sequence of multiple whitespace
+ * characters found in values for field named <code>title</code> or <code>content</code> will be
+ * replaced by a single space character.
  *
  * <pre class="prettyprint">
  * &lt;processor class="solr.RegexReplaceProcessorFactory"&gt;
@@ -67,11 +57,11 @@ import static org.apache.solr.update.processor.FieldValueMutatingUpdateProcessor
  * @since 4.0.0
  */
 public final class RegexReplaceProcessorFactory extends FieldMutatingUpdateProcessorFactory {
-  
+
   private static final String REPLACEMENT_PARAM = "replacement";
   private static final String PATTERN_PARAM = "pattern";
   private static final String LITERAL_REPLACEMENT_PARAM = "literalReplacement";
-  
+
   private Pattern pattern;
   private String replacement;
   // by default, literalReplacementEnabled is set to true to allow backward compatibility
@@ -83,21 +73,20 @@ public final class RegexReplaceProcessorFactory extends FieldMutatingUpdateProce
     Object patternParam = args.remove(PATTERN_PARAM);
 
     if (patternParam == null) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, 
-                              "Missing required init parameter: " + PATTERN_PARAM);
+      throw new SolrException(
+          ErrorCode.SERVER_ERROR, "Missing required init parameter: " + PATTERN_PARAM);
     }
-    
+
     try {
-      pattern = Pattern.compile(patternParam.toString());      
+      pattern = Pattern.compile(patternParam.toString());
     } catch (PatternSyntaxException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, 
-                              "Invalid regex: " + patternParam, e);
-    }                                
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid regex: " + patternParam, e);
+    }
 
     Object replacementParam = args.remove(REPLACEMENT_PARAM);
     if (replacementParam == null) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, 
-                              "Missing required init parameter: " + REPLACEMENT_PARAM);
+      throw new SolrException(
+          ErrorCode.SERVER_ERROR, "Missing required init parameter: " + REPLACEMENT_PARAM);
     }
 
     Boolean literalReplacement = args.removeBooleanArg(LITERAL_REPLACEMENT_PARAM);
@@ -115,27 +104,27 @@ public final class RegexReplaceProcessorFactory extends FieldMutatingUpdateProce
     super.init(args);
   }
 
-  /** 
+  /**
    * @see FieldMutatingUpdateProcessor#SELECT_NO_FIELDS
    */
   @Override
-  protected FieldMutatingUpdateProcessor.FieldNameSelector 
-    getDefaultSelector(final SolrCore core) {
+  protected FieldMutatingUpdateProcessor.FieldNameSelector getDefaultSelector(final SolrCore core) {
 
     return FieldMutatingUpdateProcessor.SELECT_NO_FIELDS;
-
   }
-  
+
   @Override
-  public UpdateRequestProcessor getInstance(SolrQueryRequest request,
-                                            SolrQueryResponse response,
-                                            UpdateRequestProcessor next) {
-    return valueMutator(getSelector(), next, src -> {
-      if (src instanceof CharSequence) {
-        CharSequence txt = (CharSequence) src;
-        return pattern.matcher(txt).replaceAll(replacement);
-      }
-      return src;
-    });
+  public UpdateRequestProcessor getInstance(
+      SolrQueryRequest request, SolrQueryResponse response, UpdateRequestProcessor next) {
+    return valueMutator(
+        getSelector(),
+        next,
+        src -> {
+          if (src instanceof CharSequence) {
+            CharSequence txt = (CharSequence) src;
+            return pattern.matcher(txt).replaceAll(replacement);
+          }
+          return src;
+        });
   }
 }

@@ -22,41 +22,54 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
-
 import org.apache.commons.math3.stat.inference.MannWhitneyUTest;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.params.StreamParams;
 
-
-public class MannWhitneyUEvaluator extends RecursiveNumericListEvaluator implements ManyValueWorker {
+public class MannWhitneyUEvaluator extends RecursiveNumericListEvaluator
+    implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
 
-  public MannWhitneyUEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+  public MannWhitneyUEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
 
-    if(containedEvaluators.size() < 1){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting at least one value but found %d",expression,containedEvaluators.size()));
+    if (containedEvaluators.size() < 1) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting at least one value but found %d",
+              expression,
+              containedEvaluators.size()));
     }
   }
 
   @Override
   public Object doWork(Object... values) throws IOException {
     @SuppressWarnings({"unchecked"})
-    List<double[]> mannWhitneyUInput = Arrays.stream(values)
-        .map(value -> ((List<Number>) value).stream().mapToDouble(Number::doubleValue).toArray())
-        .collect(Collectors.toList());
-    if(mannWhitneyUInput.size() == 2) {
+    List<double[]> mannWhitneyUInput =
+        Arrays.stream(values)
+            .map(
+                value -> ((List<Number>) value).stream().mapToDouble(Number::doubleValue).toArray())
+            .collect(Collectors.toList());
+    if (mannWhitneyUInput.size() == 2) {
       MannWhitneyUTest mannwhitneyutest = new MannWhitneyUTest();
       double u = mannwhitneyutest.mannWhitneyU(mannWhitneyUInput.get(0), mannWhitneyUInput.get(1));
-      double p = mannwhitneyutest.mannWhitneyUTest(mannWhitneyUInput.get(0), mannWhitneyUInput.get(1));
+      double p =
+          mannwhitneyutest.mannWhitneyUTest(mannWhitneyUInput.get(0), mannWhitneyUInput.get(1));
       Tuple tuple = new Tuple();
       tuple.put("u-statistic", u);
       tuple.put(StreamParams.P_VALUE, p);
       return tuple;
-    }else{
-      throw new IOException(String.format(Locale.ROOT,"%s(...) only works with a list of 2 arrays but a list of %d array(s) was provided.", constructingFactory.getFunctionName(getClass()), mannWhitneyUInput.size()));
+    } else {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "%s(...) only works with a list of 2 arrays but a list of %d array(s) was provided.",
+              constructingFactory.getFunctionName(getClass()),
+              mannWhitneyUInput.size()));
     }
   }
 }

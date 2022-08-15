@@ -20,16 +20,20 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
-
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 
 public class MockSimpleZkController extends ZkController {
 
-  public MockSimpleZkController(CoreContainer cc, String zkServerAddress, int zkClientConnectTimeout, CloudConfig cloudConfig,
-      Supplier<List<CoreDescriptor>> registerOnReconnect) throws InterruptedException, TimeoutException, IOException {
-    super(cc, zkServerAddress, zkClientConnectTimeout, cloudConfig, registerOnReconnect);
+  public MockSimpleZkController(
+      CoreContainer cc,
+      String zkServerAddress,
+      int zkClientConnectTimeout,
+      CloudConfig cloudConfig,
+      Supplier<List<CoreDescriptor>> descriptorsSupplier)
+      throws InterruptedException, TimeoutException, IOException {
+    super(cc, zkServerAddress, zkClientConnectTimeout, cloudConfig, descriptorsSupplier);
   }
 
   @Override

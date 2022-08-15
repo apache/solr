@@ -18,15 +18,39 @@
 package org.apache.solr.handler.api;
 
 import org.apache.solr.api.ApiBag;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
-import org.apache.solr.handler.admin.api.*;
+import org.apache.solr.handler.admin.api.AddReplicaAPI;
+import org.apache.solr.handler.admin.api.AddReplicaPropertyAPI;
+import org.apache.solr.handler.admin.api.BalanceShardUniqueAPI;
+import org.apache.solr.handler.admin.api.CollectionStatusAPI;
+import org.apache.solr.handler.admin.api.CreateShardAPI;
+import org.apache.solr.handler.admin.api.DeleteCollectionAPI;
+import org.apache.solr.handler.admin.api.DeleteReplicaAPI;
+import org.apache.solr.handler.admin.api.DeleteReplicaPropertyAPI;
+import org.apache.solr.handler.admin.api.DeleteShardAPI;
+import org.apache.solr.handler.admin.api.ForceLeaderAPI;
+import org.apache.solr.handler.admin.api.MigrateDocsAPI;
+import org.apache.solr.handler.admin.api.ModifyCollectionAPI;
+import org.apache.solr.handler.admin.api.MoveReplicaAPI;
+import org.apache.solr.handler.admin.api.RebalanceLeadersAPI;
+import org.apache.solr.handler.admin.api.ReloadCollectionAPI;
+import org.apache.solr.handler.admin.api.SetCollectionPropertyAPI;
+import org.apache.solr.handler.admin.api.SplitShardAPI;
+import org.apache.solr.handler.admin.api.SyncShardAPI;
+import org.apache.solr.handler.configsets.CreateConfigSetAPI;
+import org.apache.solr.handler.configsets.DeleteConfigSetAPI;
+import org.apache.solr.handler.configsets.ListConfigSetsAPI;
+import org.apache.solr.handler.configsets.UploadConfigSetAPI;
+import org.apache.solr.handler.configsets.UploadConfigSetFileAPI;
 
 /**
  * Registers annotation-based V2 APIs with an {@link ApiBag}
  *
- * Historically these APIs were registered directly by code in {@link org.apache.solr.core.CoreContainer}, but as the
- * number of annotation-based v2 APIs grew this became increasingly unwieldy.  So {@link ApiRegistrar} serves as a single
- * place where all APIs under a particular path can be registered together.
+ * <p>Historically these APIs were registered directly by code in {@link
+ * org.apache.solr.core.CoreContainer}, but as the number of annotation-based v2 APIs grew this
+ * became increasingly unwieldy. So {@link ApiRegistrar} serves as a single place where all APIs
+ * under a particular path can be registered together.
  */
 public class ApiRegistrar {
 
@@ -51,5 +75,16 @@ public class ApiRegistrar {
     apiBag.registerObject(new DeleteShardAPI(collectionsHandler));
     apiBag.registerObject(new SyncShardAPI(collectionsHandler));
     apiBag.registerObject(new ForceLeaderAPI(collectionsHandler));
+    // really this is a replica API, but since there's only 1 API on the replica path, it's included
+    // here for simplicity.
+    apiBag.registerObject(new DeleteReplicaAPI(collectionsHandler));
+  }
+
+  public static void registerConfigsetApis(ApiBag apiBag, CoreContainer container) {
+    apiBag.registerObject(new CreateConfigSetAPI(container));
+    apiBag.registerObject(new DeleteConfigSetAPI(container));
+    apiBag.registerObject(new ListConfigSetsAPI(container));
+    apiBag.registerObject(new UploadConfigSetAPI(container));
+    apiBag.registerObject(new UploadConfigSetFileAPI(container));
   }
 }

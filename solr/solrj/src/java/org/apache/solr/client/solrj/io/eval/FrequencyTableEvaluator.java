@@ -22,9 +22,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-
 import org.apache.commons.math3.stat.Frequency;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -32,34 +30,43 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 public class FrequencyTableEvaluator extends RecursiveNumericEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
 
-  public FrequencyTableEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public FrequencyTableEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
 
-    if(containedEvaluators.size() < 1){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting at least one value but found %d",expression,containedEvaluators.size()));
+    if (containedEvaluators.size() < 1) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting at least one value but found %d",
+              expression,
+              containedEvaluators.size()));
     }
   }
 
   @Override
   public Object doWork(Object... values) throws IOException {
-    if(Arrays.stream(values).anyMatch(item -> null == item)){
+    if (Arrays.stream(values).anyMatch(item -> null == item)) {
       return null;
     }
 
     List<?> sourceValues;
 
-    if(values.length == 1){
-      sourceValues = values[0] instanceof List<?> ? (List<?>)values[0] : Arrays.asList(values[0]);
-    }
-    else
-    {
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting at least one value but found %d",toExpression(constructingFactory),containedEvaluators.size()));
+    if (values.length == 1) {
+      sourceValues = values[0] instanceof List<?> ? (List<?>) values[0] : Arrays.asList(values[0]);
+    } else {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting at least one value but found %d",
+              toExpression(constructingFactory),
+              containedEvaluators.size()));
     }
 
     Frequency frequency = new Frequency();
 
-    for(Object o : sourceValues) {
-      Number number = (Number)o;
+    for (Object o : sourceValues) {
+      Number number = (Number) o;
       frequency.addValue(number.longValue());
     }
 
@@ -67,8 +74,8 @@ public class FrequencyTableEvaluator extends RecursiveNumericEvaluator implement
 
     Iterator<Comparable<?>> iterator = frequency.valuesIterator();
 
-    while(iterator.hasNext()){
-      Long value = (Long)iterator.next();
+    while (iterator.hasNext()) {
+      Long value = (Long) iterator.next();
       Tuple tuple = new Tuple();
       tuple.put("value", value.longValue());
       tuple.put("count", frequency.getCount(value));

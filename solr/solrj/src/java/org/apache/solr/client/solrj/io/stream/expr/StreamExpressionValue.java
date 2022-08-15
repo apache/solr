@@ -18,51 +18,49 @@ package org.apache.solr.client.solrj.io.stream.expr;
 
 import java.util.Objects;
 
-/**
- * Basic string stream expression
- */
+/** Basic string stream expression */
 public class StreamExpressionValue implements StreamExpressionParameter {
-  
+
   private String value;
-  
-  public StreamExpressionValue(String value){
+
+  public StreamExpressionValue(String value) {
     this.value = value;
   }
-  
-  public String getValue(){
+
+  public String getValue() {
     return this.value;
   }
-  
-  public void setValue(String value){
+
+  public void setValue(String value) {
     this.value = value;
   }
-  
-  public StreamExpressionValue withValue(String value){
+
+  public StreamExpressionValue withValue(String value) {
     this.value = value;
     return this;
   }
-  
+
   @Override
-  public String toString(){
+  public String toString() {
     return this.value;
   }
-  
+
   @Override
-  public boolean equals(Object other){
-    if(other.getClass() != StreamExpressionValue.class){
+  public boolean equals(Object other) {
+    if (other.getClass() != StreamExpressionValue.class) {
       return false;
     }
-    
-    StreamExpressionValue check = (StreamExpressionValue)other;
-    
-    if(null == this.value && null == check.value){
+
+    StreamExpressionValue check = (StreamExpressionValue) other;
+
+    if (null == this.value && null == check.value) {
       return true;
     }
-    if(null == this.value || null == check.value){
+    if (null == this.value || null == check.value) {
       return false;
     }
-    
-    return this.value.equals(((StreamExpressionValue)other).value);
+
+    return this.value.equals(((StreamExpressionValue) other).value);
   }
 
   @Override

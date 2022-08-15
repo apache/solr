@@ -20,7 +20,6 @@ package org.apache.solr.schema;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Date;
-
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
@@ -41,60 +40,53 @@ import org.apache.solr.util.DateMathParser;
 
 /**
  * FieldType that can represent any Date/Time with millisecond precision.
- * <p>
- * Date Format for the XML, incoming and outgoing:
- * </p>
- * <blockquote>
- * A date field shall be of the form 1995-12-31T23:59:59Z
- * The trailing "Z" designates UTC time and is mandatory
- * (See below for an explanation of UTC).
- * Optional fractional seconds are allowed, as long as they do not end
- * in a trailing 0 (but any precision beyond milliseconds will be ignored).
- * All other parts are mandatory.
- * </blockquote>
- * <p>
- * This format was derived to be standards compliant (ISO 8601) and is a more
- * restricted form of the
- * <a href="http://www.w3.org/TR/xmlschema-2/#dateTime-canonical-representation">canonical
- * representation of dateTime</a> from XML schema part 2.  Examples...
- * </p>
- * <ul>
- *   <li>1995-12-31T23:59:59Z</li>
- *   <li>1995-12-31T23:59:59.9Z</li>
- *   <li>1995-12-31T23:59:59.99Z</li>
- *   <li>1995-12-31T23:59:59.999Z</li>
- * </ul>
- * <p>
- * Note that <code>DatePointField</code> is lenient with regards to parsing fractional
- * seconds that end in trailing zeros and will ensure that those values
- * are indexed in the correct canonical format.
- * </p>
- * <p>
- * This FieldType also supports incoming "Date Math" strings for computing
- * values by adding/rounding internals of time relative either an explicit
- * datetime (in the format specified above) or the literal string "NOW",
- * ie: "NOW+1YEAR", "NOW/DAY", "1995-12-31T23:59:59.999Z+5MINUTES", etc...
- * -- see {@link DateMathParser} for more examples.
- * </p>
- * <p>
- * <b>NOTE:</b> Although it is possible to configure a <code>DatePointField</code>
- * instance with a default value of "<code>NOW</code>" to compute a timestamp
- * of when the document was indexed, this is not advisable when using SolrCloud
- * since each replica of the document may compute a slightly different value.
- * {@link TimestampUpdateProcessorFactory} is recommended instead.
- * </p>
  *
- * <p>
- * Explanation of "UTC"...
- * </p>
+ * <p>Date Format for the XML, incoming and outgoing:
+ *
  * <blockquote>
- * "In 1970 the Coordinated Universal Time system was devised by an
- * international advisory group of technical experts within the International
- * Telecommunication Union (ITU).  The ITU felt it was best to designate a
- * single abbreviation for use in all languages in order to minimize
- * confusion.  Since unanimous agreement could not be achieved on using
- * either the English word order, CUT, or the French word order, TUC, the
- * acronym UTC was chosen as a compromise."
+ *
+ * A date field shall be of the form 1995-12-31T23:59:59Z The trailing "Z" designates UTC time and
+ * is mandatory (See below for an explanation of UTC). Optional fractional seconds are allowed, as
+ * long as they do not end in a trailing 0 (but any precision beyond milliseconds will be ignored).
+ * All other parts are mandatory.
+ *
+ * </blockquote>
+ *
+ * <p>This format was derived to be standards compliant (ISO 8601) and is a more restricted form of
+ * the <a href="http://www.w3.org/TR/xmlschema-2/#dateTime-canonical-representation">canonical
+ * representation of dateTime</a> from XML schema part 2. Examples...
+ *
+ * <ul>
+ *   <li>1995-12-31T23:59:59Z
+ *   <li>1995-12-31T23:59:59.9Z
+ *   <li>1995-12-31T23:59:59.99Z
+ *   <li>1995-12-31T23:59:59.999Z
+ * </ul>
+ *
+ * <p>Note that <code>DatePointField</code> is lenient with regards to parsing fractional seconds
+ * that end in trailing zeros and will ensure that those values are indexed in the correct canonical
+ * format.
+ *
+ * <p>This FieldType also supports incoming "Date Math" strings for computing values by
+ * adding/rounding internals of time relative either an explicit datetime (in the format specified
+ * above) or the literal string "NOW", ie: "NOW+1YEAR", "NOW/DAY",
+ * "1995-12-31T23:59:59.999Z+5MINUTES", etc... -- see {@link DateMathParser} for more examples.
+ *
+ * <p><b>NOTE:</b> Although it is possible to configure a <code>DatePointField</code> instance with
+ * a default value of "<code>NOW</code>" to compute a timestamp of when the document was indexed,
+ * this is not advisable when using SolrCloud since each replica of the document may compute a
+ * slightly different value. {@link TimestampUpdateProcessorFactory} is recommended instead.
+ *
+ * <p>Explanation of "UTC"...
+ *
+ * <blockquote>
+ *
+ * "In 1970 the Coordinated Universal Time system was devised by an international advisory group of
+ * technical experts within the International Telecommunication Union (ITU). The ITU felt it was
+ * best to designate a single abbreviation for use in all languages in order to minimize confusion.
+ * Since unanimous agreement could not be achieved on using either the English word order, CUT, or
+ * the French word order, TUC, the acronym UTC was chosen as a compromise."
+ *
  * </blockquote>
  *
  * @see PointField
@@ -105,7 +97,6 @@ public class DatePointField extends PointField implements DateValueFieldType {
     type = NumberType.DATE;
   }
 
-
   @Override
   public Object toNativeType(Object val) {
     if (val instanceof CharSequence) {
@@ -115,7 +106,13 @@ public class DatePointField extends PointField implements DateValueFieldType {
   }
 
   @Override
-  public Query getPointRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive, boolean maxInclusive) {
+  public Query getPointRangeQuery(
+      QParser parser,
+      SchemaField field,
+      String min,
+      String max,
+      boolean minInclusive,
+      boolean maxInclusive) {
     long actualMin, actualMax;
     if (min == null) {
       actualMin = Long.MIN_VALUE;
@@ -155,7 +152,8 @@ public class DatePointField extends PointField implements DateValueFieldType {
 
   @Override
   protected Query getExactQuery(SchemaField field, String externalVal) {
-    return LongPoint.newExactQuery(field.getName(), DateMathParser.parseMath(null, externalVal).getTime());
+    return LongPoint.newExactQuery(
+        field.getName(), DateMathParser.parseMath(null, externalVal).getTime());
   }
 
   @Override
@@ -166,7 +164,7 @@ public class DatePointField extends PointField implements DateValueFieldType {
     }
     long[] values = new long[externalVals.size()];
     int i = 0;
-    for (String val:externalVals) {
+    for (String val : externalVals) {
       values[i] = DateMathParser.parseMath(null, val).getTime();
       i++;
     }
@@ -175,7 +173,8 @@ public class DatePointField extends PointField implements DateValueFieldType {
 
   @Override
   protected String indexedToReadable(BytesRef indexedForm) {
-    return Instant.ofEpochMilli(LongPoint.decodeDimension(indexedForm.bytes, indexedForm.offset)).toString();
+    return Instant.ofEpochMilli(LongPoint.decodeDimension(indexedForm.bytes, indexedForm.offset))
+        .toString();
   }
 
   @Override
@@ -208,9 +207,8 @@ public class DatePointField extends PointField implements DateValueFieldType {
 
   @Override
   public IndexableField createField(SchemaField field, Object value) {
-    Date date = (value instanceof Date)
-        ? ((Date)value)
-        : DateMathParser.parseMath(null, value.toString());
+    Date date =
+        (value instanceof Date) ? ((Date) value) : DateMathParser.parseMath(null, value.toString());
     return new LongPoint(field.getName(), date.getTime());
   }
 
@@ -251,4 +249,3 @@ public class DatePointField extends PointField implements DateValueFieldType {
     }
   }
 }
-

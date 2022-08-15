@@ -258,7 +258,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
           $scope.sampleMessage = "Please upload or paste some sample documents to build the '" + $scope.currentSchema + "' schema.";
         }
       }
-    });
+    }, $scope.errorHandler);
   };
 
   $scope.showNewSchemaDialog = function () {
@@ -752,7 +752,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
 
       $scope.schemaDiffExists = !(diff.fields == null && diff.fieldTypes == null && dynamicFields == null && diff.copyFields == null);
       $scope.showDiff = true;
-    });
+    }, $scope.errorHandler);
   }
 
   $scope.togglePublish = function (event) {
@@ -850,7 +850,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
       if (data.analysis && data.analysis["field_names"]) {
         $scope.result = processFieldAnalysisData(data.analysis["field_names"][field]);
       }
-    });
+    }, $scope.errorHandler);
   };
 
   $scope.changeLanguages = function () {
@@ -916,7 +916,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
         $scope.showAnalysis = false;
         $scope.selectNodeInTree(id);
       }
-    });
+    }, $scope.errorHandler);
   };
   
   function fieldNodes(src, type) {
@@ -1850,7 +1850,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
         }
       }
       $scope.onSelectQueryResultsNode(nodeId);
-    });
+    }, $scope.errorHandler);
   };
 
   $scope.toggleShowAnalysisJson = function () {

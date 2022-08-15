@@ -16,24 +16,31 @@
  */
 package org.apache.solr.cloud.overseer;
 
-import java.lang.invoke.MethodHandles;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-
-import org.apache.solr.client.solrj.cloud.DistribStateManager;
-import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.common.cloud.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CONFIGNAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
+
+import java.lang.invoke.MethodHandles;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import org.apache.solr.client.solrj.cloud.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.PerReplicaStates;
+import org.apache.solr.common.cloud.PerReplicaStatesOps;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CollectionMutator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -70,13 +77,18 @@ public class CollectionMutator {
       if (shardParentZkSession != null) {
         sliceProps.put("shard_parent_zk_session", shardParentZkSession);
       }
-      if (shardParentNode != null)  {
+      if (shardParentNode != null) {
         sliceProps.put("shard_parent_node", shardParentNode);
       }
-      collection = updateSlice(collectionName, collection, new Slice(shardId, replicas, sliceProps, collectionName));
+      collection =
+          updateSlice(
+              collectionName, collection, new Slice(shardId, replicas, sliceProps, collectionName));
       return new ZkWriteCommand(collectionName, collection);
     } else {
-      log.error("Unable to create Shard: {} because it already exists in collection: {}", shardId, collectionName);
+      log.error(
+          "Unable to create Shard: {} because it already exists in collection: {}",
+          shardId,
+          collectionName);
       return ZkStateWriter.NO_OP;
     }
   }
@@ -109,19 +121,20 @@ public class CollectionMutator {
         if (val == null) continue;
         boolean enable = Boolean.parseBoolean(val);
         if (enable == coll.isPerReplicaState()) {
-          //already enabled
+          // already enabled
           log.error("trying to set perReplicaState to {} from {}", val, coll.isPerReplicaState());
           continue;
         }
-        replicaOps = PerReplicaStatesOps.modifyCollection(coll, enable, PerReplicaStates.fetch(coll.getZNode(), zkClient, null));
+        replicaOps =
+            PerReplicaStatesOps.modifyCollection(
+                coll, enable, PerReplicaStates.fetch(coll.getZNode(), zkClient, null));
       }
-
 
       if (message.containsKey(prop)) {
         hasAnyOps = true;
-        if (message.get(prop) == null)  {
+        if (message.get(prop) == null) {
           props.remove(prop);
-        } else  {
+        } else {
           // rename key from collection.configName to configName
           if (prop.equals(COLL_CONF)) {
             props.put(CONFIGNAME_PROP, message.get(prop));
@@ -129,7 +142,8 @@ public class CollectionMutator {
             props.put(prop, message.get(prop));
           }
         }
-        if (prop == REPLICATION_FACTOR) { //SOLR-11676 : keep NRT_REPLICAS and REPLICATION_FACTOR in sync
+        // SOLR-11676 : keep NRT_REPLICAS and REPLICATION_FACTOR in sync
+        if (prop == REPLICATION_FACTOR) {
           props.put(NRT_REPLICAS, message.get(REPLICATION_FACTOR));
         }
       }
@@ -152,16 +166,20 @@ public class CollectionMutator {
 
     assert !props.containsKey(COLL_CONF);
 
-    DocCollection collection = new DocCollection(coll.getName(), coll.getSlicesMap(), props, coll.getRouter(), coll.getZNodeVersion());
-    if (replicaOps == null){
+    DocCollection collection =
+        new DocCollection(
+            coll.getName(), coll.getSlicesMap(), props, coll.getRouter(), coll.getZNodeVersion());
+    if (replicaOps == null) {
       return new ZkWriteCommand(coll.getName(), collection);
     } else {
       return new ZkWriteCommand(coll.getName(), collection, replicaOps, true);
     }
   }
 
-  public static DocCollection updateSlice(String collectionName, DocCollection collection, Slice slice) {
-    Map<String, Slice> slices = new LinkedHashMap<>(collection.getSlicesMap()); // make a shallow copy
+  public static DocCollection updateSlice(
+      String collectionName, DocCollection collection, Slice slice) {
+    Map<String, Slice> slices =
+        new LinkedHashMap<>(collection.getSlicesMap()); // make a shallow copy
     slices.put(slice.getName(), slice);
     return collection.copyWithSlices(slices);
   }
@@ -173,10 +191,10 @@ public class CollectionMutator {
   static boolean checkKeyExistence(ZkNodeProps message, String key) {
     String value = message.getStr(key);
     if (value == null || value.trim().length() == 0) {
-      log.error("Skipping invalid Overseer message because it has no {} specified '{}'", key, message);
+      log.error(
+          "Skipping invalid Overseer message because it has no {} specified '{}'", key, message);
       return false;
     }
     return true;
   }
 }
-

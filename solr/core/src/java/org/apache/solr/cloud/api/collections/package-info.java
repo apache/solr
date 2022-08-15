@@ -14,10 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * Package related to internal implementations of the SolrCloud collections api
- */
+
+/** Package related to internal implementations of the SolrCloud collections api */
 package org.apache.solr.cloud.api.collections;
-
-

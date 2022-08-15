@@ -22,12 +22,10 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
-import org.apache.solr.client.solrj.io.stream.StreamingTest;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -36,14 +34,12 @@ import org.apache.solr.common.params.SolrParams;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-/**
- *  All base tests will be done with CloudSolrStream. Under the covers CloudSolrStream uses SolrStream so
- *  SolrStream will get fully exercised through these tests.
- *
- **/
 
-@LuceneTestCase.Slow
-@LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
+/**
+ * All base tests will be done with CloudSolrStream. Under the covers CloudSolrStream uses
+ * SolrStream so SolrStream will get fully exercised through these tests.
+ */
+@LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40", "Lucene41", "Lucene42", "Lucene45"})
 public class GraphTest extends SolrCloudTestCase {
 
   private static final String COLLECTION = "collection1";
@@ -55,21 +51,26 @@ public class GraphTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(2)
-        .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
+        .addConfig(
+            "conf",
+            getFile("solrj")
+                .toPath()
+                .resolve("solr")
+                .resolve("configsets")
+                .resolve("streaming")
+                .resolve("conf"))
         .configure();
-    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
+        .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 2);
   }
 
   @Before
   public void cleanIndex() throws Exception {
-    new UpdateRequest()
-        .deleteByQuery("*:*")
-        .commit(cluster.getSolrClient(), COLLECTION);
+    new UpdateRequest().deleteByQuery("*:*").commit(cluster.getSolrClient(), COLLECTION);
   }
 
   @Test
-  // commented 15-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testShortestPathStream() throws Exception {
 
     new UpdateRequest()
@@ -98,20 +99,11 @@ public class GraphTest extends SolrCloudTestCase {
     SolrClientCache cache = new SolrClientCache();
     context.setSolrClientCache(cache);
 
-    SolrParams sParams = StreamingTest.mapParams("fq", "predicate_s:knows");
+    SolrParams sParams = params("fq", "predicate_s:knows");
 
-    stream = new ShortestPathStream(zkHost,
-                                                       "collection1",
-                                                       "jim",
-                                                       "steve",
-                                                        "from_s",
-                                                        "to_s",
-                                                        sParams,
-                                                        20,
-                                                        3,
-                                                        6);
-
-
+    stream =
+        new ShortestPathStream(
+            zkHost, "collection1", "jim", "steve", "from_s", "to_s", sParams, 20, 3, 6);
 
     stream.setStreamContext(context);
     paths = new HashSet<>();
@@ -119,27 +111,20 @@ public class GraphTest extends SolrCloudTestCase {
 
     assertTrue(tuples.size() == 2);
 
-    for(Tuple tuple : tuples) {
+    for (Tuple tuple : tuples) {
       paths.add(tuple.getStrings("path").toString());
     }
 
     assertTrue(paths.contains("[jim, dave, alex, steve]"));
     assertTrue(paths.contains("[jim, stan, mary, steve]"));
 
-    //Test with batch size of 1
+    // Test with batch size of 1
 
-    sParams = StreamingTest.mapParams("fq", "predicate_s:knows");
+    sParams = params("fq", "predicate_s:knows");
 
-    stream = new ShortestPathStream(zkHost,
-        "collection1",
-        "jim",
-        "steve",
-        "from_s",
-        "to_s",
-        sParams,
-        1,
-        3,
-        6);
+    stream =
+        new ShortestPathStream(
+            zkHost, "collection1", "jim", "steve", "from_s", "to_s", sParams, 1, 3, 6);
 
     stream.setStreamContext(context);
     paths = new HashSet<>();
@@ -147,75 +132,52 @@ public class GraphTest extends SolrCloudTestCase {
 
     assertTrue(tuples.size() == 2);
 
-    for(Tuple tuple : tuples) {
+    for (Tuple tuple : tuples) {
       paths.add(tuple.getStrings("path").toString());
     }
 
     assertTrue(paths.contains("[jim, dave, alex, steve]"));
     assertTrue(paths.contains("[jim, stan, mary, steve]"));
 
-    //Test with bad predicate
+    // Test with bad predicate
 
-    sParams = StreamingTest.mapParams("fq", "predicate_s:crap");
+    sParams = params("fq", "predicate_s:crap");
 
-    stream = new ShortestPathStream(zkHost,
-        "collection1",
-        "jim",
-        "steve",
-        "from_s",
-        "to_s",
-        sParams,
-        1,
-        3,
-        6);
+    stream =
+        new ShortestPathStream(
+            zkHost, "collection1", "jim", "steve", "from_s", "to_s", sParams, 1, 3, 6);
 
     stream.setStreamContext(context);
     tuples = getTuples(stream);
 
     assertTrue(tuples.size() == 0);
 
-    //Test with depth 2
+    // Test with depth 2
 
-    sParams = StreamingTest.mapParams("fq", "predicate_s:knows");
+    sParams = params("fq", "predicate_s:knows");
 
-    stream = new ShortestPathStream(zkHost,
-        "collection1",
-        "jim",
-        "steve",
-        "from_s",
-        "to_s",
-        sParams,
-        1,
-        3,
-        2);
+    stream =
+        new ShortestPathStream(
+            zkHost, "collection1", "jim", "steve", "from_s", "to_s", sParams, 1, 3, 2);
 
     stream.setStreamContext(context);
     tuples = getTuples(stream);
 
     assertTrue(tuples.size() == 0);
 
+    // Take out alex
+    sParams = params("fq", "predicate_s:knows NOT to_s:alex");
 
-
-    //Take out alex
-    sParams = StreamingTest.mapParams("fq", "predicate_s:knows NOT to_s:alex");
-
-    stream = new ShortestPathStream(zkHost,
-        "collection1",
-        "jim",
-        "steve",
-        "from_s",
-        "to_s",
-        sParams,
-        10,
-        3,
-        6);
+    stream =
+        new ShortestPathStream(
+            zkHost, "collection1", "jim", "steve", "from_s", "to_s", sParams, 10, 3, 6);
 
     stream.setStreamContext(context);
     paths = new HashSet<>();
     tuples = getTuples(stream);
     assertTrue(tuples.size() == 1);
 
-    for(Tuple tuple : tuples) {
+    for (Tuple tuple : tuples) {
       paths.add(tuple.getStrings("path").toString());
     }
 
@@ -227,9 +189,9 @@ public class GraphTest extends SolrCloudTestCase {
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
     tupleStream.open();
     List<Tuple> tuples = new ArrayList<>();
-    for(;;) {
+    for (; ; ) {
       Tuple t = tupleStream.read();
-      if(t.EOF) {
+      if (t.EOF) {
         break;
       } else {
         tuples.add(t);
@@ -240,13 +202,11 @@ public class GraphTest extends SolrCloudTestCase {
   }
 
   public boolean assertLong(Tuple tuple, String fieldName, long l) throws Exception {
-    long lv = (long)tuple.get(fieldName);
-    if(lv != l) {
-      throw new Exception("Longs not equal:"+l+" : "+lv);
+    long lv = (long) tuple.get(fieldName);
+    if (lv != l) {
+      throw new Exception("Longs not equal:" + l + " : " + lv);
     }
 
     return true;
   }
-
 }
-

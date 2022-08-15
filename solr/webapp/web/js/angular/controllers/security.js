@@ -142,9 +142,10 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
     return (!obj || (Array.isArray(obj) && obj.length === 0)) ? "null" : $scope.displayList(obj);
   };
 
+  // TODO: Use new permissions.js
   $scope.predefinedPermissions = ["collection-admin-edit", "collection-admin-read", "core-admin-read", "core-admin-edit", "zk-read",
     "read", "update", "all", "config-edit", "config-read", "schema-read", "schema-edit", "security-edit", "security-read",
-    "metrics-read", "filestore-read", "filestore-write", "package-edit", "package-read"].sort();
+    "metrics-read", "health", "filestore-read", "filestore-write", "package-edit", "package-read"].sort();
 
   $scope.predefinedPermissionCollection = {"read":"*", "update":"*", "config-edit":"*", "config-read":"*", "schema-edit":"*", "schema-read":"*"};
 
@@ -282,8 +283,12 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
   };
 
   $scope.hasPermission = function(permissionName) {
-    var rolesForPermission = $scope.permissionsTable.filter(p => permissionName === p.name).flatMap(p => p.roles);
-    return (rolesForPermission.length > 0 && roleMatch(rolesForPermission, $scope.getCurrentUserRoles()));
+    var matched = $scope.permissionsTable.filter(p => permissionName === p.name);
+    if (matched.length === 0 && permissionName !== "all") {
+      // this permission is not explicitly defined, but "all" will apply if it is defined
+      matched = $scope.permissionsTable.filter(p => "all" === p.name);
+    }
+    return matched.length > 0 && roleMatch(matched.flatMap(p => p.roles), $scope.getCurrentUserRoles());
   };
 
   $scope.refreshSecurityPanel = function() {
@@ -407,8 +412,8 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
       return false;
     }
 
-    if (!password.match(strongPasswordRegex)) {
-      $scope.validationError = "Password not strong enough! Must contain at least one lowercase letter, one uppercase letter, one digit, and one of these special characters: !@#$%^&*_-[]()";
+    if (password.length < 15 && !password.match(strongPasswordRegex)) {
+      $scope.validationError = "Password not strong enough! Must have length >= 15 or contain at least one lowercase letter, one uppercase letter, one digit, and one of these special characters: !@#$%^&*_-[]()";
       return false;
     }
 

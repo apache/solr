@@ -26,9 +26,9 @@ import org.apache.solr.search.SortSpec;
  */
 public class GroupingSpecification {
 
-  private String[] fields = new String[]{};
-  private String[] queries = new String[]{};
-  private String[] functions = new String[]{};
+  private String[] fields = new String[] {};
+  private String[] queries = new String[] {};
+  private String[] functions = new String[] {};
   private SortSpec groupSortSpec;
   private SortSpec withinGroupSortSpec;
   private boolean includeGroupCount;
@@ -128,5 +128,4 @@ public class GroupingSpecification {
   public void setWithinGroupSortSpec(SortSpec withinGroupSortSpec) {
     this.withinGroupSortSpec = withinGroupSortSpec;
   }
-
 }

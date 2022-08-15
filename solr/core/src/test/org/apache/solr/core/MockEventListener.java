@@ -16,15 +16,14 @@
  */
 package org.apache.solr.core;
 
-import org.apache.solr.search.SolrIndexSearcher;
-
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.solr.search.SolrIndexSearcher;
 
 public class MockEventListener implements SolrEventListener {
 
-  final static AtomicInteger createCounter = new AtomicInteger(0);
+  static final AtomicInteger createCounter = new AtomicInteger(0);
 
-  public static final int getCreateCount() {
+  public static int getCreateCount() {
     return createCounter.intValue();
   }
 
@@ -36,16 +35,14 @@ public class MockEventListener implements SolrEventListener {
   public void postCommit() {
     /* NOOP */
   }
-  
+
   @Override
   public void postSoftCommit() {
     /* NOOP */
   }
 
   @Override
-  public void newSearcher(SolrIndexSearcher newSearcher, 
-                          SolrIndexSearcher currentSearcher) {
+  public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {
     /* NOOP */
   }
-
 }

@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
-
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
@@ -27,25 +26,38 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class DescribeEvaluator extends RecursiveNumericEvaluator implements OneValueWorker {
   protected static final long serialVersionUID = 1L;
-  
-  public DescribeEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+
+  public DescribeEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
-    
-    if(1 != containedEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting exactly one value but found %d",expression,containedEvaluators.size()));
+
+    if (1 != containedEvaluators.size()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting exactly one value but found %d",
+              expression,
+              containedEvaluators.size()));
     }
   }
-  
+
   @Override
   public Object doWork(Object value) throws IOException {
-    
-    if(!(value instanceof List<?>)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting a numeric list but found %s", toExpression(constructingFactory), value.getClass().getSimpleName()));
+
+    if (!(value instanceof List<?>)) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting a numeric list but found %s",
+              toExpression(constructingFactory),
+              value.getClass().getSimpleName()));
     }
-    
+
     // we know each value is a BigDecimal or a list of BigDecimals
     DescriptiveStatistics descriptiveStatistics = new DescriptiveStatistics();
-    ((List<?>)value).stream().mapToDouble(innerValue -> ((Number)innerValue).doubleValue()).forEach(innerValue -> descriptiveStatistics.addValue(innerValue));
+    ((List<?>) value)
+        .stream()
+            .mapToDouble(innerValue -> ((Number) innerValue).doubleValue())
+            .forEach(innerValue -> descriptiveStatistics.addValue(innerValue));
 
     Tuple tuple = new Tuple();
     tuple.put("max", descriptiveStatistics.getMax());
@@ -62,5 +74,5 @@ public class DescribeEvaluator extends RecursiveNumericEvaluator implements OneV
     tuple.put("sumsq", descriptiveStatistics.getSumsq());
 
     return tuple;
-  }  
+  }
 }

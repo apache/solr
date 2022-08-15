@@ -16,21 +16,19 @@
  */
 package org.apache.solr.util;
 
-import org.apache.lucene.util.TestUtil;
-import org.apache.solr.SolrTestCase;
-
-import java.util.Set;
 import java.util.HashSet;
-import java.util.Random;
-import java.util.TimeZone;
 import java.util.Locale;
+import java.util.Random;
+import java.util.Set;
+import java.util.TimeZone;
+import org.apache.lucene.tests.util.TestUtil;
+import org.apache.solr.SolrTestCase;
 
 public class TimeZoneUtilsTest extends SolrTestCase {
 
-  private static void assertSameRules(final String label,
-                                      final TimeZone expected,
-                                      final TimeZone actual) {
-    
+  private static void assertSameRules(
+      final String label, final TimeZone expected, final TimeZone actual) {
+
     if (null == expected && null == actual) return;
 
     assertNotNull(label + ": expected is null", expected);
@@ -38,19 +36,18 @@ public class TimeZoneUtilsTest extends SolrTestCase {
 
     final boolean same = expected.hasSameRules(actual);
 
-    assertTrue(label + ": " + expected.toString() + " [[NOT SAME RULES]] " + 
-               actual.toString(),
-               same);
+    assertTrue(label + ": " + expected + " [[NOT SAME RULES]] " + actual, same);
   }
 
-  public void testValidIds() throws Exception {
+  public void testValidIds() {
 
     final Set<String> idsTested = new HashSet<>();
 
     // brain dead: anything the JVM supports, should work
     for (String validId : TimeZone.getAvailableIDs()) {
-      assertTrue(validId + " not found in list of known ids",
-                 TimeZoneUtils.KNOWN_TIMEZONE_IDS.contains(validId));
+      assertTrue(
+          validId + " not found in list of known ids",
+          TimeZoneUtils.KNOWN_TIMEZONE_IDS.contains(validId));
 
       final TimeZone expected = TimeZone.getTimeZone(validId);
       final TimeZone actual = TimeZoneUtils.getTimeZone(validId);
@@ -58,58 +55,83 @@ public class TimeZoneUtilsTest extends SolrTestCase {
 
       idsTested.add(validId);
     }
-    
-    assertEquals("TimeZone.getAvailableIDs vs TimeZoneUtils.KNOWN_TIMEZONE_IDS",
-                 TimeZoneUtils.KNOWN_TIMEZONE_IDS.size(), idsTested.size());
+
+    assertEquals(
+        "TimeZone.getAvailableIDs vs TimeZoneUtils.KNOWN_TIMEZONE_IDS",
+        TimeZoneUtils.KNOWN_TIMEZONE_IDS.size(),
+        idsTested.size());
   }
 
-  public void testCustom() throws Exception {
+  public void testCustom() {
 
-    for (String input : new String[] {"GMT-00", "GMT+00", "GMT-0", "GMT+0", 
-                                      "GMT+08","GMT+8", "GMT-08","GMT-8",
-                                      "GMT+0800","GMT+08:00",
-                                      "GMT-0800","GMT-08:00",
-                                      "GMT+23", "GMT+2300",
-                                      "GMT-23", "GMT-2300"}) {
-      assertSameRules(input, 
-                      TimeZone.getTimeZone(input),
-                      TimeZoneUtils.getTimeZone(input));
+    for (String input :
+        new String[] {
+          "GMT-00",
+          "GMT+00",
+          "GMT-0",
+          "GMT+0",
+          "GMT+08",
+          "GMT+8",
+          "GMT-08",
+          "GMT-8",
+          "GMT+0800",
+          "GMT+08:00",
+          "GMT-0800",
+          "GMT-08:00",
+          "GMT+23",
+          "GMT+2300",
+          "GMT-23",
+          "GMT-2300"
+        }) {
+      assertSameRules(input, TimeZone.getTimeZone(input), TimeZoneUtils.getTimeZone(input));
     }
   }
 
-  public void testStupidIKnowButIDontTrustTheJVM() throws Exception {
+  public void testStupidIKnowButIDontTrustTheJVM() {
 
-    for (String input : new String[] {"GMT-00", "GMT+00", "GMT-0", "GMT+0", 
-                                      "GMT+08","GMT+8", "GMT-08","GMT-8",
-                                      "GMT+0800","GMT+08:00",
-                                      "GMT-0800","GMT-08:00",
-                                      "GMT+23", "GMT+2300",
-                                      "GMT-23", "GMT-2300"}) {
-      assertSameRules(input, 
-                      TimeZone.getTimeZone(input),
-                      TimeZone.getTimeZone(input));
+    for (String input :
+        new String[] {
+          "GMT-00",
+          "GMT+00",
+          "GMT-0",
+          "GMT+0",
+          "GMT+08",
+          "GMT+8",
+          "GMT-08",
+          "GMT-8",
+          "GMT+0800",
+          "GMT+08:00",
+          "GMT-0800",
+          "GMT-08:00",
+          "GMT+23",
+          "GMT+2300",
+          "GMT-23",
+          "GMT-2300"
+        }) {
+      assertSameRules(input, TimeZone.getTimeZone(input), TimeZone.getTimeZone(input));
     }
   }
 
-  public void testInvalidInput() throws Exception {
+  public void testInvalidInput() {
 
     final String giberish = "giberish";
-    assumeFalse("This test assumes that " + giberish + " is not a valid tz id",
-                TimeZoneUtils.KNOWN_TIMEZONE_IDS.contains(giberish));
+    assumeFalse(
+        "This test assumes that " + giberish + " is not a valid tz id",
+        TimeZoneUtils.KNOWN_TIMEZONE_IDS.contains(giberish));
     assertNull(giberish, TimeZoneUtils.getTimeZone(giberish));
 
-
-    for (String malformed : new String[] {"GMT+72", "GMT0800", 
-                                          "GMT+2400" , "GMT+24:00",
-                                          "GMT+11-30" , "GMT+11:-30",
-                                          "GMT+0080" , "GMT+00:80"}) {
+    for (String malformed :
+        new String[] {
+          "GMT+72", "GMT0800",
+          "GMT+2400", "GMT+24:00",
+          "GMT+11-30", "GMT+11:-30",
+          "GMT+0080", "GMT+00:80"
+        }) {
       assertNull(malformed, TimeZoneUtils.getTimeZone(malformed));
     }
   }
 
-
-
-  public void testRandom() throws Exception {
+  public void testRandom() {
     final String ONE_DIGIT = "%1d";
     final String TWO_DIGIT = "%02d";
 
@@ -119,16 +141,14 @@ public class TimeZoneUtilsTest extends SolrTestCase {
       int hour = TestUtil.nextInt(r, 0, 23);
       int min = TestUtil.nextInt(r, 0, 59);
 
-      String hours = String.format(Locale.ROOT, 
-                                   (r.nextBoolean() ? ONE_DIGIT : TWO_DIGIT),
-                                   hour);
+      String hours = String.format(Locale.ROOT, (r.nextBoolean() ? ONE_DIGIT : TWO_DIGIT), hour);
       String mins = String.format(Locale.ROOT, TWO_DIGIT, min);
-      String input = "GMT" + (r.nextBoolean()?"+":"-") 
-        + hours + (r.nextBoolean() ? "" : ((r.nextBoolean()?":":"") + mins));
-      assertSameRules(input,  
-                      TimeZone.getTimeZone(input),
-                      TimeZoneUtils.getTimeZone(input));
+      String input =
+          "GMT"
+              + (r.nextBoolean() ? "+" : "-")
+              + hours
+              + (r.nextBoolean() ? "" : ((r.nextBoolean() ? ":" : "") + mins));
+      assertSameRules(input, TimeZone.getTimeZone(input), TimeZoneUtils.getTimeZone(input));
     }
   }
 }
-

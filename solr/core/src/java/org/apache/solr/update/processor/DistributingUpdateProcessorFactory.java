@@ -17,21 +17,20 @@
 package org.apache.solr.update.processor;
 
 /**
- * A marker interface for denoting that a factory is responsible for handling
- * distributed communication of updates across a SolrCloud cluster.
- * 
+ * A marker interface for denoting that a factory is responsible for handling distributed
+ * communication of updates across a SolrCloud cluster.
+ *
  * @see UpdateRequestProcessorChain#init
  * @see UpdateRequestProcessorChain#createProcessor
  */
 public interface DistributingUpdateProcessorFactory {
 
   /**
-   * Internal param used to specify the current phase of a distributed update, 
-   * not intended for use by clients.  Any non-blank value can be used to 
-   * indicate to the <code>UpdateRequestProcessorChain</code> that factories 
-   * prior to the <code>DistributingUpdateProcessorFactory</code> can be skipped.
-   * Implementations of this interface may use the non-blank values any way 
-   * they wish.
+   * Internal param used to specify the current phase of a distributed update, not intended for use
+   * by clients. Any non-blank value can be used to indicate to the <code>
+   * UpdateRequestProcessorChain</code> that factories prior to the <code>
+   * DistributingUpdateProcessorFactory</code> can be skipped. Implementations of this interface may
+   * use the non-blank values any way they wish.
    */
   public static final String DISTRIB_UPDATE_PARAM = "update.distrib";
 }

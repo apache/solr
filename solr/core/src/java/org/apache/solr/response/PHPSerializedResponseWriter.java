@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
@@ -33,13 +32,12 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.ReturnFields;
 
-
 /**
  * A description of the PHP serialization format can be found here:
  * http://www.hurring.com/scott/code/perl/serialize/
  */
 public class PHPSerializedResponseWriter implements QueryResponseWriter {
-  static String CONTENT_TYPE_PHP_UTF8="text/x-php-serialized;charset=UTF-8";
+  static String CONTENT_TYPE_PHP_UTF8 = "text/x-php-serialized;charset=UTF-8";
 
   private String contentType = CONTENT_TYPE_PHP_UTF8;
 
@@ -50,7 +48,7 @@ public class PHPSerializedResponseWriter implements QueryResponseWriter {
       this.contentType = contentType;
     }
   }
-  
+
   @Override
   public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     PHPSerializedWriter w = new PHPSerializedWriter(writer, req, rsp);
@@ -80,51 +78,50 @@ class PHPSerializedWriter extends JSONWriter {
   @Override
   public void writeResponse() throws IOException {
     Boolean omitHeader = req.getParams().getBool(CommonParams.OMIT_HEADER);
-    if(omitHeader != null && omitHeader) rsp.removeResponseHeader();
+    if (omitHeader != null && omitHeader) rsp.removeResponseHeader();
     writeNamedList(null, rsp.getValues());
   }
-  
+
   @Override
   public void writeNamedList(String name, NamedList<?> val) throws IOException {
     writeNamedListAsMapMangled(name, val);
   }
 
   @Override
-  public void writeStartDocumentList(String name, 
-      long start, int size, long numFound, Float maxScore, Boolean numFoundExact) throws IOException
-  {
+  public void writeStartDocumentList(
+      String name, long start, int size, long numFound, Float maxScore, Boolean numFoundExact)
+      throws IOException {
     writeMapOpener(headerSize(maxScore, numFoundExact));
-    writeKey("numFound",false);
-    writeLong(null,numFound);
-    writeKey("start",false);
-    writeLong(null,start);
+    writeKey("numFound", false);
+    writeLong(null, numFound);
+    writeKey("start", false);
+    writeLong(null, start);
 
-    if (maxScore!=null) {
-      writeKey("maxScore",false);
-      writeFloat(null,maxScore);
+    if (maxScore != null) {
+      writeKey("maxScore", false);
+      writeFloat(null, maxScore);
     }
     if (numFoundExact != null) {
-      writeKey("numFoundExact",false);
+      writeKey("numFoundExact", false);
       writeBool(null, numFoundExact);
     }
-    writeKey("docs",false);
+    writeKey("docs", false);
     writeArrayOpener(size);
   }
 
   @Override
-  public void writeEndDocumentList() throws IOException
-  {
+  public void writeEndDocumentList() throws IOException {
     writeArrayCloser(); // doc list
     writeMapCloser();
   }
-  
+
   @Override
-  public void writeSolrDocument(String name, SolrDocument doc, ReturnFields returnFields, int idx) throws IOException
-  {
+  public void writeSolrDocument(String name, SolrDocument doc, ReturnFields returnFields, int idx)
+      throws IOException {
     writeKey(idx, false);
-    
-    LinkedHashMap <String,Object> single = new LinkedHashMap<>();
-    LinkedHashMap <String,Object> multi = new LinkedHashMap<>();
+
+    LinkedHashMap<String, Object> single = new LinkedHashMap<>();
+    LinkedHashMap<String, Object> multi = new LinkedHashMap<>();
 
     for (String fname : doc.getFieldNames()) {
       if (returnFields != null && !returnFields.wantsField(fname)) {
@@ -134,20 +131,20 @@ class PHPSerializedWriter extends JSONWriter {
       Object val = doc.getFieldValue(fname);
       if (val instanceof Collection) {
         multi.put(fname, val);
-      }else{
+      } else {
         single.put(fname, val);
       }
     }
 
     writeMapOpener(single.size() + multi.size());
-    for(Map.Entry<String, Object> entry : single.entrySet()){
+    for (Map.Entry<String, Object> entry : single.entrySet()) {
       String fname = entry.getKey();
       Object val = entry.getValue();
       writeKey(fname, true);
       writeVal(fname, val);
     }
-    
-    for(Map.Entry<String, Object> entry : multi.entrySet()){
+
+    for (Map.Entry<String, Object> entry : multi.entrySet()) {
       String fname = entry.getKey();
       writeKey(fname, true);
 
@@ -158,19 +155,19 @@ class PHPSerializedWriter extends JSONWriter {
         writeArrayOpener(1);
         writeVal(fname, val);
         writeArrayCloser();
-      }else{
+      } else {
         writeVal(fname, val);
       }
     }
-    
+
     writeMapCloser();
   }
 
-  
   @Override
-  public void writeArray(String name, Object[] val) throws IOException {
+  public void writeArray(String name, Object[] val, boolean raw) throws IOException {
+    assert !raw;
     writeMapOpener(val.length);
-    for(int i=0; i < val.length; i++) {
+    for (int i = 0; i < val.length; i++) {
       writeKey(i, false);
       writeVal(String.valueOf(i), val[i]);
     }
@@ -178,23 +175,24 @@ class PHPSerializedWriter extends JSONWriter {
   }
 
   @Override
-  public void writeArray(String name, Iterator<?> val) throws IOException {
+  public void writeArray(String name, Iterator<?> val, boolean raw) throws IOException {
+    assert !raw;
     ArrayList<Object> vals = new ArrayList<>();
-    while( val.hasNext() ) {
+    while (val.hasNext()) {
       vals.add(val.next());
     }
-    writeArray(name, vals.toArray());
+    writeArray(name, vals.toArray(), false);
   }
-  
+
   @Override
   public void writeMapOpener(int size) throws IOException, IllegalArgumentException {
     // negative size value indicates that something has gone wrong
     if (size < 0) {
       throw new IllegalArgumentException("Map size must not be negative");
     }
-    writer.write("a:"+size+":{");
+    writer.write("a:" + size + ":{");
   }
-  
+
   @Override
   public void writeMapSeparator() throws IOException {
     /* NOOP */
@@ -211,10 +209,10 @@ class PHPSerializedWriter extends JSONWriter {
     if (size < 0) {
       throw new IllegalArgumentException("Array size must not be negative");
     }
-    writer.write("a:"+size+":{");
+    writer.write("a:" + size + ":{");
   }
 
-  @Override  
+  @Override
   public void writeArraySeparator() throws IOException {
     /* NOOP */
   }
@@ -223,7 +221,7 @@ class PHPSerializedWriter extends JSONWriter {
   public void writeArrayCloser() throws IOException {
     writer.write('}');
   }
-  
+
   @Override
   public void writeNull(String name) throws IOException {
     writer.write("N;");
@@ -233,6 +231,7 @@ class PHPSerializedWriter extends JSONWriter {
   public void writeKey(String fname, boolean needsEscaping) throws IOException {
     writeStr(null, fname, needsEscaping);
   }
+
   void writeKey(int val, boolean needsEscaping) throws IOException {
     writeInt(null, String.valueOf(val));
   }
@@ -246,30 +245,30 @@ class PHPSerializedWriter extends JSONWriter {
   public void writeBool(String name, String val) throws IOException {
     writeBool(name, val.charAt(0) == 't');
   }
-  
+
   @Override
   public void writeInt(String name, String val) throws IOException {
-    writer.write("i:"+val+";");
+    writer.write("i:" + val + ";");
   }
-  
+
   @Override
   public void writeLong(String name, String val) throws IOException {
-    writeInt(name,val);
+    writeInt(name, val);
   }
 
   @Override
   public void writeFloat(String name, String val) throws IOException {
-    writeDouble(name,val);
+    writeDouble(name, val);
   }
 
   @Override
   public void writeDouble(String name, String val) throws IOException {
-    writer.write("d:"+val+";");
+    writer.write("d:" + val + ";");
   }
 
   @Override
   public void writeStr(String name, String val, boolean needsEscaping) throws IOException {
-    // serialized PHP strings don't need to be escaped at all, however the 
+    // serialized PHP strings don't need to be escaped at all, however the
     // string size reported needs be the number of bytes rather than chars.
     utf8 = ArrayUtil.grow(utf8, val.length() * UnicodeUtil.MAX_UTF8_BYTES_PER_CHAR);
     final int nBytes = UnicodeUtil.UTF16toUTF8(val, 0, val.length(), utf8);

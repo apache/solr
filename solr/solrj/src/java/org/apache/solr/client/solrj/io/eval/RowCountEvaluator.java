@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.Locale;
-
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
@@ -32,10 +31,15 @@ public class RowCountEvaluator extends RecursiveObjectEvaluator implements OneVa
 
   @Override
   public Object doWork(Object value) throws IOException {
-    if(!(value instanceof Matrix)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for value, expecting a Matrix",toExpression(constructingFactory), value.getClass().getSimpleName()));
+    if (!(value instanceof Matrix)) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - found type %s for value, expecting a Matrix",
+              toExpression(constructingFactory),
+              value.getClass().getSimpleName()));
     } else {
-      Matrix matrix = (Matrix)value;
+      Matrix matrix = (Matrix) value;
       return matrix.getRowCount();
     }
   }

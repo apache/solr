@@ -17,20 +17,27 @@
 
 package org.apache.solr.handler.api;
 
+import java.util.List;
 import java.util.Map;
 
-/**
- * Utilities helpful for common V2 API declaration tasks.
- */
+/** Utilities helpful for common V2 API declaration tasks. */
 public class V2ApiUtils {
-  private V2ApiUtils() { /* Private ctor prevents instantiation */ }
+  private V2ApiUtils() {
+    /* Private ctor prevents instantiation */
+  }
 
-  public static void flattenMapWithPrefix(Map<String, Object> toFlatten, Map<String, Object> destination,
-                                    String additionalPrefix) {
+  public static void flattenMapWithPrefix(
+      Map<String, Object> toFlatten, Map<String, Object> destination, String additionalPrefix) {
     if (toFlatten == null || toFlatten.isEmpty() || destination == null) {
       return;
     }
 
     toFlatten.forEach((k, v) -> destination.put(additionalPrefix + k, v));
+  }
+
+  public static void flattenToCommaDelimitedString(
+      Map<String, Object> destination, List<String> toFlatten, String newKey) {
+    final String flattenedStr = String.join(",", toFlatten);
+    destination.put(newKey, flattenedStr);
   }
 }
