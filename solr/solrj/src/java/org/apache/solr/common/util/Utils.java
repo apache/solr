@@ -80,14 +80,10 @@ import org.noggit.JSONWriter;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
 public class Utils {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  // nocommit : to move this from ZkStateReader
-  private static final String NODE_NAME_PROP = "node_name";
 
   @SuppressWarnings({"rawtypes"})
   public static Map getDeepCopy(Map<?, ?> map, int maxDepth) {
@@ -773,16 +769,6 @@ public class Utils {
 
   public static long timeElapsed(TimeSource timeSource, long start, TimeUnit unit) {
     return unit.convert(timeSource.getTimeNs() - NANOSECONDS.convert(start, unit), NANOSECONDS);
-  }
-
-  public static String getMDCNode() {
-    String s = MDC.get(NODE_NAME_PROP);
-    if (s == null) return null;
-    if (s.startsWith("n:")) {
-      return s.substring(2);
-    } else {
-      return null;
-    }
   }
 
   public static <T> T handleExp(Logger logger, T def, Callable<T> c) {
