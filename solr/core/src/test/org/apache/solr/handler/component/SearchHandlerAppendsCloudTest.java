@@ -21,7 +21,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -46,21 +45,21 @@ public class SearchHandlerAppendsCloudTest extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
 
     // decide collection name ...
-    COLLECTION = "collection"+(1+random().nextInt(100)) ;
+    COLLECTION = "collection" + (1 + random().nextInt(100));
     // ... and shard/replica/node numbers
-    NUM_SHARDS = (1+random().nextInt(3)); // 1..3
-    NUM_REPLICAS = (1+random().nextInt(2)); // 1..2
+    NUM_SHARDS = (1 + random().nextInt(3)); // 1..3
+    NUM_REPLICAS = (1 + random().nextInt(2)); // 1..2
 
     // create and configure cluster
-    configureCluster(NUM_SHARDS*NUM_REPLICAS /* nodeCount */)
+    configureCluster(NUM_SHARDS * NUM_REPLICAS /* nodeCount */)
         .addConfig("conf", configset("cloud-dynamic"))
         .configure();
 
     // create an empty collection
-    CollectionAdminRequest
-    .createCollection(COLLECTION, "conf", NUM_SHARDS, NUM_REPLICAS)
-    .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, ZkStateReader.from(cluster.getSolrClient()), false, true, DEFAULT_TIMEOUT);
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", NUM_SHARDS, NUM_REPLICAS)
+        .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+        COLLECTION, ZkStateReader.from(cluster.getSolrClient()), false, true, DEFAULT_TIMEOUT);
   }
 
   @Test
@@ -72,28 +71,32 @@ public class SearchHandlerAppendsCloudTest extends SolrCloudTestCase {
     final String forage_t = "forage_t";
 
     // add custom handlers (the exact custom handler names should not matter)
-    final String[] searchHandlerNames = new String[] {
-        null,
-        "/custom_select"+random().nextInt(),
-        "/custom_select"+random().nextInt()
+    final String[] searchHandlerNames =
+        new String[] {
+          null, "/custom_select" + random().nextInt(), "/custom_select" + random().nextInt()
         };
-    final String[] searchHandlerAppends = new String[] {
-        null,
-        "    'appends' : { 'fq' : '-"+forage_t+":pollen' }, \n",
-        "    'appends' : { 'fq' : '-"+forage_t+":nectar' }, \n",
+    final String[] searchHandlerAppends =
+        new String[] {
+          null,
+          "    'appends' : { 'fq' : '-" + forage_t + ":pollen' }, \n",
+          "    'appends' : { 'fq' : '-" + forage_t + ":nectar' }, \n",
         };
     for (int ii = 0; ii < searchHandlerNames.length; ++ii) {
       if (searchHandlerNames[ii] != null) {
-        cluster.getSolrClient().request(
-            new ConfigRequest(
-                "{\n" +
-                "  'add-requesthandler': {\n" +
-                "    'name' : '"+searchHandlerNames[ii]+"',\n" +
-                "    'class' : 'org.apache.solr.handler.component.SearchHandler',\n" +
-                searchHandlerAppends[ii] +
-                "  }\n" +
-                "}"),
-            COLLECTION);
+        cluster
+            .getSolrClient()
+            .request(
+                new ConfigRequest(
+                    "{\n"
+                        + "  'add-requesthandler': {\n"
+                        + "    'name' : '"
+                        + searchHandlerNames[ii]
+                        + "',\n"
+                        + "    'class' : 'org.apache.solr.handler.component.SearchHandler',\n"
+                        + searchHandlerAppends[ii]
+                        + "  }\n"
+                        + "}"),
+                COLLECTION);
       }
     }
 
@@ -107,24 +110,26 @@ public class SearchHandlerAppendsCloudTest extends SolrCloudTestCase {
     }
 
     // search (with all possible search handler combinations)
-    for (boolean shortCircuit : new boolean[] { false, true }) {
-      for (boolean withFilterQuery : new boolean[] { false, true }) {
+    for (boolean shortCircuit : new boolean[] {false, true}) {
+      for (boolean withFilterQuery : new boolean[] {false, true}) {
         for (int ii = 0; ii < searchHandlerNames.length; ++ii) {
           for (int jj = 0; jj < searchHandlerNames.length; ++jj) {
 
             final int numAppendedFilterQueries;
-            if (searchHandlerNames[ii] != null &&
-                searchHandlerNames[jj] != null &&
-                !searchHandlerNames[ii].equals(searchHandlerNames[jj])) {
+            if (searchHandlerNames[ii] != null
+                && searchHandlerNames[jj] != null
+                && !searchHandlerNames[ii].equals(searchHandlerNames[jj])) {
               numAppendedFilterQueries = 2; // both handlers appended their filter query
             } else if (searchHandlerNames[ii] != null || searchHandlerNames[jj] != null) {
-              numAppendedFilterQueries = 1; // one filter query from one handler or the same filter query from both handlers
+              numAppendedFilterQueries =
+                  1; // one filter query from one handler or the same filter query from both
+              // handlers
             } else {
               numAppendedFilterQueries = 0; // no custom handlers, no appended filter queries
             }
 
             // compose the query
-            final SolrQuery solrQuery =  new SolrQuery(bee_t+":bee");
+            final SolrQuery solrQuery = new SolrQuery(bee_t + ":bee");
             if (searchHandlerNames[ii] != null) {
               solrQuery.setParam(CommonParams.QT, searchHandlerNames[ii]);
             }
@@ -132,48 +137,52 @@ public class SearchHandlerAppendsCloudTest extends SolrCloudTestCase {
               solrQuery.setParam(ShardParams.SHARDS_QT, searchHandlerNames[jj]);
             }
             if (withFilterQuery) {
-              solrQuery.setFilterQueries("-"+forage_t+":water");
+              solrQuery.setFilterQueries("-" + forage_t + ":water");
             }
             solrQuery.setParam("shortCircuit", shortCircuit);
             solrQuery.setParam(CommonParams.DEBUG, CommonParams.QUERY);
 
             // make the query
-            final QueryResponse queryResponse = new QueryRequest(solrQuery)
-                .process(cluster.getSolrClient(), COLLECTION);
+            final QueryResponse queryResponse =
+                new QueryRequest(solrQuery).process(cluster.getSolrClient(), COLLECTION);
 
             // analyse the response
             final StringBuilder contextInfo = new StringBuilder();
-            contextInfo.append("COLLECTION="+COLLECTION);
-            contextInfo.append(",NUM_SHARDS="+NUM_SHARDS);
-            contextInfo.append(",NUM_REPLICAS="+NUM_REPLICAS);
-            contextInfo.append(",shortCircuit="+shortCircuit);
-            contextInfo.append(",withFilterQuery="+withFilterQuery);
-            contextInfo.append(",ii="+ii);
-            contextInfo.append(",jj="+jj);
+            contextInfo.append("COLLECTION=" + COLLECTION);
+            contextInfo.append(",NUM_SHARDS=" + NUM_SHARDS);
+            contextInfo.append(",NUM_REPLICAS=" + NUM_REPLICAS);
+            contextInfo.append(",shortCircuit=" + shortCircuit);
+            contextInfo.append(",withFilterQuery=" + withFilterQuery);
+            contextInfo.append(",ii=" + ii);
+            contextInfo.append(",jj=" + jj);
 
-            final int expectedNumFilterQueries = (withFilterQuery ? 1 : 0) + numAppendedFilterQueries;
+            final int expectedNumFilterQueries =
+                (withFilterQuery ? 1 : 0) + numAppendedFilterQueries;
 
             assertNotNull(queryResponse);
             final Map<String, Object> debugMap = queryResponse.getDebugMap();
             assertNotNull(debugMap);
-            final List<?> filterQueriesList = (List<?>)debugMap.getOrDefault("filter_queries", Collections.EMPTY_LIST);
+            final List<?> filterQueriesList =
+                (List<?>) debugMap.getOrDefault("filter_queries", Collections.EMPTY_LIST);
             final Set<?> filterQueriesSet = new HashSet<>(filterQueriesList);
 
-            contextInfo.append(",filterQueriesList="+filterQueriesList.toString());
+            contextInfo.append(",filterQueriesList=" + filterQueriesList.toString());
 
-            if (searchHandlerNames[ii] != null &&
-                (searchHandlerNames[jj] == null || searchHandlerNames[jj].equals(searchHandlerNames[ii]))) {
-              assertEquals(contextInfo.toString(), expectedNumFilterQueries, filterQueriesSet.size());
+            if (searchHandlerNames[ii] != null
+                && (searchHandlerNames[jj] == null
+                    || searchHandlerNames[jj].equals(searchHandlerNames[ii]))) {
+              assertEquals(
+                  contextInfo.toString(), expectedNumFilterQueries, filterQueriesSet.size());
               // SOLR-10059: sometimes (but not always) filterQueriesList contains duplicates
               continue;
             }
 
-            assertEquals(contextInfo.toString(), expectedNumFilterQueries, filterQueriesList.size());
+            assertEquals(
+                contextInfo.toString(), expectedNumFilterQueries, filterQueriesList.size());
             assertEquals(contextInfo.toString(), filterQueriesSet.size(), filterQueriesList.size());
           }
         }
       }
     }
   }
-
 }
