@@ -49,8 +49,7 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
         .configure();
 
     CollectionAdminRequest.createCollection(COLLECTION_NAME, "config", 1, 1)
-        .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
-
+        .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION_NAME, 1, 1);
   }
 

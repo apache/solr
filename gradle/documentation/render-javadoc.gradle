@@ -280,6 +280,7 @@ class RenderJavadocTask extends DefaultTask {
     def optionsFile = project.file("${getTemporaryDir()}/javadoc-options.txt")
 
     // create the directory, so relative link calculation knows that it's a directory:
+    project.delete(outputDir);
     outputDir.mkdirs();
 
     def opts = []

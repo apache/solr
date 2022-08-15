@@ -39,9 +39,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
 
     final CloudSolrClient client = cluster.getSolrClient();
 
-    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
-        .processAndWait(client, DEFAULT_TIMEOUT);
-
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(client);
     cluster.waitForActiveCollection(COLLECTION, 2, 2);
 
     String id = "id";

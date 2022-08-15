@@ -251,9 +251,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     TimeOut timeOut = new TimeOut(5000, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
     timeOut.waitFor(
         "Timeout on waiting for c1 to show up in cluster state",
-        () ->
-            reader.getClusterState().getCollectionRef("c1") != null
-                && reader.getClusterState().getCollectionRef("c1").get() != null);
+        () -> reader.getClusterState().getCollectionOrNull("c1") != null);
 
     ClusterState.CollectionRef ref = reader.getClusterState().getCollectionRef("c1");
     assertFalse(ref.isLazilyLoaded());
@@ -299,7 +297,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     clusterState = writer.writePendingUpdates();
     timeOut.waitFor(
         "Timeout on waiting for c1 to be removed from cluster state",
-        () -> reader.getClusterState().getCollectionRef("c1").get() == null);
+        () -> reader.getClusterState().getCollectionOrNull("c1") == null);
 
     reader.unregisterCore("c1");
     // re-add the same collection
@@ -312,9 +310,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     // reader.forceUpdateCollection("c1");
     timeOut.waitFor(
         "Timeout on waiting for c1 to show up in cluster state again",
-        () ->
-            reader.getClusterState().getCollectionRef("c1") != null
-                && reader.getClusterState().getCollectionRef("c1").get() != null);
+        () -> reader.getClusterState().getCollectionOrNull("c1") != null);
     ref = reader.getClusterState().getCollectionRef("c1");
     assertFalse(ref.isLazilyLoaded());
     assertEquals(0, ref.get().getZNodeVersion());
