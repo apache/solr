@@ -232,7 +232,7 @@ public class ZkStateReader implements SolrCloseable {
       var provider = (ZkClientClusterStateProvider) solrClient.getClusterStateProvider();
       return provider.getZkStateReader();
     } catch (ClassCastException e) {
-      throw new IllegalArgumentException("client has no Zk stateReader", e);
+      throw new IllegalArgumentException("client must be ZK based", e);
     }
   }
 
