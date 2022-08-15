@@ -468,7 +468,7 @@ public class SolrZkClient implements Closeable {
     }
     metrics.writes.increment();
     if (data != null) {
-      metrics.bytesWritten.increment();
+      metrics.bytesWritten.add(data.length);
     }
     return result;
 
