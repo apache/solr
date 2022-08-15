@@ -21,8 +21,8 @@
  This example schema is the recommended starting point for users.
  It should be kept correct and concise, usable out-of-the-box.
 
- If you are interested in Multilingual search with Solr, please see the
- seperate multilingual configset.
+ If you are interested in language specific search with Solr, please see the
+ seperate _multilingual configset.
 
  For more information, on how to customize this file, please see
  https://solr.apache.org/guide/solr/latest/indexing-guide/schema-elements.html
