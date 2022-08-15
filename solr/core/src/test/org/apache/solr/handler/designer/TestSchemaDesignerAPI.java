@@ -96,12 +96,6 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     schemaDesignerAPI = new SchemaDesignerAPI(cc);
   }
 
-  public void testAbleToLoadMultilingual() {
-    ManagedIndexSchema multilingualSchema =
-        schemaDesignerAPI.getSchemaForConfigSet(MULTILINGUAL_CONFIGSET_NAME);
-    assertNotNull(multilingualSchema);
-  }
-
   public void testTSV() throws Exception {
     String configSet = "testTSV";
 
@@ -469,7 +463,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
 
     List<String> filesInResp = (List<String>) rsp.getValues().get("files");
     // we have regular protwords etc, and now the english specific ones...
-    assertEquals(7, filesInResp.size());
+    assertEquals(6, filesInResp.size());
     assertTrue(filesInResp.contains("lang/stopwords_en.txt"));
 
     rspData = rsp.getValues().toSolrParams();
@@ -500,7 +494,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
 
     filesInResp = (List<String>) rsp.getValues().get("files");
     // now it's nine, maybe becasue we now have the /lang/stopwords_en etc
-    assertEquals(9, filesInResp.size());
+    assertEquals(8, filesInResp.size());
     assertTrue(filesInResp.contains("lang/stopwords_fr.txt"));
 
     rspData = rsp.getValues().toSolrParams();
@@ -527,7 +521,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     assertDesignerSettings(expSettings, rsp.getValues());
 
     filesInResp = (List<String>) rsp.getValues().get("files");
-    assertEquals(45, filesInResp.size());
+    assertEquals(44, filesInResp.size());
     assertTrue(filesInResp.contains("lang/stopwords_fr.txt"));
     assertTrue(filesInResp.contains("lang/stopwords_en.txt"));
     assertTrue(filesInResp.contains("lang/stopwords_it.txt"));

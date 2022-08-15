@@ -664,13 +664,11 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     boolean langsUpdated = false;
     String[] languages = req.getParams().getParams(LANGUAGES_PARAM);
     List<String> langs;
-    System.out.println(" in the langs world!");
     if (languages != null) {
       langs =
           languages.length == 0 || (languages.length == 1 && "*".equals(languages[0]))
               ? Collections.emptyList()
               : Arrays.asList(languages);
-      System.out.println("Here are settings ge languages:" + settings.getLanguages());
       if (!langs.equals(settings.getLanguages())) {
         settings.setLanguages(langs);
         langsUpdated = true;
@@ -902,15 +900,6 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
 
   protected String getManagedSchemaZkPath(final String configSet) {
     return getConfigSetZkPath(configSet, DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME);
-  }
-
-  protected ManagedIndexSchema getSchemaForConfigSet(final String configSet) {
-    ManagedIndexSchema schema;
-
-    SolrConfig solrConfig = configSetHelper.loadSolrConfig(configSet);
-    schema = configSetHelper.loadLatestSchema(solrConfig);
-
-    return schema;
   }
 
   protected SchemaDesignerSettings getMutableSchemaForConfigSet(
