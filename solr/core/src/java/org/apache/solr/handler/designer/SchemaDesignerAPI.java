@@ -23,6 +23,7 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.PUT;
 import static org.apache.solr.common.StringUtils.isEmpty;
 import static org.apache.solr.common.params.CommonParams.JSON_MIME;
 import static org.apache.solr.handler.admin.ConfigSetsHandler.DEFAULT_CONFIGSET_NAME;
+import static org.apache.solr.handler.admin.ConfigSetsHandler.MULTILINGUAL_CONFIGSET_NAME;
 import static org.apache.solr.schema.ManagedIndexSchemaFactory.DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME;
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
@@ -89,7 +90,7 @@ import org.slf4j.LoggerFactory;
 public class SchemaDesignerAPI implements SchemaDesignerConstants {
 
   private static final Set<String> excludeConfigSetNames =
-      new HashSet<>(Arrays.asList(DEFAULT_CONFIGSET_NAME, BLOB_STORE_ID));
+      new HashSet<>(Arrays.asList(DEFAULT_CONFIGSET_NAME, MULTILINGUAL_CONFIGSET_NAME, BLOB_STORE_ID));
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
