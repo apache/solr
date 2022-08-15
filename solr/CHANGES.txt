@@ -45,6 +45,7 @@ New Features
 
 * SOLR-14319: Add ability to specify replica types when creating collections in Admin UI. (Richard Goodman, Eric Pugh)
 
+* SOLR-16282: CoreAdminHandler supports custom actions via solr.xml configuration. (Artem Abeleshev, Christine Poerschke)
 
 Improvements
 ---------------------
