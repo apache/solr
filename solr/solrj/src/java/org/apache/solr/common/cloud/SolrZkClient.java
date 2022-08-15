@@ -285,12 +285,13 @@ public class SolrZkClient implements Closeable {
   }
 
   public void delete(final String path, final int version, boolean retryOnConnLoss)
-          throws InterruptedException, KeeperException {
+      throws InterruptedException, KeeperException {
     if (retryOnConnLoss) {
-      zkCmdExecutor.retryOperation(() -> {
-        keeper.delete(path, version);
-        return null;
-      });
+      zkCmdExecutor.retryOperation(
+          () -> {
+            keeper.delete(path, version);
+            return null;
+          });
     } else {
       keeper.delete(path, version);
     }
@@ -335,12 +336,9 @@ public class SolrZkClient implements Closeable {
     return result;
   }
 
-  /**
-   * Returns true if path exists
-   */
+  /** Returns true if path exists */
   public Boolean exists(final String path, boolean retryOnConnLoss)
           throws KeeperException, InterruptedException {
-    metrics.existsChecks.increment();
     Boolean result = null;
     if (retryOnConnLoss) {
       result = zkCmdExecutor.retryOperation(() -> keeper.exists(path, null) != null);
@@ -370,11 +368,10 @@ public class SolrZkClient implements Closeable {
     return result;
   }
 
-  /**
-   * Returns children of the node at the path
-   */
-  public List<String> getChildren(final String path, final Watcher watcher,Stat stat, boolean retryOnConnLoss)
-          throws KeeperException, InterruptedException {
+  /** Returns children of the node at the path */
+  public List<String> getChildren(
+      final String path, final Watcher watcher, Stat stat, boolean retryOnConnLoss)
+      throws KeeperException, InterruptedException {
     List<String> result = null;
     if (retryOnConnLoss) {
       result = zkCmdExecutor.retryOperation(() -> keeper.getChildren(path, wrapWatcher(watcher), stat));
@@ -388,11 +385,10 @@ public class SolrZkClient implements Closeable {
     return result;
   }
 
-  /**
-   * Returns node's data
-   */
-  public byte[] getData(final String path, final Watcher watcher, final Stat stat, boolean retryOnConnLoss)
-          throws KeeperException, InterruptedException {
+  /** Returns node's data */
+  public byte[] getData(
+      final String path, final Watcher watcher, final Stat stat, boolean retryOnConnLoss)
+      throws KeeperException, InterruptedException {
     byte[] result = null;
     if (retryOnConnLoss) {
       result = zkCmdExecutor.retryOperation(() -> keeper.getData(path, wrapWatcher(watcher), stat));
@@ -406,11 +402,10 @@ public class SolrZkClient implements Closeable {
     return result;
   }
 
-  /**
-   * Returns node's state
-   */
-  public Stat setData(final String path, final byte data[], final int version, boolean retryOnConnLoss)
-          throws KeeperException, InterruptedException {
+  /** Returns node's state */
+  public Stat setData(
+      final String path, final byte data[], final int version, boolean retryOnConnLoss)
+      throws KeeperException, InterruptedException {
     Stat result = null;
     if (retryOnConnLoss) {
       result = zkCmdExecutor.retryOperation(() -> keeper.setData(path, data, version));
@@ -428,7 +423,8 @@ public class SolrZkClient implements Closeable {
     atomicUpdate(path, (stat, bytes) -> editor.apply(bytes));
   }
 
-  public void atomicUpdate(String path, BiFunction<Stat , byte[], byte[]> editor) throws KeeperException, InterruptedException {
+  public void atomicUpdate(String path, BiFunction<Stat, byte[], byte[]> editor)
+      throws KeeperException, InterruptedException {
     for (; ; ) {
       byte[] modified = null;
       byte[] zkData = null;
@@ -438,15 +434,15 @@ public class SolrZkClient implements Closeable {
           zkData = getData(path, null, s, true);
           modified = editor.apply(s, zkData);
           if (modified == null) {
-            //no change , no need to persist
+            // no change , no need to persist
             return;
           }
           setData(path, modified, s.getVersion(), true);
           break;
         } else {
-          modified = editor.apply(s,null);
+          modified = editor.apply(s, null);
           if (modified == null) {
-            //no change , no need to persist
+            // no change , no need to persist
             return;
           }
           create(path, modified, CreateMode.PERSISTENT, true);
@@ -456,16 +452,12 @@ public class SolrZkClient implements Closeable {
         continue;
       }
     }
-
-
   }
 
-  /**
-   * Returns path of created node
-   */
-  public String create(final String path, final byte[] data,
-                       final CreateMode createMode, boolean retryOnConnLoss) throws KeeperException,
-          InterruptedException {
+  /** Returns path of created node */
+  public String create(
+      final String path, final byte[] data, final CreateMode createMode, boolean retryOnConnLoss)
+      throws KeeperException, InterruptedException {
     String result = null;
     if (retryOnConnLoss) {
       result = zkCmdExecutor.retryOperation(() -> keeper.create(path, data, zkACLProvider.getACLsToAdd(path),
@@ -485,8 +477,8 @@ public class SolrZkClient implements Closeable {
   /**
    * Creates the path in ZooKeeper, creating each node as necessary.
    *
-   * e.g. If <code>path=/solr/group/node</code> and none of the nodes, solr,
-   * group, node exist, each will be created.
+   * <p>e.g. If <code>path=/solr/group/node</code> and none of the nodes, solr, group, node exist,
+   * each will be created.
    */
   public void makePath(String path, boolean retryOnConnLoss)
       throws KeeperException, InterruptedException {
@@ -706,7 +698,6 @@ public class SolrZkClient implements Closeable {
     }
     return result;
   }
-
 
   /** Fills string with printout of current ZooKeeper layout. */
   public void printLayout(String path, int indent, StringBuilder string)
@@ -988,7 +979,10 @@ public class SolrZkClient implements Closeable {
         if (watcher instanceof ConnectionManager) {
           zkConnManagerCallbackExecutor.submit(() -> watcher.process(event));
         } else {
-          zkCallbackExecutor.submit(() -> watcher.process(event));
+          zkCallbackExecutor.submit(() -> {
+            metrics.watchesFired.increment();
+            watcher.process(event);
+          });
         }
       } catch (RejectedExecutionException e) {
         // If not a graceful shutdown
