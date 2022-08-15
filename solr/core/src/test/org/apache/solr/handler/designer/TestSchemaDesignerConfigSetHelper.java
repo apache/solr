@@ -19,6 +19,7 @@ package org.apache.solr.handler.designer;
 
 import static org.apache.solr.common.util.Utils.toJavabin;
 import static org.apache.solr.handler.admin.ConfigSetsHandler.DEFAULT_CONFIGSET_NAME;
+import static org.apache.solr.handler.admin.ConfigSetsHandler.MULTILINGUAL_CONFIGSET_NAME;
 import static org.apache.solr.handler.designer.SchemaDesignerAPI.getMutableId;
 import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
 import static org.apache.solr.schema.IndexSchema.ROOT_FIELD_NAME;
@@ -58,6 +59,8 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
     System.setProperty("managed.schema.mutable", "true");
     configureCluster(1)
         .addConfig(DEFAULT_CONFIGSET_NAME, new File(ExternalPaths.DEFAULT_CONFIGSET).toPath())
+            .addConfig(
+                    MULTILINGUAL_CONFIGSET_NAME, new File(ExternalPaths.MULTILINGUAL_CONFIGSET).toPath())
         .configure();
     // SchemaDesignerConfigSetHelper depends on the blob store
     CollectionAdminRequest.createCollection(BLOB_STORE_ID, 1, 1).process(cluster.getSolrClient());
@@ -122,7 +125,7 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
 
   @Test
   public void testDownloadAndZip() throws IOException {
-    byte[] zipped = helper.downloadAndZipConfigSet(DEFAULT_CONFIGSET_NAME);
+    byte[] zipped = helper.downloadAndZipConfigSet(MULTILINGUAL_CONFIGSET_NAME);
     ZipInputStream stream = new ZipInputStream(new ByteArrayInputStream(zipped));
 
     boolean foundSolrConfig = false;
@@ -154,22 +157,22 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
     schema =
         helper.syncLanguageSpecificObjectsAndFiles(
             configSet, schema, Collections.singletonList("en"), true, DEFAULT_CONFIGSET_NAME);
-    assertNotNull(schema.getFieldTypeByName("text_en"));
-    assertNotNull(schema.getFieldOrNull("*_txt_en"));
+    assertNotNull(schema.getFieldTypeByName("text_general"));
+    assertNull(schema.getFieldOrNull("*_txt_en"));
     assertNull(schema.getFieldTypeByName("text_fr"));
 
     schema =
         helper.syncLanguageSpecificObjectsAndFiles(
             configSet, schema, Collections.singletonList("en"), false, DEFAULT_CONFIGSET_NAME);
-    assertNotNull(schema.getFieldTypeByName("text_en"));
-    assertNull(schema.getFieldOrNull("*_txt_en"));
+    assertNotNull(schema.getFieldTypeByName("text_general"));
+    assertNotNull(schema.getFieldOrNull("*_txt_en"));
     assertNull(schema.getFieldTypeByName("text_fr"));
 
     schema =
         helper.syncLanguageSpecificObjectsAndFiles(
             configSet, schema, Arrays.asList("en", "fr"), false, DEFAULT_CONFIGSET_NAME);
     assertNotNull(schema.getFieldTypeByName("text_en"));
-    assertNull(schema.getFieldOrNull("*_txt_en"));
+    assertNotNull(schema.getFieldOrNull("*_txt_en"));
     assertNotNull(schema.getFieldTypeByName("text_fr"));
 
     schema =
@@ -275,7 +278,7 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
     assertEquals(schema.getSchemaZkVersion(), helper.getCurrentSchemaVersion(mutableId));
     helper.createCollection(mutableId, mutableId);
 
-    Map<String, Object> addField = Map.of("name", "title", "type", "text_en");
+    Map<String, Object> addField = Map.of("name", "title", "type", "text_general");
     String addedFieldName =
         helper.addSchemaObject(configSet, Collections.singletonMap("add-field", addField));
     assertEquals("title", addedFieldName);
