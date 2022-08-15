@@ -46,7 +46,7 @@ public class ExternalPaths {
       new File(SOURCE_HOME, "server/solr/configsets/_default/conf").getAbsolutePath();
 
   public static String MULTILINGUAL_CONFIGSET =
-          new File(SOURCE_HOME, "server/solr/configsets/_multilingual/conf").getAbsolutePath();
+      new File(SOURCE_HOME, "server/solr/configsets/_multilingual/conf").getAbsolutePath();
   /**
    * @see #SOURCE_HOME
    */

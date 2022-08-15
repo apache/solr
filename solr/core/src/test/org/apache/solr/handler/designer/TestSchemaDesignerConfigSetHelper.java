@@ -139,7 +139,7 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
       }
     }
     assertTrue("Did not find solrconfig.xml in downloaded configset", foundSolrConfig);
-    assertTrue("Did not find stopwords_en.txt in downloaded configset", foundStopWords);
+    assertTrue("Did not find lang/stopwords_en.txt in downloaded configset", foundStopWords);
   }
 
   @Test

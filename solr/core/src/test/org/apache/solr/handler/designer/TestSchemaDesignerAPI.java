@@ -71,7 +71,8 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     System.setProperty("managed.schema.mutable", "true");
     configureCluster(1)
         .addConfig(DEFAULT_CONFIGSET_NAME, new File(ExternalPaths.DEFAULT_CONFIGSET).toPath())
-            .addConfig(MULTILINGUAL_CONFIGSET_NAME, new File(ExternalPaths.MULTILINGUAL_CONFIGSET).toPath())
+        .addConfig(
+            MULTILINGUAL_CONFIGSET_NAME, new File(ExternalPaths.MULTILINGUAL_CONFIGSET).toPath())
         .configure();
     // SchemaDesignerAPI depends on the blob store
     CollectionAdminRequest.createCollection(BLOB_STORE_ID, 1, 1).process(cluster.getSolrClient());
@@ -96,11 +97,10 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
   }
 
   public void testAbleToLoadMultilingual() {
-    ManagedIndexSchema multilingualSchema  = schemaDesignerAPI.getSchemaForConfigSet("_multilingual");
+    ManagedIndexSchema multilingualSchema =
+        schemaDesignerAPI.getSchemaForConfigSet(MULTILINGUAL_CONFIGSET_NAME);
     assertNotNull(multilingualSchema);
-
   }
-
 
   public void testTSV() throws Exception {
     String configSet = "testTSV";
@@ -468,8 +468,9 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     assertDesignerSettings(expSettings, rsp.getValues());
 
     List<String> filesInResp = (List<String>) rsp.getValues().get("files");
-    assertEquals(4, filesInResp.size());
- //   assertTrue(filesInResp.contains("lang/stopwords_en.txt"));
+    // we have regular protwords etc, and now the english specific ones...
+    assertEquals(7, filesInResp.size());
+    assertTrue(filesInResp.contains("lang/stopwords_en.txt"));
 
     rspData = rsp.getValues().toSolrParams();
     schemaVersion = rspData.getInt(SCHEMA_VERSION_PARAM);
@@ -498,7 +499,8 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     assertDesignerSettings(expSettings, rsp.getValues());
 
     filesInResp = (List<String>) rsp.getValues().get("files");
-    assertEquals(7, filesInResp.size());
+    // now it's nine, maybe becasue we now have the /lang/stopwords_en etc
+    assertEquals(9, filesInResp.size());
     assertTrue(filesInResp.contains("lang/stopwords_fr.txt"));
 
     rspData = rsp.getValues().toSolrParams();
@@ -525,7 +527,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     assertDesignerSettings(expSettings, rsp.getValues());
 
     filesInResp = (List<String>) rsp.getValues().get("files");
-    assertEquals(43, filesInResp.size());
+    assertEquals(45, filesInResp.size());
     assertTrue(filesInResp.contains("lang/stopwords_fr.txt"));
     assertTrue(filesInResp.contains("lang/stopwords_en.txt"));
     assertTrue(filesInResp.contains("lang/stopwords_it.txt"));
@@ -885,6 +887,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     when(req.getContentStreams()).thenReturn(Collections.singletonList(fileStream));
     rsp = new SolrQueryResponse();
     // POST /schema-designer/add
+    // boom
     schemaDesignerAPI.addSchemaObject(req, rsp);
     assertNotNull(rsp.getValues().get("add-field-type"));
 

@@ -21,6 +21,7 @@ import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 import static org.apache.solr.common.util.Utils.fromJSONString;
 import static org.apache.solr.common.util.Utils.toJavabin;
 import static org.apache.solr.handler.admin.ConfigSetsHandler.DEFAULT_CONFIGSET_NAME;
+import static org.apache.solr.handler.admin.ConfigSetsHandler.MULTILINGUAL_CONFIGSET_NAME;
 import static org.apache.solr.handler.designer.SchemaDesignerAPI.getConfigSetZkPath;
 import static org.apache.solr.handler.designer.SchemaDesignerAPI.getMutableId;
 import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
@@ -854,6 +855,10 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
       boolean dynamicEnabled,
       String copyFrom)
       throws IOException {
+
+    SolrConfig solrConfig = loadSolrConfig(MULTILINGUAL_CONFIGSET_NAME);
+    ManagedIndexSchema multilingualSchema = loadLatestSchema(solrConfig);
+
     if (!langs.isEmpty()) {
       // there's a subset of languages applied, so remove all the other langs
       schema = removeLanguageSpecificObjectsAndFiles(configSet, schema, langs);
@@ -945,6 +950,10 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
       boolean dynamicEnabled,
       String copyFrom)
       throws IOException {
+
+    // override copyFrom to be multilingual?
+    copyFrom = MULTILINGUAL_CONFIGSET_NAME;
+
     // pull the dynamic fields from the copyFrom schema
     ManagedIndexSchema copyFromSchema = loadLatestSchema(copyFrom);
 

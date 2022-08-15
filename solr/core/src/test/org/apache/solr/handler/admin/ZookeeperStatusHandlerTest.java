@@ -96,7 +96,8 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
     Map<String, Object> details = (Map<String, Object>) detailsList.get(0);
     assertEquals(true, details.get("ok"));
     var s = details.get("zk_znode_count");
-    // TODO the node count is 44...   I am guessing it's because _default gets auto loaded, and it generates fewer nodes due to /lang being gone.
+    // TODO the node count is 44...   I am guessing it's because _default gets auto loaded, and it
+    // generates fewer nodes due to /lang being gone.
     assertTrue(Integer.parseInt((String) details.get("zk_znode_count")) > 50);
     solr.close();
   }

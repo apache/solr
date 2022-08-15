@@ -647,8 +647,6 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
         getMutableSchemaForConfigSet(configSet, schemaVersion, copyFrom);
     ManagedIndexSchema schema = settings.getSchema();
 
-    ManagedIndexSchema multilingualSchema = getSchemaForConfigSet("multilingual");
-
     String uniqueKeyFieldParam = req.getParams().get(UNIQUE_KEY_FIELD_PARAM);
     if (!isEmpty(uniqueKeyFieldParam)) {
       String uniqueKeyField =
@@ -904,15 +902,15 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     return getConfigSetZkPath(configSet, DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME);
   }
 
-  protected ManagedIndexSchema getSchemaForConfigSet(final String configSet){
+  protected ManagedIndexSchema getSchemaForConfigSet(final String configSet) {
     ManagedIndexSchema schema;
-
 
     SolrConfig solrConfig = configSetHelper.loadSolrConfig(configSet);
     schema = configSetHelper.loadLatestSchema(solrConfig);
 
     return schema;
   }
+
   protected SchemaDesignerSettings getMutableSchemaForConfigSet(
       final String configSet, final int schemaVersion, String copyFrom) throws IOException {
     // The designer works with mutable config sets stored in a "temp" znode in ZK instead of the
