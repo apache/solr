@@ -23,19 +23,10 @@
     },
     "filters": [
       {
-        "words": "lang/stopwords_en.txt",
-        "ignoreCase": "true",
-        "name": "stop"
-      },
-      {
         "name": "lowercase"
       },
       {
         "name": "englishPossessive"
-      },
-      {
-        "name": "keywordMarker",
-        "protected": "protwords.txt"
       },
       {
         "name": "porterStem"
@@ -48,25 +39,10 @@
     },
     "filters": [
       {
-        "name": "synonymGraph",
-        "synonyms": "synonyms.txt",
-        "ignoreCase": "true",
-        "expand": "true"
-      },
-      {
-        "words": "lang/stopwords_en.txt",
-        "ignoreCase": "true",
-        "name": "stop"
-      },
-      {
         "name": "lowercase"
       },
       {
         "name": "englishPossessive"
-      },
-      {
-        "name": "keywordMarker",
-        "protected": "protwords.txt"
       },
       {
         "name": "porterStem"
