@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.io.sql;
 
+import static org.apache.solr.client.solrj.impl.BaseHttpClusterStateProvider.URL_SCHEME;
+
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -116,11 +118,11 @@ class DatabaseMetaDataImpl implements DatabaseMetaData {
     CloudSolrClient cloudSolrClient = this.connection.getClient();
     Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
     SolrClient solrClient = null;
+    String urlScheme =
+        cloudSolrClient.getClusterStateProvider().getClusterProperty(URL_SCHEME, "http");
     for (String node : liveNodes) {
       try {
-        String nodeURL =
-            Utils.getBaseUrlForNodeName(
-                node, /*getClusterProperty(URL_SCHEME, "http")*/ "http"); // nocommit
+        String nodeURL = Utils.getBaseUrlForNodeName(node, urlScheme);
         solrClient = new Builder(nodeURL).build();
 
         QueryResponse rsp = solrClient.query(sysQuery);
