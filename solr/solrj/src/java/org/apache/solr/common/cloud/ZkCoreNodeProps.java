@@ -17,15 +17,9 @@
 package org.apache.solr.common.cloud;
 
 import java.util.Objects;
+import org.apache.solr.common.cloud.Replica.ReplicaSProps;
 
 public class ZkCoreNodeProps {
-
-  // nocommit : to move these from ZkStateReader
-  private static final String LEADER_PROP = "leader";
-  private static final String NODE_NAME_PROP = "node_name";
-  private static final String STATE_PROP = "state";
-  private static final String CORE_NAME_PROP = "core";
-  private static final String BASE_URL_PROP = "base_url";
 
   private final ZkNodeProps nodeProps;
 
@@ -38,11 +32,11 @@ public class ZkCoreNodeProps {
   }
 
   public String getNodeName() {
-    return nodeProps.getStr(NODE_NAME_PROP);
+    return nodeProps.getStr(ReplicaSProps.NODE_NAME);
   }
 
   public String getState() {
-    return nodeProps.getStr(STATE_PROP);
+    return nodeProps.getStr(ReplicaSProps.STATE);
   }
 
   public String getBaseUrl() {
@@ -50,13 +44,13 @@ public class ZkCoreNodeProps {
   }
 
   public String getCoreName() {
-    return nodeProps.getStr(CORE_NAME_PROP);
+    return nodeProps.getStr(ReplicaSProps.CORE_NAME);
   }
 
   private static String getBaseUrl(ZkNodeProps nodeProps) {
     // if storing baseUrl in ZK is enabled and it's stored, just use what's stored, i.e. no
     // self-healing here
-    String baseUrl = nodeProps.getStr(BASE_URL_PROP);
+    String baseUrl = nodeProps.getStr(ReplicaSProps.BASE_URL);
     if (baseUrl == null) {
       throw new IllegalStateException("base_url not set in: " + nodeProps);
     }
@@ -65,7 +59,7 @@ public class ZkCoreNodeProps {
 
   public static String getCoreUrl(ZkNodeProps nodeProps) {
     String baseUrl = getBaseUrl(nodeProps);
-    return baseUrl != null ? getCoreUrl(baseUrl, nodeProps.getStr(CORE_NAME_PROP)) : null;
+    return baseUrl != null ? getCoreUrl(baseUrl, nodeProps.getStr(ReplicaSProps.CORE_NAME)) : null;
   }
 
   public static String getCoreUrl(String baseUrl, String coreName) {
@@ -88,6 +82,6 @@ public class ZkCoreNodeProps {
   }
 
   public boolean isLeader() {
-    return nodeProps.containsKey(LEADER_PROP);
+    return nodeProps.containsKey(ReplicaSProps.LEADER);
   }
 }

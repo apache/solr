@@ -32,6 +32,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.Replica.ReplicaSProps;
 import org.apache.solr.common.util.Utils;
 import org.noggit.JSONWriter;
 import org.slf4j.Logger;
@@ -181,8 +182,8 @@ public class ClusterState implements JSONWriter.Writable {
       for (Slice slice : coll.getSlices()) {
         for (Replica replica : slice.getReplicas()) {
           // TODO: for really large clusters, we could 'index' on this
-          String rnodeName = replica.getStr(Replica.NODE_NAME_PROP);
-          String rcore = replica.getStr(Replica.CORE_NAME_PROP);
+          String rnodeName = replica.getStr(ReplicaSProps.NODE_NAME);
+          String rcore = replica.getStr(ReplicaSProps.CORE_NAME);
           if (nodeName.equals(rnodeName) && coreName.equals(rcore)) {
             return slice.getName();
           }
