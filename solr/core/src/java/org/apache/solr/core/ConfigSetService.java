@@ -129,8 +129,7 @@ public abstract class ConfigSetService {
     if (this.checkConfigExists("_multilingual") == false) {
       Path configDirPath = getMultilingualConfigDirPath();
       if (configDirPath == null) {
-        log.warn(
-                "The _multilingual configset could not be uploaded.");
+        log.warn("The _multilingual configset could not be uploaded.");
       } else {
         this.uploadConfig(ConfigSetsHandler.MULTILINGUAL_CONFIGSET_NAME, configDirPath);
       }
@@ -180,21 +179,21 @@ public abstract class ConfigSetService {
   }
 
   /**
-   * Gets the absolute filesystem path of the _multilingual configset to bootstrap from. First tries the
-   * sysprop "solr.default.confdir". If not found, tries to find the _default dir relative to the
-   * sysprop "solr.install.dir". Returns null if not found anywhere.
+   * Gets the absolute filesystem path of the _multilingual configset to bootstrap from. First tries
+   * the sysprop "solr.default.confdir". If not found, tries to find the _default dir relative to
+   * the sysprop "solr.install.dir". Returns null if not found anywhere.
    *
    * @lucene.internal
    * @see SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE
    */
   public static Path getMultilingualConfigDirPath() {
-    //String confDir = System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE);
-    //if (confDir != null) {
-     // Path path = Path.of(confDir);
-      //if (Files.exists(path)) {
-       // return path;
-      //}
-    //}
+    // String confDir = System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE);
+    // if (confDir != null) {
+    // Path path = Path.of(confDir);
+    // if (Files.exists(path)) {
+    // return path;
+    // }
+    // }
 
     String installDir = System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
     if (installDir != null) {
