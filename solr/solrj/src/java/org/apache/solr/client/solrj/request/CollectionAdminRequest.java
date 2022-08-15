@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj.request;
 
-import static org.apache.solr.common.cloud.DocCollection.PER_REPLICA_STATE;
 import static org.apache.solr.common.params.CollectionAdminParams.ALIAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
@@ -49,6 +48,7 @@ import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
+import org.apache.solr.common.cloud.DocCollection.CollectionSProps;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -76,7 +76,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
 
   /** The set of modifiable collection properties */
   public static final java.util.List<String> MODIFIABLE_COLLECTION_PROPERTIES =
-      Arrays.asList(REPLICATION_FACTOR, COLL_CONF, PER_REPLICA_STATE, READ_ONLY);
+      Arrays.asList(REPLICATION_FACTOR, COLL_CONF, CollectionSProps.PER_REPLICA_STATE, READ_ONLY);
 
   protected final CollectionAction action;
 
@@ -708,7 +708,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
         params.set(TLOG_REPLICAS, tlogReplicas);
       }
       if (Boolean.TRUE.equals(perReplicaState)) {
-        params.set(PER_REPLICA_STATE, perReplicaState);
+        params.set(CollectionSProps.PER_REPLICA_STATE, perReplicaState);
       }
       params.setNonNull(ALIAS, alias);
       return params;

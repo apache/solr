@@ -47,6 +47,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocCollection.CollectionSProps;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -190,7 +191,8 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       boolean hasDownedShard = false; // means one or more shards is down
       boolean replicaInRecovery = false;
 
-      Map<String, Object> shards = (Map<String, Object>) collectionState.get(DocCollection.SHARDS);
+      Map<String, Object> shards =
+          (Map<String, Object>) collectionState.get(CollectionSProps.SHARDS);
       for (Object o : shards.values()) {
         boolean hasActive = false;
         Map<String, Object> shard = (Map<String, Object>) o;

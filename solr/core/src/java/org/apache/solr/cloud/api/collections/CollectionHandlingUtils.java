@@ -49,6 +49,7 @@ import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocCollection.CollectionSProps;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -117,7 +118,7 @@ public class CollectionHandlingUtils {
               "1",
               ZkStateReader.TLOG_REPLICAS,
               "0",
-              DocCollection.PER_REPLICA_STATE,
+              CollectionSProps.PER_REPLICA_STATE,
               null,
               ZkStateReader.PULL_REPLICAS,
               "0"));

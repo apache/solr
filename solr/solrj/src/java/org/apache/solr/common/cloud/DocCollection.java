@@ -41,18 +41,6 @@ import org.slf4j.LoggerFactory;
 public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  // nocommit : to move these from ZkStateReader
-  private static final String NRT_REPLICAS = "nrtReplicas";
-  private static final String PULL_REPLICAS = "pullReplicas";
-  private static final String READ_ONLY = "readOnly";
-  private static final String REPLICATION_FACTOR = "replicationFactor";
-  private static final String TLOG_REPLICAS = "tlogReplicas";
-  private static final String CONFIGNAME_PROP = "configName";
-
-  public static final String DOC_ROUTER = "router";
-  public static final String SHARDS = "shards";
-  public static final String PER_REPLICA_STATE = "perReplicaState";
-
   private final int znodeVersion;
 
   private final String name;
@@ -98,20 +86,21 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     // overwrites
     this.znodeVersion = zkVersion == -1 ? Integer.MAX_VALUE : zkVersion;
     this.name = name;
-    this.configName = (String) props.get(CONFIGNAME_PROP);
+    this.configName = (String) props.get(CollectionSProps.CONFIGNAME);
     this.slices = slices;
     this.activeSlices = new HashMap<>();
     this.nodeNameLeaderReplicas = new HashMap<>();
     this.nodeNameReplicas = new HashMap<>();
-    this.replicationFactor = (Integer) verifyProp(props, REPLICATION_FACTOR);
-    this.numNrtReplicas = (Integer) verifyProp(props, NRT_REPLICAS, 0);
-    this.numTlogReplicas = (Integer) verifyProp(props, TLOG_REPLICAS, 0);
-    this.numPullReplicas = (Integer) verifyProp(props, PULL_REPLICAS, 0);
-    this.perReplicaState = (Boolean) verifyProp(props, PER_REPLICA_STATE, Boolean.FALSE);
+    this.replicationFactor = (Integer) verifyProp(props, CollectionSProps.REPLICATION_FACTOR);
+    this.numNrtReplicas = (Integer) verifyProp(props, CollectionSProps.NRT_REPLICAS, 0);
+    this.numTlogReplicas = (Integer) verifyProp(props, CollectionSProps.TLOG_REPLICAS, 0);
+    this.numPullReplicas = (Integer) verifyProp(props, CollectionSProps.PULL_REPLICAS, 0);
+    this.perReplicaState =
+        (Boolean) verifyProp(props, CollectionSProps.PER_REPLICA_STATE, Boolean.FALSE);
     ClusterState.getReplicaStatesProvider()
         .get()
         .ifPresent(it -> perReplicaStates = it.getStates());
-    Boolean readOnly = (Boolean) verifyProp(props, READ_ONLY);
+    Boolean readOnly = (Boolean) verifyProp(props, CollectionSProps.READ_ONLY);
     this.readOnly = readOnly == null ? Boolean.FALSE : readOnly;
 
     Iterator<Map.Entry<String, Slice>> iter = slices.entrySet().iterator();
@@ -192,13 +181,13 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     Object o = props.get(propName);
     if (o == null) return def;
     switch (propName) {
-      case REPLICATION_FACTOR:
-      case NRT_REPLICAS:
-      case PULL_REPLICAS:
-      case TLOG_REPLICAS:
+      case CollectionSProps.REPLICATION_FACTOR:
+      case CollectionSProps.NRT_REPLICAS:
+      case CollectionSProps.PULL_REPLICAS:
+      case CollectionSProps.TLOG_REPLICAS:
         return Integer.parseInt(o.toString());
-      case PER_REPLICA_STATE:
-      case READ_ONLY:
+      case CollectionSProps.PER_REPLICA_STATE:
+      case CollectionSProps.READ_ONLY:
         return Boolean.parseBoolean(o.toString());
       case "snitch":
       default:
@@ -328,7 +317,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   public void write(JSONWriter jsonWriter) {
     LinkedHashMap<String, Object> all = new LinkedHashMap<>(slices.size() + 1);
     all.putAll(propMap);
-    all.put(SHARDS, slices);
+    all.put(CollectionSProps.SHARDS, slices);
     jsonWriter.write(all);
   }
 
@@ -475,5 +464,18 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     if (type == Replica.Type.PULL) result = numPullReplicas;
     if (type == Replica.Type.TLOG) result = numTlogReplicas;
     return result == null ? def : result;
+  }
+
+  /** JSON properties related to a collection's state. */
+  public interface CollectionSProps {
+    String NRT_REPLICAS = "nrtReplicas";
+    String PULL_REPLICAS = "pullReplicas";
+    String TLOG_REPLICAS = "tlogReplicas";
+    String REPLICATION_FACTOR = "replicationFactor";
+    String READ_ONLY = "readOnly";
+    String CONFIGNAME = "configName";
+    String DOC_ROUTER = "router";
+    String SHARDS = "shards";
+    String PER_REPLICA_STATE = "perReplicaState";
   }
 }

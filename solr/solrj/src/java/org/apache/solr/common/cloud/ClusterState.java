@@ -32,6 +32,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.DocCollection.CollectionSProps;
 import org.apache.solr.common.cloud.Replica.ReplicaSProps;
 import org.apache.solr.common.util.Utils;
 import org.noggit.JSONWriter;
@@ -250,7 +251,7 @@ public class ClusterState implements JSONWriter.Writable {
     Map<String, Object> props;
     Map<String, Slice> slices;
 
-    if (Boolean.parseBoolean(String.valueOf(objs.get(DocCollection.PER_REPLICA_STATE)))) {
+    if (Boolean.parseBoolean(String.valueOf(objs.get(CollectionSProps.PER_REPLICA_STATE)))) {
       if (log.isDebugEnabled()) {
         log.debug("a collection {} has per-replica state", name);
       }
@@ -259,7 +260,7 @@ public class ClusterState implements JSONWriter.Writable {
       if (rsp instanceof StatesProvider) ((StatesProvider) rsp).isPerReplicaState = true;
     }
     @SuppressWarnings({"unchecked"})
-    Map<String, Object> sliceObjs = (Map<String, Object>) objs.get(DocCollection.SHARDS);
+    Map<String, Object> sliceObjs = (Map<String, Object>) objs.get(CollectionSProps.SHARDS);
     if (sliceObjs == null) {
       // legacy format from 4.0... there was no separate "shards" level to contain the collection
       // shards.
@@ -268,10 +269,10 @@ public class ClusterState implements JSONWriter.Writable {
     } else {
       slices = Slice.loadAllFromMap(name, sliceObjs);
       props = new HashMap<>(objs);
-      objs.remove(DocCollection.SHARDS);
+      objs.remove(CollectionSProps.SHARDS);
     }
 
-    Object routerObj = props.get(DocCollection.DOC_ROUTER);
+    Object routerObj = props.get(CollectionSProps.DOC_ROUTER);
     DocRouter router;
     if (routerObj == null) {
       router = DocRouter.DEFAULT;

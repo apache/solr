@@ -33,8 +33,8 @@ import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SHAR
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SHARD_UNIQUE;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.CREATE_COLLECTION_PREFIX;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
-import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
-import static org.apache.solr.common.cloud.DocCollection.PER_REPLICA_STATE;
+import static org.apache.solr.common.cloud.DocCollection.CollectionSProps.DOC_ROUTER;
+import static org.apache.solr.common.cloud.DocCollection.CollectionSProps.PER_REPLICA_STATE;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
