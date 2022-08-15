@@ -91,6 +91,9 @@ public abstract class ConfigSetService {
       // _default conf
       bootstrapDefaultConf();
 
+      // _multilingual conf
+      bootstrapMultilingualConf();
+
       // bootstrap_confdir
       String confDir = System.getProperty("bootstrap_confdir");
       if (confDir != null) {
@@ -118,6 +121,18 @@ public abstract class ConfigSetService {
             System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE));
       } else {
         this.uploadConfig(ConfigSetsHandler.DEFAULT_CONFIGSET_NAME, configDirPath);
+      }
+    }
+  }
+
+  private void bootstrapMultilingualConf() throws IOException {
+    if (this.checkConfigExists("_multilingual") == false) {
+      Path configDirPath = getMultilingualConfigDirPath();
+      if (configDirPath == null) {
+        log.warn(
+                "The _multilingual configset could not be uploaded.");
+      } else {
+        this.uploadConfig(ConfigSetsHandler.MULTILINGUAL_CONFIGSET_NAME, configDirPath);
       }
     }
   }
@@ -155,6 +170,35 @@ public abstract class ConfigSetService {
     String installDir = System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
     if (installDir != null) {
       Path subPath = Path.of("server", "solr", "configsets", "_default", "conf");
+      Path path = Path.of(installDir).resolve(subPath);
+      if (Files.exists(path)) {
+        return path;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Gets the absolute filesystem path of the _multilingual configset to bootstrap from. First tries the
+   * sysprop "solr.default.confdir". If not found, tries to find the _default dir relative to the
+   * sysprop "solr.install.dir". Returns null if not found anywhere.
+   *
+   * @lucene.internal
+   * @see SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE
+   */
+  public static Path getMultilingualConfigDirPath() {
+    //String confDir = System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE);
+    //if (confDir != null) {
+     // Path path = Path.of(confDir);
+      //if (Files.exists(path)) {
+       // return path;
+      //}
+    //}
+
+    String installDir = System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
+    if (installDir != null) {
+      Path subPath = Path.of("server", "solr", "configsets", "_multilingual", "conf");
       Path path = Path.of(installDir).resolve(subPath);
       if (Files.exists(path)) {
         return path;
