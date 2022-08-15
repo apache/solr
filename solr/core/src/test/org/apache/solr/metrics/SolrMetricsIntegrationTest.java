@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-
 import org.apache.http.client.HttpClient;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
@@ -47,7 +46,6 @@ import org.apache.solr.util.TestHarness;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
 
 public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
   private static final int MAX_ITERATIONS = 20;
@@ -225,26 +223,32 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     Gauge<?> g = (Gauge<?>) metrics.get("CONTAINER.fs.path");
     assertEquals(g.getValue(), cc.getSolrHome());
   }
+
   @Test
   public void testZkMetrics() throws Exception {
     System.setProperty("metricsEnabled", "true");
-    MiniSolrCloudCluster cluster = new MiniSolrCloudCluster.Builder(3,createTempDir())
-                    .withJettyConfig(jetty -> jetty.enableV2(true))
-                    .addConfig("conf", configset("conf2"))
-                    .configure();
+    MiniSolrCloudCluster cluster =
+        new MiniSolrCloudCluster.Builder(3, createTempDir())
+            .withJettyConfig(jetty -> jetty.enableV2(true))
+            .addConfig("conf", configset("conf2"))
+            .configure();
     System.clearProperty("metricsEnabled");
     try {
       JettySolrRunner j = cluster.getRandomJetty(random());
       String url = j.getBaseUrl() + "/admin/metrics?key=solr.node:CONTAINER.zkClient&wt=json";
-      HttpClient httpClient = ((HttpSolrClient) j.newClient())
-              .getHttpClient();
+      HttpClient httpClient = ((HttpSolrClient) j.newClient()).getHttpClient();
       @SuppressWarnings("unchecked")
-      Map<String, Object> zkMmetrics = (Map<String, Object>) Utils.getObjectByPath(Utils.executeGET(
-                      httpClient, url, Utils.JSONCONSUMER), false,
-              List.of("metrics", "solr.node:CONTAINER.zkClient"));
+      Map<String, Object> zkMmetrics =
+          (Map<String, Object>)
+              Utils.getObjectByPath(
+                  Utils.executeGET(httpClient, url, Utils.JSONCONSUMER),
+                  false,
+                  List.of("metrics", "solr.node:CONTAINER.zkClient"));
       System.out.println(Utils.toJSONString(zkMmetrics));
 
-      Set<String> allKeys = Set.of("watchesFired",
+      Set<String> allKeys =
+          Set.of(
+              "watchesFired",
               "reads",
               "writes",
               "bytesRead",
@@ -259,11 +263,15 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
       for (String k : allKeys) {
         assertNotNull(zkMmetrics.get(k));
       }
-      Utils.executeGET(httpClient, j.getBaseURLV2() + "/cluster/zk/ls/live_nodes", Utils.JSONCONSUMER);
+      Utils.executeGET(
+          httpClient, j.getBaseURLV2() + "/cluster/zk/ls/live_nodes", Utils.JSONCONSUMER);
       @SuppressWarnings("unchecked")
-      Map<String, Object> zkMmetricsNew = (Map<String, Object>) Utils.getObjectByPath(
-              Utils.executeGET(httpClient, url, Utils.JSONCONSUMER), false,
-              List.of("metrics", "solr.node:CONTAINER.zkClient"));
+      Map<String, Object> zkMmetricsNew =
+          (Map<String, Object>)
+              Utils.getObjectByPath(
+                  Utils.executeGET(httpClient, url, Utils.JSONCONSUMER),
+                  false,
+                  List.of("metrics", "solr.node:CONTAINER.zkClient"));
 
       assertTrue(findDelta(zkMmetrics, zkMmetricsNew, "childFetches") >= 1);
       assertTrue(findDelta(zkMmetrics, zkMmetricsNew, "cumulativeChildrenFetched") >= 3);

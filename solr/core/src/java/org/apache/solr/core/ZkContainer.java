@@ -69,7 +69,7 @@ public class ZkContainer {
   // see ZkController.zkRunOnly
   private boolean zkRunOnly = Boolean.getBoolean("zkRunOnly"); // expert
 
-  private SolrMetricProducer metricProducer ;
+  private SolrMetricProducer metricProducer;
 
   public ZkContainer() {}
 
@@ -158,19 +158,22 @@ public class ZkContainer {
 
         this.zkController = zkController;
         MetricsMap metricsMap = new MetricsMap(zkController.getZkClient().getMetrics());
-        metricProducer = new SolrMetricProducer() {
-          SolrMetricsContext ctx;
-          @Override
-          public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-            ctx = parentContext.getChildContext(this);
-            ctx.gauge(metricsMap,true, scope, null, SolrInfoBean.Category.CONTAINER.toString());
-          }
+        metricProducer =
+            new SolrMetricProducer() {
+              SolrMetricsContext ctx;
 
-          @Override
-          public SolrMetricsContext getSolrMetricsContext() {
-            return ctx;
-          }
-        };
+              @Override
+              public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+                ctx = parentContext.getChildContext(this);
+                ctx.gauge(
+                    metricsMap, true, scope, null, SolrInfoBean.Category.CONTAINER.toString());
+              }
+
+              @Override
+              public SolrMetricsContext getSolrMetricsContext() {
+                return ctx;
+              }
+            };
       } catch (InterruptedException e) {
         // Restore the interrupted status
         Thread.currentThread().interrupt();

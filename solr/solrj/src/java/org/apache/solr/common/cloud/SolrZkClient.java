@@ -31,7 +31,6 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
-
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
@@ -325,7 +324,7 @@ public class SolrZkClient implements Closeable {
    * @throws IllegalArgumentException if an invalid path is specified
    */
   public Stat exists(final String path, final Watcher watcher, boolean retryOnConnLoss)
-          throws KeeperException, InterruptedException {
+      throws KeeperException, InterruptedException {
     Stat result = null;
     if (retryOnConnLoss) {
       result = zkCmdExecutor.retryOperation(() -> keeper.exists(path, wrapWatcher(watcher)));
@@ -338,7 +337,7 @@ public class SolrZkClient implements Closeable {
 
   /** Returns true if path exists */
   public Boolean exists(final String path, boolean retryOnConnLoss)
-          throws KeeperException, InterruptedException {
+      throws KeeperException, InterruptedException {
     Boolean result = null;
     if (retryOnConnLoss) {
       result = zkCmdExecutor.retryOperation(() -> keeper.exists(path, null) != null);
@@ -349,11 +348,9 @@ public class SolrZkClient implements Closeable {
     return result;
   }
 
-  /**
-   * Returns children of the node at the path
-   */
+  /** Returns children of the node at the path */
   public List<String> getChildren(final String path, final Watcher watcher, boolean retryOnConnLoss)
-          throws KeeperException, InterruptedException {
+      throws KeeperException, InterruptedException {
     List<String> result = null;
     if (retryOnConnLoss) {
       return zkCmdExecutor.retryOperation(() -> keeper.getChildren(path, wrapWatcher(watcher)));
@@ -374,7 +371,8 @@ public class SolrZkClient implements Closeable {
       throws KeeperException, InterruptedException {
     List<String> result = null;
     if (retryOnConnLoss) {
-      result = zkCmdExecutor.retryOperation(() -> keeper.getChildren(path, wrapWatcher(watcher), stat));
+      result =
+          zkCmdExecutor.retryOperation(() -> keeper.getChildren(path, wrapWatcher(watcher), stat));
     } else {
       result = keeper.getChildren(path, wrapWatcher(watcher), stat);
     }
@@ -419,7 +417,8 @@ public class SolrZkClient implements Closeable {
     return result;
   }
 
-  public void atomicUpdate(String path, Function<byte[], byte[]> editor) throws KeeperException, InterruptedException {
+  public void atomicUpdate(String path, Function<byte[], byte[]> editor)
+      throws KeeperException, InterruptedException {
     atomicUpdate(path, (stat, bytes) -> editor.apply(bytes));
   }
 
@@ -460,8 +459,9 @@ public class SolrZkClient implements Closeable {
       throws KeeperException, InterruptedException {
     String result = null;
     if (retryOnConnLoss) {
-      result = zkCmdExecutor.retryOperation(() -> keeper.create(path, data, zkACLProvider.getACLsToAdd(path),
-              createMode));
+      result =
+          zkCmdExecutor.retryOperation(
+              () -> keeper.create(path, data, zkACLProvider.getACLsToAdd(path), createMode));
     } else {
       List<ACL> acls = zkACLProvider.getACLsToAdd(path);
       result = keeper.create(path, data, acls, createMode);
@@ -471,7 +471,6 @@ public class SolrZkClient implements Closeable {
       metrics.bytesWritten.add(data.length);
     }
     return result;
-
   }
 
   /**
@@ -979,10 +978,11 @@ public class SolrZkClient implements Closeable {
         if (watcher instanceof ConnectionManager) {
           zkConnManagerCallbackExecutor.submit(() -> watcher.process(event));
         } else {
-          zkCallbackExecutor.submit(() -> {
-            metrics.watchesFired.increment();
-            watcher.process(event);
-          });
+          zkCallbackExecutor.submit(
+              () -> {
+                metrics.watchesFired.increment();
+                watcher.process(event);
+              });
         }
       } catch (RejectedExecutionException e) {
         // If not a graceful shutdown
@@ -1013,38 +1013,24 @@ public class SolrZkClient implements Closeable {
   }
 
   // all fields of this class are public because ReflectMapWriter requires them to be.
-  //however the object itself is private and only this class can modify it
+  // however the object itself is private and only this class can modify it
   public static class ZkMetrics implements ReflectMapWriter {
-    @JsonProperty
-    public final LongAdder watchesFired = new LongAdder();
-    @JsonProperty
-    public final LongAdder reads = new LongAdder();
-    @JsonProperty
-    public final LongAdder writes = new LongAdder();
-    @JsonProperty
+    @JsonProperty public final LongAdder watchesFired = new LongAdder();
+    @JsonProperty public final LongAdder reads = new LongAdder();
+    @JsonProperty public final LongAdder writes = new LongAdder();
+    @JsonProperty public final LongAdder bytesRead = new LongAdder();
+    @JsonProperty public final LongAdder bytesWritten = new LongAdder();
 
-    public final LongAdder bytesRead = new LongAdder();
-    @JsonProperty
+    @JsonProperty public final LongAdder multiOps = new LongAdder();
 
-    public final LongAdder bytesWritten = new LongAdder();
+    @JsonProperty public final LongAdder cumulativeMultiOps = new LongAdder();
 
-    @JsonProperty
-    public final LongAdder multiOps = new LongAdder();
+    @JsonProperty public final LongAdder childFetches = new LongAdder();
 
-    @JsonProperty
-    public final LongAdder cumulativeMultiOps = new LongAdder();
+    @JsonProperty public final LongAdder cumulativeChildrenFetched = new LongAdder();
 
-    @JsonProperty
-    public final LongAdder childFetches = new LongAdder();
+    @JsonProperty public final LongAdder existsChecks = new LongAdder();
 
-    @JsonProperty
-    public final LongAdder cumulativeChildrenFetched = new LongAdder();
-
-    @JsonProperty
-    public final LongAdder existsChecks = new LongAdder();
-
-    @JsonProperty
-    public final LongAdder deletes = new LongAdder();
-
+    @JsonProperty public final LongAdder deletes = new LongAdder();
   }
 }
