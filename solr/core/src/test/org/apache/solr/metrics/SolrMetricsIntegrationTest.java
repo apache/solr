@@ -24,10 +24,20 @@ import com.codahale.metrics.Timer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
+
+import org.apache.http.client.HttpClient;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.cloud.MiniSolrCloudCluster;
+import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.NavigableObject;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.PluginInfo;
@@ -39,6 +49,8 @@ import org.apache.solr.util.TestHarness;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.apache.solr.common.util.Utils.JAVABINCONSUMER;
 
 public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
   private static final int MAX_ITERATIONS = 20;
@@ -215,5 +227,56 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     assertTrue(metrics.containsKey("CONTAINER.version.implementation"));
     Gauge<?> g = (Gauge<?>) metrics.get("CONTAINER.fs.path");
     assertEquals(g.getValue(), cc.getSolrHome());
+  }
+  @Test
+  public void testZkMetrics() throws Exception {
+    System.setProperty("metricsEnabled", "true");
+    MiniSolrCloudCluster cluster = new MiniSolrCloudCluster.Builder(3,createTempDir())
+                    .withJettyConfig(jetty -> jetty.enableV2(true))
+                    .addConfig("conf", configset("conf2"))
+                    .configure();
+    System.clearProperty("metricsEnabled");
+    try {
+      JettySolrRunner j = cluster.getRandomJetty(random());
+      String url = j.getBaseUrl() + "/admin/metrics?key=solr.node:CONTAINER.zkClient&wt=json";
+      HttpClient httpClient = ((HttpSolrClient) j.newClient())
+              .getHttpClient();
+      @SuppressWarnings("unchecked")
+      Map<String, Object> zkMmetrics = (Map<String, Object>) Utils.getObjectByPath(Utils.executeGET(
+                      httpClient, url, Utils.JSONCONSUMER), false,
+              List.of("metrics", "solr.node:CONTAINER.zkClient"));
+      System.out.println(Utils.toJSONString(zkMmetrics));
+
+      Set<String> allKeys = Set.of("watchesFired",
+              "reads",
+              "writes",
+              "bytesRead",
+              "bytesWritten",
+              "multiOps",
+              "cumulativeMultiOps",
+              "childFetches",
+              "cumulativeChildrenFetched",
+              "existsChecks",
+              "deletes");
+
+      for (String k : allKeys) {
+        assertNotNull(zkMmetrics.get(k));
+      }
+      Utils.executeGET(httpClient, j.getBaseURLV2() + "/cluster/zk/ls/live_nodes", Utils.JSONCONSUMER);
+      @SuppressWarnings("unchecked")
+      Map<String, Object> zkMmetricsNew = (Map<String, Object>) Utils.getObjectByPath(
+              Utils.executeGET(httpClient, url, Utils.JSONCONSUMER), false,
+              List.of("metrics", "solr.node:CONTAINER.zkClient"));
+
+      assertTrue(findDelta(zkMmetrics, zkMmetricsNew, "childFetches") >= 1);
+      assertTrue(findDelta(zkMmetrics, zkMmetricsNew, "cumulativeChildrenFetched") >= 3);
+      assertTrue(findDelta(zkMmetrics, zkMmetricsNew, "existsChecks") >= 4);
+    } finally {
+      cluster.shutdown();
+    }
+  }
+
+  private long findDelta(Map<String, Object> m1, Map<String, Object> m2, String k) {
+    return ((Number) m2.get(k)).longValue() - ((Number) m1.get(k)).longValue();
   }
 }
