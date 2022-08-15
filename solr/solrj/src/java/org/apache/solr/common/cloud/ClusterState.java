@@ -46,12 +46,6 @@ import org.slf4j.LoggerFactory;
 public class ClusterState implements JSONWriter.Writable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  // nocommit : to move these from ZkStateReader
-  public static final String NODE_NAME_PROP = "node_name";
-  public static final String CORE_NAME_PROP = "core";
-  public static final String CONFIGNAME_PROP = "configName";
-  public static final String COLLECTIONS_ZKNODE = "/collections";
-
   private final Map<String, CollectionRef> collectionStates, immutableCollectionStates;
   private Set<String> liveNodes;
   private Set<String> hostAllowList;
@@ -187,8 +181,8 @@ public class ClusterState implements JSONWriter.Writable {
       for (Slice slice : coll.getSlices()) {
         for (Replica replica : slice.getReplicas()) {
           // TODO: for really large clusters, we could 'index' on this
-          String rnodeName = replica.getStr(NODE_NAME_PROP);
-          String rcore = replica.getStr(CORE_NAME_PROP);
+          String rnodeName = replica.getStr(Replica.NODE_NAME_PROP);
+          String rcore = replica.getStr(Replica.CORE_NAME_PROP);
           if (nodeName.equals(rnodeName) && coreName.equals(rcore)) {
             return slice.getName();
           }
