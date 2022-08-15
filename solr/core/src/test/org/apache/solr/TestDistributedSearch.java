@@ -32,7 +32,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -71,7 +70,6 @@ import org.slf4j.LoggerFactory;
  *
  * @since solr 1.3
  */
-@Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-9061")
 public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
@@ -543,13 +541,6 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
     setDistributedParams(minParams);
     QueryResponse minResp = queryServer(minParams);
-
-    ModifiableSolrParams eParams = new ModifiableSolrParams();
-    eParams.set("q", tdate_b + ":[* TO *]");
-    eParams.set("rows", 1000);
-    eParams.set("fl", tdate_b);
-    setDistributedParams(eParams);
-    QueryResponse eResp = queryServer(eParams);
 
     // Check that exactly the right numbers of counts came through
     assertEquals(
@@ -1935,7 +1926,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     }
     QueryResponse rsp = queryRandomUpServer(params, upClients);
 
-    comparePartialResponses(rsp, controlRsp, upShards);
+    comparePartialResponses(rsp, upShards);
 
     if (stress > 0) {
       log.info("starting stress...");
@@ -1955,7 +1946,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
                   try {
                     QueryResponse rsp = client.query(new ModifiableSolrParams(params));
                     if (verifyStress) {
-                      comparePartialResponses(rsp, controlRsp, upShards);
+                      comparePartialResponses(rsp, upShards);
                     }
                   } catch (SolrServerException | IOException e) {
                     throw new RuntimeException(e);
@@ -1990,8 +1981,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     return client.query(params);
   }
 
-  protected void comparePartialResponses(
-      QueryResponse rsp, QueryResponse controlRsp, List<String> upShards) {
+  protected void comparePartialResponses(QueryResponse rsp, List<String> upShards) {
     NamedList<?> sinfo = (NamedList<?>) rsp.getResponse().get(ShardParams.SHARDS_INFO);
 
     assertNotNull("missing shard info", sinfo);

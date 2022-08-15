@@ -17,6 +17,7 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
@@ -46,15 +47,19 @@ import org.apache.solr.core.SolrPaths;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This test simply does a bunch of basic things in solrcloud mode and asserts things work as
  * expected.
  */
-public abstract class AbstractUnloadDistributedZkTestBase
-    extends AbstractBasicDistributedZkTestBase {
+public abstract class AbstractUnloadDistributedZkTestBase extends AbstractFullDistribZkTestBase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   public AbstractUnloadDistributedZkTestBase() {
     super();
+    fixShardCount(4); // needs at least 4 servers
   }
 
   protected String getSolrXml() {
@@ -69,9 +74,11 @@ public abstract class AbstractUnloadDistributedZkTestBase
           allowPath.clear();
           allowPath.add(SolrPaths.ALL_PATH); // Allow non-standard core instance path
         });
+    log.info("###Starting testCoreUnloadAndLeaders");
     testCoreUnloadAndLeaders(); // long
+    log.info("###Starting testUnloadOfCores");
     testUnloadLotsOfCores(); // long
-
+    log.info("###Starting testUnloadShardAndCollection");
     testUnloadShardAndCollection();
   }
 
@@ -391,6 +398,7 @@ public abstract class AbstractUnloadDistributedZkTestBase
 
   private void testUnloadLotsOfCores() throws Exception {
     JettySolrRunner jetty = jettys.get(0);
+    int shards = TEST_NIGHTLY ? 2 : 1;
     try (final HttpSolrClient adminClient = (HttpSolrClient) jetty.newClient(15000, 60000)) {
       int numReplicas = atLeast(3);
       ThreadPoolExecutor executor =
@@ -403,10 +411,16 @@ public abstract class AbstractUnloadDistributedZkTestBase
               new SolrNamedThreadFactory("testExecutor"));
       try {
         // create the cores
-        createCollectionInOneInstance(
-            adminClient, jetty.getNodeName(), executor, "multiunload", 2, numReplicas);
+        AbstractBasicDistributedZkTestBase.createCollectionInOneInstance(
+            adminClient, jetty.getNodeName(), executor, "multiunload", shards, numReplicas);
       } finally {
         ExecutorUtil.shutdownAndAwaitTermination(executor);
+      }
+
+      if (TEST_NIGHTLY == false) {
+        // with nightly tests, we can try doing the unloads before the creates are done
+        // it still works, but takes much longer since we end up waiting for a timeout
+        waitForRecoveriesToFinish("multiunload", false);
       }
 
       executor =

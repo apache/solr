@@ -380,3 +380,12 @@ limitations under the License.
   float: left;
   width: 65%;
 }
+
+.replication-factor {
+    /* some style when the element is active */
+}
+
+.replication-factor[disabled] {
+    /* styles when the element is disabled */
+    color: #c0c0c0;
+}

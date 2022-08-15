@@ -40,19 +40,16 @@ import org.junit.Test;
 /** Tests the UpdateRequestHandler support for XML updates. */
 public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
   private static XMLInputFactory inputFactory;
-  protected static UpdateRequestHandler handler;
 
   @BeforeClass
   public static void beforeTests() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
-    handler = new UpdateRequestHandler();
     inputFactory = XMLInputFactory.newInstance();
   }
 
   @AfterClass
   public static void afterTests() {
     inputFactory = null;
-    handler = null;
   }
 
   @Test

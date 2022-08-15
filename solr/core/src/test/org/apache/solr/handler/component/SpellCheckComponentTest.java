@@ -17,8 +17,8 @@
 package org.apache.solr.handler.component;
 
 import java.io.File;
-import java.util.*;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.lucene.tests.util.LuceneTestCase.SuppressTempFileChecks;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -40,7 +40,6 @@ import org.junit.Test;
 /**
  * @since solr 1.3
  */
-@Slow
 @SuppressTempFileChecks(
     bugUrl = "https://issues.apache.org/jira/browse/SOLR-1877 Spellcheck IndexReader leak bug?")
 public class SpellCheckComponentTest extends SolrTestCaseJ4 {
@@ -70,10 +69,9 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
 
   @Override
   public void tearDown() throws Exception {
-    super.tearDown();
     assertU(delQ("*:*"));
-    optimize();
     assertU((commit()));
+    super.tearDown();
   }
 
   @Test

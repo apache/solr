@@ -37,9 +37,6 @@ import org.junit.BeforeClass;
 
 public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
 
-  int port = 0;
-  static final String context = "/solr";
-
   static final String collection = "collection1";
 
   @BeforeClass

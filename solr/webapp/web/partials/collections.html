@@ -34,8 +34,13 @@ limitations under the License.
         <p class="clearfix"><label for="add_numShards">numShards:</label>
           <input type="text" name="numShards" id="add_numShards" ng-model="newCollection.numShards"></p>
 
-        <p class="clearfix"><label for="add_replicationFactor">replicationFactor:</label>
-          <input type="text" name="replicationFactor" id="add_replicationFactor" ng-model="newCollection.replicationFactor"></p>
+        <p class="clearfix replication-factor" ng-disabled="replicaTypesChosen()"><label for="add_replicationFactor">replicationFactor:</label>
+          <input type="text" name="replicationFactor" id="add_replicationFactor"
+            ng-model="newCollection.replicationFactor"
+            ng-disabled="replicaTypesChosen()"
+            class="replication-factor"
+          >
+        </p>
 
         <p class="clearfix"><a ng-click="showAdvanced=!showAdvanced">
           <span id="add_advanced" ng-class="{open: showAdvanced}">Show advanced</span></a></p>
@@ -64,6 +69,14 @@ limitations under the License.
               ng-options="node for node in availableNodeSet">
             </select>
           </p>
+
+          <p>Replica Types: </p>
+          <p class="clearfix"><Label for="add_nrtReplicas">nrt replicas:</Label>
+            <input type="text" name="nrtReplicas" id="add_nrtReplicas" ng-model="newCollection.nrtReplicas"></p>
+          <p class="clearfix"><Label for="add_tlogReplicas">tlog replicas:</Label>
+            <input type="text" name="tlogReplicas" id="add_tlogReplicas" ng-model="newCollection.tlogReplicas"></p>
+          <p class="clearfix"><Label for="add_pullReplicas">pull replicas:</Label>
+            <input type="text" name="pullReplicas" id="add_pullReplicas" ng-model="newCollection.pullReplicas"></p>
 
         </div>
         <p class="clearfix note error" ng-show="addMessage">

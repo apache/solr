@@ -40,8 +40,6 @@ public class TestQuerySenderNoQuery extends SolrTestCaseJ4 {
   }
 
   public void testListenerCreationCounts() {
-    SolrCore core = h.getCore();
-
     assertEquals(
         "Unexpected number of listeners created",
         EXPECTED_MOCK_LISTENER_INSTANCES,

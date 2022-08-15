@@ -23,7 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
@@ -42,7 +42,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Slow
+@LuceneTestCase.Nightly
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDistribZkTestBase {
   private static final int FAIL_TOLERANCE = 100;
@@ -51,8 +51,6 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
 
   private static final Integer RUN_LENGTH =
       Integer.parseInt(System.getProperty("solr.tests.cloud.cm.runlength", "-1"));
-
-  private final boolean useTlogReplicas = random().nextBoolean();
 
   private final int numPullReplicas;
   private final int numRealtimeOrTlogReplicas;

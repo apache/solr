@@ -158,7 +158,6 @@ public class TestJmxIntegration extends SolrTestCaseJ4 {
       log.info("Mbeans in server: {}", mbeanServer.queryNames(null, null));
     }
 
-    Set<ObjectInstance> objects = mbeanServer.queryMBeans(searcher, null);
     assertFalse(
         "No mbean found for SolrIndexSearcher", mbeanServer.queryMBeans(searcher, null).isEmpty());
 

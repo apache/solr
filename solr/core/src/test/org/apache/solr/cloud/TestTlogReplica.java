@@ -38,7 +38,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -77,7 +76,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Slow
 public class TestTlogReplica extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -766,6 +764,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     waitForNumDocsInAllActiveReplicas(4, 0);
   }
 
+  @Nightly
   public void testRebalanceLeaders() throws Exception {
     createAndWaitForCollection(1, 0, 2, 0);
     CloudSolrClient cloudClient = cluster.getSolrClient();

@@ -68,12 +68,11 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
       if (e.getValue() instanceof Map) {
         List<String> errs = new ArrayList<>();
         collectErrors.add(errs);
-        Map<?, ?> value = (Map<?, ?>) e.getValue();
         Thread t =
             new Thread(
                 () -> {
                   try {
-                    invokeBulkCall((String) e.getKey(), errs, value);
+                    invokeBulkCall((String) e.getKey(), errs);
                   } catch (Exception e1) {
                     e1.printStackTrace();
                   }
@@ -97,12 +96,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
     assertTrue(collectErrors.toString(), success);
   }
 
-  private void invokeBulkCall(
-      String cacheName,
-      List<String> errs,
-      // TODO this is unused - is that a bug?
-      Map<?, ?> val)
-      throws Exception {
+  private void invokeBulkCall(String cacheName, List<String> errs) throws Exception {
 
     String payload =
         "{"

@@ -228,10 +228,6 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
       return CONF_DIR.resolve("schema.xml");
     }
 
-    public Path getConfDir() {
-      return confDir;
-    }
-
     public Path getDataDir() {
       return dataDir;
     }
