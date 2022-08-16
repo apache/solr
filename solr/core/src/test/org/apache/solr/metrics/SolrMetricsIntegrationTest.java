@@ -229,7 +229,6 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     System.setProperty("metricsEnabled", "true");
     MiniSolrCloudCluster cluster =
         new MiniSolrCloudCluster.Builder(3, createTempDir())
-            .withJettyConfig(jetty -> jetty.enableV2(true))
             .addConfig("conf", configset("conf2"))
             .configure();
     System.clearProperty("metricsEnabled");
@@ -244,7 +243,6 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
                   Utils.executeGET(httpClient, url, Utils.JSONCONSUMER),
                   false,
                   List.of("metrics", "solr.node:CONTAINER.zkClient"));
-      System.out.println(Utils.toJSONString(zkMmetrics));
 
       Set<String> allKeys =
           Set.of(
