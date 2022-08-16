@@ -43,7 +43,6 @@ import org.slf4j.LoggerFactory;
 public class Slice extends ZkNodeProps implements Iterable<Replica> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  // nocommit : to move this from ZkStateReader
   private static final String STATE_PROP = "state";
 
   public final String collection;
