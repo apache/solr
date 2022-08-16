@@ -136,7 +136,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
     List<String> shardNames = populateShardNames(message, router);
     checkReplicaTypes(message);
     DocCollection newColl = null;
-    final String collectionPath = ZkStateReader.getCollectionPath(collectionName);
+    final String collectionPath = DocCollection.getCollectionPath(collectionName);
 
     try {
 

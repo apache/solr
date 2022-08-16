@@ -39,6 +39,8 @@ import org.slf4j.LoggerFactory;
  * Models a Collection in zookeeper (but that Java name is obviously taken, hence "DocCollection")
  */
 public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
+
+  public static final String COLLECTIONS_ZKNODE = "/collections";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final int znodeVersion;
@@ -119,9 +121,16 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     }
     this.activeSlicesArr = activeSlices.values().toArray(new Slice[activeSlices.size()]);
     this.router = router;
-    this.znode =
-        "/collections/" + name + "/state.json"; // nocommit : check if this needs to become generic
+    this.znode = getCollectionPath(name);
     assert name != null && slices != null;
+  }
+
+  public static String getCollectionPath(String coll) {
+    return getCollectionPathRoot(coll) + "/state.json";
+  }
+
+  public static String getCollectionPathRoot(String coll) {
+    return COLLECTIONS_ZKNODE + "/" + coll;
   }
 
   /**
@@ -304,7 +313,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return "DocCollection("
         + name
         + "/"
-        + znode
+        + getZNode()
         + "/"
         + znodeVersion
         + " "

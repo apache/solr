@@ -223,7 +223,7 @@ public class ZkStateWriter {
       if (!updates.isEmpty()) {
         for (Map.Entry<String, ZkWriteCommand> entry : updates.entrySet()) {
           String name = entry.getKey();
-          String path = ZkStateReader.getCollectionPath(name);
+          String path = DocCollection.getCollectionPath(name);
           ZkWriteCommand cmd = entry.getValue();
           DocCollection c = cmd.collection;
 

@@ -814,7 +814,7 @@ public class ZkStateReader implements SolrCloseable {
         if (cachedDocCollection != null) {
           Stat freshStats = null;
           try {
-            freshStats = zkClient.exists(getCollectionPath(collName), null, true);
+            freshStats = zkClient.exists(DocCollection.getCollectionPath(collName), null, true);
           } catch (Exception e) {
           }
           if (freshStats != null
@@ -1404,7 +1404,7 @@ public class ZkStateReader implements SolrCloseable {
 
     StateWatcher(String coll) {
       this.coll = coll;
-      collectionPath = getCollectionPath(coll);
+      collectionPath = DocCollection.getCollectionPath(coll);
     }
 
     @Override
@@ -1682,7 +1682,7 @@ public class ZkStateReader implements SolrCloseable {
 
   private DocCollection fetchCollectionState(String coll, Watcher watcher)
       throws KeeperException, InterruptedException {
-    String collectionPath = getCollectionPath(coll);
+    String collectionPath = DocCollection.getCollectionPath(coll);
     while (true) {
       ClusterState.initReplicaStateProvider(
           () -> {
@@ -1729,12 +1729,14 @@ public class ZkStateReader implements SolrCloseable {
     }
   }
 
+  @Deprecated // see DocCollection
   public static String getCollectionPathRoot(String coll) {
-    return COLLECTIONS_ZKNODE + "/" + coll;
+    return DocCollection.getCollectionPathRoot(coll);
   }
 
+  @Deprecated // see DocCollection
   public static String getCollectionPath(String coll) {
-    return getCollectionPathRoot(coll) + "/state.json";
+    return DocCollection.getCollectionPath(coll);
   }
 
   /**

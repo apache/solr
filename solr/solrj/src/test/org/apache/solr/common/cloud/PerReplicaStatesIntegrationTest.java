@@ -71,7 +71,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
       PerReplicaStates prs =
           PerReplicaStatesFetcher.fetch(
-              ZkStateReader.getCollectionPath(testCollection), cluster.getZkClient(), null);
+              DocCollection.getCollectionPath(testCollection), cluster.getZkClient(), null);
       assertEquals(4, prs.states.size());
       JettySolrRunner jsr = cluster.startJettySolrRunner();
       // Now let's do an add replica
@@ -79,7 +79,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
           .process(cluster.getSolrClient());
       prs =
           PerReplicaStatesFetcher.fetch(
-              ZkStateReader.getCollectionPath(testCollection), cluster.getZkClient(), null);
+              DocCollection.getCollectionPath(testCollection), cluster.getZkClient(), null);
       assertEquals(5, prs.states.size());
 
       testCollection = "perReplicaState_testv2";
@@ -94,7 +94,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
       prs =
           PerReplicaStatesFetcher.fetch(
-              ZkStateReader.getCollectionPath(testCollection), cluster.getZkClient(), null);
+              DocCollection.getCollectionPath(testCollection), cluster.getZkClient(), null);
       assertEquals(4, prs.states.size());
     } finally {
       cluster.shutdown();
@@ -123,7 +123,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
 
       DocCollection c = cluster.getZkStateReader().getCollection(testCollection);
       c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
-      String collectionPath = ZkStateReader.getCollectionPath(testCollection);
+      String collectionPath = DocCollection.getCollectionPath(testCollection);
       PerReplicaStates prs =
           PerReplicaStatesFetcher.fetch(
               collectionPath, SolrCloudTestCase.cluster.getZkClient(), null);
@@ -205,7 +205,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       PerReplicaStates prs1 =
           original =
               PerReplicaStatesFetcher.fetch(
-                  ZkStateReader.getCollectionPath(COLL), cluster.getZkClient(), null);
+                  DocCollection.getCollectionPath(COLL), cluster.getZkClient(), null);
       log.info("prs1 : {}", prs1);
 
       CollectionAdminRequest.modifyCollection(
@@ -232,7 +232,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
                 AtomicBoolean anyFail = new AtomicBoolean(false);
                 PerReplicaStates prs2 =
                     PerReplicaStatesFetcher.fetch(
-                        ZkStateReader.getCollectionPath(COLL), cluster.getZkClient(), null);
+                        DocCollection.getCollectionPath(COLL), cluster.getZkClient(), null);
                 prs2.states.forEachEntry(
                     (r, newState) -> {
                       if (newState.getDuplicate() != null) anyFail.set(true);
@@ -245,7 +245,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       System.out.println(
           "prs2 : "
               + PerReplicaStatesFetcher.fetch(
-                  ZkStateReader.getCollectionPath(COLL), cluster.getZkClient(), null));
+                  DocCollection.getCollectionPath(COLL), cluster.getZkClient(), null));
       cluster.shutdown();
     }
   }

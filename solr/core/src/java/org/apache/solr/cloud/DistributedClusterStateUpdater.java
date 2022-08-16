@@ -480,7 +480,7 @@ public class DistributedClusterStateUpdater {
           firstAttempt = false;
 
           // The parent node of the per replica state nodes happens to be the node of state.json.
-          String prsParentNode = ZkStateReader.getCollectionPath(updater.getCollectionName());
+          String prsParentNode = DocCollection.getCollectionPath(updater.getCollectionName());
 
           for (PerReplicaStatesOps prso : allStatesOps) {
             prso.persist(prsParentNode, zkStateReader.getZkClient());
@@ -547,7 +547,7 @@ public class DistributedClusterStateUpdater {
       // call will fail if the underlying cluster state update cannot be done, and that's a
       // desirable thing).
       throw new KeeperException.BadVersionException(
-          ZkStateReader.getCollectionPath(updater.getCollectionName()));
+          DocCollection.getCollectionPath(updater.getCollectionName()));
     }
 
     /**
@@ -574,7 +574,7 @@ public class DistributedClusterStateUpdater {
      */
     private void doStateDotJsonCasUpdate(ClusterState updatedState)
         throws KeeperException, InterruptedException {
-      String jsonPath = ZkStateReader.getCollectionPath(updater.getCollectionName());
+      String jsonPath = DocCollection.getCollectionPath(updater.getCollectionName());
 
       // Collection delete
       if (!updatedState.hasCollection(updater.getCollectionName())) {
@@ -621,7 +621,7 @@ public class DistributedClusterStateUpdater {
      * fresh data is ok, a second attempt will be made)
      */
     private ClusterState fetchStateForCollection() throws KeeperException, InterruptedException {
-      String collectionStatePath = ZkStateReader.getCollectionPath(updater.getCollectionName());
+      String collectionStatePath = DocCollection.getCollectionPath(updater.getCollectionName());
       Stat stat = new Stat();
       byte[] data = zkStateReader.getZkClient().getData(collectionStatePath, null, stat, true);
 

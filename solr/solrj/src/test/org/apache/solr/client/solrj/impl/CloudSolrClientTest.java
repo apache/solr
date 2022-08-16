@@ -1156,7 +1156,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     String testCollection = "perReplicaState_test";
-    String collectionPath = ZkStateReader.getCollectionPath(testCollection);
+    String collectionPath = DocCollection.getCollectionPath(testCollection);
 
     int liveNodes = cluster.getJettySolrRunners().size();
     CollectionAdminRequest.createCollection(testCollection, "conf", 2, 2)
@@ -1185,7 +1185,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
       // create a collection with PRS and v2 API
       testCollection = "perReplicaState_testv2";
-      collectionPath = ZkStateReader.getCollectionPath(testCollection);
+      collectionPath = DocCollection.getCollectionPath(testCollection);
 
       new V2Request.Builder("/collections")
           .withMethod(POST)
