@@ -20,7 +20,7 @@ package org.apache.solr.common.cloud;
 import java.util.Set;
 
 /**
- * Callback registered with {@code
+ * Callback registered with {@link
  * ZkStateReader#registerCloudCollectionsListener(CloudCollectionsListener)} and called whenever the
  * cloud's set of collections changes.
  */

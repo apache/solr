@@ -20,6 +20,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -167,6 +168,14 @@ public class Utils {
     return v;
   }
 
+  public static InputStream toJavabin(Object o) throws IOException {
+    try (final JavaBinCodec jbc = new JavaBinCodec()) {
+      BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
+      jbc.marshal(o, baos);
+      return new ByteArrayInputStream(baos.getbuf(), 0, baos.size());
+    }
+  }
+
   public static Object fromJavabin(byte[] bytes) throws IOException {
     try (JavaBinCodec jbc = new JavaBinCodec()) {
       return jbc.unmarshal(bytes);
@@ -199,25 +208,6 @@ public class Utils {
       jsonWriter.setIndent(indent).writeObj(o);
     }
     return writer;
-  }
-
-  public static String parseMetricsReplicaName(String collectionName, String coreName) {
-    if (collectionName == null || !coreName.startsWith(collectionName)) {
-      return null;
-    } else {
-      // split "collection1_shard1_1_replica1" into parts
-      if (coreName.length() > collectionName.length()) {
-        String str = coreName.substring(collectionName.length() + 1);
-        int pos = str.lastIndexOf("_replica");
-        if (pos == -1) { // ?? no _replicaN part ??
-          return str;
-        } else {
-          return str.substring(pos + 1);
-        }
-      } else {
-        return null;
-      }
-    }
   }
 
   private static class MapWriterJSONWriter extends JSONWriter {
@@ -686,6 +676,25 @@ public class Utils {
       return ValidatingJsonMap.parse(
           CommonParams.APISPEC_LOCATION + name + ".json", CommonParams.APISPEC_LOCATION);
     };
+  }
+
+  public static String parseMetricsReplicaName(String collectionName, String coreName) {
+    if (collectionName == null || !coreName.startsWith(collectionName)) {
+      return null;
+    } else {
+      // split "collection1_shard1_1_replica1" into parts
+      if (coreName.length() > collectionName.length()) {
+        String str = coreName.substring(collectionName.length() + 1);
+        int pos = str.lastIndexOf("_replica");
+        if (pos == -1) { // ?? no _replicaN part ??
+          return str;
+        } else {
+          return str.substring(pos + 1);
+        }
+      } else {
+        return null;
+      }
+    }
   }
 
   /**

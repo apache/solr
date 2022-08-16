@@ -18,7 +18,6 @@ package org.apache.solr.common.util;
 
 import static org.apache.solr.common.util.ByteArrayUtf8CharSequence.convertCharSeq;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -41,7 +40,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.common.ConditionalKeyMapWriter;
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.IteratorWriter;
@@ -125,14 +123,6 @@ public class JavaBinCodec implements PushWriter {
   public JavaBinCodec() {
     resolver = null;
     writableDocFields = null;
-  }
-
-  public static InputStream serializeToInputStream(Object o) throws IOException {
-    try (final JavaBinCodec jbc = new JavaBinCodec()) {
-      BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
-      jbc.marshal(o, baos);
-      return new ByteArrayInputStream(baos.getbuf(), 0, baos.size());
-    }
   }
 
   public JavaBinCodec setReadStringAsCharSeq(boolean flag) {

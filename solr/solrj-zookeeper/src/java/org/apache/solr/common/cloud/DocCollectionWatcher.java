@@ -18,7 +18,7 @@
 package org.apache.solr.common.cloud;
 
 /**
- * Callback registered with {@code ZkStateReader#registerDocCollectionWatcher(String,
+ * Callback registered with {@link ZkStateReader#registerDocCollectionWatcher(String,
  * DocCollectionWatcher)} and called whenever the DocCollection changes.
  */
 public interface DocCollectionWatcher {

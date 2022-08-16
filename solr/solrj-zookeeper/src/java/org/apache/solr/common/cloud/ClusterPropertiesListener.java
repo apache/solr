@@ -20,7 +20,7 @@ package org.apache.solr.common.cloud;
 import java.util.Map;
 
 /**
- * Listener that can be used with {@code
+ * Listener that can be used with {@link
  * ZkStateReader#registerClusterPropertiesListener(ClusterPropertiesListener)} and called whenever
  * the cluster properties changes.
  */

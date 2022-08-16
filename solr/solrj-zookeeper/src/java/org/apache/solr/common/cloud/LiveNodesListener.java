@@ -20,7 +20,7 @@ package org.apache.solr.common.cloud;
 import java.util.SortedSet;
 
 /**
- * Listener that can be used with {@code ZkStateReader#registerLiveNodesListener(LiveNodesListener)}
+ * Listener that can be used with {@link ZkStateReader#registerLiveNodesListener(LiveNodesListener)}
  * and called whenever the live nodes set changes.
  */
 public interface LiveNodesListener {

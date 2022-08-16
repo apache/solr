@@ -29,8 +29,9 @@ public class ZkCmdExecutor {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private long retryDelay = 1500L; // 1 second would match timeout, so 500 ms over for padding
-  private final int retryCount;
-  private final IsClosed isClosed;
+  private int retryCount;
+  private double timeouts;
+  private IsClosed isClosed;
 
   public ZkCmdExecutor(int timeoutms) {
     this(timeoutms, null);
@@ -43,7 +44,7 @@ public class ZkCmdExecutor {
    *     class.
    */
   public ZkCmdExecutor(int timeoutms, IsClosed isClosed) {
-    double timeouts = timeoutms / 1000.0;
+    timeouts = timeoutms / 1000.0;
     this.retryCount = Math.round(0.5f * ((float) Math.sqrt(8.0f * timeouts + 1.0f) - 1.0f)) + 1;
     this.isClosed = isClosed;
   }

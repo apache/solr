@@ -35,8 +35,8 @@ public abstract class ZkClientConnectionStrategy {
   private volatile ZkCredentialsProvider zkCredentialsToAddAutomatically;
   private volatile boolean zkCredentialsToAddAutomaticallyUsed;
 
-  private final List<DisconnectedListener> disconnectedListeners = new ArrayList<>();
-  private final List<ConnectedListener> connectedListeners = new ArrayList<>();
+  private List<DisconnectedListener> disconnectedListeners = new ArrayList<>();
+  private List<ConnectedListener> connectedListeners = new ArrayList<>();
 
   public abstract void connect(
       String zkServerAddress, int zkClientTimeout, Watcher watcher, ZkUpdate updater)
