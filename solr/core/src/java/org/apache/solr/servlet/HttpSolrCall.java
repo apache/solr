@@ -837,9 +837,7 @@ public class HttpSolrCall {
 
   private void handleAdminRequest() throws IOException {
     SolrQueryResponse solrResp = new SolrQueryResponse();
-    SolrCore.preDecorateResponse(solrReq, solrResp);
     handleAdmin(solrResp);
-    SolrCore.postDecorateResponse(handler, solrReq, solrResp);
     if (solrResp.getToLog().size() > 0) {
       // has to come second and in it's own if to keep ./gradlew check happy.
       if (log.isInfoEnabled()) {
@@ -886,7 +884,9 @@ public class HttpSolrCall {
   }
 
   protected void handleAdmin(SolrQueryResponse solrResp) {
+    SolrCore.preDecorateResponse(solrReq, solrResp);
     handler.handleRequest(solrReq, solrResp);
+    SolrCore.postDecorateResponse(handler, solrReq, solrResp);
   }
 
   /**
@@ -921,7 +921,7 @@ public class HttpSolrCall {
     solrReq.setParams(params);
   }
 
-  private void writeResponse(
+  protected void writeResponse(
       SolrQueryResponse solrRsp, QueryResponseWriter responseWriter, Method reqMethod)
       throws IOException {
     try {

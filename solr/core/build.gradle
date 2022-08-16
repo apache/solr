@@ -71,7 +71,7 @@ dependencies {
   jettyClientImplementation 'org.eclipse.jetty:jetty-http'
   jettyClientImplementation 'org.eclipse.jetty:jetty-io'
   implementation 'org.eclipse.jetty:jetty-rewrite'
-  jettyClientImplementation 'org.eclipse.jetty:jetty-server' // Currently needed for Jersey integration
+  implementation 'org.eclipse.jetty:jetty-server'
   implementation 'org.eclipse.jetty:jetty-servlet'
   jettyClientImplementation 'org.eclipse.jetty:jetty-util'
 

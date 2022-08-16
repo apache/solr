@@ -17,11 +17,16 @@
 
 package org.apache.solr.jersey;
 
-import org.apache.solr.handler.api.SomeAdminResource;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.handler.configsets.ListConfigSetsAPI;
+import org.apache.solr.jersey.container.SomeAdminResource;
+import org.glassfish.hk2.api.Factory;
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Singleton;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 
@@ -31,12 +36,39 @@ import java.util.Map;
 public class CoreContainerApp extends ResourceConfig {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    public CoreContainerApp() {
+    public CoreContainerApp(CoreContainer coreContainer) {
         super();
         setProperties(Map.of("jersey.config.server.tracing.type", "ALL", "jersey.config.server.tracing.threshold", "VERBOSE"));
         register(ApplicationEventLogger.class);
-        register(SomeAdminResource.class);
         register(SolrRequestAuthorizer.class);
-        //packages(true, "org.apache.solr");
+        register(SomeAdminResource.class);
+        register(ListConfigSetsAPI.class);
+        register(new AbstractBinder() {
+            @Override
+            protected void configure() {
+                bindFactory(new CoreContainerFactory(coreContainer))
+                        .to(CoreContainer.class)
+                        .in(Singleton.class);
+            }
+        });
+        //packages(true, "org.apache.solr.jersey.container");
+    }
+
+    public static class CoreContainerFactory implements Factory<CoreContainer> {
+
+        private final CoreContainer singletonCC;
+
+        public CoreContainerFactory(CoreContainer singletonCC) {
+            this.singletonCC = singletonCC;
+        }
+
+
+        @Override
+        public CoreContainer provide() {
+            return singletonCC;
+        }
+
+        @Override
+        public void dispose(CoreContainer instance) { /* No-op */ }
     }
 }

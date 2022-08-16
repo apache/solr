@@ -17,7 +17,12 @@
 
 package org.apache.solr.common;
 
+import org.apache.solr.common.util.Utils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -25,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
-import org.apache.solr.common.util.Utils;
 
 /**
  * Use this class to push all entries of a Map into an output. This avoids creating map instances
@@ -34,6 +38,9 @@ import org.apache.solr.common.util.Utils;
  */
 public interface MapWriter extends MapSerializable, NavigableObject {
 
+  static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+
   default String jsonStr() {
     return Utils.toJSONString(this);
   }
@@ -41,11 +48,13 @@ public interface MapWriter extends MapSerializable, NavigableObject {
   @Override
   @SuppressWarnings({"unchecked", "rawtypes"})
   default Map<String, Object> toMap(Map<String, Object> map) {
+    log.info("JEGERLOW In MapWriter.toMap()");
     try {
       writeMap(
           new EntryWriter() {
             @Override
             public EntryWriter put(CharSequence k, Object v) {
+              log.info("JEGERLOW In toMap (nested) attempting to write k={} and value = {}", k , v);
               if (v instanceof MapWriter) v = ((MapWriter) v).toMap(new LinkedHashMap<>());
               if (v instanceof IteratorWriter) v = ((IteratorWriter) v).toList(new ArrayList<>());
               if (v instanceof Iterable) {

@@ -15,9 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.solr.handler.api;
+package org.apache.solr.jersey.container;
 
-import org.apache.solr.api.JerseyResource;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.security.PermissionNameProvider;
 import org.slf4j.Logger;
@@ -25,20 +24,21 @@ import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import java.lang.invoke.MethodHandles;
 
-@Path("/collections/{collectionName}/somecorepath")
-public class SomeCoreResource extends JerseyResource {
+@Path("/someadminpath")
+public class SomeAdminResource {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+
     @GET
-    @Produces(MediaType.TEXT_PLAIN)
     @PermissionName(PermissionNameProvider.Name.READ_PERM)
-    public String helloPlainText(@PathParam("collectionName") String collectionName) {
-        log.info("Made it into SomeCoreResource.helloPlainText with collName {}", collectionName);
-        return "Hello world!";
+    @Produces(MediaType.TEXT_PLAIN)
+    public String helloPlainText() {
+        log.info("Made it to SomeAdminResource");
+
+        return "Hello from admin resource!";
     }
 }

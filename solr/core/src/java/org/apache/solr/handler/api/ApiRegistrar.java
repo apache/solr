@@ -40,7 +40,6 @@ import org.apache.solr.handler.admin.api.SplitShardAPI;
 import org.apache.solr.handler.admin.api.SyncShardAPI;
 import org.apache.solr.handler.configsets.CreateConfigSetAPI;
 import org.apache.solr.handler.configsets.DeleteConfigSetAPI;
-import org.apache.solr.handler.configsets.ListConfigSetsAPI;
 import org.apache.solr.handler.configsets.UploadConfigSetAPI;
 import org.apache.solr.handler.configsets.UploadConfigSetFileAPI;
 
@@ -83,7 +82,6 @@ public class ApiRegistrar {
   public static void registerConfigsetApis(ApiBag apiBag, CoreContainer container) {
     apiBag.registerObject(new CreateConfigSetAPI(container));
     apiBag.registerObject(new DeleteConfigSetAPI(container));
-    apiBag.registerObject(new ListConfigSetsAPI(container));
     apiBag.registerObject(new UploadConfigSetAPI(container));
     apiBag.registerObject(new UploadConfigSetFileAPI(container));
   }

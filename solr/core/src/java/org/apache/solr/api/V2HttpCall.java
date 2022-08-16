@@ -38,11 +38,13 @@ import org.apache.solr.handler.RequestHandlerUtils;
 import org.apache.solr.jersey.SolrRequestAuthorizer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.servlet.HttpSolrCall;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.servlet.SolrRequestParsers;
+import org.apache.solr.servlet.cache.Method;
 import org.glassfish.jersey.internal.MapPropertiesDelegate;
 import org.glassfish.jersey.server.ApplicationHandler;
 import org.glassfish.jersey.server.ContainerRequest;
@@ -52,6 +54,7 @@ import org.slf4j.LoggerFactory;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.SecurityContext;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.security.Principal;
@@ -276,10 +279,11 @@ public class V2HttpCall extends HttpSolrCall {
     }
 
     if (api == null) {
-      return getSubPathApi(requestHandlers, path, fullPath, new CompositeApi(null));
+      return null;
     }
 
     if (api instanceof ApiBag.IntrospectApi) {
+      log.info("We're operating on an introspect API");
       final Map<String, Api> apis = new LinkedHashMap<>();
       for (String m : SolrRequest.SUPPORTED_METHODS) {
         Api x = requestHandlers.v2lookup(path, m, parts);
@@ -303,68 +307,9 @@ public class V2HttpCall extends HttpSolrCall {
                   RequestHandlerUtils.addExperimentalFormatWarning(rsp);
                 }
               });
-      getSubPathApi(requestHandlers, path, fullPath, (CompositeApi) api);
     }
 
     return api;
-  }
-
-  private static CompositeApi getSubPathApi(
-      PluginBag<SolrRequestHandler> requestHandlers,
-      String path,
-      String fullPath,
-      CompositeApi compositeApi) {
-
-    log.info("JEGERLOW In getSubPathApi with path=[{}] and fullPath=[{}]", path, fullPath);
-    String newPath =
-        path.endsWith(CommonParams.INTROSPECT)
-            ? path.substring(0, path.length() - CommonParams.INTROSPECT.length())
-            : path;
-    Map<String, Set<String>> subpaths = new LinkedHashMap<>();
-
-    getSubPaths(newPath, requestHandlers.getApiBag(), subpaths);
-    final Map<String, Set<String>> subPaths = subpaths;
-    if (subPaths.isEmpty()) return null;
-    return compositeApi.add(
-        new Api(() -> ValidatingJsonMap.EMPTY) {
-          @Override
-          public void call(SolrQueryRequest req1, SolrQueryResponse rsp) {
-            String prefix = null;
-            prefix =
-                fullPath.endsWith(CommonParams.INTROSPECT)
-                    ? fullPath.substring(0, fullPath.length() - CommonParams.INTROSPECT.length())
-                    : fullPath;
-            LinkedHashMap<String, Set<String>> result = new LinkedHashMap<>(subPaths.size());
-            for (Map.Entry<String, Set<String>> e : subPaths.entrySet()) {
-              if (e.getKey().endsWith(CommonParams.INTROSPECT)) continue;
-              result.put(prefix + e.getKey(), e.getValue());
-            }
-
-            @SuppressWarnings({"unchecked"})
-            Map<Object, Object> m = (Map<Object, Object>) rsp.getValues().get("availableSubPaths");
-            if (m != null) {
-              m.putAll(result);
-            } else {
-              rsp.add("availableSubPaths", result);
-            }
-          }
-        });
-  }
-
-  private static void getSubPaths(String path, ApiBag bag, Map<String, Set<String>> pathsVsMethod) {
-    for (SolrRequest.METHOD m : SolrRequest.METHOD.values()) {
-      PathTrie<Api> registry = bag.getRegistry(m.toString());
-      if (registry != null) {
-        HashSet<String> subPaths = new HashSet<>();
-        registry.lookup(path, new HashMap<>(), subPaths);
-        for (String subPath : subPaths) {
-          Set<String> supportedMethods = pathsVsMethod.get(subPath);
-          if (supportedMethods == null)
-            pathsVsMethod.put(subPath, supportedMethods = new HashSet<>());
-          supportedMethods.add(m.toString());
-        }
-      }
-    }
   }
 
   public List<String> getPathSegments() {
@@ -428,7 +373,6 @@ public class V2HttpCall extends HttpSolrCall {
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
-    log.info("JEGERLOW Finished call to 'handle'; response is: {} with code {}", response, response.getStatus());
   }
 
   @Override
@@ -437,7 +381,9 @@ public class V2HttpCall extends HttpSolrCall {
       if (api == null) {
         invokeJerseyRequest(cores, null, cores.getAppHandler());
       } else {
+        SolrCore.preDecorateResponse(solrReq, solrResp);
         api.call(this.solrReq, solrResp);
+        SolrCore.postDecorateResponse(handler, solrReq, solrResp);
       }
     } catch (Exception e) {
       solrResp.setException(e);
@@ -525,6 +471,15 @@ public class V2HttpCall extends HttpSolrCall {
       }
     }
     return builder.toString();
+  }
+
+  @Override
+  protected void writeResponse(
+          SolrQueryResponse solrRsp, QueryResponseWriter responseWriter, Method reqMethod) throws IOException {
+    if (api != null) {
+      super.writeResponse(solrRsp, responseWriter, reqMethod);
+    }
+    /* Do nothing for Jersey APIs, since Jersey has already written out the request */
   }
 
   @Override

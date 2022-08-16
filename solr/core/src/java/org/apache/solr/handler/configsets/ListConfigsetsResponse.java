@@ -15,30 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.solr.handler.api;
+package org.apache.solr.handler.configsets;
 
-import org.apache.solr.jersey.PermissionName;
-import org.apache.solr.security.PermissionNameProvider;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-import java.lang.invoke.MethodHandles;
+import java.util.List;
 
-@Path("/someadminpath")
-public class SomeAdminResource {
-    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+public class ListConfigsetsResponse extends SolrJerseyResponse {
 
-
-    @GET
-    @PermissionName(PermissionNameProvider.Name.READ_PERM)
-    @Produces(MediaType.TEXT_PLAIN)
-    public String helloPlainText() {
-        log.info("Made it to SomeAdminResource");
-
-        return "Hello from admin resource!";
-    }
+    @org.apache.solr.common.annotation.JsonProperty("configSets")
+    @JsonProperty("configSets")
+    public List<String> configSets;
 }

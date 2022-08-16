@@ -27,7 +27,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.SearchComponent;
-import org.apache.solr.jersey.CoreContainerApp;
 import org.apache.solr.jersey.SolrCoreApp;
 import org.apache.solr.pkg.PackagePluginHolder;
 import org.apache.solr.request.SolrRequestHandler;
@@ -77,7 +76,7 @@ public class PluginBag<T> implements AutoCloseable {
   public PluginBag(Class<T> klass, SolrCore core, boolean needThreadSafety) {
     if (klass == SolrRequestHandler.class) {
       this.apiBag = new ApiBag(core != null);
-      this.jerseyResources = (core == null) ? new CoreContainerApp() : new SolrCoreApp();
+      this.jerseyResources = (core == null) ? null : new SolrCoreApp();
     } else {
       this.apiBag = null;
       this.jerseyResources = null;

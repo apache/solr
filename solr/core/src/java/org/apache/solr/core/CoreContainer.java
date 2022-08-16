@@ -721,7 +721,7 @@ public class CoreContainer {
     }
 
     // TODO Ditch these direct references in CoreContainer and lean on the PluginBag instances
-    config = new CoreContainerApp();
+    config = new CoreContainerApp(this);
     appHandler = new ApplicationHandler(config);
 
     logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
