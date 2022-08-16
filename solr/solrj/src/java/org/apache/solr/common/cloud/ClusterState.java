@@ -32,8 +32,8 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.DocCollection.CollectionSProps;
-import org.apache.solr.common.cloud.Replica.ReplicaSProps;
+import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
+import org.apache.solr.common.cloud.Replica.ReplicaStateProps;
 import org.apache.solr.common.util.Utils;
 import org.noggit.JSONWriter;
 import org.slf4j.Logger;
@@ -187,8 +187,8 @@ public class ClusterState implements JSONWriter.Writable {
       for (Slice slice : coll.getSlices()) {
         for (Replica replica : slice.getReplicas()) {
           // TODO: for really large clusters, we could 'index' on this
-          String rnodeName = replica.getStr(ReplicaSProps.NODE_NAME);
-          String rcore = replica.getStr(ReplicaSProps.CORE_NAME);
+          String rnodeName = replica.getStr(ReplicaStateProps.NODE_NAME);
+          String rcore = replica.getStr(ReplicaStateProps.CORE_NAME);
           if (nodeName.equals(rnodeName) && coreName.equals(rcore)) {
             return slice.getName();
           }
@@ -251,7 +251,7 @@ public class ClusterState implements JSONWriter.Writable {
     Map<String, Object> props;
     Map<String, Slice> slices;
 
-    if (Boolean.parseBoolean(String.valueOf(objs.get(CollectionSProps.PER_REPLICA_STATE)))) {
+    if (Boolean.parseBoolean(String.valueOf(objs.get(CollectionStateProps.PER_REPLICA_STATE)))) {
       if (log.isDebugEnabled()) {
         log.debug("a collection {} has per-replica state", name);
       }
@@ -260,7 +260,7 @@ public class ClusterState implements JSONWriter.Writable {
       if (rsp instanceof StatesProvider) ((StatesProvider) rsp).isPerReplicaState = true;
     }
     @SuppressWarnings({"unchecked"})
-    Map<String, Object> sliceObjs = (Map<String, Object>) objs.get(CollectionSProps.SHARDS);
+    Map<String, Object> sliceObjs = (Map<String, Object>) objs.get(CollectionStateProps.SHARDS);
     if (sliceObjs == null) {
       // legacy format from 4.0... there was no separate "shards" level to contain the collection
       // shards.
@@ -269,10 +269,10 @@ public class ClusterState implements JSONWriter.Writable {
     } else {
       slices = Slice.loadAllFromMap(name, sliceObjs);
       props = new HashMap<>(objs);
-      objs.remove(CollectionSProps.SHARDS);
+      objs.remove(CollectionStateProps.SHARDS);
     }
 
-    Object routerObj = props.get(CollectionSProps.DOC_ROUTER);
+    Object routerObj = props.get(CollectionStateProps.DOC_ROUTER);
     DocRouter router;
     if (routerObj == null) {
       router = DocRouter.DEFAULT;

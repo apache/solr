@@ -34,7 +34,7 @@ import java.util.function.BiConsumer;
 import org.apache.solr.cluster.api.SimpleMap;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.annotation.JsonProperty;
-import org.apache.solr.common.cloud.Replica.ReplicaSProps;
+import org.apache.solr.common.cloud.Replica.ReplicaStateProps;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.WrappedSimpleMap;
@@ -233,7 +233,7 @@ public class PerReplicaStates implements ReflectMapWriter {
     public void writeMap(EntryWriter ew) throws IOException {
       ew.put(NAME, replica);
       ew.put(VERSION, version);
-      ew.put(ReplicaSProps.STATE, state.toString());
+      ew.put(ReplicaStateProps.STATE, state.toString());
       if (isLeader) ew.put(Slice.LEADER, isLeader);
       ew.putIfNotNull("duplicate", duplicate);
     }

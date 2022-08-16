@@ -18,7 +18,7 @@
 package org.apache.solr.common.cloud;
 
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.common.cloud.DocCollection.CollectionSProps.PER_REPLICA_STATE;
+import static org.apache.solr.common.params.CollectionAdminParams.PER_REPLICA_STATE;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;

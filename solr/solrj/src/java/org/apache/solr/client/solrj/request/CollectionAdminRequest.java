@@ -47,7 +47,6 @@ import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
-import org.apache.solr.common.cloud.DocCollection.CollectionSProps;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -701,7 +700,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
         params.set(CollectionAdminParams.TLOG_REPLICAS, tlogReplicas);
       }
       if (Boolean.TRUE.equals(perReplicaState)) {
-        params.set(CollectionSProps.PER_REPLICA_STATE, perReplicaState);
+        params.set(CollectionAdminParams.PER_REPLICA_STATE, perReplicaState);
       }
       params.setNonNull(ALIAS, alias);
       return params;

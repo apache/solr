@@ -88,21 +88,21 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     // overwrites
     this.znodeVersion = zkVersion == -1 ? Integer.MAX_VALUE : zkVersion;
     this.name = name;
-    this.configName = (String) props.get(CollectionSProps.CONFIGNAME);
+    this.configName = (String) props.get(CollectionStateProps.CONFIGNAME);
     this.slices = slices;
     this.activeSlices = new HashMap<>();
     this.nodeNameLeaderReplicas = new HashMap<>();
     this.nodeNameReplicas = new HashMap<>();
-    this.replicationFactor = (Integer) verifyProp(props, CollectionSProps.REPLICATION_FACTOR);
-    this.numNrtReplicas = (Integer) verifyProp(props, CollectionSProps.NRT_REPLICAS, 0);
-    this.numTlogReplicas = (Integer) verifyProp(props, CollectionSProps.TLOG_REPLICAS, 0);
-    this.numPullReplicas = (Integer) verifyProp(props, CollectionSProps.PULL_REPLICAS, 0);
+    this.replicationFactor = (Integer) verifyProp(props, CollectionStateProps.REPLICATION_FACTOR);
+    this.numNrtReplicas = (Integer) verifyProp(props, CollectionStateProps.NRT_REPLICAS, 0);
+    this.numTlogReplicas = (Integer) verifyProp(props, CollectionStateProps.TLOG_REPLICAS, 0);
+    this.numPullReplicas = (Integer) verifyProp(props, CollectionStateProps.PULL_REPLICAS, 0);
     this.perReplicaState =
-        (Boolean) verifyProp(props, CollectionSProps.PER_REPLICA_STATE, Boolean.FALSE);
+        (Boolean) verifyProp(props, CollectionStateProps.PER_REPLICA_STATE, Boolean.FALSE);
     ClusterState.getReplicaStatesProvider()
         .get()
         .ifPresent(it -> perReplicaStates = it.getStates());
-    Boolean readOnly = (Boolean) verifyProp(props, CollectionSProps.READ_ONLY);
+    Boolean readOnly = (Boolean) verifyProp(props, CollectionStateProps.READ_ONLY);
     this.readOnly = readOnly == null ? Boolean.FALSE : readOnly;
 
     Iterator<Map.Entry<String, Slice>> iter = slices.entrySet().iterator();
@@ -190,13 +190,13 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     Object o = props.get(propName);
     if (o == null) return def;
     switch (propName) {
-      case CollectionSProps.REPLICATION_FACTOR:
-      case CollectionSProps.NRT_REPLICAS:
-      case CollectionSProps.PULL_REPLICAS:
-      case CollectionSProps.TLOG_REPLICAS:
+      case CollectionStateProps.REPLICATION_FACTOR:
+      case CollectionStateProps.NRT_REPLICAS:
+      case CollectionStateProps.PULL_REPLICAS:
+      case CollectionStateProps.TLOG_REPLICAS:
         return Integer.parseInt(o.toString());
-      case CollectionSProps.PER_REPLICA_STATE:
-      case CollectionSProps.READ_ONLY:
+      case CollectionStateProps.PER_REPLICA_STATE:
+      case CollectionStateProps.READ_ONLY:
         return Boolean.parseBoolean(o.toString());
       case "snitch":
       default:
@@ -326,7 +326,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   public void write(JSONWriter jsonWriter) {
     LinkedHashMap<String, Object> all = new LinkedHashMap<>(slices.size() + 1);
     all.putAll(propMap);
-    all.put(CollectionSProps.SHARDS, slices);
+    all.put(CollectionStateProps.SHARDS, slices);
     jsonWriter.write(all);
   }
 
@@ -476,7 +476,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   }
 
   /** JSON properties related to a collection's state. */
-  public interface CollectionSProps {
+  public interface CollectionStateProps {
     String NRT_REPLICAS = "nrtReplicas";
     String PULL_REPLICAS = "pullReplicas";
     String TLOG_REPLICAS = "tlogReplicas";

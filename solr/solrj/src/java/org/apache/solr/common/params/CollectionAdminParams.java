@@ -18,7 +18,7 @@ package org.apache.solr.common.params;
 
 import java.util.Arrays;
 import java.util.Collection;
-import org.apache.solr.common.cloud.DocCollection.CollectionSProps;
+import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 
 public interface CollectionAdminParams {
 
@@ -123,5 +123,5 @@ public interface CollectionAdminParams {
   /** Prefix for arbitrary collection or replica properties. */
   String PROPERTY_PREFIX = "property.";
 
-  String PER_REPLICA_STATE = CollectionSProps.PER_REPLICA_STATE;
+  String PER_REPLICA_STATE = CollectionStateProps.PER_REPLICA_STATE;
 }

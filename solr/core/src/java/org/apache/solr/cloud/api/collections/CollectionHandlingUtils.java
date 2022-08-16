@@ -49,7 +49,7 @@ import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.DocCollection.CollectionSProps;
+import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -92,8 +92,6 @@ public class CollectionHandlingUtils {
   public static final String CREATE_NODE_SET_EMPTY = "EMPTY";
   public static final String CREATE_NODE_SET = CollectionAdminParams.CREATE_NODE_SET_PARAM;
 
-  public static final String ROUTER = "router";
-
   public static final String SHARDS_PROP = "shards";
 
   public static final String REQUESTID = "requestid";
@@ -110,17 +108,17 @@ public class CollectionHandlingUtils {
   public static final Map<String, Object> COLLECTION_PROPS_AND_DEFAULTS =
       Collections.unmodifiableMap(
           Utils.makeMap(
-              ROUTER,
+              CollectionStateProps.DOC_ROUTER,
               DocRouter.DEFAULT_NAME,
-              ZkStateReader.REPLICATION_FACTOR,
+              CollectionStateProps.REPLICATION_FACTOR,
               "1",
-              ZkStateReader.NRT_REPLICAS,
+              CollectionStateProps.NRT_REPLICAS,
               "1",
-              ZkStateReader.TLOG_REPLICAS,
+              CollectionStateProps.TLOG_REPLICAS,
               "0",
-              CollectionSProps.PER_REPLICA_STATE,
+              CollectionStateProps.PER_REPLICA_STATE,
               null,
-              ZkStateReader.PULL_REPLICAS,
+              CollectionStateProps.PULL_REPLICAS,
               "0"));
 
   public static final Random RANDOM;

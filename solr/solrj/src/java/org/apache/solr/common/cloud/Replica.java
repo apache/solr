@@ -142,14 +142,14 @@ public class Replica extends ZkNodeProps implements MapWriter {
     this.collection = collection;
     this.shard = shard;
     this.name = name;
-    this.node = (String) propMap.get(ReplicaSProps.NODE_NAME);
-    this.core = (String) propMap.get(ReplicaSProps.CORE_NAME);
-    this.type = Type.get((String) propMap.get(ReplicaSProps.TYPE));
+    this.node = (String) propMap.get(ReplicaStateProps.NODE_NAME);
+    this.core = (String) propMap.get(ReplicaStateProps.CORE_NAME);
+    this.type = Type.get((String) propMap.get(ReplicaStateProps.TYPE));
     readPrs();
     // default to ACTIVE
     this.state =
         State.getState(
-            String.valueOf(propMap.getOrDefault(ReplicaSProps.STATE, State.ACTIVE.toString())));
+            String.valueOf(propMap.getOrDefault(ReplicaStateProps.STATE, State.ACTIVE.toString())));
     validate();
   }
 
@@ -197,9 +197,11 @@ public class Replica extends ZkNodeProps implements MapWriter {
 
     this.propMap.putAll(details);
     readPrs();
-    type = Replica.Type.valueOf(String.valueOf(propMap.getOrDefault(ReplicaSProps.TYPE, "NRT")));
+    type =
+        Replica.Type.valueOf(String.valueOf(propMap.getOrDefault(ReplicaStateProps.TYPE, "NRT")));
     if (state == null)
-      state = State.getState(String.valueOf(propMap.getOrDefault(ReplicaSProps.STATE, "active")));
+      state =
+          State.getState(String.valueOf(propMap.getOrDefault(ReplicaStateProps.STATE, "active")));
     validate();
   }
 
@@ -212,7 +214,8 @@ public class Replica extends ZkNodeProps implements MapWriter {
               replicaState = it.getStates().get(name);
               if (replicaState != null) {
                 propMap.put(
-                    ReplicaSProps.STATE, replicaState.state.toString().toLowerCase(Locale.ROOT));
+                    ReplicaStateProps.STATE,
+                    replicaState.state.toString().toLowerCase(Locale.ROOT));
                 if (replicaState.isLeader) propMap.put(Slice.LEADER, "true");
               }
             });
@@ -227,17 +230,17 @@ public class Replica extends ZkNodeProps implements MapWriter {
     Objects.requireNonNull(this.state, "'state' must not be null");
     Objects.requireNonNull(this.node, "'node' must not be null");
 
-    String baseUrl = (String) propMap.get(ReplicaSProps.BASE_URL);
+    String baseUrl = (String) propMap.get(ReplicaStateProps.BASE_URL);
     Objects.requireNonNull(baseUrl, "'base_url' must not be null");
 
     // make sure all declared props are in the propMap
-    propMap.put(ReplicaSProps.COLLECTION, collection);
-    propMap.put(ReplicaSProps.SHARD_ID, shard);
-    propMap.put(ReplicaSProps.CORE_NODE_NAME, name);
-    propMap.put(ReplicaSProps.NODE_NAME, node);
-    propMap.put(ReplicaSProps.CORE_NAME, core);
-    propMap.put(ReplicaSProps.TYPE, type.toString());
-    propMap.put(ReplicaSProps.STATE, state.toString());
+    propMap.put(ReplicaStateProps.COLLECTION, collection);
+    propMap.put(ReplicaStateProps.SHARD_ID, shard);
+    propMap.put(ReplicaStateProps.CORE_NODE_NAME, name);
+    propMap.put(ReplicaStateProps.NODE_NAME, node);
+    propMap.put(ReplicaStateProps.CORE_NAME, core);
+    propMap.put(ReplicaStateProps.TYPE, type.toString());
+    propMap.put(ReplicaStateProps.STATE, state.toString());
   }
 
   public String getCollection() {
@@ -279,7 +282,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
   }
 
   public String getBaseUrl() {
-    return getStr(ReplicaSProps.BASE_URL);
+    return getStr(ReplicaStateProps.BASE_URL);
   }
 
   /** SolrCore name. */
@@ -299,7 +302,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
 
   public void setState(State state) {
     this.state = state;
-    propMap.put(ReplicaSProps.STATE, this.state.toString());
+    propMap.put(ReplicaStateProps.STATE, this.state.toString());
   }
 
   public boolean isActive(Set<String> liveNodes) {
@@ -311,7 +314,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
   }
 
   public boolean isLeader() {
-    return getBool(ReplicaSProps.LEADER, false);
+    return getBool(ReplicaStateProps.LEADER, false);
   }
 
   public Object get(String key, Object defValue) {
@@ -325,8 +328,8 @@ public class Replica extends ZkNodeProps implements MapWriter {
 
   public String getProperty(String propertyName) {
     final String propertyKey;
-    if (!propertyName.startsWith(ReplicaSProps.PROPERTY_PREFIX)) {
-      propertyKey = ReplicaSProps.PROPERTY_PREFIX + propertyName;
+    if (!propertyName.startsWith(ReplicaStateProps.PROPERTY_PREFIX)) {
+      propertyKey = ReplicaStateProps.PROPERTY_PREFIX + propertyName;
     } else {
       propertyKey = propertyName;
     }
@@ -338,10 +341,10 @@ public class Replica extends ZkNodeProps implements MapWriter {
     log.debug("A replica is updated with new state : {}", state);
     Map<String, Object> props = new LinkedHashMap<>(propMap);
     if (state == null) {
-      props.put(ReplicaSProps.STATE, State.DOWN.toString());
+      props.put(ReplicaStateProps.STATE, State.DOWN.toString());
       props.remove(Slice.LEADER);
     } else {
-      props.put(ReplicaSProps.STATE, state.state.toString());
+      props.put(ReplicaStateProps.STATE, state.state.toString());
       if (state.isLeader) props.put(Slice.LEADER, "true");
     }
     Replica r = new Replica(name, props, collection, shard);
@@ -387,12 +390,12 @@ public class Replica extends ZkNodeProps implements MapWriter {
       }
 
       writer
-          .put(ReplicaSProps.CORE_NAME, core, p)
-          .put(ReplicaSProps.SHARD_ID, shard, p)
-          .put(ReplicaSProps.COLLECTION, collection, p)
-          .put(ReplicaSProps.NODE_NAME, node, p)
-          .put(ReplicaSProps.TYPE, type.toString(), p)
-          .put(ReplicaSProps.STATE, state.toString(), p);
+          .put(ReplicaStateProps.CORE_NAME, core, p)
+          .put(ReplicaStateProps.SHARD_ID, shard, p)
+          .put(ReplicaStateProps.COLLECTION, collection, p)
+          .put(ReplicaStateProps.NODE_NAME, node, p)
+          .put(ReplicaStateProps.TYPE, type.toString(), p)
+          .put(ReplicaStateProps.STATE, state.toString(), p);
     };
   }
 
@@ -412,7 +415,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
   }
 
   /** JSON properties related to a replica's state. */
-  public interface ReplicaSProps {
+  public interface ReplicaStateProps {
     String COLLECTION = "collection";
     String SHARD_ID = "shard";
     String LEADER = "leader";

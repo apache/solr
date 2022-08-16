@@ -31,7 +31,7 @@ import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.DocCollection.CollectionSProps;
+import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
@@ -110,7 +110,7 @@ public class ClusterStateMutator {
       }
       if (val != null) collectionProps.put(e.getKey(), val);
     }
-    collectionProps.put(CollectionSProps.DOC_ROUTER, routerSpec);
+    collectionProps.put(CollectionStateProps.DOC_ROUTER, routerSpec);
 
     if (message.getStr("fromApi") == null) {
       collectionProps.put("autoCreated", "true");

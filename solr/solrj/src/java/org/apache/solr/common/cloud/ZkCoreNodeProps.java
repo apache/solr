@@ -17,7 +17,7 @@
 package org.apache.solr.common.cloud;
 
 import java.util.Objects;
-import org.apache.solr.common.cloud.Replica.ReplicaSProps;
+import org.apache.solr.common.cloud.Replica.ReplicaStateProps;
 
 public class ZkCoreNodeProps {
 
@@ -32,11 +32,11 @@ public class ZkCoreNodeProps {
   }
 
   public String getNodeName() {
-    return nodeProps.getStr(ReplicaSProps.NODE_NAME);
+    return nodeProps.getStr(ReplicaStateProps.NODE_NAME);
   }
 
   public String getState() {
-    return nodeProps.getStr(ReplicaSProps.STATE);
+    return nodeProps.getStr(ReplicaStateProps.STATE);
   }
 
   public String getBaseUrl() {
@@ -44,13 +44,13 @@ public class ZkCoreNodeProps {
   }
 
   public String getCoreName() {
-    return nodeProps.getStr(ReplicaSProps.CORE_NAME);
+    return nodeProps.getStr(ReplicaStateProps.CORE_NAME);
   }
 
   private static String getBaseUrl(ZkNodeProps nodeProps) {
     // if storing baseUrl in ZK is enabled and it's stored, just use what's stored, i.e. no
     // self-healing here
-    String baseUrl = nodeProps.getStr(ReplicaSProps.BASE_URL);
+    String baseUrl = nodeProps.getStr(ReplicaStateProps.BASE_URL);
     if (baseUrl == null) {
       throw new IllegalStateException("base_url not set in: " + nodeProps);
     }
@@ -59,7 +59,9 @@ public class ZkCoreNodeProps {
 
   public static String getCoreUrl(ZkNodeProps nodeProps) {
     String baseUrl = getBaseUrl(nodeProps);
-    return baseUrl != null ? getCoreUrl(baseUrl, nodeProps.getStr(ReplicaSProps.CORE_NAME)) : null;
+    return baseUrl != null
+        ? getCoreUrl(baseUrl, nodeProps.getStr(ReplicaStateProps.CORE_NAME))
+        : null;
   }
 
   public static String getCoreUrl(String baseUrl, String coreName) {
@@ -82,6 +84,6 @@ public class ZkCoreNodeProps {
   }
 
   public boolean isLeader() {
-    return nodeProps.containsKey(ReplicaSProps.LEADER);
+    return nodeProps.containsKey(ReplicaStateProps.LEADER);
   }
 }

@@ -32,7 +32,7 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.DocCollection.CollectionSProps;
+import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
@@ -117,8 +117,8 @@ public class CollectionMutator {
     boolean hasAnyOps = false;
     PerReplicaStatesOps replicaOps = null;
     for (String prop : CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES) {
-      if (prop.equals(CollectionSProps.PER_REPLICA_STATE)) {
-        String val = message.getStr(CollectionSProps.PER_REPLICA_STATE);
+      if (prop.equals(CollectionStateProps.PER_REPLICA_STATE)) {
+        String val = message.getStr(CollectionStateProps.PER_REPLICA_STATE);
         if (val == null) continue;
         boolean enable = Boolean.parseBoolean(val);
         if (enable == coll.isPerReplicaState()) {
