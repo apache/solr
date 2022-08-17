@@ -277,7 +277,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
               managedSchemaResourceName,
               schemaZkVersion,
               getSchemaUpdateLock());
-    } catch (Exception e) {
+    } catch (IOException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error loading parsing schema", e);
     }
     if (shouldUpgrade) {
