@@ -25,6 +25,5 @@ public class SolrCoreApp extends ResourceConfig {
     public SolrCoreApp() {
         super();
         setProperties(Map.of("jersey.config.server.tracing.type", "ALL", "jersey.config.server.tracing.threshold", "VERBOSE"));
-        register(ApplicationEventLogger.class);
     }
 }
