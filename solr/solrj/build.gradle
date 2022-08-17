@@ -49,6 +49,7 @@ dependencies {
   // ideally ZK centric tests move to solrj-zookeeper but sometimes we depend on ZK here anyway
   testImplementation project(':solr:solrj-zookeeper')
   testImplementation 'org.apache.zookeeper:zookeeper'
+  permitTestUnusedDeclared 'org.apache.zookeeper:zookeeper'
 
   testImplementation 'org.apache.lucene:lucene-analysis-common'
   testImplementation 'org.apache.lucene:lucene-core'
