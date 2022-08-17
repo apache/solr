@@ -67,21 +67,8 @@ public class CloudLegacySolrClient extends CloudSolrClient {
             "Both zkHost(s) & solrUrl(s) have been specified. Only specify one.");
       }
       if (builder.zkHosts != null) {
-        try {
-          var constructor =
-              Class.forName("org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider")
-                  .asSubclass(ClusterStateProvider.class)
-                  .getConstructor(Collection.class, String.class);
-          this.stateProvider = constructor.newInstance(builder.zkHosts, builder.zkChroot);
-        } catch (InvocationTargetException e) {
-          if (e.getCause() instanceof RuntimeException) {
-            throw (RuntimeException) e.getCause();
-          } else {
-            throw new RuntimeException(e.getCause());
-          }
-        } catch (Exception e) {
-          throw new RuntimeException(e.toString(), e);
-        }
+        this.stateProvider =
+            ClusterStateProvider.newZkClusterStateProvider(builder.zkHosts, builder.zkChroot);
       } else if (builder.solrUrls != null && !builder.solrUrls.isEmpty()) {
         try {
           this.stateProvider = new HttpClusterStateProvider(builder.solrUrls, builder.httpClient);
