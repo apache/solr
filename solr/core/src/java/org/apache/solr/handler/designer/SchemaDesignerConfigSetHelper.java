@@ -866,8 +866,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
     // now restore any missing types / files for the languages we need, optionally adding back
     // dynamic fields too
-    schema =
-        restoreLanguageSpecificObjectsAndFiles(configSet, schema, langs, dynamicEnabled, copyFrom);
+    schema = restoreLanguageSpecificObjectsAndFiles(configSet, schema, langs, dynamicEnabled);
 
     schema.persistManagedSchema(false);
     return schema;
@@ -944,15 +943,11 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   }
 
   protected ManagedIndexSchema restoreLanguageSpecificObjectsAndFiles(
-      String configSet,
-      ManagedIndexSchema schema,
-      List<String> langs,
-      boolean dynamicEnabled,
-      String copyFrom)
+      String configSet, ManagedIndexSchema schema, List<String> langs, boolean dynamicEnabled)
       throws IOException {
 
     // override copyFrom to be multilingual?
-    copyFrom = MULTILINGUAL_CONFIGSET_NAME;
+    String copyFrom = MULTILINGUAL_CONFIGSET_NAME;
 
     // pull the dynamic fields from the copyFrom schema
     ManagedIndexSchema copyFromSchema = loadLatestSchema(copyFrom);
