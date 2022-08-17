@@ -22,8 +22,8 @@ import java.util.Set;
 /**
  * Interface to determine if a set of liveNodes and a collection's state matches some expecatations.
  *
- * <p>{@code ZkStateReader#waitForState(String, long, TimeUnit, CollectionStatePredicate)} {@code
- * ZkStateReader#waitForState(String, long, TimeUnit, Predicate)}
+ * @see "ZkStateReader#waitForState(String, long, TimeUnit, CollectionStatePredicate)"
+ * @see "ZkStateReader#waitForState(String, long, TimeUnit, Predicate)"
  */
 public interface CollectionStatePredicate {
 
