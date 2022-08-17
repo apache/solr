@@ -26,6 +26,8 @@ import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
 import java.lang.invoke.MethodHandles;
 
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
@@ -41,6 +43,9 @@ public class ListConfigSetsAPI extends JerseyResource {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  @Context
+  public HttpHeaders headers;
+
   private final CoreContainer coreContainer;
 
   @Inject
@@ -50,13 +55,14 @@ public class ListConfigSetsAPI extends JerseyResource {
 
 
   @GET
-  @Produces("application/json")
+  @Produces({"application/json", "application/javabin"})
   @PermissionName(CONFIG_READ_PERM)
   public ListConfigsetsResponse listConfigSet() throws Exception {
-    log.info("CoreContainer={}", coreContainer);
+    log.info("CoreContainer={}, HttpHeaders.accept={}", coreContainer, (headers != null) ? headers.getAcceptableMediaTypes() : "null");
     final ListConfigsetsResponse response = new ListConfigsetsResponse();
     response.configSets = coreContainer.getConfigSetService().listConfigs();
     log.info("Finished building response, ready to return and deserialize");
+    log.info("response.header={}, response.configsets={}", response.responseHeader, response.configSets);
     return response;
   }
 

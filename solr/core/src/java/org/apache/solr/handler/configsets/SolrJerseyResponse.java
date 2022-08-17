@@ -21,14 +21,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 
 public class SolrJerseyResponse implements ReflectMapWriter {
-    //TODO We use both JsonProperty annotations here becaues the v2 serialization code expects Jackson, but
-    // ReflectMapWriter (which we use to squash the typed v2 response into a SolrQueryResponse for v1 code) relies on
-    // the ripoff SolrJ annotation.  This needs fixed before we can move forward.
+
     @org.apache.solr.common.annotation.JsonProperty("responseHeader")
     @JsonProperty("responseHeader")
     public ResponseHeader responseHeader = new ResponseHeader();
 
-    public static class ResponseHeader {
+    public static class ResponseHeader implements ReflectMapWriter {
+        @org.apache.solr.common.annotation.JsonProperty("status")
         public int status;
 
         @org.apache.solr.common.annotation.JsonProperty("QTime")

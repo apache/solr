@@ -17,6 +17,8 @@
 
 package org.apache.solr.jersey;
 
+import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.configsets.ListConfigSetsAPI;
 import org.apache.solr.jersey.container.SomeAdminResource;
@@ -27,7 +29,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Singleton;
+import javax.ws.rs.Produces;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.ext.MessageBodyWriter;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Type;
 import java.util.Map;
 
 /**
@@ -43,6 +54,7 @@ public class CoreContainerApp extends ResourceConfig {
         register(SolrRequestAuthorizer.class);
         register(SomeAdminResource.class);
         register(ListConfigSetsAPI.class);
+        register(JavabinWriter.class);
         register(new AbstractBinder() {
             @Override
             protected void configure() {
@@ -70,5 +82,28 @@ public class CoreContainerApp extends ResourceConfig {
 
         @Override
         public void dispose(CoreContainer instance) { /* No-op */ }
+    }
+
+    @Produces("application/javabin")
+    public static class JavabinWriter implements MessageBodyWriter<ReflectMapWriter> {
+
+        private final JavaBinCodec javaBinCodec;
+
+        public JavabinWriter() {
+            log.info("Creating new JavaBinWriter...hopefully this happens every request/response");
+            this.javaBinCodec = new JavaBinCodec();
+        }
+
+        @Override
+        public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
+            log.info("Entered isWriteable with class={}, mediaType={}", type, mediaType);
+            return mediaType.equals(new MediaType("application", "javabin"));
+        }
+
+        @Override
+        public void writeTo(ReflectMapWriter reflectMapWriter, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
+            log.info("Entered writeTo with object={}, type={}, mediaType={}", reflectMapWriter, type, mediaType);
+            javaBinCodec.marshal(reflectMapWriter, entityStream);
+        }
     }
 }

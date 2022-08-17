@@ -356,6 +356,9 @@ public class V2HttpCall extends HttpSolrCall {
       final URI fullUri = new URI(req.getScheme(), null, "somehostname", req.getServerPort(), path, null, null);
       final ContainerRequest containerRequest = new ContainerRequest(baseUri, fullUri, req.getMethod(),
               DEFAULT_SECURITY_CONTEXT, new MapPropertiesDelegate(), cores.getResourceConfig());
+      req.getHeaderNames().asIterator().forEachRemaining(headerName -> {
+        containerRequest.headers(headerName, Collections.list(req.getHeaders(headerName)));
+      });
 
       // Set properties that may be used by Jersey filters downstream
       containerRequest.setProperty(SolrRequestAuthorizer.CORE_CONTAINER_PROP_NAME, cores);
