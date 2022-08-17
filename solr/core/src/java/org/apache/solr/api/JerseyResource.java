@@ -17,5 +17,11 @@
 
 package org.apache.solr.api;
 
+/**
+ * A marker parent type for all Jersey resource classes
+ *
+ * We may not end up needing this, but it seemed potentially useful to have a single type that could serve as a handle
+ * for all Jersey resources.
+ */
 public class JerseyResource {
 }

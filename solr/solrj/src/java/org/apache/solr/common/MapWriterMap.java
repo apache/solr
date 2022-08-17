@@ -52,7 +52,6 @@ public class MapWriterMap implements MapWriter {
 
   @Override
   public Map<String, Object> toMap(Map<String, Object> map) {
-    log.info("In MapWriterMap.toMap");
     return delegate;
   }
 }

@@ -21,7 +21,6 @@ import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.configsets.ListConfigSetsAPI;
-import org.apache.solr.jersey.container.SomeAdminResource;
 import org.glassfish.hk2.api.Factory;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.server.ResourceConfig;
@@ -50,10 +49,7 @@ public class CoreContainerApp extends ResourceConfig {
     public CoreContainerApp(CoreContainer coreContainer) {
         super();
         setProperties(Map.of("jersey.config.server.tracing.type", "ALL", "jersey.config.server.tracing.threshold", "VERBOSE"));
-        register(ApplicationEventLogger.class);
         register(SolrRequestAuthorizer.class);
-        register(SomeAdminResource.class);
-        register(ListConfigSetsAPI.class);
         register(JavabinWriter.class);
         register(new AbstractBinder() {
             @Override
@@ -63,9 +59,14 @@ public class CoreContainerApp extends ResourceConfig {
                         .in(Singleton.class);
             }
         });
+        // Register individual APIs (or maybe we should just scan with a 'packages' call?)
+        register(ListConfigSetsAPI.class);
         //packages(true, "org.apache.solr.jersey.container");
     }
 
+    /**
+     * Allows the CoreContainer used by this Solr process to be injected into individual resource classes at call-time.
+     */
     public static class CoreContainerFactory implements Factory<CoreContainer> {
 
         private final CoreContainer singletonCC;
@@ -84,25 +85,26 @@ public class CoreContainerApp extends ResourceConfig {
         public void dispose(CoreContainer instance) { /* No-op */ }
     }
 
+    /**
+     * Registers a JAX-RS {@link MessageBodyWriter} that's used to return a javabin response when the request contains
+     * the "Accept: application/javabin" header.
+     */
     @Produces("application/javabin")
     public static class JavabinWriter implements MessageBodyWriter<ReflectMapWriter> {
 
         private final JavaBinCodec javaBinCodec;
 
         public JavabinWriter() {
-            log.info("Creating new JavaBinWriter...hopefully this happens every request/response");
             this.javaBinCodec = new JavaBinCodec();
         }
 
         @Override
         public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-            log.info("Entered isWriteable with class={}, mediaType={}", type, mediaType);
             return mediaType.equals(new MediaType("application", "javabin"));
         }
 
         @Override
         public void writeTo(ReflectMapWriter reflectMapWriter, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
-            log.info("Entered writeTo with object={}, type={}, mediaType={}", reflectMapWriter, type, mediaType);
             javaBinCodec.marshal(reflectMapWriter, entityStream);
         }
     }
