@@ -59,8 +59,8 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
     System.setProperty("managed.schema.mutable", "true");
     configureCluster(1)
         .addConfig(DEFAULT_CONFIGSET_NAME, new File(ExternalPaths.DEFAULT_CONFIGSET).toPath())
-            .addConfig(
-                    MULTILINGUAL_CONFIGSET_NAME, new File(ExternalPaths.MULTILINGUAL_CONFIGSET).toPath())
+        .addConfig(
+            MULTILINGUAL_CONFIGSET_NAME, new File(ExternalPaths.MULTILINGUAL_CONFIGSET).toPath())
         .configure();
     // SchemaDesignerConfigSetHelper depends on the blob store
     CollectionAdminRequest.createCollection(BLOB_STORE_ID, 1, 1).process(cluster.getSolrClient());
@@ -116,7 +116,7 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
 
     schema =
         helper.syncLanguageSpecificObjectsAndFiles(
-            configSet, schema, Collections.emptyList(), true, DEFAULT_CONFIGSET_NAME);
+            mutableId, schema, Collections.emptyList(), true, DEFAULT_CONFIGSET_NAME);
     assertEquals(2, schema.getSchemaZkVersion());
 
     byte[] zipped = helper.downloadAndZipConfigSet(mutableId);
@@ -156,28 +156,28 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
 
     schema =
         helper.syncLanguageSpecificObjectsAndFiles(
-            configSet, schema, Collections.singletonList("en"), true, DEFAULT_CONFIGSET_NAME);
+            mutableId, schema, Collections.singletonList("en"), true, DEFAULT_CONFIGSET_NAME);
+    assertNotNull(schema.getFieldTypeByName("text_general"));
+    assertNotNull(schema.getFieldOrNull("*_txt_en"));
+    assertNull(schema.getFieldTypeByName("text_fr"));
+
+    schema =
+        helper.syncLanguageSpecificObjectsAndFiles(
+            mutableId, schema, Collections.singletonList("en"), false, DEFAULT_CONFIGSET_NAME);
     assertNotNull(schema.getFieldTypeByName("text_general"));
     assertNull(schema.getFieldOrNull("*_txt_en"));
     assertNull(schema.getFieldTypeByName("text_fr"));
 
     schema =
         helper.syncLanguageSpecificObjectsAndFiles(
-            configSet, schema, Collections.singletonList("en"), false, DEFAULT_CONFIGSET_NAME);
-    assertNotNull(schema.getFieldTypeByName("text_general"));
-    assertNotNull(schema.getFieldOrNull("*_txt_en"));
-    assertNull(schema.getFieldTypeByName("text_fr"));
-
-    schema =
-        helper.syncLanguageSpecificObjectsAndFiles(
-            configSet, schema, Arrays.asList("en", "fr"), false, DEFAULT_CONFIGSET_NAME);
+            mutableId, schema, Arrays.asList("en", "fr"), false, DEFAULT_CONFIGSET_NAME);
     assertNotNull(schema.getFieldTypeByName("text_en"));
-    assertNotNull(schema.getFieldOrNull("*_txt_en"));
+    assertNull(schema.getFieldOrNull("*_txt_en"));
     assertNotNull(schema.getFieldTypeByName("text_fr"));
 
     schema =
         helper.syncLanguageSpecificObjectsAndFiles(
-            configSet, schema, Arrays.asList("en", "fr"), true, DEFAULT_CONFIGSET_NAME);
+            mutableId, schema, Arrays.asList("en", "fr"), true, DEFAULT_CONFIGSET_NAME);
     assertNotNull(schema.getFieldTypeByName("text_en"));
     assertNotNull(schema.getFieldOrNull("*_txt_en"));
     assertTrue(
@@ -201,7 +201,7 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
 
     schema =
         helper.syncLanguageSpecificObjectsAndFiles(
-            configSet, schema, Collections.singletonList("fr"), true, DEFAULT_CONFIGSET_NAME);
+            mutableId, schema, Collections.singletonList("fr"), true, DEFAULT_CONFIGSET_NAME);
     assertNotNull(schema.getFieldTypeByName("text_en")); // being used, so not removed
     assertNotNull(schema.getFieldOrNull("*_txt_en"));
     assertTrue(
@@ -215,7 +215,7 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
 
     schema =
         helper.syncLanguageSpecificObjectsAndFiles(
-            configSet, schema, Collections.emptyList(), true, DEFAULT_CONFIGSET_NAME);
+            mutableId, schema, Collections.emptyList(), true, DEFAULT_CONFIGSET_NAME);
     assertNotNull(schema.getFieldTypeByName("text_en"));
     assertNotNull(schema.getFieldOrNull("*_txt_en"));
     assertNotNull(schema.getFieldTypeByName("text_fr"));
@@ -225,7 +225,7 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
 
     schema =
         helper.syncLanguageSpecificObjectsAndFiles(
-            configSet, schema, Collections.emptyList(), false, DEFAULT_CONFIGSET_NAME);
+            mutableId, schema, Collections.emptyList(), false, DEFAULT_CONFIGSET_NAME);
     assertNotNull(schema.getFieldTypeByName("text_en"));
     assertNull(schema.getFieldOrNull("*_txt_en"));
     assertNotNull(schema.getFieldTypeByName("text_fr"));
