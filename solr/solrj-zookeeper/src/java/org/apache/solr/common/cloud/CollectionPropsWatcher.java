@@ -20,7 +20,7 @@ package org.apache.solr.common.cloud;
 import java.util.Map;
 
 /**
- * Callback registered with {@code ZkStateReader#registerCollectionPropsWatcher(String,
+ * Callback registered with {@link ZkStateReader#registerCollectionPropsWatcher(String,
  * CollectionPropsWatcher)} and called whenever the collection properties change.
  */
 public interface CollectionPropsWatcher {

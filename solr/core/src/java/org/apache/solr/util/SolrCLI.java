@@ -1218,14 +1218,15 @@ public class SolrCLI implements CLIO {
 
       log.debug("Running healthcheck for {}", collection);
 
-      ClusterState clusterState = cloudSolrClient.getClusterState();
+      ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
+
+      ClusterState clusterState = zkStateReader.getClusterState();
       Set<String> liveNodes = clusterState.getLiveNodes();
       final DocCollection docCollection = clusterState.getCollectionOrNull(collection);
       if (docCollection == null || docCollection.getSlices() == null)
         throw new IllegalArgumentException("Collection " + collection + " not found!");
 
       Collection<Slice> slices = docCollection.getSlices();
-      ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
       // Test http code using a HEAD request first, fail fast if authentication failure
       String urlForColl =
           zkStateReader.getLeaderUrl(collection, slices.stream().findFirst().get().getName(), 1000);
@@ -1558,10 +1559,9 @@ public class SolrCLI implements CLIO {
                 + "there is at least 1 live node in the cluster.");
 
       String baseUrl = cli.getOptionValue("solrUrl");
-      ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
       if (baseUrl == null) {
         String firstLiveNode = liveNodes.iterator().next();
-        baseUrl = zkStateReader.getBaseUrlForNodeName(firstLiveNode);
+        baseUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
       }
 
       String collectionName = cli.getOptionValue(NAME);
@@ -1577,7 +1577,9 @@ public class SolrCLI implements CLIO {
       boolean configExistsInZk =
           confname != null
               && !"".equals(confname.trim())
-              && zkStateReader.getZkClient().exists("/configs/" + confname, true);
+              && ZkStateReader.from(cloudSolrClient)
+                  .getZkClient()
+                  .exists("/configs/" + confname, true);
 
       if (CollectionAdminParams.SYSTEM_COLL.equals(collectionName)) {
         // do nothing
@@ -1598,7 +1600,7 @@ public class SolrCLI implements CLIO {
                 + cloudSolrClient.getClusterStateProvider().getQuorumHosts(),
             cli);
         ZkMaintenanceUtils.uploadToZK(
-            zkStateReader.getZkClient(),
+            ZkStateReader.from(cloudSolrClient).getZkClient(),
             confPath,
             ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confname,
             ZkMaintenanceUtils.UPLOAD_FILENAME_EXCLUDE_PATTERN);
@@ -2520,12 +2522,12 @@ public class SolrCLI implements CLIO {
       ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
       String baseUrl = zkStateReader.getBaseUrlForNodeName(firstLiveNode);
       String collectionName = cli.getOptionValue(NAME);
-      ClusterState clusterState = cloudSolrClient.getClusterState();
-      if (!clusterState.hasCollection(collectionName)) {
+      if (!zkStateReader.getClusterState().hasCollection(collectionName)) {
         throw new IllegalArgumentException("Collection " + collectionName + " not found!");
       }
 
-      String configName = clusterState.getCollection(collectionName).getConfigName();
+      String configName =
+          zkStateReader.getClusterState().getCollection(collectionName).getConfigName();
       boolean deleteConfig = "true".equals(cli.getOptionValue("deleteConfig", "true"));
       if (deleteConfig && configName != null) {
         if (cli.hasOption("forceDeleteConfig")) {
@@ -2534,7 +2536,7 @@ public class SolrCLI implements CLIO {
               configName);
         } else {
           // need to scan all Collections to see if any are using the config
-          Set<String> collections = clusterState.getCollectionsMap().keySet();
+          Set<String> collections = zkStateReader.getClusterState().getCollectionsMap().keySet();
 
           // give a little note to the user if there are many collections in case it takes a while
           if (collections.size() > 50)
@@ -2548,7 +2550,8 @@ public class SolrCLI implements CLIO {
           for (String next : collections) {
             if (collectionName.equals(next)) continue; // don't check the collection we're deleting
 
-            if (configName.equals(clusterState.getCollection(next).getConfigName())) {
+            if (configName.equals(
+                zkStateReader.getClusterState().getCollection(next).getConfigName())) {
               deleteConfig = false;
               log.warn(
                   "Configuration directory {} is also being used by {}{}",

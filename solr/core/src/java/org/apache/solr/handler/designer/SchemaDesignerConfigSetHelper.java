@@ -19,6 +19,7 @@ package org.apache.solr.handler.designer;
 
 import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 import static org.apache.solr.common.util.Utils.fromJSONString;
+import static org.apache.solr.common.util.Utils.toJavabin;
 import static org.apache.solr.handler.admin.ConfigSetsHandler.DEFAULT_CONFIGSET_NAME;
 import static org.apache.solr.handler.designer.SchemaDesignerAPI.getConfigSetZkPath;
 import static org.apache.solr.handler.designer.SchemaDesignerAPI.getMutableId;
@@ -566,7 +567,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     postDataToBlobStore(
         cloudClient(),
         configSet + "_sample",
-        DefaultSampleDocumentsLoader.streamAsBytes(Utils.toJavabin(docs)));
+        DefaultSampleDocumentsLoader.streamAsBytes(toJavabin(docs)));
   }
 
   protected void postDataToBlobStore(CloudSolrClient cloudClient, String blobName, byte[] bytes)
