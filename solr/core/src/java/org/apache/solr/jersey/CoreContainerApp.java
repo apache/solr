@@ -17,27 +17,15 @@
 
 package org.apache.solr.jersey;
 
-import org.apache.solr.common.util.JavaBinCodec;
-import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.configsets.ListConfigSetsAPI;
-import org.glassfish.hk2.api.Factory;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Singleton;
-import javax.ws.rs.Produces;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.ext.MessageBodyWriter;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Type;
 import java.util.Map;
 
 /**
@@ -62,50 +50,5 @@ public class CoreContainerApp extends ResourceConfig {
         // Register individual APIs (or maybe we should just scan with a 'packages' call?)
         register(ListConfigSetsAPI.class);
         //packages(true, "org.apache.solr.jersey.container");
-    }
-
-    /**
-     * Allows the CoreContainer used by this Solr process to be injected into individual resource classes at call-time.
-     */
-    public static class CoreContainerFactory implements Factory<CoreContainer> {
-
-        private final CoreContainer singletonCC;
-
-        public CoreContainerFactory(CoreContainer singletonCC) {
-            this.singletonCC = singletonCC;
-        }
-
-
-        @Override
-        public CoreContainer provide() {
-            return singletonCC;
-        }
-
-        @Override
-        public void dispose(CoreContainer instance) { /* No-op */ }
-    }
-
-    /**
-     * Registers a JAX-RS {@link MessageBodyWriter} that's used to return a javabin response when the request contains
-     * the "Accept: application/javabin" header.
-     */
-    @Produces("application/javabin")
-    public static class JavabinWriter implements MessageBodyWriter<ReflectMapWriter> {
-
-        private final JavaBinCodec javaBinCodec;
-
-        public JavabinWriter() {
-            this.javaBinCodec = new JavaBinCodec();
-        }
-
-        @Override
-        public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-            return mediaType.equals(new MediaType("application", "javabin"));
-        }
-
-        @Override
-        public void writeTo(ReflectMapWriter reflectMapWriter, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
-            javaBinCodec.marshal(reflectMapWriter, entityStream);
-        }
     }
 }

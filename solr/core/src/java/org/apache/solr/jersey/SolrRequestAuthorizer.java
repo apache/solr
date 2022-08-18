@@ -64,7 +64,6 @@ public class SolrRequestAuthorizer implements ContainerRequestFilter {
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
         final CoreContainer coreContainer = (CoreContainer) requestContext.getProperty(CORE_CONTAINER_PROP_NAME);
-        final SolrCore solrCore = (SolrCore) requestContext.getProperty(SOLR_CORE_PROP_NAME); // May be null
         final HttpServletRequest servletRequest = (HttpServletRequest) requestContext.getProperty(HTTP_SERVLET_REQ_PROP_NAME);
         final HttpServletResponse servletResponse = (HttpServletResponse) requestContext.getProperty(HTTP_SERVLET_RSP_PROP_NAME);
         final AuthorizationContext.RequestType requestType = (AuthorizationContext.RequestType) requestContext.getProperty(REQUEST_TYPE_PROP_NAME);

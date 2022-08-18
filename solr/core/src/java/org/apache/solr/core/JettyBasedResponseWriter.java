@@ -30,6 +30,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * A ResponseWriter which copies that output of JAX-RS computation over to {@link HttpServletResponse} object used by the Jetty server.
+ *
+ * Since we're not running Jersey as a full server or as a servlet that Jetty knows about, we need to connect the response Jersey
+ * outputs with the actual objects that Jetty sends back to clients.
+ */
 public class JettyBasedResponseWriter implements ContainerResponseWriter {
 
     private final HttpServletRequest req;

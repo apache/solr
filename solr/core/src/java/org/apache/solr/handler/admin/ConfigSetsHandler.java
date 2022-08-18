@@ -80,12 +80,8 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
   private void squashIntoSolrResponse(SolrQueryResponse rsp, ReflectMapWriter mw) {
     Map<String, Object> myMap = new HashMap<>();
     myMap = mw.toMap(myMap);
-    if (myMap.isEmpty()) {
-      log.info("Hmm, map is empty after writing in values from {}", mw);
-    }
-    for (String key : myMap.keySet()) {
-      log.info("Adding key={}, value={} to rsp", key, myMap.get(key));
-      rsp.add(key, myMap.get(key));
+    for (Map.Entry<String, Object> entry : myMap.entrySet()) {
+      rsp.add(entry.getKey(), entry.getValue());
     }
   }
 

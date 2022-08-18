@@ -17,20 +17,26 @@
 
 package org.apache.solr.jersey;
 
-import org.apache.solr.core.PluginBag;
-import org.glassfish.jersey.server.ResourceConfig;
-
-import java.util.Map;
+import org.apache.solr.core.CoreContainer;
+import org.glassfish.hk2.api.Factory;
 
 /**
- * Jersey API registration point for an individual Solr core.
- *
- * General configuration properties are set in the constructor here, but API registration itself is deferred to core-load time, which invokes
- * {@link org.apache.solr.core.PluginBag#put(String, PluginBag.PluginHolder)} with each request-handler to register
+ * Allows the CoreContainer used by this Solr process to be injected into individual resource classes at call-time.
  */
-public class SolrCoreApp extends ResourceConfig {
-    public SolrCoreApp() {
-        super();
-        setProperties(Map.of("jersey.config.server.tracing.type", "ALL", "jersey.config.server.tracing.threshold", "VERBOSE"));
+public class CoreContainerFactory implements Factory<CoreContainer> {
+
+    private final CoreContainer singletonCC;
+
+    public CoreContainerFactory(CoreContainer singletonCC) {
+        this.singletonCC = singletonCC;
     }
+
+
+    @Override
+    public CoreContainer provide() {
+        return singletonCC;
+    }
+
+    @Override
+    public void dispose(CoreContainer instance) { /* No-op */ }
 }

@@ -38,7 +38,6 @@ public class SomeCoreResource extends JerseyResource {
     @Produces(MediaType.TEXT_PLAIN)
     @PermissionName(PermissionNameProvider.Name.READ_PERM)
     public String helloPlainText(@PathParam("collectionName") String collectionName) {
-        log.info("Made it into SomeCoreResource.helloPlainText with collName {}", collectionName);
         return "Hello world!";
     }
 }

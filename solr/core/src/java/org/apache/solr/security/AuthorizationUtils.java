@@ -57,7 +57,11 @@ public class AuthorizationUtils {
     public static AuthorizationFailure authorize(HttpServletRequest servletReq, HttpServletResponse response,
                                                CoreContainer cores, AuthorizationContext context) throws IOException {
         log.debug("AuthorizationContext : {}", context);
-        AuthorizationResponse authResponse = cores.getAuthorizationPlugin().authorize(context);
+        final AuthorizationPlugin authzPlugin = cores.getAuthorizationPlugin();
+        if (authzPlugin == null) {
+            return null; // A 'null' failure retval indicates success
+        }
+        AuthorizationResponse authResponse = authzPlugin.authorize(context);
         int statusCode = authResponse.statusCode;
 
         if (statusCode == AuthorizationResponse.PROMPT.statusCode) {
