@@ -149,6 +149,9 @@ Other Changes
 
 * SOLR-16331: Migrate remaining managed-schema files to be managed-schema.xml.  (Eric Pugh)
 
+* SOLR-15342: SolrJ: Split ZooKeeper based dependencies off to a solr-solrj-zookeeper module /
+  dependency. (David Smiley, Haythem Khiri)
+
 Build
 ---------------------
 * SOLR-16204: Change Lucene dependency to Lucene 9.1.0 (Elia Porciani via Alessandro Benedetti)

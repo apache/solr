@@ -154,7 +154,10 @@ public abstract class CloudSolrClient extends SolrClient {
 
     /**
      * Provide a series of ZK hosts which will be used when configuring {@link CloudSolrClient}
-     * instances.
+     * instances. This requires a dependency on {@code solr-solrj-zookeeper} which transitively
+     * depends on more JARs. The ZooKeeper based connection is the most reliable and performant
+     * means for CloudSolrClient to work. On the other hand, it means exposing ZooKeeper more
+     * broadly than to Solr nodes, which is a security risk.
      *
      * <p>Usage example when Solr stores data at the ZooKeeper root ('/'):
      *
