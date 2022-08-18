@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -326,21 +325,7 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     public CloudLegacySolrClient build() {
       if (stateProvider == null) {
         if (!zkHosts.isEmpty()) {
-          try {
-            var constructor =
-                Class.forName("org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider")
-                    .asSubclass(ClusterStateProvider.class)
-                    .getConstructor(Collection.class, String.class);
-            this.stateProvider = constructor.newInstance(zkHosts, zkChroot);
-          } catch (InvocationTargetException e) {
-            if (e.getCause() instanceof RuntimeException) {
-              throw (RuntimeException) e.getCause();
-            } else {
-              throw new RuntimeException(e.getCause());
-            }
-          } catch (Exception e) {
-            throw new RuntimeException(e.toString(), e);
-          }
+          this.stateProvider = ClusterStateProvider.newZkClusterStateProvider(zkHosts, zkChroot);
         } else if (!this.solrUrls.isEmpty()) {
           try {
             stateProvider = new HttpClusterStateProvider(solrUrls, httpClient);
