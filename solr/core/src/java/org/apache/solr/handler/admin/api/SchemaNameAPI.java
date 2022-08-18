@@ -17,13 +17,14 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
-
 import org.apache.solr.api.EndPoint;
-import org.apache.solr.handler.SchemaHandler;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.security.PermissionNameProvider;
+
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 
 /**
  * V2 API for checking the name of an in-use schema.
@@ -32,17 +33,16 @@ import org.apache.solr.security.PermissionNameProvider;
  * /solr/collectionName/schema/name API.
  */
 public class SchemaNameAPI {
-  private final SchemaHandler schemaHandler;
-
-  public SchemaNameAPI(SchemaHandler schemaHandler) {
-    this.schemaHandler = schemaHandler;
-  }
 
   @EndPoint(
       path = {"/schema/name"},
       method = GET,
       permission = PermissionNameProvider.Name.SCHEMA_READ_PERM)
   public void getSchemaName(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    schemaHandler.handleRequestBody(req, rsp);
+    final String schemaName = req.getSchema().getSchemaName();
+    if (null == schemaName) {
+      rsp.setException(new SolrException(SolrException.ErrorCode.NOT_FOUND, "Schema has no name"));
+    }
+    rsp.add(IndexSchema.NAME, schemaName);
   }
 }

@@ -16,22 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import static java.util.Collections.singletonMap;
-import static org.apache.solr.common.params.CommonParams.JSON;
-import static org.apache.solr.schema.IndexSchema.SchemaProps.Handler.COPY_FIELDS;
-import static org.apache.solr.schema.IndexSchema.SchemaProps.Handler.DYNAMIC_FIELDS;
-import static org.apache.solr.schema.IndexSchema.SchemaProps.Handler.FIELDS;
-import static org.apache.solr.schema.IndexSchema.SchemaProps.Handler.FIELD_TYPES;
-
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
@@ -74,6 +58,23 @@ import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import static java.util.Collections.singletonMap;
+import static org.apache.solr.common.params.CommonParams.JSON;
+import static org.apache.solr.schema.IndexSchema.SchemaProps.Handler.COPY_FIELDS;
+import static org.apache.solr.schema.IndexSchema.SchemaProps.Handler.DYNAMIC_FIELDS;
+import static org.apache.solr.schema.IndexSchema.SchemaProps.Handler.FIELDS;
+import static org.apache.solr.schema.IndexSchema.SchemaProps.Handler.FIELD_TYPES;
 
 @SuppressWarnings({"unchecked"})
 public class SchemaHandler extends RequestHandlerBase
@@ -153,12 +154,7 @@ public class SchemaHandler extends RequestHandlerBase
           break;
         case "/schema/name":
           {
-            final String schemaName = req.getSchema().getSchemaName();
-            if (null == schemaName) {
-              String message = "Schema has no name";
-              throw new SolrException(SolrException.ErrorCode.NOT_FOUND, message);
-            }
-            rsp.add(IndexSchema.NAME, schemaName);
+            new SchemaNameAPI().getSchemaName(req, rsp);
             break;
           }
         case "/schema/zkversion":
@@ -315,7 +311,7 @@ public class SchemaHandler extends RequestHandlerBase
   public Collection<Api> getApis() {
 
     final List<Api> apis = new ArrayList<>();
-    apis.addAll(AnnotatedApi.getApis(new SchemaNameAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new SchemaNameAPI()));
     apis.addAll(AnnotatedApi.getApis(new SchemaInfoAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new SchemaUniqueKeyAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new SchemaVersionAPI(this)));

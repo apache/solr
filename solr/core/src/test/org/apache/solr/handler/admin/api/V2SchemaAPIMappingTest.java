@@ -26,7 +26,7 @@ public class V2SchemaAPIMappingTest extends V2ApiMappingTest<SchemaHandler> {
 
   @Override
   public void populateApiBag() {
-    apiBag.registerObject(new SchemaNameAPI(getRequestHandler()));
+    apiBag.registerObject(new SchemaNameAPI());
     apiBag.registerObject(new SchemaInfoAPI(getRequestHandler()));
     apiBag.registerObject(new SchemaUniqueKeyAPI(getRequestHandler()));
     apiBag.registerObject(new SchemaVersionAPI(getRequestHandler()));
