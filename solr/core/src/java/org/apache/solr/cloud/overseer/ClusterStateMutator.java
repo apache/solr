@@ -36,6 +36,7 @@ import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.Slice.SliceStateProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -94,7 +95,7 @@ public class ClusterStateMutator {
         String sliceName = shardNames.get(i);
 
         Map<String, Object> sliceProps = new LinkedHashMap<>(1);
-        sliceProps.put(Slice.RANGE, ranges == null ? null : ranges.get(i));
+        sliceProps.put(SliceStateProps.RANGE, ranges == null ? null : ranges.get(i));
 
         slices.put(sliceName, new Slice(sliceName, null, sliceProps, cName));
       }

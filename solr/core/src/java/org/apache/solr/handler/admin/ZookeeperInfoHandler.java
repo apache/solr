@@ -50,7 +50,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.Slice.SliceStateProps;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.MapSolrParams;
@@ -196,7 +196,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       for (Object o : shards.values()) {
         boolean hasActive = false;
         Map<String, Object> shard = (Map<String, Object>) o;
-        Map<String, Object> replicas = (Map<String, Object>) shard.get(Slice.REPLICAS);
+        Map<String, Object> replicas = (Map<String, Object>) shard.get(SliceStateProps.REPLICAS);
         for (Object value : replicas.values()) {
           Map<String, Object> replicaState = (Map<String, Object>) value;
           Replica.State coreState =

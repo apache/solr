@@ -216,7 +216,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
                 propMap.put(
                     ReplicaStateProps.STATE,
                     replicaState.state.toString().toLowerCase(Locale.ROOT));
-                if (replicaState.isLeader) propMap.put(Slice.LEADER, "true");
+                if (replicaState.isLeader) propMap.put(ReplicaStateProps.LEADER, "true");
               }
             });
   }
@@ -342,10 +342,10 @@ public class Replica extends ZkNodeProps implements MapWriter {
     Map<String, Object> props = new LinkedHashMap<>(propMap);
     if (state == null) {
       props.put(ReplicaStateProps.STATE, State.DOWN.toString());
-      props.remove(Slice.LEADER);
+      props.remove(ReplicaStateProps.LEADER);
     } else {
       props.put(ReplicaStateProps.STATE, state.state.toString());
-      if (state.isLeader) props.put(Slice.LEADER, "true");
+      if (state.isLeader) props.put(ReplicaStateProps.LEADER, "true");
     }
     Replica r = new Replica(name, props, collection, shard);
     r.replicaState = state;

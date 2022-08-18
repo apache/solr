@@ -37,6 +37,7 @@ import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.Slice.SliceStateProps;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -70,10 +71,10 @@ public class CollectionMutator {
       String shardParent = message.getStr(ZkStateReader.SHARD_PARENT_PROP);
       String shardParentZkSession = message.getStr("shard_parent_zk_session");
       String shardParentNode = message.getStr("shard_parent_node");
-      sliceProps.put(Slice.RANGE, shardRange);
+      sliceProps.put(SliceStateProps.RANGE, shardRange);
       sliceProps.put(ZkStateReader.STATE_PROP, shardState);
       if (shardParent != null) {
-        sliceProps.put(Slice.PARENT, shardParent);
+        sliceProps.put(SliceStateProps.PARENT, shardParent);
       }
       if (shardParentZkSession != null) {
         sliceProps.put("shard_parent_zk_session", shardParentZkSession);

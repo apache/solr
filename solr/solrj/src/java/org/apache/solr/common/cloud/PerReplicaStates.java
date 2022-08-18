@@ -234,7 +234,7 @@ public class PerReplicaStates implements ReflectMapWriter {
       ew.put(NAME, replica);
       ew.put(VERSION, version);
       ew.put(ReplicaStateProps.STATE, state.toString());
-      if (isLeader) ew.put(Slice.LEADER, isLeader);
+      if (isLeader) ew.put(ReplicaStateProps.LEADER, isLeader);
       ew.putIfNotNull("duplicate", duplicate);
     }
 

@@ -31,6 +31,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
+import org.apache.solr.common.cloud.Replica.ReplicaStateProps;
 import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -172,7 +173,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     }
     replicas.add(replica);
 
-    if (replica.getStr(Slice.LEADER) != null) {
+    if (replica.getStr(ReplicaStateProps.LEADER) != null) {
       List<Replica> leaderReplicas = nodeNameLeaderReplicas.get(replica.getNodeName());
       if (leaderReplicas == null) {
         leaderReplicas = new ArrayList<>();

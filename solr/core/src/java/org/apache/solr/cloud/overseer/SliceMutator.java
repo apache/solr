@@ -36,6 +36,7 @@ import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.RoutingRule;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.Slice.SliceStateProps;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -193,7 +194,7 @@ public class SliceMutator {
     }
 
     Map<String, Object> newSliceProps = slice.shallowCopy();
-    newSliceProps.put(Slice.REPLICAS, newReplicas);
+    newSliceProps.put(SliceStateProps.REPLICAS, newReplicas);
     slice = new Slice(slice.getName(), newReplicas, slice.getProperties(), collectionName);
     if (coll.isPerReplicaState()) {
       PerReplicaStates prs =
@@ -233,7 +234,7 @@ public class SliceMutator {
       Map<String, Object> props = slice.shallowCopy();
 
       if (Slice.State.getState(message.getStr(key)) == Slice.State.ACTIVE) {
-        props.remove(Slice.PARENT);
+        props.remove(SliceStateProps.PARENT);
         props.remove("shard_parent_node");
         props.remove("shard_parent_zk_session");
       }
