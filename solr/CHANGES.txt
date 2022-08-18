@@ -115,6 +115,8 @@ Bug Fixes
 
 * SOLR-16357: CaffeineCache ramBytes incorrect accounting on updates and deletes (Alex Deparvu)
 
+* SOLR-16343: Handle MDC snapshot being null (Dee Moore via Kevin Risden)
+
 Other Changes
 ---------------------
 * SOLR-16351: Upgrade Carrot2 to 4.4.3, upgrade randomizedtesting to 2.8.0. (Dawid Weiss)
