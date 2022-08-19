@@ -126,6 +126,8 @@ Other Changes
 
 * SOLR-16331: Migrate remaining managed-schema files to be managed-schema.xml.  (Eric Pugh)
 
+* SOLR-16332: Upgrade Jetty to 9.4.48.v20220622 (Chris Sabelstrom, janhoy)
+
 Build
 ---------------------
 * SOLR-16204: Change Lucene dependency to Lucene 9.1.0 (Elia Porciani via Alessandro Benedetti)
