@@ -787,8 +787,6 @@ Other Changes
 * SOLR-15780: The v2 API is now treated as "experimental".  It may change in backwards-incompatible ways in subsequent releases
   as it expands to cover additional functionality and prepares to supplant the v1 API. (Jason Gerlowski)
 
-* SOLR-15718: Remove backcompat feature solr.useUnsafeOverseerResponse (janhoy)
-
 Bug Fixes
 ---------------------
 * SOLR-15849: Fix the connection reset problem caused by the incorrect use of 4LW with \n when monitoring zooKeeper status
