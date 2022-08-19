@@ -15,18 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.solr.handler.configsets;
+package org.apache.solr.jersey;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.apache.solr.core.SolrCore;
+import org.glassfish.hk2.api.Factory;
 
-import java.util.List;
+/**
+ * Allows the SolrCore germane to a particular request to be injected into individual resource instances at call-time.
+ */
+public class SolrCoreFactory implements Factory<SolrCore> {
 
-public class ListConfigsetsResponse extends SolrJerseyResponse {
+    private final SolrCore solrCore;
 
-    //TODO We use both JsonProperty annotations here because the v2 serialization code expects Jackson, but
-    // ReflectMapWriter (which we use to squash the typed v2 response into a SolrQueryResponse for v1 code) relies on
-    // the ripoff SolrJ annotation.  This needs fixed before we can move forward.
-    @org.apache.solr.common.annotation.JsonProperty("configSets")
-    @JsonProperty("configSets")
-    public List<String> configSets;
+    public SolrCoreFactory(SolrCore solrCore) {
+        this.solrCore = solrCore;
+    }
+
+
+    @Override
+    public SolrCore provide() {
+        return solrCore;
+    }
+
+    @Override
+    public void dispose(SolrCore instance) { /* No-op */ }
 }

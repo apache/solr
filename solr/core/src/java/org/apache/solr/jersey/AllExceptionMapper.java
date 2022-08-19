@@ -15,29 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.solr.handler.api;
+package org.apache.solr.jersey;
 
-import org.apache.solr.api.JerseyResource;
-import org.apache.solr.jersey.PermissionName;
-import org.apache.solr.security.PermissionNameProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.ext.ExceptionMapper;
 import java.lang.invoke.MethodHandles;
 
-@Path("/collections/{collectionName}/somecorepath")
-public class SomeCoreResource extends JerseyResource {
+public class AllExceptionMapper implements ExceptionMapper<Throwable> {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    @GET
-    @Produces(MediaType.TEXT_PLAIN)
-    @PermissionName(PermissionNameProvider.Name.READ_PERM)
-    public String helloPlainText(@PathParam("collectionName") String collectionName) {
-        return "Hello world!";
+    @Override
+    public Response toResponse(Throwable exception) {
+        log.error("Ran into exception serving Jersey resource", exception);
+        return Response.serverError().entity("Error encountered: " + exception.getMessage()).build();
     }
 }

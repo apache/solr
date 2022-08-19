@@ -37,8 +37,11 @@ public class CoreContainerApp extends ResourceConfig {
     public CoreContainerApp(CoreContainer coreContainer) {
         super();
         setProperties(Map.of("jersey.config.server.tracing.type", "ALL", "jersey.config.server.tracing.threshold", "VERBOSE"));
+        register(ApplicationEventLogger.class);
+        register(RequestEventLogger.class);
         register(SolrRequestAuthorizer.class);
         register(JavabinWriter.class);
+        register(AllExceptionMapper.class);
         register(new AbstractBinder() {
             @Override
             protected void configure() {

@@ -17,14 +17,20 @@
 
 package org.apache.solr.handler.admin.api;
 
-import org.apache.solr.api.EndPoint;
+import org.apache.solr.api.JerseyResource;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.security.PermissionNameProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import java.lang.invoke.MethodHandles;
 
 /**
  * V2 API for checking the name of an in-use schema.
@@ -32,17 +38,30 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
  * <p>This API (GET /v2/collections/collectionName/schema/name) is analogous to the v1
  * /solr/collectionName/schema/name API.
  */
-public class SchemaNameAPI {
+@Path("/collections/{collectionName}/schema/name")
+public class SchemaNameAPI extends JerseyResource {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  @EndPoint(
-      path = {"/schema/name"},
-      method = GET,
-      permission = PermissionNameProvider.Name.SCHEMA_READ_PERM)
-  public void getSchemaName(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    final String schemaName = req.getSchema().getSchemaName();
-    if (null == schemaName) {
-      rsp.setException(new SolrException(SolrException.ErrorCode.NOT_FOUND, "Schema has no name"));
+
+  private SolrCore solrCore;
+
+  @Inject
+  public SchemaNameAPI(SolrCore solrCore) {
+    this.solrCore = solrCore;
+  }
+
+  @GET
+  @Produces("application/json")
+  @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
+  public GetSchemaNameResponse getSchemaName() throws Exception {
+    final IndexSchema schema = solrCore.getLatestSchema();
+    if (null == schema.getSchemaName()) {
+      // TODO Add an ExceptionMapper to format this as it would look in v1 Solr
+      throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "Schema has no name");
     }
-    rsp.add(IndexSchema.NAME, schemaName);
+
+    final GetSchemaNameResponse response = new GetSchemaNameResponse();
+    response.name = schema.getSchemaName();
+    return response;
   }
 }

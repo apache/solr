@@ -76,7 +76,7 @@ public class PluginBag<T> implements AutoCloseable {
   public PluginBag(Class<T> klass, SolrCore core, boolean needThreadSafety) {
     if (klass == SolrRequestHandler.class) {
       this.apiBag = new ApiBag(core != null);
-      this.jerseyResources = (core == null) ? null : new SolrCoreApp();
+      this.jerseyResources = (core == null) ? null : new SolrCoreApp(core);
     } else {
       this.apiBag = null;
       this.jerseyResources = null;

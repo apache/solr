@@ -18,8 +18,11 @@
 package org.apache.solr.jersey;
 
 import org.apache.solr.core.PluginBag;
+import org.apache.solr.core.SolrCore;
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.server.ResourceConfig;
 
+import javax.inject.Singleton;
 import java.util.Map;
 
 /**
@@ -29,8 +32,19 @@ import java.util.Map;
  * {@link org.apache.solr.core.PluginBag#put(String, PluginBag.PluginHolder)} with each request-handler to register
  */
 public class SolrCoreApp extends ResourceConfig {
-    public SolrCoreApp() {
+    public SolrCoreApp(SolrCore solrCore) {
         super();
         setProperties(Map.of("jersey.config.server.tracing.type", "ALL", "jersey.config.server.tracing.threshold", "VERBOSE"));
+        register(ApplicationEventLogger.class);
+        register(RequestEventLogger.class);
+        register(AllExceptionMapper.class);
+        register(new AbstractBinder() {
+            @Override
+            protected void configure() {
+                bindFactory(new SolrCoreFactory(solrCore))
+                        .to(SolrCore.class)
+                        .in(Singleton.class);
+            }
+        });
     }
 }
