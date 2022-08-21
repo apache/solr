@@ -210,7 +210,7 @@ public class ConnectionManager implements Watcher {
 
                 private void closeKeeper(ZooKeeper keeper) {
                   try {
-                    keeper.close();
+                    SolrZkClient.closeAsync(keeper);
                   } catch (InterruptedException e) {
                     // Restore the interrupted status
                     Thread.currentThread().interrupt();

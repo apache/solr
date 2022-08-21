@@ -88,13 +88,14 @@ public class TestZkAclsWithHadoopAuth extends SolrCloudTestCase {
   @Test
   @SuppressWarnings({"try"})
   public void testZkAcls() throws Exception {
-    try (ZooKeeper keeper =
+    ZooKeeper keeper =
         new ZooKeeper(
             cluster.getZkServer().getZkAddress(),
             (int) TimeUnit.MINUTES.toMillis(1),
             arg0 -> {
               /* Do nothing */
-            })) {
+            });
+    try {
       keeper.addAuthInfo("digest", ("solr:" + SOLR_PASSWD).getBytes(StandardCharsets.UTF_8));
 
       // Test well known paths.
@@ -106,6 +107,10 @@ public class TestZkAclsWithHadoopAuth extends SolrCloudTestCase {
       String zkHost = cluster.getSolrClient().getClusterStateProvider().getQuorumHosts();
       String zkChroot = zkHost.contains("/") ? zkHost.substring(zkHost.indexOf("/")) : null;
       walkZkTree(keeper, zkChroot, "/");
+    } finally {
+      // NOTE: cannot use try-with-resources, because `ZooKeeper.close()` without shutdownTimeout
+      // does not join on (and can leak) connection threads.
+      SolrZkClient.close(keeper, SolrZkClient.ZK_CLOSE_SYNC_TIMEOUT);
     }
   }
 

@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -63,6 +64,36 @@ public class SolrZkClient implements Closeable {
   static final String NEWL = System.getProperty("line.separator");
 
   static final int DEFAULT_CLIENT_CONNECT_TIMEOUT = 30000;
+
+  public static final int ZK_CLOSE_SYNC_TIMEOUT = 10000;
+
+  /**
+   * Closes the specified ZooKeeper instance, optionally blocking until all ZooKeeper-internal
+   * threads have exited, or the specified timeout expires, whichever comes first.
+   *
+   * <p>NOTE: because of the way {@link ZooKeeper#close(int)} interprets its timeout argument, the
+   * timeout arg actually specifies the amount of time to wait <i>for each internal thread to
+   * exit</i>; consequently this method may block considerably longer than the specified
+   *
+   * @param keeper the ZooKeeper instance to close
+   * @param timeoutMs how long to wait for each internal thread
+   */
+  public static void close(ZooKeeper keeper, int timeoutMs)
+      throws InterruptedException, TimeoutException {
+    if (!keeper.close(timeoutMs)) {
+      throw new TimeoutException("keeper failed to close within " + timeoutMs + "ms");
+    }
+  }
+
+  /**
+   * Wrap calls to {@link ZooKeeper#close()} for easier access/special handling. This is helpful to
+   * clarify (and provide an easier way to handle specially) the unusual semantics of {@link
+   * ZooKeeper#close()} -- in particular the fact that {@link ZooKeeper#close()} does not block/wait
+   * for connection threads to die.
+   */
+  public static void closeAsync(ZooKeeper keeper) throws InterruptedException {
+    keeper.close();
+  }
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -172,27 +203,12 @@ public class SolrZkClient implements Closeable {
             SolrZkClient.this::isClosed);
 
     try {
-      strat.connect(
-          zkServerAddress,
-          zkClientTimeout,
-          wrapWatcher(connManager),
-          zooKeeper -> {
-            ZooKeeper oldKeeper = keeper;
-            keeper = zooKeeper;
-            try {
-              closeKeeper(oldKeeper);
-            } finally {
-              if (isClosed) {
-                // we may have been closed
-                closeKeeper(SolrZkClient.this.keeper);
-              }
-            }
-          });
+      strat.connect(zkServerAddress, zkClientTimeout, wrapWatcher(connManager), this::updateKeeper);
     } catch (Exception e) {
       connManager.close();
       if (keeper != null) {
         try {
-          keeper.close();
+          closeAsync(keeper);
         } catch (InterruptedException e1) {
           Thread.currentThread().interrupt();
         }
@@ -205,7 +221,7 @@ public class SolrZkClient implements Closeable {
     } catch (Exception e) {
       connManager.close();
       try {
-        keeper.close();
+        closeAsync(keeper);
       } catch (InterruptedException e1) {
         Thread.currentThread().interrupt();
       }
@@ -702,10 +718,10 @@ public class SolrZkClient implements Closeable {
     ZooKeeper oldKeeper = this.keeper;
     this.keeper = keeper;
     if (oldKeeper != null) {
-      oldKeeper.close();
+      closeAsync(oldKeeper);
     }
     // we might have been closed already
-    if (isClosed) this.keeper.close();
+    if (isClosed) closeAsync(this.keeper);
   }
 
   public ZooKeeper getZooKeeper() {
@@ -715,10 +731,13 @@ public class SolrZkClient implements Closeable {
   private void closeKeeper(ZooKeeper keeper) {
     if (keeper != null) {
       try {
-        keeper.close();
+        close(keeper, ZK_CLOSE_SYNC_TIMEOUT);
       } catch (InterruptedException e) {
         // Restore the interrupted status
         Thread.currentThread().interrupt();
+        log.error("", e);
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+      } catch (TimeoutException e) {
         log.error("", e);
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
       }
