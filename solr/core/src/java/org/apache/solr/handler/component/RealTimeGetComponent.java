@@ -294,7 +294,7 @@ public class RealTimeGetComponent extends SearchComponent {
                     break; // document has been deleted as the resolve was going on
                   }
                   doc.visitSelfAndNestedDocs(
-                      (label, d) -> removeCopyFieldTargets(d, req.getSchema()));
+                      (label, d) -> removeCopyFieldTargets(d, core.getLatestSchema()));
                 } else {
                   throw new SolrException(
                       ErrorCode.INVALID_STATE, "Expected ADD or UPDATE_INPLACE. Got: " + oper);
@@ -382,13 +382,14 @@ public class RealTimeGetComponent extends SearchComponent {
       return;
     }
 
+    final SolrCore core = req.getCore();
+
     String idStr = params.get("getInputDocument", null);
     if (idStr == null) return;
-    BytesRef idBytes = req.getSchema().indexableUniqueKey(idStr);
+    BytesRef idBytes = core.getLatestSchema().indexableUniqueKey(idStr);
     AtomicLong version = new AtomicLong();
     SolrInputDocument doc =
-        getInputDocument(
-            req.getCore(), idBytes, idBytes, version, null, Resolution.ROOT_WITH_CHILDREN);
+        getInputDocument(core, idBytes, idBytes, version, null, Resolution.ROOT_WITH_CHILDREN);
     log.info("getInputDocument called for id={}, returning {}", idStr, doc);
     rb.rsp.add("inputDocument", doc);
     rb.rsp.add("version", version.get());
