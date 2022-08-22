@@ -109,6 +109,7 @@ public class ExecutorUtil {
         // Wait again for forced threads to stop.
         if (!pool.awaitTermination(timeout, unit)) {
           log.error("Threads from pool {} did not forcefully stop.", pool);
+          throw new RuntimeException("Timeout waiting for pool " + pool + " to shutdown.");
         }
       }
     } catch (InterruptedException ie) {

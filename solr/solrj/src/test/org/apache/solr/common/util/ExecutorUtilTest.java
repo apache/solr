@@ -44,7 +44,10 @@ public class ExecutorUtilTest extends SolrTestCase {
         executorService.submit(
             () -> getTestThread(threadTimeoutDuration, testTimeUnit, interruptCount, false));
     executorService.shutdownNow();
-    ExecutorUtil.awaitTermination(executorService, awaitTerminationTimeout, testTimeUnit);
+    assertThrows(
+        RuntimeException.class,
+        () ->
+            ExecutorUtil.awaitTermination(executorService, awaitTerminationTimeout, testTimeUnit));
 
     // Thread should not have finished in await termination.
     assertFalse(nonInterruptableFuture.isDone());
