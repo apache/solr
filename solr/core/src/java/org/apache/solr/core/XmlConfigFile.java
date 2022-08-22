@@ -64,7 +64,6 @@ public class XmlConfigFile { // formerly simply "Config"
   static final XPathFactory xpathFactory = XPathFactory.newInstance();
 
   private final Document doc;
-  private final Document origDoc; // with unsubstituted properties
   private final String prefix;
   private final String name;
   private final SolrResourceLoader loader;
@@ -165,7 +164,6 @@ public class XmlConfigFile { // formerly simply "Config"
       db.setErrorHandler(xmllog);
       try {
         doc = db.parse(is);
-        origDoc = doc;
       } finally {
         // some XML parsers are broken and don't close the byte stream (but they should according to
         // spec)
