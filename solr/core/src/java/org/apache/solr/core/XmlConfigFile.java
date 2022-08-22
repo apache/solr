@@ -72,13 +72,13 @@ public class XmlConfigFile { // formerly simply "Config"
 
   /** Builds a config from a resource name with no xpath prefix. Does no property substitution. */
   public XmlConfigFile(SolrResourceLoader loader, String name)
-      throws ParserConfigurationException, IOException, SAXException {
+      throws IOException {
     this(loader, name, null, null);
   }
 
   /** Builds a config. Does no property substitution. */
   public XmlConfigFile(SolrResourceLoader loader, String name, InputSource is, String prefix)
-      throws ParserConfigurationException, IOException, SAXException {
+      throws IOException {
     this(loader, name, is, prefix, null);
   }
 
@@ -88,7 +88,7 @@ public class XmlConfigFile { // formerly simply "Config"
       InputSource is,
       String prefix,
       Properties substituteProps)
-      throws ParserConfigurationException, IOException, SAXException {
+      throws IOException {
     this(
         loader,
         s -> {
