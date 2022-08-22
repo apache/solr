@@ -19,8 +19,10 @@ package org.apache.solr.s3;
 import com.adobe.testing.s3mock.junit4.S3MockRule;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
+import java.nio.file.Path;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.After;
@@ -62,8 +64,8 @@ public class AbstractS3ClientTest extends SolrTestCaseJ4 {
    * user's ~/.aws/config or credentials
    */
   public static void setS3ConfFile() throws URISyntaxException {
-    String emptyFile =
-        S3IncrementalBackupTest.class.getClassLoader().getResource("s3.conf").toURI().getPath();
+    URI conf = S3IncrementalBackupTest.class.getClassLoader().getResource("s3.conf").toURI();
+    String emptyFile = Path.of(conf).toString();
     System.setProperty(ProfileFileSystemSetting.AWS_CONFIG_FILE.property(), emptyFile);
     System.setProperty(ProfileFileSystemSetting.AWS_SHARED_CREDENTIALS_FILE.property(), emptyFile);
   }

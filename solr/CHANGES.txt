@@ -45,6 +45,7 @@ New Features
 
 * SOLR-14319: Add ability to specify replica types when creating collections in Admin UI. (Richard Goodman, Eric Pugh)
 
+* SOLR-16282: CoreAdminHandler supports custom actions via solr.xml configuration. (Artem Abeleshev, Christine Poerschke)
 
 Improvements
 ---------------------
@@ -59,14 +60,14 @@ Improvements
 
 * SOLR-16181: Initialize the LogWatcher earlier in CoreContainer#load() (janhoy)
 
+* SOLR-16192: Add ZK credentials injectors support (Lamine Idjeraoui with review by Anshum Gupta, Jason Gerlowski, Mike Drob and Houston Putman)
+
 * SOLR-16225: Upgrade dependencies (Carrot2, HPPC) (Dawid Weiss)
 
 * SOLR-16257: Improve ZkStateReader to avoid race condition between collectionWatches and watchedCollectionStates
   (Patson Luk, Houston Putman, Mike Drob)
 
 * SOLR-16323: The Docker image now uses the Solr User ID instead of the User Name, helps with non-root checks (Houston Putman)
-
-* SOLR-16192: Add ZK credentials injectors support (Lamine Idjeraoui with review by Anshum Gupta, Jason Gerlowski, Mike Drob and Houston Putman)
 
 Optimizations
 ---------------------
@@ -78,6 +79,8 @@ Optimizations
 * SOLR-16146: Avoid loading all collections during node startup (noble)
 
 * SOLR-16266: Eliminate unneccessary byte[] copy in Http2SolrClient (hossman)
+
+* SOLR-9359: Enable warming queries to be managed using Config API (Andy Webb, Eric Pugh)
 
 Bug Fixes
 ---------------------
@@ -143,9 +146,17 @@ Other Changes
 
 * SOLR-16231: Fix ref-guide links across the codebase (Houston Putman)
 
+* SOLR-16304: No more @Slow annotation for tests! (Mike Drob)
+
+* SOLR-16331: Migrate remaining managed-schema files to be managed-schema.xml.  (Eric Pugh)
+
+* SOLR-16332: Upgrade Jetty to 9.4.48.v20220622 (Chris Sabelstrom, janhoy)
+ 
 Build
 ---------------------
 * SOLR-16204: Change Lucene dependency to Lucene 9.1.0 (Elia Porciani via Alessandro Benedetti)
+
+* SOLR-16303: Change Lucene dependency to Lucene 9.3.0 (Mike Drob)
 
 * SOLR-16053: Upgrade scriptDepVersions (Kevin Risden)
 
