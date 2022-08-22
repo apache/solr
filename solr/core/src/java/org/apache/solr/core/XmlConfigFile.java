@@ -70,18 +70,6 @@ public class XmlConfigFile { // formerly simply "Config"
   private final Properties substituteProperties;
   private int zkVersion = -1;
 
-  /** Builds a config from a resource name with no xpath prefix. Does no property substitution. */
-  public XmlConfigFile(SolrResourceLoader loader, String name)
-      throws IOException {
-    this(loader, name, null, null);
-  }
-
-  /** Builds a config. Does no property substitution. */
-  public XmlConfigFile(SolrResourceLoader loader, String name, InputSource is, String prefix)
-      throws IOException {
-    this(loader, name, is, prefix, null);
-  }
-
   public XmlConfigFile(
       SolrResourceLoader loader,
       String name,
