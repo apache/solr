@@ -158,8 +158,6 @@ public abstract class SolrScraper implements Closeable {
             labelValues.add(((HttpSolrClient) client).getBaseURL());
           }
 
-          // TODO: This will never be true, as even in cloud mode the HttpSolrClient instances will
-          // be used
           if (client instanceof CloudSolrClient) {
             labelNames.add("zk_host");
             labelValues.add(((CloudSolrClient) client).getClusterStateProvider().getQuorumHosts());
