@@ -58,8 +58,9 @@ public class ZkDistribStateManager implements DistribStateManager {
     } catch (KeeperException.NoNodeException | NoSuchElementException e) {
       return Collections.emptyMap();
     }
-    if (data == null || data.getData() == null || data.getData().length == 0)
+    if (data == null || data.getData() == null || data.getData().length == 0) {
       return Collections.emptyMap();
+    }
     return (Map<String, Object>) Utils.fromJSON(data.getData());
   }
 
