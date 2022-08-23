@@ -172,7 +172,7 @@
           "format": "time_series",
           "instant": false,
           "interval": "",
-          "legendFormat": "Live nodes",
+          "legendFormat": "Live nodes ({{cluster_id}})",
           "refId": "A"
         },
         {
@@ -180,7 +180,7 @@
           "hide": false,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "Total nodes",
+          "legendFormat": "Total nodes ({{cluster_id}})",
           "refId": "B"
         }
       ],
@@ -293,7 +293,7 @@
           "format": "time_series",
           "instant": false,
           "interval": "",
-          "legendFormat": "Healthy nodes",
+          "legendFormat": "Healthy nodes ({{cluster_id}})",
           "refId": "A"
         },
         {
@@ -301,7 +301,7 @@
           "hide": false,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "Ensemble size",
+          "legendFormat": "Ensemble size ({{cluster_id}})",
           "refId": "B"
         }
       ],
