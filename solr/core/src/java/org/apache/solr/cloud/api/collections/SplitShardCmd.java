@@ -812,7 +812,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       SolrCloudManager cloudManager)
       throws SolrException {
     // check that the system property is enabled
-    if (Boolean.getBoolean("solr.shardSplit.checkDiskSpace")) {
+    if (!Boolean.getBoolean("solr.shardSplit.checkDiskSpace")) {
       return;
     }
     // check that enough disk space is available on the parent leader node
