@@ -20,7 +20,6 @@ package org.apache.solr.prometheus.scraper;
 import io.prometheus.client.Collector;
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -115,8 +114,7 @@ public class SolrStandaloneScraperTest extends RestTestBase {
     assertEquals(1.0, samples.samples.get(0).value, 0.001);
     assertEquals(List.of("base_url", "cluster_id"), samples.samples.get(0).labelNames);
     assertEquals(
-        List.of(restTestHarness.getAdminURL(), "undefined"),
-        samples.samples.get(0).labelValues);
+        List.of(restTestHarness.getAdminURL(), "undefined"), samples.samples.get(0).labelValues);
   }
 
   @Test
@@ -141,7 +139,6 @@ public class SolrStandaloneScraperTest extends RestTestBase {
 
     assertEquals("solr_metrics_jvm_buffers", replicaSamples.get(0).name);
 
-    // clusterId is not set for tests, falls back to "default"
     assertEquals("cluster_id", replicaSamples.get(0).samples.get(0).labelNames.get(2));
     assertEquals("undefined", replicaSamples.get(0).samples.get(0).labelValues.get(2));
   }
