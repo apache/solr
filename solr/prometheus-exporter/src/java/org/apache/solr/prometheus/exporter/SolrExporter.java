@@ -39,6 +39,8 @@ import org.slf4j.LoggerFactory;
 
 public class SolrExporter {
 
+  public static String clusterId = "undefined";
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String[] ARG_PORT_FLAGS = {"-p", "--port"};
@@ -61,6 +63,13 @@ public class SolrExporter {
   private static final String ARG_ZK_HOST_DEFAULT = "";
   private static final String ARG_ZK_HOST_HELP =
       "Specify the ZooKeeper connection string when connecting to Solr in SolrCloud mode. If omitted both the -b parameter and the -z parameter, connect to http://localhost:8983/solr. For example 'localhost:2181/solr'.";
+
+  private static final String[] ARG_CLUSTER_ID_FLAGS = {"-i", "--cluster-id"};
+  private static final String ARG_CLUSTER_ID_METAVAR = "CLUSTER_ID";
+  private static final String ARG_CLUSTER_ID_DEST = "clusterId";
+  private static final String ARG_CLUSTER_ID_DEFAULT = "undefined";
+  private static final String ARG_CLUSTER_ID_HELP =
+      "Specify a unique identifier for the cluster, which can be used to select between multiple clusters in Grafana. By default this ID will be equal to the -b or -z argument";
 
   private static final String[] ARG_CONFIG_FLAGS = {"-f", "--config-file"};
   private static final String ARG_CONFIG_METAVAR = "CONFIG";
@@ -218,15 +227,27 @@ public class SolrExporter {
         .setDefault(ARG_NUM_THREADS_DEFAULT)
         .help(ARG_NUM_THREADS_HELP);
 
+    parser
+        .addArgument(ARG_CLUSTER_ID_FLAGS)
+        .metavar(ARG_CLUSTER_ID_METAVAR)
+        .dest(ARG_CLUSTER_ID_DEST)
+        .type(String.class)
+        .setDefault(ARG_CLUSTER_ID_DEFAULT)
+        .help(ARG_CLUSTER_ID_HELP);
+
     try {
       Namespace res = parser.parseArgs(args);
 
       SolrScrapeConfiguration scrapeConfiguration = null;
 
+      clusterId = res.getString(ARG_CLUSTER_ID_DEST);
+
       if (!res.getString(ARG_ZK_HOST_DEST).equals("")) {
         scrapeConfiguration = SolrScrapeConfiguration.solrCloud(res.getString(ARG_ZK_HOST_DEST));
+        if ("undefined".equals(clusterId)) clusterId = res.getString(ARG_ZK_HOST_DEST);
       } else if (!res.getString(ARG_BASE_URL_DEST).equals("")) {
         scrapeConfiguration = SolrScrapeConfiguration.standalone(res.getString(ARG_BASE_URL_DEST));
+        if ("undefined".equals(clusterId)) clusterId = res.getString(ARG_BASE_URL_DEST);
       }
 
       if (scrapeConfiguration == null) {

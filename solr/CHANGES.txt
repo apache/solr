@@ -67,6 +67,8 @@ Improvements
 
 * SOLR-16323: The Docker image now uses the Solr User ID instead of the User Name, helps with non-root checks (Houston Putman)
 
+* SOLR-16340: Provide a cluster_id label for all metrics exposed by the Solr Prometheus Exporter (janhoy, Houston Putman)
+
 Optimizations
 ---------------------
 * SOLR-16120: Optimise hl.fl expansion. (Christine Poerschke, David Smiley, Mike Drob)

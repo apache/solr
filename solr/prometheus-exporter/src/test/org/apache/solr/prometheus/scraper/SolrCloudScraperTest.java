@@ -120,9 +120,9 @@ public class SolrCloudScraperTest extends PrometheusExporterTestBase {
 
     assertEquals(1.0, collection1Metrics.samples.get(0).value, 0.001);
     assertEquals(
-        Collections.singletonList("zk_host"), collection1Metrics.samples.get(0).labelNames);
+        List.of("zk_host", "cluster_id"), collection1Metrics.samples.get(0).labelNames);
     assertEquals(
-        Collections.singletonList(cluster.getZkServer().getZkAddress()),
+        List.of(cluster.getZkServer().getZkAddress(), "undefined"),
         collection1Metrics.samples.get(0).labelValues);
   }
 
@@ -183,7 +183,7 @@ public class SolrCloudScraperTest extends PrometheusExporterTestBase {
     for (Collector.MetricFamilySamples.Sample sample : shardLeaderSamples.samples) {
       assertEquals("solr_collections_shard_leader", sample.name);
       assertEquals(
-          Arrays.asList("collection", "shard", "replica", "core", "type", "zk_host"),
+          Arrays.asList("collection", "shard", "replica", "core", "type", "zk_host", "cluster_id"),
           sample.labelNames);
       assertEquals(
           leaderCoreNames.contains(sample.labelValues.get(3)) ? 1.0 : 0.0, sample.value, 0.001);
@@ -203,6 +203,10 @@ public class SolrCloudScraperTest extends PrometheusExporterTestBase {
           metricsByHost.get(replica.getBaseUrl()).asList();
       assertEquals(1, replicaSamples.size());
       assertEquals("solr_metrics_jvm_buffers", replicaSamples.get(0).name);
+
+      // clusterId is not set for tests, falls back to "default"
+      assertEquals("cluster_id", replicaSamples.get(0).samples.get(0).labelNames.get(2));
+      assertEquals("undefined", replicaSamples.get(0).samples.get(0).labelValues.get(2));
     }
   }
 
