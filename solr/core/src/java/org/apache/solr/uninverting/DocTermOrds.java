@@ -808,6 +808,29 @@ public class DocTermOrds implements Accountable {
       return buffer[bufferUpto++];
     }
 
+    @Override
+    public int docValueCount() {
+      if (arr == null) {
+        // This value was inlined, and then read into a single buffer
+        return bufferLength;
+      } else {
+        // scan logic taken from read()
+        int start = index[doc] & 0x7fffffff;
+        int cursor = start;
+        for (; ; ) {
+          int delta = 0;
+          for (; ; ) {
+            byte b = arr[cursor++];
+            delta = (delta << 7) | (b & 0x7f);
+            if ((b & 0x80) == 0) break;
+          }
+          if (delta == 0) break;
+        }
+
+        return cursor - start - 1;
+      }
+    }
+
     /**
      * Buffer must be at least 5 ints long. Returns number of term ords placed into buffer; if this
      * count is less than buffer.length then that is the end.
@@ -831,7 +854,7 @@ public class DocTermOrds implements Accountable {
           code >>>= 8;
         }
       } else {
-        // code is a pointer
+        // upto is a pointer into the array
         for (; ; ) {
           int delta = 0;
           for (; ; ) {
