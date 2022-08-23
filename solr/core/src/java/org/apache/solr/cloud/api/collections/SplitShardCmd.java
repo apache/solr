@@ -855,7 +855,9 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
     double neededSpace =
         method == SolrIndexSplitter.SplitMethod.REWRITE ? 2.0 * indexSize : 1.05 * indexSize;
     if (freeSize.doubleValue() < neededSpace) {
-      log.warn("not enough free disk space to perform index split on node "
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "not enough free disk space to perform index split on node "
               + parentShardLeader.getNodeName()
               + ", required: "
               + neededSpace
