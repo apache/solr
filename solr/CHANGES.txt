@@ -120,6 +120,8 @@ Bug Fixes
 
 Other Changes
 ---------------------
+* SOLR-16351: Upgrade Carrot2 to 4.4.3, upgrade randomizedtesting to 2.8.0. (Dawid Weiss)
+
 * SOLR-16245: Make DenseVectorField codec agnostic (Elia Porciani via Alessandro Benedetti)
 
 * SOLR-15897: Remove <jmx/> from all unit test solrconfig.xml files. (Eric Pugh)
