@@ -107,11 +107,39 @@ For example, `<str name="adminHandler">com.myorg.MyAdminHandler</str>` would con
 +
 If this attribute isn't set, Solr uses the default admin handler, `org.apache.solr.handler.admin.CoreAdminHandler`.
 
-`collectionsHandler`::
+`coreAdminHandlerActions`::
 +
 [%autowidth,frame=none]
 |===
 |Optional |Default: none
+|===
++
+This attribute does not need to be set.
++
+If defined, it should contain a list of custom actions to be registered within the CoreAdminHandler. Each entry of the list should be of `str` type where name of the entry defines the name of the action and value is a FQN (Fully qualified name) of an action class that inherits from `CoreAdminOp`.
++
+For example, actions can be defined like this:
++
+[source,xml]
+----
+  <coreAdminHandlerActions>
+    <str name="foo">com.example.FooAction</str>
+    <str name="bar">com.example.BarAction</str>
+  </coreAdminHandlerActions>
+----
++
+After defining custom actions they can be called using their names:
++
+[source,text]
+----
+http://localhost:8983/solr/admin/cores?action=foo
+----
+
+`collectionsHandler`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `org.apache.solr.handler.admin.CollectionsHandler`
 |===
 +
 As above, for custom CollectionsHandler implementations.
@@ -120,7 +148,7 @@ As above, for custom CollectionsHandler implementations.
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: none
+|Optional |Default: `org.apache.solr.handler.admin.InfoHandler`
 |===
 +
 As above, for custom InfoHandler implementations.
