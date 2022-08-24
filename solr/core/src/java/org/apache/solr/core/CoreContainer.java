@@ -88,7 +88,7 @@ import org.apache.solr.handler.admin.ZookeeperStatusHandler;
 import org.apache.solr.handler.api.ApiRegistrar;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.designer.SchemaDesignerAPI;
-import org.apache.solr.jersey.CoreContainerApp;
+import org.apache.solr.jersey.CoreContainerFactory;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrCoreMetricManager;
@@ -114,11 +114,13 @@ import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.stats.MetricUtils;
 import org.apache.zookeeper.KeeperException;
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.server.ApplicationHandler;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Singleton;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
@@ -720,10 +722,6 @@ public class CoreContainer {
       log.debug("Loading cores into CoreContainer [instanceDir={}]", getSolrHome());
     }
 
-    // TODO Ditch these direct references in CoreContainer and lean on the PluginBag instances
-    config = new CoreContainerApp(this);
-    appHandler = new ApplicationHandler(config);
-
     logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
 
     ClusterEventProducerFactory clusterEventProducerFactory = new ClusterEventProducerFactory(this);
@@ -828,7 +826,6 @@ public class CoreContainer {
     ClusterAPI clusterAPI = new ClusterAPI(collectionsHandler, configSetsHandler);
     containerHandlers.getApiBag().registerObject(clusterAPI);
     containerHandlers.getApiBag().registerObject(clusterAPI.commands);
-    ApiRegistrar.registerConfigsetApis(containerHandlers.getApiBag(), this);
 
     if (isZooKeeperAware()) {
       containerHandlers.getApiBag().registerObject(new SchemaDesignerAPI(this));
@@ -1062,6 +1059,19 @@ public class CoreContainer {
         zkSys.getZkController().checkOverseerDesignate();
       }
     }
+
+    final CoreContainer thisCCRef = this;
+    // Init the Jersey app once all CC endpoints have been registered
+    containerHandlers.getJerseyEndpoints().register(new AbstractBinder() {
+      @Override
+      protected void configure() {
+        bindFactory(new CoreContainerFactory(thisCCRef))
+                .to(CoreContainer.class)
+                .in(Singleton.class);
+      }
+    });
+    appHandler = new ApplicationHandler(containerHandlers.getJerseyEndpoints());
+
     // This is a bit redundant but these are two distinct concepts for all they're accomplished at
     // the same time.
     status |= LOAD_COMPLETE | INITIAL_CORE_LOAD_COMPLETE;

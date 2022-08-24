@@ -17,14 +17,10 @@
 
 package org.apache.solr.jersey;
 
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.configsets.ListConfigSetsAPI;
-import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Singleton;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 
@@ -34,7 +30,7 @@ import java.util.Map;
 public class CoreContainerApp extends ResourceConfig {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    public CoreContainerApp(CoreContainer coreContainer) {
+    public CoreContainerApp() {
         super();
         setProperties(Map.of("jersey.config.server.tracing.type", "ALL", "jersey.config.server.tracing.threshold", "VERBOSE"));
         register(ApplicationEventLogger.class);
@@ -42,16 +38,7 @@ public class CoreContainerApp extends ResourceConfig {
         register(SolrRequestAuthorizer.class);
         register(JavabinWriter.class);
         register(AllExceptionMapper.class);
-        register(new AbstractBinder() {
-            @Override
-            protected void configure() {
-                bindFactory(new CoreContainerFactory(coreContainer))
-                        .to(CoreContainer.class)
-                        .in(Singleton.class);
-            }
-        });
-        // Register individual APIs (or maybe we should just scan with a 'packages' call?)
-        register(ListConfigSetsAPI.class);
-        //packages(true, "org.apache.solr.jersey.container");
+
+        // Individual Jersey APIs only need to be registered here if they're not affiliated with a request handler
     }
 }

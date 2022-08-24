@@ -27,13 +27,13 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.SearchComponent;
+import org.apache.solr.jersey.CoreContainerApp;
 import org.apache.solr.jersey.SolrCoreApp;
 import org.apache.solr.pkg.PackagePluginHolder;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
-import org.glassfish.jersey.server.ApplicationHandler;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,20 +67,15 @@ public class PluginBag<T> implements AutoCloseable {
   private final SolrConfig.SolrPluginInfo meta;
   private final ApiBag apiBag;
   private final ResourceConfig jerseyResources;
-  // TODO Need to work out the lifecycle for this.  I _think_ that if I create the appHandler _before_ registering
-  //  components, then Jersey spits out the message: "The resource configuration is not modifiable in this context."
-  //  But I need to understand better when the resourceConfig CAN be modified, and how to start/stop them.
-  private ApplicationHandler appHandler;
 
   /** Pass needThreadSafety=true if plugins can be added and removed concurrently with lookups. */
   public PluginBag(Class<T> klass, SolrCore core, boolean needThreadSafety) {
     if (klass == SolrRequestHandler.class) {
       this.apiBag = new ApiBag(core != null);
-      this.jerseyResources = (core == null) ? null : new SolrCoreApp(core);
+      this.jerseyResources = (core == null) ? new CoreContainerApp() : new SolrCoreApp(core);
     } else {
       this.apiBag = null;
       this.jerseyResources = null;
-      this.appHandler = null;
     }
     this.core = core;
     this.klass = klass;
@@ -195,7 +190,9 @@ public class PluginBag<T> implements AutoCloseable {
 
   /** register a plugin by a name */
   public T put(String name, T plugin) {
+
     if (plugin == null) return null;
+
     PluginHolder<T> pluginHolder = new PluginHolder<>(null, plugin);
     pluginHolder.registerAPI = false;
     PluginHolder<T> old = put(name, pluginHolder);
@@ -206,6 +203,7 @@ public class PluginBag<T> implements AutoCloseable {
   public PluginHolder<T> put(String name, PluginHolder<T> plugin) {
     Boolean registerApi = null;
     Boolean disableHandler = null;
+
     if (plugin.pluginInfo != null) {
       String registerAt = plugin.pluginInfo.attributes.get("registerPath");
       if (registerAt != null) {
@@ -237,7 +235,7 @@ public class PluginBag<T> implements AutoCloseable {
             Collection<Class<? extends JerseyResource>> jerseyApis = apiSupport.getJerseyResources();
             if (! CollectionUtils.isEmpty(jerseyApis)) {
               for (Class<? extends JerseyResource> jerseyClazz : jerseyApis) {
-                log.info("JEGERLOW: Plugin Bag {} is registering a jersey resource class: {}", jerseyClazz.getName());
+                log.info("JEGERLOW: Plugin Bag is registering a jersey resource class: {}", jerseyClazz.getName());
                 jerseyResources.register(jerseyClazz);
               }
 
@@ -321,11 +319,6 @@ public class PluginBag<T> implements AutoCloseable {
       if (!contains(e.getKey())) {
         put(e.getKey(), new PluginHolder<T>(null, e.getValue()));
       }
-    }
-    if (jerseyResources != null) {
-      log.info("Instantiating new AppHandler in PluginBag");
-      this.appHandler = new ApplicationHandler(jerseyResources);
-
     }
   }
 
@@ -526,7 +519,7 @@ public class PluginBag<T> implements AutoCloseable {
     return apiBag;
   }
 
-  public ApplicationHandler getApplicationHandler() {
-    return appHandler;
+  public ResourceConfig getJerseyEndpoints() {
+    return jerseyResources;
   }
 }

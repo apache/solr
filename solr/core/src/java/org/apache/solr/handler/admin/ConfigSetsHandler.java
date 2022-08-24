@@ -17,6 +17,9 @@
 package org.apache.solr.handler.admin;
 
 import com.google.common.collect.Maps;
+import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.api.Api;
+import org.apache.solr.api.JerseyResource;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.request.beans.CreateConfigPayload;
 import org.apache.solr.cloud.ConfigSetCmds;
@@ -44,7 +47,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
@@ -193,6 +199,25 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
   @Override
   public Category getCategory() {
     return Category.ADMIN;
+  }
+
+  public Boolean registerV2() { return true; }
+  @Override
+  public Collection<Api> getApis() {
+    final List<Api> apis = new ArrayList<>();
+    apis.addAll(AnnotatedApi.getApis(new CreateConfigSetAPI(coreContainer)));
+    apis.addAll(AnnotatedApi.getApis(new DeleteConfigSetAPI(coreContainer)));
+    apis.addAll(AnnotatedApi.getApis(new UploadConfigSetAPI(coreContainer)));
+    apis.addAll(AnnotatedApi.getApis(new UploadConfigSetFileAPI(coreContainer)));
+
+    return apis;
+  }
+
+  @Override
+  public Collection<Class<? extends JerseyResource>> getJerseyResources() {
+    final List<Class<? extends JerseyResource>> endpoints = new ArrayList<>();
+    endpoints.add(ListConfigSetsAPI.class);
+    return endpoints;
   }
 
   @Override

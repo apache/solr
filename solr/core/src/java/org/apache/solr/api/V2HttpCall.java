@@ -396,7 +396,7 @@ public class V2HttpCall extends HttpSolrCall {
   @Override
   protected void executeCoreRequest(SolrQueryResponse rsp) {
     if (api == null) {
-      invokeJerseyRequest(cores, core, core.getRequestHandlers().getApplicationHandler());
+      invokeJerseyRequest(cores, core, core.getApplicationHandler());
     } else {
       SolrCore.preDecorateResponse(solrReq, rsp);
       try {
