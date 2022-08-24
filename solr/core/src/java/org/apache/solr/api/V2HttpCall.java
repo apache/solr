@@ -171,8 +171,7 @@ public class V2HttpCall extends HttpSolrCall {
 
       // We didn't find a core, so we're either an error or a Jersey 'ADMIN' api
       if (core == null) {
-        // This codepath needs to cover custom plugin Jersey APIs, as well as in-built ones
-        log.info("Hoping this path is covered by the Jersey-admin case: {}", path);
+        // initAdminRequest handles "custom plugin" Jersey APIs, as well as in-built ones
         initAdminRequest(path);
         return;
       }

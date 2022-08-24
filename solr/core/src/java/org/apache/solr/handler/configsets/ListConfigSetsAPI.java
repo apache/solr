@@ -58,11 +58,8 @@ public class ListConfigSetsAPI extends JerseyResource {
   @Produces({"application/json", "application/javabin"})
   @PermissionName(CONFIG_READ_PERM)
   public ListConfigsetsResponse listConfigSet() throws Exception {
-    log.info("CoreContainer={}, HttpHeaders.accept={}", coreContainer, (headers != null) ? headers.getAcceptableMediaTypes() : "null");
     final ListConfigsetsResponse response = new ListConfigsetsResponse();
     response.configSets = coreContainer.getConfigSetService().listConfigs();
-    log.info("Finished building response, ready to return and deserialize");
-    log.info("response.header={}, response.configsets={}", response.responseHeader, response.configSets);
     return response;
   }
 

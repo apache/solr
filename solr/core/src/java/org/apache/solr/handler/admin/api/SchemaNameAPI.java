@@ -23,14 +23,11 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.security.PermissionNameProvider;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-import java.lang.invoke.MethodHandles;
 
 /**
  * V2 API for checking the name of an in-use schema.
@@ -40,8 +37,6 @@ import java.lang.invoke.MethodHandles;
  */
 @Path("/collections/{collectionName}/schema/name")
 public class SchemaNameAPI extends JerseyResource {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
 
   private SolrCore solrCore;
 
