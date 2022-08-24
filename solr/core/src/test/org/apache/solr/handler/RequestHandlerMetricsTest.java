@@ -23,10 +23,9 @@ import java.util.Set;
 import org.apache.solr.client.solrj.*;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.response.SolrResponseBase;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -80,22 +79,7 @@ public class RequestHandlerMetricsTest extends SolrCloudTestCase {
 
     NamedList<Object> response =
         cloudClient.request(
-            new SolrRequest<>(SolrRequest.METHOD.GET, "/admin/metrics") {
-              @Override
-              public String getRequestType() {
-                return "metricsRequest";
-              }
-
-              @Override
-              public SolrParams getParams() {
-                return null;
-              }
-
-              @Override
-              protected SolrResponse createResponse(SolrClient client) {
-                return new SolrResponseBase();
-              }
-            });
+            new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", null));
 
     NamedList<Object> metrics = (NamedList<Object>) response.get("metrics");
 

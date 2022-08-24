@@ -19,6 +19,11 @@ package org.apache.solr.metrics;
 
 import com.codahale.metrics.Counter;
 
+/**
+ * A counter implementation that is aware of both primary and delegate metrics belonging to different registries
+ *  and able to update metrics in multiple registries
+ * @see SolrDelegateRegistryMetricsContext
+ */
 public class DelegateRegistryCounter extends Counter {
 
   private final Counter primaryCounter;
