@@ -23,11 +23,14 @@ import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
 
 /**
- * This class represents a metrics context that is delegate aware in that it is aware of multiple metric registries,
- *  a primary and a delegate. This enables creating metrics that are tracked at multiple levels, i.e. core-level and node-level.
- * This class will create instances of new Timer, Meter, Counter, Histogram implementations that hold references to
- *  both primary and delegate implementations of corresponding classes. The DelegateRegistry* metric classes are just
- *  pass-through to two different implementations. As such the DelegateRegistry* metric classes do not hold any metric data themselves.
+ * This class represents a metrics context that is delegate aware in that it is aware of multiple
+ * metric registries, a primary and a delegate. This enables creating metrics that are tracked at
+ * multiple levels, i.e. core-level and node-level. This class will create instances of new Timer,
+ * Meter, Counter, Histogram implementations that hold references to both primary and delegate
+ * implementations of corresponding classes. The DelegateRegistry* metric classes are just
+ * pass-through to two different implementations. As such the DelegateRegistry* metric classes do
+ * not hold any metric data themselves.
+ *
  * @see org.apache.solr.metrics.SolrMetricsContext
  */
 public class SolrDelegateRegistryMetricsContext extends SolrMetricsContext {

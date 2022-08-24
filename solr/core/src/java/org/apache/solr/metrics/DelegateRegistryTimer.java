@@ -26,8 +26,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 /**
- * A timer implementation that is aware of both primary and delegate metrics belonging to different registries
- *  and able to update metrics in multiple registries
+ * A timer implementation that is aware of both primary and delegate metrics belonging to different
+ * registries and able to update metrics in multiple registries
+ *
  * @see SolrDelegateRegistryMetricsContext
  */
 public class DelegateRegistryTimer extends Timer {

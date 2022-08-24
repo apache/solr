@@ -78,8 +78,7 @@ public class RequestHandlerMetricsTest extends SolrCloudTestCase {
     cloudClient.query(collection2, solrQuery);
 
     NamedList<Object> response =
-        cloudClient.request(
-            new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", null));
+        cloudClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", null));
 
     NamedList<Object> metrics = (NamedList<Object>) response.get("metrics");
 

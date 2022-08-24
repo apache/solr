@@ -21,8 +21,9 @@ import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Snapshot;
 
 /**
- * A meter implementation that is aware of both primary and delegate metrics belonging to different registries
- *  and able to update metrics in multiple registries
+ * A meter implementation that is aware of both primary and delegate metrics belonging to different
+ * registries and able to update metrics in multiple registries
+ *
  * @see SolrDelegateRegistryMetricsContext
  */
 public class DelegateRegistryHistogram extends Histogram {
