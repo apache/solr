@@ -18,15 +18,12 @@
 package org.apache.solr.handler.configsets;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.apache.solr.jersey.SolrJerseyResponse;
 
 import java.util.List;
 
 public class ListConfigsetsResponse extends SolrJerseyResponse {
 
-    //TODO We use both JsonProperty annotations here because the v2 serialization code expects Jackson, but
-    // ReflectMapWriter (which we use to squash the typed v2 response into a SolrQueryResponse for v1 code) relies on
-    // the ripoff SolrJ annotation.  This needs fixed before we can move forward.
-    @org.apache.solr.common.annotation.JsonProperty("configSets")
     @JsonProperty("configSets")
     public List<String> configSets;
 }

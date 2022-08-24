@@ -15,22 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.solr.handler.configsets;
+package org.apache.solr.jersey;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.solr.common.util.ReflectMapWriter;
 
-public class SolrJerseyResponse implements ReflectMapWriter {
+public class SolrJerseyResponse implements JacksonReflectMapWriter {
 
-    @org.apache.solr.common.annotation.JsonProperty("responseHeader")
     @JsonProperty("responseHeader")
     public ResponseHeader responseHeader = new ResponseHeader();
 
-    public static class ResponseHeader implements ReflectMapWriter {
-        @org.apache.solr.common.annotation.JsonProperty("status")
+    public static class ResponseHeader implements JacksonReflectMapWriter {
+        @JsonProperty("status")
         public int status;
 
-        @org.apache.solr.common.annotation.JsonProperty("QTime")
         @JsonProperty("QTime")
         public long qTime;
     }

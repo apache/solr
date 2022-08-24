@@ -17,7 +17,7 @@
 
 package org.apache.solr.handler.api;
 
-import org.apache.solr.common.util.ReflectMapWriter;
+import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.response.SolrQueryResponse;
 
 import java.util.HashMap;
@@ -48,7 +48,7 @@ public class V2ApiUtils {
 
   // TODO Come up with a better approach (maybe change Responses to be based on some class that can natively do this
   //  without the intermediate map(s)?)
-  public static void squashIntoSolrResponse(SolrQueryResponse rsp, ReflectMapWriter mw) {
+  public static void squashIntoSolrResponse(SolrQueryResponse rsp, JacksonReflectMapWriter mw) {
     Map<String, Object> myMap = new HashMap<>();
     myMap = mw.toMap(myMap);
     for (Map.Entry<String, Object> entry : myMap.entrySet()) {

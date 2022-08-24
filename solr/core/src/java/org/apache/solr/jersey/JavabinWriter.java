@@ -18,7 +18,6 @@
 package org.apache.solr.jersey;
 
 import org.apache.solr.common.util.JavaBinCodec;
-import org.apache.solr.common.util.ReflectMapWriter;
 
 import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
@@ -35,7 +34,7 @@ import java.lang.reflect.Type;
  * the "Accept: application/javabin" header.
  */
 @Produces("application/javabin")
-public class JavabinWriter implements MessageBodyWriter<ReflectMapWriter> {
+public class JavabinWriter implements MessageBodyWriter<JacksonReflectMapWriter> {
 
     private final JavaBinCodec javaBinCodec;
 
@@ -49,7 +48,7 @@ public class JavabinWriter implements MessageBodyWriter<ReflectMapWriter> {
     }
 
     @Override
-    public void writeTo(ReflectMapWriter reflectMapWriter, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
+    public void writeTo(JacksonReflectMapWriter reflectMapWriter, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
         javaBinCodec.marshal(reflectMapWriter, entityStream);
     }
 }

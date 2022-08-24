@@ -18,10 +18,9 @@
 package org.apache.solr.handler.admin.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.solr.handler.configsets.SolrJerseyResponse;
+import org.apache.solr.jersey.SolrJerseyResponse;
 
 public class GetSchemaNameResponse extends SolrJerseyResponse {
-    @org.apache.solr.common.annotation.JsonProperty("name")
     @JsonProperty("name")
     public String name;
 }
