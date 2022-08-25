@@ -18,7 +18,6 @@
 package org.apache.solr.common;
 
 import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
-import static org.apache.solr.common.cloud.ZkStateReader.getCollectionPathRoot;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -266,7 +265,7 @@ public class LazySolrCluster implements SolrCluster {
           byte[] d =
               zkStateReader
                   .getZkClient()
-                  .getData(getCollectionPathRoot(coll.getName()), null, null, true);
+                  .getData(DocCollection.getCollectionPathRoot(coll.getName()), null, null, true);
           if (d == null || d.length == 0) return null;
           Map<?, ?> m = (Map<?, ?>) Utils.fromJSON(d);
           confName = (String) m.get("configName");

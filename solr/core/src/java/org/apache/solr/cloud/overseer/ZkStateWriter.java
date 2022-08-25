@@ -28,7 +28,7 @@ import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.Stats;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.PerReplicaStates;
+import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
@@ -223,7 +223,7 @@ public class ZkStateWriter {
       if (!updates.isEmpty()) {
         for (Map.Entry<String, ZkWriteCommand> entry : updates.entrySet()) {
           String name = entry.getKey();
-          String path = ZkStateReader.getCollectionPath(name);
+          String path = DocCollection.getCollectionPath(name);
           ZkWriteCommand cmd = entry.getValue();
           DocCollection c = cmd.collection;
 
@@ -234,7 +234,7 @@ public class ZkStateWriter {
                 clusterState.copyWith(
                     name,
                     cmd.collection.copyWith(
-                        PerReplicaStates.fetch(
+                        PerReplicaStatesFetcher.fetch(
                             cmd.collection.getZNode(), reader.getZkClient(), null)));
           }
 
@@ -279,7 +279,7 @@ public class ZkStateWriter {
                   clusterState.copyWith(
                       name,
                       currentCollState.copyWith(
-                          PerReplicaStates.fetch(
+                          PerReplicaStatesFetcher.fetch(
                               currentCollState.getZNode(), reader.getZkClient(), null)));
             }
           }
