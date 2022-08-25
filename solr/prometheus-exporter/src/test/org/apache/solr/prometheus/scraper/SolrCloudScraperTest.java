@@ -69,7 +69,7 @@ public class SolrCloudScraperTest extends PrometheusExporterTestBase {
 
     SolrClientFactory factory = new SolrClientFactory(PrometheusExporterSettings.builder().build());
 
-    return new SolrCloudScraper(solrClient, executor, factory);
+    return new SolrCloudScraper(solrClient, executor, factory, "test");
   }
 
   private ClusterState getClusterState() {
@@ -121,7 +121,7 @@ public class SolrCloudScraperTest extends PrometheusExporterTestBase {
     assertEquals(1.0, collection1Metrics.samples.get(0).value, 0.001);
     assertEquals(List.of("zk_host", "cluster_id"), collection1Metrics.samples.get(0).labelNames);
     assertEquals(
-        List.of(cluster.getZkServer().getZkAddress(), "undefined"),
+        List.of(cluster.getZkServer().getZkAddress(), "test"),
         collection1Metrics.samples.get(0).labelValues);
   }
 
@@ -204,7 +204,7 @@ public class SolrCloudScraperTest extends PrometheusExporterTestBase {
       assertEquals("solr_metrics_jvm_buffers", replicaSamples.get(0).name);
 
       assertEquals("cluster_id", replicaSamples.get(0).samples.get(0).labelNames.get(2));
-      assertEquals("undefined", replicaSamples.get(0).samples.get(0).labelValues.get(2));
+      assertEquals("test", replicaSamples.get(0).samples.get(0).labelValues.get(2));
     }
   }
 

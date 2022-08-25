@@ -26,6 +26,7 @@ import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
+import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -38,8 +39,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SolrExporter {
-
-  public static String clusterId = "undefined";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -67,7 +66,7 @@ public class SolrExporter {
   private static final String[] ARG_CLUSTER_ID_FLAGS = {"-i", "--cluster-id"};
   private static final String ARG_CLUSTER_ID_METAVAR = "CLUSTER_ID";
   private static final String ARG_CLUSTER_ID_DEST = "clusterId";
-  private static final String ARG_CLUSTER_ID_DEFAULT = "undefined";
+  private static final String ARG_CLUSTER_ID_DEFAULT = "";
   private static final String ARG_CLUSTER_ID_HELP =
       "Specify a unique identifier for the cluster, which can be used to select between multiple clusters in Grafana. By default this ID will be equal to the -b or -z argument";
 
@@ -113,7 +112,8 @@ public class SolrExporter {
       int numberThreads,
       int scrapeInterval,
       SolrScrapeConfiguration scrapeConfiguration,
-      MetricsConfiguration metricsConfiguration) {
+      MetricsConfiguration metricsConfiguration,
+      String clusterId) {
     this.port = port;
 
     this.metricCollectorExecutor =
@@ -124,7 +124,8 @@ public class SolrExporter {
         ExecutorUtil.newMDCAwareFixedThreadPool(
             numberThreads, new SolrNamedThreadFactory("solr-exporter-requests"));
 
-    this.solrScraper = createScraper(scrapeConfiguration, metricsConfiguration.getSettings());
+    this.solrScraper =
+        createScraper(scrapeConfiguration, metricsConfiguration.getSettings(), clusterId);
     this.metricsCollector =
         new MetricsCollectorFactory(
                 metricCollectorExecutor, scrapeInterval, solrScraper, metricsConfiguration)
@@ -156,18 +157,23 @@ public class SolrExporter {
   }
 
   private SolrScraper createScraper(
-      SolrScrapeConfiguration configuration, PrometheusExporterSettings settings) {
+      SolrScrapeConfiguration configuration,
+      PrometheusExporterSettings settings,
+      String clusterId) {
     SolrClientFactory factory = new SolrClientFactory(settings);
 
     switch (configuration.getType()) {
       case STANDALONE:
         return new SolrStandaloneScraper(
-            factory.createStandaloneSolrClient(configuration.getSolrHost().get()), requestExecutor);
+            factory.createStandaloneSolrClient(configuration.getSolrHost().get()),
+            requestExecutor,
+            clusterId);
       case CLOUD:
         return new SolrCloudScraper(
             factory.createCloudSolrClient(configuration.getZookeeperConnectionString().get()),
             requestExecutor,
-            factory);
+            factory,
+            clusterId);
       default:
         throw new RuntimeException("Invalid type: " + configuration.getType());
     }
@@ -240,14 +246,13 @@ public class SolrExporter {
 
       SolrScrapeConfiguration scrapeConfiguration = null;
 
-      clusterId = res.getString(ARG_CLUSTER_ID_DEST);
-
+      String defaultClusterId = "";
       if (!res.getString(ARG_ZK_HOST_DEST).equals("")) {
-        scrapeConfiguration = SolrScrapeConfiguration.solrCloud(res.getString(ARG_ZK_HOST_DEST));
-        if ("undefined".equals(clusterId)) clusterId = res.getString(ARG_ZK_HOST_DEST);
+        defaultClusterId = res.getString(ARG_ZK_HOST_DEST);
+        scrapeConfiguration = SolrScrapeConfiguration.solrCloud(defaultClusterId);
       } else if (!res.getString(ARG_BASE_URL_DEST).equals("")) {
-        scrapeConfiguration = SolrScrapeConfiguration.standalone(res.getString(ARG_BASE_URL_DEST));
-        if ("undefined".equals(clusterId)) clusterId = res.getString(ARG_BASE_URL_DEST);
+        defaultClusterId = res.getString(ARG_BASE_URL_DEST);
+        scrapeConfiguration = SolrScrapeConfiguration.standalone(defaultClusterId);
       }
 
       if (scrapeConfiguration == null) {
@@ -255,18 +260,26 @@ public class SolrExporter {
       }
 
       int port = res.getInt(ARG_PORT_DEST);
+      String clusterId = res.getString(ARG_CLUSTER_ID_DEST);
+      if (StringUtils.isEmpty(clusterId)) {
+        clusterId = defaultClusterId;
+      }
+
       SolrExporter solrExporter =
           new SolrExporter(
               port,
               res.getInt(ARG_NUM_THREADS_DEST),
               res.getInt(ARG_SCRAPE_INTERVAL_DEST),
               scrapeConfiguration,
-              loadMetricsConfiguration(res.getString(ARG_CONFIG_DEST)));
+              loadMetricsConfiguration(res.getString(ARG_CONFIG_DEST)),
+              clusterId);
 
       log.info("Starting Solr Prometheus Exporting on port {}", port);
       solrExporter.start();
       log.info(
-          "Solr Prometheus Exporter is running. Collecting metrics for {}", scrapeConfiguration);
+          "Solr Prometheus Exporter is running. Collecting metrics for cluster {}: {}",
+          clusterId,
+          scrapeConfiguration);
     } catch (IOException e) {
       log.error("Failed to start Solr Prometheus Exporter: ", e);
     } catch (ArgumentParserException e) {

@@ -64,7 +64,7 @@ public class SolrStandaloneScraperTest extends RestTestBase {
         Helpers.loadConfiguration("conf/prometheus-solr-exporter-scraper-test-config.xml");
 
     solrClient = getHttpSolrClient(restTestHarness.getAdminURL());
-    solrScraper = new SolrStandaloneScraper(solrClient, executor);
+    solrScraper = new SolrStandaloneScraper(solrClient, executor, "test");
 
     NoOpResponseParser responseParser = new NoOpResponseParser();
     responseParser.setWriterType("json");
@@ -114,7 +114,7 @@ public class SolrStandaloneScraperTest extends RestTestBase {
     assertEquals(1.0, samples.samples.get(0).value, 0.001);
     assertEquals(List.of("base_url", "cluster_id"), samples.samples.get(0).labelNames);
     assertEquals(
-        List.of(restTestHarness.getAdminURL(), "undefined"), samples.samples.get(0).labelValues);
+        List.of(restTestHarness.getAdminURL(), "test"), samples.samples.get(0).labelValues);
   }
 
   @Test
@@ -140,7 +140,7 @@ public class SolrStandaloneScraperTest extends RestTestBase {
     assertEquals("solr_metrics_jvm_buffers", replicaSamples.get(0).name);
 
     assertEquals("cluster_id", replicaSamples.get(0).samples.get(0).labelNames.get(2));
-    assertEquals("undefined", replicaSamples.get(0).samples.get(0).labelValues.get(2));
+    assertEquals("test", replicaSamples.get(0).samples.get(0).labelValues.get(2));
   }
 
   @Test
