@@ -32,10 +32,12 @@ import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.PerReplicaStates;
+import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.RoutingRule;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.Slice.SliceStateProps;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -111,7 +113,8 @@ public class SliceMutator {
 
     if (collection.isPerReplicaState()) {
       PerReplicaStates prs =
-          PerReplicaStates.fetch(collection.getZNode(), zkClient, collection.getPerReplicaStates());
+          PerReplicaStatesFetcher.fetch(
+              collection.getZNode(), zkClient, collection.getPerReplicaStates());
       return new ZkWriteCommand(
           coll,
           updateReplica(collection, sl, replica.getName(), replica),
@@ -149,7 +152,8 @@ public class SliceMutator {
     if (coll.isPerReplicaState()) {
       PerReplicaStatesOps replicaOps =
           PerReplicaStatesOps.deleteReplica(
-              cnn, PerReplicaStates.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates()));
+              cnn,
+              PerReplicaStatesFetcher.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates()));
       return new ZkWriteCommand(collection, coll.copyWithSlices(newSlices), replicaOps, true);
     } else {
       return new ZkWriteCommand(collection, coll.copyWithSlices(newSlices));
@@ -192,11 +196,11 @@ public class SliceMutator {
     }
 
     Map<String, Object> newSliceProps = slice.shallowCopy();
-    newSliceProps.put(Slice.REPLICAS, newReplicas);
+    newSliceProps.put(SliceStateProps.REPLICAS, newReplicas);
     slice = new Slice(slice.getName(), newReplicas, slice.getProperties(), collectionName);
     if (coll.isPerReplicaState()) {
       PerReplicaStates prs =
-          PerReplicaStates.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
+          PerReplicaStatesFetcher.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
       return new ZkWriteCommand(
           collectionName,
           CollectionMutator.updateSlice(collectionName, coll, slice),
@@ -232,7 +236,7 @@ public class SliceMutator {
       Map<String, Object> props = slice.shallowCopy();
 
       if (Slice.State.getState(message.getStr(key)) == Slice.State.ACTIVE) {
-        props.remove(Slice.PARENT);
+        props.remove(SliceStateProps.PARENT);
         props.remove("shard_parent_node");
         props.remove("shard_parent_zk_session");
       }

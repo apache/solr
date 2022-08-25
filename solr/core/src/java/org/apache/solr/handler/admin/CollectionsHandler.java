@@ -33,8 +33,6 @@ import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SHAR
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SHARD_UNIQUE;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.CREATE_COLLECTION_PREFIX;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
-import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
-import static org.apache.solr.common.cloud.DocCollection.PER_REPLICA_STATE;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
@@ -50,6 +48,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
+import static org.apache.solr.common.params.CollectionAdminParams.PER_REPLICA_STATE;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_NAME;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFIX;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_VALUE;
@@ -169,6 +168,7 @@ import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CollectionProperties;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
@@ -938,7 +938,11 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
                       .resolveSimpleAlias(extCollectionName)
                   : extCollectionName;
           if (!ImplicitDocRouter.NAME.equals(
-              ((Map<?, ?>) clusterState.getCollection(collectionName).get(DOC_ROUTER)).get(NAME)))
+              ((Map<?, ?>)
+                      clusterState
+                          .getCollection(collectionName)
+                          .get(CollectionStateProps.DOC_ROUTER))
+                  .get(NAME)))
             throw new SolrException(
                 ErrorCode.BAD_REQUEST, "shards can be added only to 'implicit' collections");
           copy(

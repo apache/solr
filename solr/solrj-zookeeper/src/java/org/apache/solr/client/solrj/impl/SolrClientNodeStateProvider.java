@@ -345,9 +345,21 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     }
 
     @Override
+    @SuppressWarnings({"unchecked"})
     public Map<?, ?> getZkJson(String path) throws KeeperException, InterruptedException {
-      return Utils.getJson(
-          zkClientClusterStateProvider.getZkStateReader().getZkClient(), path, true);
+      try {
+        byte[] bytes =
+            zkClientClusterStateProvider
+                .getZkStateReader()
+                .getZkClient()
+                .getData(path, null, null, true);
+        if (bytes != null && bytes.length > 0) {
+          return (Map<String, Object>) Utils.fromJSON(bytes);
+        }
+      } catch (KeeperException.NoNodeException e) {
+        return emptyMap();
+      }
+      return emptyMap();
     }
 
     /**

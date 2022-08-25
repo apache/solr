@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.cloud.PerReplicaStates;
@@ -51,6 +52,9 @@ public interface DistribStateManager extends SolrCloseable {
       throws NoSuchElementException, IOException, KeeperException, InterruptedException {
     return getData(path, null);
   }
+
+  Map<String, Object> getJson(String path)
+      throws InterruptedException, IOException, KeeperException;
 
   // state mutators
 

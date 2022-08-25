@@ -159,7 +159,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     this.runningZKTasks = ConcurrentHashMap.newKeySet();
     this.runningTasks = ConcurrentHashMap.newKeySet();
     this.completedTasks = new ConcurrentHashMap<>();
-    thisNode = Utils.getMDCNode();
+    thisNode = MDCLoggingContext.getNodeName();
 
     overseerTaskProcessorMetricsContext = solrMetricsContext.getChildContext(this);
     overseerTaskProcessorMetricsContext.gauge(
