@@ -68,17 +68,6 @@ public class ReplicaListTransformerTest extends SolrTestCase {
     }
   }
 
-  // A transformer that makes no transformation
-  private static class ToyNoOpReplicaListTransformer implements ReplicaListTransformer {
-
-    public ToyNoOpReplicaListTransformer() {}
-
-    public <T> void transform(List<T> choices) {
-      // no-op
-      log.info("No-Op transform ignoring input: {}", choices);
-    }
-  }
-
   @Test
   public void testTransform() throws Exception {
 
@@ -99,7 +88,7 @@ public class ReplicaListTransformerTest extends SolrTestCase {
               final SolrParams params = req.getParams();
 
               if (params.getBool("toyNoTransform", false)) {
-                return new ToyNoOpReplicaListTransformer();
+                return NoOpReplicaListTransformer.INSTANCE;
               }
 
               final String regex = params.get("toyRegEx");

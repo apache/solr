@@ -100,13 +100,7 @@ public class NodePreferenceRulesComparator implements Comparator<Object> {
     }
   }
 
-  private static final ReplicaListTransformer NOOP_RLT =
-      new ReplicaListTransformer() {
-        @Override
-        public <T> void transform(List<T> choices) {
-          // Cannot use a method reference because of generic types!
-        }
-      };
+  private static final ReplicaListTransformer NOOP_RLT = NoOpReplicaListTransformer.INSTANCE;
   private static final ReplicaListTransformerFactory NOOP_RLTF =
       (String configSpec, SolrParams requestParams, ReplicaListTransformerFactory fallback) ->
           NOOP_RLT;
