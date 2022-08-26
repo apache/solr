@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -65,6 +66,16 @@ public class TestSolrXml extends SolrTestCaseJ4 {
 
     assertEquals("maxBooleanClauses", (Integer) 42, cfg.getBooleanQueryMaxClauseCount());
     assertEquals("core admin handler class", "testAdminHandler", cfg.getCoreAdminHandlerClass());
+    assertEquals(
+        "core admin handler actions",
+        Map.of(
+            "action1",
+            "testCoreAdminHandlerAction1",
+            "action2",
+            "testCoreAdminHandlerAction2",
+            "action3",
+            "testCoreAdminHandlerAction3"),
+        cfg.getCoreAdminHandlerActions());
     assertEquals(
         "collection handler class", "testCollectionsHandler", cfg.getCollectionsHandlerClass());
     assertEquals("info handler class", "testInfoHandler", cfg.getInfoHandlerClass());
@@ -216,6 +227,18 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     expectedException.expect(SolrException.class);
     expectedException.expectMessage(
         "Multiple instances of logging/watcher section found in solr.xml");
+    SolrXmlConfig.fromString(solrHome, solrXml); // return not used, only for validation
+  }
+
+  public void testMultiCoreAdminHandlerActionsSectionError() {
+    String solrXml =
+        "<solr>"
+            + "<coreAdminHandlerActions><str name=\"action1\">testCoreAdminHandlerAction1</str></coreAdminHandlerActions>"
+            + "<coreAdminHandlerActions><str name=\"action2\">testCoreAdminHandlerAction2</str></coreAdminHandlerActions>"
+            + "</solr>";
+    expectedException.expect(SolrException.class);
+    expectedException.expectMessage(
+        "Multiple instances of coreAdminHandlerActions section found in solr.xml");
     SolrXmlConfig.fromString(solrHome, solrXml); // return not used, only for validation
   }
 
@@ -378,6 +401,26 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     expectedException.expect(SolrException.class);
     expectedException.expectMessage(
         "Main section of solr.xml contains duplicated 'coreLoadThreads'");
+
+    SolrXmlConfig.fromString(solrHome, solrXml); // return not used, only for validation
+  }
+
+  public void testFailAtConfigParseTimeWhenCoreAdminHandlerActionsConfigParamsAreDuplicated() {
+    String v1 = "" + random().nextInt();
+    String v2 = "" + random().nextInt();
+    String solrXml =
+        String.format(
+            Locale.ROOT,
+            "<solr><coreAdminHandlerActions>"
+                + "<str name=\"action\">%s</str>"
+                + "<str name=\"action\">%s</str>"
+                + "</coreAdminHandlerActions></solr>",
+            v1,
+            v2);
+
+    expectedException.expect(SolrException.class);
+    expectedException.expectMessage(
+        "<coreAdminHandlerActions> section of solr.xml contains duplicated 'action'");
 
     SolrXmlConfig.fromString(solrHome, solrXml); // return not used, only for validation
   }
