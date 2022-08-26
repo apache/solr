@@ -62,6 +62,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.PerReplicaStates;
+import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -1155,7 +1156,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     String testCollection = "perReplicaState_test";
-    String collectionPath = ZkStateReader.getCollectionPath(testCollection);
+    String collectionPath = DocCollection.getCollectionPath(testCollection);
 
     int liveNodes = cluster.getJettySolrRunners().size();
     CollectionAdminRequest.createCollection(testCollection, "conf", 2, 2)
@@ -1168,7 +1169,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     DocCollection c = cluster.getZkStateReader().getCollection(testCollection);
     c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
-    PerReplicaStates prs = PerReplicaStates.fetch(collectionPath, cluster.getZkClient(), null);
+    PerReplicaStates prs =
+        PerReplicaStatesFetcher.fetch(collectionPath, cluster.getZkClient(), null);
     assertEquals(4, prs.states.size());
 
     JettySolrRunner jsr = null;
@@ -1178,12 +1180,12 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       // Now let's do an add replica
       CollectionAdminRequest.addReplicaToShard(testCollection, "shard1")
           .process(cluster.getSolrClient());
-      prs = PerReplicaStates.fetch(collectionPath, cluster.getZkClient(), null);
+      prs = PerReplicaStatesFetcher.fetch(collectionPath, cluster.getZkClient(), null);
       assertEquals(5, prs.states.size());
 
       // create a collection with PRS and v2 API
       testCollection = "perReplicaState_testv2";
-      collectionPath = ZkStateReader.getCollectionPath(testCollection);
+      collectionPath = DocCollection.getCollectionPath(testCollection);
 
       new V2Request.Builder("/collections")
           .withMethod(POST)
@@ -1194,7 +1196,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       cluster.waitForActiveCollection(testCollection, 2, 4);
       c = cluster.getZkStateReader().getCollection(testCollection);
       c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
-      prs = PerReplicaStates.fetch(collectionPath, cluster.getZkClient(), null);
+      prs = PerReplicaStatesFetcher.fetch(collectionPath, cluster.getZkClient(), null);
       assertEquals(4, prs.states.size());
     } finally {
       if (jsr != null) {
