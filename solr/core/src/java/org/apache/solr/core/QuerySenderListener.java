@@ -19,6 +19,7 @@ package org.apache.solr.core;
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
@@ -46,7 +47,8 @@ public class QuerySenderListener extends AbstractSolrEventListener {
     final SolrIndexSearcher searcher = newSearcher;
     log.debug("QuerySenderListener sending requests to {}", newSearcher);
     @SuppressWarnings("unchecked")
-    List<NamedList<Object>> allLists = (List<NamedList<Object>>) getArgs().get("queries");
+    List<NamedList<Object>> allLists =
+        convertQueriesToList((ArrayList<Object>) getArgs().getAll("queries"));
     if (allLists == null) return;
     for (NamedList<Object> nlst : allLists) {
       try {
@@ -101,5 +103,38 @@ public class QuerySenderListener extends AbstractSolrEventListener {
       }
     }
     log.info("QuerySenderListener done.");
+  }
+
+  protected static List<NamedList<Object>> convertQueriesToList(ArrayList<Object> queries) {
+
+    List<NamedList<Object>> allLists = new ArrayList<NamedList<Object>>();
+
+    for (Object o : queries) {
+      if (o instanceof ArrayList) {
+        // XML config from solrconfig.xml triggers this path
+        for (Object o2 : (ArrayList) o) {
+          if (o2 instanceof NamedList) {
+            @SuppressWarnings("unchecked")
+            NamedList<Object> o3 = (NamedList<Object>) o2;
+            allLists.add(o3);
+          } else {
+            // this is triggered by unexpected <str> elements
+            // (unexpected <arr> is ignored)
+            // also by nested lists in JSON from Config API
+            log.warn("ignoring unsupported warming config ({})", o2);
+          }
+        }
+      } else if (o instanceof NamedList) {
+        // JSON config from Config API triggers this path
+        @SuppressWarnings("unchecked")
+        NamedList<Object> o3 = (NamedList<Object>) o;
+        allLists.add(o3);
+      } else {
+        // NB different message format to above so messages can be differentiated
+        log.warn("ignoring unsupported warming config - {}", o);
+      }
+    }
+
+    return allLists;
   }
 }

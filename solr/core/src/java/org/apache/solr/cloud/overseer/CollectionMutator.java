@@ -32,10 +32,12 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.PerReplicaStates;
+import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
+import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.Slice.SliceStateProps;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -69,10 +71,10 @@ public class CollectionMutator {
       String shardParent = message.getStr(ZkStateReader.SHARD_PARENT_PROP);
       String shardParentZkSession = message.getStr("shard_parent_zk_session");
       String shardParentNode = message.getStr("shard_parent_node");
-      sliceProps.put(Slice.RANGE, shardRange);
+      sliceProps.put(SliceStateProps.RANGE, shardRange);
       sliceProps.put(ZkStateReader.STATE_PROP, shardState);
       if (shardParent != null) {
-        sliceProps.put(Slice.PARENT, shardParent);
+        sliceProps.put(SliceStateProps.PARENT, shardParent);
       }
       if (shardParentZkSession != null) {
         sliceProps.put("shard_parent_zk_session", shardParentZkSession);
@@ -116,8 +118,8 @@ public class CollectionMutator {
     boolean hasAnyOps = false;
     PerReplicaStatesOps replicaOps = null;
     for (String prop : CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES) {
-      if (prop.equals(DocCollection.PER_REPLICA_STATE)) {
-        String val = message.getStr(DocCollection.PER_REPLICA_STATE);
+      if (prop.equals(CollectionStateProps.PER_REPLICA_STATE)) {
+        String val = message.getStr(CollectionStateProps.PER_REPLICA_STATE);
         if (val == null) continue;
         boolean enable = Boolean.parseBoolean(val);
         if (enable == coll.isPerReplicaState()) {
@@ -127,7 +129,7 @@ public class CollectionMutator {
         }
         replicaOps =
             PerReplicaStatesOps.modifyCollection(
-                coll, enable, PerReplicaStates.fetch(coll.getZNode(), zkClient, null));
+                coll, enable, PerReplicaStatesFetcher.fetch(coll.getZNode(), zkClient, null));
       }
 
       if (message.containsKey(prop)) {
