@@ -75,6 +75,8 @@ Optimizations
 
 * SOLR-16266: Eliminate unneccessary byte[] copy in Http2SolrClient (hossman)
 
+* SOLR-16296: Remove the use of XmlConfigFile by QueryElevationComponent. (Haythem Khiri)
+
 Bug Fixes
 ---------------------
 * SOLR-15918: Skip repetitive parent znode creation on config set upload (Mike Drob)
