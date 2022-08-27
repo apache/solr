@@ -87,7 +87,8 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
   private static final int MAX_NUM_SUB_SHARDS = 8;
   private static final int DEFAULT_NUM_SUB_SHARDS = 2;
 
-  public static final String SHARDSPLIT_CHECKDISKSPACE_ENABLED = "solr.shardSplit.checkDiskSpace.enabled";
+  public static final String SHARDSPLIT_CHECKDISKSPACE_ENABLED =
+      "solr.shardSplit.checkDiskSpace.enabled";
 
   private final CollectionCommandContext ccc;
 
