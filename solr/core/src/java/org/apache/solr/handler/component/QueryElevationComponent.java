@@ -27,7 +27,6 @@ import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.ObjectArrays;
 import com.google.common.collect.Sets;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.lang.ref.WeakReference;
 import java.nio.file.Files;
