@@ -49,13 +49,12 @@ public class SchemaNameAPI extends JerseyResource {
   @Produces("application/json")
   @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
   public GetSchemaNameResponse getSchemaName() throws Exception {
+    final GetSchemaNameResponse response = instantiateJerseyResponse(GetSchemaNameResponse.class);
     final IndexSchema schema = solrCore.getLatestSchema();
     if (null == schema.getSchemaName()) {
-      // TODO Add an ExceptionMapper to format this as it would look in v1 Solr
       throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "Schema has no name");
     }
 
-    final GetSchemaNameResponse response = new GetSchemaNameResponse();
     response.name = schema.getSchemaName();
     return response;
   }

@@ -19,8 +19,6 @@ package org.apache.solr.handler.configsets;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.jersey.PermissionName;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
@@ -28,7 +26,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
-import java.lang.invoke.MethodHandles;
 
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
 
@@ -41,8 +38,6 @@ import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_P
 @Path("/cluster/configs")
 public class ListConfigSetsAPI extends JerseyResource {
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   @Context
   public HttpHeaders headers;
 
@@ -53,7 +48,6 @@ public class ListConfigSetsAPI extends JerseyResource {
     this.coreContainer = coreContainer;
   }
 
-
   @GET
   @Produces({"application/json", "application/javabin"})
   @PermissionName(CONFIG_READ_PERM)
@@ -62,5 +56,4 @@ public class ListConfigSetsAPI extends JerseyResource {
     response.configSets = coreContainer.getConfigSetService().listConfigs();
     return response;
   }
-
 }

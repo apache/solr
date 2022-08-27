@@ -17,19 +17,20 @@
 
 package org.apache.solr.jersey;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
-import java.lang.invoke.MethodHandles;
+import javax.ws.rs.ext.ContextResolver;
+import javax.ws.rs.ext.Provider;
 
-public class AllExceptionMapper implements ExceptionMapper<Throwable> {
-    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
+// TODO Add support for 'indent' parameter, etc.?
+/**
+ * Customizes the ObjectMapper settings used for serialization/deserialization in Jersey
+ */
+@Provider
+public class SolrJacksonMapper implements ContextResolver<ObjectMapper> {
     @Override
-    public Response toResponse(Throwable exception) {
-        log.error("Ran into exception serving Jersey resource", exception);
-        return Response.serverError().entity("Error encountered: " + exception.getMessage()).build();
+    public ObjectMapper getContext(Class<?> type) {
+        return new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL);
     }
 }

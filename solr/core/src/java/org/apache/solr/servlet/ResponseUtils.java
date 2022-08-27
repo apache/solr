@@ -16,16 +16,32 @@
  */
 package org.apache.solr.servlet;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.jersey.ErrorInfo;
 import org.slf4j.Logger;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.HashMap;
+import java.util.Map;
 
 /** Response helper methods. */
 public class ResponseUtils {
   private ResponseUtils() {}
+
+  public static int getErrorInfo(Throwable ex, NamedList<Object> info, Logger log) {
+    final ErrorInfo errorInfo = getTypedErrorInfo(ex, log);
+
+    Map<String, Object> errorInfoMap = new HashMap<>();
+    errorInfoMap = errorInfo.toMap(errorInfoMap);
+    for (Map.Entry<String, Object> entry : errorInfoMap.entrySet()) {
+      info.add(entry.getKey(), entry.getValue());
+    }
+
+    return errorInfo.code;
+  }
 
   /**
    * Adds the given Throwable's message to the given NamedList.
@@ -35,29 +51,25 @@ public class ResponseUtils {
    *
    * <p>Status codes less than 100 are adjusted to be 500.
    */
-  public static int getErrorInfo(Throwable ex, NamedList<Object> info, Logger log) {
+  public static ErrorInfo getTypedErrorInfo(Throwable ex, Logger log) {
+    final ErrorInfo errorInfo = new ErrorInfo();
     int code = 500;
     if (ex instanceof SolrException) {
       SolrException solrExc = (SolrException) ex;
       code = solrExc.code();
-      NamedList<String> errorMetadata = solrExc.getMetadata();
-      if (errorMetadata == null) {
-        errorMetadata = new NamedList<>();
-      }
-      errorMetadata.add(SolrException.ERROR_CLASS, ex.getClass().getName());
-      errorMetadata.add(
-          SolrException.ROOT_ERROR_CLASS, SolrException.getRootCause(ex).getClass().getName());
-      info.add("metadata", errorMetadata);
+      errorInfo.metadata = new ErrorInfo.ErrorMetadata();
+      errorInfo.metadata.errorClass = ex.getClass().getName();
+      errorInfo.metadata.rootErrorClass = SolrException.getRootCause(ex).getClass().getName();
       if (ex instanceof ApiBag.ExceptionWithErrObject) {
         ApiBag.ExceptionWithErrObject exception = (ApiBag.ExceptionWithErrObject) ex;
-        info.add("details", exception.getErrs());
+        errorInfo.details = exception.getErrs();
       }
     }
 
     for (Throwable th = ex; th != null; th = th.getCause()) {
       String msg = th.getMessage();
       if (msg != null) {
-        info.add("msg", msg);
+        errorInfo.msg = msg;
         break;
       }
     }
@@ -67,7 +79,7 @@ public class ResponseUtils {
       StringWriter sw = new StringWriter();
       ex.printStackTrace(new PrintWriter(sw));
       SolrException.log(log, ex);
-      info.add("trace", sw.toString());
+      errorInfo.trace = sw.toString();
 
       // non standard codes have undefined results with various servers
       if (code < 100) {
@@ -76,7 +88,7 @@ public class ResponseUtils {
       }
     }
 
-    info.add("code", code);
-    return code;
+    errorInfo.code = code;
+    return errorInfo;
   }
 }

@@ -32,8 +32,9 @@ public class CoreContainerApp extends ResourceConfig {
         register(ApplicationEventLogger.class);
         register(RequestEventLogger.class);
         register(SolrRequestAuthorizer.class);
+        //register(RequestMetricsInitializer.class);
         register(JavabinWriter.class);
-        register(AllExceptionMapper.class);
+        register(CatchAllExceptionMapper.class);
 
         // Individual Jersey APIs only need to be registered here if they're not affiliated with a request handler
     }

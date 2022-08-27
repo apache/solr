@@ -68,14 +68,19 @@ public class PluginBag<T> implements AutoCloseable {
   private final ApiBag apiBag;
   private final ResourceConfig jerseyResources;
 
+  public static class JerseyMetricsLookupRegistry extends HashMap<Class<? extends JerseyResource>, RequestHandlerBase> {}
+  private final JerseyMetricsLookupRegistry infoBeanByResource;
+
   /** Pass needThreadSafety=true if plugins can be added and removed concurrently with lookups. */
   public PluginBag(Class<T> klass, SolrCore core, boolean needThreadSafety) {
     if (klass == SolrRequestHandler.class) {
       this.apiBag = new ApiBag(core != null);
-      this.jerseyResources = (core == null) ? new CoreContainerApp() : new SolrCoreApp(core);
+      this.infoBeanByResource = new JerseyMetricsLookupRegistry();
+      this.jerseyResources = (core == null) ? new CoreContainerApp() : new SolrCoreApp(core, infoBeanByResource);
     } else {
       this.apiBag = null;
       this.jerseyResources = null;
+      this.infoBeanByResource = null;
     }
     this.core = core;
     this.klass = klass;
@@ -235,10 +240,13 @@ public class PluginBag<T> implements AutoCloseable {
             Collection<Class<? extends JerseyResource>> jerseyApis = apiSupport.getJerseyResources();
             if (! CollectionUtils.isEmpty(jerseyApis)) {
               for (Class<? extends JerseyResource> jerseyClazz : jerseyApis) {
-                log.info("JEGERLOW: Plugin Bag is registering a jersey resource class: {}", jerseyClazz.getName());
+                log.debug("Registering jersey resource class: {}", jerseyClazz.getName());
                 jerseyResources.register(jerseyClazz);
+                // See MetricsBeanFactory javadocs for a better understanding of this resource->RH mapping
+                if (inst instanceof RequestHandlerBase) {
+                  infoBeanByResource.put(jerseyClazz, (RequestHandlerBase) inst);
+                }
               }
-
             }
           }
         }

@@ -17,24 +17,39 @@
 
 package org.apache.solr.jersey;
 
+
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.apache.solr.common.SolrException;
 
-public class SolrJerseyResponse implements JacksonReflectMapWriter {
+import java.util.List;
+import java.util.Map;
 
-    @JsonProperty("responseHeader")
-    public ResponseHeader responseHeader = new ResponseHeader();
+/**
+ * A value type representing an error.
+ *
+ * Based on the fields exposed in responses from Solr's v1/requestHandler API.
+ */
+public class ErrorInfo implements JacksonReflectMapWriter {
+    @JsonProperty("metadata")
+    public ErrorMetadata metadata;
 
-    @JsonProperty("error")
-    public ErrorInfo error;
+    @JsonProperty("details")
+    public List<Map<String, Object>> details;
 
-    public static class ResponseHeader implements JacksonReflectMapWriter {
-        @JsonProperty("status")
-        public int status;
+    @JsonProperty("msg")
+    public String msg;
 
-        @JsonProperty("QTime")
-        public long qTime;
+    @JsonProperty("trace")
+    public String trace;
 
-        @JsonProperty("partialResults")
-        public Boolean partialResults;
+    public Integer code;
+
+    // TODO Support for the arbitrary keys that APIs might put in SolrException.setMetadata(...)?
+    public static class ErrorMetadata implements JacksonReflectMapWriter {
+        @JsonProperty(SolrException.ERROR_CLASS)
+        public String errorClass;
+
+        @JsonProperty(SolrException.ROOT_ERROR_CLASS)
+        public String rootErrorClass;
     }
 }

@@ -70,6 +70,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.jersey.RequestContextConstants.SOLR_QUERY_REQUEST_KEY;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
@@ -360,6 +361,7 @@ public class V2HttpCall extends HttpSolrCall {
       });
 
       // Set properties that may be used by Jersey filters downstream
+      containerRequest.setProperty(SOLR_QUERY_REQUEST_KEY, solrReq);
       containerRequest.setProperty(SolrRequestAuthorizer.CORE_CONTAINER_PROP_NAME, cores);
       containerRequest.setProperty(SolrRequestAuthorizer.HTTP_SERVLET_REQ_PROP_NAME, req);
       containerRequest.setProperty(SolrRequestAuthorizer.REQUEST_TYPE_PROP_NAME, requestType);

@@ -32,12 +32,14 @@ import java.util.Map;
  * {@link org.apache.solr.core.PluginBag#put(String, PluginBag.PluginHolder)} with each request-handler to register
  */
 public class SolrCoreApp extends ResourceConfig {
-    public SolrCoreApp(SolrCore solrCore) {
+    public SolrCoreApp(SolrCore solrCore, PluginBag.JerseyMetricsLookupRegistry beanRegistry) {
         super();
         setProperties(Map.of("jersey.config.server.tracing.type", "ALL", "jersey.config.server.tracing.threshold", "VERBOSE"));
         register(ApplicationEventLogger.class);
         register(RequestEventLogger.class);
-        register(AllExceptionMapper.class);
+        register(CatchAllExceptionMapper.class);
+        register(PreRequestMetricsFilter.class);
+        register(PostRequestMetricsFilter.class);
         register(new AbstractBinder() {
             @Override
             protected void configure() {
@@ -46,5 +48,14 @@ public class SolrCoreApp extends ResourceConfig {
                         .in(Singleton.class);
             }
         });
+        register(new AbstractBinder() {
+            @Override
+            protected void configure() {
+                bindFactory(new MetricBeanFactory(beanRegistry))
+                        .to(PluginBag.JerseyMetricsLookupRegistry.class)
+                        .in(Singleton.class);
+            }
+        });
+        register(SolrJacksonMapper.class);
     }
 }
