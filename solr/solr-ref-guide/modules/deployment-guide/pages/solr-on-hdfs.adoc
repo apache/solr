@@ -246,6 +246,17 @@ s|Required |Default: none
 +
 The Kerberos principal that Solr should use to authenticate to secure Hadoop; the format of a typical Kerberos V5 principal is: `primary/instance@realm`.
 
+== Shard splitting settings
+
+`solr.shardSplit.checkDiskSpace.enabled`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: true
+|===
++
+Enable free disk space check on the local file system of the shard leader before shard splits.
+
 == Update Log settings
 When using HDFS to store Solr indexes, it is recommended to also store the transaction logs on HDFS. This can be done by using the `solr.HdfsUpdateLog` update log hander class.
 The solrconfig.xml is often used to define an update log handler class name either using a variable reference or direct specification, for example:
