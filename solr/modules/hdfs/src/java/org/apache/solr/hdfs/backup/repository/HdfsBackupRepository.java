@@ -91,7 +91,6 @@ public class HdfsBackupRepository implements BackupRepository {
     factory = new HdfsDirectoryFactory();
     factory.init(args);
     this.hdfsConfig = factory.getConf(new Path(hdfsSolrHome));
-    System.setProperty(SplitShardCmd.SHARDSPLIT_CHECKDISKSPACE_ENABLED, "false");
 
     // Configure the umask mode if specified.
     if (args.get(HDFS_UMASK_MODE_PARAM) != null) {
