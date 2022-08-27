@@ -378,7 +378,6 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    * @return The loaded {@link ElevationProvider}; not null.
    */
   private ElevationProvider loadElevationProvider(SolrCore core) throws IOException, SAXException {
-    InputStream inputStream = null;
     Document xmlDocument;
     try {
       xmlDocument = SafeXMLParsing.parseConfigXML(log, core.getResourceLoader(), configFileName);
@@ -391,8 +390,8 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     } catch (Exception e) {
       // See if it's because the file is empty; wrap it if so.
       boolean isEmpty = false;
-      try {
-        if (inputStream.read() == -1) { // thus empty file
+      try (var input = core.getResourceLoader().openResource(configFileName)) {
+        if (input.read() == -1) { // thus empty file
           isEmpty = true;
         }
       } catch (Exception ignored) {
