@@ -381,8 +381,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     InputStream inputStream = null;
     Document xmlDocument;
     try {
-      inputStream = core.getResourceLoader().openResource(configFileName);
-      xmlDocument = SafeXMLParsing.parseUntrustedXML(log, inputStream);
+      xmlDocument = SafeXMLParsing.parseConfigXML(log, core.getResourceLoader(), configFileName);
     } catch (SolrResourceNotFoundException e) {
       String msg = "Missing config file \"" + configFileName + "\"";
       if (Files.exists(Path.of(core.getDataDir(), configFileName))) {
