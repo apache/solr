@@ -35,6 +35,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.NoLockFactory;
+import org.apache.solr.cloud.api.collections.SplitShardCmd;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
@@ -90,6 +91,7 @@ public class HdfsBackupRepository implements BackupRepository {
     factory = new HdfsDirectoryFactory();
     factory.init(args);
     this.hdfsConfig = factory.getConf(new Path(hdfsSolrHome));
+    System.setProperty(SplitShardCmd.SHARDSPLIT_CHECKDISKSPACE_ENABLED, "false");
 
     // Configure the umask mode if specified.
     if (args.get(HDFS_UMASK_MODE_PARAM) != null) {

@@ -252,7 +252,7 @@ The Kerberos principal that Solr should use to authenticate to secure Hadoop; th
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: true
+|Optional |Default: false
 |===
 +
 Enable free disk space check on the local file system of the shard leader before shard splits.

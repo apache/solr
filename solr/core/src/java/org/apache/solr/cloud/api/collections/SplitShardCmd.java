@@ -87,6 +87,8 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
   private static final int MAX_NUM_SUB_SHARDS = 8;
   private static final int DEFAULT_NUM_SUB_SHARDS = 2;
 
+  public static final String SHARDSPLIT_CHECKDISKSPACE_ENABLED = "solr.shardSplit.checkDiskSpace.enabled";
+
   private final CollectionCommandContext ccc;
 
   public SplitShardCmd(CollectionCommandContext ccc) {
@@ -812,7 +814,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       SolrCloudManager cloudManager)
       throws SolrException {
     // check that the system property is enabled. It should not be disabled by default.
-    if (!Boolean.parseBoolean(System.getProperty("solr.shardSplit.checkDiskSpace.enabled", "true"))) {
+    if (!Boolean.parseBoolean(System.getProperty(SHARDSPLIT_CHECKDISKSPACE_ENABLED, "true"))) {
       return;
     }
     // check that enough disk space is available on the parent leader node
