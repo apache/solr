@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.data.Stat;
 
 /** Refresh the Cluster State for a given collection */
@@ -35,7 +34,7 @@ public class RefreshCollectionMessage implements Overseer.Message {
         overseer
             .getZkStateReader()
             .getZkClient()
-            .exists(ZkStateReader.getCollectionPath(collection), null, true);
+            .exists(DocCollection.getCollectionPath(collection), null, true);
     if (stat == null) {
       // collection does not exist
       return clusterState.copyWith(collection, null);

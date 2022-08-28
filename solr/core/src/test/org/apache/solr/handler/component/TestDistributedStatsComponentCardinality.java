@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -36,14 +35,12 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.hll.HLL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-9062")
-@LogLevel("org.eclipse.jetty.client.HttpConnection=DEBUG")
+// @LogLevel("org.eclipse.jetty.client.HttpConnection=DEBUG")
 public class TestDistributedStatsComponentCardinality extends BaseDistributedSearchTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -161,8 +158,7 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
       Map<String, FieldStatsInfo> stats = rsp.getFieldStatsInfo();
 
       if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) {
-        log.warn(
-            "SOLR-10918: can't relying on exact match with pre-hashed values when using points");
+        // SOLR-10918: can't rely on exact match with pre-hashed values when using points
       } else {
         for (String f : STAT_FIELDS) {
           // regardless of log2m and regwidth, the estimated cardinality of the

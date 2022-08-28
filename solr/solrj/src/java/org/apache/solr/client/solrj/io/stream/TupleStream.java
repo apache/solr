@@ -41,7 +41,6 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 
@@ -149,9 +148,8 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
     }
 
     CloudSolrClient cloudSolrClient = solrClientCache.getCloudSolrClient(zkHost);
-    ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
-    ClusterState clusterState = zkStateReader.getClusterState();
-    Slice[] slices = CloudSolrStream.getSlices(collection, zkStateReader, true);
+    ClusterState clusterState = cloudSolrClient.getClusterStateProvider().getClusterState();
+    Slice[] slices = CloudSolrStream.getSlices(collection, cloudSolrClient, true);
     Set<String> liveNodes = clusterState.getLiveNodes();
 
     RequestReplicaListTransformerGenerator requestReplicaListTransformerGenerator;

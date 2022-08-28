@@ -29,6 +29,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Replica.ReplicaStateProps;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
@@ -169,13 +170,13 @@ public class ClusterStateMockUtil {
           boolean leaderFound = false;
           for (Map.Entry<String, Replica> entry : replicas.entrySet()) {
             Replica value = entry.getValue();
-            if ("true".equals(value.get(Slice.LEADER))) {
+            if ("true".equals(value.get(ReplicaStateProps.LEADER))) {
               leaderFound = true;
               break;
             }
           }
           if (!leaderFound && !m.group(1).equals("p")) {
-            replicaPropMap.put(Slice.LEADER, "true");
+            replicaPropMap.put(ReplicaStateProps.LEADER, "true");
           }
           replica = new Replica(replicaName, replicaPropMap, collName, sliceName);
           replicas.put(replica.getName(), replica);

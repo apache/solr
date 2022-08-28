@@ -375,6 +375,51 @@ public class TestSolrConfigHandler extends RestTestBase {
 
     payload =
         "{\n"
+            + "'add-listener' : { 'event' : 'firstSearcher', 'class': 'solr.QuerySenderListener', "
+            + "'name':'f7fb2d87bea44464af2401cf33f42b69', "
+            + "'queries':[{'q':'static firstSearcher warming in solrconfig.xml'}]"
+            + "}\n"
+            + "}";
+    runConfigCommand(writeHarness, "/config", payload);
+    testForResponseElement(
+        writeHarness,
+        testServerBaseUrl,
+        "/config",
+        cloudSolrClient,
+        asList("config", "listener[0]", "class"),
+        "solr.QuerySenderListener",
+        TIMEOUT_S);
+
+    payload =
+        "{\n"
+            + "'update-listener' : { 'event' : 'firstSearcher', 'class': 'org.apache.solr.core.QuerySenderListener', "
+            + "'name':'f7fb2d87bea44464af2401cf33f42b69', "
+            + "'queries':[{'q':'static firstSearcher warming in solrconfig.xml'}]"
+            + "}\n"
+            + "}";
+    runConfigCommand(writeHarness, "/config", payload);
+    testForResponseElement(
+        writeHarness,
+        testServerBaseUrl,
+        "/config",
+        cloudSolrClient,
+        asList("config", "listener[0]", "class"),
+        "org.apache.solr.core.QuerySenderListener",
+        TIMEOUT_S);
+
+    payload = "{\n" + "'delete-listener' : 'f7fb2d87bea44464af2401cf33f42b69'" + "}";
+    runConfigCommand(writeHarness, "/config", payload);
+    testForResponseElement(
+        writeHarness,
+        testServerBaseUrl,
+        "/config",
+        cloudSolrClient,
+        asList("config", "listener"),
+        null,
+        TIMEOUT_S);
+
+    payload =
+        "{\n"
             + "'create-searchcomponent' : { 'name' : 'tc', 'class': 'org.apache.solr.handler.component.TermsComponent'}\n"
             + "}";
     runConfigCommand(writeHarness, "/config", payload);

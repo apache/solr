@@ -29,9 +29,9 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ClusterProperties;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -54,7 +54,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@Slow
 @SolrTestCaseJ4.SuppressSSL
 public class ZkControllerTest extends SolrTestCaseJ4 {
 
@@ -206,7 +205,6 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     }
   }
 
-  @Slow
   @LogLevel(value = "org.apache.solr.cloud=DEBUG;org.apache.solr.cloud.overseer=DEBUG")
   public void testPublishAndWaitForDownStates() throws Exception {
 
@@ -260,7 +258,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
         zkController
             .getZkClient()
             .makePath(
-                ZkStateReader.getCollectionPathRoot(collectionName),
+                DocCollection.getCollectionPathRoot(collectionName),
                 new byte[0],
                 CreateMode.PERSISTENT,
                 true);
