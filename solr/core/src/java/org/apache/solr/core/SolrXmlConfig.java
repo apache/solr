@@ -40,7 +40,6 @@ import javax.management.MBeanServer;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
@@ -57,7 +56,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
 
 /** Loads {@code solr.xml}. */
 public class SolrXmlConfig {
@@ -230,12 +228,8 @@ public class SolrXmlConfig {
       substituteProps = new Properties();
     }
     try {
-      byte[] buf = IOUtils.toByteArray(is);
-      try (ByteArrayInputStream dup = new ByteArrayInputStream(buf)) {
-        XmlConfigFile config =
-            new XmlConfigFile(loader, null, new InputSource(dup), null, substituteProps);
-        return fromConfig(solrHome, config, fromZookeeper);
-      }
+      XmlConfigFile config = new XmlConfigFile(loader, null, null, substituteProps);
+      return fromConfig(solrHome, config, fromZookeeper);
     } catch (SolrException exc) {
       throw exc;
     } catch (Exception e) {
