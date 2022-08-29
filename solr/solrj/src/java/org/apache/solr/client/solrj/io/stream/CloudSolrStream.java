@@ -50,10 +50,8 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -347,35 +345,31 @@ public class CloudSolrStream extends TupleStream implements Expressible {
   }
 
   public static Slice[] getSlices(
-      String collectionName, ZkStateReader zkStateReader, boolean checkAlias) throws IOException {
-    ClusterState clusterState = zkStateReader.getClusterState();
+      String collectionName, CloudSolrClient cloudSolrClient, boolean checkAlias)
+      throws IOException {
+
+    Stream<String> allCollections = Arrays.stream(collectionName.split(","));
 
     // check for alias or collection
-
-    List<String> allCollections = new ArrayList<>();
-    String[] collectionNames = collectionName.split(",");
-    Aliases aliases = checkAlias ? zkStateReader.getAliases() : null;
-
-    for (String col : collectionNames) {
-      List<String> collections =
-          (aliases != null)
-              ? aliases.resolveAliases(col) // if not an alias, returns collectionName
-              : Collections.singletonList(collectionName);
-      allCollections.addAll(collections);
+    if (checkAlias) {
+      // if not an alias, returns collectionName
+      allCollections =
+          allCollections.flatMap(
+              col -> cloudSolrClient.getClusterStateProvider().resolveAlias(col).stream());
     }
 
     // Lookup all actives slices for these collections
-    List<Slice> slices =
-        allCollections.stream()
+    ClusterState clusterState = cloudSolrClient.getClusterState();
+    Slice[] slices =
+        allCollections
             .map(c -> clusterState.getCollectionOrNull(c, true))
             .filter(Objects::nonNull)
             .flatMap(docCol -> Arrays.stream(docCol.getActiveSlicesArr()))
-            .collect(Collectors.toList());
-    if (!slices.isEmpty()) {
-      return slices.toArray(new Slice[0]);
+            .toArray(Slice[]::new);
+    if (slices.length == 0) {
+      throw new IOException("Slices not found for " + collectionName);
     }
-
-    throw new IOException("Slices not found for " + collectionName);
+    return slices;
   }
 
   protected void constructStreams() throws IOException {

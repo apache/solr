@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin;
 
-import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
 import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.apache.solr.common.params.CoreAdminParams.GET_RANGES;
 
@@ -40,6 +39,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CommonAdminParams;
@@ -136,7 +136,8 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
           DocRouter.Range currentRange = slice.getRange();
           ranges = currentRange != null ? router.partitionRange(partitions, currentRange) : null;
         }
-        Object routerObj = collection.get(DOC_ROUTER); // for back-compat with Solr 4.4
+        Object routerObj =
+            collection.get(CollectionStateProps.DOC_ROUTER); // for back-compat with Solr 4.4
         if (routerObj instanceof Map) {
           Map<?, ?> routerProps = (Map<?, ?>) routerObj;
           routeFieldName = (String) routerProps.get("field");
@@ -249,7 +250,8 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
             collection.getRouter() != null ? collection.getRouter() : DocRouter.DEFAULT;
         DocRouter.Range currentRange = slice.getRange();
 
-        Object routerObj = collection.get(DOC_ROUTER); // for back-compat with Solr 4.4
+        Object routerObj =
+            collection.get(CollectionStateProps.DOC_ROUTER); // for back-compat with Solr 4.4
         if (routerObj instanceof Map) {
           Map<?, ?> routerProps = (Map<?, ?>) routerObj;
           routeFieldName = (String) routerProps.get("field");

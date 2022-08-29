@@ -71,6 +71,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean.Category;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
+import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -93,6 +94,13 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     TestInjection.randomDelayInCoreCreation = "true:5";
     System.setProperty("validateAfterInactivity", "200");
     System.setProperty("solr.allowPaths", "*");
+  }
+
+  @Override
+  @After
+  public void tearDown() throws Exception {
+    cluster.deleteAllCollections();
+    super.tearDown();
   }
 
   @Test
