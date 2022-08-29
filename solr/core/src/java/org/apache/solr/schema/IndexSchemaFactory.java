@@ -18,13 +18,13 @@ package org.apache.solr.schema;
 
 import static org.apache.solr.schema.IndexSchema.SCHEMA;
 
-import com.google.common.base.Supplier;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import javax.xml.parsers.ParserConfigurationException;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
