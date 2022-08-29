@@ -35,7 +35,7 @@ import org.apache.solr.core.JettyBasedResponseWriter;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerUtils;
-import org.apache.solr.jersey.SolrRequestAuthorizer;
+import org.apache.solr.jersey.RequestContextConstants;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
@@ -71,6 +71,7 @@ import java.util.function.Supplier;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.jersey.RequestContextConstants.SOLR_QUERY_REQUEST_KEY;
+import static org.apache.solr.jersey.RequestContextConstants.SOLR_QUERY_RESPONSE_KEY;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
@@ -346,7 +347,7 @@ public class V2HttpCall extends HttpSolrCall {
     public String getAuthenticationScheme() { return null; }
   };
 
-  private void invokeJerseyRequest(CoreContainer cores, SolrCore core, ApplicationHandler jerseyHandler) {
+  private void invokeJerseyRequest(CoreContainer cores, SolrCore core, ApplicationHandler jerseyHandler, SolrQueryResponse rsp) {
     final String basePath = "/____v2/";
     final String path = req.getServletPath();
     try {
@@ -362,14 +363,15 @@ public class V2HttpCall extends HttpSolrCall {
 
       // Set properties that may be used by Jersey filters downstream
       containerRequest.setProperty(SOLR_QUERY_REQUEST_KEY, solrReq);
-      containerRequest.setProperty(SolrRequestAuthorizer.CORE_CONTAINER_PROP_NAME, cores);
-      containerRequest.setProperty(SolrRequestAuthorizer.HTTP_SERVLET_REQ_PROP_NAME, req);
-      containerRequest.setProperty(SolrRequestAuthorizer.REQUEST_TYPE_PROP_NAME, requestType);
-      containerRequest.setProperty(SolrRequestAuthorizer.SOLR_PARAMS_PROP_NAME, queryParams);
-      containerRequest.setProperty(SolrRequestAuthorizer.COLLECTION_LIST_PROP_NAME, collectionsList);
-      containerRequest.setProperty(SolrRequestAuthorizer.HTTP_SERVLET_RSP_PROP_NAME, response);
+      containerRequest.setProperty(SOLR_QUERY_RESPONSE_KEY, rsp);
+      containerRequest.setProperty(RequestContextConstants.CORE_CONTAINER_KEY, cores);
+      containerRequest.setProperty(RequestContextConstants.HTTP_SERVLET_REQ_KEY, req);
+      containerRequest.setProperty(RequestContextConstants.REQUEST_TYPE_KEY, requestType);
+      containerRequest.setProperty(RequestContextConstants.SOLR_PARAMS_KEY, queryParams);
+      containerRequest.setProperty(RequestContextConstants.COLLECTION_LIST_KEY, collectionsList);
+      containerRequest.setProperty(RequestContextConstants.HTTP_SERVLET_RSP_KEY, response);
       if (core != null) {
-        containerRequest.setProperty(SolrRequestAuthorizer.SOLR_CORE_PROP_NAME, core);
+        containerRequest.setProperty(RequestContextConstants.SOLR_CORE_KEY, core);
       }
       // Execute the request
       containerRequest.setWriter(new JettyBasedResponseWriter(req, response));
@@ -383,7 +385,7 @@ public class V2HttpCall extends HttpSolrCall {
   protected void handleAdmin(SolrQueryResponse solrResp) {
     try {
       if (api == null) {
-        invokeJerseyRequest(cores, null, cores.getAppHandler());
+        invokeJerseyRequest(cores, null, cores.getAppHandler(), solrResp);
       } else {
         SolrCore.preDecorateResponse(solrReq, solrResp);
         api.call(this.solrReq, solrResp);
@@ -397,7 +399,7 @@ public class V2HttpCall extends HttpSolrCall {
   @Override
   protected void executeCoreRequest(SolrQueryResponse rsp) {
     if (api == null) {
-      invokeJerseyRequest(cores, core, core.getApplicationHandler());
+      invokeJerseyRequest(cores, core, core.getApplicationHandler(), rsp);
     } else {
       SolrCore.preDecorateResponse(solrReq, rsp);
       try {

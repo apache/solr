@@ -46,7 +46,7 @@ public class SchemaNameAPI extends JerseyResource {
   }
 
   @GET
-  @Produces("application/json")
+  @Produces({"application/json", "application/xml", "application/javabin"})
   @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
   public GetSchemaNameResponse getSchemaName() throws Exception {
     final GetSchemaNameResponse response = instantiateJerseyResponse(GetSchemaNameResponse.class);

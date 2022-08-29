@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.api;
 
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.response.SolrQueryResponse;
 
@@ -46,13 +47,18 @@ public class V2ApiUtils {
   }
 
 
+
+  public static void squashIntoSolrResponse(SolrQueryResponse rsp, JacksonReflectMapWriter mw) {
+    squashIntoNamedList(rsp.getValues(), mw);
+  }
+
   // TODO Come up with a better approach (maybe change Responses to be based on some class that can natively do this
   //  without the intermediate map(s)?)
-  public static void squashIntoSolrResponse(SolrQueryResponse rsp, JacksonReflectMapWriter mw) {
+  public static void squashIntoNamedList(NamedList<Object> destination, JacksonReflectMapWriter mw) {
     Map<String, Object> myMap = new HashMap<>();
     myMap = mw.toMap(myMap);
     for (Map.Entry<String, Object> entry : myMap.entrySet()) {
-      rsp.add(entry.getKey(), entry.getValue());
+      destination.add(entry.getKey(), entry.getValue());
     }
   }
 }

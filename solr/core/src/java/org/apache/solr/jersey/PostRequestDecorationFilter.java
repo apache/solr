@@ -17,8 +17,10 @@
 
 package org.apache.solr.jersey;
 
-import com.codahale.metrics.Timer;
-import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.response.SolrQueryResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,31 +30,27 @@ import javax.ws.rs.container.ContainerResponseFilter;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 
-import static org.apache.solr.jersey.RequestContextConstants.HANDLER_METRICS_KEY;
-import static org.apache.solr.jersey.RequestContextConstants.TIMER_KEY;
+import static org.apache.solr.jersey.RequestContextConstants.SOLR_QUERY_REQUEST_KEY;
 
 /**
- * Adjusts post-request metrics for individual Jersey requests.
+ * Applies standard post-processing decorations to a {@link SolrJerseyResponse} that are needed on all responses.
+ *
+ * @see SolrCore#postDecorateResponse(SolrRequestHandler, SolrQueryRequest, SolrQueryResponse)
  */
-public class PostRequestMetricsFilter implements ContainerResponseFilter {
+public class PostRequestDecorationFilter implements ContainerResponseFilter {
+
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     @Override
     public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext) throws IOException {
-        final RequestHandlerBase.HandlerMetrics metrics = (RequestHandlerBase.HandlerMetrics) requestContext.getProperty(HANDLER_METRICS_KEY);
-        if (metrics == null) return;
-
-        // Increment the timeout count if responseHeader indicates a timeout
-        if (responseContext.hasEntity() &&  SolrJerseyResponse.class.isInstance(responseContext.getEntity())) {
-            final SolrJerseyResponse response = (SolrJerseyResponse) responseContext.getEntity();
-            if (Boolean.TRUE.equals(response.responseHeader.partialResults)) {
-                metrics.numTimeouts.mark();
-            }
-        } else {
-            log.debug("Skipping partialResults check because entity was not SolrJerseyResponse");
+        final SolrQueryRequest solrQueryRequest = (SolrQueryRequest) requestContext.getProperty(SOLR_QUERY_REQUEST_KEY);
+        if ( ! responseContext.hasEntity() || ! SolrJerseyResponse.class.isInstance(responseContext.getEntity())) {
+            log.debug("Skipping QTime assignment because response was not a SolrJerseyResponse");
+            return;
         }
 
-        final Timer.Context timer = (Timer.Context) requestContext.getProperty(TIMER_KEY);
-        metrics.totalTime.inc(timer.stop());
+        log.info("JEGERLOW: Setting QTime");
+        final SolrJerseyResponse response = (SolrJerseyResponse) responseContext.getEntity();
+        response.responseHeader.qTime = Math.round(solrQueryRequest.getRequestTimer().getTime());
     }
 }

@@ -19,7 +19,6 @@ package org.apache.solr.jersey;
 
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.AuthorizationUtils;
 import org.apache.solr.security.HttpServletAuthorizationContext;
@@ -43,14 +42,6 @@ import java.util.List;
 @Provider
 public class SolrRequestAuthorizer implements ContainerRequestFilter {
 
-    public static final String CORE_CONTAINER_PROP_NAME = CoreContainer.class.getName();
-    public static final String HTTP_SERVLET_REQ_PROP_NAME = HttpServletRequest.class.getName();
-    public static final String HTTP_SERVLET_RSP_PROP_NAME = HttpServletResponse.class.getName();
-    public static final String SOLR_CORE_PROP_NAME = SolrCore.class.getName();
-    public static final String REQUEST_TYPE_PROP_NAME = AuthorizationContext.RequestType.class.getName();
-    public static final String SOLR_PARAMS_PROP_NAME = SolrParams.class.getName();
-    public static final String COLLECTION_LIST_PROP_NAME = "collection_name_list";
-
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     @Context
@@ -63,12 +54,12 @@ public class SolrRequestAuthorizer implements ContainerRequestFilter {
     @SuppressWarnings("unchecked")
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
-        final CoreContainer coreContainer = (CoreContainer) requestContext.getProperty(CORE_CONTAINER_PROP_NAME);
-        final HttpServletRequest servletRequest = (HttpServletRequest) requestContext.getProperty(HTTP_SERVLET_REQ_PROP_NAME);
-        final HttpServletResponse servletResponse = (HttpServletResponse) requestContext.getProperty(HTTP_SERVLET_RSP_PROP_NAME);
-        final AuthorizationContext.RequestType requestType = (AuthorizationContext.RequestType) requestContext.getProperty(REQUEST_TYPE_PROP_NAME);
-        final List<String> collectionNames = (List<String>) requestContext.getProperty(COLLECTION_LIST_PROP_NAME);
-        final SolrParams solrParams = (SolrParams) requestContext.getProperty(SOLR_PARAMS_PROP_NAME);
+        final CoreContainer coreContainer = (CoreContainer) requestContext.getProperty(RequestContextConstants.CORE_CONTAINER_KEY);
+        final HttpServletRequest servletRequest = (HttpServletRequest) requestContext.getProperty(RequestContextConstants.HTTP_SERVLET_REQ_KEY);
+        final HttpServletResponse servletResponse = (HttpServletResponse) requestContext.getProperty(RequestContextConstants.HTTP_SERVLET_RSP_KEY);
+        final AuthorizationContext.RequestType requestType = (AuthorizationContext.RequestType) requestContext.getProperty(RequestContextConstants.REQUEST_TYPE_KEY);
+        final List<String> collectionNames = (List<String>) requestContext.getProperty(RequestContextConstants.COLLECTION_LIST_KEY);
+        final SolrParams solrParams = (SolrParams) requestContext.getProperty(RequestContextConstants.SOLR_PARAMS_KEY);
 
         /*
          * HttpSolrCall has more involved logic to check whether a request requires authorization, but most of that
@@ -80,8 +71,8 @@ public class SolrRequestAuthorizer implements ContainerRequestFilter {
         if (coreContainer.getAuthorizationPlugin() == null) {
             return;
         }
-        log.info("JEGERLOW: Looks like we will have to attempt authz");
         final AuthorizationContext authzContext = getAuthzContext(servletRequest, requestType, collectionNames, solrParams, coreContainer);
+        log.debug("Attempting authz with context {}", authzContext);
         AuthorizationUtils.AuthorizationFailure authzFailure = AuthorizationUtils.authorize(servletRequest, servletResponse, coreContainer, authzContext);
         if (authzFailure != null) {
             final Response failureResponse = Response.status(authzFailure.getStatusCode())
