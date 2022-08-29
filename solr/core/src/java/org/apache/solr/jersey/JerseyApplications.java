@@ -38,8 +38,10 @@ public class JerseyApplications extends ResourceConfig {
             register(SolrRequestAuthorizer.class);
 
             // Request and response serialization/deserialization
+            // TODO: could these be singletons to save per-request object creations?
             register(MessageBodyWriters.JavabinMessageBodyWriter.class);
             register(MessageBodyWriters.XmlMessageBodyWriter.class);
+            register(MessageBodyWriters.CsvMessageBodyWriter.class);
             register(SolrJacksonMapper.class);
 
             // Request lifecycle logic
