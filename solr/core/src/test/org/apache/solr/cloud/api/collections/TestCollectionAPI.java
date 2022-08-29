@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
-
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -1287,24 +1286,24 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   @Test
   public void testConfigCaching() throws Exception {
     String COLL = "cfg_cache_test";
-    MiniSolrCloudCluster cl = new MiniSolrCloudCluster.Builder(2, createTempDir())
+    MiniSolrCloudCluster cl =
+        new MiniSolrCloudCluster.Builder(2, createTempDir())
             .addConfig("conf", configset("cloud-minimal"))
             .configure();
 
     try {
       LongAdder schemaMisses = new LongAdder();
       LongAdder configMisses = new LongAdder();
-      IndexSchemaFactory.CACHE_MISS_LISTENER = s -> {
-        if("schema.xml".equals(s)) schemaMisses.increment();
-        if("solrconfig.xml".equals(s)) configMisses.increment();
-      };
-      CollectionAdminRequest.createCollection(COLL, "conf", 5, 1)
-              .process(cl.getSolrClient());
+      IndexSchemaFactory.CACHE_MISS_LISTENER =
+          s -> {
+            if ("schema.xml".equals(s)) schemaMisses.increment();
+            if ("solrconfig.xml".equals(s)) configMisses.increment();
+          };
+      CollectionAdminRequest.createCollection(COLL, "conf", 5, 1).process(cl.getSolrClient());
       assertEquals(2, schemaMisses.longValue());
       assertEquals(2, configMisses.longValue());
     } finally {
       cl.shutdown();
     }
-
   }
 }

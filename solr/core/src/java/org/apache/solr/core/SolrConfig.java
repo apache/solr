@@ -213,7 +213,10 @@ public class SolrConfig implements MapSerializable {
     getOverlay(); // just in case it is not initialized
     // insist we have non-null substituteProperties; it might get overlaid
 
-    IndexSchemaFactory.VersionedConfig cfg = IndexSchemaFactory.getFromCache(name, loader,
+    IndexSchemaFactory.VersionedConfig cfg =
+        IndexSchemaFactory.getFromCache(
+            name,
+            loader,
             () -> {
               if (loader.getCoreContainer() == null) return null;
               return loader.getCoreContainer().getObjectCache();
@@ -389,18 +392,17 @@ public class SolrConfig implements MapSerializable {
     }
   }
 
-  private IndexSchemaFactory.VersionedConfig readXml(
-      SolrResourceLoader loader,
-      String name) {
-       try {
-         ResourceProvider rp = new ResourceProvider(loader,name);
-         XmlConfigFile xml = new XmlConfigFile(loader, rp, name, null, "/config/", null);
-         return new IndexSchemaFactory.VersionedConfig(rp.zkVersion,
-                 new DataConfigNode(new DOMConfigNode(xml.getDocument().getDocumentElement())));
-       } catch (IOException e) {
-         throw new SolrException(ErrorCode.SERVER_ERROR, e);
-       }
-     }
+  private IndexSchemaFactory.VersionedConfig readXml(SolrResourceLoader loader, String name) {
+    try {
+      ResourceProvider rp = new ResourceProvider(loader, name);
+      XmlConfigFile xml = new XmlConfigFile(loader, rp, name, null, "/config/", null);
+      return new IndexSchemaFactory.VersionedConfig(
+          rp.zkVersion,
+          new DataConfigNode(new DOMConfigNode(xml.getDocument().getDocumentElement())));
+    } catch (IOException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    }
+  }
 
   private static final AtomicBoolean versionWarningAlreadyLogged = new AtomicBoolean(false);
 

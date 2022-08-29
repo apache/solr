@@ -59,7 +59,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
     String file = (".".equals(resource)) ? configSetZkPath : configSetZkPath + "/" + resource;
     try {
       Stat stat = zkController.getZkClient().exists(file, null, true);
-      if(stat != null) {
+      if (stat != null) {
         return new Pair<>(file, stat.getVersion());
       } else {
         return null;
