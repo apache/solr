@@ -46,6 +46,10 @@ Improvements
 * SOLR-16323: The Docker image now uses the Solr User ID instead of the User Name, helps with non-root checks (Houston Putman)
 
 * SOLR-16337: implement Zk metrics (noble)
+
+* SOLR-16353: Make SplitShardCmd#checkDiskSpace disableable through a system property. (Haythem Khiri)
+
+
 Optimizations
 ---------------------
 * SOLR-16120: Optimise hl.fl expansion. (Christine Poerschke, David Smiley, Mike Drob)
