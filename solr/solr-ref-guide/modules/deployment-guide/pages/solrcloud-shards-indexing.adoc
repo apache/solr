@@ -161,6 +161,8 @@ You can delete the old shard at a later time when you're ready.
 
 More details on how to use shard splitting is in the section on the Collection API's xref:shard-management.adoc#splitshard[SPLITSHARD command].
 
+When splitting a shard, a free disk space check is performed on the local file system of the leader shard. This can be disabled through the `solr.shardSplit.checkDiskSpace.enabled` system property (i.e. `-Dsolr.shardSplit.checkDiskSpace.enabled=false`). This property is disabled by default for xref:solr-on-hdfs.adoc[HDFS].
+
 == Ignoring Commits from Client Applications in SolrCloud
 
 In most cases, when running in SolrCloud mode, indexing client applications should not send explicit commit requests.
