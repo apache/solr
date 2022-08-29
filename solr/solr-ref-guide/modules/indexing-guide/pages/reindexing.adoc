@@ -156,7 +156,7 @@ Another approach is to use index to a new collection and use Solr's xref:deploym
 
 This option is only available for Solr installations running in SolrCloud mode.
 
-With this approach, you will index your documents into a new collection that uses your changes and, once indexing and testing are complete, create an alias that points your front-end at the new collection.
+With this approach, you will index your documents into a new collection that uses your changes. If you store all the fields, you can use the xref:deployment-guide:collection-management.adoc#reindexcollection[REINDEXCOLLECTION command] to reindex from the old collection to the new one. Once indexing and testing are complete, create an alias that points your front-end at the new collection.
 From that point, new queries and updates will be routed to the new collection seamlessly.
 
 Once the alias is in place and you are satisfied you no longer need the old data, you can delete the old collection with the Collections API xref:deployment-guide:collection-management.adoc#delete[DELETE command].

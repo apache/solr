@@ -51,11 +51,9 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
@@ -280,12 +278,8 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
 
   private List<String> getShardUrls() throws IOException {
     try {
-      ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
-
-      Slice[] slices = CloudSolrStream.getSlices(this.collection, zkStateReader, false);
-
-      ClusterState clusterState = zkStateReader.getClusterState();
-      Set<String> liveNodes = clusterState.getLiveNodes();
+      Slice[] slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);
+      Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
 
       List<String> baseUrls = new ArrayList<>();
       for (Slice slice : slices) {
