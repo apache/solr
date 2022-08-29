@@ -413,7 +413,7 @@ public class SolrConfig implements MapSerializable {
       Map<String, IndexSchemaFactory.VersionedConfig> configCache,
       ResourceProvider rp)
       throws IOException {
-    XmlConfigFile xml = new XmlConfigFile(loader, rp, name, null, "/config/", null);
+    XmlConfigFile xml = new XmlConfigFile(loader, name, "/config/", null);
     root = new DataConfigNode(new DOMConfigNode(xml.getDocument().getDocumentElement()));
     this.znodeVersion = rp.zkVersion;
     if (configCache != null && rp.fileName != null) {

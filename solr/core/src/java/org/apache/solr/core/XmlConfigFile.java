@@ -17,7 +17,6 @@
 package org.apache.solr.core;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -28,21 +27,15 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.function.Function;
 import javax.xml.namespace.QName;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
-import org.apache.commons.io.IOUtils;
-import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.XMLErrorLogger;
-import org.apache.solr.util.SystemIdResolver;
+import org.apache.solr.util.SafeXMLParsing;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -77,19 +70,7 @@ public class XmlConfigFile { // formerly simply "Config"
       String prefix,
       Properties substituteProps)
       throws IOException {
-    this(
-        loader,
-        s -> {
-          try {
-            return loader.openResource(s);
-          } catch (IOException e) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-          }
-        },
-        name,
-        is,
-        prefix,
-        substituteProps);
+    this(loader, name, prefix, substituteProps);
   }
 
   /**
@@ -106,63 +87,26 @@ public class XmlConfigFile { // formerly simply "Config"
    *
    * @param loader the resource loader used to obtain an input stream if 'is' is null
    * @param name the resource name used if the input stream 'is' is null
-   * @param is the resource as a SAX InputSource
    * @param prefix an optional prefix that will be prepended to all non-absolute xpath expressions
    * @param substituteProps optional property substitution
    */
   public XmlConfigFile(
-      SolrResourceLoader loader,
-      Function<String, InputStream> fileSupplier,
-      String name,
-      InputSource is,
-      String prefix,
-      Properties substituteProps)
+      SolrResourceLoader loader, String name, String prefix, Properties substituteProps)
       throws IOException {
     if (null == loader) throw new NullPointerException("loader");
     this.loader = loader;
-
     this.substituteProperties = substituteProps;
     this.name = name;
     this.prefix = (prefix != null && !prefix.endsWith("/")) ? prefix + '/' : prefix;
+
     try {
-      javax.xml.parsers.DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-
-      if (is == null) {
-        InputStream in = fileSupplier.apply(name);
-        if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
-          zkVersion = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
-          log.debug("loaded config {} with version {} ", name, zkVersion);
-        }
-        is = new InputSource(in);
-        is.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
-      }
-
-      // only enable xinclude, if a SystemId is available
-      if (is.getSystemId() != null) {
-        try {
-          dbf.setXIncludeAware(true);
-          dbf.setNamespaceAware(true);
-        } catch (UnsupportedOperationException e) {
-          log.warn("{} XML parser doesn't support XInclude option", name);
-        }
-      }
-
-      final DocumentBuilder db = dbf.newDocumentBuilder();
-      db.setEntityResolver(new SystemIdResolver(loader));
-      db.setErrorHandler(xmllog);
-      try {
-        doc = db.parse(is);
-      } finally {
-        // some XML parsers are broken and don't close the byte stream (but they should according to
-        // spec)
-        IOUtils.closeQuietly(is.getByteStream());
-      }
-      if (substituteProps != null) {
-        DOMUtil.substituteProperties(doc, getSubstituteProperties());
-      }
-    } catch (ParserConfigurationException | SAXException e) {
+      doc = SafeXMLParsing.parseConfigXML(log, loader, name);
+    } catch (SAXException e) {
       SolrException.log(log, "Exception during parsing file: " + name, e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+    if (substituteProps != null) {
+      DOMUtil.substituteProperties(doc, getSubstituteProperties());
     }
   }
 
