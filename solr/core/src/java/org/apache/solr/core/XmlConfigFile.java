@@ -74,13 +74,7 @@ public class XmlConfigFile { // formerly simply "Config"
   }
 
   /**
-   * Builds a config:
-   *
-   * <p>Note that the 'name' parameter is used to obtain a valid input stream if no valid one is
-   * provided through 'is'. If no valid stream is provided, a valid SolrResourceLoader instance
-   * should be provided through 'loader' so the resource can be opened (@see
-   * SolrResourceLoader#openResource); if no SolrResourceLoader instance is provided, a default one
-   * will be created.
+   * Builds a config.
    *
    * <p>Consider passing a non-null 'name' parameter in all use-cases since it is used for logging
    * &amp; exception reporting.
