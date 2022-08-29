@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import javax.xml.parsers.ParserConfigurationException;
 
 import com.google.common.base.Supplier;
@@ -142,11 +143,19 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
     }
   }
 
+
+  //for testing purposes
+  public static volatile Consumer<String> CACHE_MISS_LISTENER = null;
   @SuppressWarnings("unchecked")
   public static VersionedConfig getFromCache(String name,
                                              SolrResourceLoader loader,
-                                             com.google.common.base.Supplier<ObjectCache> objectCacheSupplier,
-                                             Supplier<VersionedConfig> cfgLoader) {
+                                             Supplier<ObjectCache> objectCacheSupplier,
+                                             Supplier<VersionedConfig> c) {
+    Supplier<VersionedConfig> cfgLoader = () -> {
+      Consumer<String> listener = CACHE_MISS_LISTENER;
+      if (listener != null) listener.accept(name);
+      return c.get();
+    };
     if (loader instanceof ZkSolrResourceLoader) {
       ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) loader;
       ObjectCache objectCache = objectCacheSupplier.get();
