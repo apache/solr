@@ -80,8 +80,6 @@ Optimizations
 
 * SOLR-9359: Enable warming queries to be managed using Config API (Andy Webb, Eric Pugh)
 
-* SOLR-16296: Remove the use of XmlConfigFile by QueryElevationComponent. (Haythem Khiri)
-
 Bug Fixes
 ---------------------
 * SOLR-15918: Skip repetitive parent znode creation on config set upload (Mike Drob)
@@ -160,6 +158,8 @@ Other Changes
 
 * SOLR-15342: SolrJ: Split ZooKeeper based dependencies off to a solr-solrj-zookeeper module /
   dependency. (David Smiley, Haythem Khiri)
+
+* SOLR-16296: Remove the use of XmlConfigFile by QueryElevationComponent. (Haythem Khiri)
 
 Build
 ---------------------
