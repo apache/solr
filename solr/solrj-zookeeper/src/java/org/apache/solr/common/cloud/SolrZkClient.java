@@ -83,10 +83,10 @@ public class SolrZkClient implements Closeable {
   }
 
   private final ExecutorService zkCallbackExecutor =
-          ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("zkCallback"));
+      ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("zkCallback"));
   private final ExecutorService zkConnManagerCallbackExecutor =
-          ExecutorUtil.newMDCAwareSingleThreadExecutor(
-                  new SolrNamedThreadFactory("zkConnectionManagerCallback"));
+      ExecutorUtil.newMDCAwareSingleThreadExecutor(
+          new SolrNamedThreadFactory("zkConnectionManagerCallback"));
 
   private volatile boolean isClosed = false;
   private ZkClientConnectionStrategy zkClientConnectionStrategy;
@@ -324,7 +324,7 @@ public class SolrZkClient implements Closeable {
    * @throws IllegalArgumentException if an invalid path is specified
    */
   public Stat exists(final String path, final Watcher watcher, boolean retryOnConnLoss)
-          throws KeeperException, InterruptedException {
+      throws KeeperException, InterruptedException {
     Stat result = null;
     if (retryOnConnLoss) {
       result = zkCmdExecutor.retryOperation(() -> keeper.exists(path, wrapWatcher(watcher)));
@@ -337,7 +337,7 @@ public class SolrZkClient implements Closeable {
 
   /** Returns true if path exists */
   public Boolean exists(final String path, boolean retryOnConnLoss)
-          throws KeeperException, InterruptedException {
+      throws KeeperException, InterruptedException {
     Boolean result = null;
     if (retryOnConnLoss) {
       result = zkCmdExecutor.retryOperation(() -> keeper.exists(path, null) != null);
@@ -350,7 +350,7 @@ public class SolrZkClient implements Closeable {
 
   /** Returns children of the node at the path */
   public List<String> getChildren(final String path, final Watcher watcher, boolean retryOnConnLoss)
-          throws KeeperException, InterruptedException {
+      throws KeeperException, InterruptedException {
     List<String> result = null;
     if (retryOnConnLoss) {
       return zkCmdExecutor.retryOperation(() -> keeper.getChildren(path, wrapWatcher(watcher)));
@@ -367,12 +367,12 @@ public class SolrZkClient implements Closeable {
 
   /** Returns children of the node at the path */
   public List<String> getChildren(
-          final String path, final Watcher watcher, Stat stat, boolean retryOnConnLoss)
-          throws KeeperException, InterruptedException {
+      final String path, final Watcher watcher, Stat stat, boolean retryOnConnLoss)
+      throws KeeperException, InterruptedException {
     List<String> result = null;
     if (retryOnConnLoss) {
       result =
-              zkCmdExecutor.retryOperation(() -> keeper.getChildren(path, wrapWatcher(watcher), stat));
+          zkCmdExecutor.retryOperation(() -> keeper.getChildren(path, wrapWatcher(watcher), stat));
     } else {
       result = keeper.getChildren(path, wrapWatcher(watcher), stat);
     }
@@ -385,8 +385,8 @@ public class SolrZkClient implements Closeable {
 
   /** Returns node's data */
   public byte[] getData(
-          final String path, final Watcher watcher, final Stat stat, boolean retryOnConnLoss)
-          throws KeeperException, InterruptedException {
+      final String path, final Watcher watcher, final Stat stat, boolean retryOnConnLoss)
+      throws KeeperException, InterruptedException {
     byte[] result = null;
     if (retryOnConnLoss) {
       result = zkCmdExecutor.retryOperation(() -> keeper.getData(path, wrapWatcher(watcher), stat));
@@ -402,8 +402,8 @@ public class SolrZkClient implements Closeable {
 
   /** Returns node's state */
   public Stat setData(
-          final String path, final byte data[], final int version, boolean retryOnConnLoss)
-          throws KeeperException, InterruptedException {
+      final String path, final byte data[], final int version, boolean retryOnConnLoss)
+      throws KeeperException, InterruptedException {
     Stat result = null;
     if (retryOnConnLoss) {
       result = zkCmdExecutor.retryOperation(() -> keeper.setData(path, data, version));
@@ -455,13 +455,13 @@ public class SolrZkClient implements Closeable {
 
   /** Returns path of created node */
   public String create(
-          final String path, final byte[] data, final CreateMode createMode, boolean retryOnConnLoss)
-          throws KeeperException, InterruptedException {
+      final String path, final byte[] data, final CreateMode createMode, boolean retryOnConnLoss)
+      throws KeeperException, InterruptedException {
     String result = null;
     if (retryOnConnLoss) {
       result =
-              zkCmdExecutor.retryOperation(
-                      () -> keeper.create(path, data, zkACLProvider.getACLsToAdd(path), createMode));
+          zkCmdExecutor.retryOperation(
+              () -> keeper.create(path, data, zkACLProvider.getACLsToAdd(path), createMode));
     } else {
       List<ACL> acls = zkACLProvider.getACLsToAdd(path);
       result = keeper.create(path, data, acls, createMode);
@@ -684,7 +684,7 @@ public class SolrZkClient implements Closeable {
   }
 
   public List<OpResult> multi(final Iterable<Op> ops, boolean retryOnConnLoss)
-          throws InterruptedException, KeeperException {
+      throws InterruptedException, KeeperException {
     List<OpResult> result = null;
     if (retryOnConnLoss) {
       result = zkCmdExecutor.retryOperation(() -> keeper.multi(ops));
@@ -979,10 +979,10 @@ public class SolrZkClient implements Closeable {
           zkConnManagerCallbackExecutor.submit(() -> watcher.process(event));
         } else {
           zkCallbackExecutor.submit(
-                  () -> {
-                    metrics.watchesFired.increment();
-                    watcher.process(event);
-                  });
+              () -> {
+                metrics.watchesFired.increment();
+                watcher.process(event);
+              });
         }
       } catch (RejectedExecutionException e) {
         // If not a graceful shutdown
@@ -1032,19 +1032,21 @@ public class SolrZkClient implements Closeable {
     @JsonProperty public final LongAdder existsChecks = new LongAdder();
 
     @JsonProperty public final LongAdder deletes = new LongAdder();
+
     @Override
     public void writeMap(EntryWriter ew) throws IOException {
-      ReflectMapWriter.super.writeMap(new EntryWriter() {
-        @Override
-        public EntryWriter put(CharSequence k, Object v) throws IOException {
-          if (v instanceof LongAdder) {
-            ew.put(k, ((LongAdder) v).longValue());
-          } else {
-            ew.put(k, v);
-          }
-          return this;
-        }
-      });
+      ReflectMapWriter.super.writeMap(
+          new EntryWriter() {
+            @Override
+            public EntryWriter put(CharSequence k, Object v) throws IOException {
+              if (v instanceof LongAdder) {
+                ew.put(k, ((LongAdder) v).longValue());
+              } else {
+                ew.put(k, v);
+              }
+              return this;
+            }
+          });
     }
   }
 }
