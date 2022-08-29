@@ -129,6 +129,7 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
 
   private NodeConfig loadNodeConfig(String config) {
     InputStream is = MetricsConfigTest.class.getResourceAsStream("/solr/" + config);
-    return SolrXmlConfig.fromInputStream(TEST_PATH(), is, new Properties()); // TODO pass in props
+    // TODO pass in props
+    return SolrXmlConfig.fromInputStream(TEST_PATH(), new Properties(), false);
   }
 }

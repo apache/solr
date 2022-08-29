@@ -17,8 +17,6 @@
 
 package org.apache.solr.core;
 
-import static org.apache.solr.core.TestConfigSets.solrxml;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -50,7 +48,7 @@ public class TestConfLoadPerf extends SolrTestCaseJ4 {
 
     System.setProperty("configsets", configSetsBaseDir);
 
-    CoreContainer container = new CoreContainer(SolrXmlConfig.fromString(testDirectory, solrxml));
+    CoreContainer container = new CoreContainer(SolrXmlConfig.fromString(testDirectory));
     container.load();
     container.shutdown();
 

@@ -513,9 +513,7 @@ public class SchemaManager {
         return new ManagedIndexSchema(
             core.getSolrConfig(),
             schemaResourceName,
-            () ->
-                IndexSchemaFactory.getParsedSchema(
-                    in, zkLoader, core.getLatestSchema().getResourceName()),
+            () -> IndexSchemaFactory.getParsedSchema(zkLoader),
             true,
             schemaResourceName,
             version,

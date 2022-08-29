@@ -76,7 +76,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     System.setProperty("solr.test.sys.prop2", "proptwo");
     String solrXml =
         Files.readString(home.resolve("solr-metricreporter.xml"), StandardCharsets.UTF_8);
-    NodeConfig cfg = SolrXmlConfig.fromString(home, solrXml);
+    NodeConfig cfg = SolrXmlConfig.fromString(home);
     cc =
         createCoreContainer(
             cfg,

@@ -135,6 +135,6 @@ public class DirectoryFactoryTest extends SolrTestCase {
 
   private NodeConfig loadNodeConfig(String config) {
     InputStream is = DirectoryFactoryTest.class.getResourceAsStream(config);
-    return SolrXmlConfig.fromInputStream(solrHome, is, new Properties());
+    return SolrXmlConfig.fromInputStream(solrHome, new Properties(), false);
   }
 }

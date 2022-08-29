@@ -46,7 +46,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
 
     System.setProperty("configsets", configSetsBaseDir);
 
-    CoreContainer container = new CoreContainer(SolrXmlConfig.fromString(testDirectory, solrxml));
+    CoreContainer container = new CoreContainer(SolrXmlConfig.fromString(testDirectory));
     container.load();
 
     return container;
@@ -56,16 +56,12 @@ public class TestConfigSets extends SolrTestCaseJ4 {
   public void testDefaultConfigSetBasePathResolution() {
     Path solrHome = Paths.get("/path/to/solr/home");
 
-    NodeConfig config =
-        SolrXmlConfig.fromString(
-            solrHome, "<solr><str name=\"configSetBaseDir\">configsets</str></solr>");
+    NodeConfig config = SolrXmlConfig.fromString(solrHome);
     assertThat(
         config.getConfigSetBaseDirectory().toAbsolutePath(),
         is(Paths.get("/path/to/solr/home/configsets").toAbsolutePath()));
 
-    NodeConfig absConfig =
-        SolrXmlConfig.fromString(
-            solrHome, "<solr><str name=\"configSetBaseDir\">/path/to/configsets</str></solr>");
+    NodeConfig absConfig = SolrXmlConfig.fromString(solrHome);
     assertThat(
         absConfig.getConfigSetBaseDirectory().toAbsolutePath(),
         is(Paths.get("/path/to/configsets").toAbsolutePath()));
@@ -116,7 +112,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
     String csd = configSetsDir.getAbsolutePath();
     System.setProperty("configsets", csd);
 
-    CoreContainer container = new CoreContainer(SolrXmlConfig.fromString(testDirectory, solrxml));
+    CoreContainer container = new CoreContainer(SolrXmlConfig.fromString(testDirectory));
     container.load();
 
     // We initially don't have a /dump handler defined

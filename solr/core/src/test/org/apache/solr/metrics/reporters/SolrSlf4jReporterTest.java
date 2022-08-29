@@ -51,7 +51,7 @@ public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
     String solrXml =
         FileUtils.readFileToString(
             Paths.get(home.toString(), "solr-slf4jreporter.xml").toFile(), "UTF-8");
-    NodeConfig cfg = SolrXmlConfig.fromString(home, solrXml);
+    NodeConfig cfg = SolrXmlConfig.fromString(home);
     CoreContainer cc =
         createCoreContainer(
             cfg,

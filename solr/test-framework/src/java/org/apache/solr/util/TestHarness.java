@@ -167,7 +167,7 @@ public class TestHarness extends BaseTestHarness {
    * @param solrXml the text of a solrxml
    */
   public TestHarness(Path solrHome, String solrXml) {
-    this(SolrXmlConfig.fromString(solrHome, solrXml));
+    this(SolrXmlConfig.fromString(solrHome));
   }
 
   public TestHarness(NodeConfig nodeConfig) {

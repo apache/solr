@@ -113,7 +113,7 @@ public class JvmMetricsTest extends SolrJettyTestBase {
 
     // default config
     String solrXml = Files.readString(home.resolve("solr.xml"), StandardCharsets.UTF_8);
-    NodeConfig config = SolrXmlConfig.fromString(home, solrXml);
+    NodeConfig config = SolrXmlConfig.fromString(home);
     NodeConfig.NodeConfigBuilder.DEFAULT_HIDDEN_SYS_PROPS.forEach(
         s -> {
           assertTrue(s, config.getMetricsConfig().getHiddenSysProps().contains(s));
@@ -121,7 +121,7 @@ public class JvmMetricsTest extends SolrJettyTestBase {
 
     // custom config
     solrXml = Files.readString(home.resolve("solr-hiddensysprops.xml"), StandardCharsets.UTF_8);
-    NodeConfig config2 = SolrXmlConfig.fromString(home, solrXml);
+    NodeConfig config2 = SolrXmlConfig.fromString(home);
     Arrays.asList("foo", "bar", "baz")
         .forEach(
             s -> {

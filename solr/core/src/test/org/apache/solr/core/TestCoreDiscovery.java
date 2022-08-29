@@ -626,16 +626,12 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
   @Test
   public void testRootDirectoryResolution() {
-    NodeConfig config =
-        SolrXmlConfig.fromString(
-            solrHomeDirectory, "<solr><str name=\"coreRootDirectory\">relative</str></solr>");
+    NodeConfig config = SolrXmlConfig.fromString(solrHomeDirectory);
     assertThat(
         config.getCoreRootDirectory().toString(),
         containsString(solrHomeDirectory.toAbsolutePath().toString()));
 
-    NodeConfig absConfig =
-        SolrXmlConfig.fromString(
-            solrHomeDirectory, "<solr><str name=\"coreRootDirectory\">/absolute</str></solr>");
+    NodeConfig absConfig = SolrXmlConfig.fromString(solrHomeDirectory);
     assertThat(
         absConfig.getCoreRootDirectory().toString(),
         not(containsString(solrHomeDirectory.toAbsolutePath().toString())));

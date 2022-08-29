@@ -16,7 +16,6 @@
  */
 package org.apache.solr.core;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
@@ -219,8 +218,7 @@ public class NodeConfig {
         if (zkClient.exists("/solr.xml", true)) {
           log.info("solr.xml found in ZooKeeper. Loading...");
           byte[] data = zkClient.getData("/solr.xml", null, null, true);
-          return SolrXmlConfig.fromInputStream(
-              solrHome, new ByteArrayInputStream(data), nodeProperties, true);
+          return SolrXmlConfig.fromInputStream(solrHome, nodeProperties, true);
         }
       } catch (Exception e) {
         throw new SolrException(

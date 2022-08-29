@@ -19,10 +19,7 @@ package org.apache.solr.core;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 import com.google.common.base.Strings;
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -200,29 +197,16 @@ public class SolrXmlConfig {
     }
 
     log.info("Loading solr.xml from {}", configFile);
-    try (InputStream inputStream = Files.newInputStream(configFile)) {
-      return fromInputStream(solrHome, inputStream, substituteProps);
-    } catch (SolrException exc) {
-      throw exc;
-    } catch (Exception exc) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "Could not load SOLR configuration", exc);
-    }
+    return fromInputStream(solrHome, substituteProps, false);
   }
 
   /** TEST-ONLY */
-  public static NodeConfig fromString(Path solrHome, String xml) {
-    return fromInputStream(
-        solrHome, new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)), new Properties());
+  public static NodeConfig fromString(Path solrHome) {
+    return fromInputStream(solrHome, new Properties(), false);
   }
 
   public static NodeConfig fromInputStream(
-      Path solrHome, InputStream is, Properties substituteProps) {
-    return fromInputStream(solrHome, is, substituteProps, false);
-  }
-
-  public static NodeConfig fromInputStream(
-      Path solrHome, InputStream is, Properties substituteProps, boolean fromZookeeper) {
+      Path solrHome, Properties substituteProps, boolean fromZookeeper) {
     SolrResourceLoader loader = new SolrResourceLoader(solrHome);
     if (substituteProps == null) {
       substituteProps = new Properties();

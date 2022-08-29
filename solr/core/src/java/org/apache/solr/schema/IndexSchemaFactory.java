@@ -36,11 +36,9 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.util.DOMConfigNode;
 import org.apache.solr.util.DataConfigNode;
-import org.apache.solr.util.SystemIdResolver;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 /** Base class for factories for IndexSchema implementations */
@@ -139,22 +137,18 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
         }
       }
       return () -> {
-        ConfigNode data =
-            getParsedSchema(
-                schemaInputStream, loader, name); // either missing or stale. create a new one
+        ConfigNode data = getParsedSchema(loader); // either missing or stale. create a new one
         configCache.put(is.fileName, new VersionedConfig(is.getStat().getVersion(), data));
         return data;
       };
     }
     // this is not cacheable as it does not come from ZK
-    return () -> getParsedSchema(schemaInputStream, loader, name);
+    return () -> getParsedSchema(loader);
   }
 
-  public static ConfigNode getParsedSchema(InputStream is, SolrResourceLoader loader, String name)
+  public static ConfigNode getParsedSchema(SolrResourceLoader loader)
       throws IOException, SAXException, ParserConfigurationException {
-    XmlConfigFile schemaConf = null;
-    InputSource inputSource = new InputSource(is);
-    inputSource.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
+    XmlConfigFile schemaConf;
     schemaConf = new XmlConfigFile(loader, SCHEMA, "/" + SCHEMA + "/", null);
     return new DataConfigNode(new DOMConfigNode(schemaConf.getDocument().getDocumentElement()));
   }

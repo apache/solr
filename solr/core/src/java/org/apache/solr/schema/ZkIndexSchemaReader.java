@@ -16,7 +16,6 @@
  */
 package org.apache.solr.schema;
 
-import java.io.ByteArrayInputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
@@ -184,9 +183,7 @@ public class ZkIndexSchemaReader implements OnReconnect {
               new ManagedIndexSchema(
                   managedIndexSchemaFactory.getConfig(),
                   resourceName,
-                  () ->
-                      IndexSchemaFactory.getParsedSchema(
-                          new ByteArrayInputStream(data), zkLoader, resourceName),
+                  () -> IndexSchemaFactory.getParsedSchema(zkLoader),
                   managedIndexSchemaFactory.isMutable(),
                   resourceName,
                   stat.getVersion(),

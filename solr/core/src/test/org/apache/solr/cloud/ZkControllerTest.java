@@ -412,7 +412,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     SolrMetricManager metricManager;
 
     public MockCoreContainer() {
-      super(SolrXmlConfig.fromString(TEST_PATH(), "<solr/>"));
+      super(SolrXmlConfig.fromString(TEST_PATH()));
       HttpShardHandlerFactory httpShardHandlerFactory = new HttpShardHandlerFactory();
       httpShardHandlerFactory.init(new PluginInfo("shardHandlerFactory", Collections.emptyMap()));
       this.shardHandlerFactory = httpShardHandlerFactory;

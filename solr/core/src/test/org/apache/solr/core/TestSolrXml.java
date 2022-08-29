@@ -172,7 +172,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
             + "<null name=\"leaderVoteWait\"/>"
             + "</solrcloud></solr>";
 
-    NodeConfig cfg = SolrXmlConfig.fromString(solrHome, solrXml);
+    NodeConfig cfg = SolrXmlConfig.fromString(solrHome);
     assertNull("maxBooleanClauses", cfg.getBooleanQueryMaxClauseCount()); // default is null
     assertEquals("leaderVoteWait", 180000, cfg.getCloudConfig().getLeaderVoteWait());
     assertEquals("hostPort", 8000, cfg.getCloudConfig().getSolrHostPort());
@@ -184,13 +184,13 @@ public class TestSolrXml extends SolrTestCaseJ4 {
 
     expectedException.expect(SolrException.class);
     expectedException.expectMessage("transientCacheSize");
-    SolrXmlConfig.fromString(solrHome, solrXml); // return not used, only for validation
+    SolrXmlConfig.fromString(solrHome); // return not used, only for validation
   }
 
   public void testIntAsLongOk() {
     int ok = random().nextInt();
     String solrXml = "<solr><long name=\"transientCacheSize\">" + ok + "</long></solr>";
-    NodeConfig cfg = SolrXmlConfig.fromString(solrHome, solrXml);
+    NodeConfig cfg = SolrXmlConfig.fromString(solrHome);
     assertEquals(ok, cfg.getTransientCacheSize());
   }
 
@@ -202,7 +202,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
             + "</solr>";
     expectedException.expect(SolrException.class);
     expectedException.expectMessage("Multiple instances of solrcloud section found in solr.xml");
-    SolrXmlConfig.fromString(solrHome, solrXml); // return not used, only for validation
+    SolrXmlConfig.fromString(solrHome); // return not used, only for validation
   }
 
   public void testMultiLoggingSectionError() {
@@ -213,7 +213,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
             + "</solr>";
     expectedException.expect(SolrException.class);
     expectedException.expectMessage("Multiple instances of logging section found in solr.xml");
-    SolrXmlConfig.fromString(solrHome, solrXml); // return not used, only for validation
+    SolrXmlConfig.fromString(solrHome); // return not used, only for validation
   }
 
   public void testMultiLoggingWatcherSectionError() {
@@ -227,7 +227,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     expectedException.expect(SolrException.class);
     expectedException.expectMessage(
         "Multiple instances of logging/watcher section found in solr.xml");
-    SolrXmlConfig.fromString(solrHome, solrXml); // return not used, only for validation
+    SolrXmlConfig.fromString(solrHome); // return not used, only for validation
   }
 
   public void testMultiCoreAdminHandlerActionsSectionError() {
@@ -239,7 +239,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     expectedException.expect(SolrException.class);
     expectedException.expectMessage(
         "Multiple instances of coreAdminHandlerActions section found in solr.xml");
-    SolrXmlConfig.fromString(solrHome, solrXml); // return not used, only for validation
+    SolrXmlConfig.fromString(solrHome); // return not used, only for validation
   }
 
   public void testValidStringValueWhenBoolTypeIsExpected() {
@@ -247,7 +247,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     String solrXml =
         String.format(Locale.ROOT, "<solr><str name=\"shareSchema\">%s</str></solr>", schemaCache);
 
-    NodeConfig nodeConfig = SolrXmlConfig.fromString(solrHome, solrXml);
+    NodeConfig nodeConfig = SolrXmlConfig.fromString(solrHome);
     assertEquals("gen core node names", schemaCache, nodeConfig.hasSchemaCache());
   }
 
@@ -258,7 +258,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
             Locale.ROOT,
             "<solr><updateshardhandler><str name=\"maxUpdateConnections\">%d</str></updateshardhandler></solr>",
             maxUpdateConnections);
-    NodeConfig nodeConfig = SolrXmlConfig.fromString(solrHome, solrXml);
+    NodeConfig nodeConfig = SolrXmlConfig.fromString(solrHome);
     assertEquals(
         "max update conn",
         maxUpdateConnections,
@@ -275,7 +275,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
 
     expectedException.expect(SolrException.class);
     expectedException.expectMessage("Error parsing 'maxUpdateConnections'");
-    SolrXmlConfig.fromString(solrHome, solrXml); // return not used, only for validation
+    SolrXmlConfig.fromString(solrHome); // return not used, only for validation
   }
 
   public void testFailAtConfigParseTimeWhenBoolTypeIsExpectedAndValueIsInvalidString() {
@@ -284,7 +284,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
 
     expectedException.expect(SolrException.class);
     expectedException.expectMessage("invalid boolean value: NOT_A_BOOLEAN");
-    SolrXmlConfig.fromString(solrHome, solrXml); // return not used, only for validation
+    SolrXmlConfig.fromString(solrHome); // return not used, only for validation
   }
 
   public void testFailAtConfigParseTimeWhenIntTypeIsExpectedAndBoolTypeIsGiven() {
@@ -303,7 +303,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
             "Value of 'unknown-option' can not be parsed as 'int': \"%s\"",
             randomBoolean));
 
-    SolrXmlConfig.fromString(solrHome, solrXml); // return not used, only for validation
+    SolrXmlConfig.fromString(solrHome); // return not used, only for validation
   }
 
   public void testFailAtConfigParseTimeWhenUnrecognizedSolrCloudOptionWasFound() {
@@ -314,7 +314,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     expectedException.expectMessage(
         "Unknown configuration parameter in <solrcloud> section of solr.xml: unknown-option");
 
-    SolrXmlConfig.fromString(solrHome, solrXml); // return not used, only for validation
+    SolrXmlConfig.fromString(solrHome); // return not used, only for validation
   }
 
   public void testFailAtConfigParseTimeWhenUnrecognizedSolrOptionWasFound() {
@@ -324,7 +324,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     expectedException.expect(SolrException.class);
     expectedException.expectMessage("Unknown configuration value in solr.xml: unknown-bool-option");
 
-    SolrXmlConfig.fromString(solrHome, solrXml); // return not used, only for validation
+    SolrXmlConfig.fromString(solrHome); // return not used, only for validation
   }
 
   public void testFailAtConfigParseTimeWhenUnrecognizedLoggingOptionWasFound() {
@@ -337,7 +337,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     expectedException.expect(SolrException.class);
     expectedException.expectMessage("Unknown value in logwatcher config: unknown-option");
 
-    SolrXmlConfig.fromString(solrHome, solrXml); // return not used, only for validation
+    SolrXmlConfig.fromString(solrHome); // return not used, only for validation
   }
 
   public void testFailAtConfigParseTimeWhenLoggingConfigParamsAreDuplicated() {
@@ -356,7 +356,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     expectedException.expect(SolrException.class);
     expectedException.expectMessage("<logging> section of solr.xml contains duplicated 'class'");
 
-    SolrXmlConfig.fromString(solrHome, solrXml); // return not used, only for validation
+    SolrXmlConfig.fromString(solrHome); // return not used, only for validation
   }
 
   public void testFailAtConfigParseTimeWhenSolrCloudConfigParamsAreDuplicated() {
@@ -381,7 +381,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     expectedException.expectMessage(
         "<solrcloud> section of solr.xml contains duplicated 'zkClientTimeout'");
 
-    SolrXmlConfig.fromString(solrHome, solrXml); // return not used, only for validation
+    SolrXmlConfig.fromString(solrHome); // return not used, only for validation
   }
 
   @Ignore
@@ -402,7 +402,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     expectedException.expectMessage(
         "Main section of solr.xml contains duplicated 'coreLoadThreads'");
 
-    SolrXmlConfig.fromString(solrHome, solrXml); // return not used, only for validation
+    SolrXmlConfig.fromString(solrHome); // return not used, only for validation
   }
 
   public void testFailAtConfigParseTimeWhenCoreAdminHandlerActionsConfigParamsAreDuplicated() {
@@ -422,44 +422,41 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     expectedException.expectMessage(
         "<coreAdminHandlerActions> section of solr.xml contains duplicated 'action'");
 
-    SolrXmlConfig.fromString(solrHome, solrXml); // return not used, only for validation
+    SolrXmlConfig.fromString(solrHome); // return not used, only for validation
   }
 
   public void testCloudConfigRequiresHostPort() {
     expectedException.expect(SolrException.class);
     expectedException.expectMessage("solrcloud section missing required entry 'hostPort'");
 
-    SolrXmlConfig.fromString(solrHome, "<solr><solrcloud></solrcloud></solr>");
+    SolrXmlConfig.fromString(solrHome);
   }
 
   public void testCloudConfigDefaultHostPort() {
     expectedException.expect(SolrException.class);
     expectedException.expectMessage("solrcloud section missing required entry 'hostPort'");
 
-    SolrXmlConfig.fromString(solrHome, "<solr><solrcloud></solrcloud></solr>");
+    SolrXmlConfig.fromString(solrHome);
   }
 
   public void testCloudConfigRequiresHost() {
     expectedException.expect(SolrException.class);
     expectedException.expectMessage("solrcloud section missing required entry 'host'");
 
-    SolrXmlConfig.fromString(
-        solrHome, "<solr><solrcloud><int name=\"hostPort\">8983</int></solrcloud></solr>");
+    SolrXmlConfig.fromString(solrHome);
   }
 
   public void testCloudConfigRequiresHostContext() {
     expectedException.expect(SolrException.class);
     expectedException.expectMessage("solrcloud section missing required entry 'hostContext'");
 
-    SolrXmlConfig.fromString(
-        solrHome,
-        "<solr><solrcloud><str name=\"host\">host</str><int name=\"hostPort\">8983</int></solrcloud></solr>");
+    SolrXmlConfig.fromString(solrHome);
   }
 
   public void testMultiBackupSectionError() {
     String solrXml = "<solr><backup></backup><backup></backup></solr>";
     expectedException.expect(SolrException.class);
     expectedException.expectMessage("Multiple instances of backup section found in solr.xml");
-    SolrXmlConfig.fromString(solrHome, solrXml); // return not used, only for validation
+    SolrXmlConfig.fromString(solrHome); // return not used, only for validation
   }
 }
