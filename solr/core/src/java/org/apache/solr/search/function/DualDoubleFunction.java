@@ -16,15 +16,14 @@
  */
 package org.apache.solr.search.function;
 
+import java.io.IOException;
+import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.queries.function.valuesource.MultiFunction;
 import org.apache.lucene.search.IndexSearcher;
-
-import java.io.IOException;
-import java.util.Map;
 
 /**
  * Abstract {@link ValueSource} implementation which wraps two ValueSources and applies an
