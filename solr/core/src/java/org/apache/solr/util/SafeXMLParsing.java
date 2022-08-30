@@ -80,7 +80,12 @@ public final class SafeXMLParsing {
       trySetDOMFeature(dbf, XMLConstants.FEATURE_SECURE_PROCESSING, true);
       // only enable xinclude, if systemId is available. this assumes it is the case as loader
       // provides one.
-      dbf.setXIncludeAware(true);
+      try {
+        dbf.setXIncludeAware(true);
+      } catch (UnsupportedOperationException e) {
+        throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST, "XML parser doesn't support XInclude option", e);
+      }
       final DocumentBuilder db = dbf.newDocumentBuilder();
       db.setEntityResolver(new SystemIdResolver(loader));
       db.setErrorHandler(new XMLErrorLogger(log));
