@@ -34,6 +34,7 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.DOMUtil;
+import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.util.SafeXMLParsing;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +43,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 /**
@@ -50,6 +52,7 @@ import org.xml.sax.SAXException;
  */
 public class XmlConfigFile { // formerly simply "Config"
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
 
   static final XPathFactory xpathFactory = XPathFactory.newInstance();
 
@@ -59,6 +62,16 @@ public class XmlConfigFile { // formerly simply "Config"
   private final SolrResourceLoader loader;
   private final Properties substituteProperties;
   private int zkVersion = -1;
+
+  public XmlConfigFile(
+      SolrResourceLoader loader,
+      String name,
+      InputSource is,
+      String prefix,
+      Properties substituteProps)
+      throws IOException {
+    this(loader, name, prefix, substituteProps);
+  }
 
   /**
    * Builds a config.
