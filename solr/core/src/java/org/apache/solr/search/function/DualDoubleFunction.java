@@ -28,7 +28,7 @@ import java.util.Map;
 
 /**
  * Abstract {@link ValueSource} implementation which wraps two ValueSources and applies an
- * extendible float function to their values.
+ * extendible double function to their values.
  */
 public abstract class DualDoubleFunction extends ValueSource {
   protected final ValueSource a;
