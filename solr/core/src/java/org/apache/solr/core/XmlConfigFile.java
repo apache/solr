@@ -87,8 +87,7 @@ public class XmlConfigFile { // formerly simply "Config"
       String prefix,
       Properties substituteProps)
       throws IOException {
-    Objects.requireNonNull(loader);
-    this.loader = loader;
+    this.loader = Objects.requireNonNull(loader);
     this.substituteProperties = substituteProps;
     this.name = name;
     this.prefix = (prefix != null && !prefix.endsWith("/")) ? prefix + '/' : prefix;
