@@ -74,6 +74,7 @@ import org.apache.solr.search.function.EqualFunction;
 import org.apache.solr.search.function.OrdFieldSource;
 import org.apache.solr.search.function.ReverseOrdFieldSource;
 import org.apache.solr.search.function.SolrComparisonBoolFunction;
+import org.apache.solr.search.function.DualDoubleFunction;
 import org.apache.solr.search.function.distance.GeoDistValueSourceParser;
 import org.apache.solr.search.function.distance.GeohashFunction;
 import org.apache.solr.search.function.distance.GeohashHaversineFunction;
@@ -242,16 +243,16 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           public ValueSource parse(FunctionQParser fp) throws SyntaxError {
             ValueSource a = fp.parseValueSource();
             ValueSource b = fp.parseValueSource();
-            return new DualFloatFunction(a, b) {
+            return new DualDoubleFunction(a, b) {
               @Override
               protected String name() {
                 return "mod";
               }
 
               @Override
-              protected float func(int doc, FunctionValues aVals, FunctionValues bVals)
+              protected double func(int doc, FunctionValues aVals, FunctionValues bVals)
                   throws IOException {
-                return aVals.floatVal(doc) % bVals.floatVal(doc);
+                return aVals.doubleVal(doc) % bVals.doubleVal(doc);
               }
             };
           }
