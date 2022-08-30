@@ -234,7 +234,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     System.clearProperty("metricsEnabled");
     try {
       JettySolrRunner j = cluster.getRandomJetty(random());
-      String url = j.getBaseUrl() + "/admin/metrics?key=solr.node:CONTAINER.zkClient&wt=json";
+      String url = j.getBaseUrl() + "/admin/metrics?key=solr.node:CONTAINER.zknSolrClient&wt=json";
       HttpClient httpClient = ((HttpSolrClient) j.newClient()).getHttpClient();
       @SuppressWarnings("unchecked")
       Map<String, Object> zkMmetrics =
