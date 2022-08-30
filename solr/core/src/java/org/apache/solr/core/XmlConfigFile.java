@@ -34,7 +34,6 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.DOMUtil;
-import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.util.SafeXMLParsing;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +51,6 @@ import org.xml.sax.SAXException;
  */
 public class XmlConfigFile { // formerly simply "Config"
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
 
   static final XPathFactory xpathFactory = XPathFactory.newInstance();
 
@@ -63,16 +61,6 @@ public class XmlConfigFile { // formerly simply "Config"
   private final Properties substituteProperties;
   private int zkVersion = -1;
 
-  public XmlConfigFile(
-      SolrResourceLoader loader,
-      String name,
-      InputSource is,
-      String prefix,
-      Properties substituteProps)
-      throws IOException {
-    this(loader, name, prefix, substituteProps);
-  }
-
   /**
    * Builds a config.
    *
@@ -81,11 +69,16 @@ public class XmlConfigFile { // formerly simply "Config"
    *
    * @param loader the resource loader used to obtain an input stream if 'is' is null
    * @param name the resource name used if the input stream 'is' is null
+   * @param is the resource as a SAX InputSource
    * @param prefix an optional prefix that will be prepended to all non-absolute xpath expressions
    * @param substituteProps optional property substitution
    */
   public XmlConfigFile(
-      SolrResourceLoader loader, String name, String prefix, Properties substituteProps)
+      SolrResourceLoader loader,
+      String name,
+      InputSource is,
+      String prefix,
+      Properties substituteProps)
       throws IOException {
     if (null == loader) throw new NullPointerException("loader");
     this.loader = loader;
@@ -94,7 +87,11 @@ public class XmlConfigFile { // formerly simply "Config"
     this.prefix = (prefix != null && !prefix.endsWith("/")) ? prefix + '/' : prefix;
 
     try {
-      doc = SafeXMLParsing.parseConfigXML(log, loader, name);
+      if (is != null) {
+        doc = SafeXMLParsing.parseConfigXML(log, is, loader);
+      } else {
+        doc = SafeXMLParsing.parseConfigXML(log, loader, name);
+      }
     } catch (SAXException e) {
       SolrException.log(log, "Exception during parsing file: " + name, e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
