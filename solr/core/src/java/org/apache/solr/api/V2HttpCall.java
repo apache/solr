@@ -284,7 +284,6 @@ public class V2HttpCall extends HttpSolrCall {
     }
 
     if (api instanceof ApiBag.IntrospectApi) {
-      log.info("We're operating on an introspect API");
       final Map<String, Api> apis = new LinkedHashMap<>();
       for (String m : SolrRequest.SUPPORTED_METHODS) {
         Api x = requestHandlers.v2lookup(path, m, parts);
@@ -340,7 +339,7 @@ public class V2HttpCall extends HttpSolrCall {
 
   // We don't rely on any of Jersey's authc/z features so we pass in this empty context for
   // all requests.
-  private static final SecurityContext DEFAULT_SECURITY_CONTEXT = new SecurityContext() {
+  public static final SecurityContext DEFAULT_SECURITY_CONTEXT = new SecurityContext() {
     public boolean isUserInRole(String role) { return false; }
     public boolean isSecure() { return false; }
     public Principal getUserPrincipal() { return null; }
@@ -356,7 +355,7 @@ public class V2HttpCall extends HttpSolrCall {
               req.getServerPort(), basePath, null, null);
       final URI fullUri = new URI(req.getScheme(), null, "somehostname", req.getServerPort(), path, null, null);
       final ContainerRequest containerRequest = new ContainerRequest(baseUri, fullUri, req.getMethod(),
-              DEFAULT_SECURITY_CONTEXT, new MapPropertiesDelegate(), cores.getResourceConfig());
+              DEFAULT_SECURITY_CONTEXT, new MapPropertiesDelegate(), jerseyHandler.getConfiguration());
       req.getHeaderNames().asIterator().forEachRemaining(headerName -> {
         containerRequest.headers(headerName, Collections.list(req.getHeaders(headerName)));
       });
