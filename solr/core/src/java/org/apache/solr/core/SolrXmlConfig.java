@@ -233,7 +233,7 @@ public class SolrXmlConfig {
       byte[] buf = IOUtils.toByteArray(is);
       try (ByteArrayInputStream dup = new ByteArrayInputStream(buf)) {
         XmlConfigFile config =
-            new XmlConfigFile(loader, null, new InputSource(dup), null, substituteProps);
+            new XmlConfigFile(loader, null, null, new InputSource(dup), null, substituteProps);
         return fromConfig(solrHome, config, fromZookeeper);
       }
     } catch (SolrException exc) {

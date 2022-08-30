@@ -17,6 +17,7 @@
 package org.apache.solr.core;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -28,14 +29,17 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Function;
 import javax.xml.namespace.QName;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.util.SafeXMLParsing;
+import org.apache.solr.util.SystemIdResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -82,6 +86,7 @@ public class XmlConfigFile { // formerly simply "Config"
    */
   public XmlConfigFile(
       SolrResourceLoader loader,
+      Function<String, InputStream> fileSupplier,
       String name,
       InputSource is,
       String prefix,
@@ -93,6 +98,16 @@ public class XmlConfigFile { // formerly simply "Config"
     this.prefix = (prefix != null && !prefix.endsWith("/")) ? prefix + '/' : prefix;
 
     try {
+      if (fileSupplier != null) {
+        InputStream in = fileSupplier.apply(name);
+        if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
+          zkVersion = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
+          log.debug("loaded config {} with version {} ", name, zkVersion);
+        }
+        is = new InputSource(in);
+        is.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
+      }
+
       if (is != null) {
         doc = SafeXMLParsing.parseConfigXML(log, loader, is);
       } else {

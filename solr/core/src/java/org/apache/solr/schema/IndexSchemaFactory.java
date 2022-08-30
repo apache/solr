@@ -155,7 +155,7 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
     XmlConfigFile schemaConf = null;
     InputSource inputSource = new InputSource(is);
     inputSource.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
-    schemaConf = new XmlConfigFile(loader, SCHEMA, inputSource, "/" + SCHEMA + "/", null);
+    schemaConf = new XmlConfigFile(loader, null, SCHEMA, inputSource, "/" + SCHEMA + "/", null);
     return new DataConfigNode(new DOMConfigNode(schemaConf.getDocument().getDocumentElement()));
   }
 
