@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Objects;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -73,7 +74,7 @@ public final class SafeXMLParsing {
 
   private static DocumentBuilder configDocumentBuilder(ResourceLoader loader, Logger log) {
     try {
-      if (null == loader) throw new NullPointerException("loader");
+      Objects.requireNonNull(loader);
       final DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
       dbf.setNamespaceAware(true);
       trySetDOMFeature(dbf, XMLConstants.FEATURE_SECURE_PROCESSING, true);

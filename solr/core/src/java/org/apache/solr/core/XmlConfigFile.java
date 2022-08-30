@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.SortedMap;
@@ -80,7 +81,7 @@ public class XmlConfigFile { // formerly simply "Config"
       String prefix,
       Properties substituteProps)
       throws IOException {
-    if (null == loader) throw new NullPointerException("loader");
+    Objects.requireNonNull(loader);
     this.loader = loader;
     this.substituteProperties = substituteProps;
     this.name = name;
