@@ -63,7 +63,7 @@ public final class SafeXMLParsing {
   }
 
   /**
-   * Parses a config file from a Solr config based on an InputSource. Xinclude and external entities
+   * Parses a config file from a Solr config based on InputSource. Xinclude and external entities
    * are enabled, but cannot escape the resource loader.
    */
   public static Document parseConfigXML(Logger log, InputSource is, ResourceLoader loader)
