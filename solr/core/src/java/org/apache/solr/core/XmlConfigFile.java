@@ -39,7 +39,6 @@ import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.util.SafeXMLParsing;
-import org.apache.solr.util.SystemIdResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -65,6 +64,28 @@ public class XmlConfigFile { // formerly simply "Config"
   private final SolrResourceLoader loader;
   private final Properties substituteProperties;
   private int zkVersion = -1;
+
+  public XmlConfigFile(
+      SolrResourceLoader loader,
+      String name,
+      InputSource is,
+      String prefix,
+      Properties substituteProps)
+      throws IOException {
+    this(
+        loader,
+        s -> {
+          try {
+            return loader.openResource(s);
+          } catch (IOException e) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+          }
+        },
+        name,
+        is,
+        prefix,
+        substituteProps);
+  }
 
   /**
    * Builds a config.
@@ -105,7 +126,6 @@ public class XmlConfigFile { // formerly simply "Config"
           log.debug("loaded config {} with version {} ", name, zkVersion);
         }
         is = new InputSource(in);
-        is.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
       }
 
       if (is != null) {
