@@ -84,7 +84,7 @@ public final class SafeXMLParsing {
         dbf.setXIncludeAware(true);
       } catch (UnsupportedOperationException e) {
         throw new SolrException(
-                SolrException.ErrorCode.BAD_REQUEST, "XML parser doesn't support XInclude option", e);
+            SolrException.ErrorCode.BAD_REQUEST, "XML parser doesn't support XInclude option", e);
       }
       final DocumentBuilder db = dbf.newDocumentBuilder();
       db.setEntityResolver(new SystemIdResolver(loader));
