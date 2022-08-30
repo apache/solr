@@ -16,7 +16,6 @@
  */
 package org.apache.solr.common.cloud;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
@@ -29,16 +28,20 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
+import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.util.Utils.STANDARDOBJBUILDER;
 
 /**
  * Immutable state of the cloud. Normally you can get the state by using {@link
@@ -209,6 +212,7 @@ public class ClusterState implements JSONWriter.Writable {
     return sb.toString();
   }
 
+
   /**
    * Create a ClusterState from Json. This method doesn't support legacy configName location and
    * thus don't call it where that's important
@@ -230,22 +234,7 @@ public class ClusterState implements JSONWriter.Writable {
                 bytes,
                 0,
                 bytes.length,
-                parser -> {
-                  try {
-                    return new ObjectBuilder(parser) {
-                      @Override
-                      public void addKeyVal(Object map, Object key, Object val) throws IOException {
-                        key = key.toString().intern();
-                        if (val instanceof String) {
-                          val = ((String) val).intern();
-                        }
-                        super.addKeyVal(map, key, val);
-                      }
-                    };
-                  } catch (IOException e) {
-                    throw new RuntimeException(e);
-                  }
-                });
+                    STR_INTERNER_OBJ_BUILDER);
     return createFromCollectionMap(version, stateMap, liveNodes);
   }
 
@@ -538,4 +527,13 @@ public class ClusterState implements JSONWriter.Writable {
       return perReplicaStates;
     }
   }
+  private static volatile Function<JSONParser, ObjectBuilder> STR_INTERNER_OBJ_BUILDER = STANDARDOBJBUILDER;
+  public static void setStrInternerParser(Function<JSONParser, ObjectBuilder> fun) {
+    if(fun == null) return;
+    STR_INTERNER_OBJ_BUILDER = fun;
+  }
+  public static Function<JSONParser, ObjectBuilder> getStringInterner() {
+    return STR_INTERNER_OBJ_BUILDER;
+  }
+
 }
