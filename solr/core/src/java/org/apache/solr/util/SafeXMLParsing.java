@@ -67,7 +67,7 @@ public final class SafeXMLParsing {
    * Parses a config file from a Solr config based on InputSource. Xinclude and external entities
    * are enabled, but cannot escape the resource loader.
    */
-  public static Document parseConfigXML(Logger log, InputSource is, ResourceLoader loader)
+  public static Document parseConfigXML(Logger log, ResourceLoader loader, InputSource is)
       throws SAXException, IOException {
     return configDocumentBuilder(loader, log).parse(is);
   }

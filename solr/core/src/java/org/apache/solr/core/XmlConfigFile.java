@@ -95,7 +95,7 @@ public class XmlConfigFile { // formerly simply "Config"
 
     try {
       if (is != null) {
-        doc = SafeXMLParsing.parseConfigXML(log, is, loader);
+        doc = SafeXMLParsing.parseConfigXML(log, loader, is);
       } else {
         doc = SafeXMLParsing.parseConfigXML(log, loader, name);
       }
