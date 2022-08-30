@@ -142,7 +142,7 @@ class MarkdownTemplateTask extends DefaultTask {
     binding.put('projectList', project.providers.provider{
       def projects = productProject.subprojects.findAll{ it.tasks.findByName('renderSiteJavadoc')?.enabled }
         .sort(false, Comparator.comparing{ (it.name != 'core') as Boolean }
-          .thenComparing(Comparator.comparing{ (it.name != 'solrj') as Boolean })
+          .thenComparing(Comparator.comparing{ (! it.name.startsWith('solrj')) as Boolean })
           .thenComparing(Comparator.comparing{ (it.name == 'test-framework') as Boolean })
           .thenComparing(Comparator.comparing{ it.path }));
       return projects.collect{ project ->
