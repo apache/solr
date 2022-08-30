@@ -16,6 +16,8 @@
  */
 package org.apache.solr.common.cloud;
 
+import static org.apache.solr.common.util.Utils.STANDARDOBJBUILDER;
+
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
@@ -40,8 +42,6 @@ import org.noggit.JSONWriter;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.util.Utils.STANDARDOBJBUILDER;
 
 /**
  * Immutable state of the cloud. Normally you can get the state by using {@link
@@ -212,7 +212,6 @@ public class ClusterState implements JSONWriter.Writable {
     return sb.toString();
   }
 
-
   /**
    * Create a ClusterState from Json. This method doesn't support legacy configName location and
    * thus don't call it where that's important
@@ -229,12 +228,7 @@ public class ClusterState implements JSONWriter.Writable {
     }
     @SuppressWarnings({"unchecked"})
     Map<String, Object> stateMap =
-        (Map<String, Object>)
-            Utils.fromJSON(
-                bytes,
-                0,
-                bytes.length,
-                    STR_INTERNER_OBJ_BUILDER);
+        (Map<String, Object>) Utils.fromJSON(bytes, 0, bytes.length, STR_INTERNER_OBJ_BUILDER);
     return createFromCollectionMap(version, stateMap, liveNodes);
   }
 
@@ -527,13 +521,16 @@ public class ClusterState implements JSONWriter.Writable {
       return perReplicaStates;
     }
   }
-  private static volatile Function<JSONParser, ObjectBuilder> STR_INTERNER_OBJ_BUILDER = STANDARDOBJBUILDER;
+
+  private static volatile Function<JSONParser, ObjectBuilder> STR_INTERNER_OBJ_BUILDER =
+      STANDARDOBJBUILDER;
+
   public static void setStrInternerParser(Function<JSONParser, ObjectBuilder> fun) {
-    if(fun == null) return;
+    if (fun == null) return;
     STR_INTERNER_OBJ_BUILDER = fun;
   }
+
   public static Function<JSONParser, ObjectBuilder> getStringInterner() {
     return STR_INTERNER_OBJ_BUILDER;
   }
-
 }
