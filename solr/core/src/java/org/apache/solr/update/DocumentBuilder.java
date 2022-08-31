@@ -166,6 +166,7 @@ public class DocumentBuilder {
         // Ensure we do not flood the logs with extremely long values
         String fieldValue = field.getValue().toString();
         if (fieldValue.length() > MAX_VALUES_AS_STRING_LENGTH) {
+          assert fieldValue.endsWith("]");
           fieldValue = fieldValue.substring(0, MAX_VALUES_AS_STRING_LENGTH - 4) + "...]";
         }
 
