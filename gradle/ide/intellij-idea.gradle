@@ -22,6 +22,12 @@ def isIdea = System.getProperty("idea.active") != null ||
 
 if (isIdea) {
   logger.warn("IntelliJ Idea IDE detected.")
+
+  copy {
+    from rootProject.file("gradle/ide/intellij-idea/Project_Default.xml")
+    into rootProject.file(".idea/inspectionProfiles")
+  }
+
 }
 
 allprojects {
