@@ -31,11 +31,11 @@ import org.apache.solr.common.util.PathTrie;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.JettyBasedResponseWriter;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerUtils;
 import org.apache.solr.jersey.RequestContextConstants;
+import org.apache.solr.jersey.container.ContainerRequestUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
@@ -45,7 +45,6 @@ import org.apache.solr.servlet.HttpSolrCall;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.servlet.SolrRequestParsers;
 import org.apache.solr.servlet.cache.Method;
-import org.glassfish.jersey.internal.MapPropertiesDelegate;
 import org.glassfish.jersey.server.ApplicationHandler;
 import org.glassfish.jersey.server.ContainerRequest;
 import org.slf4j.Logger;
@@ -56,7 +55,6 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.SecurityContext;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.URI;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.HashMap;
@@ -347,18 +345,8 @@ public class V2HttpCall extends HttpSolrCall {
   };
 
   private void invokeJerseyRequest(CoreContainer cores, SolrCore core, ApplicationHandler jerseyHandler, SolrQueryResponse rsp) {
-    final String basePath = "/____v2/";
-    final String path = req.getServletPath();
     try {
-      // TODO Cleanup or replace these hacky URIs altogether
-      final URI baseUri = new URI(req.getScheme(), null, "somehostname",
-              req.getServerPort(), basePath, null, null);
-      final URI fullUri = new URI(req.getScheme(), null, "somehostname", req.getServerPort(), path, null, null);
-      final ContainerRequest containerRequest = new ContainerRequest(baseUri, fullUri, req.getMethod(),
-              DEFAULT_SECURITY_CONTEXT, new MapPropertiesDelegate(), jerseyHandler.getConfiguration());
-      req.getHeaderNames().asIterator().forEachRemaining(headerName -> {
-        containerRequest.headers(headerName, Collections.list(req.getHeaders(headerName)));
-      });
+      final ContainerRequest containerRequest = ContainerRequestUtils.createContainerRequest(req, response, jerseyHandler.getConfiguration());
 
       // Set properties that may be used by Jersey filters downstream
       containerRequest.setProperty(SOLR_QUERY_REQUEST_KEY, solrReq);
@@ -372,8 +360,6 @@ public class V2HttpCall extends HttpSolrCall {
       if (core != null) {
         containerRequest.setProperty(RequestContextConstants.SOLR_CORE_KEY, core);
       }
-      // Execute the request
-      containerRequest.setWriter(new JettyBasedResponseWriter(req, response));
       jerseyHandler.handle(containerRequest);
     } catch (Exception e) {
       throw new RuntimeException(e);

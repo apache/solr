@@ -15,17 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.solr.core;
+package org.apache.solr.jersey.container;
 
-import org.eclipse.jetty.http.HttpHeader;
 import org.glassfish.jersey.server.ContainerException;
 import org.glassfish.jersey.server.ContainerResponse;
 import org.glassfish.jersey.server.spi.ContainerResponseWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -35,61 +36,61 @@ import java.util.concurrent.TimeUnit;
  *
  * Since we're not running Jersey as a full server or as a servlet that Jetty knows about, we need to connect the response Jersey
  * outputs with the actual objects that Jetty sends back to clients.
+ *
+ * Inspired and partially copied from the JettyHttpContainer.ResponseWriter class available in the
+ * jersey-container-jetty-http artifact.
  */
-public class JettyBasedResponseWriter implements ContainerResponseWriter {
+public class JettyBridgeResponseWriter implements ContainerResponseWriter {
 
-    private final HttpServletRequest req;
-    private final HttpServletResponse rsp;
+    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    public JettyBasedResponseWriter(HttpServletRequest req, HttpServletResponse rsp) {
-        this.req = req;
-        this.rsp = rsp;
+    private final HttpServletResponse httpServletResponse;
+
+    public JettyBridgeResponseWriter(HttpServletResponse httpServletResponse) {
+        this.httpServletResponse = httpServletResponse;
     }
 
     @Override
-    public OutputStream writeResponseStatusAndHeaders(long contentLength, ContainerResponse responseContext) throws ContainerException {
-        final javax.ws.rs.core.Response.StatusType statusInfo = responseContext.getStatusInfo();
-        rsp.setStatus(statusInfo.getStatusCode());
+    public OutputStream writeResponseStatusAndHeaders(final long contentLength, final ContainerResponse context)
+            throws ContainerException {
+        final javax.ws.rs.core.Response.StatusType statusInfo = context.getStatusInfo();
+        httpServletResponse.setStatus(statusInfo.getStatusCode());
 
         if (contentLength != -1 && contentLength < Integer.MAX_VALUE) {
-            rsp.setHeader(HttpHeader.CONTENT_LENGTH.asString(), Long.toString(contentLength));
+            httpServletResponse.setContentLength((int) contentLength);
         }
-
-        for (final Map.Entry<String, List<String>> e : responseContext.getStringHeaders().entrySet()) {
+        for (final Map.Entry<String, List<String>> e : context.getStringHeaders().entrySet()) {
             for (final String value : e.getValue()) {
-                rsp.addHeader(e.getKey(), value);
+                httpServletResponse.addHeader(e.getKey(), value);
             }
         }
 
         try {
-            return rsp.getOutputStream();
+            return httpServletResponse.getOutputStream();
         } catch (final IOException ioe) {
             throw new ContainerException("Error during writing out the response headers.", ioe);
         }
     }
 
     @Override
-    public boolean suspend(long timeOut, TimeUnit timeUnit, TimeoutHandler timeoutHandler) {
-        // TODO Do I need to do anything here?  The surrounding servlet filter will handle closing the wrapped
-        //  HttpServletResponse on its own.
+    public boolean suspend(final long timeOut, final TimeUnit timeUnit, final ContainerResponseWriter.TimeoutHandler timeoutHandler) {
+        // I don't think we can (or should) do anything here as the surrounding servlet filter will handle this on its own.
         return true;
     }
 
     @Override
-    public void setSuspendTimeout(long timeOut, TimeUnit timeUnit) throws IllegalStateException {
-        // TODO Do I need to do anything here?  The surrounding servlet filter will handle closing the wrapped
-        //  HttpServletResponse on its own.
+    public void setSuspendTimeout(final long timeOut, final TimeUnit timeUnit) throws IllegalStateException {
+        // I don't think we can (or should) do anything here as the surrounding servlet filter will handle this on its own.
     }
 
     @Override
     public void commit() {
-        // TODO Do I need to do anything here?  The surrounding servlet filter will handle closing the wrapped
-        //  HttpServletResponse on its own.
+        // I don't think we can (or should) do anything here as the surrounding servlet filter will handle this on its own.
     }
 
     @Override
-    public void failure(Throwable error) {
-        // TODO Do I need to do anything here?  The surrounding servlet filter will handle any errors, stream closing, etc.
+    public void failure(final Throwable error) {
+        // We don't (or shouldn't) do anything here, as the surrounding servlet filter handles this on its own.
     }
 
     @Override
