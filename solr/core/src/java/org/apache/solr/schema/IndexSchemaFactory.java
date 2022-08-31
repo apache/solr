@@ -156,12 +156,15 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
       SolrResourceLoader loader,
       Supplier<ObjectCache> objectCacheSupplier,
       Supplier<VersionedConfig> c) {
+    Consumer<String> listener = CACHE_MISS_LISTENER;
     Supplier<VersionedConfig> cfgLoader =
-        () -> {
-          Consumer<String> listener = CACHE_MISS_LISTENER;
-          if (listener != null) listener.accept(name);
-          return c.get();
-        };
+        listener == null
+            ? c
+            : () -> {
+              listener.accept(name);
+              return c.get();
+            };
+
     if (loader instanceof ZkSolrResourceLoader) {
       ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) loader;
       ObjectCache objectCache = objectCacheSupplier.get();
