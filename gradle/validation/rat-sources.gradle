@@ -274,8 +274,16 @@ class RatTask extends DefaultTask {
             }
         }
         if (errors) {
-            throw new GradleException("Found " + errors.size() + " file(s) with errors:\n" +
-                    errors.collect{ msg -> "  - ${msg}" }.join("\n"))
+            def checkProp = "validation.rat.failOnError"
+            def shouldFail = Boolean.valueOf(project.propertyOrDefault(checkProp, true))
+            def message = "Found " + errors.size() + " file(s) with errors: " +
+                    (shouldFail ? "(skip with -P${checkProp}=false)\n" : "\n") +
+                    errors.collect{ msg -> "  - ${msg}" }.join("\n")
+            if (shouldFail) {
+                throw new GradleException(message)
+            } else {
+                logger.lifecycle("NOTE: ${message}")
+            }
         }
     }
 

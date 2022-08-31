@@ -274,8 +274,17 @@ class ValidateSourcePatternsTask extends DefaultTask {
     progress.completed()
 
     if (found) {
-      throw new GradleException(String.format(Locale.ENGLISH, 'Found %d violations in source files (%s).',
-        found, violations.join(', ')));
+      def checkProp = "validation.sourcePatterns.failOnError"
+      def shouldFail = Boolean.valueOf(project.propertyOrDefault(checkProp, true))
+      def message = "Found ${found} violations in source files" +
+              (shouldFail ? " (skip with -P${checkProp}=false)" : "") +
+              ", offending files:\n${violations.join("\n")}"
+
+      if (shouldFail) {
+        throw new GradleException(message)
+      } else {
+        logger.lifecycle("NOTE: ${message}")
+      }
     }
   }
 }
