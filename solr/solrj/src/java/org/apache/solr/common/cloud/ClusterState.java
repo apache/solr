@@ -492,8 +492,4 @@ public class ClusterState implements JSONWriter.Writable {
     if (fun == null) return;
     STR_INTERNER_OBJ_BUILDER = fun;
   }
-
-  public static Function<JSONParser, ObjectBuilder> getStringInterner() {
-    return STR_INTERNER_OBJ_BUILDER;
-  }
 }
