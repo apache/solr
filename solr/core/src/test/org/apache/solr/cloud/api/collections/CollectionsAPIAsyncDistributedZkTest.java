@@ -24,7 +24,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -48,7 +47,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Tests the Cloud Collections API. */
-@Slow
 public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
 
   private static final int MAX_TIMEOUT_SECONDS = 90;
@@ -58,16 +56,13 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
   @Before
   public void setupCluster() throws Exception {
     // we recreate per test - they need to be isolated to be solid
-    configureCluster(2)
-        .addConfig(
-            "conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
-        .configure();
+    configureCluster(2).addConfig("conf1", configset("cloud-minimal")).configure();
   }
 
   @After
   public void tearDown() throws Exception {
-    super.tearDown();
     shutdownCluster();
+    super.tearDown();
   }
 
   @Test

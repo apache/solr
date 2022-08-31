@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
@@ -33,7 +32,6 @@ import org.junit.BeforeClass;
 /**
  * @since solr 1.3
  */
-@Slow
 public class SolrExampleStreamingTest extends SolrExampleTests {
 
   @BeforeClass

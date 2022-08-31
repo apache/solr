@@ -41,8 +41,11 @@ New Features
 
 * SOLR-15853: Admin UI support for managing Paramsets and using in Queries. (Betul Ince, Eric Pugh)
 
-* SOLR-16096: Support createNodeSet parameter when creating collecitons in Admin UI.   (Eric Pugh)
+* SOLR-16096: Support createNodeSet parameter when creating collections in Admin UI.   (Eric Pugh)
 
+* SOLR-14319: Add ability to specify replica types when creating collections in Admin UI. (Richard Goodman, Eric Pugh)
+
+* SOLR-16282: CoreAdminHandler supports custom actions via solr.xml configuration. (Artem Abeleshev, Christine Poerschke)
 
 Improvements
 ---------------------
@@ -62,6 +65,13 @@ Improvements
 * SOLR-16257: Improve ZkStateReader to avoid race condition between collectionWatches and watchedCollectionStates
   (Patson Luk, Houston Putman, Mike Drob)
 
+* SOLR-16323: The Docker image now uses the Solr User ID instead of the User Name, helps with non-root checks (Houston Putman)
+
+* SOLR-16337: implement Zk metrics (noble)
+
+* SOLR-16353: Make SplitShardCmd#checkDiskSpace disableable through a system property. (Haythem Khiri)
+
+
 Optimizations
 ---------------------
 * SOLR-16120: Optimise hl.fl expansion. (Christine Poerschke, David Smiley, Mike Drob)
@@ -72,6 +82,8 @@ Optimizations
 * SOLR-16146: Avoid loading all collections during node startup (noble)
 
 * SOLR-16266: Eliminate unneccessary byte[] copy in Http2SolrClient (hossman)
+
+* SOLR-9359: Enable warming queries to be managed using Config API (Andy Webb, Eric Pugh)
 
 Bug Fixes
 ---------------------
@@ -109,8 +121,12 @@ Bug Fixes
 
 * SOLR-9661: Fix explanation of select() streaming expression that uses replace() operation  (Ahmet Can Kepenek via Eric Pugh) 
 
+* SOLR-16316: Fix debugQuery clicking on the Query UI does not show the debug.explain.structured option. (Shiming Li via Eric Pugh)
+
 Other Changes
 ---------------------
+* SOLR-16351: Upgrade Carrot2 to 4.4.3, upgrade randomizedtesting to 2.8.0. (Dawid Weiss)
+
 * SOLR-16245: Make DenseVectorField codec agnostic (Elia Porciani via Alessandro Benedetti)
 
 * SOLR-15897: Remove <jmx/> from all unit test solrconfig.xml files. (Eric Pugh)
@@ -137,9 +153,22 @@ Other Changes
 
 * SOLR-16231: Fix ref-guide links across the codebase (Houston Putman)
 
+* SOLR-16304: No more @Slow annotation for tests! (Mike Drob)
+
+* SOLR-16331: Migrate remaining managed-schema files to be managed-schema.xml.  (Eric Pugh)
+
+* SOLR-16332: Upgrade Jetty to 9.4.48.v20220622 (Chris Sabelstrom, janhoy)
+
+* SOLR-16339: Refined "no servers hosting shard" SolrException wording. (Christine Poerschke)
+
+* SOLR-15342: SolrJ: Split ZooKeeper based dependencies off to a solr-solrj-zookeeper module /
+  dependency. (David Smiley, Haythem Khiri)
+
 Build
 ---------------------
 * SOLR-16204: Change Lucene dependency to Lucene 9.1.0 (Elia Porciani via Alessandro Benedetti)
+
+* SOLR-16303: Change Lucene dependency to Lucene 9.3.0 (Mike Drob)
 
 * SOLR-16053: Upgrade scriptDepVersions (Kevin Risden)
 
@@ -152,6 +181,8 @@ Build
 * SOLR-16264: Set versions for all Antora build tools (Houston Putman)
 
 * SOLR-16299: Ref-guide examples are no longer symlinked from SolrJ, they live in the ref-guide module (Houston Putman)
+
+* SOLR-16298: Clean the javadocs directory before building (Houston Putman, Mike Drob, Uwe Schindler)
 
 ==================  9.0.0 ==================
 

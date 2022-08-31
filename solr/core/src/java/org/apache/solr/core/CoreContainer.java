@@ -57,6 +57,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.auth.AuthSchemeProvider;
 import org.apache.http.client.CredentialsProvider;
@@ -111,6 +112,7 @@ import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.ContainerPluginsApi;
 import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminOp;
 import org.apache.solr.handler.admin.HealthCheckHandler;
 import org.apache.solr.handler.admin.InfoHandler;
 import org.apache.solr.handler.admin.MetricsHandler;
@@ -750,6 +752,8 @@ public class CoreContainer {
 
     zkSys.initZooKeeper(this, cfg.getCloudConfig());
     if (isZooKeeperAware()) {
+      // initialize ZkClient metrics
+      zkSys.getZkMetricsProducer().initializeMetrics(solrMetricsContext, "zkClient");
       pkiAuthenticationSecurityBuilder =
           new PKIAuthenticationPlugin(
               this,
@@ -809,7 +813,7 @@ public class CoreContainer {
     ClusterAPI clusterAPI = new ClusterAPI(collectionsHandler, configSetsHandler);
     containerHandlers.getApiBag().registerObject(clusterAPI);
     containerHandlers.getApiBag().registerObject(clusterAPI.commands);
-    containerHandlers.getApiBag().registerObject(clusterAPI.configSetCommands);
+    ApiRegistrar.registerConfigsetApis(containerHandlers.getApiBag(), this);
 
     if (isZooKeeperAware()) {
       containerHandlers.getApiBag().registerObject(new SchemaDesignerAPI(this));
@@ -829,6 +833,16 @@ public class CoreContainer {
     infoHandler = createHandler(INFO_HANDLER_PATH, cfg.getInfoHandlerClass(), InfoHandler.class);
     coreAdminHandler =
         createHandler(CORES_HANDLER_PATH, cfg.getCoreAdminHandlerClass(), CoreAdminHandler.class);
+
+    Map<String, CoreAdminOp> coreAdminHandlerActions =
+        cfg.getCoreAdminHandlerActions().entrySet().stream()
+            .collect(
+                Collectors.toMap(
+                    item -> item.getKey(),
+                    item -> loader.newInstance(item.getValue(), CoreAdminOp.class)));
+
+    // Register custom actions for CoreAdminHandler
+    coreAdminHandler.registerCustomActions(coreAdminHandlerActions);
 
     metricsHandler = new MetricsHandler(this);
     containerHandlers.put(METRICS_PATH, metricsHandler);

@@ -20,6 +20,7 @@ package org.apache.solr.cloud;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -28,6 +29,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+@LuceneTestCase.Nightly
 public abstract class AbstractChaosMonkeySafeLeaderTestBase extends AbstractFullDistribZkTestBase {
   private static final Integer RUN_LENGTH =
       Integer.parseInt(System.getProperty("solr.tests.cloud.cm.runlength", "-1"));

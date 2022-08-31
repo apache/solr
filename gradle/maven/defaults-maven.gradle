@@ -26,6 +26,7 @@ configure(rootProject) {
     published = [
         ":solr:core",
         ":solr:solrj",
+        ":solr:solrj-zookeeper",
         ":solr:prometheus-exporter",
         ":solr:test-framework",
     ] + project(":solr:modules").getChildProjects().values().path

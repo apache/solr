@@ -27,7 +27,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -50,7 +49,6 @@ import org.slf4j.LoggerFactory;
  * Tests a client application's ability to get replication factor information back from the cluster
  * after an add or update.
  */
-@Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
 
@@ -324,7 +322,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     doDBIdWithRetry(2, 5, "deletes should have propagated to 2 replicas", 1);
 
     // SOLR-13599 sanity check if problem is related to sending a batch
-    List<SolrInputDocument> batch = new ArrayList<SolrInputDocument>(10);
+    List<SolrInputDocument> batch = new ArrayList<SolrInputDocument>(15);
     for (int i = 30; i < 45; i++) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField(id, String.valueOf(i));

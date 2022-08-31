@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.lucene.tests.util.LuceneTestCase;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -72,7 +71,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@Slow
 @SolrTestCaseJ4.SuppressSSL
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40", "Lucene41", "Lucene42", "Lucene45"})
 public class StreamDecoratorTest extends SolrCloudTestCase {
@@ -3030,14 +3028,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assertEquals(tuples.size(), 4);
       assertOrder(tuples, 5, 6, 7, 8);
 
-      expression =
-          StreamExpressionParser.parse(
-              "priority(topic(collection1, collection1, q=\"a_s:hello\", fl=\"id,a_i\", id=1000000, initialCheckpoint=0),"
-                  + "topic(collection1, collection1, q=\"a_s:hello1\", fl=\"id,a_i\", id=2000000, initialCheckpoint=0))");
-      stream = factory.constructStream(expression);
-      context = new StreamContext();
-      context.setSolrClientCache(cache);
-      stream.setStreamContext(context);
       tuples = getTuples(stream);
       Collections.sort(tuples, comp);
 
@@ -3045,14 +3035,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assertEquals(tuples.size(), 6);
       assertOrder(tuples, 0, 1, 2, 3, 4, 9);
 
-      expression =
-          StreamExpressionParser.parse(
-              "priority(topic(collection1, collection1, q=\"a_s:hello\", fl=\"id,a_i\", id=1000000, initialCheckpoint=0),"
-                  + "topic(collection1, collection1, q=\"a_s:hello1\", fl=\"id,a_i\", id=2000000, initialCheckpoint=0))");
-      stream = factory.constructStream(expression);
-      context = new StreamContext();
-      context.setSolrClientCache(cache);
-      stream.setStreamContext(context);
       tuples = getTuples(stream);
 
       // Both queus are empty.
@@ -3112,14 +3094,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assertEquals(tuples.size(), 4);
       assertOrder(tuples, 5, 6, 7, 8);
 
-      expression =
-          StreamExpressionParser.parse(
-              "parallel(collection1, workers=2, sort=\"_version_ asc\", priority(topic(collection1, collection1, q=\"a_s:hello\", fl=\"id,a_i\", id=1000000, initialCheckpoint=0, partitionKeys=id),"
-                  + "topic(collection1, collection1, q=\"a_s:hello1\", fl=\"id,a_i\", id=2000000, initialCheckpoint=0, partitionKeys=id)))");
-      stream = factory.constructStream(expression);
-      context = new StreamContext();
-      context.setSolrClientCache(cache);
-      stream.setStreamContext(context);
       tuples = getTuples(stream);
       Collections.sort(tuples, comp);
 
@@ -3127,14 +3101,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assertEquals(tuples.size(), 6);
       assertOrder(tuples, 0, 1, 2, 3, 4, 9);
 
-      expression =
-          StreamExpressionParser.parse(
-              "parallel(collection1, workers=2, sort=\"_version_ asc\", priority(topic(collection1, collection1, q=\"a_s:hello\", fl=\"id,a_i\", id=1000000, initialCheckpoint=0, partitionKeys=id),"
-                  + "topic(collection1, collection1, q=\"a_s:hello1\", fl=\"id,a_i\", id=2000000, initialCheckpoint=0, partitionKeys=id)))");
-      stream = factory.constructStream(expression);
-      context = new StreamContext();
-      context.setSolrClientCache(cache);
-      stream.setStreamContext(context);
       tuples = getTuples(stream);
 
       // Both queus are empty.
