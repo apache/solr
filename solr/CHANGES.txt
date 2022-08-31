@@ -70,6 +70,11 @@ Improvements
 * SOLR-16340: Provide a cluster_id label for all metrics exposed by the Solr Prometheus Exporter, making it possible to
   filter Grafana board by cluster (janhoy, Houston Putman)
 
+* SOLR-16337: implement Zk metrics (noble)
+
+* SOLR-16353: Make SplitShardCmd#checkDiskSpace disableable through a system property. (Haythem Khiri)
+
+
 Optimizations
 ---------------------
 * SOLR-16120: Optimise hl.fl expansion. (Christine Poerschke, David Smiley, Mike Drob)
@@ -123,6 +128,8 @@ Bug Fixes
 
 Other Changes
 ---------------------
+* SOLR-16351: Upgrade Carrot2 to 4.4.3, upgrade randomizedtesting to 2.8.0. (Dawid Weiss)
+
 * SOLR-16245: Make DenseVectorField codec agnostic (Elia Porciani via Alessandro Benedetti)
 
 * SOLR-15897: Remove <jmx/> from all unit test solrconfig.xml files. (Eric Pugh)
@@ -154,6 +161,11 @@ Other Changes
 * SOLR-16331: Migrate remaining managed-schema files to be managed-schema.xml.  (Eric Pugh)
 
 * SOLR-16332: Upgrade Jetty to 9.4.48.v20220622 (Chris Sabelstrom, janhoy)
+
+* SOLR-16339: Refined "no servers hosting shard" SolrException wording. (Christine Poerschke)
+
+* SOLR-15342: SolrJ: Split ZooKeeper based dependencies off to a solr-solrj-zookeeper module /
+  dependency. (David Smiley, Haythem Khiri)
 
 Build
 ---------------------
