@@ -186,7 +186,7 @@ import static org.apache.solr.common.params.CommonParams.PATH;
  * to make it work. When multi-core support was added to Solr way back in version 1.3, this class
  * was required so that the core functionality could be re-used multiple times.
  */
-public final class SolrCore implements SolrInfoBean, Closeable {
+public class SolrCore implements SolrInfoBean, Closeable {
 
   public static final String version = "1.0";
 

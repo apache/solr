@@ -52,10 +52,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.core.SecurityContext;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.security.Principal;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -334,15 +332,6 @@ public class V2HttpCall extends HttpSolrCall {
       return this;
     }
   }
-
-  // We don't rely on any of Jersey's authc/z features so we pass in this empty context for
-  // all requests.
-  public static final SecurityContext DEFAULT_SECURITY_CONTEXT = new SecurityContext() {
-    public boolean isUserInRole(String role) { return false; }
-    public boolean isSecure() { return false; }
-    public Principal getUserPrincipal() { return null; }
-    public String getAuthenticationScheme() { return null; }
-  };
 
   private void invokeJerseyRequest(CoreContainer cores, SolrCore core, ApplicationHandler jerseyHandler, SolrQueryResponse rsp) {
     try {

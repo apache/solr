@@ -28,7 +28,7 @@ import java.util.Map;
 /**
  * JAX-RS "application" configurations for Solr's {@link org.apache.solr.core.CoreContainer} and {@link SolrCore} instances
  */
-public class JerseyApplications extends ResourceConfig {
+public class JerseyApplications {
 
     public static class CoreContainerApp extends ResourceConfig {
         public CoreContainerApp(PluginBag.JerseyMetricsLookupRegistry beanRegistry) {

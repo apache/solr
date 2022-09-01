@@ -26,8 +26,8 @@ import org.junit.Test;
 import javax.ws.rs.container.ContainerRequestContext;
 import java.net.URI;
 
-import static org.apache.solr.api.V2HttpCall.DEFAULT_SECURITY_CONTEXT;
 import static org.apache.solr.jersey.RequestContextConstants.SOLR_JERSEY_RESPONSE_KEY;
+import static org.apache.solr.jersey.container.ContainerRequestUtils.DEFAULT_SECURITY_CONTEXT;
 
 /**
  * Unit tests for the {@link JerseyResource} parent class
