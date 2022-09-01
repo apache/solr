@@ -91,7 +91,7 @@ Handlers that support process distributed shard requests also report `shardReque
 * shard replication and transaction log replay on replicas,
 * open / available / pending connections for shard handler and update handler.
 
-RequestHandlers can be configured to roll up core level metrics to the node level in addition to reporting them per core. This is useful if you have a large number of cores per node and are interested in aggregate metrics per node. This is configured by adding `<bool name="aggregateNodeLevelMetricsEnabled">true</bool>` to a <<Request Handlers and Search Components,RequestHandler configuration>> in your solrconfig.xml, for example:
+RequestHandlers can be configured to roll up core level metrics to the node level in addition to reporting them per core. This is useful if you have a large number of cores per node and are interested in aggregate metrics per node. This is configured by adding `<bool name="aggregateNodeLevelMetricsEnabled">true</bool>` to a xref:configuration-guide:requesthandlers-searchcomponents.adoc#configuring-request-handlers[RequestHandler configuration] in your solrconfig.xml, for example:
 
 ```
 <requestHandler name="/select" class="solr.SearchHandler">
