@@ -16,39 +16,10 @@
  */
 package org.apache.solr.security;
 
-import static org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
-import static org.apache.solr.client.solrj.request.CollectionAdminRequest.getClusterStatus;
-import static org.apache.solr.client.solrj.request.CollectionAdminRequest.getOverseerStatus;
-import static org.apache.solr.security.AuditEvent.EventType.COMPLETED;
-import static org.apache.solr.security.AuditEvent.EventType.ERROR;
-import static org.apache.solr.security.AuditEvent.EventType.REJECTED;
-import static org.apache.solr.security.AuditEvent.EventType.UNAUTHORIZED;
-import static org.apache.solr.security.AuditEvent.RequestType.ADMIN;
-import static org.apache.solr.security.AuditEvent.RequestType.SEARCH;
-import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
-
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.lang.invoke.MethodHandles;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -71,6 +42,36 @@ import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.lang.invoke.MethodHandles;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+
+import static org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
+import static org.apache.solr.client.solrj.request.CollectionAdminRequest.getClusterStatus;
+import static org.apache.solr.client.solrj.request.CollectionAdminRequest.getOverseerStatus;
+import static org.apache.solr.security.AuditEvent.EventType.COMPLETED;
+import static org.apache.solr.security.AuditEvent.EventType.ERROR;
+import static org.apache.solr.security.AuditEvent.EventType.REJECTED;
+import static org.apache.solr.security.AuditEvent.EventType.UNAUTHORIZED;
+import static org.apache.solr.security.AuditEvent.RequestType.ADMIN;
+import static org.apache.solr.security.AuditEvent.RequestType.SEARCH;
+import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
 
 /** Validate that audit logging works in a live cluster */
 @SolrTestCaseJ4.SuppressSSL
@@ -236,7 +237,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
         .cluster
         .getSolrClient()
         .request(CollectionAdminRequest.createCollection("test", 1, 1));
-    expectThrows(
+    Exception e = expectThrows(
         SolrException.class,
         () -> {
           testHarness

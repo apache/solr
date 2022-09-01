@@ -16,45 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.core.ConfigSetProperties.DEFAULT_FILENAME;
-import static org.junit.matchers.JUnitMatchers.containsString;
-
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.lang.invoke.MethodHandles;
-import java.net.URI;
-import java.nio.ByteBuffer;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.security.Principal;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Deque;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
-import javax.script.ScriptEngineManager;
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.auth.BasicUserPrincipal;
@@ -112,6 +73,46 @@ import org.junit.Test;
 import org.noggit.JSONParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.script.ScriptEngineManager;
+import javax.servlet.FilterChain;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
+import javax.servlet.http.HttpServletResponse;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.lang.invoke.MethodHandles;
+import java.net.URI;
+import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.Principal;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.core.ConfigSetProperties.DEFAULT_FILENAME;
+import static org.junit.matchers.JUnitMatchers.containsString;
 
 /** Simple ConfigSets API tests on user errors and simple success cases. */
 public class TestConfigSetsAPI extends SolrCloudTestCase {
@@ -1030,10 +1031,12 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     String configsetName = "regular";
     String configsetSuffix = "testSinglePathUntrusted-1-" + v2;
     uploadConfigSetWithAssertions(configsetName, configsetSuffix, null);
+
     try (SolrZkClient zkClient =
         new SolrZkClient(
             cluster.getZkServer().getZkAddress(), AbstractZkTestCase.TIMEOUT, 45000, null)) {
       // New file with trusted request
+
       assertEquals(
           0,
           uploadSingleConfigSetFile(
@@ -1455,7 +1458,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
               username,
               usePut);
       assertNotNull(map);
-      return (long) getObjectByPath(map, Arrays.asList("responseHeader", "status"));
+      return (Long) getObjectByPath(map, Arrays.asList("responseHeader", "status"));
     } // else "not" a V2 request...
 
     try {
@@ -1653,6 +1656,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
           ((CloudLegacySolrClient) cloudClient).getHttpClient().execute(httpRequest).getEntity();
       try {
         response = EntityUtils.toString(entity, UTF_8);
+        log.info("Response came back as: {}", response);
         m = (Map<?, ?>) Utils.fromJSONString(response);
       } catch (JSONParser.ParseException e) {
         System.err.println("err response: " + response);

@@ -16,46 +16,8 @@
  */
 package org.apache.solr.servlet;
 
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
-import static org.apache.solr.common.params.CollectionAdminParams.SYSTEM_COLL;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.params.CoreAdminParams.ACTION;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.FORWARD;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.PASSTHROUGH;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETRY;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETURN;
-
 import io.opentracing.Span;
 import io.opentracing.tag.Tags;
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HeaderIterator;
@@ -131,6 +93,45 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MarkerFactory;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+import static org.apache.solr.common.params.CollectionAdminParams.SYSTEM_COLL;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CoreAdminParams.ACTION;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.FORWARD;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.PASSTHROUGH;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETRY;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETURN;
 
 /** This class represents a call made to Solr */
 @SolrThreadSafe
@@ -491,8 +492,10 @@ public class HttpSolrCall {
       return RETURN;
     }
 
+    log.info("Val before init is: {}", ServletUtils.getPathAfterContext(req));
     try {
       init();
+      log.info("Val after init is {}", ServletUtils.getPathAfterContext(req));
 
       TraceUtils.ifNotNoop(getSpan(), this::populateTracingSpan);
 
@@ -518,6 +521,7 @@ public class HttpSolrCall {
         }
       }
 
+      log.info("Val right before HttpSolrCall switch is {}", ServletUtils.getPathAfterContext(req));
       HttpServletResponse resp = response;
       switch (action) {
         case ADMIN:
@@ -541,13 +545,17 @@ public class HttpSolrCall {
              * QueryResponseWriter is selected and we get the correct
              * Content-Type)
              */
+            log.info("Val right before setRequestInfo is {}", ServletUtils.getPathAfterContext(req));
             SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, solrRsp, action));
             mustClearSolrRequestInfo = true;
+            log.info("Val right before executeCoreREquest is {}", ServletUtils.getPathAfterContext(req));
             executeCoreRequest(solrRsp);
+            log.info("Val right after executeCoreREquest is {}", ServletUtils.getPathAfterContext(req));
             if (shouldAudit(cores)) {
               EventType eventType =
                   solrRsp.getException() == null ? EventType.COMPLETED : EventType.ERROR;
               if (shouldAudit(cores, eventType)) {
+                  log.info("Val right near auditing is: {}", ServletUtils.getPathAfterContext(req));
                 cores
                     .getAuditLoggerPlugin()
                     .doAudit(
@@ -855,6 +863,9 @@ public class HttpSolrCall {
     if (shouldAudit()) {
       EventType eventType = solrResp.getException() == null ? EventType.COMPLETED : EventType.ERROR;
       if (shouldAudit(eventType)) {
+        if (eventType == EventType.ERROR) {
+          log.info("Blah2");
+        }
         cores
             .getAuditLoggerPlugin()
             .doAudit(
@@ -1172,6 +1183,11 @@ public class HttpSolrCall {
       @Override
       public List<CollectionRequest> getCollectionRequests() {
         return collectionRequests;
+      }
+
+      @Override
+      public String getResource() {
+        return path;
       }
 
       @Override

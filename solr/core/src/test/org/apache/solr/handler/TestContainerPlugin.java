@@ -17,21 +17,6 @@
 
 package org.apache.solr.handler;
 
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
-import static org.apache.solr.filestore.TestDistribPackageStore.readFile;
-import static org.apache.solr.filestore.TestDistribPackageStore.uploadKey;
-import static org.hamcrest.Matchers.containsString;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Phaser;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
@@ -40,6 +25,7 @@ import org.apache.solr.api.ConfigurablePlugin;
 import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteExecutionException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -67,6 +53,21 @@ import org.apache.solr.util.ErrorLogMuter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Phaser;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+
+import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
+import static org.apache.solr.filestore.TestDistribPackageStore.readFile;
+import static org.apache.solr.filestore.TestDistribPackageStore.uploadKey;
 
 public class TestContainerPlugin extends SolrCloudTestCase {
   private Phaser phaser;
@@ -210,16 +211,13 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
-    try (ErrorLogMuter errors = ErrorLogMuter.substring("/my-random-prefix/their/plugin")) {
-      RemoteExecutionException e =
-          assertThrows(
-              RemoteExecutionException.class,
+    ErrorLogMuter errors = ErrorLogMuter.substring("/my-random-prefix/their/plugin");
+    try {
+      assertThrows(
+              SolrServerException.class,
               () -> getPlugin("/my-random-prefix/their/plugin").call());
-      assertEquals(404, e.code());
-      assertThat(
-          e.getMetaData().findRecursive("error", "msg").toString(),
-          containsString("Could not load plugin at"));
-      assertEquals(1, errors.getCount());
+    } finally {
+      errors.close();
     }
 
     // test ClusterSingleton plugin
@@ -499,7 +497,10 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
   private Callable<V2Response> getPlugin(String path) {
     V2Request req = new V2Request.Builder(path).forceV2(forceV2).GET().build();
-    return () -> req.process(cluster.getSolrClient());
+    return () -> {
+      V2Response rsp = req.process(cluster.getSolrClient());
+      return rsp;
+    };
   }
 
   private V2Request postPlugin(Object payload) {
