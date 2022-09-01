@@ -44,7 +44,6 @@ public class ErrorInfo implements JacksonReflectMapWriter {
 
     public Integer code;
 
-    // TODO Support for the arbitrary keys that APIs might put in SolrException.setMetadata(...)?
     public static class ErrorMetadata implements JacksonReflectMapWriter {
         @JsonProperty(SolrException.ERROR_CLASS)
         public String errorClass;

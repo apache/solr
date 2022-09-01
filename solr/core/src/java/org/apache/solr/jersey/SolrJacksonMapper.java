@@ -23,7 +23,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.Provider;
 
-// TODO Add support for 'indent' parameter, etc.?
 /**
  * Customizes the ObjectMapper settings used for serialization/deserialization in Jersey
  */

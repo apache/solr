@@ -25,6 +25,9 @@ import java.security.Principal;
 import java.util.Enumeration;
 import java.util.List;
 
+/**
+ * An {@link AuthorizationContext} implementation that delegates many methods to an underlying {@link HttpServletRequest}
+ */
 public abstract class HttpServletAuthorizationContext extends AuthorizationContext {
 
     private final HttpServletRequest servletRequest;

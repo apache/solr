@@ -22,6 +22,9 @@ import org.apache.solr.jersey.SolrJerseyResponse;
 
 import java.util.List;
 
+/**
+ * Response body POJO for the {@link ListConfigSetsAPI} resource.
+ */
 public class ListConfigsetsResponse extends SolrJerseyResponse {
 
     @JsonProperty("configSets")

@@ -74,7 +74,7 @@ public final class QueryResponseWriterUtil {
     }
   }
 
-  public static Writer buildWriter(OutputStream outputStream, String charset)
+  private static Writer buildWriter(OutputStream outputStream, String charset)
       throws UnsupportedEncodingException {
     Writer writer =
         (charset == null)

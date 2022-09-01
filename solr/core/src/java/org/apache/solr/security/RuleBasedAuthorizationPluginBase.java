@@ -97,7 +97,6 @@ public abstract class RuleBasedAuthorizationPluginBase
           collectionRequests);
     }
 
-
     if (context.getRequestType() == AuthorizationContext.RequestType.ADMIN) {
       log.debug("Authorizing an ADMIN request, checking admin permissions");
       MatchStatus flag = checkCollPerm(mapping.get(null), context);
@@ -199,9 +198,7 @@ public abstract class RuleBasedAuthorizationPluginBase
     if (predefinedPermission.wellknownName == PermissionNameProvider.Name.ALL) {
       log.trace("'ALL' perm applies to all requests; perm applies.");
       return true; // 'ALL' applies to everything!
-    }
-
-    if (!(context.getHandler() instanceof PermissionNameProvider)) {
+    } else if (!(context.getHandler() instanceof PermissionNameProvider)) {
       // TODO: Is this code path needed anymore, now that all handlers implement the interface?
       // context.getHandler returns Object and is not documented
       if (log.isTraceEnabled()) {

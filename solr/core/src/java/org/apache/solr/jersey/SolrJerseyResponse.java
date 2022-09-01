@@ -19,6 +19,11 @@ package org.apache.solr.jersey;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * Base response-body POJO to be used by Jersey resources.
+ *
+ * Contains fields common to all Solr API responses, particularly the 'responseHeader' and 'error' fields.
+ */
 public class SolrJerseyResponse implements JacksonReflectMapWriter {
 
     @JsonProperty("responseHeader")

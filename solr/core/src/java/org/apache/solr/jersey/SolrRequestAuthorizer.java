@@ -39,6 +39,9 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 
+/**
+ * A JAX-RS request filter that blocks or allows requests based on the authorization plugin configured in security.json.
+ */
 @Provider
 public class SolrRequestAuthorizer implements ContainerRequestFilter {
 
