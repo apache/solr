@@ -156,7 +156,7 @@ public class SchemaHandler extends RequestHandlerBase
         case "/schema/name":
           {
             V2ApiUtils.squashIntoSolrResponse(
-                rsp, new SchemaNameAPI(req.getCore()).getSchemaName());
+                rsp, new SchemaNameAPI(req.getCore()).getSchemaName(), true);
             break;
           }
         case "/schema/zkversion":

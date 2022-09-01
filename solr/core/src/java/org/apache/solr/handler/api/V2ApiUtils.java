@@ -45,18 +45,39 @@ public class V2ApiUtils {
     destination.put(newKey, flattenedStr);
   }
 
+  /**
+   * Convert a JacksonReflectMapWriter (typically a {@link
+   * org.apache.solr.jersey.SolrJerseyResponse}) into the NamedList on a SolrQueryResponse
+   *
+   * @param rsp the response to attach the resulting NamedList to
+   * @param mw the input object to be converted into a NamedList
+   * @param trimHeader should the 'responseHeader' portion of the response be added to the
+   *     NamedList, or should populating that header be left to code elsewhere. This value should
+   *     usually be 'false' when called from v2 code, and 'true' when called from v1 code.
+   */
+  public static void squashIntoSolrResponse(
+      SolrQueryResponse rsp, JacksonReflectMapWriter mw, boolean trimHeader) {
+    squashIntoNamedList(rsp.getValues(), mw, trimHeader);
+  }
+
   public static void squashIntoSolrResponse(SolrQueryResponse rsp, JacksonReflectMapWriter mw) {
-    squashIntoNamedList(rsp.getValues(), mw);
+    squashIntoSolrResponse(rsp, mw, false);
+  }
+
+  public static void squashIntoNamedList(
+      NamedList<Object> destination, JacksonReflectMapWriter mw) {
+    squashIntoNamedList(destination, mw, false);
   }
 
   // TODO Come up with a better approach (maybe change Responses to be based on some class that can
   // natively do this
   //  without the intermediate map(s)?)
   public static void squashIntoNamedList(
-      NamedList<Object> destination, JacksonReflectMapWriter mw) {
+      NamedList<Object> destination, JacksonReflectMapWriter mw, boolean trimHeader) {
     Map<String, Object> myMap = new HashMap<>();
     myMap = mw.toMap(myMap);
     for (Map.Entry<String, Object> entry : myMap.entrySet()) {
+      if (trimHeader && entry.getKey().equals("responseHeader")) continue;
       destination.add(entry.getKey(), entry.getValue());
     }
   }

@@ -144,7 +144,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
         break;
       case LIST:
         final ListConfigSetsAPI listConfigSetsAPI = new ListConfigSetsAPI(coreContainer);
-        V2ApiUtils.squashIntoSolrResponse(rsp, listConfigSetsAPI.listConfigSet());
+        V2ApiUtils.squashIntoSolrResponse(rsp, listConfigSetsAPI.listConfigSet(), true);
         break;
       case CREATE:
         final String newConfigSetName = req.getParams().get(NAME);
