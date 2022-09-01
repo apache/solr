@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Testing for the org.apache.solr.handler.configsets package.
- */
+/** Testing for the org.apache.solr.handler.configsets package. */
 package org.apache.solr.handler.configsets;

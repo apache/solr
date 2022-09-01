@@ -22,24 +22,25 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /**
  * Base response-body POJO to be used by Jersey resources.
  *
- * Contains fields common to all Solr API responses, particularly the 'responseHeader' and 'error' fields.
+ * <p>Contains fields common to all Solr API responses, particularly the 'responseHeader' and
+ * 'error' fields.
  */
 public class SolrJerseyResponse implements JacksonReflectMapWriter {
 
-    @JsonProperty("responseHeader")
-    public ResponseHeader responseHeader = new ResponseHeader();
+  @JsonProperty("responseHeader")
+  public ResponseHeader responseHeader = new ResponseHeader();
 
-    @JsonProperty("error")
-    public ErrorInfo error;
+  @JsonProperty("error")
+  public ErrorInfo error;
 
-    public static class ResponseHeader implements JacksonReflectMapWriter {
-        @JsonProperty("status")
-        public int status;
+  public static class ResponseHeader implements JacksonReflectMapWriter {
+    @JsonProperty("status")
+    public int status;
 
-        @JsonProperty("QTime")
-        public long qTime;
+    @JsonProperty("QTime")
+    public long qTime;
 
-        @JsonProperty("partialResults")
-        public Boolean partialResults;
-    }
+    @JsonProperty("partialResults")
+    public Boolean partialResults;
+  }
 }

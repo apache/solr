@@ -21,22 +21,24 @@ import org.apache.solr.core.CoreContainer;
 import org.glassfish.hk2.api.Factory;
 
 /**
- * Allows the CoreContainer used by this Solr process to be injected into individual resource classes at call-time.
+ * Allows the CoreContainer used by this Solr process to be injected into individual resource
+ * classes at call-time.
  */
 public class CoreContainerFactory implements Factory<CoreContainer> {
 
-    private final CoreContainer singletonCC;
+  private final CoreContainer singletonCC;
 
-    public CoreContainerFactory(CoreContainer singletonCC) {
-        this.singletonCC = singletonCC;
-    }
+  public CoreContainerFactory(CoreContainer singletonCC) {
+    this.singletonCC = singletonCC;
+  }
 
+  @Override
+  public CoreContainer provide() {
+    return singletonCC;
+  }
 
-    @Override
-    public CoreContainer provide() {
-        return singletonCC;
-    }
-
-    @Override
-    public void dispose(CoreContainer instance) { /* No-op */ }
+  @Override
+  public void dispose(CoreContainer instance) {
+    /* No-op */
+  }
 }

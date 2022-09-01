@@ -17,38 +17,36 @@
 
 package org.apache.solr.jersey;
 
-
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.solr.common.SolrException;
-
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.common.SolrException;
 
 /**
  * A value type representing an error.
  *
- * Based on the fields exposed in responses from Solr's v1/requestHandler API.
+ * <p>Based on the fields exposed in responses from Solr's v1/requestHandler API.
  */
 public class ErrorInfo implements JacksonReflectMapWriter {
-    @JsonProperty("metadata")
-    public ErrorMetadata metadata;
+  @JsonProperty("metadata")
+  public ErrorMetadata metadata;
 
-    @JsonProperty("details")
-    public List<Map<String, Object>> details;
+  @JsonProperty("details")
+  public List<Map<String, Object>> details;
 
-    @JsonProperty("msg")
-    public String msg;
+  @JsonProperty("msg")
+  public String msg;
 
-    @JsonProperty("trace")
-    public String trace;
+  @JsonProperty("trace")
+  public String trace;
 
-    public Integer code;
+  public Integer code;
 
-    public static class ErrorMetadata implements JacksonReflectMapWriter {
-        @JsonProperty(SolrException.ERROR_CLASS)
-        public String errorClass;
+  public static class ErrorMetadata implements JacksonReflectMapWriter {
+    @JsonProperty(SolrException.ERROR_CLASS)
+    public String errorClass;
 
-        @JsonProperty(SolrException.ROOT_ERROR_CLASS)
-        public String rootErrorClass;
-    }
+    @JsonProperty(SolrException.ROOT_ERROR_CLASS)
+    public String rootErrorClass;
+  }
 }

@@ -16,11 +16,41 @@
  */
 package org.apache.solr.servlet;
 
+import static org.apache.solr.core.NodeConfig.loadNodeConfig;
+import static org.apache.solr.servlet.SolrDispatchFilter.PROPERTIES_ATTRIBUTE;
+import static org.apache.solr.servlet.SolrDispatchFilter.SOLRHOME_ATTRIBUTE;
+import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE;
+import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_LOG_LEVEL;
+import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_LOG_MUTECONSOLE;
+
 import com.codahale.metrics.jvm.ClassLoadingGaugeSet;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
 import com.google.common.annotations.VisibleForTesting;
+import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Properties;
+import java.util.Set;
+import java.util.WeakHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.naming.NoInitialContextException;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
+import javax.servlet.UnavailableException;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -42,37 +72,6 @@ import org.apache.solr.util.SolrVersion;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.naming.Context;
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
-import javax.naming.NoInitialContextException;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-import javax.servlet.UnavailableException;
-import java.lang.invoke.MethodHandles;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Properties;
-import java.util.Set;
-import java.util.WeakHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
-
-import static org.apache.solr.core.NodeConfig.loadNodeConfig;
-import static org.apache.solr.servlet.SolrDispatchFilter.PROPERTIES_ATTRIBUTE;
-import static org.apache.solr.servlet.SolrDispatchFilter.SOLRHOME_ATTRIBUTE;
-import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE;
-import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_LOG_LEVEL;
-import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_LOG_MUTECONSOLE;
 
 /**
  * A service that can provide access to solr cores. This allows us to have multiple filters and

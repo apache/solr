@@ -17,68 +17,73 @@
 
 package org.apache.solr.jersey;
 
+import java.util.Map;
+import javax.inject.Singleton;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.SolrCore;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.server.ResourceConfig;
 
-import javax.inject.Singleton;
-import java.util.Map;
-
 /**
- * JAX-RS "application" configurations for Solr's {@link org.apache.solr.core.CoreContainer} and {@link SolrCore} instances
+ * JAX-RS "application" configurations for Solr's {@link org.apache.solr.core.CoreContainer} and
+ * {@link SolrCore} instances
  */
 public class JerseyApplications {
 
-    public static class CoreContainerApp extends ResourceConfig {
-        public CoreContainerApp(PluginBag.JerseyMetricsLookupRegistry beanRegistry) {
-            super();
+  public static class CoreContainerApp extends ResourceConfig {
+    public CoreContainerApp(PluginBag.JerseyMetricsLookupRegistry beanRegistry) {
+      super();
 
-            // Authentication and authorization
-            register(SolrRequestAuthorizer.class);
+      // Authentication and authorization
+      register(SolrRequestAuthorizer.class);
 
-            // Request and response serialization/deserialization
-            // TODO: could these be singletons to save per-request object creations?
-            register(MessageBodyWriters.JavabinMessageBodyWriter.class);
-            register(MessageBodyWriters.XmlMessageBodyWriter.class);
-            register(MessageBodyWriters.CsvMessageBodyWriter.class);
-            register(SolrJacksonMapper.class);
+      // Request and response serialization/deserialization
+      // TODO: could these be singletons to save per-request object creations?
+      register(MessageBodyWriters.JavabinMessageBodyWriter.class);
+      register(MessageBodyWriters.XmlMessageBodyWriter.class);
+      register(MessageBodyWriters.CsvMessageBodyWriter.class);
+      register(SolrJacksonMapper.class);
 
-            // Request lifecycle logic
-            register(CatchAllExceptionMapper.class);
-            register(PreRequestMetricsFilter.class);
-            register(PostRequestMetricsFilter.class);
-            register(PostRequestDecorationFilter.class);
-            register(new AbstractBinder() {
-                @Override
-                protected void configure() {
-                    bindFactory(new MetricBeanFactory(beanRegistry))
-                            .to(PluginBag.JerseyMetricsLookupRegistry.class)
-                            .in(Singleton.class);
-                }
-            });
+      // Request lifecycle logic
+      register(CatchAllExceptionMapper.class);
+      register(PreRequestMetricsFilter.class);
+      register(PostRequestMetricsFilter.class);
+      register(PostRequestDecorationFilter.class);
+      register(
+          new AbstractBinder() {
+            @Override
+            protected void configure() {
+              bindFactory(new MetricBeanFactory(beanRegistry))
+                  .to(PluginBag.JerseyMetricsLookupRegistry.class)
+                  .in(Singleton.class);
+            }
+          });
 
-            // Logging - disabled by default but useful for debugging Jersey execution
-            setProperties(Map.of("jersey.config.server.tracing.type", "ALL", "jersey.config.server.tracing.threshold", "VERBOSE"));
-            register(ApplicationEventLogger.class);
-            register(RequestEventLogger.class);
-        }
+      // Logging - disabled by default but useful for debugging Jersey execution
+      setProperties(
+          Map.of(
+              "jersey.config.server.tracing.type",
+              "ALL",
+              "jersey.config.server.tracing.threshold",
+              "VERBOSE"));
+      register(ApplicationEventLogger.class);
+      register(RequestEventLogger.class);
     }
+  }
 
-    public static class SolrCoreApp extends CoreContainerApp {
+  public static class SolrCoreApp extends CoreContainerApp {
 
-        public SolrCoreApp(SolrCore solrCore, PluginBag.JerseyMetricsLookupRegistry beanRegistry) {
-            super(beanRegistry);
+    public SolrCoreApp(SolrCore solrCore, PluginBag.JerseyMetricsLookupRegistry beanRegistry) {
+      super(beanRegistry);
 
-            // Dependency Injection for Jersey resources
-            register(new AbstractBinder() {
-                @Override
-                protected void configure() {
-                    bindFactory(new SolrCoreFactory(solrCore))
-                            .to(SolrCore.class)
-                            .in(Singleton.class);
-                }
-            });
-        }
+      // Dependency Injection for Jersey resources
+      register(
+          new AbstractBinder() {
+            @Override
+            protected void configure() {
+              bindFactory(new SolrCoreFactory(solrCore)).to(SolrCore.class).in(Singleton.class);
+            }
+          });
     }
+  }
 }

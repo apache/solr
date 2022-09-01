@@ -17,6 +17,12 @@
 
 package org.apache.solr.handler;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
@@ -33,117 +39,121 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
-
-/**
- * Unit tests for the metric and exception handling in {@link RequestHandlerBase}
- */
+/** Unit tests for the metric and exception handling in {@link RequestHandlerBase} */
 public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
 
-    private SolrCore solrCore;
-    private CoreContainer coreContainer;
+  private SolrCore solrCore;
+  private CoreContainer coreContainer;
 
-    @BeforeClass
-    public static void ensureWorkingMockito() { assumeWorkingMockito(); }
+  @BeforeClass
+  public static void ensureWorkingMockito() {
+    assumeWorkingMockito();
+  }
 
-    @Before
-    public void initMocks() {
-        solrCore = mock(SolrCore.class);
-        coreContainer = mock(CoreContainer.class);
-    }
+  @Before
+  public void initMocks() {
+    solrCore = mock(SolrCore.class);
+    coreContainer = mock(CoreContainer.class);
+  }
 
-    @Test
-    public void testEachNonSolrExceptionIncrementsTheServerErrorCount() {
-        final Exception e = new RuntimeException("Generic exception");
-        final RequestHandlerBase.HandlerMetrics metrics = createHandlerMetrics();
+  @Test
+  public void testEachNonSolrExceptionIncrementsTheServerErrorCount() {
+    final Exception e = new RuntimeException("Generic exception");
+    final RequestHandlerBase.HandlerMetrics metrics = createHandlerMetrics();
 
-        RequestHandlerBase.processErrorMetricsOnException(e, metrics);
+    RequestHandlerBase.processErrorMetricsOnException(e, metrics);
 
-        verify(metrics.numErrors).mark();
-        verify(metrics.numServerErrors).mark();
-        verifyNoInteractions(metrics.numClientErrors);
-    }
+    verify(metrics.numErrors).mark();
+    verify(metrics.numServerErrors).mark();
+    verifyNoInteractions(metrics.numClientErrors);
+  }
 
-    @Test
-    public void test409SolrExceptionsSkipMetricRecording() {
-        final Exception e = new SolrException(SolrException.ErrorCode.CONFLICT, "Conflict message");
-        final RequestHandlerBase.HandlerMetrics metrics = createHandlerMetrics();
+  @Test
+  public void test409SolrExceptionsSkipMetricRecording() {
+    final Exception e = new SolrException(SolrException.ErrorCode.CONFLICT, "Conflict message");
+    final RequestHandlerBase.HandlerMetrics metrics = createHandlerMetrics();
 
-        RequestHandlerBase.processErrorMetricsOnException(e, metrics);
+    RequestHandlerBase.processErrorMetricsOnException(e, metrics);
 
-        verifyNoInteractions(metrics.numErrors);
-        verifyNoInteractions(metrics.numServerErrors);
-        verifyNoInteractions(metrics.numClientErrors);
-    }
+    verifyNoInteractions(metrics.numErrors);
+    verifyNoInteractions(metrics.numServerErrors);
+    verifyNoInteractions(metrics.numClientErrors);
+  }
 
-    @Test
-    public void testEach4xxSolrExceptionIncrementsTheClientErrorCount() {
-        final Exception e = new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Conflict message");
-        final RequestHandlerBase.HandlerMetrics metrics = createHandlerMetrics();
+  @Test
+  public void testEach4xxSolrExceptionIncrementsTheClientErrorCount() {
+    final Exception e = new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Conflict message");
+    final RequestHandlerBase.HandlerMetrics metrics = createHandlerMetrics();
 
-        RequestHandlerBase.processErrorMetricsOnException(e, metrics);
+    RequestHandlerBase.processErrorMetricsOnException(e, metrics);
 
-        verify(metrics.numErrors).mark();
-        verify(metrics.numClientErrors).mark();
-        verifyNoInteractions(metrics.numServerErrors);
-    }
+    verify(metrics.numErrors).mark();
+    verify(metrics.numClientErrors).mark();
+    verifyNoInteractions(metrics.numServerErrors);
+  }
 
-    @Test
-    public void testReceivedSyntaxErrorsAreWrappedIn400SolrException() {
-        final SolrQueryRequest solrQueryRequest = new LocalSolrQueryRequest(solrCore, new ModifiableSolrParams()) {
-            @Override
-            public CoreContainer getCoreContainer() { return coreContainer; }
+  @Test
+  public void testReceivedSyntaxErrorsAreWrappedIn400SolrException() {
+    final SolrQueryRequest solrQueryRequest =
+        new LocalSolrQueryRequest(solrCore, new ModifiableSolrParams()) {
+          @Override
+          public CoreContainer getCoreContainer() {
+            return coreContainer;
+          }
         };
-        final Exception e = new SyntaxError("Some syntax error");
+    final Exception e = new SyntaxError("Some syntax error");
 
-        final Exception normalized = RequestHandlerBase.normalizeReceivedException(solrQueryRequest, e);
+    final Exception normalized = RequestHandlerBase.normalizeReceivedException(solrQueryRequest, e);
 
-        assertEquals(SolrException.class, normalized.getClass());
-        final SolrException normalizedSolrException = (SolrException) normalized;
-        assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, normalizedSolrException.code());
-    }
+    assertEquals(SolrException.class, normalized.getClass());
+    final SolrException normalizedSolrException = (SolrException) normalized;
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, normalizedSolrException.code());
+  }
 
-    @Test
-    public void testReceivedNonTragicNonSolrExceptionsAreNotModified() {
-        final SolrQueryRequest solrQueryRequest = new LocalSolrQueryRequest(solrCore, new ModifiableSolrParams()) {
-            @Override
-            public CoreContainer getCoreContainer() { return coreContainer; }
+  @Test
+  public void testReceivedNonTragicNonSolrExceptionsAreNotModified() {
+    final SolrQueryRequest solrQueryRequest =
+        new LocalSolrQueryRequest(solrCore, new ModifiableSolrParams()) {
+          @Override
+          public CoreContainer getCoreContainer() {
+            return coreContainer;
+          }
         };
-        final Exception e = new RuntimeException("Some generic, non-SolrException");
+    final Exception e = new RuntimeException("Some generic, non-SolrException");
 
-        final Exception normalized = RequestHandlerBase.normalizeReceivedException(solrQueryRequest, e);
+    final Exception normalized = RequestHandlerBase.normalizeReceivedException(solrQueryRequest, e);
 
-        assertEquals(normalized, e);
-    }
+    assertEquals(normalized, e);
+  }
 
-    @Test
-    public void testTragicNonSolrExceptionsAreWrappedInA500SolrException() {
-        when(coreContainer.checkTragicException(solrCore)).thenReturn(true);
-        final SolrQueryRequest solrQueryRequest = new LocalSolrQueryRequest(solrCore, new ModifiableSolrParams()) {
-            @Override
-            public CoreContainer getCoreContainer() { return coreContainer; }
+  @Test
+  public void testTragicNonSolrExceptionsAreWrappedInA500SolrException() {
+    when(coreContainer.checkTragicException(solrCore)).thenReturn(true);
+    final SolrQueryRequest solrQueryRequest =
+        new LocalSolrQueryRequest(solrCore, new ModifiableSolrParams()) {
+          @Override
+          public CoreContainer getCoreContainer() {
+            return coreContainer;
+          }
         };
-        final Exception e = new RuntimeException("Some generic, non-SolrException");
+    final Exception e = new RuntimeException("Some generic, non-SolrException");
 
-        final Exception normalized = RequestHandlerBase.normalizeReceivedException(solrQueryRequest, e);
+    final Exception normalized = RequestHandlerBase.normalizeReceivedException(solrQueryRequest, e);
 
-        assertEquals(SolrException.class, normalized.getClass());
-        final SolrException normalizedSolrException = (SolrException) normalized;
-        assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, normalizedSolrException.code());
-    }
+    assertEquals(SolrException.class, normalized.getClass());
+    final SolrException normalizedSolrException = (SolrException) normalized;
+    assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, normalizedSolrException.code());
+  }
 
-    // Ideally we wouldn't need to use mocks here, but HandlerMetrics requires a SolrMetricsContext, which
-    //  requires a MetricsManager, which requires ...
-    private RequestHandlerBase.HandlerMetrics createHandlerMetrics() {
-        final SolrMetricsContext metricsContext = mock(SolrMetricsContext.class);
-        when(metricsContext.timer(any(), any())).thenReturn(mock(Timer.class));
-        when(metricsContext.meter(any(), any())).then(invocation -> mock(Meter.class));
-        when(metricsContext.counter(any(), any())).thenReturn(mock(Counter.class));
+  // Ideally we wouldn't need to use mocks here, but HandlerMetrics requires a SolrMetricsContext,
+  // which
+  //  requires a MetricsManager, which requires ...
+  private RequestHandlerBase.HandlerMetrics createHandlerMetrics() {
+    final SolrMetricsContext metricsContext = mock(SolrMetricsContext.class);
+    when(metricsContext.timer(any(), any())).thenReturn(mock(Timer.class));
+    when(metricsContext.meter(any(), any())).then(invocation -> mock(Meter.class));
+    when(metricsContext.counter(any(), any())).thenReturn(mock(Counter.class));
 
-        return new RequestHandlerBase.HandlerMetrics(metricsContext, "someBaseMetricPath");
-    }
+    return new RequestHandlerBase.HandlerMetrics(metricsContext, "someBaseMetricPath");
+  }
 }

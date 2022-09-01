@@ -16,16 +16,15 @@
  */
 package org.apache.solr.response;
 
-import org.apache.solr.common.util.ContentStreamBase;
-import org.apache.solr.common.util.FastWriter;
-import org.apache.solr.request.SolrQueryRequest;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.FastWriter;
+import org.apache.solr.request.SolrQueryRequest;
 
 /** Static utility methods relating to {@link QueryResponseWriter}s */
 public final class QueryResponseWriterUtil {

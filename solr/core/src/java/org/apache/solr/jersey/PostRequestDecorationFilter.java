@@ -17,6 +17,13 @@
 
 package org.apache.solr.jersey;
 
+import static org.apache.solr.jersey.RequestContextConstants.SOLR_QUERY_REQUEST_KEY;
+
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ContainerResponseContext;
+import javax.ws.rs.container.ContainerResponseFilter;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -24,33 +31,30 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerResponseContext;
-import javax.ws.rs.container.ContainerResponseFilter;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-
-import static org.apache.solr.jersey.RequestContextConstants.SOLR_QUERY_REQUEST_KEY;
-
 /**
- * Applies standard post-processing decorations to a {@link SolrJerseyResponse} that are needed on all responses.
+ * Applies standard post-processing decorations to a {@link SolrJerseyResponse} that are needed on
+ * all responses.
  *
  * @see SolrCore#postDecorateResponse(SolrRequestHandler, SolrQueryRequest, SolrQueryResponse)
  */
 public class PostRequestDecorationFilter implements ContainerResponseFilter {
 
-    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    @Override
-    public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext) throws IOException {
-        final SolrQueryRequest solrQueryRequest = (SolrQueryRequest) requestContext.getProperty(SOLR_QUERY_REQUEST_KEY);
-        if ( ! responseContext.hasEntity() || ! SolrJerseyResponse.class.isInstance(responseContext.getEntity())) {
-            log.debug("Skipping QTime assignment because response was not a SolrJerseyResponse");
-            return;
-        }
-
-        log.info("JEGERLOW: Setting QTime");
-        final SolrJerseyResponse response = (SolrJerseyResponse) responseContext.getEntity();
-        response.responseHeader.qTime = Math.round(solrQueryRequest.getRequestTimer().getTime());
+  @Override
+  public void filter(
+      ContainerRequestContext requestContext, ContainerResponseContext responseContext)
+      throws IOException {
+    final SolrQueryRequest solrQueryRequest =
+        (SolrQueryRequest) requestContext.getProperty(SOLR_QUERY_REQUEST_KEY);
+    if (!responseContext.hasEntity()
+        || !SolrJerseyResponse.class.isInstance(responseContext.getEntity())) {
+      log.debug("Skipping QTime assignment because response was not a SolrJerseyResponse");
+      return;
     }
+
+    log.info("JEGERLOW: Setting QTime");
+    final SolrJerseyResponse response = (SolrJerseyResponse) responseContext.getEntity();
+    response.responseHeader.qTime = Math.round(solrQueryRequest.getRequestTimer().getTime());
+  }
 }

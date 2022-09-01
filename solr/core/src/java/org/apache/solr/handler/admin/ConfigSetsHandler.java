@@ -16,7 +16,16 @@
  */
 package org.apache.solr.handler.admin;
 
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.handler.configsets.UploadConfigSetFileAPI.FILEPATH_PLACEHOLDER;
+
 import com.google.common.collect.Maps;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
@@ -45,16 +54,6 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.handler.configsets.UploadConfigSetFileAPI.FILEPATH_PLACEHOLDER;
 
 /** A {@link org.apache.solr.request.SolrRequestHandler} for ConfigSets API requests. */
 public class ConfigSetsHandler extends RequestHandlerBase implements PermissionNameProvider {
@@ -201,7 +200,10 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     return Category.ADMIN;
   }
 
-  public Boolean registerV2() { return true; }
+  public Boolean registerV2() {
+    return true;
+  }
+
   @Override
   public Collection<Api> getApis() {
     final List<Api> apis = new ArrayList<>();

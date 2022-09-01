@@ -19,17 +19,14 @@ package org.apache.solr.jersey;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.Provider;
 
-/**
- * Customizes the ObjectMapper settings used for serialization/deserialization in Jersey
- */
+/** Customizes the ObjectMapper settings used for serialization/deserialization in Jersey */
 @Provider
 public class SolrJacksonMapper implements ContextResolver<ObjectMapper> {
-    @Override
-    public ObjectMapper getContext(Class<?> type) {
-        return new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL);
-    }
+  @Override
+  public ObjectMapper getContext(Class<?> type) {
+    return new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL);
+  }
 }

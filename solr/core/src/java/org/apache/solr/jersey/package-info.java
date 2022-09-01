@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Jersey integration code
- */
+/** Jersey integration code */
 package org.apache.solr.jersey;

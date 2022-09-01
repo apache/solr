@@ -17,6 +17,9 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.common.util.NamedList;
@@ -28,59 +31,59 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-//  These tests create SchemaNameAPI instances directly, which is valuable. But they don't test that the JAX-RS annotations
-//  or resource-matching is correct.  Should we have other tests to exercise that, or is relying on Solr's existing
+//  These tests create SchemaNameAPI instances directly, which is valuable. But they don't test that
+// the JAX-RS annotations
+//  or resource-matching is correct.  Should we have other tests to exercise that, or is relying on
+// Solr's existing
 //  testing of this API sufficient?
-/**
- * Unit tests for {@link SchemaNameAPI}
- */
+/** Unit tests for {@link SchemaNameAPI} */
 public class SchemaNameAPITest extends SolrTestCaseJ4 {
 
-    private SolrCore solrCore;
-    private IndexSchema schema;
+  private SolrCore solrCore;
+  private IndexSchema schema;
 
-    @BeforeClass
-    public static void ensureWorkingMockito() { assumeWorkingMockito(); }
+  @BeforeClass
+  public static void ensureWorkingMockito() {
+    assumeWorkingMockito();
+  }
 
-    @Before
-    public void initMocks() {
-        solrCore = mock(SolrCore.class);
-        schema = mock(IndexSchema.class);
-        when(solrCore.getLatestSchema()).thenReturn(schema);
-    }
+  @Before
+  public void initMocks() {
+    solrCore = mock(SolrCore.class);
+    schema = mock(IndexSchema.class);
+    when(solrCore.getLatestSchema()).thenReturn(schema);
+  }
 
-    @Test
-    public void testLooksUpNameFromLatestCoreSchema() throws Exception {
-        when(schema.getSchemaName()).thenReturn("expectedSchemaName");
-        final SchemaNameAPI nameApi = new SchemaNameAPI(solrCore);
+  @Test
+  public void testLooksUpNameFromLatestCoreSchema() throws Exception {
+    when(schema.getSchemaName()).thenReturn("expectedSchemaName");
+    final SchemaNameAPI nameApi = new SchemaNameAPI(solrCore);
 
-        final GetSchemaNameResponse response = nameApi.getSchemaName();
+    final GetSchemaNameResponse response = nameApi.getSchemaName();
 
-        assertEquals("expectedSchemaName", response.name);
-        assertNull(response.error);
-    }
+    assertEquals("expectedSchemaName", response.name);
+    assertNull(response.error);
+  }
 
-    /**
-     * Test the v2 to v1 response mapping for /schema/name
-     *
-     * {@link SchemaHandler} uses the v2 {@link SchemaNameAPI} (and its response class
-     * {@link GetSchemaNameResponse}) internally to serve the v1 version of this functionality.  So it's important to
-     * make sure that our response stays compatible with SolrJ - both because that's important in its own right and
-     * because that ensures we haven't accidentally changed the v1 response format.
-     */
-    @Test
-    public void testResponseCanBeParsedBySolrJ() {
-        final NamedList<Object> squashedResponse = new NamedList<>();
-        final GetSchemaNameResponse typedResponse = new GetSchemaNameResponse();
-        typedResponse.name = "someName";
+  /**
+   * Test the v2 to v1 response mapping for /schema/name
+   *
+   * <p>{@link SchemaHandler} uses the v2 {@link SchemaNameAPI} (and its response class {@link
+   * GetSchemaNameResponse}) internally to serve the v1 version of this functionality. So it's
+   * important to make sure that our response stays compatible with SolrJ - both because that's
+   * important in its own right and because that ensures we haven't accidentally changed the v1
+   * response format.
+   */
+  @Test
+  public void testResponseCanBeParsedBySolrJ() {
+    final NamedList<Object> squashedResponse = new NamedList<>();
+    final GetSchemaNameResponse typedResponse = new GetSchemaNameResponse();
+    typedResponse.name = "someName";
 
-        V2ApiUtils.squashIntoNamedList(squashedResponse, typedResponse);
-        final SchemaResponse.SchemaNameResponse solrjResponse = new SchemaResponse.SchemaNameResponse();
-        solrjResponse.setResponse(squashedResponse);
+    V2ApiUtils.squashIntoNamedList(squashedResponse, typedResponse);
+    final SchemaResponse.SchemaNameResponse solrjResponse = new SchemaResponse.SchemaNameResponse();
+    solrjResponse.setResponse(squashedResponse);
 
-        assertEquals("someName", solrjResponse.getSchemaName());
-    }
+    assertEquals("someName", solrjResponse.getSchemaName());
+  }
 }

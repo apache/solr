@@ -17,8 +17,6 @@
 
 package org.apache.solr.common;
 
-import org.apache.solr.common.util.Utils;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
+import org.apache.solr.common.util.Utils;
 
 /**
  * Use this class to push all entries of a Map into an output. This avoids creating map instances

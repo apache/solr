@@ -17,21 +17,20 @@
 
 package org.apache.solr.jersey;
 
-import org.apache.solr.api.EndPoint;
-import org.apache.solr.security.PermissionNameProvider;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.apache.solr.api.EndPoint;
+import org.apache.solr.security.PermissionNameProvider;
 
 /**
  * Associates the resource method with a particular {@link PermissionNameProvider} value.
  *
- * Analogous to {@link EndPoint#permission()} in the current v2 annotation framework.
+ * <p>Analogous to {@link EndPoint#permission()} in the current v2 annotation framework.
  */
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface PermissionName {
-    PermissionNameProvider.Name value();
+  PermissionNameProvider.Name value();
 }

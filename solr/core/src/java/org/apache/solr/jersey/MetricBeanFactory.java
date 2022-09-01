@@ -23,30 +23,33 @@ import org.glassfish.hk2.api.Factory;
 /**
  * Factory to inject JerseyMetricsLookupRegistry instances into Jersey resources and filters.
  *
- * Currently, Jersey resources that have a corresponding v1 API produce the same metrics as their v1 equivalent and rely
- * on the v1 requestHandler instance to do so.  Solr facilitates this by building a map of the Jersey resource to
- * requestHandler mapping (a {@link org.apache.solr.core.PluginBag.JerseyMetricsLookupRegistry}), and injecting it into
- * the pre- and post- Jersey filters that handle metrics.
+ * <p>Currently, Jersey resources that have a corresponding v1 API produce the same metrics as their
+ * v1 equivalent and rely on the v1 requestHandler instance to do so. Solr facilitates this by
+ * building a map of the Jersey resource to requestHandler mapping (a {@link
+ * org.apache.solr.core.PluginBag.JerseyMetricsLookupRegistry}), and injecting it into the pre- and
+ * post- Jersey filters that handle metrics.
  *
- * This isn't ideal, as requestHandler's don't really "fit" conceptually here.  But it's unavoidable while we want our
- * v2 APIs to exactly match the metrics produced by v1 calls.
+ * <p>This isn't ideal, as requestHandler's don't really "fit" conceptually here. But it's
+ * unavoidable while we want our v2 APIs to exactly match the metrics produced by v1 calls.
  *
  * @see PreRequestMetricsFilter
  * @see PostRequestMetricsFilter
  */
 public class MetricBeanFactory implements Factory<PluginBag.JerseyMetricsLookupRegistry> {
 
-    private final PluginBag.JerseyMetricsLookupRegistry metricsLookupRegistry;
+  private final PluginBag.JerseyMetricsLookupRegistry metricsLookupRegistry;
 
-    public MetricBeanFactory(PluginBag.JerseyMetricsLookupRegistry metricsLookupRegistry) {
-        this.metricsLookupRegistry = metricsLookupRegistry;
-    }
+  public MetricBeanFactory(PluginBag.JerseyMetricsLookupRegistry metricsLookupRegistry) {
+    this.metricsLookupRegistry = metricsLookupRegistry;
+  }
 
-    @Override
-    public PluginBag.JerseyMetricsLookupRegistry provide() {
-        return metricsLookupRegistry;
-    }
+  @Override
+  public PluginBag.JerseyMetricsLookupRegistry provide() {
+    return metricsLookupRegistry;
+  }
 
-    @Override
-    public void dispose(PluginBag.JerseyMetricsLookupRegistry instance) { /* No-op */ }
+  @Override
+  public void dispose(PluginBag.JerseyMetricsLookupRegistry instance) {
+    /* No-op */
+  }
 }

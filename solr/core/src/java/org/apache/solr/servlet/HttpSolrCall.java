@@ -16,8 +16,46 @@
  */
 package org.apache.solr.servlet;
 
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+import static org.apache.solr.common.params.CollectionAdminParams.SYSTEM_COLL;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CoreAdminParams.ACTION;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.FORWARD;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.PASSTHROUGH;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETRY;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETURN;
+
 import io.opentracing.Span;
 import io.opentracing.tag.Tags;
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HeaderIterator;
@@ -93,45 +131,6 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MarkerFactory;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
-import static org.apache.solr.common.params.CollectionAdminParams.SYSTEM_COLL;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.params.CoreAdminParams.ACTION;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.FORWARD;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.PASSTHROUGH;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETRY;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETURN;
 
 /** This class represents a call made to Solr */
 @SolrThreadSafe
@@ -511,7 +510,8 @@ public class HttpSolrCall {
           && shouldAuthorize()
           && !(action == REMOTEQUERY || action == FORWARD)) {
         final AuthorizationContext authzContext = getAuthCtx();
-        AuthorizationUtils.AuthorizationFailure authzFailure = AuthorizationUtils.authorize(req, response, cores, authzContext);
+        AuthorizationUtils.AuthorizationFailure authzFailure =
+            AuthorizationUtils.authorize(req, response, cores, authzContext);
         if (authzFailure != null) {
           sendError(authzFailure.getStatusCode(), authzFailure.getMessage());
           return RETURN;
@@ -1153,8 +1153,8 @@ public class HttpSolrCall {
 
     String resource = getPath();
 
-    final List<CollectionRequest> collectionRequests = AuthorizationUtils.getCollectionRequests(getPath(),
-            getCollectionsList(), getQueryParams());
+    final List<CollectionRequest> collectionRequests =
+        AuthorizationUtils.getCollectionRequests(getPath(), getCollectionsList(), getQueryParams());
 
     // Populate the request type if the request is select or update
     if (requestType == RequestType.UNKNOWN) {

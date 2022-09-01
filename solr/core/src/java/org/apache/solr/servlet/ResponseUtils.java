@@ -16,16 +16,15 @@
  */
 package org.apache.solr.servlet;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.jersey.ErrorInfo;
 import org.slf4j.Logger;
-
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.HashMap;
-import java.util.Map;
 
 /** Response helper methods. */
 public class ResponseUtils {

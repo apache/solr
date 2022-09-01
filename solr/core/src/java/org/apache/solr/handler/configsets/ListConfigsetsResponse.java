@@ -18,15 +18,12 @@
 package org.apache.solr.handler.configsets;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
 import org.apache.solr.jersey.SolrJerseyResponse;
 
-import java.util.List;
-
-/**
- * Response body POJO for the {@link ListConfigSetsAPI} resource.
- */
+/** Response body POJO for the {@link ListConfigSetsAPI} resource. */
 public class ListConfigsetsResponse extends SolrJerseyResponse {
 
-    @JsonProperty("configSets")
-    public List<String> configSets;
+  @JsonProperty("configSets")
+  public List<String> configSets;
 }

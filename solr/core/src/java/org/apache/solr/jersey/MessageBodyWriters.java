@@ -17,6 +17,22 @@
 
 package org.apache.solr.jersey;
 
+import static org.apache.solr.jersey.RequestContextConstants.SOLR_QUERY_REQUEST_KEY;
+import static org.apache.solr.jersey.RequestContextConstants.SOLR_QUERY_RESPONSE_KEY;
+import static org.apache.solr.response.QueryResponseWriter.CONTENT_TYPE_TEXT_UTF8;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
+import javax.ws.rs.Produces;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ResourceContext;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.ext.MessageBodyWriter;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.BinaryResponseWriter;
@@ -26,81 +42,92 @@ import org.apache.solr.response.QueryResponseWriterUtil;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.XMLResponseWriter;
 
-import javax.ws.rs.Produces;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ResourceContext;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.ext.MessageBodyWriter;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Type;
-
-import static org.apache.solr.jersey.RequestContextConstants.SOLR_QUERY_REQUEST_KEY;
-import static org.apache.solr.jersey.RequestContextConstants.SOLR_QUERY_RESPONSE_KEY;
-import static org.apache.solr.response.QueryResponseWriter.CONTENT_TYPE_TEXT_UTF8;
-
 /**
  * A collection of thin Jersey shims around Solr's existing {@link QueryResponseWriter} interface
  */
 public class MessageBodyWriters {
 
-    // Jersey has a default MessageBodyWriter for JSON so we don't need to declare one here
-    // Which other response-writer formats are worth carrying forward into v2?
+  // Jersey has a default MessageBodyWriter for JSON so we don't need to declare one here
+  // Which other response-writer formats are worth carrying forward into v2?
 
-    @Produces(MediaType.APPLICATION_XML)
-    public static class XmlMessageBodyWriter extends BaseMessageBodyWriter implements MessageBodyWriter<JacksonReflectMapWriter> {
-        @Override
-        public QueryResponseWriter createResponseWriter() { return new XMLResponseWriter(); }
-
-        @Override
-        public String getSupportedMediaType() { return MediaType.APPLICATION_XML; }
+  @Produces(MediaType.APPLICATION_XML)
+  public static class XmlMessageBodyWriter extends BaseMessageBodyWriter
+      implements MessageBodyWriter<JacksonReflectMapWriter> {
+    @Override
+    public QueryResponseWriter createResponseWriter() {
+      return new XMLResponseWriter();
     }
 
-    @Produces("application/javabin")
-    public static class JavabinMessageBodyWriter extends BaseMessageBodyWriter implements MessageBodyWriter<JacksonReflectMapWriter> {
-        @Override
-        public QueryResponseWriter createResponseWriter() { return new BinaryResponseWriter(); }
+    @Override
+    public String getSupportedMediaType() {
+      return MediaType.APPLICATION_XML;
+    }
+  }
 
-        @Override
-        public String getSupportedMediaType() { return "application/javabin"; }
+  @Produces("application/javabin")
+  public static class JavabinMessageBodyWriter extends BaseMessageBodyWriter
+      implements MessageBodyWriter<JacksonReflectMapWriter> {
+    @Override
+    public QueryResponseWriter createResponseWriter() {
+      return new BinaryResponseWriter();
     }
 
-    @Produces(CONTENT_TYPE_TEXT_UTF8)
-    public static class CsvMessageBodyWriter extends BaseMessageBodyWriter implements MessageBodyWriter<JacksonReflectMapWriter> {
-        @Override
-        public QueryResponseWriter createResponseWriter() { return new CSVResponseWriter(); }
+    @Override
+    public String getSupportedMediaType() {
+      return "application/javabin";
+    }
+  }
 
-        @Override
-        public String getSupportedMediaType() { return CONTENT_TYPE_TEXT_UTF8; }
+  @Produces(CONTENT_TYPE_TEXT_UTF8)
+  public static class CsvMessageBodyWriter extends BaseMessageBodyWriter
+      implements MessageBodyWriter<JacksonReflectMapWriter> {
+    @Override
+    public QueryResponseWriter createResponseWriter() {
+      return new CSVResponseWriter();
     }
 
-    public static abstract class BaseMessageBodyWriter implements MessageBodyWriter<JacksonReflectMapWriter> {
-
-        @Context
-        protected ResourceContext resourceContext;
-        private final QueryResponseWriter responseWriter = createResponseWriter();
-
-
-        public abstract QueryResponseWriter createResponseWriter();
-        public abstract String getSupportedMediaType();
-
-        @Override
-        public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-            return mediaType.equals(MediaType.valueOf(getSupportedMediaType()));
-        }
-
-        @Override
-        public void writeTo(JacksonReflectMapWriter reflectMapWriter, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
-            final ContainerRequestContext requestContext = resourceContext.getResource(ContainerRequestContext.class);
-            final SolrQueryRequest solrQueryRequest = (SolrQueryRequest) requestContext.getProperty(SOLR_QUERY_REQUEST_KEY);
-            final SolrQueryResponse solrQueryResponse = (SolrQueryResponse) requestContext.getProperty(SOLR_QUERY_RESPONSE_KEY);
-
-            V2ApiUtils.squashIntoSolrResponse(solrQueryResponse, reflectMapWriter);
-            QueryResponseWriterUtil.writeQueryResponse(entityStream, responseWriter, solrQueryRequest, solrQueryResponse, mediaType.toString());
-        }
+    @Override
+    public String getSupportedMediaType() {
+      return CONTENT_TYPE_TEXT_UTF8;
     }
+  }
+
+  public abstract static class BaseMessageBodyWriter
+      implements MessageBodyWriter<JacksonReflectMapWriter> {
+
+    @Context protected ResourceContext resourceContext;
+    private final QueryResponseWriter responseWriter = createResponseWriter();
+
+    public abstract QueryResponseWriter createResponseWriter();
+
+    public abstract String getSupportedMediaType();
+
+    @Override
+    public boolean isWriteable(
+        Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
+      return mediaType.equals(MediaType.valueOf(getSupportedMediaType()));
+    }
+
+    @Override
+    public void writeTo(
+        JacksonReflectMapWriter reflectMapWriter,
+        Class<?> type,
+        Type genericType,
+        Annotation[] annotations,
+        MediaType mediaType,
+        MultivaluedMap<String, Object> httpHeaders,
+        OutputStream entityStream)
+        throws IOException, WebApplicationException {
+      final ContainerRequestContext requestContext =
+          resourceContext.getResource(ContainerRequestContext.class);
+      final SolrQueryRequest solrQueryRequest =
+          (SolrQueryRequest) requestContext.getProperty(SOLR_QUERY_REQUEST_KEY);
+      final SolrQueryResponse solrQueryResponse =
+          (SolrQueryResponse) requestContext.getProperty(SOLR_QUERY_RESPONSE_KEY);
+
+      V2ApiUtils.squashIntoSolrResponse(solrQueryResponse, reflectMapWriter);
+      QueryResponseWriterUtil.writeQueryResponse(
+          entityStream, responseWriter, solrQueryRequest, solrQueryResponse, mediaType.toString());
+    }
+  }
 }

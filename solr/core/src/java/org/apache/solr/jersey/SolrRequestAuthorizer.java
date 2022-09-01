@@ -17,6 +17,17 @@
 
 package org.apache.solr.jersey;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.List;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ContainerRequestFilter;
+import javax.ws.rs.container.ResourceInfo;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.ext.Provider;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.security.AuthorizationContext;
@@ -27,93 +38,95 @@ import org.apache.solr.servlet.ServletUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.container.ResourceInfo;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.Provider;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.List;
-
 /**
- * A JAX-RS request filter that blocks or allows requests based on the authorization plugin configured in security.json.
+ * A JAX-RS request filter that blocks or allows requests based on the authorization plugin
+ * configured in security.json.
  */
 @Provider
 public class SolrRequestAuthorizer implements ContainerRequestFilter {
 
-    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    @Context
-    private ResourceInfo resourceInfo;
+  @Context private ResourceInfo resourceInfo;
 
-    public SolrRequestAuthorizer() {
-        log.info("Creating a new SolrRequestAuthorizer");
+  public SolrRequestAuthorizer() {
+    log.info("Creating a new SolrRequestAuthorizer");
+  }
+
+  @SuppressWarnings("unchecked")
+  @Override
+  public void filter(ContainerRequestContext requestContext) throws IOException {
+    final CoreContainer coreContainer =
+        (CoreContainer) requestContext.getProperty(RequestContextConstants.CORE_CONTAINER_KEY);
+    final HttpServletRequest servletRequest =
+        (HttpServletRequest)
+            requestContext.getProperty(RequestContextConstants.HTTP_SERVLET_REQ_KEY);
+    final HttpServletResponse servletResponse =
+        (HttpServletResponse)
+            requestContext.getProperty(RequestContextConstants.HTTP_SERVLET_RSP_KEY);
+    final AuthorizationContext.RequestType requestType =
+        (AuthorizationContext.RequestType)
+            requestContext.getProperty(RequestContextConstants.REQUEST_TYPE_KEY);
+    final List<String> collectionNames =
+        (List<String>) requestContext.getProperty(RequestContextConstants.COLLECTION_LIST_KEY);
+    final SolrParams solrParams =
+        (SolrParams) requestContext.getProperty(RequestContextConstants.SOLR_PARAMS_KEY);
+
+    /*
+     * HttpSolrCall has more involved logic to check whether a request requires authorization, but most of that
+     * revolves around checking for (1) static paths (e.g. index.html) or (2) HttpSolrCall 'action's that don't need
+     * authorization (e.g. request-forwarding)
+     *
+     * Since we don't invoke Jersey code in those particular cases we can ignore those checks here.
+     */
+    if (coreContainer.getAuthorizationPlugin() == null) {
+      return;
     }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public void filter(ContainerRequestContext requestContext) throws IOException {
-        final CoreContainer coreContainer = (CoreContainer) requestContext.getProperty(RequestContextConstants.CORE_CONTAINER_KEY);
-        final HttpServletRequest servletRequest = (HttpServletRequest) requestContext.getProperty(RequestContextConstants.HTTP_SERVLET_REQ_KEY);
-        final HttpServletResponse servletResponse = (HttpServletResponse) requestContext.getProperty(RequestContextConstants.HTTP_SERVLET_RSP_KEY);
-        final AuthorizationContext.RequestType requestType = (AuthorizationContext.RequestType) requestContext.getProperty(RequestContextConstants.REQUEST_TYPE_KEY);
-        final List<String> collectionNames = (List<String>) requestContext.getProperty(RequestContextConstants.COLLECTION_LIST_KEY);
-        final SolrParams solrParams = (SolrParams) requestContext.getProperty(RequestContextConstants.SOLR_PARAMS_KEY);
-
-        /*
-         * HttpSolrCall has more involved logic to check whether a request requires authorization, but most of that
-         * revolves around checking for (1) static paths (e.g. index.html) or (2) HttpSolrCall 'action's that don't need
-         * authorization (e.g. request-forwarding)
-         *
-         * Since we don't invoke Jersey code in those particular cases we can ignore those checks here.
-         */
-        if (coreContainer.getAuthorizationPlugin() == null) {
-            return;
-        }
-        final AuthorizationContext authzContext = getAuthzContext(servletRequest, requestType, collectionNames, solrParams, coreContainer);
-        log.debug("Attempting authz with context {}", authzContext);
-        AuthorizationUtils.AuthorizationFailure authzFailure = AuthorizationUtils.authorize(servletRequest, servletResponse, coreContainer, authzContext);
-        if (authzFailure != null) {
-            final Response failureResponse = Response.status(authzFailure.getStatusCode())
-                    .entity(authzFailure.getMessage())
-                    .build();
-            requestContext.abortWith(failureResponse);
-        }
+    final AuthorizationContext authzContext =
+        getAuthzContext(servletRequest, requestType, collectionNames, solrParams, coreContainer);
+    log.debug("Attempting authz with context {}", authzContext);
+    AuthorizationUtils.AuthorizationFailure authzFailure =
+        AuthorizationUtils.authorize(servletRequest, servletResponse, coreContainer, authzContext);
+    if (authzFailure != null) {
+      final Response failureResponse =
+          Response.status(authzFailure.getStatusCode()).entity(authzFailure.getMessage()).build();
+      requestContext.abortWith(failureResponse);
     }
+  }
 
-    private AuthorizationContext getAuthzContext(HttpServletRequest servletRequest, AuthorizationContext.RequestType reqType,
-                                                 List<String> collectionNames, SolrParams solrParams, CoreContainer cores) {
-        return new HttpServletAuthorizationContext(servletRequest) {
+  private AuthorizationContext getAuthzContext(
+      HttpServletRequest servletRequest,
+      AuthorizationContext.RequestType reqType,
+      List<String> collectionNames,
+      SolrParams solrParams,
+      CoreContainer cores) {
+    return new HttpServletAuthorizationContext(servletRequest) {
 
-            @Override
-            public List<CollectionRequest> getCollectionRequests() {
-                return AuthorizationUtils.getCollectionRequests(ServletUtils.getPathAfterContext(servletRequest),
-                        collectionNames, solrParams);
-            }
+      @Override
+      public List<CollectionRequest> getCollectionRequests() {
+        return AuthorizationUtils.getCollectionRequests(
+            ServletUtils.getPathAfterContext(servletRequest), collectionNames, solrParams);
+      }
 
-            @Override
-            public Object getHandler() {
-                return new PermissionNameProvider() {
-                    @Override
-                    public Name getPermissionName(AuthorizationContext request) {
-                        return resourceInfo.getResourceMethod().getAnnotation(PermissionName.class).value();
-                    }
-                };
-            }
-
-            @Override
-            public SolrParams getParams() {
-                return solrParams;
-            }
-
-            @Override
-            public RequestType getRequestType() {
-                return reqType;
-            }
+      @Override
+      public Object getHandler() {
+        return new PermissionNameProvider() {
+          @Override
+          public Name getPermissionName(AuthorizationContext request) {
+            return resourceInfo.getResourceMethod().getAnnotation(PermissionName.class).value();
+          }
         };
-    }
+      }
+
+      @Override
+      public SolrParams getParams() {
+        return solrParams;
+      }
+
+      @Override
+      public RequestType getRequestType() {
+        return reqType;
+      }
+    };
+  }
 }

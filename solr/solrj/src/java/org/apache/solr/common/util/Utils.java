@@ -16,35 +16,9 @@
  */
 package org.apache.solr.common.util;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpRequestBase;
-import org.apache.http.util.EntityUtils;
-import org.apache.solr.client.solrj.cloud.DistribStateManager;
-import org.apache.solr.client.solrj.cloud.VersionedData;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
-import org.apache.solr.common.IteratorWriter;
-import org.apache.solr.common.LinkedHashMapWriter;
-import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.MapWriterMap;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SpecProvider;
-import org.apache.solr.common.annotation.JsonProperty;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkOperation;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.server.ByteBufferInputStream;
-import org.noggit.CharArr;
-import org.noggit.JSONParser;
-import org.noggit.JSONWriter;
-import org.noggit.ObjectBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Collections.singletonList;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -87,10 +61,35 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Collections.singletonList;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.util.EntityUtils;
+import org.apache.solr.client.solrj.cloud.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.VersionedData;
+import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
+import org.apache.solr.common.IteratorWriter;
+import org.apache.solr.common.LinkedHashMapWriter;
+import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.MapWriterMap;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SpecProvider;
+import org.apache.solr.common.annotation.JsonProperty;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkOperation;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.server.ByteBufferInputStream;
+import org.noggit.CharArr;
+import org.noggit.JSONParser;
+import org.noggit.JSONWriter;
+import org.noggit.ObjectBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 public class Utils {
 
@@ -919,31 +918,39 @@ public class Utils {
   }
 
   /**
-   * Convert the input object to a map, writing only those fields annotated with a {@link JsonProperty} annotation
+   * Convert the input object to a map, writing only those fields annotated with a {@link
+   * JsonProperty} annotation
    *
-   * @param ew an {@link org.apache.solr.common.MapWriter.EntryWriter} to do the actual map insertion/writing
+   * @param ew an {@link org.apache.solr.common.MapWriter.EntryWriter} to do the actual map
+   *     insertion/writing
    * @param o the object to be converted
    */
   public static void reflectWrite(MapWriter.EntryWriter ew, Object o) {
-    reflectWrite(ew, o,
-            field -> field.getAnnotation(JsonProperty.class) != null,
-            field -> {
-              final JsonProperty prop = field.getAnnotation(JsonProperty.class);
-              return prop.value().isEmpty() ? field.getName() : prop.value();
-            }
-    );
+    reflectWrite(
+        ew,
+        o,
+        field -> field.getAnnotation(JsonProperty.class) != null,
+        field -> {
+          final JsonProperty prop = field.getAnnotation(JsonProperty.class);
+          return prop.value().isEmpty() ? field.getName() : prop.value();
+        });
   }
 
   /**
-   * Convert an input object to a map, writing only those fields that match a provided {@link Predicate}
+   * Convert an input object to a map, writing only those fields that match a provided {@link
+   * Predicate}
    *
-   * @param ew an {@link org.apache.solr.common.MapWriter.EntryWriter} to do the actual map insertion/writing
+   * @param ew an {@link org.apache.solr.common.MapWriter.EntryWriter} to do the actual map
+   *     insertion/writing
    * @param o the object to be converted
    * @param fieldFilterer a predicate used to identify which fields of the object to write
    * @param fieldNamer a callback that allows changing field names
    */
-  public static void reflectWrite(MapWriter.EntryWriter ew, Object o, Predicate<Field> fieldFilterer,
-                                  Function<Field, String> fieldNamer) {
+  public static void reflectWrite(
+      MapWriter.EntryWriter ew,
+      Object o,
+      Predicate<Field> fieldFilterer,
+      Function<Field, String> fieldNamer) {
     List<FieldWriter> fieldWriters = null;
     try {
       fieldWriters = getReflectData(o.getClass(), fieldFilterer, fieldNamer);
@@ -960,8 +967,9 @@ public class Utils {
     }
   }
 
-  private static List<FieldWriter> getReflectData(Class<?> c, Predicate<Field> fieldFilterer,
-                                                  Function<Field, String> fieldNamer) throws IllegalAccessException {
+  private static List<FieldWriter> getReflectData(
+      Class<?> c, Predicate<Field> fieldFilterer, Function<Field, String> fieldNamer)
+      throws IllegalAccessException {
     boolean sameClassLoader = c.getClassLoader() == Utils.class.getClassLoader();
     // we should not cache the class references of objects loaded from packages because they will
     // not get garbage collected
@@ -971,7 +979,7 @@ public class Utils {
       ArrayList<FieldWriter> l = new ArrayList<>();
       MethodHandles.Lookup lookup = MethodHandles.publicLookup();
       for (Field field : lookup.accessClass(c).getFields()) {
-        if (! fieldFilterer.test(field)) continue;
+        if (!fieldFilterer.test(field)) continue;
         int modifiers = field.getModifiers();
         if (Modifier.isPublic(modifiers) && !Modifier.isStatic(modifiers)) {
           final String fname = fieldNamer.apply(field);

@@ -17,74 +17,74 @@
 
 package org.apache.solr.security;
 
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.servlet.ServletUtils;
-
-import javax.servlet.http.HttpServletRequest;
 import java.security.Principal;
 import java.util.Enumeration;
 import java.util.List;
+import javax.servlet.http.HttpServletRequest;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.servlet.ServletUtils;
 
 /**
- * An {@link AuthorizationContext} implementation that delegates many methods to an underlying {@link HttpServletRequest}
+ * An {@link AuthorizationContext} implementation that delegates many methods to an underlying
+ * {@link HttpServletRequest}
  */
 public abstract class HttpServletAuthorizationContext extends AuthorizationContext {
 
-    private final HttpServletRequest servletRequest;
+  private final HttpServletRequest servletRequest;
 
-    public HttpServletAuthorizationContext(HttpServletRequest servletRequest) {
-        this.servletRequest = servletRequest;
-    }
+  public HttpServletAuthorizationContext(HttpServletRequest servletRequest) {
+    this.servletRequest = servletRequest;
+  }
 
-    @Override
-    public abstract SolrParams getParams();
+  @Override
+  public abstract SolrParams getParams();
 
-    @Override
-    public abstract List<CollectionRequest> getCollectionRequests();
+  @Override
+  public abstract List<CollectionRequest> getCollectionRequests();
 
-    @Override
-    public abstract RequestType getRequestType();
+  @Override
+  public abstract RequestType getRequestType();
 
-    @Override
-    public abstract Object getHandler();
+  @Override
+  public abstract Object getHandler();
 
-    @Override
-    public String getResource() {
-        return ServletUtils.getPathAfterContext(servletRequest);
-    }
+  @Override
+  public String getResource() {
+    return ServletUtils.getPathAfterContext(servletRequest);
+  }
 
-    @Override
-    public String getRemoteAddr() {
-        return servletRequest.getRemoteAddr();
-    }
+  @Override
+  public String getRemoteAddr() {
+    return servletRequest.getRemoteAddr();
+  }
 
-    @Override
-    public Principal getUserPrincipal() {
-        return servletRequest.getUserPrincipal();
-    }
+  @Override
+  public Principal getUserPrincipal() {
+    return servletRequest.getUserPrincipal();
+  }
 
-    @Override
-    public String getUserName() {
-        return servletRequest.getRemoteUser();
-    }
+  @Override
+  public String getUserName() {
+    return servletRequest.getRemoteUser();
+  }
 
-    @Override
-    public String getHttpHeader(String s) {
-        return servletRequest.getHeader(s);
-    }
+  @Override
+  public String getHttpHeader(String s) {
+    return servletRequest.getHeader(s);
+  }
 
-    @Override
-    public Enumeration<String> getHeaderNames() {
-        return servletRequest.getHeaderNames();
-    }
+  @Override
+  public Enumeration<String> getHeaderNames() {
+    return servletRequest.getHeaderNames();
+  }
 
-    @Override
-    public String getHttpMethod() {
-        return servletRequest.getMethod();
-    }
+  @Override
+  public String getHttpMethod() {
+    return servletRequest.getMethod();
+  }
 
-    @Override
-    public String getRemoteHost() {
-        return servletRequest.getRemoteHost();
-    }
+  @Override
+  public String getRemoteHost() {
+    return servletRequest.getRemoteHost();
+  }
 }

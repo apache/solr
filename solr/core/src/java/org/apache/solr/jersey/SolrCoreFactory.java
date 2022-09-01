@@ -21,22 +21,24 @@ import org.apache.solr.core.SolrCore;
 import org.glassfish.hk2.api.Factory;
 
 /**
- * Allows the SolrCore germane to a particular request to be injected into individual resource instances at call-time.
+ * Allows the SolrCore germane to a particular request to be injected into individual resource
+ * instances at call-time.
  */
 public class SolrCoreFactory implements Factory<SolrCore> {
 
-    private final SolrCore solrCore;
+  private final SolrCore solrCore;
 
-    public SolrCoreFactory(SolrCore solrCore) {
-        this.solrCore = solrCore;
-    }
+  public SolrCoreFactory(SolrCore solrCore) {
+    this.solrCore = solrCore;
+  }
 
+  @Override
+  public SolrCore provide() {
+    return solrCore;
+  }
 
-    @Override
-    public SolrCore provide() {
-        return solrCore;
-    }
-
-    @Override
-    public void dispose(SolrCore instance) { /* No-op */ }
+  @Override
+  public void dispose(SolrCore instance) {
+    /* No-op */
+  }
 }

@@ -16,14 +16,9 @@
  */
 package org.apache.solr.security;
 
-import org.apache.solr.api.AnnotatedApi;
-import org.apache.solr.api.Api;
-import org.apache.solr.common.SpecProvider;
-import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.common.util.ValidatingJsonMap;
-import org.apache.solr.handler.admin.api.ModifyRuleBasedAuthConfigAPI;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.toMap;
+import static org.apache.solr.handler.admin.SecurityConfHandler.getListValue;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -37,10 +32,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static java.util.function.Function.identity;
-import static java.util.stream.Collectors.toMap;
-import static org.apache.solr.handler.admin.SecurityConfHandler.getListValue;
+import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.api.Api;
+import org.apache.solr.common.SpecProvider;
+import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.ValidatingJsonMap;
+import org.apache.solr.handler.admin.api.ModifyRuleBasedAuthConfigAPI;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Base class for rule based authorization plugins */
 public abstract class RuleBasedAuthorizationPluginBase

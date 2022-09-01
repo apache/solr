@@ -18,30 +18,31 @@
 package org.apache.solr.jersey;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.io.IOException;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.Utils;
-
-import java.io.IOException;
 
 /**
  * A {@link MapWriter} implementation that relies on Jackson's {@link JsonProperty} annotation.
  *
- * Similar to {@link org.apache.solr.common.util.ReflectMapWriter}, except for its use of the Jackson annotation instead
- * of our own homegrown alternative, {@link org.apache.solr.common.annotation.JsonProperty}.  This is useful for when
- * the objects involved must interact with 3rd party libraries that expect Jackson, such as Jersey/
+ * <p>Similar to {@link org.apache.solr.common.util.ReflectMapWriter}, except for its use of the
+ * Jackson annotation instead of our own homegrown alternative, {@link
+ * org.apache.solr.common.annotation.JsonProperty}. This is useful for when the objects involved
+ * must interact with 3rd party libraries that expect Jackson, such as Jersey/
  *
  * @see org.apache.solr.common.util.ReflectMapWriter
  */
 public interface JacksonReflectMapWriter extends MapWriter {
-    @Override
-    default void writeMap(EntryWriter ew) throws IOException {
-        Utils.reflectWrite(ew, this,
-                // TODO Should we be lenient here and accept both the Jackson and our homegrown annotation?
-                field -> field.getAnnotation(JsonProperty.class) != null,
-                field -> {
-                    final JsonProperty prop = field.getAnnotation(JsonProperty.class);
-                    return prop.value().isEmpty() ? field.getName() : prop.value();
-                }
-        );
-    }
+  @Override
+  default void writeMap(EntryWriter ew) throws IOException {
+    Utils.reflectWrite(
+        ew,
+        this,
+        // TODO Should we be lenient here and accept both the Jackson and our homegrown annotation?
+        field -> field.getAnnotation(JsonProperty.class) != null,
+        field -> {
+          final JsonProperty prop = field.getAnnotation(JsonProperty.class);
+          return prop.value().isEmpty() ? field.getName() : prop.value();
+        });
+  }
 }

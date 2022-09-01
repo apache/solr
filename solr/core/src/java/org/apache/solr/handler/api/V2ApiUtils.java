@@ -17,13 +17,12 @@
 
 package org.apache.solr.handler.api;
 
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.jersey.JacksonReflectMapWriter;
-import org.apache.solr.response.SolrQueryResponse;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.jersey.JacksonReflectMapWriter;
+import org.apache.solr.response.SolrQueryResponse;
 
 /** Utilities helpful for common V2 API declaration tasks. */
 public class V2ApiUtils {
@@ -46,15 +45,15 @@ public class V2ApiUtils {
     destination.put(newKey, flattenedStr);
   }
 
-
-
   public static void squashIntoSolrResponse(SolrQueryResponse rsp, JacksonReflectMapWriter mw) {
     squashIntoNamedList(rsp.getValues(), mw);
   }
 
-  // TODO Come up with a better approach (maybe change Responses to be based on some class that can natively do this
+  // TODO Come up with a better approach (maybe change Responses to be based on some class that can
+  // natively do this
   //  without the intermediate map(s)?)
-  public static void squashIntoNamedList(NamedList<Object> destination, JacksonReflectMapWriter mw) {
+  public static void squashIntoNamedList(
+      NamedList<Object> destination, JacksonReflectMapWriter mw) {
     Map<String, Object> myMap = new HashMap<>();
     myMap = mw.toMap(myMap);
     for (Map.Entry<String, Object> entry : myMap.entrySet()) {

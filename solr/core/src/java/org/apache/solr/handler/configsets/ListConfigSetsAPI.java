@@ -16,9 +16,7 @@
  */
 package org.apache.solr.handler.configsets;
 
-import org.apache.solr.api.JerseyResource;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.jersey.PermissionName;
+import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
@@ -26,20 +24,19 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
-
-import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
+import org.apache.solr.api.JerseyResource;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.jersey.PermissionName;
 
 /**
  * V2 API for adding or updating a single file within a configset.
  *
  * <p>This API (GET /v2/cluster/configs) is analogous to the v1 /admin/configs?action=LIST command.
  */
-
 @Path("/cluster/configs")
 public class ListConfigSetsAPI extends JerseyResource {
 
-  @Context
-  public HttpHeaders headers;
+  @Context public HttpHeaders headers;
 
   private final CoreContainer coreContainer;
 

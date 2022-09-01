@@ -16,12 +16,13 @@
  */
 
 /**
- * Adapter code used to convert the native Jetty request/response abstractions into the objects required by Jersey
+ * Adapter code used to convert the native Jetty request/response abstractions into the objects
+ * required by Jersey
  *
- * Much of the code in this package is inspired or copied from the jersey-container-jetty-http artifact, which greatly
- * simplifies deploying a Jersey application in its own Jetty servlet or servlet filter.  Solr cannot currently take
- * advantage of this due to the interconnectedness of its filter logic (i.e. everything running in one massive filter).
- * However, if this is remedied in the future we should be able to get rid of most or all of the adapter code in this
- * package.
+ * <p>Much of the code in this package is inspired or copied from the jersey-container-jetty-http
+ * artifact, which greatly simplifies deploying a Jersey application in its own Jetty servlet or
+ * servlet filter. Solr cannot currently take advantage of this due to the interconnectedness of its
+ * filter logic (i.e. everything running in one massive filter). However, if this is remedied in the
+ * future we should be able to get rid of most or all of the adapter code in this package.
  */
 package org.apache.solr.jersey.container;

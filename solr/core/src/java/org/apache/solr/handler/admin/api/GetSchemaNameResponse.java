@@ -21,6 +21,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.solr.jersey.SolrJerseyResponse;
 
 public class GetSchemaNameResponse extends SolrJerseyResponse {
-    @JsonProperty("name")
-    public String name;
+  @JsonProperty("name")
+  public String name;
 }
