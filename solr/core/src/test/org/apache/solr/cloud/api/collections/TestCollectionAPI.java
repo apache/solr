@@ -25,6 +25,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -35,6 +36,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.SolrException;
@@ -50,6 +52,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
 
@@ -1277,6 +1280,30 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
           CollectionAdminRequest.createCollection("testcollection", "conf1", 1, 2).process(client);
       assertNull(rsp.getErrorMessages());
       assertSame(0, rsp.getStatus());
+    }
+  }
+
+  @Test
+  public void testConfigCaching() throws Exception {
+    String COLL = "cfg_cache_test";
+    MiniSolrCloudCluster cl =
+        new MiniSolrCloudCluster.Builder(2, createTempDir())
+            .addConfig("conf", configset("cloud-minimal"))
+            .configure();
+
+    try {
+      LongAdder schemaMisses = new LongAdder();
+      LongAdder configMisses = new LongAdder();
+      IndexSchemaFactory.CACHE_MISS_LISTENER =
+          s -> {
+            if ("schema.xml".equals(s)) schemaMisses.increment();
+            if ("solrconfig.xml".equals(s)) configMisses.increment();
+          };
+      CollectionAdminRequest.createCollection(COLL, "conf", 5, 1).process(cl.getSolrClient());
+      assertEquals(2, schemaMisses.longValue());
+      assertEquals(2, configMisses.longValue());
+    } finally {
+      cl.shutdown();
     }
   }
 }

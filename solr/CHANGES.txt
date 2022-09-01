@@ -85,6 +85,8 @@ Optimizations
 
 * SOLR-9359: Enable warming queries to be managed using Config API (Andy Webb, Eric Pugh)
 
+* SOLR-16336: avoid fetching solrconfig.xml & schema.xml for already cached schema and config (noble)
+
 Bug Fixes
 ---------------------
 * SOLR-15918: Skip repetitive parent znode creation on config set upload (Mike Drob)
