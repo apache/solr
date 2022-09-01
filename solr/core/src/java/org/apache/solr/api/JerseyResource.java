@@ -83,7 +83,9 @@ public class JerseyResource {
      */
     protected <T extends SolrJerseyResponse> T instantiateJerseyResponse(Supplier<T> instantiator) {
         final T instance = instantiator.get();
-        containerRequestContext.setProperty(SOLR_JERSEY_RESPONSE_KEY, instance);
+        if (containerRequestContext != null) {
+            containerRequestContext.setProperty(SOLR_JERSEY_RESPONSE_KEY, instance);
+        }
         return instance;
     }
 }
