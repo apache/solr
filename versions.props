@@ -56,6 +56,7 @@ org.bitbucket.b_c:jose4j=0.7.9
 org.carrot2:carrot2-core=4.4.2
 org.codehaus.woodstox:stax2-api=4.2.1
 org.eclipse.jetty*:*=9.4.44.v20210927
+org.glassfish.jersey*:*=2.35
 org.hamcrest:*=2.2
 org.hsqldb:hsqldb=2.4.0
 org.jctools:jctools-core=3.3.0
