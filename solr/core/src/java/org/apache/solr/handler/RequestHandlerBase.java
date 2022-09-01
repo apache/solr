@@ -158,9 +158,9 @@ public abstract class RequestHandlerBase
                 "NO_OP",
                 "NO_OP"));
 
-    private final Meter numErrors;
-    private final Meter numServerErrors;
-    private final Meter numClientErrors;
+    public final Meter numErrors;
+    public final Meter numServerErrors;
+    public final Meter numClientErrors;
     public final Meter numTimeouts;
     public final Counter requests;
     public final Timer requestTimes;
@@ -247,6 +247,7 @@ public abstract class RequestHandlerBase
 
   public static Exception normalizeReceivedException(SolrQueryRequest req, Exception e) {
     if (req.getCore() != null) {
+      assert req.getCoreContainer() != null;
       boolean isTragic = req.getCoreContainer().checkTragicException(req.getCore());
       if (isTragic) {
         if (e instanceof SolrException) {
