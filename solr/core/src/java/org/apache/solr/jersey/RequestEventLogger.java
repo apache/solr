@@ -17,11 +17,12 @@
 
 package org.apache.solr.jersey;
 
-import java.lang.invoke.MethodHandles;
 import org.glassfish.jersey.server.monitoring.RequestEvent;
 import org.glassfish.jersey.server.monitoring.RequestEventListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.lang.invoke.MethodHandles;
 
 /**
  * Logs out request-specific information useful for troubleshooting Jersey development.
@@ -39,7 +40,9 @@ public class RequestEventLogger implements RequestEventListener {
 
   @Override
   public void onEvent(RequestEvent event) {
-    log.info("Received event for request #{}: {}", requestCount, event.getType());
+    if (log.isInfoEnabled()) {
+      log.info("Received event for request #{}: {}", requestCount, event.getType());
+    }
     if (event.getType().equals(RequestEvent.Type.ON_EXCEPTION)) {
       log.error("Exception encountered executing Jersey request: ", event.getException());
     }
