@@ -60,7 +60,7 @@ The default behavior in Solr is to add one ACL on all the content it creates - o
 
 == Solr to Zookeeper ACLs Workflow
 
-* Solr to Zookeeper credentials and ACLs are controlled through 3 interfaces: {solr-javadocs}/solrj/org/apache/solr/common/cloud/ZkCredentialsInjector.html[`ZkCredentialsInjector`],  {solr-javadocs}/solrj/org/apache/solr/common/cloud/ZkCredentialsProvider.html[`ZkCredentialsProvider`] and {solr-javadocs}/solrj/org/apache/solr/common/cloud/ZkACLProvider.html[`ZkACLProvider`].
+* Solr to Zookeeper credentials and ACLs are controlled through 3 interfaces: {solr-javadocs}/solrj-zookeeper/org/apache/solr/common/cloud/ZkCredentialsInjector.html[`ZkCredentialsInjector`],  {solr-javadocs}/solrj-zookeeper/org/apache/solr/common/cloud/ZkCredentialsProvider.html[`ZkCredentialsProvider`] and {solr-javadocs}/solrj-zookeeper/org/apache/solr/common/cloud/ZkACLProvider.html[`ZkACLProvider`].
 
 * The classes implementing these 3 interfaces are passed to Solr via System Properties using the properties names
 defined in `solr.xml` (see xref:configuration-guide:configuring-solr-xml.adoc[] for details). The following are the default properties names:
@@ -94,7 +94,7 @@ The credentials are used to get permission to perform operations in ZooKeeper.
 . Control which ACLs Solr will add to znodes (ZooKeeper files/folders) it creates in ZooKeeper.
 . Control it "from the outside", so that you do not have to modify and/or recompile Solr code to turn this on.
 
-Solr nodes, clients, and tools (e.g., ZkCLI) always use a java class called {solr-javadocs}/solrj/org/apache/solr/common/cloud/SolrZkClient.html[`SolrZkClient`] to deal with their ZooKeeper stuff.
+Solr nodes, clients, and tools (e.g., ZkCLI) always use a java class called {solr-javadocs}/solrj-zookeeper/org/apache/solr/common/cloud/SolrZkClient.html[`SolrZkClient`] to deal with their ZooKeeper stuff.
 The implementation of the solution described here is all about changing `SolrZkClient`.
 If you use `SolrZkClient` in your application, the descriptions below will be true for your application too.
 
@@ -117,7 +117,7 @@ We will describe these 3 steps in details before giving some ready to use exampl
 * A credentials injector gets the credentials from an external source and injects them into Solr.
 
 
-** You control which credentials will be injected by configuring `zkCredentialsInjector` property in the `<solrcloud>` section of xref:configuration-guide:configuring-solr-xml.adoc[`solr.xml`] to the name of a class (on the classpath) implementing the {solr-javadocs}/solrj/org/apache/solr/common/cloud/ZkCredentialsInjector.html[`ZkCredentialsInjector`] interface. +
+** You control which credentials will be injected by configuring `zkCredentialsInjector` property in the `<solrcloud>` section of xref:configuration-guide:configuring-solr-xml.adoc[`solr.xml`] to the name of a class (on the classpath) implementing the {solr-javadocs}/solrj-zookeeper/org/apache/solr/common/cloud/ZkCredentialsInjector.html[`ZkCredentialsInjector`] interface. +
 `server/solr/solr.xml` file in the Solr distribution defines the`zkCredentialsInjector` such that it will take on the value
 of the same-named `zkCredentialsInjector` system property if it is defined (e.g., by uncommenting
 the `SOLR_ZK_CREDS_AND_ACLS` environment variable definition in `solr.in.sh/.cmd`- see below), or if not, default
@@ -155,7 +155,7 @@ Java properties file and contain both the `zkDigestUsername` and `zkDigestPasswo
 ----
 
 ** You can create your own credentials injector by
-implementing {solr-javadocs}/solrj/org/apache/solr/common/cloud/ZkCredentialsInjector.html[`ZkCredentialsInjector`] and pass it through System Properties using `zkCredentialsInjector` name:
+implementing {solr-javadocs}/solrj-zookeeper/org/apache/solr/common/cloud/ZkCredentialsInjector.html[`ZkCredentialsInjector`] and pass it through System Properties using `zkCredentialsInjector` name:
 
 ----
 -DzkCredentialsInjector=fully.qualified.class.CustomInjectorClassName
@@ -174,7 +174,7 @@ After the credentials are injected they are then used in the `ZkCredentialsProvi
 `ZkCredentialsProvider` gets the credentials from the `ZkCredentialsInjector` and uses them to connect to Zookeeper.
 
 
-** You control which credentials will be used by configuring `zkCredentialsProvider` property in the `<solrcloud>` section of xref:configuration-guide:configuring-solr-xml.adoc[`solr.xml`] to the name of a class (on the classpath) implementing the {solr-javadocs}/solrj/org/apache/solr/common/cloud/ZkCredentialsProvider.html[`ZkCredentialsProvider`] interface. +
+** You control which credentials will be used by configuring `zkCredentialsProvider` property in the `<solrcloud>` section of xref:configuration-guide:configuring-solr-xml.adoc[`solr.xml`] to the name of a class (on the classpath) implementing the {solr-javadocs}/solrj-zookeeper/org/apache/solr/common/cloud/ZkCredentialsProvider.html[`ZkCredentialsProvider`] interface. +
 `server/solr/solr.xml` file in the Solr distribution defines the`zkCredentialsProvider`such that it will take on the value
 of the same-named `zkCredentialsProvider` system property if it is defined (e.g., by uncommenting
 the `SOLR_ZK_CREDS_AND_ACLS` environment variable definition in `solr.in.sh/.cmd`- see below), or if not, default
@@ -203,7 +203,7 @@ back to default behavior and use the (empty) credentials list from `DefaultZkCre
 === Set an ACL Provider
 
 
-** You control which ACLs will be added by configuring `zkACLProvider` property in the `<solrcloud>` section of xref:configuration-guide:configuring-solr-xml.adoc[`solr.xml`] to the name of a class (on the classpath) implementing the {solr-javadocs}/solrj/org/apache/solr/common/cloud/ZkACLProvider.html[`ZkACLProvider`] interface. +
+** You control which ACLs will be added by configuring `zkACLProvider` property in the `<solrcloud>` section of xref:configuration-guide:configuring-solr-xml.adoc[`solr.xml`] to the name of a class (on the classpath) implementing the {solr-javadocs}/solrj-zookeeper/org/apache/solr/common/cloud/ZkACLProvider.html[`ZkACLProvider`] interface. +
 `server/solr/solr.xml` file in the Solr distribution defines the`zkACLProvider`such that it will take on the value
 of the same-named `zkACLProvider` system property if it is defined (e.g., by uncommenting
 the `SOLR_ZK_CREDS_AND_ACLS` environment variable definition in `solr.in.sh/.cmd`- see below), or if not, default
@@ -393,7 +393,7 @@ set SOLR_ZK_CREDS_AND_ACLS=-DzkACLProvider=org.apache.solr.common.cloud.DigestZk
 
 
 * Alternatively, you can create your own credentials injector by
-implementing {solr-javadocs}/solrj/org/apache/solr/common/cloud/ZkCredentialsInjector.html[`ZkCredentialsInjector`] and pass
+implementing {solr-javadocs}/solrj-zookeeper/org/apache/solr/common/cloud/ZkCredentialsInjector.html[`ZkCredentialsInjector`] and pass
 it through system props using DzkCredentialsInjector variable name.
 
 

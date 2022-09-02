@@ -123,6 +123,10 @@ allprojects {
                     exclude "**/*.js"
                     break
 
+                case ":solr:modules:s3-repository":
+                    exclude "src/test-files/s3.conf" // empty file
+                    break
+
                 case ":solr:documentation":
                     exclude "src/markdown/*.md"
                     break
@@ -269,10 +273,8 @@ class RatTask extends DefaultTask {
                 errors << "Unknown license: ${resource.@name}"
             }
         }
-        if (errors) {
-            throw new GradleException("Found " + errors.size() + " file(s) with errors:\n" +
-                    errors.collect{ msg -> "  - ${msg}" }.join("\n"))
-        }
+        def checkProp = "validation.rat.failOnError"
+        project.failOrWarn(checkProp, "Detected license header issues", errors)
     }
 
     @TaskAction

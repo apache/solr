@@ -85,6 +85,7 @@ import org.apache.solr.common.cloud.LiveNodesListener;
 import org.apache.solr.common.cloud.NodesSysPropsCacher;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.PerReplicaStates;
+import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.Type;
@@ -1794,7 +1795,7 @@ public class ZkController implements Closeable {
           log.debug("bypassed overseer for message : {}", Utils.toJSONString(m));
         }
         PerReplicaStates perReplicaStates =
-            PerReplicaStates.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
+            PerReplicaStatesFetcher.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
         PerReplicaStatesOps.flipState(coreNodeName, state, perReplicaStates)
             .persist(coll.getZNode(), zkClient);
       }

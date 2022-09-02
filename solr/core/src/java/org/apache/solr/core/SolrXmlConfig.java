@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import javax.management.MBeanServer;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
@@ -132,6 +133,16 @@ public class SolrXmlConfig {
     String nodeName = (String) entries.remove("nodeName");
     if (Strings.isNullOrEmpty(nodeName) && cloudConfig != null) nodeName = cloudConfig.getHost();
 
+    // It should goes inside the fillSolrSection method but
+    // since it is arranged as a separate section it is placed here
+    Map<String, String> coreAdminHandlerActions =
+        readNodeListAsNamedList(
+                config, "solr/coreAdminHandlerActions/*[@name]", "<coreAdminHandlerActions>")
+            .asMap()
+            .entrySet()
+            .stream()
+            .collect(Collectors.toMap(item -> item.getKey(), item -> item.getValue().toString()));
+
     UpdateShardHandlerConfig updateConfig;
     if (deprecatedUpdateConfig == null) {
       updateConfig =
@@ -168,6 +179,7 @@ public class SolrXmlConfig {
     configBuilder.setMetricsConfig(getMetricsConfig(config));
     configBuilder.setFromZookeeper(fromZookeeper);
     configBuilder.setDefaultZkHost(defaultZkHost);
+    configBuilder.setCoreAdminHandlerActions(coreAdminHandlerActions);
     return fillSolrSection(configBuilder, entries);
   }
 
@@ -246,6 +258,7 @@ public class SolrXmlConfig {
     assertSingleInstance("logging", config);
     assertSingleInstance("logging/watcher", config);
     assertSingleInstance("backup", config);
+    assertSingleInstance("coreAdminHandlerActions", config);
   }
 
   private static void assertSingleInstance(String section, XmlConfigFile config) {

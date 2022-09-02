@@ -637,6 +637,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     public void close() throws Exception {
       shutdownCluster();
       receiverThread.interrupt();
+      receiverThread.join();
       receiver.close();
       receiverThread = null;
     }
