@@ -125,6 +125,8 @@ Bug Fixes
 
 * SOLR-16316: Fix debugQuery clicking on the Query UI does not show the debug.explain.structured option. (Shiming Li via Eric Pugh)
 
+* SOLR-16399: ExportWriter fails with max values for fields (Kevin Risden)
+
 Other Changes
 ---------------------
 * SOLR-16351: Upgrade Carrot2 to 4.4.3, upgrade randomizedtesting to 2.8.0. (Dawid Weiss)
