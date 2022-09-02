@@ -319,7 +319,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
 
   public void testFailAtConfigParseTimeWhenUnrecognizedSolrOptionWasFound() {
     String solrXml =
-        "<solr><bool name=\"unknown-bool-option\">true</bool><str name=\"unknown-str-option\">true</str></solr>";
+        "<solr><bool name=\"unknown-bool-option\">true</bool></solr>";
 
     expectedException.expect(SolrException.class);
     expectedException.expectMessage("Unknown configuration value in solr.xml: unknown-bool-option");
