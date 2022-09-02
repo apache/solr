@@ -232,7 +232,7 @@ public class ZkStateReader implements SolrCloseable {
       var provider = (ZkClientClusterStateProvider) solrClient.getClusterStateProvider();
       return provider.getZkStateReader();
     } catch (ClassCastException e) {
-      throw new IllegalArgumentException("client has no Zk stateReader", e);
+      throw new IllegalArgumentException("client must be ZK based", e);
     }
   }
 
@@ -814,7 +814,7 @@ public class ZkStateReader implements SolrCloseable {
         if (cachedDocCollection != null) {
           Stat freshStats = null;
           try {
-            freshStats = zkClient.exists(getCollectionPath(collName), null, true);
+            freshStats = zkClient.exists(DocCollection.getCollectionPath(collName), null, true);
           } catch (Exception e) {
           }
           if (freshStats != null
@@ -1256,7 +1256,7 @@ public class ZkStateReader implements SolrCloseable {
    * @param cacheForMillis The minimum number of milliseconds to maintain a cache for the specified
    *     collection's properties. Setting a {@code CollectionPropsWatcher} will override this value
    *     and retain the cache for the life of the watcher. A lack of changes in zookeeper may allow
-   *     the caching to remain for a greater duration up to the cycle time of {@link CacheCleaner}.
+   *     the caching to remain for a greater duration up to the cycle time of {@code CacheCleaner}.
    *     Passing zero for this value will explicitly remove the cached copy if and only if it is due
    *     to expire and no watch exists. Any positive value will extend the expiration time if
    *     required.
@@ -1404,7 +1404,7 @@ public class ZkStateReader implements SolrCloseable {
 
     StateWatcher(String coll) {
       this.coll = coll;
-      collectionPath = getCollectionPath(coll);
+      collectionPath = DocCollection.getCollectionPath(coll);
     }
 
     @Override
@@ -1682,13 +1682,13 @@ public class ZkStateReader implements SolrCloseable {
 
   private DocCollection fetchCollectionState(String coll, Watcher watcher)
       throws KeeperException, InterruptedException {
-    String collectionPath = getCollectionPath(coll);
+    String collectionPath = DocCollection.getCollectionPath(coll);
     while (true) {
       ClusterState.initReplicaStateProvider(
           () -> {
             try {
               PerReplicaStates replicaStates =
-                  PerReplicaStates.fetch(collectionPath, zkClient, null);
+                  PerReplicaStatesFetcher.fetch(collectionPath, zkClient, null);
               log.debug(
                   "per-replica-state ver: {} fetched for initializing {} ",
                   replicaStates.cversion,
@@ -1707,7 +1707,7 @@ public class ZkStateReader implements SolrCloseable {
         // old ZK location.
         // TODO in Solr 10 remove that factory method
         ClusterState state =
-            ClusterState.createFromJsonSupportingLegacyConfigName(
+            ZkClientClusterStateProvider.createFromJsonSupportingLegacyConfigName(
                 stat.getVersion(), data, Collections.emptySet(), coll, zkClient);
 
         ClusterState.CollectionRef collectionRef = state.getCollectionStates().get(coll);
@@ -1729,12 +1729,14 @@ public class ZkStateReader implements SolrCloseable {
     }
   }
 
+  @Deprecated // see DocCollection
   public static String getCollectionPathRoot(String coll) {
-    return COLLECTIONS_ZKNODE + "/" + coll;
+    return DocCollection.getCollectionPathRoot(coll);
   }
 
+  @Deprecated // see DocCollection
   public static String getCollectionPath(String coll) {
-    return getCollectionPathRoot(coll) + "/state.json";
+    return DocCollection.getCollectionPath(coll);
   }
 
   /**
@@ -1861,7 +1863,7 @@ public class ZkStateReader implements SolrCloseable {
   private DocCollection updatePerReplicaState(DocCollection c) {
     if (c == null || !c.isPerReplicaState()) return c;
     PerReplicaStates current = c.getPerReplicaStates();
-    PerReplicaStates newPrs = PerReplicaStates.fetch(c.getZNode(), zkClient, current);
+    PerReplicaStates newPrs = PerReplicaStatesFetcher.fetch(c.getZNode(), zkClient, current);
     if (newPrs != current) {
       if (log.isDebugEnabled()) {
         log.debug("update for a fresh per-replica-state {}", c.getName());

@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ClusterProperties;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -257,7 +258,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
         zkController
             .getZkClient()
             .makePath(
-                ZkStateReader.getCollectionPathRoot(collectionName),
+                DocCollection.getCollectionPathRoot(collectionName),
                 new byte[0],
                 CreateMode.PERSISTENT,
                 true);
