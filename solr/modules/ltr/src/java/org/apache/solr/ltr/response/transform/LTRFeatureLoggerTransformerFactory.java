@@ -133,15 +133,15 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     SolrQueryRequestContextUtils.setFvStoreName(
         req, (fvStoreName == null ? defaultStore : fvStoreName));
 
-    // Create and supply the feature logger to be used
-    SolrQueryRequestContextUtils.setFeatureLogger(
-        req, createFeatureLogger(localparams.get(FV_FORMAT)));
-
     boolean missingFeatures = false;
     String missingFeatureExternalParameter = localparams.get(MISSING_FEATURES);
     if (missingFeatureExternalParameter != null) {
       missingFeatures = Boolean.parseBoolean(missingFeatureExternalParameter);
     }
+
+    // Create and supply the feature logger to be used
+    SolrQueryRequestContextUtils.setFeatureLogger(
+        req, createFeatureLogger(localparams.get(FV_FORMAT), missingFeatures));
 
     return new FeatureTransformer(
         name, localparams, req, (fvStoreName != null) /* hasExplicitFeatureStore */, missingFeatures);
@@ -154,7 +154,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
    *
    * @return a feature logger for the format specified.
    */
-  private FeatureLogger createFeatureLogger(String formatStr) {
+  private FeatureLogger createFeatureLogger(String formatStr, boolean missingFeatures) {
     final FeatureLogger.FeatureFormat format;
     if (formatStr != null) {
       format = FeatureLogger.FeatureFormat.valueOf(formatStr.toUpperCase(Locale.ROOT));
@@ -164,7 +164,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     if (fvCacheName == null) {
       throw new IllegalArgumentException("a fvCacheName must be configured");
     }
-    return new CSVFeatureLogger(fvCacheName, format, csvKeyValueDelimiter, csvFeatureSeparator);
+    return new CSVFeatureLogger(fvCacheName, format, csvKeyValueDelimiter, csvFeatureSeparator, missingFeatures);
   }
 
   class FeatureTransformer extends DocTransformer {

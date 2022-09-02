@@ -369,16 +369,23 @@ public class LTRScoringQuery extends Query implements Accountable {
   public static class FeatureInfo {
     private final String name;
     private float value;
+
+    private Float withNullValue;
     private boolean used;
 
-    FeatureInfo(String n, float v, boolean u) {
+    FeatureInfo(String n, float v, Float nv, boolean u) {
       name = n;
       value = v;
+      withNullValue = nv;
       used = u;
     }
 
     public void setValue(float value) {
       this.value = value;
+    }
+
+    public void setWithNullValue(Float value) {
+      this.withNullValue = value;
     }
 
     public String getName() {
@@ -387,6 +394,10 @@ public class LTRScoringQuery extends Query implements Accountable {
 
     public float getValue() {
       return value;
+    }
+
+    public float getWithNullValue() {
+      return withNullValue;
     }
 
     public boolean isUsed() {
@@ -448,7 +459,7 @@ public class LTRScoringQuery extends Query implements Accountable {
         String featName = extractedFeatureWeights[i].getName();
         int featId = extractedFeatureWeights[i].getIndex();
         float value = extractedFeatureWeights[i].getDefaultValue();
-        featuresInfo[featId] = new FeatureInfo(featName, value, false);
+        featuresInfo[featId] = new FeatureInfo(featName, value, Float.NaN, false);
       }
     }
 
@@ -499,7 +510,7 @@ public class LTRScoringQuery extends Query implements Accountable {
         FeatureInfo fInfo = featuresInfo[featureId];
         // not checking for finfo == null as that would be a bug we should catch
         if (fInfo.isUsed()) {
-          modelFeatureValuesNormalizedWithMissingBranch[pos] = fInfo.getValue();
+          modelFeatureValuesNormalizedWithMissingBranch[pos] = fInfo.getWithNullValue();
         } else {
           modelFeatureValuesNormalizedWithMissingBranch[pos] = Float.NaN;
         }
@@ -542,6 +553,7 @@ public class LTRScoringQuery extends Query implements Accountable {
         // need to set default value everytime as the default value is used in 'dense'
         // mode even if used=false
         featuresInfo[featId].setValue(value);
+        featuresInfo[featId].setWithNullValue(Float.NaN);
         featuresInfo[featId].setUsed(false);
       }
     }
@@ -648,7 +660,7 @@ public class LTRScoringQuery extends Query implements Accountable {
         @Override
         public float score() throws IOException {
           final DisiWrapper topList = subScorers.topList();
-          // If target doc we wanted to advance to matches the actual doc
+          // If target doc we wanted to advance to match the actual doc
           // the underlying features advanced to, perform the feature
           // calculations,
           // otherwise just continue with the model's scoring process with empty
@@ -660,6 +672,7 @@ public class LTRScoringQuery extends Query implements Accountable {
               Feature.FeatureWeight scFW = (Feature.FeatureWeight) subScorer.getWeight();
               final int featureId = scFW.getIndex();
               featuresInfo[featureId].setValue(subScorer.score());
+              featuresInfo[featureId].setWithNullValue(subScorer.score());
               featuresInfo[featureId].setUsed(true);
             }
           }
@@ -708,7 +721,7 @@ public class LTRScoringQuery extends Query implements Accountable {
 
           @Override
           public final int advance(int target) throws IOException {
-            // If target doc we wanted to advance to matches the actual doc
+            // If target doc we wanted to advance to match the actual doc
             // the underlying features advanced to, perform the feature
             // calculations,
             // otherwise just continue with the model's scoring process with
@@ -750,6 +763,7 @@ public class LTRScoringQuery extends Query implements Accountable {
                 Feature.FeatureWeight scFW = (Feature.FeatureWeight) scorer.getWeight();
                 final int featureId = scFW.getIndex();
                 featuresInfo[featureId].setValue(scorer.score());
+                featuresInfo[featureId].setWithNullValue(scorer.score());
                 featuresInfo[featureId].setUsed(true);
               }
             }

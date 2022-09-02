@@ -23,16 +23,21 @@ public class CSVFeatureLogger extends FeatureLogger {
   private final char keyValueSep;
   private final char featureSep;
 
+  private final boolean missingFeatures;
+
   public CSVFeatureLogger(String fvCacheName, FeatureFormat f) {
     super(fvCacheName, f);
     this.keyValueSep = DEFAULT_KEY_VALUE_SEPARATOR;
     this.featureSep = DEFAULT_FEATURE_SEPARATOR;
+    this.missingFeatures = false;
   }
 
-  public CSVFeatureLogger(String fvCacheName, FeatureFormat f, char keyValueSep, char featureSep) {
+  public CSVFeatureLogger(String fvCacheName, FeatureFormat f, char keyValueSep, char featureSep,
+                          boolean missingFeatures) {
     super(fvCacheName, f);
     this.keyValueSep = keyValueSep;
     this.featureSep = featureSep;
+    this.missingFeatures = missingFeatures;
   }
 
   @Override
@@ -44,10 +49,18 @@ public class CSVFeatureLogger extends FeatureLogger {
     boolean isDense = featureFormat.equals(FeatureFormat.DENSE);
     for (LTRScoringQuery.FeatureInfo featInfo : featuresInfo) {
       if (featInfo.isUsed() || isDense) {
-        sb.append(featInfo.getName())
-            .append(keyValueSep)
-            .append(featInfo.getValue())
-            .append(featureSep);
+        if (missingFeatures) {
+          sb.append(featInfo.getName())
+                  .append(keyValueSep)
+                  .append(featInfo.getWithNullValue())
+                  .append(featureSep);
+        }
+        else {
+          sb.append(featInfo.getName())
+                  .append(keyValueSep)
+                  .append(featInfo.getValue())
+                  .append(featureSep);
+        }
       }
     }
 
