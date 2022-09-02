@@ -73,6 +73,7 @@ Improvements
 
 * SOLR-16353: Make SplitShardCmd#checkDiskSpace disableable through a system property. (Haythem Khiri)
 
+* SOLR-16362: Logs: Truncate field values in logs if a doc fails to index. (Nazerke Seidan, David Smiley)
 
 Optimizations
 ---------------------
