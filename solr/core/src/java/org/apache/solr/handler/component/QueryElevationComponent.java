@@ -48,10 +48,6 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.function.Consumer;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -70,10 +66,10 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.QueryElevationParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -89,12 +85,13 @@ import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.grouping.GroupingSpecification;
+import org.apache.solr.util.DOMConfigNode;
+import org.apache.solr.util.DataConfigNode;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 /**
  * A component to elevate some documents to the top of the result set.
@@ -414,32 +411,29 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    *     (either {@link RuntimeException} or {@link org.apache.solr.common.SolrException}).
    */
   protected ElevationProvider loadElevationProvider(XmlConfigFile config) {
+    DataConfigNode root =
+        new DataConfigNode(new DOMConfigNode(config.getDocument().getDocumentElement()));
     Map<ElevatingQuery, ElevationBuilder> elevationBuilderMap = new LinkedHashMap<>();
-    XPath xpath = XPathFactory.newInstance().newXPath();
-    NodeList nodes = (NodeList) config.evaluate("elevate/query", XPathConstants.NODESET);
-    for (int i = 0; i < nodes.getLength(); i++) {
-      Node node = nodes.item(i);
-      String queryString = DOMUtil.getAttr(node, "text", "missing query 'text'");
-      String matchString = DOMUtil.getAttr(node, "match");
+    for (ConfigNode node : root.getAll("query")) {
+      String queryString =
+          node.requiredStrAttr(
+              "text",
+              () ->
+                  new RuntimeException("missing query 'text': missing mandatory attribute 'text'"));
+      String matchString = node.attr("match");
       ElevatingQuery elevatingQuery =
           new ElevatingQuery(queryString, isSubsetMatchPolicy(matchString));
+      List<ConfigNode> children = node.getAll("doc");
 
-      NodeList children;
-      try {
-        children = (NodeList) xpath.evaluate("doc", node, XPathConstants.NODESET);
-      } catch (XPathExpressionException e) {
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR, "query requires '<doc .../>' child");
-      }
-
-      if (children.getLength() == 0) { // weird
+      if (children.size() == 0) { // weird
         continue;
       }
       ElevationBuilder elevationBuilder = new ElevationBuilder();
-      for (int j = 0; j < children.getLength(); j++) {
-        Node child = children.item(j);
-        String id = DOMUtil.getAttr(child, "id", "missing 'id'");
-        String e = DOMUtil.getAttr(child, EXCLUDE, null);
+      for (ConfigNode child : children) {
+        String id =
+            node.requiredStrAttr(
+                "id", () -> new RuntimeException("missing 'id': missing mandatory attribute 'id'"));
+        String e = child.attr(EXCLUDE);
         if (e != null) {
           if (Boolean.valueOf(e)) {
             elevationBuilder.addExcludedIds(Collections.singleton(id));

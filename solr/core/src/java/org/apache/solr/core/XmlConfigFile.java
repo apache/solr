@@ -223,6 +223,7 @@ public class XmlConfigFile { // formerly simply "Config"
     return doc;
   }
 
+  @Deprecated
   public XPath getXPath() {
     return xpathFactory.newXPath();
   }
@@ -231,6 +232,7 @@ public class XmlConfigFile { // formerly simply "Config"
     return (prefix == null || path.startsWith("/")) ? path : prefix + path;
   }
 
+  @Deprecated
   public Object evaluate(String path, QName type) {
     XPath xpath = xpathFactory.newXPath();
     try {
@@ -250,6 +252,7 @@ public class XmlConfigFile { // formerly simply "Config"
     return getNode(path, doc, errifMissing);
   }
 
+  @Deprecated
   public Node getNode(String path, Document doc, boolean errIfMissing) {
     XPath xpath = xpathFactory.newXPath();
     String xstr = normalize(path);
@@ -286,6 +289,7 @@ public class XmlConfigFile { // formerly simply "Config"
     }
   }
 
+  @Deprecated
   public NodeList getNodeList(String path, boolean errIfMissing) {
     XPath xpath = xpathFactory.newXPath();
     String xstr = normalize(path);
@@ -322,6 +326,7 @@ public class XmlConfigFile { // formerly simply "Config"
    * Returns the set of attributes on the given element that are not among the given
    * knownAttributes, or null if all attributes are known.
    */
+  @Deprecated
   public Set<String> getUnknownAttributes(Element element, String... knownAttributes) {
     Set<String> knownAttributeSet = new HashSet<>(Arrays.asList(knownAttributes));
     Set<String> unknownAttributeSet = null;
@@ -342,6 +347,7 @@ public class XmlConfigFile { // formerly simply "Config"
    * Logs an error and throws an exception if any of the element(s) at the given elementXpath
    * contains an attribute name that is not among knownAttributes.
    */
+  @Deprecated
   public void complainAboutUnknownAttributes(String elementXpath, String... knownAttributes) {
     SortedMap<String, SortedSet<String>> problems = new TreeMap<>();
     NodeList nodeList = getNodeList(elementXpath, false);
@@ -380,6 +386,7 @@ public class XmlConfigFile { // formerly simply "Config"
     }
   }
 
+  @Deprecated
   public String getVal(String path, boolean errIfMissing) {
     Node nd = getNode(path, errIfMissing);
     if (nd == null) return null;
@@ -390,10 +397,12 @@ public class XmlConfigFile { // formerly simply "Config"
     return txt;
   }
 
+  @Deprecated
   public String get(String path) {
     return getVal(path, true);
   }
 
+  @Deprecated
   public String get(String path, String def) {
     String val = getVal(path, false);
     if (val == null || val.length() == 0) {
@@ -402,37 +411,45 @@ public class XmlConfigFile { // formerly simply "Config"
     return val;
   }
 
+  @Deprecated
   public int getInt(String path) {
     return Integer.parseInt(getVal(path, true));
   }
 
+  @Deprecated
   public int getInt(String path, int def) {
     String val = getVal(path, false);
     return val != null ? Integer.parseInt(val) : def;
   }
 
+  @Deprecated
   public boolean getBool(String path) {
     return Boolean.parseBoolean(getVal(path, true));
   }
 
+  @Deprecated
   public boolean getBool(String path, boolean def) {
     String val = getVal(path, false);
     return val != null ? Boolean.parseBoolean(val) : def;
   }
 
+  @Deprecated
   public float getFloat(String path) {
     return Float.parseFloat(getVal(path, true));
   }
 
+  @Deprecated
   public float getFloat(String path, float def) {
     String val = getVal(path, false);
     return val != null ? Float.parseFloat(val) : def;
   }
 
+  @Deprecated
   public double getDouble(String path) {
     return Double.parseDouble(getVal(path, true));
   }
 
+  @Deprecated
   public double getDouble(String path, double def) {
     String val = getVal(path, false);
     return val != null ? Double.parseDouble(val) : def;
