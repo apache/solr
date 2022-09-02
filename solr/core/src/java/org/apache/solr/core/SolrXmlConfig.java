@@ -249,19 +249,19 @@ public class SolrXmlConfig {
     return fromFile(solrHome, solrHome.resolve(SOLR_XML_FILE), substituteProps);
   }
 
-  private static void checkForIllegalConfig(ConfigNode cfg) {
-    failIfFound(cfg.attr("coreLoadThreads"), "solr/@coreLoadThreads");
-    failIfFound(cfg.attr("persistent"), "solr/@persistent");
-    failIfFound(cfg.attr("sharedLib"), "solr/@sharedLib");
-    failIfFound(cfg.attr("zkHost"), "solr/@zkHost");
-    failIfFound(cfg.attr("zkHost"), "solr/@zkHost");
-    failIfFound(cfg.get("cores").exists() ? "" : null, "solr/cores");
+  private static void checkForIllegalConfig(ConfigNode root) {
+    failIfFound(root.attr("coreLoadThreads"), "solr/@coreLoadThreads");
+    failIfFound(root.attr("persistent"), "solr/@persistent");
+    failIfFound(root.attr("sharedLib"), "solr/@sharedLib");
+    failIfFound(root.attr("zkHost"), "solr/@zkHost");
+    failIfFound(root.attr("zkHost"), "solr/@zkHost");
+    failIfFound(root.get("cores").exists() ? "" : null, "solr/cores");
 
-    assertSingleInstance(cfg.getAll("solrcloud"), "solrcloud");
-    assertSingleInstance(cfg.getAll("logging"), "logging");
-    assertSingleInstance(cfg.get("logging").getAll("watcher"), "logging/watcher");
-    assertSingleInstance(cfg.getAll("backup"), "backup");
-    assertSingleInstance(cfg.getAll("coreAdminHandlerActions"), "coreAdminHandlerActions");
+    assertSingleInstance(root.getAll("solrcloud"), "solrcloud");
+    assertSingleInstance(root.getAll("logging"), "logging");
+    assertSingleInstance(root.get("logging").getAll("watcher"), "logging/watcher");
+    assertSingleInstance(root.getAll("backup"), "backup");
+    assertSingleInstance(root.getAll("coreAdminHandlerActions"), "coreAdminHandlerActions");
   }
 
   private static void assertSingleInstance(List<ConfigNode> l, String section) {
