@@ -234,9 +234,12 @@ public class SolrXmlConfig {
       try (ByteArrayInputStream dup = new ByteArrayInputStream(buf)) {
         XmlConfigFile config =
             new XmlConfigFile(loader, null, new InputSource(dup), null, substituteProps);
-        ConfigNode root =
-            new DataConfigNode(new DOMConfigNode(config.getDocument().getDocumentElement()));
-        return fromConfig(solrHome, substituteProps, fromZookeeper, root, loader);
+        return fromConfig(
+            solrHome,
+            substituteProps,
+            fromZookeeper,
+            new DataConfigNode(new DOMConfigNode(config.getDocument().getDocumentElement())),
+            loader);
       }
     } catch (SolrException exc) {
       throw exc;
