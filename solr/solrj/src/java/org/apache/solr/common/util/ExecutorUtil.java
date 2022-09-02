@@ -113,6 +113,8 @@ public class ExecutorUtil {
         }
       }
     } catch (InterruptedException ie) {
+      // (Re-)Cancel if current thread also interrupted
+      pool.shutdownNow();
       // Preserve interrupt status
       Thread.currentThread().interrupt();
     }
