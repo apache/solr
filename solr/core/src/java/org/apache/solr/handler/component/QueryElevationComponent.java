@@ -91,7 +91,6 @@ import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Node;
 
 /**
  * A component to elevate some documents to the top of the result set.
@@ -414,31 +413,28 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     DataConfigNode root =
         new DataConfigNode(new DOMConfigNode(config.getDocument().getDocumentElement()));
     Map<ElevatingQuery, ElevationBuilder> elevationBuilderMap = new LinkedHashMap<>();
-    for (ConfigNode node : root.getAll("query")) {
+    for (ConfigNode query : root.getAll("query")) {
       String queryString =
-          node.requiredStrAttr(
+          query.requiredStrAttr(
               "text",
               () ->
                   new RuntimeException("missing query 'text': missing mandatory attribute 'text'"));
-      String matchString = node.attr("match");
+      String matchString = query.attr("match");
       ElevatingQuery elevatingQuery =
           new ElevatingQuery(queryString, isSubsetMatchPolicy(matchString));
-      List<ConfigNode> children = node.getAll("doc");
+      List<ConfigNode> children = query.getAll("doc");
 
       if (children.size() == 0) { // weird
         continue;
       }
       ElevationBuilder elevationBuilder = new ElevationBuilder();
-      for (ConfigNode child : children) {
+      for (ConfigNode doc : children) {
         String id =
-            node.requiredStrAttr(
+            doc.requiredStrAttr(
                 "id", () -> new RuntimeException("missing 'id': missing mandatory attribute 'id'"));
-        String e = child.attr(EXCLUDE);
-        if (e != null) {
-          if (Boolean.valueOf(e)) {
-            elevationBuilder.addExcludedIds(Collections.singleton(id));
-            continue;
-          }
+        if (doc.boolAttr(EXCLUDE, false)) {
+          elevationBuilder.addExcludedIds(Collections.singleton(id));
+          continue;
         }
         elevationBuilder.addElevatedIds(Collections.singletonList(id));
       }
