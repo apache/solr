@@ -2432,7 +2432,7 @@ public class CoreContainer {
   }
 
   public static void setWeakStringInterner() {
-    boolean enable = "true".equals(System.getProperty("use.str.intern", "true"));
+    boolean enable = "true".equals(System.getProperty("solr.use.str.intern", "true"));
     if (!enable) return;
     Interner<String> interner = Interner.newWeakInterner();
     ClusterState.setStrInternerParser(
