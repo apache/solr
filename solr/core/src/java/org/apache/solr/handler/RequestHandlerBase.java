@@ -16,14 +16,9 @@
  */
 package org.apache.solr.handler;
 
-import static org.apache.solr.core.RequestParams.USEPARAM;
-
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
-import java.lang.invoke.MethodHandles;
-import java.util.Collection;
-import java.util.Collections;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.ApiSupport;
@@ -46,6 +41,12 @@ import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.lang.invoke.MethodHandles;
+import java.util.Collection;
+import java.util.Collections;
+
+import static org.apache.solr.core.RequestParams.USEPARAM;
 
 /** Base class for all request handlers. */
 public abstract class RequestHandlerBase
@@ -247,15 +248,8 @@ public abstract class RequestHandlerBase
   public static Exception normalizeReceivedException(SolrQueryRequest req, Exception e) {
     if (req.getCore() != null) {
       assert req.getCoreContainer() != null;
-      boolean isTragic = req.getCoreContainer().checkTragicException(req.getCore());
-      if (isTragic) {
-        if (e instanceof SolrException) {
-          // Tragic exceptions should always throw a server error
-          assert ((SolrException) e).code() == 500;
-        } else {
-          // wrap it in a solr exception
-          return new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
-        }
+      if (req.getCoreContainer().checkTragicException(req.getCore())) {
+        return SolrException.wrapLuceneTragicExceptionIfNecessary(e);
       }
     }
 

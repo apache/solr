@@ -17,12 +17,13 @@
 
 package org.apache.solr.handler.api;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.response.SolrQueryResponse;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /** Utilities helpful for common V2 API declaration tasks. */
 public class V2ApiUtils {
@@ -47,21 +48,24 @@ public class V2ApiUtils {
 
   /**
    * Convert a JacksonReflectMapWriter (typically a {@link
-   * org.apache.solr.jersey.SolrJerseyResponse}) into the NamedList on a SolrQueryResponse
+   * org.apache.solr.jersey.SolrJerseyResponse}) into the NamedList on a SolrQueryResponse, omitting the response header
    *
    * @param rsp the response to attach the resulting NamedList to
    * @param mw the input object to be converted into a NamedList
-   * @param trimHeader should the 'responseHeader' portion of the response be added to the
-   *     NamedList, or should populating that header be left to code elsewhere. This value should
-   *     usually be 'false' when called from v2 code, and 'true' when called from v1 code.
    */
-  public static void squashIntoSolrResponse(
-      SolrQueryResponse rsp, JacksonReflectMapWriter mw, boolean trimHeader) {
-    squashIntoNamedList(rsp.getValues(), mw, trimHeader);
+  public static void squashIntoSolrResponseWithoutHeader(SolrQueryResponse rsp, JacksonReflectMapWriter mw) {
+    squashIntoNamedList(rsp.getValues(), mw, true);
   }
 
-  public static void squashIntoSolrResponse(SolrQueryResponse rsp, JacksonReflectMapWriter mw) {
-    squashIntoSolrResponse(rsp, mw, false);
+  /**
+   * Convert a JacksonReflectMapWriter (typically a {@link
+   * org.apache.solr.jersey.SolrJerseyResponse}) into the NamedList on a SolrQueryResponse, including the response header
+   *
+   * @param rsp the response to attach the resulting NamedList to
+   * @param mw the input object to be converted into a NamedList
+   */
+  public static void squashIntoSolrResponseWithHeader(SolrQueryResponse rsp, JacksonReflectMapWriter mw) {
+    squashIntoNamedList(rsp.getValues(), mw, false);
   }
 
   public static void squashIntoNamedList(

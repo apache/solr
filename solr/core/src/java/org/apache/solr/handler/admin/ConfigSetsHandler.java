@@ -16,16 +16,7 @@
  */
 package org.apache.solr.handler.admin;
 
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.handler.configsets.UploadConfigSetFileAPI.FILEPATH_PLACEHOLDER;
-
 import com.google.common.collect.Maps;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
@@ -54,6 +45,16 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.handler.configsets.UploadConfigSetFileAPI.FILEPATH_PLACEHOLDER;
 
 /** A {@link org.apache.solr.request.SolrRequestHandler} for ConfigSets API requests. */
 public class ConfigSetsHandler extends RequestHandlerBase implements PermissionNameProvider {
@@ -144,7 +145,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
         break;
       case LIST:
         final ListConfigSetsAPI listConfigSetsAPI = new ListConfigSetsAPI(coreContainer);
-        V2ApiUtils.squashIntoSolrResponse(rsp, listConfigSetsAPI.listConfigSet(), true);
+        V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, listConfigSetsAPI.listConfigSet());
         break;
       case CREATE:
         final String newConfigSetName = req.getParams().get(NAME);
@@ -217,9 +218,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
 
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
-    final List<Class<? extends JerseyResource>> endpoints = new ArrayList<>();
-    endpoints.add(ListConfigSetsAPI.class);
-    return endpoints;
+    return List.of(ListConfigSetsAPI.class);
   }
 
   @Override

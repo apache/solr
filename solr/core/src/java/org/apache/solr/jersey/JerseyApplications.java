@@ -17,12 +17,13 @@
 
 package org.apache.solr.jersey;
 
-import java.util.Map;
-import javax.inject.Singleton;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.SolrCore;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.server.ResourceConfig;
+
+import javax.inject.Singleton;
+import java.util.Map;
 
 /**
  * JAX-RS "application" configurations for Solr's {@link org.apache.solr.core.CoreContainer} and
@@ -46,8 +47,8 @@ public class JerseyApplications {
 
       // Request lifecycle logic
       register(CatchAllExceptionMapper.class);
-      register(PreRequestMetricsFilter.class);
-      register(PostRequestMetricsFilter.class);
+      register(RequestMetricHandling.PreRequestMetricsFilter.class);
+      register(RequestMetricHandling.PostRequestMetricsFilter.class);
       register(PostRequestDecorationFilter.class);
       register(
           new AbstractBinder() {

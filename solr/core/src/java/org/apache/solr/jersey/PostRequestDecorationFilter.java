@@ -17,19 +17,20 @@
 
 package org.apache.solr.jersey;
 
-import static org.apache.solr.jersey.RequestContextConstants.SOLR_QUERY_REQUEST_KEY;
-
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerResponseContext;
-import javax.ws.rs.container.ContainerResponseFilter;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ContainerResponseContext;
+import javax.ws.rs.container.ContainerResponseFilter;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+
+import static org.apache.solr.jersey.RequestContextConstants.SOLR_QUERY_REQUEST_KEY;
 
 /**
  * Applies standard post-processing decorations to a {@link SolrJerseyResponse} that are needed on
@@ -53,7 +54,6 @@ public class PostRequestDecorationFilter implements ContainerResponseFilter {
       return;
     }
 
-    log.info("JEGERLOW: Setting QTime");
     final SolrJerseyResponse response = (SolrJerseyResponse) responseContext.getEntity();
     response.responseHeader.qTime = Math.round(solrQueryRequest.getRequestTimer().getTime());
   }

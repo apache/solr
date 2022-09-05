@@ -1656,7 +1656,6 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
           ((CloudLegacySolrClient) cloudClient).getHttpClient().execute(httpRequest).getEntity();
       try {
         response = EntityUtils.toString(entity, UTF_8);
-        log.info("Response came back as: {}", response);
         m = (Map<?, ?>) Utils.fromJSONString(response);
       } catch (JSONParser.ParseException e) {
         System.err.println("err response: " + response);

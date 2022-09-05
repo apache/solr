@@ -32,8 +32,8 @@ import org.glassfish.hk2.api.Factory;
  * <p>This isn't ideal, as requestHandler's don't really "fit" conceptually here. But it's
  * unavoidable while we want our v2 APIs to exactly match the metrics produced by v1 calls.
  *
- * @see PreRequestMetricsFilter
- * @see PostRequestMetricsFilter
+ * @see RequestMetricHandling.PreRequestMetricsFilter
+ * @see RequestMetricHandling.PostRequestMetricsFilter
  */
 public class MetricBeanFactory implements Factory<PluginBag.JerseyMetricsLookupRegistry> {
 

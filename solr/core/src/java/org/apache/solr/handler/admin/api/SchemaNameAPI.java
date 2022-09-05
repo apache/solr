@@ -17,16 +17,19 @@
 
 package org.apache.solr.handler.admin.api;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.jersey.PermissionName;
+import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.security.PermissionNameProvider;
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 
 /**
  * V2 API for checking the name of an in-use schema.
@@ -56,5 +59,13 @@ public class SchemaNameAPI extends JerseyResource {
 
     response.name = schema.getSchemaName();
     return response;
+  }
+
+  /**
+   * Response for {@link SchemaNameAPI}.
+   */
+  public static class GetSchemaNameResponse extends SolrJerseyResponse {
+    @JsonProperty("name")
+    public String name;
   }
 }

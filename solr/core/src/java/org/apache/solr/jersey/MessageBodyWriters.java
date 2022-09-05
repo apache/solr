@@ -17,22 +17,6 @@
 
 package org.apache.solr.jersey;
 
-import static org.apache.solr.jersey.RequestContextConstants.SOLR_QUERY_REQUEST_KEY;
-import static org.apache.solr.jersey.RequestContextConstants.SOLR_QUERY_RESPONSE_KEY;
-import static org.apache.solr.response.QueryResponseWriter.CONTENT_TYPE_TEXT_UTF8;
-
-import java.io.IOException;
-import java.io.OutputStream;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Type;
-import javax.ws.rs.Produces;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ResourceContext;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.ext.MessageBodyWriter;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.BinaryResponseWriter;
@@ -41,6 +25,23 @@ import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.QueryResponseWriterUtil;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.XMLResponseWriter;
+
+import javax.ws.rs.Produces;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ResourceContext;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.ext.MessageBodyWriter;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
+
+import static org.apache.solr.jersey.RequestContextConstants.SOLR_QUERY_REQUEST_KEY;
+import static org.apache.solr.jersey.RequestContextConstants.SOLR_QUERY_RESPONSE_KEY;
+import static org.apache.solr.response.QueryResponseWriter.CONTENT_TYPE_TEXT_UTF8;
 
 /**
  * A collection of thin Jersey shims around Solr's existing {@link QueryResponseWriter} interface
@@ -64,7 +65,7 @@ public class MessageBodyWriters {
     }
   }
 
-  @Produces("application/javabin")
+  @Produces("application/octet-stream")
   public static class JavabinMessageBodyWriter extends BaseMessageBodyWriter
       implements MessageBodyWriter<JacksonReflectMapWriter> {
     @Override
@@ -74,7 +75,7 @@ public class MessageBodyWriters {
 
     @Override
     public String getSupportedMediaType() {
-      return "application/javabin";
+      return "application/octet-stream";
     }
   }
 
@@ -125,7 +126,7 @@ public class MessageBodyWriters {
       final SolrQueryResponse solrQueryResponse =
           (SolrQueryResponse) requestContext.getProperty(SOLR_QUERY_RESPONSE_KEY);
 
-      V2ApiUtils.squashIntoSolrResponse(solrQueryResponse, reflectMapWriter);
+      V2ApiUtils.squashIntoSolrResponseWithHeader(solrQueryResponse, reflectMapWriter);
       QueryResponseWriterUtil.writeQueryResponse(
           entityStream, responseWriter, solrQueryRequest, solrQueryResponse, mediaType.toString());
     }

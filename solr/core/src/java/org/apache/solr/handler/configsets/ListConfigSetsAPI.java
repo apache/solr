@@ -16,7 +16,11 @@
  */
 package org.apache.solr.handler.configsets;
 
-import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import org.apache.solr.api.JerseyResource;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.jersey.PermissionName;
+import org.apache.solr.jersey.SolrJerseyResponse;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
@@ -24,9 +28,9 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
-import org.apache.solr.api.JerseyResource;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.jersey.PermissionName;
+import java.util.List;
+
+import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
 
 /**
  * V2 API for adding or updating a single file within a configset.
@@ -49,8 +53,15 @@ public class ListConfigSetsAPI extends JerseyResource {
   @Produces({"application/json", "application/javabin"})
   @PermissionName(CONFIG_READ_PERM)
   public ListConfigsetsResponse listConfigSet() throws Exception {
-    final ListConfigsetsResponse response = new ListConfigsetsResponse();
+    final ListConfigsetsResponse response = instantiateJerseyResponse(ListConfigsetsResponse.class);
     response.configSets = coreContainer.getConfigSetService().listConfigs();
     return response;
+  }
+
+  /** Response body POJO for the {@link ListConfigSetsAPI} resource. */
+  public static class ListConfigsetsResponse extends SolrJerseyResponse {
+
+    @JsonProperty("configSets")
+    public List<String> configSets;
   }
 }

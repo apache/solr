@@ -16,22 +16,6 @@
  */
 package org.apache.solr.core;
 
-import static java.util.Collections.singletonMap;
-import static org.apache.solr.api.ApiBag.HANDLER_NAME;
-
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
@@ -52,6 +36,23 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
+import static java.util.Collections.singletonMap;
+import static org.apache.solr.api.ApiBag.HANDLER_NAME;
 
 /** This manages the lifecycle of a set of plugin of the same type . */
 public class PluginBag<T> implements AutoCloseable {
@@ -198,9 +199,7 @@ public class PluginBag<T> implements AutoCloseable {
 
   /** register a plugin by a name */
   public T put(String name, T plugin) {
-
     if (plugin == null) return null;
-
     PluginHolder<T> pluginHolder = new PluginHolder<>(null, plugin);
     pluginHolder.registerAPI = false;
     PluginHolder<T> old = put(name, pluginHolder);
@@ -211,7 +210,6 @@ public class PluginBag<T> implements AutoCloseable {
   public PluginHolder<T> put(String name, PluginHolder<T> plugin) {
     Boolean registerApi = null;
     Boolean disableHandler = null;
-
     if (plugin.pluginInfo != null) {
       String registerAt = plugin.pluginInfo.attributes.get("registerPath");
       if (registerAt != null) {

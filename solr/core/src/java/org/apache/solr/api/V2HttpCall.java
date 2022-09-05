@@ -66,8 +66,6 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.jersey.RequestContextConstants.SOLR_QUERY_REQUEST_KEY;
-import static org.apache.solr.jersey.RequestContextConstants.SOLR_QUERY_RESPONSE_KEY;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
@@ -79,6 +77,7 @@ public class V2HttpCall extends HttpSolrCall {
   private Api api;
   private List<String> pathSegments;
   private String prefix;
+  private boolean servedByJaxRs = false; // A flag indicating whether the request was served by JAX-RS or the native framework
   HashMap<String, String> parts = new HashMap<>();
   static final Set<String> knownPrefixes = Set.of("cluster", "node", "collections", "cores", "c");
 
@@ -341,8 +340,8 @@ public class V2HttpCall extends HttpSolrCall {
               req, response, jerseyHandler.getConfiguration());
 
       // Set properties that may be used by Jersey filters downstream
-      containerRequest.setProperty(SOLR_QUERY_REQUEST_KEY, solrReq);
-      containerRequest.setProperty(SOLR_QUERY_RESPONSE_KEY, rsp);
+      containerRequest.setProperty(RequestContextConstants.SOLR_QUERY_REQUEST_KEY, solrReq);
+      containerRequest.setProperty(RequestContextConstants.SOLR_QUERY_RESPONSE_KEY, rsp);
       containerRequest.setProperty(RequestContextConstants.CORE_CONTAINER_KEY, cores);
       containerRequest.setProperty(RequestContextConstants.HTTP_SERVLET_REQ_KEY, req);
       containerRequest.setProperty(RequestContextConstants.REQUEST_TYPE_KEY, requestType);
@@ -352,6 +351,7 @@ public class V2HttpCall extends HttpSolrCall {
       if (core != null) {
         containerRequest.setProperty(RequestContextConstants.SOLR_CORE_KEY, core);
       }
+      servedByJaxRs = true;
       jerseyHandler.handle(containerRequest);
     } catch (Exception e) {
       throw new RuntimeException(e);
@@ -361,9 +361,8 @@ public class V2HttpCall extends HttpSolrCall {
   @Override
   protected void handleAdmin(SolrQueryResponse solrResp) {
       if (api == null) {
-        invokeJerseyRequest(cores, null, cores.getAppHandler(), solrResp);
+        invokeJerseyRequest(cores, null, cores.getJerseyApplicationHandler(), solrResp);
       } else {
-        log.info("About to call an api-based admin request: {} {}",solrReq.getHttpMethod(), solrReq.getPath());
         SolrCore.preDecorateResponse(solrReq, solrResp);
         try {
           api.call(this.solrReq, solrResp);
@@ -378,7 +377,7 @@ public class V2HttpCall extends HttpSolrCall {
   @Override
   protected void executeCoreRequest(SolrQueryResponse rsp) {
     if (api == null) {
-      invokeJerseyRequest(cores, core, core.getApplicationHandler(), rsp);
+      invokeJerseyRequest(cores, core, core.getJerseyApplicationHandler(), rsp);
     } else {
       SolrCore.preDecorateResponse(solrReq, rsp);
       try {
@@ -463,10 +462,11 @@ public class V2HttpCall extends HttpSolrCall {
   protected void writeResponse(
       SolrQueryResponse solrRsp, QueryResponseWriter responseWriter, Method reqMethod)
       throws IOException {
-    if (api != null) {
+    // JAX-RS has its own code that flushes out the Response to the relevant output stream, so we no-op here if the
+    // request was already handled via JAX-RS
+    if (! servedByJaxRs) {
       super.writeResponse(solrRsp, responseWriter, reqMethod);
     }
-    /* Do nothing for Jersey APIs, since Jersey has already written out the request */
   }
 
   @Override

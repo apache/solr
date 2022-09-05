@@ -25,7 +25,6 @@ import org.apache.solr.api.ConfigurablePlugin;
 import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteExecutionException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -68,6 +67,7 @@ import static java.util.Collections.singletonMap;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.filestore.TestDistribPackageStore.readFile;
 import static org.apache.solr.filestore.TestDistribPackageStore.uploadKey;
+import static org.hamcrest.Matchers.containsString;
 
 public class TestContainerPlugin extends SolrCloudTestCase {
   private Phaser phaser;
@@ -146,6 +146,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     System.clearProperty("enable.packages");
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   public void testApi() throws Exception {
     int version = phaser.getPhase();
@@ -211,14 +212,12 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
-    ErrorLogMuter errors = ErrorLogMuter.substring("/my-random-prefix/their/plugin");
-    try {
-      assertThrows(
-              SolrServerException.class,
-              () -> getPlugin("/my-random-prefix/their/plugin").call());
-    } finally {
-      errors.close();
-    }
+    RemoteExecutionException e = assertThrows(
+            RemoteExecutionException.class,
+            () -> getPlugin("/my-random-prefix/their/plugin").call());
+    assertEquals(404, e.code());
+    final String msg = (String) ((Map<String, Object>) (e.getMetaData().get("error"))).get("msg");
+    assertThat(msg, containsString("Cannot find API for the path"));
 
     // test ClusterSingleton plugin
     plugin.name = "clusterSingleton";

@@ -191,8 +191,8 @@ dependencies {
   testImplementation 'junit:junit'
   testImplementation 'org.hamcrest:hamcrest'
 
-  testImplementation 'org.glassfish.jersey.test-framework:jersey-test-framework-core:2.35'
-  testImplementation 'org.glassfish.jersey.test-framework.providers:jersey-test-framework-provider-grizzly2:2.35'
+  testImplementation 'org.glassfish.jersey.test-framework:jersey-test-framework-core'
+  testImplementation 'org.glassfish.jersey.test-framework.providers:jersey-test-framework-provider-grizzly2'
 
 
   testImplementation('org.mockito:mockito-core', {

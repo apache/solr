@@ -224,7 +224,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   private final Date startTime = new Date();
   private final long startNanoTime = System.nanoTime();
   private final RequestHandlers reqHandlers;
-  private final ApplicationHandler appHandler;
+  private final ApplicationHandler jerseyAppHandler;
   private final PluginBag<SearchComponent> searchComponents =
       new PluginBag<>(SearchComponent.class, this);
   private final PluginBag<UpdateRequestProcessorFactory> updateProcessors =
@@ -1136,7 +1136,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       updateProcessorChains = loadUpdateProcessorChains();
       reqHandlers = new RequestHandlers(this);
       reqHandlers.initHandlersFromConfig(solrConfig);
-      appHandler = new ApplicationHandler(reqHandlers.getRequestHandlers().getJerseyEndpoints());
+      jerseyAppHandler = new ApplicationHandler(reqHandlers.getRequestHandlers().getJerseyEndpoints());
 
       // cause the executor to stall so firstSearcher events won't fire
       // until after inform() has been called for all components.
@@ -1959,8 +1959,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
     return reqHandlers.handlers;
   }
 
-  public ApplicationHandler getApplicationHandler() {
-    return appHandler;
+  public ApplicationHandler getJerseyApplicationHandler() {
+    return jerseyAppHandler;
   }
 
   /**
@@ -2982,7 +2982,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
         responseHeader.add("params", req.getParams().toNamedList());
       }
     }
-    log.info("Leaving postdecorate with a response of {}", rsp.getValues());
   }
 
   public static final void log(Throwable e) {
