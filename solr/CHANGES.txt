@@ -49,6 +49,8 @@ New Features
 
 * SOLR-15007: Add ability to roll up core level metrics to be node level metrics for a RequestHandler via configuration. (Justin Sweeney, David Smiley)
 
+* SOLR-15715: Dedicated query coordinator nodes in the solr cluster (noble, Ishan Chattopadhyaya)
+
 Improvements
 ---------------------
 * SOLR-15986: CommitUpdateCommand and SplitIndexCommand can write user commit metadata. (Bruno Roustant)
