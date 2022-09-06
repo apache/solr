@@ -401,7 +401,7 @@
         {
           "expr": "solr_collections_shard_leader{cluster_id=~\"$cluster_id\",base_url=~\"$base_url\",collection=~\"$collection\",shard=~\"$shard\",replica=~\"$replica\",core=~\"$core\"}",
           "interval": "",
-          "legendFormat": "{{collection}} {{shard}} {{replica}} ({{node_name}})",
+          "legendFormat": "{{cluster_id}} {{collection}} {{shard}} {{replica}} ({{node_name}})",
           "refId": "A"
         }
       ],
@@ -653,7 +653,7 @@
         {
           "expr": "1 - solr_collections_replica_state{cluster_id=~\"$cluster_id\",base_url=~\"$base_url\",collection=~\"$collection\",shard=~\"$shard\",replica=~\"$replica\",core=~\"$core\"}",
           "interval": "",
-          "legendFormat": "{{collection}} {{shard}} {{replica}} ({{node_name}})={{state}}",
+          "legendFormat": "{{cluster_id}} {{collection}} {{shard}} {{replica}} ({{node_name}})={{state}}",
           "refId": "A"
         }
       ],
@@ -775,9 +775,9 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum by (collection) (solr_metrics_core_query_1minRate{internal=\"false\",cluster_id=~\"$cluster_id\",base_url=~\"$base_url\",collection=~\"$collection\",shard=~\"$shard\",replica=~\"$replica\",core=~\"$core\",searchHandler=~\"$searchHandler\"})",
+              "expr": "sum by (cluster_id, collection) (solr_metrics_core_query_1minRate{internal=\"false\",cluster_id=~\"$cluster_id\",base_url=~\"$base_url\",collection=~\"$collection\",shard=~\"$shard\",replica=~\"$replica\",core=~\"$core\",searchHandler=~\"$searchHandler\"})",
               "interval": "",
-              "legendFormat": "{{collection}}",
+              "legendFormat": "{{collection}} ({{cluster_id}})",
               "refId": "A"
             }
           ],
