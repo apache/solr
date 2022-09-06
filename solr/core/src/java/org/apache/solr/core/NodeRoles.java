@@ -106,7 +106,7 @@ public class NodeRoles {
 
     COORDINATOR("coordinator") {
       @Override
-      public String  modeWhenRoleIsAbsent() {
+      public String modeWhenRoleIsAbsent() {
         return MODE_OFF;
       }
 

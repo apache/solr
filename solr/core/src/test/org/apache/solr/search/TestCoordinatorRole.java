@@ -20,7 +20,6 @@ package org.apache.solr.search;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -39,18 +38,15 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(4)
-            .addConfig("conf", configset("cloud-minimal"))
-            .configure();
+    configureCluster(4).addConfig("conf", configset("cloud-minimal")).configure();
   }
 
   public void testSimple() throws Exception {
     CloudSolrClient client = cluster.getSolrClient();
     String COLLECTION_NAME = "test_coll";
-    String SYNTHETIC_COLLECTION = CoordinatorHttpSolrCall.SYNTHETIC_COLL_PREFIX +"conf";
-    CollectionAdminRequest
-            .createCollection(COLLECTION_NAME, "conf", 2, 2)
-            .process(cluster.getSolrClient());
+    String SYNTHETIC_COLLECTION = CoordinatorHttpSolrCall.SYNTHETIC_COLL_PREFIX + "conf";
+    CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 2, 2)
+        .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION_NAME, 2, 4);
     UpdateRequest ur = new UpdateRequest();
     for (int i = 0; i < 10; i++) {
@@ -70,20 +66,20 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
     } finally {
       System.clearProperty(NodeRoles.NODE_ROLES_PROP);
     }
-    QueryResponse rslt = new QueryRequest(new SolrQuery("*:*"))
+    QueryResponse rslt =
+        new QueryRequest(new SolrQuery("*:*"))
             .setPreferredNodes(List.of(coordinatorJetty.getNodeName()))
             .process(client, COLLECTION_NAME);
 
     assertEquals(10, rslt.getResults().size());
 
-    DocCollection collection = cluster.getSolrClient().getClusterStateProvider().getCollection(SYNTHETIC_COLLECTION);
+    DocCollection collection =
+        cluster.getSolrClient().getClusterStateProvider().getCollection(SYNTHETIC_COLLECTION);
     assertNotNull(collection);
 
     Set<String> expectedNodes = new HashSet<>();
     expectedNodes.add(coordinatorJetty.getNodeName());
     collection.forEachReplica((s, replica) -> expectedNodes.remove(replica.getNodeName()));
     assertTrue(expectedNodes.isEmpty());
-
   }
-
 }

@@ -19,7 +19,6 @@ package org.apache.solr.api;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.servlet.CoordinatorHttpSolrCall;
@@ -28,11 +27,18 @@ import org.apache.solr.servlet.SolrDispatchFilter;
 public class CoordinatorV2HttpSolrCall extends V2HttpCall {
   private String collectionName;
   CoordinatorHttpSolrCall.Factory factory;
-  public CoordinatorV2HttpSolrCall(CoordinatorHttpSolrCall.Factory factory,  SolrDispatchFilter solrDispatchFilter, CoreContainer cc, HttpServletRequest request,
-                                   HttpServletResponse response, boolean retry) {
+
+  public CoordinatorV2HttpSolrCall(
+      CoordinatorHttpSolrCall.Factory factory,
+      SolrDispatchFilter solrDispatchFilter,
+      CoreContainer cc,
+      HttpServletRequest request,
+      HttpServletResponse response,
+      boolean retry) {
     super(solrDispatchFilter, cc, request, response, retry);
     this.factory = factory;
   }
+
   @Override
   protected SolrCore getCoreByCollection(String collectionName, boolean isPreferLeader) {
     this.collectionName = collectionName;
@@ -45,7 +51,7 @@ public class CoordinatorV2HttpSolrCall extends V2HttpCall {
   @Override
   protected void init() throws Exception {
     super.init();
-    if(action == SolrDispatchFilter.Action.PROCESS && core != null) {
+    if (action == SolrDispatchFilter.Action.PROCESS && core != null) {
       solrReq = CoordinatorHttpSolrCall.wrappedReq(solrReq, collectionName, this);
     }
   }

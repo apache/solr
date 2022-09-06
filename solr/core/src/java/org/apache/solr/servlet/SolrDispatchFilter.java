@@ -85,7 +85,7 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
 
   protected String abortErrorMessage = null;
 
-  private  HttpSolrCallFactory solrCallFactory;
+  private HttpSolrCallFactory solrCallFactory;
 
   @Override
   public void setExcludePatterns(List<Pattern> excludePatterns) {
@@ -140,10 +140,15 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
   public void init(FilterConfig config) throws ServletException {
     try {
       coreService = CoreContainerProvider.serviceForContext(config.getServletContext());
-      boolean isCoordinator = NodeRoles.MODE_ON.equals(coreService.getService().getCoreContainer().nodeRoles.getRoleMode(NodeRoles.Role.COORDINATOR));
-      solrCallFactory = isCoordinator ?
-              new CoordinatorHttpSolrCall.Factory()
-              : new HttpSolrCallFactory() {};
+      boolean isCoordinator =
+          NodeRoles.MODE_ON.equals(
+              coreService
+                  .getService()
+                  .getCoreContainer()
+                  .nodeRoles
+                  .getRoleMode(NodeRoles.Role.COORDINATOR));
+      solrCallFactory =
+          isCoordinator ? new CoordinatorHttpSolrCall.Factory() : new HttpSolrCallFactory() {};
       if (log.isTraceEnabled()) {
         log.trace("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
       }
@@ -282,7 +287,7 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
     } catch (UnavailableException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Core Container Unavailable");
     }
-   return solrCallFactory.createInstance(this, path, cores, request, response, retry);
+    return solrCallFactory.createInstance(this, path, cores, request, response, retry);
   }
 
   // TODO: make this a servlet filter
@@ -397,13 +402,15 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
     coreService.getService().setRateLimitManager(rateLimitManager);
   }
 
-  /**
-   * internal API
-   */
+  /** internal API */
   public interface HttpSolrCallFactory {
-    default HttpSolrCall createInstance (SolrDispatchFilter filter, String path,
-                                         CoreContainer cores, HttpServletRequest request,
-                                         HttpServletResponse response, boolean retry){
+    default HttpSolrCall createInstance(
+        SolrDispatchFilter filter,
+        String path,
+        CoreContainer cores,
+        HttpServletRequest request,
+        HttpServletResponse response,
+        boolean retry) {
       if (filter.isV2Enabled && (path.startsWith("/____v2/") || path.equals("/____v2"))) {
         return new V2HttpCall(filter, cores, request, response, false);
       } else {
