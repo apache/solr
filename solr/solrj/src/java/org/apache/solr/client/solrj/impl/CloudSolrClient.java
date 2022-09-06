@@ -1092,6 +1092,21 @@ public abstract class CloudSolrClient extends SolrClient {
                 + inputCollections);
       }
 
+      List<String> preferredNodes = request.getPreferredNodes();
+      if(preferredNodes != null && !preferredNodes.isEmpty()) {
+        String joinedInputCollections = StrUtils.join(inputCollections, ',');
+        List<String> urlList = new ArrayList<>(preferredNodes.size());
+        for (String nodeName : preferredNodes) {
+          //todo avoid hardcoding
+          urlList.add(Utils.getBaseUrlForNodeName(nodeName, urlScheme)+ "/"+ joinedInputCollections);
+        }
+        if(!urlList.isEmpty()) {
+          LBSolrClient.Req req = new LBSolrClient.Req(request, theUrlList);
+          LBSolrClient.Rsp rsp = getLbClient().request(req);
+          return rsp.getResponse();
+        }
+      }
+
       // TODO: not a big deal because of the caching, but we could avoid looking
       //   at every shard when getting leaders if we tweaked some things
 
