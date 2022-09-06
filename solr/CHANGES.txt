@@ -171,6 +171,8 @@ Other Changes
 * SOLR-15342: SolrJ: Split ZooKeeper based dependencies off to a solr-solrj-zookeeper module /
   dependency. (David Smiley, Haythem Khiri)
 
+* SOLR-16324: Upgrade commons-configuration2 to 2.8.0 and commons-text to 1.8 (Kevin Risden)
+
 Build
 ---------------------
 * SOLR-16204: Change Lucene dependency to Lucene 9.1.0 (Elia Porciani via Alessandro Benedetti)
