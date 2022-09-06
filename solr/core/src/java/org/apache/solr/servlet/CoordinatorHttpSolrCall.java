@@ -91,19 +91,26 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
         DocCollection syntheticColl = clusterState.getCollectionOrNull(syntheticCollectionName);
         if (syntheticColl == null) {
           // no such collection. let's create one
-          log.info("synthetic collection: {} does not exist, creating.. ", syntheticCollectionName);
+          if (log.isInfoEnabled()) {
+            log.info(
+                "synthetic collection: {} does not exist, creating.. ", syntheticCollectionName);
+          }
           createColl(syntheticCollectionName, solrCall.cores, confName);
         }
         SolrCore core = solrCall.getCoreByCollection(syntheticCollectionName, isPreferLeader);
         if (core != null) {
           factory.collectionVsCoreNameMapping.put(collectionName, core.getName());
           solrCall.cores.getZkController().getZkStateReader().registerCore(collectionName);
-          log.info("coordinator NODE , returns synthetic core " + core.getName());
+          if (log.isDebugEnabled()) {
+            log.debug("coordinator node, returns synthetic core: {}", core.getName());
+          }
         } else {
           // this node does not have a replica. add one
-          log.info(
-              "this node does not have a replica of the synthetic collection: {} , adding replica ",
-              syntheticCollectionName);
+          if (log.isInfoEnabled()) {
+            log.info(
+                "this node does not have a replica of the synthetic collection: {} , adding replica ",
+                syntheticCollectionName);
+          }
 
           addReplica(syntheticCollectionName, solrCall.cores);
           core = solrCall.getCoreByCollection(syntheticCollectionName, isPreferLeader);
@@ -147,7 +154,9 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
           CollectionAdminRequest.createCollection(syntheticCollectionName, confName, 1, 1)
               .setCreateNodeSet(cores.getZkController().getNodeName())
               .getParams();
-      log.info("sending collection admin command : {}", Utils.toJSONString(params));
+      if (log.isInfoEnabled()) {
+        log.info("sending collection admin command : {}", Utils.toJSONString(params));
+      }
       cores.getCollectionsHandler().handleRequestBody(new LocalSolrQueryRequest(null, params), rsp);
       if (rsp.getValues().get("success") == null) {
         throw new SolrException(
