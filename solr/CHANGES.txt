@@ -8,12 +8,13 @@ https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-not
 
 Bug Fixes
 ---------------------
-
 * SOLR-16191: Validate that installed ps utility supports -p flag, so that we do not inadvertantly stop the wrong process. (Mike Drob, Michael Gibney)
 
 * SOLR-16209: Rolling restart will no longer trigger as much PKI Plugin error logging. (Mike Drob, Tomás Fernández Löbbe)
 
 * SOLR-16264: Set versions for all Antora build tools (Houston Putman)
+
+* SOLR-16399: ExportWriter fails with max values for fields (Kevin Risden)
 
 ==================  9.0.0 ==================
 
