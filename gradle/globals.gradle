@@ -69,6 +69,19 @@ allprojects {
       return file(buildscript.sourceFile.absolutePath.replaceAll('.gradle$', ""))
     }
 
+    failOrWarn = { propName, message, errors ->
+      if (errors) {
+        def shouldFail = Boolean.valueOf(propertyOrDefault(propName, true))
+        def msg = message + (shouldFail ? " (skip with -P${propName}=false)" : "") + ":\n${errors.join("\n")}"
+
+        if (shouldFail) {
+          throw new GradleException(msg)
+        } else {
+          logger.warn("NOTE: ${msg}")
+        }
+      }
+    }
+
     // Utility function similar to project.exec but not emitting
     // any output unless an error code is returned from the executed command.
     quietExec = { closure ->
