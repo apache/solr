@@ -415,6 +415,10 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    *     (either {@link RuntimeException} or {@link org.apache.solr.common.SolrException}).
    */
   protected ElevationProvider loadElevationProvider(Document doc) {
+    if (!doc.getDocumentElement().getNodeName().equals("elevate")) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "Root element must be <elevate>");
+    }
     Map<ElevatingQuery, ElevationBuilder> elevationBuilderMap = new LinkedHashMap<>();
     NodeList nodes = doc.getDocumentElement().getElementsByTagName("query");
     XPath xpath = XPathFactory.newInstance().newXPath();
