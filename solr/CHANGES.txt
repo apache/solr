@@ -159,7 +159,7 @@ Other Changes
 * SOLR-15342: SolrJ: Split ZooKeeper based dependencies off to a solr-solrj-zookeeper module /
   dependency. (David Smiley, Haythem Khiri)
 
-* SOLR-16296: Remove the use of XmlConfigFile and XPath by QueryElevationComponent. (Haythem Khiri)
+* SOLR-16296: Remove the use of XmlConfigFile by QueryElevationComponent. (Haythem Khiri)
 
 Build
 ---------------------
