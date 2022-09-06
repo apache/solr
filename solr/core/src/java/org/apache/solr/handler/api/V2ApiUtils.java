@@ -17,9 +17,14 @@
 
 package org.apache.solr.handler.api;
 
+import java.io.IOException;
+import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.MapWriter.EntryWriter;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.response.SolrQueryResponse;
@@ -69,16 +74,23 @@ public class V2ApiUtils {
     squashIntoNamedList(destination, mw, false);
   }
 
-  // TODO Come up with a better approach (maybe change Responses to be based on some class that can
-  // natively do this
-  //  without the intermediate map(s)?)
-  public static void squashIntoNamedList(
+  private static void squashIntoNamedList(
       NamedList<Object> destination, JacksonReflectMapWriter mw, boolean trimHeader) {
-    Map<String, Object> myMap = new HashMap<>();
-    myMap = mw.toMap(myMap);
-    for (Map.Entry<String, Object> entry : myMap.entrySet()) {
-      if (trimHeader && entry.getKey().equals("responseHeader")) continue;
-      destination.add(entry.getKey(), entry.getValue());
+    try {
+      mw.writeMap(new EntryWriter() {
+        @Override
+        public EntryWriter put(CharSequence key, Object value) {
+          var kStr = key.toString();
+          if (trimHeader && kStr.equals("responseHeader")) {
+            return null;
+          }
+          destination.add(kStr, value);
+          return this; // returning "this" means we can't use a lambda :-(
+        }
+      });
+    } catch (IOException e) {
+      throw new RuntimeException(e); // impossible
     }
+
   }
 }
