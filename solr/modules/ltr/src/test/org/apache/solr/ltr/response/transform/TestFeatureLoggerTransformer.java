@@ -125,6 +125,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
   protected void loadFeaturesAndModelsWithNull() throws Exception {
     loadFeatures("multipleadditivetreesmodel_features_with_missing_branch.json");
     loadModels("multipleadditivetreesmodel_with_missing_branch.json");
+    loadModels("multipleadditivetreesmodel_with_missing_branch_for_interleaving.json");
   }
 
   @Test
@@ -269,6 +270,96 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
                     "featureA1\\=0.0\\,featureA2\\=0.0\\,featureAB\\=0.0\\,featureB1\\=1.0\\,featureB2\\=0.0"
             };
     int[] expectedInterleaved = new int[] {7, 1, 3, 8, 4};
+
+    String[] tests = new String[11];
+    tests[0] = "/response/numFound/==5";
+    for (int i = 1; i <= 5; i++) {
+      tests[i] = "/response/docs/[" + (i - 1) + "]/id==\"" + expectedInterleaved[(i - 1)] + "\"";
+      tests[i + 5] =
+              "/response/docs/[" + (i - 1) + "]/features==" + expectedFeatureVectors[(i - 1)];
+    }
+    assertJQ("/query" + query.toQueryString(), tests);
+  }
+
+  @Test
+  public void interleaving_featureTransformer_shouldWorkInSparseFormat_withMissingFeatures() throws Exception {
+    TeamDraftInterleaving.setRANDOM(
+            new Random(10101011)); // Random Boolean Choices Generation from Seed: [0,0,1]
+    loadFeaturesAndModelsWithNull();
+
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("*:*");
+    query.add("fl", "*, score,features:[fv format=sparse missingFeatures=true]");
+    query.add("rows", "10");
+    query.add("debugQuery", "true");
+    query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
+    query.add("rq", "{!ltr model=multipleadditivetreesmodel model=multipleadditivetreesmodelinterleaving reRankDocs=10 missingFeatures=true efi.user_query='w5' efi.user_device=0}");
+
+    /*
+    Doc1 = "constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-20)
+    Doc3 = "constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-20)
+    Doc4 = "constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-20)
+    Doc7 ="matchedTitle=1.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-20)
+    Doc8 = "constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-45)
+    multipleadditivetreesmodelRerankedList = [1,3,4,7,8]
+    MultipleadditivetreesmodelinterleavingRerankedList = [1,3,4,8,7]
+
+    Random Boolean Choices Generation from Seed: [0,0,1]
+    */
+    String[] expectedFeatureVectors =
+            new String[] {
+                    "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+                    "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+                    "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+                    "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+                    "matchedTitle\\=1.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0"
+            };
+    int[] expectedInterleaved = new int[] {1, 3, 4, 8, 7};
+
+    String[] tests = new String[11];
+    tests[0] = "/response/numFound/==5";
+    for (int i = 1; i <= 5; i++) {
+      tests[i] = "/response/docs/[" + (i - 1) + "]/id==\"" + expectedInterleaved[(i - 1)] + "\"";
+      tests[i + 5] =
+              "/response/docs/[" + (i - 1) + "]/features==" + expectedFeatureVectors[(i - 1)];
+    }
+    assertJQ("/query" + query.toQueryString(), tests);
+  }
+
+  @Test
+  public void interleaving_featureTransformer_shouldWorkInDenseFormat_withMissingFeatures() throws Exception {
+    TeamDraftInterleaving.setRANDOM(
+            new Random(10101011)); // Random Boolean Choices Generation from Seed: [0,0,1]
+    loadFeaturesAndModelsWithNull();
+
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("*:*");
+    query.add("fl", "*, score,features:[fv format=dense missingFeatures=true]");
+    query.add("rows", "10");
+    query.add("debugQuery", "true");
+    query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
+    query.add("rq", "{!ltr model=multipleadditivetreesmodel model=multipleadditivetreesmodelinterleaving reRankDocs=10 missingFeatures=true efi.user_query='w5' efi.user_device=0}");
+
+    /*
+    Doc1 = "constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-20)
+    Doc3 = "constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-20)
+    Doc4 = "constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-20)
+    Doc7 ="matchedTitle=1.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-20)
+    Doc8 = "constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-45)
+    multipleadditivetreesmodelRerankedList = [1,3,4,7,8]
+    MultipleadditivetreesmodelinterleavingRerankedList = [1,3,4,8,7]
+
+    Random Boolean Choices Generation from Seed: [0,0,1]
+    */
+    String[] expectedFeatureVectors =
+            new String[] {
+                    "matchedTitle\\=NaN\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+                    "matchedTitle\\=NaN\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+                    "matchedTitle\\=NaN\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+                    "matchedTitle\\=NaN\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+                    "matchedTitle\\=1.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0"
+            };
+    int[] expectedInterleaved = new int[] {1, 3, 4, 8, 7};
 
     String[] tests = new String[11];
     tests[0] = "/response/numFound/==5";
