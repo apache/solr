@@ -49,7 +49,7 @@ New Features
 
 * SOLR-15007: Add ability to roll up core level metrics to be node level metrics for a RequestHandler via configuration. (Justin Sweeney, David Smiley)
 
-* SOLR-15715: Dedicated query coordinator nodes in the solr cluster (noble, Ishan Chattopadhyaya)
+* SOLR-15715: Dedicated query coordinator nodes in the solr cluster (noble, Hitesh Khamesra, Ishan Chattopadhyaya)
 
 Improvements
 ---------------------
