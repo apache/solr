@@ -109,9 +109,6 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
     return this.preferredNodes;
   }
 
-
-
-
   private String basicAuthUser, basicAuthPwd;
 
   private String basePath;
