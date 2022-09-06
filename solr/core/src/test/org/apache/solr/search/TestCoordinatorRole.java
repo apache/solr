@@ -19,6 +19,7 @@ package org.apache.solr.search;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrQuery;
@@ -71,7 +72,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       System.clearProperty(NodeRoles.NODE_ROLES_PROP);
     }
     QueryResponse rslt = new QueryRequest(new SolrQuery("*:*"))
-            .setPreferredNodes(Collections.singletonList(coordinatorJetty.getNodeName()))
+            .setPreferredNodes(List.of(coordinatorJetty.getNodeName()))
             .process(client, COLLECTION_NAME);
 
     assertEquals(10, rslt.getResults().size());

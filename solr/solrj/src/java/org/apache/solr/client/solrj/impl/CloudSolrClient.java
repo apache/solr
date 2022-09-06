@@ -1097,11 +1097,10 @@ public abstract class CloudSolrClient extends SolrClient {
         String joinedInputCollections = StrUtils.join(inputCollections, ',');
         List<String> urlList = new ArrayList<>(preferredNodes.size());
         for (String nodeName : preferredNodes) {
-          //todo avoid hardcoding
           urlList.add(Utils.getBaseUrlForNodeName(nodeName, urlScheme)+ "/"+ joinedInputCollections);
         }
         if(!urlList.isEmpty()) {
-          LBSolrClient.Req req = new LBSolrClient.Req(request, theUrlList);
+          LBSolrClient.Req req = new LBSolrClient.Req(request, urlList);
           LBSolrClient.Rsp rsp = getLbClient().request(req);
           return rsp.getResponse();
         }
