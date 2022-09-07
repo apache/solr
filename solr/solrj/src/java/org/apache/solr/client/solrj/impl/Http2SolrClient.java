@@ -387,6 +387,7 @@ public class Http2SolrClient extends SolrClient {
     outStream.flush();
   }
 
+  @SuppressWarnings("StaticAssignmentOfThrowable")
   private static final Exception CANCELLED_EXCEPTION = new Exception();
   private static final Cancellable FAILED_MAKING_REQUEST_CANCELLABLE = () -> {};
 
