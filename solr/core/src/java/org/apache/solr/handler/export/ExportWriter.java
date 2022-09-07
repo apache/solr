@@ -804,7 +804,9 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         int docId;
         while ((docId = it.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
           this.sortDoc.setValues(docId);
-          if (top.lessThan(this.sortDoc)) {
+          // Always set the top doc if previously not set, otherwise
+          // set the top if the sortDoc is greater than current
+          if (top.lessThan(this.sortDoc) || top.docId == -1) {
             top.setValues(this.sortDoc);
             top = queue.updateTop();
           }
