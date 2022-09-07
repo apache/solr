@@ -442,6 +442,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
   /**
    * @return true if we have reached max attempts or should stop recovering for some other reason
    */
+  @SuppressWarnings("NarrowCalculation")
   private boolean waitBetweenRecoveries(String coreName) {
     // lets pause for a moment and we need to try again...
     // TODO: we don't want to retry for some problems?

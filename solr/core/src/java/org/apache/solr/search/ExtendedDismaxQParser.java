@@ -949,6 +949,7 @@ public class ExtendedDismaxQParser extends QParser {
     RANGE
   }
 
+  @SuppressWarnings("StaticAssignmentOfThrowable")
   static final RuntimeException unknownField = new RuntimeException("UnknownField");
 
   static {

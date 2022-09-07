@@ -47,6 +47,7 @@ public interface LongValueStream extends AnalyticsValueStream {
    */
   public abstract static class AbstractLongValueStream implements CastingLongValueStream {
     @Override
+    @SuppressWarnings("LongDoubleConversion")
     public void streamDoubles(DoubleConsumer cons) {
       streamLongs((long val) -> cons.accept(val));
     }

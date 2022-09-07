@@ -3020,6 +3020,7 @@ public class StreamingTest extends SolrCloudTestCase {
     return true;
   }
 
+  @SuppressWarnings("UnnecessaryLongToIntConversion")
   protected boolean assertGroupOrder(Tuple tuple, int... ids) {
     @SuppressWarnings({"rawtypes"})
     List group = (List) tuple.get("tuples");

@@ -1453,6 +1453,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     checkForSingleIndex(followerJetty, true);
   }
 
+  @SuppressWarnings("NarrowCalculation")
   @Test
   public void testRateLimitedReplication() throws Exception {
 

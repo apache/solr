@@ -77,6 +77,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
     req = null;
   }
 
+  @SuppressWarnings("UnnecessaryLongToIntConversion")
   void doTermEnum(int size) throws Exception {
     // System.out.println("doTermEnum size=" + size);
     close();

@@ -169,6 +169,7 @@ public class UnInvertedField extends DocTermOrds {
     maxTermCounts[termNum] = docFreq;
   }
 
+  @SuppressWarnings("NarrowCalculation")
   public long memSize() {
     // can cache the mem size since it shouldn't change
     if (memsz != 0) return memsz;

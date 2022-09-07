@@ -402,6 +402,7 @@ public class TestNumericRangeQuery32 extends SolrTestCase {
     dir.close();
   }
 
+  @SuppressWarnings("NarrowCalculation")
   private void testRangeSplit(int precisionStep) throws Exception {
     String field = "ascfield" + precisionStep;
     // 10 random tests
