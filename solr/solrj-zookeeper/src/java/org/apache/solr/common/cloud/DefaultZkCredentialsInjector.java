@@ -14,7 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cloud;
+package org.apache.solr.common.cloud;
 
-public class VMParamsZkACLAndCredentialsProvidersTest
-    extends AbstractDigestZkACLAndCredentialsProvidersTestBase {}
+import java.util.Collections;
+import java.util.List;
+
+public class DefaultZkCredentialsInjector implements ZkCredentialsInjector {
+
+  @Override
+  public List<ZkCredential> getZkCredentials() {
+    return Collections.emptyList();
+  }
+}

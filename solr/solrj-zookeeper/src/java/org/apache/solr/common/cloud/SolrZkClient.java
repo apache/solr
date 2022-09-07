@@ -92,6 +92,7 @@ public class SolrZkClient implements Closeable {
   private ZkClientConnectionStrategy zkClientConnectionStrategy;
   private int zkClientTimeout;
   private ZkACLProvider zkACLProvider;
+  private ZkCredentialsInjector zkCredentialsInjector;
   private String zkServerAddress;
 
   private IsClosed higherLevelIsClosed;
@@ -163,6 +164,7 @@ public class SolrZkClient implements Closeable {
     this.zkClientConnectionStrategy = strat;
 
     if (!strat.hasZkCredentialsToAddAutomatically()) {
+      zkCredentialsInjector = createZkCredentialsInjector();
       ZkCredentialsProvider zkCredentialsToAddAutomatically =
           createZkCredentialsToAddAutomatically();
       strat.setZkCredentialsToAddAutomatically(zkCredentialsToAddAutomatically);
@@ -246,13 +248,18 @@ public class SolrZkClient implements Closeable {
     if (!StringUtils.isEmpty(zkCredentialsProviderClassName)) {
       try {
         log.info("Using ZkCredentialsProvider: {}", zkCredentialsProviderClassName);
-        return (ZkCredentialsProvider)
-            Class.forName(zkCredentialsProviderClassName).getConstructor().newInstance();
-      } catch (Throwable t) {
+        ZkCredentialsProvider zkCredentialsProvider =
+            Class.forName(zkCredentialsProviderClassName)
+                .asSubclass(ZkCredentialsProvider.class)
+                .getConstructor()
+                .newInstance();
+        zkCredentialsProvider.setZkCredentialsInjector(zkCredentialsInjector);
+        return zkCredentialsProvider;
+      } catch (Exception e) {
         // just ignore - go default
         log.warn(
             "VM param zkCredentialsProvider does not point to a class implementing ZkCredentialsProvider and with a non-arg constructor",
-            t);
+            e);
       }
     }
     log.debug("Using default ZkCredentialsProvider");
@@ -266,16 +273,49 @@ public class SolrZkClient implements Closeable {
     if (!StringUtils.isEmpty(zkACLProviderClassName)) {
       try {
         log.info("Using ZkACLProvider: {}", zkACLProviderClassName);
-        return (ZkACLProvider) Class.forName(zkACLProviderClassName).getConstructor().newInstance();
-      } catch (Throwable t) {
+        ZkACLProvider zkACLProvider =
+            Class.forName(zkACLProviderClassName)
+                .asSubclass(ZkACLProvider.class)
+                .getConstructor()
+                .newInstance();
+        zkACLProvider.setZkCredentialsInjector(zkCredentialsInjector);
+        return zkACLProvider;
+      } catch (Exception e) {
         // just ignore - go default
         log.warn(
             "VM param zkACLProvider does not point to a class implementing ZkACLProvider and with a non-arg constructor",
-            t);
+            e);
       }
     }
-    log.debug("Using default ZkACLProvider");
+    log.warn(
+        "Using default ZkACLProvider. DefaultZkACLProvider is not secure, it creates 'OPEN_ACL_UNSAFE' ACLs to Zookeeper nodes");
     return new DefaultZkACLProvider();
+  }
+
+  public static final String ZK_CREDENTIALS_INJECTOR_CLASS_NAME_VM_PARAM_NAME =
+      "zkCredentialsInjector";
+
+  protected ZkCredentialsInjector createZkCredentialsInjector() {
+    String zkCredentialsInjectorClassName =
+        System.getProperty(ZK_CREDENTIALS_INJECTOR_CLASS_NAME_VM_PARAM_NAME);
+    if (!StringUtils.isEmpty(zkCredentialsInjectorClassName)) {
+      try {
+        log.info("Using ZkCredentialsInjector: {}", zkCredentialsInjectorClassName);
+        return Class.forName(zkCredentialsInjectorClassName)
+            .asSubclass(ZkCredentialsInjector.class)
+            .getConstructor()
+            .newInstance();
+      } catch (Exception e) {
+        // just ignore - go default
+        log.warn(
+            "VM param ZkCredentialsInjector does not point to a class implementing ZkCredentialsInjector and with a non-arg constructor",
+            e);
+      }
+    }
+    log.warn(
+        "Using default ZkCredentialsInjector. ZkCredentialsInjector is not secure, it creates an empty list of "
+            + "credentials which leads to 'OPEN_ACL_UNSAFE' ACLs to Zookeeper nodes");
+    return new DefaultZkCredentialsInjector();
   }
 
   /** Returns true if client is connected */
