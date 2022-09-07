@@ -16,31 +16,30 @@
  */
 package org.apache.solr.servlet;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.jersey.ErrorInfo;
 import org.slf4j.Logger;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-
 /** Response helper methods. */
 public class ResponseUtils {
   private ResponseUtils() {}
 
-
   /**
    * Adds the given Throwable's message to the given NamedList.
    *
-   * <p>Primarily used by v1 code; v2 endpoints or dispatch code should call {@link #getTypedErrorInfo(Throwable, Logger)}
-   * 
+   * <p>Primarily used by v1 code; v2 endpoints or dispatch code should call {@link
+   * #getTypedErrorInfo(Throwable, Logger)}
+   *
    * <p>If the response code is not a regular code, the Throwable's stack trace is both logged and
    * added to the given NamedList.
    *
    * <p>Status codes less than 100 are adjusted to be 500.
-   * 
-   * @see #getTypedErrorInfo(Throwable, Logger) 
+   *
+   * @see #getTypedErrorInfo(Throwable, Logger)
    */
   public static int getErrorInfo(Throwable ex, NamedList<Object> info, Logger log) {
     int code = 500;
@@ -53,7 +52,7 @@ public class ResponseUtils {
       }
       errorMetadata.add(SolrException.ERROR_CLASS, ex.getClass().getName());
       errorMetadata.add(
-              SolrException.ROOT_ERROR_CLASS, SolrException.getRootCause(ex).getClass().getName());
+          SolrException.ROOT_ERROR_CLASS, SolrException.getRootCause(ex).getClass().getName());
       info.add("metadata", errorMetadata);
       if (ex instanceof ApiBag.ExceptionWithErrObject) {
         ApiBag.ExceptionWithErrObject exception = (ApiBag.ExceptionWithErrObject) ex;
@@ -93,8 +92,8 @@ public class ResponseUtils {
    * <p>Primarily used by v2 API code, which can handle such typed information.
    *
    * <p>Status codes less than 100 are adjusted to be 500.
-   * 
-   * @see #getErrorInfo(Throwable, NamedList, Logger) 
+   *
+   * @see #getErrorInfo(Throwable, NamedList, Logger)
    */
   public static ErrorInfo getTypedErrorInfo(Throwable ex, Logger log) {
     final ErrorInfo errorInfo = new ErrorInfo();

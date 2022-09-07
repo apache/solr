@@ -17,6 +17,21 @@
 
 package org.apache.solr.jersey;
 
+import static org.apache.solr.common.SolrException.ErrorCode.getErrorCode;
+import static org.apache.solr.common.params.CommonParams.WT;
+import static org.apache.solr.jersey.RequestContextConstants.HANDLER_METRICS_KEY;
+import static org.apache.solr.jersey.RequestContextConstants.SOLR_JERSEY_RESPONSE_KEY;
+import static org.apache.solr.jersey.RequestContextConstants.SOLR_QUERY_REQUEST_KEY;
+import static org.apache.solr.jersey.RequestContextConstants.SOLR_QUERY_RESPONSE_KEY;
+
+import java.lang.invoke.MethodHandles;
+import javax.ws.rs.NotFoundException;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ResourceContext;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.ext.ExceptionMapper;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -25,22 +40,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.ResponseUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ResourceContext;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
-import java.lang.invoke.MethodHandles;
-
-import static org.apache.solr.common.SolrException.ErrorCode.getErrorCode;
-import static org.apache.solr.common.params.CommonParams.WT;
-import static org.apache.solr.jersey.RequestContextConstants.HANDLER_METRICS_KEY;
-import static org.apache.solr.jersey.RequestContextConstants.SOLR_JERSEY_RESPONSE_KEY;
-import static org.apache.solr.jersey.RequestContextConstants.SOLR_QUERY_REQUEST_KEY;
-import static org.apache.solr.jersey.RequestContextConstants.SOLR_QUERY_RESPONSE_KEY;
 
 // TODO Create separate ExceptionMapper for WebApplicationException
 /**
@@ -52,26 +51,33 @@ import static org.apache.solr.jersey.RequestContextConstants.SOLR_QUERY_RESPONSE
 public class CatchAllExceptionMapper implements ExceptionMapper<Exception> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  @Context
-  public ResourceContext resourceContext;
+  @Context public ResourceContext resourceContext;
 
   @Override
   public Response toResponse(Exception exception) {
-    final ContainerRequestContext containerRequestContext = resourceContext.getResource(ContainerRequestContext.class);
+    final ContainerRequestContext containerRequestContext =
+        resourceContext.getResource(ContainerRequestContext.class);
 
-    // Set the exception on the SolrQueryResponse.  Not to affect the actual response, but as SolrDispatchFiler and
-    // HttpSolrCall use the presence of an exception as a marker of success/failure for AuditLogging, and other logic.
-    final SolrQueryResponse solrQueryResponse = (SolrQueryResponse) containerRequestContext.getProperty(SOLR_QUERY_RESPONSE_KEY);
+    // Set the exception on the SolrQueryResponse.  Not to affect the actual response, but as
+    // SolrDispatchFiler and
+    // HttpSolrCall use the presence of an exception as a marker of success/failure for
+    // AuditLogging, and other logic.
+    final SolrQueryResponse solrQueryResponse =
+        (SolrQueryResponse) containerRequestContext.getProperty(SOLR_QUERY_RESPONSE_KEY);
     final SolrQueryRequest solrQueryRequest =
-            (SolrQueryRequest) containerRequestContext.getProperty(SOLR_QUERY_REQUEST_KEY);
+        (SolrQueryRequest) containerRequestContext.getProperty(SOLR_QUERY_REQUEST_KEY);
     if (exception instanceof NotFoundException) {
       // For backwards compatibility with existing v2 API format
-      exception = new SolrException(SolrException.ErrorCode.NOT_FOUND, "Cannot find API for the path: " +
-              solrQueryRequest.getContext().get(CommonParams.PATH));
+      exception =
+          new SolrException(
+              SolrException.ErrorCode.NOT_FOUND,
+              "Cannot find API for the path: "
+                  + solrQueryRequest.getContext().get(CommonParams.PATH));
       solrQueryResponse.setException(exception);
     } else if (exception instanceof WebApplicationException) {
       final WebApplicationException wae = (WebApplicationException) exception;
-      final SolrException solrException = new SolrException(getErrorCode(wae.getResponse().getStatus()), wae.getMessage());
+      final SolrException solrException =
+          new SolrException(getErrorCode(wae.getResponse().getStatus()), wae.getMessage());
       solrQueryResponse.setException(solrException);
     } else {
       solrQueryResponse.setException(exception);
@@ -81,7 +87,6 @@ public class CatchAllExceptionMapper implements ExceptionMapper<Exception> {
     if (exception instanceof WebApplicationException) {
       return processWebApplicationException((WebApplicationException) exception);
     }
-
 
     // First, handle any exception-related metrics
     final Exception normalizedException =
@@ -93,10 +98,12 @@ public class CatchAllExceptionMapper implements ExceptionMapper<Exception> {
       RequestHandlerBase.processErrorMetricsOnException(normalizedException, metrics);
     }
 
-    // Then, convert the exception into a SolrJerseyResponse (creating one as necessary if resource was matched, etc.)
-    final SolrJerseyResponse response = containerRequestContext.getProperty(SOLR_JERSEY_RESPONSE_KEY) == null ?
-            new SolrJerseyResponse() :
-            (SolrJerseyResponse) containerRequestContext.getProperty(SOLR_JERSEY_RESPONSE_KEY);
+    // Then, convert the exception into a SolrJerseyResponse (creating one as necessary if resource
+    // was matched, etc.)
+    final SolrJerseyResponse response =
+        containerRequestContext.getProperty(SOLR_JERSEY_RESPONSE_KEY) == null
+            ? new SolrJerseyResponse()
+            : (SolrJerseyResponse) containerRequestContext.getProperty(SOLR_JERSEY_RESPONSE_KEY);
 
     response.error = ResponseUtils.getTypedErrorInfo(normalizedException, log);
     response.responseHeader.status = response.error.code;
@@ -106,7 +113,7 @@ public class CatchAllExceptionMapper implements ExceptionMapper<Exception> {
 
   private String getMediaType(SolrQueryRequest solrQueryRequest) {
     final String wtParam = solrQueryRequest.getParams().get(WT);
-    if (wtParam == null ) return "application/json";
+    if (wtParam == null) return "application/json";
 
     // The only currently-supported response-formats for JAX-RS v2 endpoints.
     switch (wtParam) {

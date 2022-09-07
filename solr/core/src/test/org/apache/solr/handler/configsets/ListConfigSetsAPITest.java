@@ -17,6 +17,18 @@
 
 package org.apache.solr.handler.configsets;
 
+import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.util.List;
+import javax.inject.Singleton;
+import javax.ws.rs.core.Application;
+import javax.ws.rs.core.Response;
 import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.ConfigSetService;
@@ -29,19 +41,6 @@ import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.test.JerseyTest;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import javax.inject.Singleton;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Response;
-import java.util.List;
-
-import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class ListConfigSetsAPITest extends JerseyTest {
 
@@ -114,10 +113,10 @@ public class ListConfigSetsAPITest extends JerseyTest {
    * Test the v2 to v1 response mapping for /cluster/configs
    *
    * <p>{@link org.apache.solr.handler.admin.ConfigSetsHandler} uses {@link ListConfigSetsAPI} (and
-   * its response class {@link ListConfigSetsAPI.ListConfigsetsResponse}) internally to serve the v1 version of this
-   * functionality. So it's important to make sure that the v2 response stays compatible with SolrJ
-   * - both because that's important in its own right and because that ensures we haven't
-   * accidentally changed the v1 response format.
+   * its response class {@link ListConfigSetsAPI.ListConfigsetsResponse}) internally to serve the v1
+   * version of this functionality. So it's important to make sure that the v2 response stays
+   * compatible with SolrJ - both because that's important in its own right and because that ensures
+   * we haven't accidentally changed the v1 response format.
    */
   @Test
   public void testListConfigsetsV1Compatibility() throws Exception {

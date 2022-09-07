@@ -17,8 +17,27 @@
 
 package org.apache.solr.api;
 
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
+
 import io.opentracing.Span;
 import io.opentracing.tag.Tags;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Supplier;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.SolrThreadSafe;
@@ -50,26 +69,6 @@ import org.glassfish.jersey.server.ContainerRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Supplier;
-
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
-
 // class that handle the '/v2' path
 @SolrThreadSafe
 public class V2HttpCall extends HttpSolrCall {
@@ -77,7 +76,8 @@ public class V2HttpCall extends HttpSolrCall {
   private Api api;
   private List<String> pathSegments;
   private String prefix;
-  private boolean servedByJaxRs = false; // A flag indicating whether the request was served by JAX-RS or the native framework
+  private boolean servedByJaxRs =
+      false; // A flag indicating whether the request was served by JAX-RS or the native framework
   HashMap<String, String> parts = new HashMap<>();
   static final Set<String> knownPrefixes = Set.of("cluster", "node", "collections", "cores", "c");
 
@@ -360,18 +360,18 @@ public class V2HttpCall extends HttpSolrCall {
 
   @Override
   protected void handleAdmin(SolrQueryResponse solrResp) {
-      if (api == null) {
-        invokeJerseyRequest(cores, null, cores.getJerseyApplicationHandler(), solrResp);
-      } else {
-        SolrCore.preDecorateResponse(solrReq, solrResp);
-        try {
-          api.call(this.solrReq, solrResp);
-        } catch (Exception e) {
-          solrResp.setException(e);
-        } finally {
-          SolrCore.postDecorateResponse(handler, solrReq, solrResp);
-        }
+    if (api == null) {
+      invokeJerseyRequest(cores, null, cores.getJerseyApplicationHandler(), solrResp);
+    } else {
+      SolrCore.preDecorateResponse(solrReq, solrResp);
+      try {
+        api.call(this.solrReq, solrResp);
+      } catch (Exception e) {
+        solrResp.setException(e);
+      } finally {
+        SolrCore.postDecorateResponse(handler, solrReq, solrResp);
       }
+    }
   }
 
   @Override
@@ -462,9 +462,10 @@ public class V2HttpCall extends HttpSolrCall {
   protected void writeResponse(
       SolrQueryResponse solrRsp, QueryResponseWriter responseWriter, Method reqMethod)
       throws IOException {
-    // JAX-RS has its own code that flushes out the Response to the relevant output stream, so we no-op here if the
+    // JAX-RS has its own code that flushes out the Response to the relevant output stream, so we
+    // no-op here if the
     // request was already handled via JAX-RS
-    if (! servedByJaxRs) {
+    if (!servedByJaxRs) {
       super.writeResponse(solrRsp, responseWriter, reqMethod);
     }
   }

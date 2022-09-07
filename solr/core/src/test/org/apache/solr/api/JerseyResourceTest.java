@@ -17,17 +17,16 @@
 
 package org.apache.solr.api;
 
+import static org.apache.solr.jersey.RequestContextConstants.SOLR_JERSEY_RESPONSE_KEY;
+import static org.apache.solr.jersey.container.ContainerRequestUtils.DEFAULT_SECURITY_CONTEXT;
+
+import java.net.URI;
+import javax.ws.rs.container.ContainerRequestContext;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.handler.admin.api.SchemaNameAPI;
 import org.glassfish.jersey.internal.MapPropertiesDelegate;
 import org.glassfish.jersey.server.ContainerRequest;
 import org.junit.Test;
-
-import javax.ws.rs.container.ContainerRequestContext;
-import java.net.URI;
-
-import static org.apache.solr.jersey.RequestContextConstants.SOLR_JERSEY_RESPONSE_KEY;
-import static org.apache.solr.jersey.container.ContainerRequestUtils.DEFAULT_SECURITY_CONTEXT;
 
 /** Unit tests for the {@link JerseyResource} parent class */
 public class JerseyResourceTest extends SolrTestCaseJ4 {

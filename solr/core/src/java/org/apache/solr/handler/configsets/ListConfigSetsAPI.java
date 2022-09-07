@@ -16,21 +16,20 @@
  */
 package org.apache.solr.handler.configsets;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.solr.api.JerseyResource;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.jersey.PermissionName;
-import org.apache.solr.jersey.SolrJerseyResponse;
+import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
-import java.util.List;
-
-import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
+import org.apache.solr.api.JerseyResource;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.jersey.PermissionName;
+import org.apache.solr.jersey.SolrJerseyResponse;
 
 /**
  * V2 API for adding or updating a single file within a configset.

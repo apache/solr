@@ -16,11 +16,10 @@
  */
 package org.apache.solr.common;
 
+import java.util.Map;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.MDC;
-
-import java.util.Map;
 
 /** */
 public class SolrException extends RuntimeException {
@@ -199,10 +198,12 @@ public class SolrException extends RuntimeException {
   /**
    * Ensure that the provided tragic exception is wrapped in a 5xx SolrException
    *
-   * Tragic exceptions (those that Lucene's IndexWriter uses to signify it has become inoperable) are expected to have a
-   * 5xx error code.  This method takes an input tragic exception and adds the expected wrapper, if necessary.
+   * <p>Tragic exceptions (those that Lucene's IndexWriter uses to signify it has become inoperable)
+   * are expected to have a 5xx error code. This method takes an input tragic exception and adds the
+   * expected wrapper, if necessary.
    *
-   * @param e the exception to check the code on.  If not a SolrException, then this method acts as a no-op.
+   * @param e the exception to check the code on. If not a SolrException, then this method acts as a
+   *     no-op.
    */
   public static SolrException wrapLuceneTragicExceptionIfNecessary(Exception e) {
     if (e instanceof SolrException) {

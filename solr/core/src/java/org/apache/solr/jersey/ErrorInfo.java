@@ -18,10 +18,9 @@
 package org.apache.solr.jersey;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.solr.common.SolrException;
-
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.common.SolrException;
 
 /**
  * A value type representing an error.

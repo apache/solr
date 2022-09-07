@@ -17,21 +17,20 @@
 
 package org.apache.solr.api;
 
+import static org.apache.solr.jersey.RequestContextConstants.SOLR_JERSEY_RESPONSE_KEY;
+
+import java.util.function.Supplier;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.core.Context;
 import org.apache.solr.jersey.CatchAllExceptionMapper;
 import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.servlet.HttpSolrCall;
 
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.core.Context;
-import java.util.function.Supplier;
-
-import static org.apache.solr.jersey.RequestContextConstants.SOLR_JERSEY_RESPONSE_KEY;
-
 /**
  * A marker parent type for all Jersey "resource" classes.
  *
- * "Resources" in Jersey are classes that define one or more API endpoints.  As such they're analogous to the v1
- * {@link org.apache.solr.request.SolrRequestHandler} or the v2 {@link Api}.
+ * <p>"Resources" in Jersey are classes that define one or more API endpoints. As such they're
+ * analogous to the v1 {@link org.apache.solr.request.SolrRequestHandler} or the v2 {@link Api}.
  */
 public class JerseyResource {
 
@@ -50,10 +49,11 @@ public class JerseyResource {
    * for that API.
    *
    * <p>The JAX-RS framework isn't well suited to mimicking responses of this sort, as the
-   * "response" from a Jersey resource is its return value (instead of a mutable method parameter that gets
-   * modified). This utility works around this limitation by attaching the eventual return value of
-   * a JerseyResource to the context associated with the Jersey request, as soon as its created. This allows
-   * partially-constructed responses to be accessed later in the case of an exception.
+   * "response" from a Jersey resource is its return value (instead of a mutable method parameter
+   * that gets modified). This utility works around this limitation by attaching the eventual return
+   * value of a JerseyResource to the context associated with the Jersey request, as soon as its
+   * created. This allows partially-constructed responses to be accessed later in the case of an
+   * exception.
    *
    * <p>In order to instantiate arbitrary SolrJerseyResponse subclasses, this utility uses
    * reflection to find and invoke the first (no-arg) constructor for the specified type.
