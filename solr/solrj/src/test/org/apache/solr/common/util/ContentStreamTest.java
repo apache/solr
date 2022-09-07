@@ -35,6 +35,7 @@ import org.apache.solr.core.SolrResourceLoader;
 /** Tests {@link ContentStream} such as "stream.file". */
 public class ContentStreamTest extends SolrTestCaseJ4 {
 
+  @SuppressWarnings("UnnecessaryLongToIntConversion")
   public void testStringStream() throws IOException {
     String input = "aads ghaskdgasgldj asl sadg ajdsg &jag # @ hjsakg hsakdg hjkas s";
     ContentStreamBase stream = new ContentStreamBase.StringStream(input);
@@ -43,6 +44,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
     assertEquals(input, IOUtils.toString(stream.getReader()));
   }
 
+  @SuppressWarnings("UnnecessaryLongToIntConversion")
   public void testFileStream() throws IOException {
     File file = new File(createTempDir().toFile(), "README");
     try (SolrResourceLoader srl = new SolrResourceLoader(Paths.get("").toAbsolutePath());
@@ -66,6 +68,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
     }
   }
 
+  @SuppressWarnings("UnnecessaryLongToIntConversion")
   public void testFileStreamGZIP() throws IOException {
     File file = new File(createTempDir().toFile(), "README.gz");
 
@@ -92,6 +95,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
     }
   }
 
+  @SuppressWarnings("UnnecessaryLongToIntConversion")
   public void testURLStream() throws IOException {
     File file = new File(createTempDir().toFile(), "README");
 
@@ -123,6 +127,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
     }
   }
 
+  @SuppressWarnings("UnnecessaryLongToIntConversion")
   public void testURLStreamGZIP() throws IOException {
     File file = new File(createTempDir().toFile(), "README.gz");
 
@@ -150,6 +155,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
     }
   }
 
+  @SuppressWarnings("UnnecessaryLongToIntConversion")
   public void testURLStreamCSVGZIPExtention() throws IOException {
     File file = new File(createTempDir().toFile(), "README.CSV.gz");
 
@@ -177,6 +183,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
     }
   }
 
+  @SuppressWarnings("UnnecessaryLongToIntConversion")
   public void testURLStreamJSONGZIPExtention() throws IOException {
     File file = new File(createTempDir().toFile(), "README.json.gzip");
 

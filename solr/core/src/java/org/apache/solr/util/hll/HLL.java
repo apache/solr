@@ -153,6 +153,7 @@ public class HLL implements Cloneable {
    * @param type the type in the promotion hierarchy which this instance should start at. This
    *     cannot be <code>null</code>.
    */
+  @SuppressWarnings("NarrowCalculation")
   public HLL(
       final int log2m,
       final int regwidth,

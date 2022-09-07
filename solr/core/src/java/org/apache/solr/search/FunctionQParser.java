@@ -82,6 +82,7 @@ public class FunctionQParser extends QParser {
     return parseMultipleSources;
   }
 
+  @SuppressWarnings("ErroneousBitwiseExpression")
   @Override
   public Query parse() throws SyntaxError {
     ValueSource vs = null;
@@ -334,6 +335,7 @@ public class FunctionQParser extends QParser {
    *
    * @param doConsumeDelimiter whether to consume a delimiter following the ValueSource
    */
+  @SuppressWarnings("ErroneousBitwiseExpression")
   protected ValueSource parseValueSource(boolean doConsumeDelimiter) throws SyntaxError {
     return parseValueSource(
         doConsumeDelimiter
