@@ -25,7 +25,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
-import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -311,7 +310,7 @@ public class Aliases {
    * based on the parameters.
    *
    * <p>Note that the state in zookeeper is unaffected by this method and the change must still be
-   * persisted via {@link
+   * persisted via {@code
    * ZkStateReader.AliasesManager#applyModificationAndExportToZk(UnaryOperator)}
    *
    * @param alias the alias to update, must not be null
@@ -352,7 +351,7 @@ public class Aliases {
    * lists. Renaming routed aliases is not supported.
    *
    * <p>Note that the state in zookeeper is unaffected by this method and the change must still be
-   * persisted via {@link
+   * persisted via {@code
    * ZkStateReader.AliasesManager#applyModificationAndExportToZk(UnaryOperator)}
    *
    * @param before previous alias name, must not be null
@@ -422,7 +421,7 @@ public class Aliases {
    * instance with the same data as the current one but with a modification based on the parameters.
    *
    * <p>Note that the state in zookeeper is unaffected by this method and the change must still be
-   * persisted via {@link
+   * persisted via {@code
    * ZkStateReader.AliasesManager#applyModificationAndExportToZk(UnaryOperator)}
    *
    * @param alias the alias to update
@@ -442,7 +441,7 @@ public class Aliases {
    * parameters.
    *
    * <p>Note that the state in zookeeper is unaffected by this method and the change must still be
-   * persisted via {@link
+   * persisted via {@code
    * ZkStateReader.AliasesManager#applyModificationAndExportToZk(UnaryOperator)}
    *
    * @param alias the alias to update

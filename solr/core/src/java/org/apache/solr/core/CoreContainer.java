@@ -16,6 +16,8 @@
  */
 package org.apache.solr.core;
 
+
+import com.github.benmanes.caffeine.cache.Interner;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -53,6 +55,7 @@ import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Aliases;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
@@ -76,6 +79,7 @@ import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.ContainerPluginsApi;
 import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminOp;
 import org.apache.solr.handler.admin.HealthCheckHandler;
 import org.apache.solr.handler.admin.InfoHandler;
 import org.apache.solr.handler.admin.MetricsHandler;
@@ -116,6 +120,8 @@ import org.apache.solr.util.stats.MetricUtils;
 import org.apache.zookeeper.KeeperException;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.server.ApplicationHandler;
+import org.noggit.JSONParser;
+import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -141,7 +147,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 import static org.apache.solr.common.params.CommonParams.AUTHC_PATH;
@@ -392,6 +400,7 @@ public class CoreContainer {
     if (null != this.cfg.getBooleanQueryMaxClauseCount()) {
       IndexSearcher.setMaxClauseCount(this.cfg.getBooleanQueryMaxClauseCount());
     }
+    setWeakStringInterner();
     this.coresLocator = locator;
     this.containerProperties = new Properties(config.getSolrProperties());
     this.asyncSolrCoreLoad = asyncSolrCoreLoad;
@@ -761,6 +770,8 @@ public class CoreContainer {
 
     zkSys.initZooKeeper(this, cfg.getCloudConfig());
     if (isZooKeeperAware()) {
+      // initialize ZkClient metrics
+      zkSys.getZkMetricsProducer().initializeMetrics(solrMetricsContext, "zkClient");
       pkiAuthenticationSecurityBuilder =
           new PKIAuthenticationPlugin(
               this,
@@ -839,6 +850,16 @@ public class CoreContainer {
     infoHandler = createHandler(INFO_HANDLER_PATH, cfg.getInfoHandlerClass(), InfoHandler.class);
     coreAdminHandler =
         createHandler(CORES_HANDLER_PATH, cfg.getCoreAdminHandlerClass(), CoreAdminHandler.class);
+
+    Map<String, CoreAdminOp> coreAdminHandlerActions =
+        cfg.getCoreAdminHandlerActions().entrySet().stream()
+            .collect(
+                Collectors.toMap(
+                    item -> item.getKey(),
+                    item -> loader.newInstance(item.getValue(), CoreAdminOp.class)));
+
+    // Register custom actions for CoreAdminHandler
+    coreAdminHandler.registerCustomActions(coreAdminHandlerActions);
 
     metricsHandler = new MetricsHandler(this);
     containerHandlers.put(METRICS_PATH, metricsHandler);
@@ -2435,6 +2456,34 @@ public class CoreContainer {
    */
   public void runAsync(Runnable r) {
     coreContainerAsyncTaskExecutor.submit(r);
+  }
+
+  public static void setWeakStringInterner() {
+    boolean enable = "true".equals(System.getProperty("solr.use.str.intern", "true"));
+    if (!enable) return;
+    Interner<String> interner = Interner.newWeakInterner();
+    ClusterState.setStrInternerParser(
+        new Function<>() {
+          @Override
+          public ObjectBuilder apply(JSONParser p) {
+            try {
+              return new ObjectBuilder(p) {
+                @Override
+                public void addKeyVal(Object map, Object key, Object val) throws IOException {
+                  if (key != null) {
+                    key = interner.intern(key.toString());
+                  }
+                  if (val instanceof String) {
+                    val = interner.intern((String) val);
+                  }
+                  super.addKeyVal(map, key, val);
+                }
+              };
+            } catch (IOException e) {
+              throw new RuntimeException(e);
+            }
+          }
+        });
   }
 }
 

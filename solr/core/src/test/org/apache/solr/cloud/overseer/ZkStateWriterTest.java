@@ -212,8 +212,8 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         int c2Version = state.getCollection("c2").getZNodeVersion();
 
         // Simulate an external modification to /collections/c2/state.json
-        byte[] data = zkClient.getData(ZkStateReader.getCollectionPath("c2"), null, null, true);
-        zkClient.setData(ZkStateReader.getCollectionPath("c2"), data, true);
+        byte[] data = zkClient.getData(DocCollection.getCollectionPath("c2"), null, null, true);
+        zkClient.setData(DocCollection.getCollectionPath("c2"), data, true);
 
         // get the most up-to-date state
         reader.forceUpdateCollection("c2");

@@ -40,6 +40,8 @@ public class CloudConfig {
 
   private final String zkACLProviderClass;
 
+  private final String zkCredentialsInjectorClass;
+
   private final int createCollectionWaitTimeTillActive;
 
   private final boolean createCollectionCheckLeaderActive;
@@ -63,6 +65,7 @@ public class CloudConfig {
       int leaderConflictResolveWait,
       String zkCredentialsProviderClass,
       String zkACLProviderClass,
+      String zkCredentialsInjectorClass,
       int createCollectionWaitTimeTillActive,
       boolean createCollectionCheckLeaderActive,
       String pkiHandlerPrivateKeyPath,
@@ -79,6 +82,7 @@ public class CloudConfig {
     this.leaderConflictResolveWait = leaderConflictResolveWait;
     this.zkCredentialsProviderClass = zkCredentialsProviderClass;
     this.zkACLProviderClass = zkACLProviderClass;
+    this.zkCredentialsInjectorClass = zkCredentialsInjectorClass;
     this.createCollectionWaitTimeTillActive = createCollectionWaitTimeTillActive;
     this.createCollectionCheckLeaderActive = createCollectionCheckLeaderActive;
     this.pkiHandlerPrivateKeyPath = pkiHandlerPrivateKeyPath;
@@ -127,6 +131,10 @@ public class CloudConfig {
 
   public String getZkACLProviderClass() {
     return zkACLProviderClass;
+  }
+
+  public String getZkCredentialsInjectorClass() {
+    return zkCredentialsInjectorClass;
   }
 
   public int getLeaderVoteWait() {
@@ -183,6 +191,7 @@ public class CloudConfig {
     private int leaderConflictResolveWait = DEFAULT_LEADER_CONFLICT_RESOLVE_WAIT;
     private String zkCredentialsProviderClass;
     private String zkACLProviderClass;
+    private String zkCredentialsInjectorClass;
     private int createCollectionWaitTimeTillActive = DEFAULT_CREATE_COLLECTION_ACTIVE_WAIT;
     private boolean createCollectionCheckLeaderActive =
         DEFAULT_CREATE_COLLECTION_CHECK_LEADER_ACTIVE;
@@ -227,12 +236,19 @@ public class CloudConfig {
     }
 
     public CloudConfigBuilder setZkCredentialsProviderClass(String zkCredentialsProviderClass) {
-      this.zkCredentialsProviderClass = zkCredentialsProviderClass;
+      this.zkCredentialsProviderClass =
+          zkCredentialsProviderClass != null ? zkCredentialsProviderClass.trim() : null;
       return this;
     }
 
     public CloudConfigBuilder setZkACLProviderClass(String zkACLProviderClass) {
-      this.zkACLProviderClass = zkACLProviderClass;
+      this.zkACLProviderClass = zkACLProviderClass != null ? zkACLProviderClass.trim() : null;
+      return this;
+    }
+
+    public CloudConfigBuilder setZkCredentialsInjectorClass(String zkCredentialsInjectorClass) {
+      this.zkCredentialsInjectorClass =
+          zkCredentialsInjectorClass != null ? zkCredentialsInjectorClass.trim() : null;
       return this;
     }
 
@@ -282,6 +298,7 @@ public class CloudConfig {
           leaderConflictResolveWait,
           zkCredentialsProviderClass,
           zkACLProviderClass,
+          zkCredentialsInjectorClass,
           createCollectionWaitTimeTillActive,
           createCollectionCheckLeaderActive,
           pkiHandlerPrivateKeyPath,

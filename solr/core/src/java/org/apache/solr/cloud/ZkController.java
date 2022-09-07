@@ -72,10 +72,12 @@ import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.BeforeReconnect;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DefaultConnectionStrategy;
 import org.apache.solr.common.cloud.DefaultZkACLProvider;
+import org.apache.solr.common.cloud.DefaultZkCredentialsInjector;
 import org.apache.solr.common.cloud.DefaultZkCredentialsProvider;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocCollectionWatcher;
@@ -83,6 +85,7 @@ import org.apache.solr.common.cloud.LiveNodesListener;
 import org.apache.solr.common.cloud.NodesSysPropsCacher;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.PerReplicaStates;
+import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.Type;
@@ -93,6 +96,7 @@ import org.apache.solr.common.cloud.ZkACLProvider;
 import org.apache.solr.common.cloud.ZkClientConnectionStrategy;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.ZkCredentialsInjector;
 import org.apache.solr.common.cloud.ZkCredentialsProvider;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -347,22 +351,29 @@ public class ZkController implements Closeable {
     ZkClientConnectionStrategy strat =
         ZkClientConnectionStrategy.forName(connectionStrategy, new DefaultConnectionStrategy());
 
+    String zkCredentialsInjectorClass = cloudConfig.getZkCredentialsInjectorClass();
+    ZkCredentialsInjector zkCredentialsInjector =
+        StringUtils.isEmpty(zkCredentialsInjectorClass)
+            ? new DefaultZkCredentialsInjector()
+            : cc.getResourceLoader()
+                .newInstance(zkCredentialsInjectorClass, ZkCredentialsInjector.class);
+
     String zkACLProviderClass = cloudConfig.getZkACLProviderClass();
-    ZkACLProvider zkACLProvider = null;
-    if (zkACLProviderClass != null && zkACLProviderClass.trim().length() > 0) {
-      zkACLProvider = cc.getResourceLoader().newInstance(zkACLProviderClass, ZkACLProvider.class);
-    } else {
-      zkACLProvider = new DefaultZkACLProvider();
-    }
+    ZkACLProvider zkACLProvider =
+        StringUtils.isEmpty(zkACLProviderClass)
+            ? new DefaultZkACLProvider()
+            : cc.getResourceLoader().newInstance(zkACLProviderClass, ZkACLProvider.class);
+    zkACLProvider.setZkCredentialsInjector(zkCredentialsInjector);
 
     String zkCredentialsProviderClass = cloudConfig.getZkCredentialsProviderClass();
-    if (zkCredentialsProviderClass != null && zkCredentialsProviderClass.trim().length() > 0) {
-      strat.setZkCredentialsToAddAutomatically(
-          cc.getResourceLoader()
-              .newInstance(zkCredentialsProviderClass, ZkCredentialsProvider.class));
-    } else {
-      strat.setZkCredentialsToAddAutomatically(new DefaultZkCredentialsProvider());
-    }
+    ZkCredentialsProvider zkCredentialsProvider =
+        StringUtils.isEmpty(zkCredentialsProviderClass)
+            ? new DefaultZkCredentialsProvider()
+            : cc.getResourceLoader()
+                .newInstance(zkCredentialsProviderClass, ZkCredentialsProvider.class);
+
+    zkCredentialsProvider.setZkCredentialsInjector(zkCredentialsInjector);
+    strat.setZkCredentialsToAddAutomatically(zkCredentialsProvider);
     addOnReconnectListener(getConfigDirListener());
 
     zkClient =
@@ -1051,6 +1062,7 @@ public class ZkController implements Closeable {
     }
   }
 
+  @SuppressWarnings("NarrowCalculation")
   private void checkForExistingEphemeralNode() throws KeeperException, InterruptedException {
     if (zkRunOnly) {
       return;
@@ -1784,7 +1796,7 @@ public class ZkController implements Closeable {
           log.debug("bypassed overseer for message : {}", Utils.toJSONString(m));
         }
         PerReplicaStates perReplicaStates =
-            PerReplicaStates.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
+            PerReplicaStatesFetcher.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
         PerReplicaStatesOps.flipState(coreNodeName, state, perReplicaStates)
             .persist(coll.getZNode(), zkClient);
       }

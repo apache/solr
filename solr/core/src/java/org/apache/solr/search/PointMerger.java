@@ -453,5 +453,6 @@ public class PointMerger {
     }
   }
 
+  @SuppressWarnings("StaticAssignmentOfThrowable")
   static BreakException breakException = new BreakException();
 }

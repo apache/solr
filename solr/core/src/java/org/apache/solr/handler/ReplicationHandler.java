@@ -1025,6 +1025,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   // TODO Should a failure retrieving any piece of info mark the overall request as a failure?  Is
   // there a core set of values that are required to make a response here useful?
   /** Used for showing statistics and progress information. */
+  @SuppressWarnings("NarrowCalculation")
   private NamedList<Object> getReplicationDetails(
       SolrQueryResponse rsp, boolean showFollowerDetails) {
     NamedList<Object> details = new SimpleOrderedMap<>();

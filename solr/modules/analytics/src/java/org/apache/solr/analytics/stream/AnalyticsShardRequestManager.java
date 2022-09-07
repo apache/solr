@@ -41,7 +41,6 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -104,8 +103,7 @@ public class AnalyticsShardRequestManager {
   protected void pickShards(String collection) throws IOException {
     try {
 
-      ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
-      ClusterState clusterState = zkStateReader.getClusterState();
+      ClusterState clusterState = cloudSolrClient.getClusterState();
       Set<String> liveNodes = clusterState.getLiveNodes();
 
       Slice[] slices = clusterState.getCollection(collection).getActiveSlicesArr();
