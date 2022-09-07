@@ -1025,7 +1025,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   // TODO Should a failure retrieving any piece of info mark the overall request as a failure?  Is
   // there a core set of values that are required to make a response here useful?
   /** Used for showing statistics and progress information. */
-  @SuppressWarnings("NarrowCalculation")
   private NamedList<Object> getReplicationDetails(
       SolrQueryResponse rsp, boolean showFollowerDetails) {
     NamedList<Object> details = new SimpleOrderedMap<>();
@@ -1126,7 +1125,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
               currFileSizeDownloaded = (Long) currentFile.get("bytesDownloaded");
               bytesDownloaded += currFileSizeDownloaded;
               if (currFileSize > 0)
-                percentDownloaded = (currFileSizeDownloaded * 100) / currFileSize;
+                percentDownloaded = (float) (currFileSizeDownloaded * 100) / currFileSize;
             }
           }
           follower.add("filesDownloaded", filesDownloaded);
@@ -1146,7 +1145,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
                 ((bytesToDownload - bytesDownloaded) * elapsed) / bytesDownloaded;
           float totalPercent = 0;
           long downloadSpeed = 0;
-          if (bytesToDownload > 0) totalPercent = (bytesDownloaded * 100) / bytesToDownload;
+          if (bytesToDownload > 0) totalPercent = (float) (bytesDownloaded * 100) / bytesToDownload;
           if (elapsed > 0) downloadSpeed = (bytesDownloaded / elapsed);
           if (currFile != null) follower.add("currentFile", currFile);
           follower.add("currentFileSize", NumberUtils.readableSize(currFileSize));

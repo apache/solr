@@ -107,7 +107,6 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
     commit();
   }
 
-  @SuppressWarnings("NarrowCalculation")
   public void test() throws Exception {
     buildIndex();
 
@@ -187,7 +186,7 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
                 + numMatches
                 + ", p="
                 + p,
-            (Math.abs(numMatches - estimate) / numMatches) < relErr);
+            ((float) Math.abs(numMatches - estimate) / numMatches) < relErr);
       }
     }
 
@@ -262,12 +261,11 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
   }
 
   /** Returns the (max) expected relative error according ot the HLL algorithm docs */
-  @SuppressWarnings("LongDoubleConversion")
   private static double expectedRelativeError(final int log2m) {
-    final long m = 1 << log2m;
+    final long m = 1L << log2m;
     // theoretical error is 1.04D * sqrt(m)
     // fudge slightly to account for variance in random data
-    return 1.1D / Math.sqrt(m);
+    return 1.1D / Math.sqrt((double) m);
   }
 
   /**
