@@ -894,6 +894,7 @@ public class FieldCacheImpl implements FieldCache {
       }
     }
 
+    @SuppressWarnings("NarrowCalculation")
     @Override
     public long ramBytesUsed() {
       return bytes.ramBytesUsed()
@@ -1107,6 +1108,7 @@ public class FieldCacheImpl implements FieldCache {
       };
     }
 
+    @SuppressWarnings("NarrowCalculation")
     @Override
     public long ramBytesUsed() {
       return bytes.ramBytesUsed()

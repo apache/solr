@@ -1052,6 +1052,7 @@ public class ZkController implements Closeable {
     }
   }
 
+  @SuppressWarnings("NarrowCalculation")
   private void checkForExistingEphemeralNode() throws KeeperException, InterruptedException {
     if (zkRunOnly) {
       return;

@@ -67,6 +67,7 @@ public class TestHash extends SolrTestCase {
 
   // test that the hash of the UTF-16 encoded Java String is equal to the hash of the unicode code
   // points
+  @SuppressWarnings("UnnecessaryLongToIntConversion")
   void tstEquiv(int[] utf32, int len) {
     int seed = 100;
     StringBuilder sb = new StringBuilder();

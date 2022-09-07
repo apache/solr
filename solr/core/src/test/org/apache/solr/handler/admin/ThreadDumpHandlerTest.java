@@ -191,11 +191,8 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
         ManagementFactory.getThreadMXBean().isSynchronizerUsageSupported());
 
     // unique class name to show up as a lock class name in output
-    final class TestReentrantLockStruct extends ReentrantLock {
-      /* empty */
-    }
 
-    final List<String> failures = new ArrayList<>();
+      final List<String> failures = new ArrayList<>();
     final CountDownLatch lockIsHeldLatch = new CountDownLatch(1);
     final CountDownLatch doneWithTestLatch = new CountDownLatch(1);
     final ReentrantLock lock = new ReentrantLock();
