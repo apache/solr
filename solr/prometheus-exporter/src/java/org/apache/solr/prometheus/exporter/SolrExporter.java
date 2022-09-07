@@ -26,6 +26,7 @@ import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
@@ -68,7 +69,7 @@ public class SolrExporter {
   private static final String ARG_CLUSTER_ID_DEST = "clusterId";
   private static final String ARG_CLUSTER_ID_DEFAULT = "";
   private static final String ARG_CLUSTER_ID_HELP =
-      "Specify a unique identifier for the cluster, which can be used to select between multiple clusters in Grafana. By default this ID will be equal to the -b or -z argument";
+      "Specify a unique identifier for the cluster, which can be used to select between multiple clusters in Grafana. By default this ID will be equal to a hash of the -b or -z argument";
 
   private static final String[] ARG_CONFIG_FLAGS = {"-f", "--config-file"};
   private static final String ARG_CONFIG_METAVAR = "CONFIG";
@@ -248,10 +249,10 @@ public class SolrExporter {
 
       String defaultClusterId = "";
       if (!res.getString(ARG_ZK_HOST_DEST).equals("")) {
-        defaultClusterId = res.getString(ARG_ZK_HOST_DEST);
+        defaultClusterId = makeShortHash(res.getString(ARG_ZK_HOST_DEST));
         scrapeConfiguration = SolrScrapeConfiguration.solrCloud(defaultClusterId);
       } else if (!res.getString(ARG_BASE_URL_DEST).equals("")) {
-        defaultClusterId = res.getString(ARG_BASE_URL_DEST);
+        defaultClusterId = makeShortHash(res.getString(ARG_BASE_URL_DEST));
         scrapeConfiguration = SolrScrapeConfiguration.standalone(defaultClusterId);
       }
 
@@ -285,6 +286,16 @@ public class SolrExporter {
     } catch (ArgumentParserException e) {
       parser.handleError(e);
     }
+  }
+
+  /**
+   * Creates a short 10-char hash of a longer string, based on first chars of the sha256 hash
+   *
+   * @param inputString original string
+   * @return 10 char hash
+   */
+  static String makeShortHash(String inputString) {
+    return DigestUtils.sha256Hex(inputString).substring(0, 10);
   }
 
   private static MetricsConfiguration loadMetricsConfiguration(String configPath) {
