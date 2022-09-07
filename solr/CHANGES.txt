@@ -179,6 +179,8 @@ Other Changes
 
 * SOLR-16296: XmlConfigFile and QueryElevationComponent now use SafeXMLParsing. (Haythem Khiri)
 
+* SOLR-16369: Avoid XPath in parsing elevate.xml (Haythem Khiri)
+
 Build
 ---------------------
 * SOLR-16204: Change Lucene dependency to Lucene 9.1.0 (Elia Porciani via Alessandro Benedetti)
