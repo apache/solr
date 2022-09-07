@@ -127,6 +127,7 @@ public class LegacyExpressionTest extends LegacyAbstractAnalyticsTest {
     assertEquals(getRawResponse(), Math.pow(meanResult, countResult), result, 0.0);
   }
 
+  @SuppressWarnings("LongDoubleConversion")
   @Test
   public void negateTest() throws Exception {
     double sumResult = (Double) getStatResult("nr", "sum", VAL_TYPE.DOUBLE);
@@ -138,6 +139,7 @@ public class LegacyExpressionTest extends LegacyAbstractAnalyticsTest {
     assertEquals(getRawResponse(), -1 * countResult, lresult, 0.0);
   }
 
+  @SuppressWarnings("LongDoubleConversion")
   @Test
   public void absoluteValueTest() throws Exception {
     double sumResult = (Double) getStatResult("avr", "sum", VAL_TYPE.DOUBLE);

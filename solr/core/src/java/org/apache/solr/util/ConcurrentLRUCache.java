@@ -646,7 +646,7 @@ public class ConcurrentLRUCache<K, V> implements Cache<K, V>, Accountable {
       myMaxSize = maxSz;
     }
 
-    @SuppressWarnings({"unchecked","NarrowCalculation"})
+    @SuppressWarnings({"unchecked", "NarrowCalculation"})
     Iterable<CacheEntry<K, V>> getValues() {
       return (Iterable) Collections.unmodifiableCollection(Arrays.asList(heap));
     }
