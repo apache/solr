@@ -175,7 +175,7 @@ Other Changes
 
 * SOLR-16324: Upgrade commons-configuration2 to 2.8.0 and commons-text to 1.8 (Kevin Risden)
 
-* SOLR-16296: Remove the use of XmlConfigFile by QueryElevationComponent. (Haythem Khiri)
+* SOLR-16296: XmlConfigFile and QueryElevationComponent now use SafeXMLParsing. (Haythem Khiri)
 
 Build
 ---------------------
