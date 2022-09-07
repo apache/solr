@@ -40,6 +40,8 @@ Improvements
 
 * SOLR-16181: Initialize the LogWatcher earlier in CoreContainer#load() (janhoy)
 
+* SOLR-16192: Add ZK credentials injectors support (Lamine Idjeraoui with review by Anshum Gupta, Jason Gerlowski, Mike Drob and Houston Putman)
+
 * SOLR-16225: Upgrade dependencies (Carrot2, HPPC) (Dawid Weiss)
 
 * SOLR-16257: Improve ZkStateReader to avoid race condition between collectionWatches and watchedCollectionStates
@@ -100,7 +102,7 @@ Bug Fixes
 
 * SOLR-16142: Fix Admin UI's spatial parameter generation. (Arsal Jalib, Christine Poerschke)
 
-* SOLR-9661: Fix explanation of select() streaming expression that uses replace() operation  (Ahmet Can Kepenek via Eric Pugh) 
+* SOLR-9661: Fix explanation of select() streaming expression that uses replace() operation  (Ahmet Can Kepenek via Eric Pugh)
 
 * SOLR-16316: Fix debugQuery clicking on the Query UI does not show the debug.explain.structured option. (Shiming Li via Eric Pugh)
 
