@@ -33,6 +33,7 @@ public class LegacyFunctionTest extends LegacyAbstractAnalyticsTest {
   public static final int NUM_LOOPS = 100;
 
   @BeforeClass
+  @SuppressWarnings("LongDoubleConversion")
   public static void beforeClass() throws Exception {
     initCore("solrconfig-analytics.xml", "schema-analytics.xml");
     h.update("<delete><query>*:*</query></delete>");

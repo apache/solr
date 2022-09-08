@@ -122,6 +122,7 @@ public class LogFunctionTest extends SolrTestCaseJ4 {
     assertTrue(func.exists());
   }
 
+  @SuppressWarnings("LongDoubleConversion")
   @Test
   public void oneMultiOneSingleValueParameterTest() {
     TestLongValueStream base = new TestLongValueStream();
@@ -165,6 +166,7 @@ public class LogFunctionTest extends SolrTestCaseJ4 {
     assertFalse(values.hasNext());
   }
 
+  @SuppressWarnings("LongDoubleConversion")
   @Test
   public void oneSingleOneMultiValueParameterTest() {
     TestDoubleValue base = new TestDoubleValue();

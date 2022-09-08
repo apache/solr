@@ -607,6 +607,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     }
   }
 
+  @SuppressWarnings("NarrowCalculation")
   private String[] getTenSecondWindow(int size, int lag, String start) {
     try {
       List<String> windowList = new ArrayList<>();

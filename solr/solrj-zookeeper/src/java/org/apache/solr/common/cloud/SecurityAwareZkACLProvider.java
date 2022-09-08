@@ -28,6 +28,20 @@ public abstract class SecurityAwareZkACLProvider implements ZkACLProvider {
 
   private List<ACL> nonSecurityACLsToAdd;
   private List<ACL> securityACLsToAdd;
+  protected ZkCredentialsInjector zkCredentialsInjector;
+
+  public SecurityAwareZkACLProvider() {
+    this(new DefaultZkCredentialsInjector());
+  }
+
+  public SecurityAwareZkACLProvider(ZkCredentialsInjector zkCredentialsInjector) {
+    this.zkCredentialsInjector = zkCredentialsInjector;
+  }
+
+  @Override
+  public void setZkCredentialsInjector(ZkCredentialsInjector zkCredentialsInjector) {
+    this.zkCredentialsInjector = zkCredentialsInjector;
+  }
 
   @Override
   public final List<ACL> getACLsToAdd(String zNodePath) {

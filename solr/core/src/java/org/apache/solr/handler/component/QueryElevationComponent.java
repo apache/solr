@@ -44,6 +44,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.SortedSet;
@@ -79,7 +80,6 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceNotFoundException;
-import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.ElevatedMarkerFactory;
 import org.apache.solr.response.transform.ExcludedMarkerFactory;
@@ -90,11 +90,14 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.util.RefCounted;
+import org.apache.solr.util.SafeXMLParsing;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 /**
  * A component to elevate some documents to the top of the result set.
@@ -376,10 +379,10 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    *
    * @return The loaded {@link ElevationProvider}; not null.
    */
-  private ElevationProvider loadElevationProvider(SolrCore core) throws Exception {
-    XmlConfigFile cfg;
+  private ElevationProvider loadElevationProvider(SolrCore core) throws IOException, SAXException {
+    Document xmlDocument;
     try {
-      cfg = new XmlConfigFile(core.getResourceLoader(), configFileName);
+      xmlDocument = SafeXMLParsing.parseConfigXML(log, core.getResourceLoader(), configFileName);
     } catch (SolrResourceNotFoundException e) {
       String msg = "Missing config file \"" + configFileName + "\"";
       if (Files.exists(Path.of(core.getDataDir(), configFileName))) {
@@ -402,9 +405,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       }
       throw e;
     }
-    ElevationProvider elevationProvider = loadElevationProvider(cfg);
-    assert elevationProvider != null;
-    return elevationProvider;
+    return Objects.requireNonNull(loadElevationProvider(xmlDocument));
   }
 
   /**
@@ -413,17 +414,20 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    * @throws RuntimeException If the config does not provide an XML content of the expected format
    *     (either {@link RuntimeException} or {@link org.apache.solr.common.SolrException}).
    */
-  protected ElevationProvider loadElevationProvider(XmlConfigFile config) {
+  protected ElevationProvider loadElevationProvider(Document doc) {
+    if (!doc.getDocumentElement().getNodeName().equals("elevate")) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "Root element must be <elevate>");
+    }
     Map<ElevatingQuery, ElevationBuilder> elevationBuilderMap = new LinkedHashMap<>();
+    NodeList nodes = doc.getDocumentElement().getElementsByTagName("query");
     XPath xpath = XPathFactory.newInstance().newXPath();
-    NodeList nodes = (NodeList) config.evaluate("elevate/query", XPathConstants.NODESET);
     for (int i = 0; i < nodes.getLength(); i++) {
       Node node = nodes.item(i);
       String queryString = DOMUtil.getAttr(node, "text", "missing query 'text'");
       String matchString = DOMUtil.getAttr(node, "match");
       ElevatingQuery elevatingQuery =
           new ElevatingQuery(queryString, isSubsetMatchPolicy(matchString));
-
       NodeList children;
       try {
         children = (NodeList) xpath.evaluate("doc", node, XPathConstants.NODESET);

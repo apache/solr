@@ -168,6 +168,7 @@ public class DocTermOrds implements Accountable {
 
   // TODO: Why is indexedTermsArray not part of this?
   /** Returns total bytes used. */
+  @SuppressWarnings("NarrowCalculation")
   @Override
   public long ramBytesUsed() {
     // can cache the mem size since it shouldn't change

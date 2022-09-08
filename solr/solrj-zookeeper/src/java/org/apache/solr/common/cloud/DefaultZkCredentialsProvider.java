@@ -22,6 +22,20 @@ import java.util.Collection;
 public class DefaultZkCredentialsProvider implements ZkCredentialsProvider {
 
   private Collection<ZkCredentials> zkCredentials;
+  protected ZkCredentialsInjector zkCredentialsInjector;
+
+  public DefaultZkCredentialsProvider() {
+    this(new DefaultZkCredentialsInjector());
+  }
+
+  public DefaultZkCredentialsProvider(ZkCredentialsInjector zkCredentialsInjector) {
+    this.zkCredentialsInjector = zkCredentialsInjector;
+  }
+
+  @Override
+  public void setZkCredentialsInjector(ZkCredentialsInjector zkCredentialsInjector) {
+    this.zkCredentialsInjector = zkCredentialsInjector;
+  }
 
   @Override
   public Collection<ZkCredentials> getCredentials() {
@@ -34,6 +48,6 @@ public class DefaultZkCredentialsProvider implements ZkCredentialsProvider {
   }
 
   protected Collection<ZkCredentials> createCredentials() {
-    return new ArrayList<ZkCredentials>();
+    return new ArrayList<>();
   }
 }

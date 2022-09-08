@@ -64,6 +64,8 @@ Improvements
 
 * SOLR-16181: Initialize the LogWatcher earlier in CoreContainer#load() (janhoy)
 
+* SOLR-16192: Add ZK credentials injectors support (Lamine Idjeraoui with review by Anshum Gupta, Jason Gerlowski, Mike Drob and Houston Putman)
+
 * SOLR-16225: Upgrade dependencies (Carrot2, HPPC) (Dawid Weiss)
 
 * SOLR-16257: Improve ZkStateReader to avoid race condition between collectionWatches and watchedCollectionStates
@@ -91,6 +93,8 @@ Optimizations
 * SOLR-9359: Enable warming queries to be managed using Config API (Andy Webb, Eric Pugh)
 
 * SOLR-16336: avoid fetching solrconfig.xml & schema.xml for already cached schema and config (noble)
+
+* SOLR-16328: intern() strings in DocCollection to reduce memory footprint (noble)
 
 Bug Fixes
 ---------------------
@@ -126,9 +130,11 @@ Bug Fixes
 
 * SOLR-16142: Fix Admin UI's spatial parameter generation. (Arsal Jalib, Christine Poerschke)
 
-* SOLR-9661: Fix explanation of select() streaming expression that uses replace() operation  (Ahmet Can Kepenek via Eric Pugh) 
+* SOLR-9661: Fix explanation of select() streaming expression that uses replace() operation  (Ahmet Can Kepenek via Eric Pugh)
 
 * SOLR-16316: Fix debugQuery clicking on the Query UI does not show the debug.explain.structured option. (Shiming Li via Eric Pugh)
+
+* SOLR-16399: ExportWriter fails with max values for fields (Kevin Risden)
 
 Other Changes
 ---------------------
@@ -170,6 +176,12 @@ Other Changes
 
 * SOLR-15342: SolrJ: Split ZooKeeper based dependencies off to a solr-solrj-zookeeper module /
   dependency. (David Smiley, Haythem Khiri)
+
+* SOLR-16324: Upgrade commons-configuration2 to 2.8.0 and commons-text to 1.8 (Kevin Risden)
+
+* SOLR-16296: XmlConfigFile and QueryElevationComponent now use SafeXMLParsing. (Haythem Khiri)
+
+* SOLR-16402: Bump google-cloud-bom to 0.178.0 (Kevin Risden)
 
 Build
 ---------------------
