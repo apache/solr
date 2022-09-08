@@ -92,6 +92,8 @@ Optimizations
 
 * SOLR-16336: avoid fetching solrconfig.xml & schema.xml for already cached schema and config (noble)
 
+* SOLR-16328: intern() strings in DocCollection to reduce memory footprint (noble)
+
 Bug Fixes
 ---------------------
 * SOLR-15918: Skip repetitive parent znode creation on config set upload (Mike Drob)
@@ -174,6 +176,10 @@ Other Changes
   dependency. (David Smiley, Haythem Khiri)
 
 * SOLR-16324: Upgrade commons-configuration2 to 2.8.0 and commons-text to 1.8 (Kevin Risden)
+
+* SOLR-16296: XmlConfigFile and QueryElevationComponent now use SafeXMLParsing. (Haythem Khiri)
+
+* SOLR-16402: Bump google-cloud-bom to 0.178.0 (Kevin Risden)
 
 Build
 ---------------------

@@ -327,6 +327,7 @@ public abstract class DocValuesAcc extends SlotAcc {
     double[] result;
     double initialValue;
 
+    @SuppressWarnings("LongDoubleConversion")
     public DoubleSortedSetDVAcc(
         FacetContext fcontext, SchemaField sf, int numSlots, long initialValue) throws IOException {
       super(fcontext, sf, numSlots);

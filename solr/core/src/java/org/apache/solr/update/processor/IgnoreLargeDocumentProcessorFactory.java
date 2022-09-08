@@ -140,6 +140,7 @@ public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorF
       return primitiveEstimate(obj, 0L);
     }
 
+    @SuppressWarnings("NarrowCalculation")
     private static long primitiveEstimate(Object obj, long def) {
       Class<?> clazz = obj.getClass();
       if (clazz.isPrimitive()) {

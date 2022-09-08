@@ -177,6 +177,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     CLIENTS.clear();
   }
 
+  @SuppressWarnings("NarrowCalculation")
   @Before
   private void clearCloudCollection() throws Exception {
     TestInjection.reset();

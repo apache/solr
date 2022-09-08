@@ -572,6 +572,7 @@ public class SimplePostTool {
    *
    * @return number of files posted
    */
+  @SuppressWarnings("NarrowCalculation")
   int postFiles(File[] files, OutputStream out, String type) {
     int filesPosted = 0;
     for (File srcFile : files) {
@@ -658,6 +659,7 @@ public class SimplePostTool {
    * @param out output stream to write to
    * @return number of pages crawled on this level and below
    */
+  @SuppressWarnings("NarrowCalculation")
   protected int webCrawl(int level, OutputStream out) {
     int numPages = 0;
     LinkedHashSet<URI> stack = backlog.get(level);
