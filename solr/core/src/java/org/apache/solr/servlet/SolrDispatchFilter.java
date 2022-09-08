@@ -148,7 +148,9 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
                   .nodeRoles
                   .getRoleMode(NodeRoles.Role.COORDINATOR));
       solrCallFactory =
-          isCoordinator ? new CoordinatorHttpSolrCall.Factory() : new HttpSolrCallFactory() {};
+          isCoordinator ?
+                  new CoordinatorHttpSolrCall.Factory() :
+                  new HttpSolrCallFactory() {};
       if (log.isTraceEnabled()) {
         log.trace("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
       }
@@ -412,7 +414,7 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
         HttpServletResponse response,
         boolean retry) {
       if (filter.isV2Enabled && (path.startsWith("/____v2/") || path.equals("/____v2"))) {
-        return new V2HttpCall(filter, cores, request, response, false);
+        return new V2HttpCall(filter, cores, request, response, retry);
       } else {
         return new HttpSolrCall(filter, cores, request, response, retry);
       }

@@ -39,6 +39,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.DelegatedSolrQueryRequest;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -192,88 +193,7 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
     CloudDescriptor cloudDescriptor =
         new CloudDescriptor(
             delegate.getCore().getCoreDescriptor(), delegate.getCore().getName(), p);
-    return new SolrQueryRequest() {
-      @Override
-      public SolrParams getParams() {
-        return delegate.getParams();
-      }
-
-      @Override
-      public void setParams(SolrParams params) {
-
-        delegate.setParams(params);
-      }
-
-      @Override
-      public Iterable<ContentStream> getContentStreams() {
-        return delegate.getContentStreams();
-      }
-
-      @Override
-      public SolrParams getOriginalParams() {
-        return delegate.getOriginalParams();
-      }
-
-      @Override
-      public Map<Object, Object> getContext() {
-        return delegate.getContext();
-      }
-
-      @Override
-      public void close() {
-        delegate.close();
-      }
-
-      @Override
-      public long getStartTime() {
-        return delegate.getStartTime();
-      }
-
-      @Override
-      public RTimerTree getRequestTimer() {
-        return delegate.getRequestTimer();
-      }
-
-      @Override
-      public SolrIndexSearcher getSearcher() {
-        return delegate.getSearcher();
-      }
-
-      @Override
-      public SolrCore getCore() {
-        return delegate.getCore();
-      }
-
-      @Override
-      public IndexSchema getSchema() {
-        return delegate.getSchema();
-      }
-
-      @Override
-      public void updateSchemaToLatest() {
-        delegate.updateSchemaToLatest();
-      }
-
-      @Override
-      public String getParamString() {
-        return delegate.getParamString();
-      }
-
-      @Override
-      public Map<String, Object> getJSON() {
-        return delegate.getJSON();
-      }
-
-      @Override
-      public void setJSON(Map<String, Object> json) {
-        delegate.setJSON(json);
-      }
-
-      @Override
-      public Principal getUserPrincipal() {
-        return delegate.getUserPrincipal();
-      }
-
+    return new DelegatedSolrQueryRequest(delegate) {
       @Override
       public HttpSolrCall getHttpSolrCall() {
         return httpSolrCall;
@@ -286,6 +206,7 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
     };
   }
 
+  //The factory that creates an instance of HttpSolrCall
   public static class Factory implements SolrDispatchFilter.HttpSolrCallFactory {
     private final Map<String, String> collectionVsCoreNameMapping = new ConcurrentHashMap<>();
 
