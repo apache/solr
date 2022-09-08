@@ -35,6 +35,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import java.lang.invoke.MethodHandles;
 
+import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.common.SolrException.ErrorCode.getErrorCode;
 import static org.apache.solr.common.params.CommonParams.WT;
 import static org.apache.solr.jersey.RequestContextKeys.HANDLER_METRICS;
@@ -120,7 +121,7 @@ public class CatchAllExceptionMapper implements ExceptionMapper<Exception> {
       case "xml":
         return "application/xml";
       case "javabin":
-        return "application/octet-stream";
+        return BINARY_CONTENT_TYPE_V2;
       default:
         return "application/json";
     }

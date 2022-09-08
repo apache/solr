@@ -16,9 +16,12 @@
  */
 package org.apache.solr.client.solrj;
 
+import org.apache.solr.common.util.NamedList;
+
 import java.io.InputStream;
 import java.io.Reader;
-import org.apache.solr.common.util.NamedList;
+import java.util.Collection;
+import java.util.Set;
 
 /**
  * @since solr 1.3
@@ -34,9 +37,20 @@ public abstract class ResponseParser {
    * A well behaved ResponseParser will return its content-type.
    *
    * @return the content-type this parser expects to parse
+   * @deprecated use {@link #getContentTypes()} instead
    */
+  @Deprecated
   public String getContentType() {
     return null;
+  }
+
+  /**
+   * A well-behaved ResponseParser will return the content-types it supports.
+   *
+   * @return the content-type values that this parser is capable of parsing.
+   */
+  public Collection<String> getContentTypes() {
+    return Set.of(getContentType());
   }
 
   /**

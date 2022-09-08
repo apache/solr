@@ -16,18 +16,22 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Reader;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
+import java.util.Collection;
+import java.util.Set;
+
 /**
  * @since solr 1.3
  */
 public class BinaryResponseParser extends ResponseParser {
+  public static final String BINARY_CONTENT_TYPE_V2 = "application/vnd.apache.solr.javabin";
   public static final String BINARY_CONTENT_TYPE = "application/octet-stream";
 
   protected JavaBinCodec.StringCache stringCache;
@@ -59,6 +63,11 @@ public class BinaryResponseParser extends ResponseParser {
   @Override
   public String getContentType() {
     return BINARY_CONTENT_TYPE;
+  }
+
+  @Override
+  public Collection<String> getContentTypes() {
+    return Set.of(BINARY_CONTENT_TYPE, BINARY_CONTENT_TYPE_V2);
   }
 
   @Override

@@ -16,38 +16,7 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import static org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteExecutionException;
-import static org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
-import static org.apache.solr.common.util.Utils.getObjectByPath;
-
-import java.io.ByteArrayOutputStream;
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
-import java.lang.reflect.InvocationTargetException;
-import java.net.ConnectException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Phaser;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import org.apache.http.entity.ContentType;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -98,6 +67,40 @@ import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
+import java.lang.reflect.InvocationTargetException;
+import java.net.ConnectException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Phaser;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
+
+import static org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteExecutionException;
+import static org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
+import static org.apache.solr.common.util.Utils.getObjectByPath;
 
 /**
  * Difference between this {@link Http2SolrClient} and {@link HttpSolrClient}:
@@ -755,25 +758,27 @@ public class Http2SolrClient extends SolrClient {
         return rsp;
       }
 
-      String procCt = processor.getContentType();
-      if (procCt != null) {
-        String procMimeType =
-            MimeTypes.getContentTypeWithoutCharset(procCt).trim().toLowerCase(Locale.ROOT);
-        if (!procMimeType.equals(mimeType)) {
+      final Collection<String> processorSupportedContentTypes = processor.getContentTypes();
+      if (processorSupportedContentTypes != null && ! processorSupportedContentTypes.isEmpty()) {
+        final Collection<String> processorMimeTypes = processorSupportedContentTypes.stream()
+                .map(ct -> ContentType.parse(ct).getMimeType().trim().toLowerCase(Locale.ROOT))
+                .collect(Collectors.toSet());
+        if (! processorMimeTypes.contains(mimeType)) {
           // unexpected mime type
-          String prefix = "Expected mime type " + procMimeType + " but got " + mimeType + ". ";
+          final String allSupportedTypes = String.join(", ", processorMimeTypes);
+          String prefix = "Expected mime type in [" + allSupportedTypes + "] but got " + mimeType + ". ";
           String exceptionEncoding = encoding != null ? encoding : FALLBACK_CHARSET.name();
           try {
             ByteArrayOutputStream body = new ByteArrayOutputStream();
             is.transferTo(body);
             throw new RemoteSolrException(
-                serverBaseUrl, httpStatus, prefix + body.toString(exceptionEncoding), null);
+                    serverBaseUrl, httpStatus, prefix + body.toString(exceptionEncoding), null);
           } catch (IOException e) {
             throw new RemoteSolrException(
-                serverBaseUrl,
-                httpStatus,
-                "Could not parse response with encoding " + exceptionEncoding,
-                e);
+                    serverBaseUrl,
+                    httpStatus,
+                    "Could not parse response with encoding " + exceptionEncoding,
+                    e);
           }
         }
       }

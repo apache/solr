@@ -39,6 +39,7 @@ import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 
+import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_REQUEST;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_RESPONSE;
 import static org.apache.solr.response.QueryResponseWriter.CONTENT_TYPE_TEXT_UTF8;
@@ -65,7 +66,7 @@ public class MessageBodyWriters {
     }
   }
 
-  @Produces("application/octet-stream")
+  @Produces(BINARY_CONTENT_TYPE_V2)
   public static class JavabinMessageBodyWriter extends BaseMessageBodyWriter
       implements MessageBodyWriter<JacksonReflectMapWriter> {
     @Override
@@ -75,7 +76,7 @@ public class MessageBodyWriters {
 
     @Override
     public String getSupportedMediaType() {
-      return "application/octet-stream";
+      return BINARY_CONTENT_TYPE_V2;
     }
   }
 

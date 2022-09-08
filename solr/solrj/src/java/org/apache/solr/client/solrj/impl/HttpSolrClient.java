@@ -16,34 +16,6 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import static org.apache.solr.common.util.Utils.getObjectByPath;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
-import java.lang.invoke.MethodHandles;
-import java.net.ConnectException;
-import java.net.MalformedURLException;
-import java.net.SocketTimeoutException;
-import java.net.URL;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.security.Principal;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpMessage;
@@ -89,6 +61,36 @@ import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.lang.invoke.MethodHandles;
+import java.net.ConnectException;
+import java.net.MalformedURLException;
+import java.net.SocketTimeoutException;
+import java.net.URL;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.security.Principal;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.stream.Collectors;
+
+import static org.apache.solr.common.util.Utils.getObjectByPath;
 
 /**
  * A SolrClient implementation that talks directly to a Solr server via Apache HTTP client
@@ -630,36 +632,38 @@ public class HttpSolrClient extends BaseHttpSolrClient {
         return rsp;
       }
 
-      String procCt = processor.getContentType();
-      if (procCt != null) {
-        String procMimeType =
-            ContentType.parse(procCt).getMimeType().trim().toLowerCase(Locale.ROOT);
-        if (!procMimeType.equals(mimeType)) {
+      final Collection<String> processorSupportedContentTypes = processor.getContentTypes();
+      if (processorSupportedContentTypes != null && ! processorSupportedContentTypes.isEmpty()) {
+        final Collection<String> processorMimeTypes = processorSupportedContentTypes.stream()
+                .map(ct -> ContentType.parse(ct).getMimeType().trim().toLowerCase(Locale.ROOT))
+                .collect(Collectors.toSet());
+        if (! processorMimeTypes.contains(mimeType)) {
           if (isUnmatchedErrorCode(mimeType, httpStatus)) {
             throw new RemoteSolrException(
-                baseUrl,
-                httpStatus,
-                "non ok status: "
-                    + httpStatus
-                    + ", message:"
-                    + response.getStatusLine().getReasonPhrase(),
-                null);
+                    baseUrl,
+                    httpStatus,
+                    "non ok status: "
+                            + httpStatus
+                            + ", message:"
+                            + response.getStatusLine().getReasonPhrase(),
+                    null);
           }
 
           // unexpected mime type
-          String prefix = "Expected mime type " + procMimeType + " but got " + mimeType + ". ";
+          final String combinedMimeTypes = String.join(", ", processorMimeTypes);
+          String prefix = "Expected mime type in [" + combinedMimeTypes + "] but got " + mimeType + ". ";
           Charset exceptionCharset = charset != null ? charset : FALLBACK_CHARSET;
           try {
             ByteArrayOutputStream body = new ByteArrayOutputStream();
             respBody.transferTo(body);
             throw new RemoteSolrException(
-                baseUrl, httpStatus, prefix + body.toString(exceptionCharset), null);
+                    baseUrl, httpStatus, prefix + body.toString(exceptionCharset), null);
           } catch (IOException e) {
             throw new RemoteSolrException(
-                baseUrl,
-                httpStatus,
-                "Could not parse response with encoding " + exceptionCharset,
-                e);
+                    baseUrl,
+                    httpStatus,
+                    "Could not parse response with encoding " + exceptionCharset,
+                    e);
           }
         }
       }
