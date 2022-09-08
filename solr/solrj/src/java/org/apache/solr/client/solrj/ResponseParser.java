@@ -50,6 +50,10 @@ public abstract class ResponseParser {
    * @return the content-type values that this parser is capable of parsing.
    */
   public Collection<String> getContentTypes() {
+    final String contentType = getContentType();
+    if (contentType == null) {
+      return Set.of();
+    }
     return Set.of(getContentType());
   }
 
