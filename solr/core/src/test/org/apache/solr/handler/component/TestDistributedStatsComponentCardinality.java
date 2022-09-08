@@ -140,9 +140,9 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
       // MINIMUM_LOG2M_PARAM is just too absurdly small to give anything remotely close to the
       // theoretically expected relative error.
       //
-      // So we have to use a slightly higher lower bound on what log2m values we randomly test
+      // So we have to use a higher lower bound on what log2m values we randomly test
       final int log2m =
-          TestUtil.nextInt(random(), 2 + HLL.MINIMUM_LOG2M_PARAM, HLL.MAXIMUM_LOG2M_PARAM);
+          TestUtil.nextInt(random(), 13 + HLL.MINIMUM_LOG2M_PARAM, HLL.MAXIMUM_LOG2M_PARAM);
 
       // use max regwidth to try and prevent hash collisions from introducing problems
       final int regwidth = HLL.MAXIMUM_REGWIDTH_PARAM;
@@ -173,20 +173,24 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
 
       for (String f : STAT_FIELDS) {
         // check the relative error of the estimate returned against the known truth
-
         final double relErr = expectedRelativeError(log2m);
         final long estimate = stats.get(f).getCardinality();
+        final double actualError = ((double) Math.abs(numMatches - estimate) / numMatches);
         assertTrue(
             f
-                + ": relativeErr="
+                + ": log2m="
+                + log2m
+                + ", relativeErr="
                 + relErr
+                + ", actualError="
+                + actualError
                 + ", estimate="
                 + estimate
                 + ", real="
                 + numMatches
                 + ", p="
                 + p,
-            ((float) Math.abs(numMatches - estimate) / numMatches) < relErr);
+            actualError < relErr);
       }
     }
 
@@ -265,7 +269,7 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
     final long m = 1L << log2m;
     // theoretical error is 1.04D * sqrt(m)
     // fudge slightly to account for variance in random data
-    return 1.1D / Math.sqrt((double) m);
+    return 1.10D * (1.04D / Math.sqrt((double) m));
   }
 
   /**
