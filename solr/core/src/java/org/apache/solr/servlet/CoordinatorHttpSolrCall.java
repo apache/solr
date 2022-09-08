@@ -219,7 +219,7 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
         HttpServletResponse response,
         boolean retry) {
       if ((path.startsWith("/____v2/") || path.equals("/____v2"))) {
-        return new CoordinatorV2HttpSolrCall(this, filter, cores, request, response, false);
+        return new CoordinatorV2HttpSolrCall(this, filter, cores, request, response, retry);
       } else {
         return new CoordinatorHttpSolrCall(this, filter, cores, request, response, retry);
       }
