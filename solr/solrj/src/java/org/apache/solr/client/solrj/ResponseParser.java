@@ -16,12 +16,11 @@
  */
 package org.apache.solr.client.solrj;
 
-import org.apache.solr.common.util.NamedList;
-
 import java.io.InputStream;
 import java.io.Reader;
 import java.util.Collection;
 import java.util.Set;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * @since solr 1.3

@@ -17,6 +17,22 @@
 
 package org.apache.solr.jersey;
 
+import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
+import static org.apache.solr.common.SolrException.ErrorCode.getErrorCode;
+import static org.apache.solr.common.params.CommonParams.WT;
+import static org.apache.solr.jersey.RequestContextKeys.HANDLER_METRICS;
+import static org.apache.solr.jersey.RequestContextKeys.SOLR_JERSEY_RESPONSE;
+import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_REQUEST;
+import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_RESPONSE;
+
+import java.lang.invoke.MethodHandles;
+import javax.ws.rs.NotFoundException;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ResourceContext;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.ext.ExceptionMapper;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -25,23 +41,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.ResponseUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ResourceContext;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
-import java.lang.invoke.MethodHandles;
-
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
-import static org.apache.solr.common.SolrException.ErrorCode.getErrorCode;
-import static org.apache.solr.common.params.CommonParams.WT;
-import static org.apache.solr.jersey.RequestContextKeys.HANDLER_METRICS;
-import static org.apache.solr.jersey.RequestContextKeys.SOLR_JERSEY_RESPONSE;
-import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_REQUEST;
-import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_RESPONSE;
 
 // TODO Create separate ExceptionMapper for WebApplicationException
 /**
@@ -93,8 +92,7 @@ public class CatchAllExceptionMapper implements ExceptionMapper<Exception> {
     final Exception normalizedException =
         RequestHandlerBase.normalizeReceivedException(solrQueryRequest, exception);
     final RequestHandlerBase.HandlerMetrics metrics =
-        (RequestHandlerBase.HandlerMetrics)
-            containerRequestContext.getProperty(HANDLER_METRICS);
+        (RequestHandlerBase.HandlerMetrics) containerRequestContext.getProperty(HANDLER_METRICS);
     if (metrics != null) {
       RequestHandlerBase.processErrorMetricsOnException(normalizedException, metrics);
     }

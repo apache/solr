@@ -17,6 +17,17 @@
 
 package org.apache.solr.jersey;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.List;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ContainerRequestFilter;
+import javax.ws.rs.container.ResourceInfo;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.ext.Provider;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.security.AuthorizationContext;
@@ -26,18 +37,6 @@ import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.servlet.ServletUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.container.ResourceInfo;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.Provider;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.List;
 
 /**
  * A JAX-RS request filter that blocks or allows requests based on the authorization plugin
@@ -60,11 +59,9 @@ public class SolrRequestAuthorizer implements ContainerRequestFilter {
     final CoreContainer coreContainer =
         (CoreContainer) requestContext.getProperty(RequestContextKeys.CORE_CONTAINER);
     final HttpServletRequest servletRequest =
-        (HttpServletRequest)
-            requestContext.getProperty(RequestContextKeys.HTTP_SERVLET_REQ);
+        (HttpServletRequest) requestContext.getProperty(RequestContextKeys.HTTP_SERVLET_REQ);
     final HttpServletResponse servletResponse =
-        (HttpServletResponse)
-            requestContext.getProperty(RequestContextKeys.HTTP_SERVLET_RSP);
+        (HttpServletResponse) requestContext.getProperty(RequestContextKeys.HTTP_SERVLET_RSP);
     final AuthorizationContext.RequestType requestType =
         (AuthorizationContext.RequestType)
             requestContext.getProperty(RequestContextKeys.REQUEST_TYPE);

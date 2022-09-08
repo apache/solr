@@ -17,20 +17,19 @@
 
 package org.apache.solr.jersey;
 
+import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_REQUEST;
+
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ContainerResponseContext;
+import javax.ws.rs.container.ContainerResponseFilter;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerResponseContext;
-import javax.ws.rs.container.ContainerResponseFilter;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-
-import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_REQUEST;
 
 /**
  * Applies standard post-processing decorations to a {@link SolrJerseyResponse} that are needed on

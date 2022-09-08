@@ -17,15 +17,14 @@
 
 package org.apache.solr.api;
 
+import static org.apache.solr.jersey.RequestContextKeys.SOLR_JERSEY_RESPONSE;
+
+import java.util.function.Supplier;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.core.Context;
 import org.apache.solr.jersey.CatchAllExceptionMapper;
 import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.servlet.HttpSolrCall;
-
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.core.Context;
-import java.util.function.Supplier;
-
-import static org.apache.solr.jersey.RequestContextKeys.SOLR_JERSEY_RESPONSE;
 
 /**
  * A marker parent type for all Jersey "resource" classes.
