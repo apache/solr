@@ -39,7 +39,7 @@ public class JerseyResource {
 
   /**
    * Create an instance of the {@link SolrJerseyResponse} subclass; registering it with the Jersey
-   * request-context upon creation
+   * request-context upon creation.
    *
    * <p>This utility method primarily exists to allow Jersey resources to return error responses
    * that match those returned by Solr's v1 APIs.
@@ -79,7 +79,7 @@ public class JerseyResource {
 
   /**
    * Create an instance of the {@link SolrJerseyResponse} subclass; registering it with the Jersey
-   * request-context upon creation
+   * request-context upon creation.
    *
    * <p>This utility method primarily exists to allow Jersey resources to return responses,
    * especially error responses, that match some of the particulars of Solr's traditional/v1 APIs.
