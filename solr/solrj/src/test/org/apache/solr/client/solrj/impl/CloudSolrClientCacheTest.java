@@ -18,9 +18,10 @@
 package org.apache.solr.client.solrj.impl;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import com.google.common.collect.ImmutableSet;
 import java.net.ConnectException;
 import java.net.SocketException;
 import java.util.Collections;
@@ -83,7 +84,7 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
             new CloudSolrClientBuilder(clusterStateProvider)
                 .withLBHttpSolrClient(mockLbclient)
                 .build()) {
-      livenodes.addAll(ImmutableSet.of("192.168.1.108:7574_solr", "192.168.1.108:8983_solr"));
+      livenodes.addAll(Set.of("192.168.1.108:7574_solr", "192.168.1.108:8983_solr"));
       ClusterState cs =
           ClusterState.createFromJson(1, coll1State.getBytes(UTF_8), Collections.emptySet());
       refs.put(collName, new Ref(collName));

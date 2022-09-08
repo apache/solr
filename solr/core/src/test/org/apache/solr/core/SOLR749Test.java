@@ -24,7 +24,7 @@ import org.junit.BeforeClass;
 
 /**
  * This class started life as a test for SOLR-749 to prove that value source plugins were properly
- * intialized, but it has since evolved to also help prove that ValueSource's are not asked to
+ * initialized, but it has since evolved to also help prove that ValueSource's are not asked to
  * compute values for documents unnecessarily.
  *
  * @see CountUsageValueSourceParser
@@ -146,7 +146,7 @@ public class SOLR749Test extends SolrTestCaseJ4 {
       assertQ(
           "query matching 20 -> 10 -> 5 docs; two non-cached queries",
           req(
-              // match 20. the below IDs have alternating even/odd pairings so as to test possible
+              // match 20. the below IDs have alternating even/odd pairings to test possible
               // sequencing of evaluation
               "q", "{!notfoo cache=false}id_i1:[20 TO 39]",
               // match 10 (subset of above)

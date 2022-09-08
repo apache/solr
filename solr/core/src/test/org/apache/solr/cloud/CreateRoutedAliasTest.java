@@ -118,7 +118,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
                 + "    },\n"
                 +
                 // TODO should we use "NOW=" param?  Won't work with v2 and is kinda a hack any way
-                // since intended for distrib
+                // since intended for distributed search
                 "    \"create-collection\" : {\n"
                 + "      \"router\": {\n"
                 + "        \"name\":\"implicit\",\n"

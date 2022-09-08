@@ -402,6 +402,7 @@ public class TestNumericRangeQuery32 extends SolrTestCase {
     dir.close();
   }
 
+  @SuppressWarnings("NarrowCalculation")
   private void testRangeSplit(int precisionStep) throws Exception {
     String field = "ascfield" + precisionStep;
     // 10 random tests
@@ -507,7 +508,7 @@ public class TestNumericRangeQuery32 extends SolrTestCase {
   }
 
   @Test
-  public void testEqualsAndHash() throws Exception {
+  public void testEqualsAndHash() {
     QueryUtils.checkHashEquals(LegacyNumericRangeQuery.newIntRange("test1", 4, 10, 20, true, true));
     QueryUtils.checkHashEquals(
         LegacyNumericRangeQuery.newIntRange("test2", 4, 10, 20, false, true));

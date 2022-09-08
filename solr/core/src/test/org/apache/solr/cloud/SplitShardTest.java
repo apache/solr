@@ -236,7 +236,7 @@ public class SplitShardTest extends SolrCloudTestCase {
                 () -> {
                   while (doIndex.get()) {
                     try {
-                      // Thread.sleep(10);  // cap indexing rate at 100 docs per second per thread
+                      // Thread.sleep(10);  // cap indexing rate at 100 docs per second, per thread
                       int currDoc = docsIndexed.incrementAndGet();
                       String docId = "doc_" + currDoc;
 
@@ -277,7 +277,7 @@ public class SplitShardTest extends SolrCloudTestCase {
               2,
               3 * repFactor)); // 2 repFactor for the new split shards, 1 repFactor for old replicas
 
-      // make sure that docs were able to be indexed during the split
+      // make sure that docs were indexed during the split
       assertTrue(model.size() > docCount);
 
       Thread.sleep(100); // wait for a few more docs to be indexed after split

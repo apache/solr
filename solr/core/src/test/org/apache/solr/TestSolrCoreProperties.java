@@ -58,7 +58,7 @@ public class TestSolrCoreProperties extends SolrJettyTestBase {
     String src_dir = TEST_HOME() + "/collection1/conf";
     FileUtils.copyFile(new File(src_dir, "schema-tiny.xml"), new File(confDir, "schema.xml"));
     FileUtils.copyFile(
-        new File(src_dir, "solrconfig-solcoreproperties.xml"), new File(confDir, "solrconfig.xml"));
+        new File(src_dir, "solrconfig-coreproperties.xml"), new File(confDir, "solrconfig.xml"));
     FileUtils.copyFile(
         new File(src_dir, "solrconfig.snippet.randomindexconfig.xml"),
         new File(confDir, "solrconfig.snippet.randomindexconfig.xml"));

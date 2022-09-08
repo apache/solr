@@ -65,7 +65,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
           core.getSearchComponent(MoreLikeThisComponent.COMPONENT_NAME),
           handler.getComponents().get(0));
     } catch (IOException e) {
-      fail("IOExcepiton closing SearchHandler");
+      fail("IOException closing SearchHandler");
     }
 
     // Build an explicit list that includes the debug comp.
@@ -263,7 +263,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
       try (HttpSolrClient httpSolrClient =
           new HttpSolrClient.Builder(connectedReplica.getCoreUrl()).build()) {
         ignoreException("ZooKeeper is not connected");
-        ignoreException("no servers hosting shard:");
+        ignoreException("no active servers hosting shard:");
         JettySolrRunner disconnectedJetty = miniCluster.getReplicaJetty(disconnectedReplica);
         disconnectedJetty.getCoreContainer().getZkController().getZkClient().close();
         req.process(httpSolrClient);
@@ -272,12 +272,12 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
       } catch (Exception e) {
         assertTrue(
             "Unrecognized exception message: " + e,
-            e.getMessage().contains("no servers hosting shard:")
+            e.getMessage().contains("no active servers hosting shard:")
                 || e.getMessage().contains("ZooKeeper is not connected"));
       }
     } finally {
       miniCluster.shutdown();
-      unIgnoreException("no servers hosting shard:");
+      unIgnoreException("no active servers hosting shard:");
       unIgnoreException("ZooKeeper is not connected");
     }
   }

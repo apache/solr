@@ -17,7 +17,6 @@
 
 package org.apache.solr.spelling.suggest;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.search.suggest.InputIterator;
@@ -92,7 +91,7 @@ public class RandomTestDictionaryFactory extends DictionaryFactory {
       private static final int MAX_LENGTH = 100;
 
       @Override
-      public BytesRef next() throws IOException {
+      public BytesRef next() {
         BytesRef next = null;
         if (System.getProperty(enabledSysProp) != null) {
           if (emittedItems < maxItems) {

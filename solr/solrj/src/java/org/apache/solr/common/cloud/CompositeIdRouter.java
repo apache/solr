@@ -213,6 +213,7 @@ public class CompositeIdRouter extends HashBasedRouter {
   }
 
   @Override
+  @SuppressWarnings("NarrowCalculation")
   public List<Range> partitionRange(int partitions, Range range) {
     int min = range.min;
     int max = range.max;

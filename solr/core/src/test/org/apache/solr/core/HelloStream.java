@@ -47,13 +47,13 @@ public class HelloStream extends TupleStream implements Expressible {
   }
 
   @Override
-  public void open() throws IOException {}
+  public void open() {}
 
   @Override
-  public void close() throws IOException {}
+  public void close() {}
 
   @Override
-  public Tuple read() throws IOException {
+  public Tuple read() {
     if (isSentHelloWorld) {
       return Tuple.EOF();
     } else {
@@ -69,8 +69,7 @@ public class HelloStream extends TupleStream implements Expressible {
 
   @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
-    StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
-    return expression;
+    return new StreamExpression(factory.getFunctionName(this.getClass()));
   }
 
   @Override

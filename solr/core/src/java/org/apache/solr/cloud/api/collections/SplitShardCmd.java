@@ -18,14 +18,26 @@
 package org.apache.solr.cloud.api.collections;
 
 import static org.apache.solr.client.solrj.impl.SolrClientNodeStateProvider.Variable.CORE_IDX;
-import static org.apache.solr.common.cloud.ZkStateReader.*;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESHARD;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.NUM_SUB_SHARDS;
 
 import java.lang.invoke.MethodHandles;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
@@ -39,7 +51,16 @@ import org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ShardReques
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.CompositeIdRouter;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.PlainIdRouter;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ReplicaPosition;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonAdminParams;
@@ -65,6 +86,9 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
   // This is an arbitrary number that seems reasonable at this time.
   private static final int MAX_NUM_SUB_SHARDS = 8;
   private static final int DEFAULT_NUM_SUB_SHARDS = 2;
+
+  public static final String SHARDSPLIT_CHECKDISKSPACE_ENABLED =
+      "solr.shardSplit.checkDiskSpace.enabled";
 
   private final CollectionCommandContext ccc;
 
@@ -790,6 +814,10 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       SolrIndexSplitter.SplitMethod method,
       SolrCloudManager cloudManager)
       throws SolrException {
+    // check that the system property is enabled. It should not be disabled by default.
+    if (!Boolean.parseBoolean(System.getProperty(SHARDSPLIT_CHECKDISKSPACE_ENABLED, "true"))) {
+      return;
+    }
     // check that enough disk space is available on the parent leader node
     // otherwise the actual index splitting will always fail
     NodeStateProvider nodeStateProvider = cloudManager.getNodeStateProvider();
@@ -800,9 +828,8 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         nodeStateProvider.getReplicaInfo(
             parentShardLeader.getNodeName(), Collections.singletonList(CORE_IDX.metricsAttribute));
     if (infos.get(collection) == null || infos.get(collection).get(shard) == null) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "missing replica information for parent shard leader");
+      log.warn("cannot verify information for parent shard leader");
+      return;
     }
     // find the leader
     List<Replica> lst = infos.get(collection).get(shard);
@@ -811,24 +838,21 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       if (info.getCoreName().equals(parentShardLeader.getCoreName())) {
         Number size = (Number) info.get(CORE_IDX.metricsAttribute);
         if (size == null) {
-          throw new SolrException(
-              SolrException.ErrorCode.SERVER_ERROR,
-              "missing index size information for parent shard leader");
+          log.warn("cannot verify information for parent shard leader");
+          return;
         }
         indexSize = (Double) CORE_IDX.convertVal(size);
         break;
       }
     }
     if (indexSize == null) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "missing replica information for parent shard leader");
+      log.warn("missing replica information for parent shard leader");
+      return;
     }
     Number freeSize = (Number) nodeValues.get(ImplicitSnitch.DISK);
     if (freeSize == null) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "missing node disk space information for parent shard leader");
+      log.warn("missing node disk space information for parent shard leader");
+      return;
     }
     // 100% more for REWRITE, 5% more for LINK
     double neededSpace =

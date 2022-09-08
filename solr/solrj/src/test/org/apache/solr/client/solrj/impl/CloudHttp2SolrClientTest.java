@@ -38,7 +38,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -72,21 +71,16 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** This test would be faster if we simulated the zk state instead. */
-@Slow
 public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  private static final String COLLECTION = "collection1";
-  private static final String COLLECTION2 = "2nd_collection";
 
   private static final String id = "id";
 
@@ -96,8 +90,8 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   private static CloudHttp2SolrClient httpBasedCloudSolrClient = null;
   private static CloudHttp2SolrClient zkBasedCloudSolrClient = null;
 
-  @Before
-  public void setupCluster() throws Exception {
+  @BeforeClass
+  public static void setupCluster() throws Exception {
     System.setProperty("metricsEnabled", "true");
     configureCluster(NODE_COUNT)
         .addConfig(
@@ -119,8 +113,8 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
             .build();
   }
 
-  @After
-  public void tearDown() throws Exception {
+  @AfterClass
+  public static void tearDownAfterClass() throws Exception {
     if (httpBasedCloudSolrClient != null) {
       try {
         httpBasedCloudSolrClient.close();
@@ -137,11 +131,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     }
 
     shutdownCluster();
-    super.tearDown();
-  }
-
-  @AfterClass
-  public static void cleanUpAfterClass() throws Exception {
     httpBasedCloudSolrClient = null;
     zkBasedCloudSolrClient = null;
   }
@@ -154,6 +143,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void testParallelUpdateQTime() throws Exception {
+    String COLLECTION = getSaferTestName();
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 2);
@@ -198,6 +188,9 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void testAliasHandling() throws Exception {
+    String COLLECTION = getSaferTestName();
+    String COLLECTION2 = "2nd_collection";
+
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 2);
@@ -288,7 +281,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       try (HttpSolrClient solrClient = getHttpSolrClient(url)) {
         QueryResponse queryResponse = queryRequest.process(solrClient);
         SolrDocumentList docList = queryResponse.getResults();
-        assertTrue(docList.getNumFound() == 1);
+        assertEquals(1, docList.getNumFound());
       }
     }
 
@@ -334,7 +327,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
         try (HttpSolrClient solrClient = getHttpSolrClient(url)) {
           QueryResponse queryResponse = queryRequest.process(solrClient);
           SolrDocumentList docList = queryResponse.getResults();
-          assertTrue(docList.getNumFound() == 1);
+          assertEquals(1, docList.getNumFound());
         }
       }
     }
@@ -746,6 +739,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void stateVersionParamTest() throws Exception {
+    String COLLECTION = getSaferTestName();
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 2);
@@ -913,13 +907,13 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void testInitializationWithSolrUrls() throws Exception {
+    String COLLECTION = getSaferTestName();
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 2);
     CloudHttp2SolrClient client = httpBasedCloudSolrClient;
     SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
-    client.add(COLLECTION, doc);
-    client.commit(COLLECTION);
+    new UpdateRequest().add(doc).commit(client, COLLECTION);
     assertEquals(1, client.query(COLLECTION, params("q", "*:*")).getResults().getNumFound());
   }
 
@@ -1120,7 +1114,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       assertNotNull(
           ShardParams.SHARDS_INFO + " did not return 'shardAddress' parameter", shardAddress);
       assertTrue(replicaTypeMap.containsKey(shardAddress));
-      assertTrue(preferredTypes.indexOf(replicaTypeMap.get(shardAddress)) == 0);
+      assertEquals(0, preferredTypes.indexOf(replicaTypeMap.get(shardAddress)));
       shardAddresses.add(shardAddress);
     }
     assertTrue("No responses", shardAddresses.size() > 0);

@@ -766,7 +766,7 @@ public class DocValuesTest extends SolrTestCaseJ4 {
    * that are not inverted (indexed "forward" only)
    */
   @Test
-  public void testDocValuesMatch() throws Exception {
+  public void testDocValuesMatch() {
     assertU(
         adoc(
             "id",
@@ -993,8 +993,9 @@ public class DocValuesTest extends SolrTestCaseJ4 {
         "//result/doc[2]/str[@name='id'][.=4]");
   }
 
+  @SuppressWarnings("BoxedPrimitiveEquality")
   @Test
-  public void testFloatAndDoubleRangeQueryRandom() throws Exception {
+  public void testFloatAndDoubleRangeQueryRandom() {
 
     String fieldName[] = new String[] {"floatdv", "doubledv"};
 
@@ -1147,7 +1148,7 @@ public class DocValuesTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testFloatAndDoubleRangeQuery() throws Exception {
+  public void testFloatAndDoubleRangeQuery() {
     String fieldName[] = new String[] {"floatdv", "doubledv"};
     String largestNegative[] =
         new String[] {

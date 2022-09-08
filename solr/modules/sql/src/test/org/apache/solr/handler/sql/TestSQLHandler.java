@@ -28,7 +28,6 @@ import java.util.Locale;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.tests.util.LuceneTestCase;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.ExceptionStream;
@@ -45,7 +44,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@Slow
 @SolrTestCaseJ4.SuppressSSL
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40", "Lucene41", "Lucene42", "Lucene45"})
 public class TestSQLHandler extends SolrCloudTestCase {
@@ -2553,7 +2551,8 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE '(\"dog pig\"~5)'", 2);
     expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'jumped over'", 8);
-    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'quick brown fox'", 5);
+    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'quick brow%'", 5);
+    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'quick brow%' AND b_s LIKE 'foo*'", 3);
     expectResults("SELECT b_s FROM $ALIAS WHERE b_s LIKE 'foo*'", 5);
     expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE '*og'", 8);
   }

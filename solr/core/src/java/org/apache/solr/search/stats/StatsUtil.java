@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -199,11 +199,11 @@ public class StatsUtil {
           output.append(c);
       }
     }
-    return URLEncoder.encode(output.toString(), Charset.forName("UTF-8"));
+    return URLEncoder.encode(output.toString(), StandardCharsets.UTF_8);
   }
 
   public static String decode(String value) throws IOException {
-    value = URLDecoder.decode(value, Charset.forName("UTF-8"));
+    value = URLDecoder.decode(value, StandardCharsets.UTF_8);
     StringBuilder output = new StringBuilder(value.length());
     for (int i = 0; i < value.length(); i++) {
       char c = value.charAt(i);

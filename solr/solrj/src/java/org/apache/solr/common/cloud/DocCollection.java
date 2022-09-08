@@ -16,12 +16,6 @@
  */
 package org.apache.solr.common.cloud;
 
-import static org.apache.solr.common.cloud.ZkStateReader.CONFIGNAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.READ_ONLY;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
-import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.util.Utils.toJSONString;
 
 import java.lang.invoke.MethodHandles;
@@ -37,6 +31,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
+import org.apache.solr.common.cloud.Replica.ReplicaStateProps;
 import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,11 +40,9 @@ import org.slf4j.LoggerFactory;
  * Models a Collection in zookeeper (but that Java name is obviously taken, hence "DocCollection")
  */
 public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final String DOC_ROUTER = "router";
-  public static final String SHARDS = "shards";
-  public static final String PER_REPLICA_STATE = "perReplicaState";
+  public static final String COLLECTIONS_ZKNODE = "/collections";
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final int znodeVersion;
 
@@ -96,20 +89,21 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     // overwrites
     this.znodeVersion = zkVersion == -1 ? Integer.MAX_VALUE : zkVersion;
     this.name = name;
-    this.configName = (String) props.get(CONFIGNAME_PROP);
+    this.configName = (String) props.get(CollectionStateProps.CONFIGNAME);
     this.slices = slices;
     this.activeSlices = new HashMap<>();
     this.nodeNameLeaderReplicas = new HashMap<>();
     this.nodeNameReplicas = new HashMap<>();
-    this.replicationFactor = (Integer) verifyProp(props, REPLICATION_FACTOR);
-    this.numNrtReplicas = (Integer) verifyProp(props, NRT_REPLICAS, 0);
-    this.numTlogReplicas = (Integer) verifyProp(props, TLOG_REPLICAS, 0);
-    this.numPullReplicas = (Integer) verifyProp(props, PULL_REPLICAS, 0);
-    this.perReplicaState = (Boolean) verifyProp(props, PER_REPLICA_STATE, Boolean.FALSE);
+    this.replicationFactor = (Integer) verifyProp(props, CollectionStateProps.REPLICATION_FACTOR);
+    this.numNrtReplicas = (Integer) verifyProp(props, CollectionStateProps.NRT_REPLICAS, 0);
+    this.numTlogReplicas = (Integer) verifyProp(props, CollectionStateProps.TLOG_REPLICAS, 0);
+    this.numPullReplicas = (Integer) verifyProp(props, CollectionStateProps.PULL_REPLICAS, 0);
+    this.perReplicaState =
+        (Boolean) verifyProp(props, CollectionStateProps.PER_REPLICA_STATE, Boolean.FALSE);
     ClusterState.getReplicaStatesProvider()
         .get()
         .ifPresent(it -> perReplicaStates = it.getStates());
-    Boolean readOnly = (Boolean) verifyProp(props, READ_ONLY);
+    Boolean readOnly = (Boolean) verifyProp(props, CollectionStateProps.READ_ONLY);
     this.readOnly = readOnly == null ? Boolean.FALSE : readOnly;
 
     Iterator<Map.Entry<String, Slice>> iter = slices.entrySet().iterator();
@@ -128,8 +122,16 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     }
     this.activeSlicesArr = activeSlices.values().toArray(new Slice[activeSlices.size()]);
     this.router = router;
-    this.znode = ZkStateReader.getCollectionPath(name);
+    this.znode = getCollectionPath(name);
     assert name != null && slices != null;
+  }
+
+  public static String getCollectionPath(String coll) {
+    return getCollectionPathRoot(coll) + "/state.json";
+  }
+
+  public static String getCollectionPathRoot(String coll) {
+    return COLLECTIONS_ZKNODE + "/" + coll;
   }
 
   /**
@@ -171,7 +173,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     }
     replicas.add(replica);
 
-    if (replica.getStr(Slice.LEADER) != null) {
+    if (replica.getStr(ReplicaStateProps.LEADER) != null) {
       List<Replica> leaderReplicas = nodeNameLeaderReplicas.get(replica.getNodeName());
       if (leaderReplicas == null) {
         leaderReplicas = new ArrayList<>();
@@ -189,13 +191,13 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     Object o = props.get(propName);
     if (o == null) return def;
     switch (propName) {
-      case REPLICATION_FACTOR:
-      case NRT_REPLICAS:
-      case PULL_REPLICAS:
-      case TLOG_REPLICAS:
+      case CollectionStateProps.REPLICATION_FACTOR:
+      case CollectionStateProps.NRT_REPLICAS:
+      case CollectionStateProps.PULL_REPLICAS:
+      case CollectionStateProps.TLOG_REPLICAS:
         return Integer.parseInt(o.toString());
-      case PER_REPLICA_STATE:
-      case READ_ONLY:
+      case CollectionStateProps.PER_REPLICA_STATE:
+      case CollectionStateProps.READ_ONLY:
         return Boolean.parseBoolean(o.toString());
       case "snitch":
       default:
@@ -312,7 +314,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return "DocCollection("
         + name
         + "/"
-        + znode
+        + getZNode()
         + "/"
         + znodeVersion
         + " "
@@ -325,7 +327,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   public void write(JSONWriter jsonWriter) {
     LinkedHashMap<String, Object> all = new LinkedHashMap<>(slices.size() + 1);
     all.putAll(propMap);
-    all.put(SHARDS, slices);
+    all.put(CollectionStateProps.SHARDS, slices);
     jsonWriter.write(all);
   }
 
@@ -425,12 +427,13 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     DocCollection other = (DocCollection) that;
     return super.equals(that)
         && Objects.equals(this.name, other.name)
-        && this.znodeVersion == other.znodeVersion;
+        && this.znodeVersion == other.znodeVersion
+        && this.getChildNodesVersion() == other.getChildNodesVersion();
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, znodeVersion);
+    return Objects.hash(name, znodeVersion, getChildNodesVersion());
   }
 
   /**
@@ -471,5 +474,18 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     if (type == Replica.Type.PULL) result = numPullReplicas;
     if (type == Replica.Type.TLOG) result = numTlogReplicas;
     return result == null ? def : result;
+  }
+
+  /** JSON properties related to a collection's state. */
+  public interface CollectionStateProps {
+    String NRT_REPLICAS = "nrtReplicas";
+    String PULL_REPLICAS = "pullReplicas";
+    String TLOG_REPLICAS = "tlogReplicas";
+    String REPLICATION_FACTOR = "replicationFactor";
+    String READ_ONLY = "readOnly";
+    String CONFIGNAME = "configName";
+    String DOC_ROUTER = "router";
+    String SHARDS = "shards";
+    String PER_REPLICA_STATE = "perReplicaState";
   }
 }

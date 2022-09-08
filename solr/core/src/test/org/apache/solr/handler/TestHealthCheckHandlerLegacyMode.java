@@ -16,10 +16,15 @@
  */
 package org.apache.solr.handler;
 
-import static org.apache.solr.handler.ReplicationTestHelper.*;
+import static org.apache.solr.handler.ReplicationTestHelper.SolrInstance;
+import static org.apache.solr.handler.ReplicationTestHelper.assertVersions;
+import static org.apache.solr.handler.ReplicationTestHelper.createAndStartJetty;
+import static org.apache.solr.handler.ReplicationTestHelper.index;
+import static org.apache.solr.handler.ReplicationTestHelper.invokeReplicationCommand;
+import static org.apache.solr.handler.ReplicationTestHelper.numFound;
+import static org.apache.solr.handler.ReplicationTestHelper.rQuery;
 
 import java.io.IOException;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -34,8 +39,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 /** Test for HealthCheckHandler in legacy mode */
-@Slow
-@SuppressSSL // Currently unknown why SSL does not work with this test
+@SuppressSSL // Currently, unknown why SSL does not work with this test
 public class TestHealthCheckHandlerLegacyMode extends SolrTestCaseJ4 {
   HttpSolrClient leaderClientHealthCheck, followerClientHealthCheck;
   JettySolrRunner leaderJetty, followerJetty;

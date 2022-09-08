@@ -37,6 +37,8 @@ import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAccumulator;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -1092,6 +1094,12 @@ public class JavaBinCodec implements PushWriter {
       return true;
     } else if (val == END_OBJ) {
       writeTag(END);
+      return true;
+    } else if (val instanceof LongAdder) {
+      daos.writeLong(((LongAdder) val).longValue());
+      return true;
+    } else if (val instanceof LongAccumulator) {
+      daos.writeLong(((LongAccumulator) val).longValue());
       return true;
     }
     return false;

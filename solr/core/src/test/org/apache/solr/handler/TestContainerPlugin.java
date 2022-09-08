@@ -30,6 +30,7 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Phaser;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.ResourceLoader;
@@ -41,6 +42,7 @@ import org.apache.solr.api.EndPoint;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteExecutionException;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.Package;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
@@ -54,6 +56,9 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.filestore.TestDistribPackageStore;
 import org.apache.solr.filestore.TestDistribPackageStore.Fetcher;
+import org.apache.solr.pkg.PackageAPI;
+import org.apache.solr.pkg.PackageListeners;
+import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.pkg.TestPackages;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -66,7 +71,43 @@ import org.junit.Test;
 public class TestContainerPlugin extends SolrCloudTestCase {
   private Phaser phaser;
 
+  private CountingListener listener;
+
   private boolean forceV2;
+
+  /**
+   * A package listener that will count how many times it has been triggered. Useful to wait for
+   * changes accross multiple cores.
+   *
+   * <p>Use by calling {@link #reset()} before the API calls, and then {@link #waitFor(int)} to
+   * block until <code>num</code> cores have been notified.
+   */
+  class CountingListener implements PackageListeners.Listener {
+    private Semaphore changeCalled = new Semaphore(0);
+
+    @Override
+    public String packageName() {
+      return null; // will fire on all package changes
+    }
+
+    @Override
+    public Map<String, PackageAPI.PkgVersion> packageDetails() {
+      return null; // only used to print meta information
+    }
+
+    @Override
+    public void changed(PackageLoader.Package pkg, Ctx ctx) {
+      changeCalled.release();
+    }
+
+    public void reset() {
+      changeCalled.drainPermits();
+    }
+
+    public boolean waitFor(int num) throws InterruptedException {
+      return changeCalled.tryAcquire(num, 10, TimeUnit.SECONDS);
+    }
+  }
 
   @Before
   public void setup() throws Exception {
@@ -75,9 +116,26 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     forceV2 = random().nextBoolean();
 
     int nodes = TEST_NIGHTLY ? 4 : 2;
-    cluster = configureCluster(nodes).withJettyConfig(jetty -> jetty.enableV2(true)).configure();
+    cluster =
+        configureCluster(nodes)
+            .addConfig("conf1", configset("cloud-minimal"))
+            .withJettyConfig(jetty -> jetty.enableV2(true))
+            .configure();
+
+    String coll = getSaferTestName();
+    CollectionAdminRequest.createCollection(coll, "conf1", 1, nodes)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(coll, 1, nodes); // 1 replica per node
+
+    listener = new CountingListener();
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      jetty.getCoreContainer().getContainerPluginsRegistry().setPhaser(phaser);
+      CoreContainer cc = jetty.getCoreContainer();
+      cc.getContainerPluginsRegistry().setPhaser(phaser);
+      cc.getCores()
+          .forEach(
+              c -> {
+                c.getPackageListeners().addListener(listener);
+              });
     }
   }
 
@@ -240,6 +298,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
     // We have two versions of the plugin in 2 different jar files. they are already uploaded to
     // the package store
+    listener.reset();
     Package.AddVersion add = new Package.AddVersion();
     add.version = "1.0";
     add.pkg = "mypkg";
@@ -251,6 +310,9 @@ public class TestContainerPlugin extends SolrCloudTestCase {
             .withPayload(singletonMap("add", add))
             .build();
     addPkgVersionReq.process(cluster.getSolrClient());
+    assertTrue(
+        "core package listeners did not notify",
+        listener.waitFor(cluster.getJettySolrRunners().size()));
 
     waitForAllNodesToSync(
         "/cluster/package",
@@ -260,7 +322,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
             ":result:packages:mypkg[0]:files[0]",
             FILE1));
 
-    // Now lets create a plugin using v1 jar file
+    // Now let's create a plugin using v1 jar file
     PluginMeta plugin = new PluginMeta();
     plugin.name = "myplugin";
     plugin.klass = "mypkg:org.apache.solr.handler.MyPlugin";
@@ -354,7 +416,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     }
 
     @Override
-    public void start() throws Exception {
+    public void start() {
       state = State.STARTING;
       startCalled = true;
       state = State.RUNNING;
@@ -378,7 +440,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     private SolrResourceLoader resourceLoader;
 
     @Override
-    public void inform(ResourceLoader loader) throws IOException {
+    public void inform(ResourceLoader loader) {
       this.resourceLoader = (SolrResourceLoader) loader;
       try {
         InputStream is = resourceLoader.openResource("org/apache/solr/handler/MyPlugin.class");

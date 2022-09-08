@@ -132,7 +132,7 @@ public class TestTaskManagement extends SolrCloudTestCase {
     NamedList<String> tasks = listTasks();
 
     for (int i = 0; i < 100; i++) {
-      cancelFutures.add(cancelQuery(Integer.toString(i), 0, queryIdsSet, notFoundIdsSet));
+      cancelFutures.add(cancelQuery(Integer.toString(i), queryIdsSet, notFoundIdsSet));
     }
 
     cancelFutures.forEach(CompletableFuture::join);
@@ -204,10 +204,7 @@ public class TestTaskManagement extends SolrCloudTestCase {
   }
 
   private CompletableFuture<Void> cancelQuery(
-      final String queryID,
-      final int sleepTime,
-      Set<Integer> cancelledQueryIdsSet,
-      Set<Integer> notFoundQueryIdSet) {
+      final String queryID, Set<Integer> cancelledQueryIdsSet, Set<Integer> notFoundQueryIdSet) {
     return CompletableFuture.runAsync(
         () -> {
           ModifiableSolrParams params = new ModifiableSolrParams();
@@ -216,29 +213,19 @@ public class TestTaskManagement extends SolrCloudTestCase {
           SolrRequest<?> request = new QueryRequest(params);
           request.setPath("/tasks/cancel");
 
-          // Wait for some time to let the query start
           try {
-            if (sleepTime > 0) {
-              Thread.sleep(sleepTime);
+            NamedList<Object> queryResponse;
+
+            queryResponse = cluster.getSolrClient().request(request);
+
+            int responseCode = (int) queryResponse.get("responseCode");
+
+            if (responseCode == 200 /* HTTP OK */) {
+              cancelledQueryIdsSet.add(Integer.parseInt(queryID));
+            } else if (responseCode == 404 /* HTTP NOT FOUND */) {
+              notFoundQueryIdSet.add(Integer.parseInt(queryID));
             }
-
-            try {
-              NamedList<Object> queryResponse;
-
-              queryResponse = cluster.getSolrClient().request(request);
-
-              int responseCode = (int) queryResponse.get("responseCode");
-
-              if (responseCode == 200 /* HTTP OK */) {
-                cancelledQueryIdsSet.add(Integer.parseInt(queryID));
-              } else if (responseCode == 404 /* HTTP NOT FOUND */) {
-                notFoundQueryIdSet.add(Integer.parseInt(queryID));
-              }
-            } catch (Exception e) {
-              throw new CompletionException(e);
-            }
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+          } catch (Exception e) {
             throw new CompletionException(e);
           }
         },

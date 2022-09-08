@@ -18,52 +18,29 @@ package org.apache.solr.handler.admin;
 
 import static org.apache.solr.common.params.CommonParams.ACTION;
 import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
-import com.google.common.collect.Maps;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.api.Api;
-import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.handler.CollectionBackupsAPI;
-import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 
-public class V2CollectionBackupsAPIMappingTest extends SolrTestCaseJ4 {
-
-  private ApiBag apiBag;
-  private ArgumentCaptor<SolrQueryRequest> queryRequestCaptor;
-  private CollectionsHandler mockCollectionsHandler;
-
-  @BeforeClass
-  public static void ensureWorkingMockito() {
-    assumeWorkingMockito();
+public class V2CollectionBackupsAPIMappingTest extends V2ApiMappingTest<CollectionsHandler> {
+  @Override
+  public void populateApiBag() {
+    final CollectionBackupsAPI collBackupsAPI = new CollectionBackupsAPI(getRequestHandler());
+    apiBag.registerObject(collBackupsAPI);
   }
 
-  @Before
-  public void setupApiBag() {
-    mockCollectionsHandler = mock(CollectionsHandler.class);
-    queryRequestCaptor = ArgumentCaptor.forClass(SolrQueryRequest.class);
+  @Override
+  public CollectionsHandler createUnderlyingRequestHandler() {
+    return createMock(CollectionsHandler.class);
+  }
 
-    apiBag = new ApiBag(false);
-    final CollectionBackupsAPI collBackupsAPI = new CollectionBackupsAPI(mockCollectionsHandler);
-    apiBag.registerObject(collBackupsAPI);
+  @Override
+  public boolean isCoreSpecific() {
+    return false;
   }
 
   @Test
@@ -109,35 +86,5 @@ public class V2CollectionBackupsAPIMappingTest extends SolrTestCaseJ4 {
     assertEquals("backupName", v1Params.get(NAME));
     assertEquals("/some/location/uri", v1Params.get(CoreAdminParams.BACKUP_LOCATION));
     assertEquals("someRepository", v1Params.get(CoreAdminParams.BACKUP_REPOSITORY));
-  }
-
-  private SolrParams captureConvertedV1Params(String path, String method, String v2RequestBody)
-      throws Exception {
-    final HashMap<String, String> parts = new HashMap<>();
-    final Api api = apiBag.lookup(path, method, parts);
-    final SolrQueryResponse rsp = new SolrQueryResponse();
-    final LocalSolrQueryRequest req =
-        new LocalSolrQueryRequest(null, Maps.newHashMap()) {
-          @Override
-          public List<CommandOperation> getCommands(boolean validateInput) {
-            if (v2RequestBody == null) return Collections.emptyList();
-            return ApiBag.getCommandOperations(
-                new ContentStreamBase.StringStream(v2RequestBody), api.getCommandSchema(), true);
-          }
-
-          @Override
-          public Map<String, String> getPathTemplateValues() {
-            return parts;
-          }
-
-          @Override
-          public String getHttpMethod() {
-            return method;
-          }
-        };
-
-    api.call(req, rsp);
-    verify(mockCollectionsHandler).handleRequestBody(queryRequestCaptor.capture(), any());
-    return queryRequestCaptor.getValue().getParams();
   }
 }

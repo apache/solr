@@ -53,20 +53,20 @@ public class DateMathParserTest extends SolrTestCaseJ4 {
   }
 
   /** MACRO: Round: parses s, rounds with u, fmts */
-  protected String r(String s, String u) throws Exception {
+  protected String r(String s, String u) {
     Date dt = DateMathParser.parseMath(null, s + "Z/" + u);
     return fmt.format(dt.toInstant());
   }
 
   /** MACRO: Add: parses s, adds v u, fmts */
-  protected String a(String s, int v, String u) throws Exception {
+  protected String a(String s, int v, String u) {
     char sign = v >= 0 ? '+' : '-';
     Date dt = DateMathParser.parseMath(null, s + 'Z' + sign + Math.abs(v) + u);
     return fmt.format(dt.toInstant());
   }
 
   /** MACRO: Expected: parses s, fmts */
-  protected String e(String s) throws Exception {
+  protected String e(String s) {
     return fmt.format(parser.parse(s, Instant::from));
   }
 

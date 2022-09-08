@@ -16,7 +16,6 @@
  */
 package org.apache.solr.core;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -74,8 +73,7 @@ public class CountUsageValueSourceParser extends ValueSourceParser {
     }
 
     @Override
-    public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
-        throws IOException {
+    public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) {
       return new DoubleDocValues(this) {
         @Override
         public double doubleVal(int doc) {

@@ -634,6 +634,7 @@ public class MetricUtils {
   }
 
   // some snapshots represent time in ns, other snapshots represent raw values (eg. chunk size)
+  @SuppressWarnings("LongDoubleConversion")
   static void addSnapshot(
       MapWriter.EntryWriter ew,
       Snapshot snapshot,

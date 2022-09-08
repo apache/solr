@@ -55,7 +55,7 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     return floatAppend;
   }
 
-  public void testString() throws Exception {
+  public void testString() {
     _testExpand("group_s", "", maybeTopFc());
   }
 
@@ -63,7 +63,7 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     _testExpand("group_s_dv", "", maybeTopFc());
   }
 
-  public void testInt() throws Exception {
+  public void testInt() {
     _testExpand("group_i", "", "");
   }
 
@@ -71,7 +71,7 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     _testExpand("group_ti_dv", "", "");
   }
 
-  public void testFloat() throws Exception {
+  public void testFloat() {
     _testExpand("group_f", floatAppend(), "");
     _testExpand("group_f", ".0", ""); // explicit 0 check for 0 vs null group
   }
@@ -255,7 +255,7 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
 
     // Test with nullPolicy...
     // Main result set should include the doc(s) with null value in the collapse field.
-    // By default ExpandComponent should ignore docs with null values in the collapse fields....
+    // By default, ExpandComponent should ignore docs with null values in the collapse fields....
     params = new ModifiableSolrParams();
     params.add("q", "*:*");
     params.add("defType", "edismax");

@@ -76,7 +76,7 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
           sf.hasDocValues());
     }
 
-    { // this field should *NOT* have docValues .. should behave like a plain old TextField
+    { // this field should *NOT* have docValues... should behave like a plain old TextField
       SchemaField sf = h.getCore().getLatestSchema().getField("whitespace_nodv_stxt");
       assertFalse(
           "field " + sf.getName() + " should not have docvalues - schema got changed?",
@@ -85,11 +85,11 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
   }
 
   @Before
-  public void cleanup() throws Exception {
+  public void cleanup() {
     clearIndex();
   }
 
-  public void testSimple() throws Exception {
+  public void testSimple() {
     assertU(
         adoc("id", "1", "whitespace_stxt", "how now brown cow ?", "whitespace_f_stxt", "aaa bbb"));
     assertU(
@@ -348,7 +348,7 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
       }
     }
 
-    // sorting on a maxChars limited fields should force tie breaker
+    // sorting on a maxChars limited fields should force tiebreaker
     for (String dir : Arrays.asList("asc", "desc")) {
       // for max3, dir shouldn't matter - should always tie..
       assertQ(
@@ -401,7 +401,7 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
     assertU(adoc("id", "5", "whitespace_stxt", BIG_CONST + " aaa zzz"));
     assertU(adoc("id", "6", "whitespace_stxt", BIG_CONST + " bbb zzz "));
     assertU(commit());
-    // for these fields, the tie breaker should be the only thing that matters, regardless of
+    // for these fields, the tiebreaker should be the only thing that matters, regardless of
     // direction...
     for (String sortF : Arrays.asList("whitespace_stxt", "whitespace_nois_stxt")) {
       for (String dir : Arrays.asList("asc", "desc")) {
@@ -510,14 +510,14 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
                 ex.getMessage().contains(expect));
           }
         } else {
-          // otherwise (useDocValuesAsStored==false *OR* maxCharsForDocValues=0) any value
-          // should be fine when adding a doc and we should be able to search for it later...
+          // otherwise, (useDocValuesAsStored==false *OR* maxCharsForDocValues=0) any value
+          // should be fine when adding a doc, and we should be able to search for it later...
           final String val = docid + " apple pear orange " + BIG_CONST;
           assertU(adoc("id", docid, name, val));
           String doc_xpath = "//result/doc[str[@name='id'][.='" + docid + "']]";
 
           if (usedvs) {
-            // ...and if it *does* usedvs, then we should defnitely see our value when searching...
+            // ...and if it *does* usedvs, then we should definitely see our value when searching...
             doc_xpath = doc_xpath + "[str[@name='" + name + "'][.='" + val + "']]";
           } else {
             // ...but if not, then we should definitely not see any value for our field...
@@ -539,8 +539,8 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
   }
 
   /**
-   * tests that a SortableTextField using KeywordTokenzier (w/docValues) behaves exactly the same as
-   * StrFields that it's copied to for quering and sorting
+   * tests that a SortableTextField using KeywordTokenizer (with docValues) behaves exactly the same
+   * as StrFields that it's copied to for querying and sorting
    */
   public void testRandomStrEquivalentBehavior() throws Exception {
     final List<String> test_fields =

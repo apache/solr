@@ -62,7 +62,7 @@ public class ConfigSetApiLockingTest extends SolrTestCaseJ4 {
         apiLockingHelper.createConfigSetApiLock(CONFIG_SET_NAME_2, BASE_CONFIG_SET_NAME);
     assertTrue("cs2Lock should have been acquired", cs2Lock.isAcquired());
 
-    // This lock does has the same base config set, but that shouldn't prevent acquiring it
+    // This lock has the same base config set, but that shouldn't prevent acquiring it
     DistributedMultiLock cs3Lock =
         apiLockingHelper.createConfigSetApiLock(CONFIG_SET_NAME_3, BASE_CONFIG_SET_NAME);
     assertTrue("cs3Lock should have been acquired", cs3Lock.isAcquired());
@@ -106,7 +106,7 @@ public class ConfigSetApiLockingTest extends SolrTestCaseJ4 {
     new Thread(
             () -> {
               csBaseLock.waitUntilAcquired();
-              // countDown() will not be called if waitUntilAcquired() threw exception of any kind
+              // countDown() will not be called if waitUntilAcquired() threw an exception
               latch.countDown();
             })
         .start();
@@ -126,7 +126,7 @@ public class ConfigSetApiLockingTest extends SolrTestCaseJ4 {
 
     cs2Lock.release();
     assertTrue(
-        "basec config set lock should have been acquired now that other lock was released",
+        "base config set lock should have been acquired now that other lock was released",
         csBaseLock.isAcquired());
 
     // Wait for the Zookeeper watch to fire + the thread to be unblocked and countdown the latch

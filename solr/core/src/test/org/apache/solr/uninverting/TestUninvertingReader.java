@@ -264,7 +264,8 @@ public class TestUninvertingReader extends SolrTestCase {
         doc.add(new LegacyIntField("notrie_single", val, NO_TRIE_TYPE));
       }
       if (0 != TestUtil.nextInt(random(), 0, 9)) {
-        int numMulti = atLeast(1);
+        // Half of the documents will have >= 5 values, i.e. the non-inline path
+        int numMulti = TestUtil.nextInt(random(), 1, 10);
         while (0 < numMulti--) {
           int val = TestUtil.nextInt(random(), MIN, MAX);
           doc.add(new LegacyIntField("trie_multi", val, Field.Store.NO));
@@ -281,7 +282,7 @@ public class TestUninvertingReader extends SolrTestCase {
 
     final int NUM_LEAVES = ir.leaves().size();
 
-    // check the leaves: no more then total set size
+    // check the leaves: no more than total set size
     for (LeafReaderContext rc : ir.leaves()) {
       final LeafReader ar = rc.reader();
       for (String f : UNINVERT_MAP.keySet()) {
@@ -294,7 +295,7 @@ public class TestUninvertingReader extends SolrTestCase {
                 + " values per segment, got "
                 + valSetSize
                 + " from: "
-                + ar.toString(),
+                + ar,
             valSetSize <= EXPECTED_VALSET_SIZE);
 
         if (1 == NUM_LEAVES && MULTI_VALUES.contains(f)) {

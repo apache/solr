@@ -17,7 +17,6 @@
 package org.apache.solr.security.hadoop;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.Enumeration;
@@ -178,7 +177,7 @@ public class HttpParamDelegationTokenPlugin extends KerberosPlugin {
 
   private static String getHttpParam(HttpServletRequest request, String param) {
     List<NameValuePair> pairs =
-        URLEncodedUtils.parse(request.getQueryString(), Charset.forName("UTF-8"));
+        URLEncodedUtils.parse(request.getQueryString(), StandardCharsets.UTF_8);
     for (NameValuePair nvp : pairs) {
       if (param.equals(nvp.getName())) {
         return nvp.getValue();
@@ -276,7 +275,7 @@ public class HttpParamDelegationTokenPlugin extends KerberosPlugin {
       // forwarded.
       List<NameValuePair> newPairs = new LinkedList<NameValuePair>();
       List<NameValuePair> pairs =
-          URLEncodedUtils.parse(request.getQueryString(), Charset.forName("UTF-8"));
+          URLEncodedUtils.parse(request.getQueryString(), StandardCharsets.UTF_8);
       for (NameValuePair nvp : pairs) {
         if (!USER_PARAM.equals(nvp.getName())) {
           newPairs.add(nvp);

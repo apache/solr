@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -50,7 +49,6 @@ import org.apache.solr.security.RuleBasedAuthorizationPlugin;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@Slow
 public class TestPullReplicaWithAuth extends SolrCloudTestCase {
 
   private static final String USER = "solr";
@@ -133,7 +131,7 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
           QueryResponse statsResponse =
               queryWithBasicAuth(
                   pullReplicaClient, new SolrQuery("qt", "/admin/plugins", "stats", "true"));
-          // adds is a gauge, which is null for PULL replicas
+          // the 'adds' metric is a gauge, which is null for PULL replicas
           assertNull(
               "Replicas shouldn't process the add document request: " + statsResponse,
               getUpdateHandlerMetric(statsResponse, "UPDATE.updateHandler.adds"));

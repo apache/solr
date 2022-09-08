@@ -27,7 +27,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.lucene.tests.util.LuceneTestCase;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -66,7 +65,6 @@ import org.junit.Test;
  * All base tests will be done with CloudSolrStream. Under the covers CloudSolrStream uses
  * SolrStream so SolrStream will get fully exercised through these tests.
  */
-@Slow
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40", "Lucene41", "Lucene42", "Lucene45"})
 public class GraphExpressionTest extends SolrCloudTestCase {
 

@@ -50,7 +50,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
   }
 
   @Before
-  public void addSomeDocs() throws Exception {
+  public void addSomeDocs() {
     assertU(
         adoc(
             "id", "42",
@@ -66,7 +66,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
             "id", "44",
             "title", "Why the LazY dog was lazy",
             "body",
-                "News flash: Lazy Dog was not actually lazy, it just seemd so compared to Fox"));
+                "News flash: Lazy Dog was not actually lazy, it just seemed so compared to Fox"));
     assertU(
         adoc(
             "id", "45",
@@ -76,7 +76,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
   }
 
   @After
-  public void deleteAllDocs() throws Exception {
+  public void deleteAllDocs() {
     assertU(delQ("*:*"));
     assertU((commit()));
   }
@@ -92,7 +92,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
         IntStream.rangeClosed((11 - 7 + 1), 11).sum(), // 11 words, max query phrase size is 7
         phrases.size());
 
-    // spot check a few explicitly choosen phrases of various lengths...
+    // spot check a few explicitly chosen phrases of various lengths...
 
     { // single term, close to edge so not as many super phrases as other terms might have
       final Phrase lazy = phrases.get(phrases.size() - 1 - 2);
@@ -146,7 +146,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
       assertEquals(debug, daq, daq.getLargestIndexedSubPhrases().get(0));
       assertEquals(debug, 0, daq.getIndexedSuperPhrases().size());
     }
-    { // length 4 phrase (larger then the max indexed size)
+    { // length 4 phrase (larger than the max indexed size)
       final Phrase qbfp = phrases.get((7 * 2) + 3);
       final String debug = qbfp.toString();
 
@@ -237,8 +237,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
       final List<Phrase> phrases,
       final int inputPositionLength,
       final int maxIndexedPositionLength,
-      final int maxQueryPositionLength)
-      throws Exception {
+      final int maxQueryPositionLength) {
     assert 0 < phrases.size() : "Don't use this method if phrases might be empty";
 
     assertEmptyStream(
@@ -342,7 +341,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
     final String input = "BROWN fox lAzY  dog xxxyyyzzz";
 
     // a function we'll re-use on phrases generated from the above input
-    // the multiplier let's us simulate multiple shards returning the same values
+    // the multiplier lets us simulate multiple shards returning the same values
     BiConsumer<Integer, List<Phrase>> assertions =
         (mult, phrases) -> {
           final Phrase brown_fox = phrases.get(1);
@@ -502,7 +501,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
         wawl.toString(), wawl.getFieldScore("multigrams_title"), wawl.getTotalScore(), 0.0D);
 
     // "brown fox why are we" is longer then the max indexed phrase, and none of it's
-    // (longest) sub phrases exists in either field -- so all of it's scores should be -1
+    // (longest) sub phrases exists in either field -- so all of its scores should be -1
     final Phrase bfwaw = phrases.get(11);
     assertEquals("BROWN fox why are we", bfwaw.getSubSequence());
     assertEquals(bfwaw.toString(), -1.0D, bfwaw.getFieldScore("multigrams_title"), 0.0D);
@@ -510,7 +509,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
     assertEquals(bfwaw.toString(), -1.0D, bfwaw.getTotalScore(), 0.0D);
   }
 
-  public void testWhiteboxScorcesStopwords() throws Exception {
+  public void testWhiteboxScoresStopwords() throws Exception {
     final String input = "why the lazy dog brown fox";
     final Map<String, Double> fieldWeights = new TreeMap<>();
     fieldWeights.put("multigrams_title", 1.0D);
@@ -567,9 +566,9 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
     }
 
     { // now flip things: our analysisField filters stopwords,
-      // but we also generates scores from a field that doesn't know about them...
+      // but we also generate scores from a field that doesn't know about them...
       //
-      // (NOTE: the parser will still generate _some_ candidate phrases spaning the stop word
+      // (NOTE: the parser will still generate _some_ candidate phrases spanning the stop word
       // position, but not ones that start with the stopword)
       final SchemaField analysisField =
           h.getCore().getLatestSchema().getField("multigrams_title_stop");
@@ -605,7 +604,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
     }
   }
 
-  public void testExpectedUserErrors() throws Exception {
+  public void testExpectedUserErrors() {
     assertQEx(
         "empty field list should error",
         "must specify a (weighted) list of fields",
@@ -625,7 +624,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
         ErrorCode.BAD_REQUEST);
 
     assertQEx(
-        "analyzer missmatch should cause error",
+        "analyzer mismatch should cause error",
         "must have the same fieldType",
         req(
             "q",
@@ -659,7 +658,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
         ErrorCode.BAD_REQUEST);
   }
 
-  public void testMaxShingleSizeHelper() throws Exception {
+  public void testMaxShingleSizeHelper() {
     IndexSchema schema = h.getCore().getLatestSchema();
 
     assertEquals(
@@ -690,11 +689,11 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
             schema.getFieldTypeByName("text").getQueryAnalyzer()));
   }
 
-  public void testSimplePhraseRequest() throws Exception {
+  public void testSimplePhraseRequest() {
     final String input = " did  a Quick    brown FOX perniciously jump over the lazy dog";
     final String expected = " did  a Quick    {brown FOX} perniciously jump over {the lazy dog}";
 
-    // should get same behavior regardless of wether we use "q" or "phrases.q"
+    // should get same behavior regardless of whether we use "q" or "phrases.q"
     for (String p : Arrays.asList("q", "phrases.q")) {
       // basic request...
       assertQ(
@@ -723,7 +722,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
     }
   }
 
-  public void testSimpleSearchRequests() throws Exception {
+  public void testSimpleSearchRequests() {
     final String input = "\"brown fox\"";
 
     assertQ(
@@ -807,7 +806,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
         "count(//lst[@name='phrases']/arr[@name='details']/lst) = 0");
   }
 
-  public void testGreyboxShardSearchRequests() throws Exception {
+  public void testGreyboxShardSearchRequests() {
     final String input = "quick brown fox ran";
 
     final String phrase_xpath = "//lst[@name='phrases']";

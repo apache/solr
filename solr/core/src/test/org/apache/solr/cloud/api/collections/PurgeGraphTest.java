@@ -28,7 +28,12 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.api.collections.DeleteBackupCmd.PurgeGraph;
-import org.apache.solr.core.backup.*;
+import org.apache.solr.core.backup.BackupFilePaths;
+import org.apache.solr.core.backup.BackupId;
+import org.apache.solr.core.backup.BackupProperties;
+import org.apache.solr.core.backup.Checksum;
+import org.apache.solr.core.backup.ShardBackupId;
+import org.apache.solr.core.backup.ShardBackupMetadata;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
 import org.junit.Before;
@@ -46,9 +51,7 @@ public class PurgeGraphTest extends SolrTestCaseJ4 {
     repository = new LocalFileSystemRepository();
     baseLocationUri =
         repository.createDirectoryURI(
-            createTempDir("backup_files_" + UUID.randomUUID().toString())
-                .toAbsolutePath()
-                .toString());
+            createTempDir("backup_files_" + UUID.randomUUID()).toAbsolutePath().toString());
     backupPaths = new BackupFilePaths(repository, baseLocationUri);
 
     backupPaths.createIncrementalBackupFolders();

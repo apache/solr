@@ -34,7 +34,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -75,7 +75,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Slow
+@LuceneTestCase.Nightly
 @LogLevel(
     "org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.cloud.overseer=DEBUG;org.apache.solr.cloud.api.collections=DEBUG;org.apache.solr.cloud.OverseerTaskProcessor=DEBUG;org.apache.solr.util.TestInjection=DEBUG")
 public class ShardSplitTest extends BasicDistributedZkTest {
@@ -221,7 +221,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
           // add a new replica for the sub-shard
           CollectionAdminRequest.AddReplica addReplica =
               CollectionAdminRequest.addReplicaToShard(collectionName, SHARD1_0);
-          // use control client because less chances of it being the node being restarted
+          // use control client because there are fewer chances of it being the node being restarted
           // this is to avoid flakiness of test because of NoHttpResponseExceptions
           String control_collection =
               client
@@ -362,7 +362,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     Slice shard11 = collection.getSlice(SHARD1_1);
     assertNull(shard11);
 
-    // lets retry the split
+    // let's retry the split
     TestInjection.reset(); // let the split succeed
     try {
       CollectionAdminRequest.SplitShard splitShard =
@@ -448,8 +448,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
       Slice.State expectedState,
       int numNrt,
       int numTlog,
-      int numPull)
-      throws Exception {
+      int numPull) {
     Slice s = coll.getSlice(shard);
     assertEquals("unexpected shard state", expectedState, s.getState());
     AtomicInteger actualNrt = new AtomicInteger();
@@ -556,7 +555,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
             e);
       }
 
-      // we don't care if the split failed because we are injecting faults and it is likely
+      // we don't care if the split failed because we are injecting faults, and it is likely
       // that the split has failed but in any case we want to assert that all docs that got
       // indexed are available in SolrCloud and if the split succeeded then all replicas of the
       // sub-shard must be consistent (i.e. have same numdocs)

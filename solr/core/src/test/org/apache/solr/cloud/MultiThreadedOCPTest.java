@@ -79,7 +79,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
         assertNotNull(
             "Queue did not process first two tasks on A_COLL, can't run test", task1CollA);
 
-        // Make sure the long running task did not finish, otherwise no way the B_COLL task can be
+        // Make sure the long-running task did not finish, otherwise no way the B_COLL task can be
         // tested to run in parallel with it
         assumeTrue(
             "Long running task finished too early, can't test",
@@ -93,12 +93,12 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
         mockTask.setSleep("1");
         mockTask.processAsync("200", client);
 
-        // We now check that either the B_COLL task has completed before the third (long running)
+        // We now check that either the B_COLL task has completed before the third (long-running)
         // task on A_COLL, or if both have completed (if this check got significantly delayed for
         // some reason), we verify B_COLL was first.
         Long taskCollB = waitForTaskToCompleted(client, 200);
 
-        // We do not wait for the long running task to finish, that would be a waste of time.
+        // We do not wait for the long-running task to finish, that would be a waste of time.
         Long task2CollA = checkTaskHasCompleted(client, 2);
 
         // Given the wait delay (500 iterations of 100ms), the task has plenty of time to complete,

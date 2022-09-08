@@ -19,7 +19,7 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.Locale;
-import org.apache.commons.math3.util.*;
+import org.apache.commons.math3.util.CombinatoricsUtils;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
