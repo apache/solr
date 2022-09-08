@@ -236,6 +236,7 @@ public class TestInjection {
     return true;
   }
 
+  @SuppressWarnings("NarrowCalculation")
   public static boolean injectRandomDelayInCoreCreation() {
     if (randomDelayInCoreCreation != null) {
       Random rand = random();
@@ -257,6 +258,7 @@ public class TestInjection {
     return true;
   }
 
+  @SuppressWarnings("NarrowCalculation")
   public static boolean injectNonGracefullClose(CoreContainer cc) {
     if (cc.isShutDown() && nonGracefullClose != null) {
       Random rand = random();

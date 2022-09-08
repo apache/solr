@@ -993,6 +993,7 @@ public class DocValuesTest extends SolrTestCaseJ4 {
         "//result/doc[2]/str[@name='id'][.=4]");
   }
 
+  @SuppressWarnings("BoxedPrimitiveEquality")
   @Test
   public void testFloatAndDoubleRangeQueryRandom() {
 

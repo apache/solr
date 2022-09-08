@@ -355,6 +355,7 @@ public class IndexSizeEstimator {
     result.put(NORMS, stats);
   }
 
+  @SuppressWarnings("LongDoubleConversion")
   private void estimatePoints(Map<String, Object> result) throws IOException {
     log.info("- estimating points...");
     Map<String, Map<String, Object>> stats = new HashMap<>();
@@ -512,6 +513,7 @@ public class IndexSizeEstimator {
     result.put(TERMS, stats);
   }
 
+  @SuppressWarnings("LongDoubleConversion")
   private void estimateTermStats(
       String field, Terms terms, Map<String, Map<String, Object>> stats, boolean isSampling)
       throws IOException {

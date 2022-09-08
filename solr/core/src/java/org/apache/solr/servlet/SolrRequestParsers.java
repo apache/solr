@@ -608,6 +608,7 @@ public class SolrRequestParsers {
   static class MultipartRequestParser implements SolrRequestParser {
     private final MultipartConfigElement multipartConfigElement;
 
+    @SuppressWarnings("NarrowCalculation")
     public MultipartRequestParser(int uploadLimitKB) {
       multipartConfigElement =
           new MultipartConfigElement(
