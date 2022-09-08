@@ -17,27 +17,8 @@
 
 package org.apache.solr.api;
 
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
-
 import io.opentracing.Span;
 import io.opentracing.tag.Tags;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Supplier;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.SolrThreadSafe;
@@ -53,7 +34,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerUtils;
-import org.apache.solr.jersey.RequestContextConstants;
+import org.apache.solr.jersey.RequestContextKeys;
 import org.apache.solr.jersey.container.ContainerRequestUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -68,6 +49,26 @@ import org.glassfish.jersey.server.ApplicationHandler;
 import org.glassfish.jersey.server.ContainerRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Supplier;
+
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
 
 // class that handle the '/v2' path
 @SolrThreadSafe
@@ -340,16 +341,16 @@ public class V2HttpCall extends HttpSolrCall {
               req, response, jerseyHandler.getConfiguration());
 
       // Set properties that may be used by Jersey filters downstream
-      containerRequest.setProperty(RequestContextConstants.SOLR_QUERY_REQUEST_KEY, solrReq);
-      containerRequest.setProperty(RequestContextConstants.SOLR_QUERY_RESPONSE_KEY, rsp);
-      containerRequest.setProperty(RequestContextConstants.CORE_CONTAINER_KEY, cores);
-      containerRequest.setProperty(RequestContextConstants.HTTP_SERVLET_REQ_KEY, req);
-      containerRequest.setProperty(RequestContextConstants.REQUEST_TYPE_KEY, requestType);
-      containerRequest.setProperty(RequestContextConstants.SOLR_PARAMS_KEY, queryParams);
-      containerRequest.setProperty(RequestContextConstants.COLLECTION_LIST_KEY, collectionsList);
-      containerRequest.setProperty(RequestContextConstants.HTTP_SERVLET_RSP_KEY, response);
+      containerRequest.setProperty(RequestContextKeys.SOLR_QUERY_REQUEST, solrReq);
+      containerRequest.setProperty(RequestContextKeys.SOLR_QUERY_RESPONSE, rsp);
+      containerRequest.setProperty(RequestContextKeys.CORE_CONTAINER, cores);
+      containerRequest.setProperty(RequestContextKeys.HTTP_SERVLET_REQ, req);
+      containerRequest.setProperty(RequestContextKeys.REQUEST_TYPE, requestType);
+      containerRequest.setProperty(RequestContextKeys.SOLR_PARAMS, queryParams);
+      containerRequest.setProperty(RequestContextKeys.COLLECTION_LIST, collectionsList);
+      containerRequest.setProperty(RequestContextKeys.HTTP_SERVLET_RSP, response);
       if (core != null) {
-        containerRequest.setProperty(RequestContextConstants.SOLR_CORE_KEY, core);
+        containerRequest.setProperty(RequestContextKeys.SOLR_CORE, core);
       }
       servedByJaxRs = true;
       jerseyHandler.handle(containerRequest);
@@ -463,8 +464,7 @@ public class V2HttpCall extends HttpSolrCall {
       SolrQueryResponse solrRsp, QueryResponseWriter responseWriter, Method reqMethod)
       throws IOException {
     // JAX-RS has its own code that flushes out the Response to the relevant output stream, so we
-    // no-op here if the
-    // request was already handled via JAX-RS
+    // no-op here if the request was already handled via JAX-RS
     if (!servedByJaxRs) {
       super.writeResponse(solrRsp, responseWriter, reqMethod);
     }

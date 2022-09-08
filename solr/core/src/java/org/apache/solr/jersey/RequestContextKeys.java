@@ -18,9 +18,6 @@
 package org.apache.solr.jersey;
 
 import com.codahale.metrics.Timer;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.container.ContainerRequestContext;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
@@ -29,6 +26,10 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.container.ContainerRequestContext;
+
 /**
  * Keys used to store and retrieve values from the Jersey request context.
  *
@@ -36,17 +37,17 @@ import org.apache.solr.security.AuthorizationContext;
  * {@link javax.ws.rs.container.ContainerRequestFilter}s using {@link
  * ContainerRequestContext#getProperty(String)}
  */
-public interface RequestContextConstants {
-  String HTTP_SERVLET_REQ_KEY = HttpServletRequest.class.getName();
-  String HTTP_SERVLET_RSP_KEY = HttpServletResponse.class.getName();
-  String SOLR_QUERY_REQUEST_KEY = SolrQueryRequest.class.getName();
-  String SOLR_QUERY_RESPONSE_KEY = SolrQueryResponse.class.getName();
-  String CORE_CONTAINER_KEY = CoreContainer.class.getName();
-  String SOLR_CORE_KEY = SolrCore.class.getName();
-  String REQUEST_TYPE_KEY = AuthorizationContext.RequestType.class.getName();
-  String SOLR_PARAMS_KEY = SolrParams.class.getName();
-  String COLLECTION_LIST_KEY = "collection_name_list";
-  String HANDLER_METRICS_KEY = RequestHandlerBase.HandlerMetrics.class.getName();
-  String TIMER_KEY = Timer.Context.class.getName();
-  String SOLR_JERSEY_RESPONSE_KEY = SolrJerseyResponse.class.getName();
+public interface RequestContextKeys {
+  String HTTP_SERVLET_REQ = HttpServletRequest.class.getName();
+  String HTTP_SERVLET_RSP = HttpServletResponse.class.getName();
+  String SOLR_QUERY_REQUEST = SolrQueryRequest.class.getName();
+  String SOLR_QUERY_RESPONSE = SolrQueryResponse.class.getName();
+  String CORE_CONTAINER = CoreContainer.class.getName();
+  String SOLR_CORE = SolrCore.class.getName();
+  String REQUEST_TYPE = AuthorizationContext.RequestType.class.getName();
+  String SOLR_PARAMS = SolrParams.class.getName();
+  String COLLECTION_LIST = "collection_name_list";
+  String HANDLER_METRICS = RequestHandlerBase.HandlerMetrics.class.getName();
+  String TIMER = Timer.Context.class.getName();
+  String SOLR_JERSEY_RESPONSE = SolrJerseyResponse.class.getName();
 }

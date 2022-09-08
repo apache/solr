@@ -17,17 +17,6 @@
 
 package org.apache.solr.jersey;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.List;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.container.ResourceInfo;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.Provider;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.security.AuthorizationContext;
@@ -37,6 +26,18 @@ import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.servlet.ServletUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ContainerRequestFilter;
+import javax.ws.rs.container.ResourceInfo;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.ext.Provider;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.List;
 
 /**
  * A JAX-RS request filter that blocks or allows requests based on the authorization plugin
@@ -57,20 +58,20 @@ public class SolrRequestAuthorizer implements ContainerRequestFilter {
   @Override
   public void filter(ContainerRequestContext requestContext) throws IOException {
     final CoreContainer coreContainer =
-        (CoreContainer) requestContext.getProperty(RequestContextConstants.CORE_CONTAINER_KEY);
+        (CoreContainer) requestContext.getProperty(RequestContextKeys.CORE_CONTAINER);
     final HttpServletRequest servletRequest =
         (HttpServletRequest)
-            requestContext.getProperty(RequestContextConstants.HTTP_SERVLET_REQ_KEY);
+            requestContext.getProperty(RequestContextKeys.HTTP_SERVLET_REQ);
     final HttpServletResponse servletResponse =
         (HttpServletResponse)
-            requestContext.getProperty(RequestContextConstants.HTTP_SERVLET_RSP_KEY);
+            requestContext.getProperty(RequestContextKeys.HTTP_SERVLET_RSP);
     final AuthorizationContext.RequestType requestType =
         (AuthorizationContext.RequestType)
-            requestContext.getProperty(RequestContextConstants.REQUEST_TYPE_KEY);
+            requestContext.getProperty(RequestContextKeys.REQUEST_TYPE);
     final List<String> collectionNames =
-        (List<String>) requestContext.getProperty(RequestContextConstants.COLLECTION_LIST_KEY);
+        (List<String>) requestContext.getProperty(RequestContextKeys.COLLECTION_LIST);
     final SolrParams solrParams =
-        (SolrParams) requestContext.getProperty(RequestContextConstants.SOLR_PARAMS_KEY);
+        (SolrParams) requestContext.getProperty(RequestContextKeys.SOLR_PARAMS);
 
     /*
      * HttpSolrCall has more involved logic to check whether a request requires authorization, but most of that
@@ -83,7 +84,7 @@ public class SolrRequestAuthorizer implements ContainerRequestFilter {
       return;
     }
     final AuthorizationContext authzContext =
-        getAuthzContext(servletRequest, requestType, collectionNames, solrParams, coreContainer);
+        getAuthzContext(servletRequest, requestType, collectionNames, solrParams);
     log.debug("Attempting authz with context {}", authzContext);
     AuthorizationUtils.AuthorizationFailure authzFailure =
         AuthorizationUtils.authorize(servletRequest, servletResponse, coreContainer, authzContext);
@@ -98,8 +99,7 @@ public class SolrRequestAuthorizer implements ContainerRequestFilter {
       HttpServletRequest servletRequest,
       AuthorizationContext.RequestType reqType,
       List<String> collectionNames,
-      SolrParams solrParams,
-      CoreContainer cores) {
+      SolrParams solrParams) {
     return new HttpServletAuthorizationContext(servletRequest) {
 
       @Override

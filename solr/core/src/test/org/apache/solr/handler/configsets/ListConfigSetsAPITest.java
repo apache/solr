@@ -17,18 +17,6 @@
 
 package org.apache.solr.handler.configsets;
 
-import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.util.List;
-import javax.inject.Singleton;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Response;
 import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.ConfigSetService;
@@ -42,6 +30,24 @@ import org.glassfish.jersey.test.JerseyTest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import javax.inject.Singleton;
+import javax.ws.rs.core.Application;
+import javax.ws.rs.core.Response;
+import java.util.List;
+
+import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+/**
+ * Unit tests for {@link ListConfigSetsAPI}.
+ *
+ * Serves primarily as a model and example of how to write unit tests using Jersey's test framework.
+ */
 public class ListConfigSetsAPITest extends JerseyTest {
 
   private CoreContainer mockCoreContainer;

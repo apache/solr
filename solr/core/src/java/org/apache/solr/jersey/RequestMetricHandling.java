@@ -17,13 +17,13 @@
 
 package org.apache.solr.jersey;
 
-import static org.apache.solr.jersey.RequestContextConstants.HANDLER_METRICS_KEY;
-import static org.apache.solr.jersey.RequestContextConstants.SOLR_QUERY_REQUEST_KEY;
-import static org.apache.solr.jersey.RequestContextConstants.TIMER_KEY;
-
 import com.codahale.metrics.Timer;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
+import org.apache.solr.core.PluginBag;
+import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.request.SolrQueryRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.inject.Inject;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
@@ -31,11 +31,12 @@ import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Context;
-import org.apache.solr.core.PluginBag;
-import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.request.SolrQueryRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+
+import static org.apache.solr.jersey.RequestContextKeys.HANDLER_METRICS;
+import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_REQUEST;
+import static org.apache.solr.jersey.RequestContextKeys.TIMER;
 
 /**
  * A request and response filter used to initialize and report per-request metrics.
@@ -74,12 +75,12 @@ public class RequestMetricHandling {
       }
 
       final SolrQueryRequest solrQueryRequest =
-          (SolrQueryRequest) requestContext.getProperty(SOLR_QUERY_REQUEST_KEY);
+          (SolrQueryRequest) requestContext.getProperty(SOLR_QUERY_REQUEST);
       final RequestHandlerBase.HandlerMetrics metrics =
           handlerBase.getMetricsForThisRequest(solrQueryRequest);
 
-      requestContext.setProperty(HANDLER_METRICS_KEY, metrics);
-      requestContext.setProperty(TIMER_KEY, metrics.requestTimes.time());
+      requestContext.setProperty(HANDLER_METRICS, metrics);
+      requestContext.setProperty(TIMER, metrics.requestTimes.time());
       metrics.requests.inc();
     }
   }
@@ -93,7 +94,7 @@ public class RequestMetricHandling {
         ContainerRequestContext requestContext, ContainerResponseContext responseContext)
         throws IOException {
       final RequestHandlerBase.HandlerMetrics metrics =
-          (RequestHandlerBase.HandlerMetrics) requestContext.getProperty(HANDLER_METRICS_KEY);
+          (RequestHandlerBase.HandlerMetrics) requestContext.getProperty(HANDLER_METRICS);
       if (metrics == null) return;
 
       // Increment the timeout count if responseHeader indicates a timeout
@@ -107,7 +108,7 @@ public class RequestMetricHandling {
         log.debug("Skipping partialResults check because entity was not SolrJerseyResponse");
       }
 
-      final Timer.Context timer = (Timer.Context) requestContext.getProperty(TIMER_KEY);
+      final Timer.Context timer = (Timer.Context) requestContext.getProperty(TIMER);
       metrics.totalTime.inc(timer.stop());
     }
   }

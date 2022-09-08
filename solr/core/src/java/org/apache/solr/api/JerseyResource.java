@@ -17,14 +17,15 @@
 
 package org.apache.solr.api;
 
-import static org.apache.solr.jersey.RequestContextConstants.SOLR_JERSEY_RESPONSE_KEY;
-
-import java.util.function.Supplier;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.core.Context;
 import org.apache.solr.jersey.CatchAllExceptionMapper;
 import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.servlet.HttpSolrCall;
+
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.core.Context;
+import java.util.function.Supplier;
+
+import static org.apache.solr.jersey.RequestContextKeys.SOLR_JERSEY_RESPONSE;
 
 /**
  * A marker parent type for all Jersey "resource" classes.
@@ -91,7 +92,7 @@ public class JerseyResource {
   protected <T extends SolrJerseyResponse> T instantiateJerseyResponse(Supplier<T> instantiator) {
     final T instance = instantiator.get();
     if (containerRequestContext != null) {
-      containerRequestContext.setProperty(SOLR_JERSEY_RESPONSE_KEY, instance);
+      containerRequestContext.setProperty(SOLR_JERSEY_RESPONSE, instance);
     }
     return instance;
   }
