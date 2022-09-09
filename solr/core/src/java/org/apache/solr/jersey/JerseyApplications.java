@@ -17,12 +17,12 @@
 
 package org.apache.solr.jersey;
 
-import java.util.Map;
-import javax.inject.Singleton;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.SolrCore;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.server.ResourceConfig;
+
+import javax.inject.Singleton;
 
 /**
  * JAX-RS "application" configurations for Solr's {@link org.apache.solr.core.CoreContainer} and
@@ -60,14 +60,12 @@ public class JerseyApplications {
           });
 
       // Logging - disabled by default but useful for debugging Jersey execution
-      setProperties(
-          Map.of(
-              "jersey.config.server.tracing.type",
-              "ALL",
-              "jersey.config.server.tracing.threshold",
-              "VERBOSE"));
-      register(ApplicationEventLogger.class);
-      register(RequestEventLogger.class);
+//      setProperties(
+//          Map.of(
+//              "jersey.config.server.tracing.type",
+//              "ALL",
+//              "jersey.config.server.tracing.threshold",
+//              "VERBOSE"));
     }
   }
 
