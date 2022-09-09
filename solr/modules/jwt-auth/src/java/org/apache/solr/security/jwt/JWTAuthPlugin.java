@@ -617,7 +617,19 @@ public class JWTAuthPlugin extends AuthenticationPlugin
                 if (rolesObj instanceof String) {
                   finalRoles.addAll(Arrays.asList(((String) rolesObj).split("\\s+")));
                 } else if (rolesObj instanceof List) {
-                  ((List<?>) rolesObj).forEach(entry -> finalRoles.add((String) entry));
+                  ((List<?>) rolesObj)
+                      .forEach(
+                          entry -> {
+                            if (entry instanceof String) {
+                              finalRoles.add((String) entry);
+                            } else {
+                              throw new SolrException(
+                                  SolrException.ErrorCode.BAD_REQUEST,
+                                  String.format(
+                                      "Could not parse roles from JWT claim %s; expected array of strings, got array with a value of type %s",
+                                      rolesClaim, entry.getClass().getSimpleName()));
+                            }
+                          });
                 }
               }
             }
