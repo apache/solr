@@ -40,6 +40,11 @@ SolrJ is beginning to be split up.  If you use ZooKeeper coordinates to create a
 Instead, consider migrating to use of specifying a list of Solr URLs in the client's builder.
 Not only does this reduce dependencies, but it improves security by being able to limit ZooKeeper access.
 
+Zookeeper Credential support now follows a new paradigm.
+Old classes, such as `VMParamsAllAndReadonlyDigestZkACLProvider` and `VMParamsSingleSetCredentialsDigestZkCredentialsProvider`, are deprecated but still supported.
+Users are encouraged to upgrade to the non-deprecated classes before the next major version release.
+Please refer to xref:deployment-guide:zookeeper-access-control.adoc#solr-to-zookeeper-acls-workflow[] for more information.
+
 == Upgrading to 9.0 from 8.x Releases
 
 The upgrade from 8.x to Solr 9.0 introduces several *major* changes that you should be aware of before upgrading.
