@@ -77,6 +77,8 @@ Improvements
 
 * SOLR-16362: Logs: Truncate field values in logs if a doc fails to index. (Nazerke Seidan, David Smiley)
 
+* SOLR-16404: Prometheus Exporter: Use non-deprecated Solr clients, remove explicit Zookeeper gradle dependency. (Houston Putman)
+
 Optimizations
 ---------------------
 * SOLR-16120: Optimise hl.fl expansion. (Christine Poerschke, David Smiley, Mike Drob)
