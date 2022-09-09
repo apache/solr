@@ -18,7 +18,6 @@
 package org.apache.solr.servlet;
 
 import java.lang.invoke.MethodHandles;
-import java.security.Principal;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,7 +33,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
@@ -43,9 +41,6 @@ import org.apache.solr.request.DelegatedSolrQueryRequest;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.RTimerTree;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -206,7 +201,7 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
     };
   }
 
-  //The factory that creates an instance of HttpSolrCall
+  // The factory that creates an instance of HttpSolrCall
   public static class Factory implements SolrDispatchFilter.HttpSolrCallFactory {
     private final Map<String, String> collectionVsCoreNameMapping = new ConcurrentHashMap<>();
 

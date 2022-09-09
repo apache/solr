@@ -148,9 +148,7 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
                   .nodeRoles
                   .getRoleMode(NodeRoles.Role.COORDINATOR));
       solrCallFactory =
-          isCoordinator ?
-                  new CoordinatorHttpSolrCall.Factory() :
-                  new HttpSolrCallFactory() {};
+          isCoordinator ? new CoordinatorHttpSolrCall.Factory() : new HttpSolrCallFactory() {};
       if (log.isTraceEnabled()) {
         log.trace("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
       }
