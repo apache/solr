@@ -270,11 +270,10 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
    *
    * @return <code>0</code> if a commit was done, else <code>itersSinceLastCommit + 1</code>
    */
-  @SuppressWarnings("NarrowCalculation")
   private static int maybeCommit(
       final Random rand, final int itersSinceLastCommit, final int numIters)
       throws IOException, SolrServerException {
-    final float threshold = itersSinceLastCommit / numIters;
+    final float threshold = (float) itersSinceLastCommit / numIters;
     if (rand.nextFloat() < threshold) {
       log.info("COMMIT");
       assertEquals(0, getRandClient(rand).commit().getStatus());

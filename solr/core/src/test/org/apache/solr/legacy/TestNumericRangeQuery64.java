@@ -51,7 +51,6 @@ public class TestNumericRangeQuery64 extends SolrTestCase {
   private static IndexReader reader = null;
   private static IndexSearcher searcher = null;
 
-  @SuppressWarnings("NarrowCalculation")
   @BeforeClass
   public static void beforeClass() throws Exception {
     noDocs = atLeast(4096);
@@ -426,14 +425,13 @@ public class TestNumericRangeQuery64 extends SolrTestCase {
     dir.close();
   }
 
-  @SuppressWarnings("NarrowCalculation")
   private void testRangeSplit(int precisionStep) throws Exception {
     String field = "ascfield" + precisionStep;
     // 10 random tests
     int num = TestUtil.nextInt(random(), 10, 20);
     for (int i = 0; i < num; i++) {
-      long lower = (long) (random().nextDouble() * noDocs - noDocs / 2);
-      long upper = (long) (random().nextDouble() * noDocs - noDocs / 2);
+      long lower = (long) (random().nextDouble() * noDocs - noDocs / 2.0);
+      long upper = (long) (random().nextDouble() * noDocs - noDocs / 2.0);
       if (lower > upper) {
         long a = lower;
         lower = upper;

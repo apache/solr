@@ -177,7 +177,6 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     CLIENTS.clear();
   }
 
-  @SuppressWarnings("NarrowCalculation")
   @Before
   private void clearCloudCollection() throws Exception {
     TestInjection.reset();
@@ -191,7 +190,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
         0,
         CLOUD_CLIENT.query(params("q", "*:*")).getResults().getNumFound());
 
-    final int injectionPercentage = (int) Math.ceil(atLeast(1) / 2);
+    final int injectionPercentage = (int) Math.ceil((float) atLeast(1) / 2);
     testInjection = usually() ? "false:0" : ("true:" + injectionPercentage);
   }
 

@@ -3020,7 +3020,6 @@ public class StreamingTest extends SolrCloudTestCase {
     return true;
   }
 
-  @SuppressWarnings("UnnecessaryLongToIntConversion")
   protected boolean assertGroupOrder(Tuple tuple, int... ids) {
     @SuppressWarnings({"rawtypes"})
     List group = (List) tuple.get("tuples");
@@ -3028,8 +3027,8 @@ public class StreamingTest extends SolrCloudTestCase {
     for (int val : ids) {
       @SuppressWarnings({"rawtypes"})
       Map t = (Map) group.get(i);
-      Long tip = (Long) t.get("id");
-      assertEquals(val, tip.intValue());
+      int tip = (int) t.get("id");
+      assertEquals(val, tip);
       ++i;
     }
     return true;
