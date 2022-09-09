@@ -82,7 +82,6 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
 
   @AfterClass
   public static void cleanupStatics() {
-    deleteCore();
     SOLR = null;
     ALL_SORT_FIELD_NAMES = ALL_COLLAPSE_FIELD_NAMES = null;
   }

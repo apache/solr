@@ -109,17 +109,13 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
     IOUtils.closeQuietly(fs);
     fs = null;
     try {
-      deleteCore();
+      HdfsTestUtil.teardownClass(dfsCluster);
     } finally {
-      try {
-        HdfsTestUtil.teardownClass(dfsCluster);
-      } finally {
-        dfsCluster = null;
-        hdfsUri = null;
-        System.clearProperty("solr.ulog.dir");
-        System.clearProperty("test.build.data");
-        System.clearProperty("test.cache.data");
-      }
+      dfsCluster = null;
+      hdfsUri = null;
+      System.clearProperty("solr.ulog.dir");
+      System.clearProperty("test.build.data");
+      System.clearProperty("test.cache.data");
     }
   }
 
