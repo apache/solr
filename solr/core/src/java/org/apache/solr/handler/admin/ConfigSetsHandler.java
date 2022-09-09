@@ -21,8 +21,13 @@ import static org.apache.solr.handler.configsets.UploadConfigSetFileAPI.FILEPATH
 
 import com.google.common.collect.Maps;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.api.Api;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.request.beans.CreateConfigPayload;
 import org.apache.solr.cloud.ConfigSetCmds;
@@ -206,5 +211,21 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
       }
     }
     return null;
+  }
+
+  @Override
+  public Boolean registerV2() {
+    return Boolean.TRUE;
+  }
+
+  @Override
+  public Collection<Api> getApis() {
+    final List<Api> apis = new ArrayList<>();
+    apis.addAll(AnnotatedApi.getApis(new CreateConfigSetAPI(coreContainer)));
+    apis.addAll(AnnotatedApi.getApis(new DeleteConfigSetAPI(coreContainer)));
+    apis.addAll(AnnotatedApi.getApis(new ListConfigSetsAPI(coreContainer)));
+    apis.addAll(AnnotatedApi.getApis(new UploadConfigSetAPI(coreContainer)));
+    apis.addAll(AnnotatedApi.getApis(new UploadConfigSetFileAPI(coreContainer)));
+    return apis;
   }
 }
