@@ -630,6 +630,12 @@ public class JWTAuthPlugin extends AuthenticationPlugin
                                       rolesClaim, entry.getClass().getSimpleName()));
                             }
                           });
+                } else {
+                  throw new SolrException(
+                      SolrException.ErrorCode.BAD_REQUEST,
+                      String.format(
+                          "Could not parse roles from JWT claim %s; got %s",
+                          rolesClaim, rolesObj.getClass().getSimpleName()));
                 }
               }
             }
