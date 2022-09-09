@@ -34,6 +34,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -626,16 +627,20 @@ public class JWTAuthPlugin extends AuthenticationPlugin
                               throw new SolrException(
                                   SolrException.ErrorCode.BAD_REQUEST,
                                   String.format(
+                                      Locale.ROOT,
                                       "Could not parse roles from JWT claim %s; expected array of strings, got array with a value of type %s",
-                                      rolesClaim, entry.getClass().getSimpleName()));
+                                      rolesClaim,
+                                      entry.getClass().getSimpleName()));
                             }
                           });
                 } else {
                   throw new SolrException(
                       SolrException.ErrorCode.BAD_REQUEST,
                       String.format(
+                          Locale.ROOT,
                           "Could not parse roles from JWT claim %s; got %s",
-                          rolesClaim, rolesObj.getClass().getSimpleName()));
+                          rolesClaim,
+                          rolesObj.getClass().getSimpleName()));
                 }
               }
             }
