@@ -168,19 +168,18 @@ public class DocTermOrds implements Accountable {
 
   // TODO: Why is indexedTermsArray not part of this?
   /** Returns total bytes used. */
-  @SuppressWarnings("NarrowCalculation")
   @Override
   public long ramBytesUsed() {
     // can cache the mem size since it shouldn't change
     if (memsz != 0) return memsz;
     long sz = 8 * 8 + 32; // local fields
-    if (index != null) sz += index.length * 4;
+    if (index != null) sz += index.length * 4L;
     if (tnums != null) {
       for (byte[] arr : tnums) if (arr != null) sz += arr.length;
     }
     if (indexedTermsArray != null) {
       // assume 8 byte references?
-      sz += 8 + 8 + 8 + 8 + (indexedTermsArray.length << 3) + sizeOfIndexedStrings;
+      sz += 8 + 8 + 8 + 8 + ((long) indexedTermsArray.length << 3) + sizeOfIndexedStrings;
     }
     memsz = sz;
     return sz;

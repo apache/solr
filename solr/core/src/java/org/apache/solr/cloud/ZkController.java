@@ -1062,7 +1062,6 @@ public class ZkController implements Closeable {
     }
   }
 
-  @SuppressWarnings("NarrowCalculation")
   private void checkForExistingEphemeralNode() throws KeeperException, InterruptedException {
     if (zkRunOnly) {
       return;
@@ -1094,7 +1093,7 @@ public class ZkController implements Closeable {
     }
 
     boolean deleted =
-        deletedLatch.await(zkClient.getZooKeeper().getSessionTimeout() * 2, TimeUnit.MILLISECONDS);
+        deletedLatch.await(zkClient.getZooKeeper().getSessionTimeout() * 2L, TimeUnit.MILLISECONDS);
     if (!deleted) {
       throw new SolrException(
           ErrorCode.SERVER_ERROR,

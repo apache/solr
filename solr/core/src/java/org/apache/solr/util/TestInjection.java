@@ -236,7 +236,6 @@ public class TestInjection {
     return true;
   }
 
-  @SuppressWarnings("NarrowCalculation")
   public static boolean injectRandomDelayInCoreCreation() {
     if (randomDelayInCoreCreation != null) {
       Random rand = random();
@@ -249,7 +248,7 @@ public class TestInjection {
         int delay = rand.nextInt(randomDelayMaxInCoreCreationInSec);
         log.info("Inject random core creation delay of {}s", delay);
         try {
-          Thread.sleep(delay * 1000);
+          Thread.sleep(delay * 1000L);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
         }
@@ -258,7 +257,6 @@ public class TestInjection {
     return true;
   }
 
-  @SuppressWarnings("NarrowCalculation")
   public static boolean injectNonGracefullClose(CoreContainer cc) {
     if (cc.isShutDown() && nonGracefullClose != null) {
       Random rand = random();
