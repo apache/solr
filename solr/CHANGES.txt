@@ -110,6 +110,8 @@ Bug Fixes
 
 * SOLR-16399: ExportWriter fails with max values for fields (Kevin Risden)
 
+* SOLR-16357: CaffeineCache ramBytes incorrect accounting on updates and deletes (Alex Deparvu)
+
 Other Changes
 ---------------------
 * SOLR-16351: Upgrade Carrot2 to 4.4.3, upgrade randomizedtesting to 2.8.0. (Dawid Weiss)
