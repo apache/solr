@@ -26,6 +26,8 @@ import org.apache.solr.common.util.NamedList;
 
 public abstract class BaseHttpSolrClient extends SolrClient {
 
+  public abstract String getBaseURL();
+
   /**
    * Subclass of SolrException that allows us to capture an arbitrary HTTP status code that may have
    * been returned by the remote server or a proxy along the way.

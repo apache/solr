@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import org.apache.commons.io.FileUtils;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
@@ -44,7 +44,7 @@ public class SolrStandaloneScraperTest extends RestTestBase {
   private static MetricsConfiguration configuration;
   private static SolrStandaloneScraper solrScraper;
   private static ExecutorService executor;
-  private static HttpSolrClient solrClient;
+  private static Http2SolrClient solrClient;
 
   @BeforeClass
   public static void setupBeforeClass() throws Exception {
@@ -64,7 +64,7 @@ public class SolrStandaloneScraperTest extends RestTestBase {
     configuration =
         Helpers.loadConfiguration("conf/prometheus-solr-exporter-scraper-test-config.xml");
 
-    solrClient = getHttpSolrClient(restTestHarness.getAdminURL());
+    solrClient = new Http2SolrClient.Builder(restTestHarness.getAdminURL()).build();
     solrScraper = new SolrStandaloneScraper(solrClient, executor);
 
     NoOpResponseParser responseParser = new NoOpResponseParser();

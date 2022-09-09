@@ -778,6 +778,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     return invariantParams;
   }
 
+  @Override
   public String getBaseURL() {
     return baseUrl;
   }

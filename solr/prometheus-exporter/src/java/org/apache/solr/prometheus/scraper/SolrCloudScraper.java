@@ -25,8 +25,8 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.IOUtils;
@@ -40,7 +40,7 @@ public class SolrCloudScraper extends SolrScraper {
   private final CloudSolrClient solrClient;
   private final SolrClientFactory solrClientFactory;
 
-  private Cache<String, HttpSolrClient> hostClientCache = Caffeine.newBuilder().build();
+  private Cache<String, BaseHttpSolrClient> hostClientCache = Caffeine.newBuilder().build();
 
   public SolrCloudScraper(
       CloudSolrClient solrClient, ExecutorService executor, SolrClientFactory solrClientFactory) {
@@ -51,7 +51,7 @@ public class SolrCloudScraper extends SolrScraper {
 
   @Override
   public Map<String, MetricSamples> pingAllCores(MetricsQuery query) throws IOException {
-    Map<String, HttpSolrClient> httpSolrClients = createHttpSolrClients();
+    Map<String, BaseHttpSolrClient> httpSolrClients = createHttpSolrClients();
 
     Map<String, DocCollection> collectionState = solrClient.getClusterState().getCollectionsMap();
 
@@ -64,7 +64,7 @@ public class SolrCloudScraper extends SolrScraper {
     List<String> coreNames =
         replicas.stream().map(Replica::getCoreName).collect(Collectors.toList());
 
-    Map<String, HttpSolrClient> coreToClient =
+    Map<String, BaseHttpSolrClient> coreToClient =
         replicas.stream()
             .map(
                 replica ->
@@ -82,10 +82,10 @@ public class SolrCloudScraper extends SolrScraper {
         });
   }
 
-  private Map<String, HttpSolrClient> createHttpSolrClients() throws IOException {
+  private Map<String, BaseHttpSolrClient> createHttpSolrClients() throws IOException {
     return getBaseUrls().stream()
         .map(url -> hostClientCache.get(url, solrClientFactory::createStandaloneSolrClient))
-        .collect(Collectors.toMap(HttpSolrClient::getBaseURL, Function.identity()));
+        .collect(Collectors.toMap(BaseHttpSolrClient::getBaseURL, Function.identity()));
   }
 
   @Override
@@ -103,7 +103,7 @@ public class SolrCloudScraper extends SolrScraper {
 
   @Override
   public Map<String, MetricSamples> metricsForAllHosts(MetricsQuery query) throws IOException {
-    Map<String, HttpSolrClient> httpSolrClients = createHttpSolrClients();
+    Map<String, BaseHttpSolrClient> httpSolrClients = createHttpSolrClients();
 
     return sendRequestsInParallel(
         httpSolrClients.keySet(),

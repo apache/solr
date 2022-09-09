@@ -25,6 +25,8 @@ import java.net.SocketTimeoutException;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.IsUpdateRequest;
@@ -88,6 +90,12 @@ public class LBHttp2SolrClient extends LBSolrClient {
   @Override
   protected SolrClient getClient(String baseUrl) {
     return httpClient;
+  }
+
+  @Override
+  public void setParser(ResponseParser parser) {
+    super.setParser(parser);
+    this.httpClient.setParser(parser);
   }
 
   public Cancellable asyncReq(Req req, AsyncListener<Rsp> asyncListener) {
