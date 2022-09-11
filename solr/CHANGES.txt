@@ -136,6 +136,8 @@ Bug Fixes
 
 * SOLR-16357: CaffeineCache ramBytes incorrect accounting on updates and deletes (Alex Deparvu)
 
+* SOLR-16406: Clarify that adding SOLR_MODULES in solr.in.sh needs 'export' in order to work (janhoy)
+
 Other Changes
 ---------------------
 * SOLR-16351: Upgrade Carrot2 to 4.4.3, upgrade randomizedtesting to 2.8.0. (Dawid Weiss)
