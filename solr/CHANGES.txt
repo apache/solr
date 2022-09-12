@@ -162,6 +162,8 @@ Other Changes
 
 * SOLR-16296: XmlConfigFile and QueryElevationComponent now use SafeXMLParsing. (Haythem Khiri)
 
+* SOLR-16369: Avoid XPath in parsing elevate.xml (Haythem Khiri)
+
 * SOLR-16402: Bump google-cloud-bom to 0.178.0 (Kevin Risden)
 
 Build
