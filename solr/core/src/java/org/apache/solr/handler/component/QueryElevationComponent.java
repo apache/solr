@@ -49,10 +49,6 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.function.Consumer;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -95,6 +91,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
@@ -420,28 +417,20 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
           SolrException.ErrorCode.BAD_REQUEST, "Root element must be <elevate>");
     }
     Map<ElevatingQuery, ElevationBuilder> elevationBuilderMap = new LinkedHashMap<>();
-    NodeList nodes = doc.getDocumentElement().getElementsByTagName("query");
-    XPath xpath = XPathFactory.newInstance().newXPath();
-    for (int i = 0; i < nodes.getLength(); i++) {
-      Node node = nodes.item(i);
-      String queryString = DOMUtil.getAttr(node, "text", "missing query 'text'");
-      String matchString = DOMUtil.getAttr(node, "match");
-      ElevatingQuery elevatingQuery =
-          new ElevatingQuery(queryString, isSubsetMatchPolicy(matchString));
-      NodeList children;
-      try {
-        children = (NodeList) xpath.evaluate("doc", node, XPathConstants.NODESET);
-      } catch (XPathExpressionException e) {
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR, "query requires '<doc .../>' child");
-      }
+    NodeList queryNodes = doc.getDocumentElement().getElementsByTagName("query");
+    for (int i = 0; i < queryNodes.getLength(); i++) {
+      var queryNode = (Element) queryNodes.item(i);
+      String queryString = DOMUtil.getAttr(queryNode, "text", "missing query 'text'");
+      String matchString = DOMUtil.getAttr(queryNode, "match");
+      var elevatingQuery = new ElevatingQuery(queryString, isSubsetMatchPolicy(matchString));
 
-      if (children.getLength() == 0) { // weird
+      NodeList docNodes = queryNode.getElementsByTagName("doc");
+      if (docNodes.getLength() == 0) { // weird
         continue;
       }
-      ElevationBuilder elevationBuilder = new ElevationBuilder();
-      for (int j = 0; j < children.getLength(); j++) {
-        Node child = children.item(j);
+      var elevationBuilder = new ElevationBuilder();
+      for (int j = 0; j < docNodes.getLength(); j++) {
+        Node child = docNodes.item(j);
         String id = DOMUtil.getAttr(child, "id", "missing 'id'");
         String e = DOMUtil.getAttr(child, EXCLUDE, null);
         if (e != null) {
