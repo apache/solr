@@ -71,6 +71,9 @@ Improvements
 
 * SOLR-16323: The Docker image now uses the Solr User ID instead of the User Name, helps with non-root checks (Houston Putman)
 
+* SOLR-16340: Provide a cluster_id label for all metrics exposed by the Solr Prometheus Exporter, making it possible to
+  filter Grafana board by cluster (janhoy, Houston Putman)
+
 * SOLR-16337: implement Zk metrics (noble)
 
 * SOLR-16353: Make SplitShardCmd#checkDiskSpace disableable through a system property. (Haythem Khiri)
@@ -134,6 +137,8 @@ Bug Fixes
 
 * SOLR-16399: ExportWriter fails with max values for fields (Kevin Risden)
 
+* SOLR-16357: CaffeineCache ramBytes incorrect accounting on updates and deletes (Alex Deparvu)
+
 Other Changes
 ---------------------
 * SOLR-16351: Upgrade Carrot2 to 4.4.3, upgrade randomizedtesting to 2.8.0. (Dawid Weiss)
@@ -180,6 +185,8 @@ Other Changes
 * SOLR-16296: XmlConfigFile and QueryElevationComponent now use SafeXMLParsing. (Haythem Khiri)
 
 * SOLR-16369: Avoid XPath in parsing elevate.xml (Haythem Khiri)
+
+* SOLR-16402: Bump google-cloud-bom to 0.178.0 (Kevin Risden)
 
 Build
 ---------------------

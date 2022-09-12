@@ -634,7 +634,6 @@ public class MetricUtils {
   }
 
   // some snapshots represent time in ns, other snapshots represent raw values (eg. chunk size)
-  @SuppressWarnings("LongDoubleConversion")
   static void addSnapshot(
       MapWriter.EntryWriter ew,
       Snapshot snapshot,
@@ -646,8 +645,8 @@ public class MetricUtils {
             ew.putNoEx(k, v);
           }
         };
-    filter.accept((ms ? MIN_MS : MIN), nsToMs(ms, snapshot.getMin()));
-    filter.accept((ms ? MAX_MS : MAX), nsToMs(ms, snapshot.getMax()));
+    filter.accept((ms ? MIN_MS : MIN), nsToMs(ms, (double) snapshot.getMin()));
+    filter.accept((ms ? MAX_MS : MAX), nsToMs(ms, (double) snapshot.getMax()));
     filter.accept((ms ? MEAN_MS : MEAN), nsToMs(ms, snapshot.getMean()));
     filter.accept((ms ? MEDIAN_MS : MEDIAN), nsToMs(ms, snapshot.getMedian()));
     filter.accept((ms ? STDDEV_MS : STDDEV), nsToMs(ms, snapshot.getStdDev()));

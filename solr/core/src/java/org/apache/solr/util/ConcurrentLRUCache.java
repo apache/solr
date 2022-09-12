@@ -153,12 +153,11 @@ public class ConcurrentLRUCache<K, V> implements Cache<K, V>, Accountable {
     setRunCleanupThread(runCleanupThread);
   }
 
-  @SuppressWarnings("NarrowCalculation")
   public ConcurrentLRUCache(int size, int lowerWatermark) {
     this(
         size,
         lowerWatermark,
-        (int) Math.floor((lowerWatermark + size) / 2),
+        (int) Math.floor((lowerWatermark + size) / 2.0),
         (int) Math.ceil(0.75 * size),
         false,
         false,
@@ -646,7 +645,7 @@ public class ConcurrentLRUCache<K, V> implements Cache<K, V>, Accountable {
       myMaxSize = maxSz;
     }
 
-    @SuppressWarnings({"unchecked", "NarrowCalculation"})
+    @SuppressWarnings("unchecked")
     Iterable<CacheEntry<K, V>> getValues() {
       return (Iterable) Collections.unmodifiableCollection(Arrays.asList(heap));
     }
@@ -839,7 +838,6 @@ public class ConcurrentLRUCache<K, V> implements Cache<K, V>, Accountable {
   }
 
   public static class Stats implements Accountable {
-    @SuppressWarnings("NarrowCalculation")
     private static final long RAM_BYTES_USED =
         // accounts for field refs
         RamUsageEstimator.shallowSizeOfInstance(Stats.class)
@@ -848,7 +846,7 @@ public class ConcurrentLRUCache<K, V> implements Cache<K, V>, Accountable {
             6
                 * (RamUsageEstimator.NUM_BYTES_ARRAY_HEADER
                     + RamUsageEstimator.primitiveSizes.get(long.class)
-                    + 2
+                    + 2L
                         * (RamUsageEstimator.NUM_BYTES_OBJECT_REF
                             + RamUsageEstimator.primitiveSizes.get(long.class)))
             +

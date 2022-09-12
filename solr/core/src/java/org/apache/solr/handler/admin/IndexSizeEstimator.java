@@ -355,7 +355,6 @@ public class IndexSizeEstimator {
     result.put(NORMS, stats);
   }
 
-  @SuppressWarnings("LongDoubleConversion")
   private void estimatePoints(Map<String, Object> result) throws IOException {
     log.info("- estimating points...");
     Map<String, Map<String, Object>> stats = new HashMap<>();
@@ -372,7 +371,8 @@ public class IndexSizeEstimator {
             (SummaryStatistics)
                 perField.computeIfAbsent("lengths", s -> new MapWriterSummaryStatistics());
         lengthSummary.addValue(
-            values.size() * values.getBytesPerDimension() * values.getNumIndexDimensions());
+            (double)
+                (values.size() * values.getBytesPerDimension() * values.getNumIndexDimensions()));
       }
     }
     result.put(POINTS, stats);
@@ -513,7 +513,6 @@ public class IndexSizeEstimator {
     result.put(TERMS, stats);
   }
 
-  @SuppressWarnings("LongDoubleConversion")
   private void estimateTermStats(
       String field, Terms terms, Map<String, Map<String, Object>> stats, boolean isSampling)
       throws IOException {
@@ -550,12 +549,12 @@ public class IndexSizeEstimator {
         for (int i = 0; i < samplingStep; i++) {
           lengthSummary.addValue(term.length);
           docFreqSummary.addValue(termsEnum.docFreq());
-          totalFreqSummary.addValue(termsEnum.totalTermFreq());
+          totalFreqSummary.addValue((double) termsEnum.totalTermFreq());
         }
       } else {
         lengthSummary.addValue(term.length);
         docFreqSummary.addValue(termsEnum.docFreq());
-        totalFreqSummary.addValue(termsEnum.totalTermFreq());
+        totalFreqSummary.addValue((double) termsEnum.totalTermFreq());
       }
       if (terms.hasPayloads()) {
         postings = termsEnum.postings(postings, PostingsEnum.ALL);
