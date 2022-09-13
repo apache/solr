@@ -181,13 +181,11 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         // This code directly updates Zookeeper by creating the collection state.json. It is
         // compatible with both distributed cluster state updates and Overseer based cluster state
         // updates.
-        ZkWriteCommand command =
-            new ClusterStateMutator(ccc.getSolrCloudManager())
-                .createCollection(clusterState, message);
+
+        // TODO: Consider doing this for all collections, not just the PRS collections.
+        ZkWriteCommand command = new ClusterStateMutator(ccc.getSolrCloudManager()).createCollection(clusterState, message);
         byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, command.collection));
-        ccc.getZkStateReader()
-            .getZkClient()
-            .create(collectionPath, data, CreateMode.PERSISTENT, true);
+        ccc.getZkStateReader().getZkClient().create(collectionPath, data, CreateMode.PERSISTENT, true);
         clusterState = clusterState.copyWith(collectionName, command.collection);
         newColl = command.collection;
         // When cluster state updates are handled by Overseer, ask it to load that collection it
@@ -333,9 +331,8 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
           // update strategies
           ZkWriteCommand command =
               new SliceMutator(ccc.getSolrCloudManager()).addReplica(clusterState, props);
-          byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, command.collection));
-          //        log.info("collection updated : {}", new String(data, StandardCharsets.UTF_8));
-          zkStateReader.getZkClient().setData(collectionPath, data, true);
+        /*  byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, command.collection));
+          zkStateReader.getZkClient().setData(collectionPath, data, true);*/
           clusterState = clusterState.copyWith(collectionName, command.collection);
           newColl = command.collection;
         } else {
@@ -380,6 +377,8 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
       // state updates, need to tell it to refresh itself to know about the replicas and be able to
       // execute nodes shard requests regarding the replicas.
       if (isPRS && !ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+        byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, clusterState.getCollection(collectionName)));
+        zkStateReader.getZkClient().setData(collectionPath, data, true);
         ccc.submitIntraProcessMessage(new RefreshCollectionMessage(collectionName));
       }
 
