@@ -138,7 +138,7 @@ public class SearchHandler extends RequestHandlerBase
   }
 
   @Override
-  protected HandlerMetrics getMetricsForThisRequest(SolrQueryRequest req) {
+  public HandlerMetrics getMetricsForThisRequest(SolrQueryRequest req) {
     return req.getParams().getBool(ShardParams.IS_SHARD, false) ? this.metricsShard : this.metrics;
   }
 
