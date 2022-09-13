@@ -150,6 +150,9 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     resourceAccess.put("solr", solrMap);
     claims.setClaim("resource_access", resourceAccess);
 
+    // Special claim with dots in key, should still be addressable non-nested
+    claims.setClaim("roles.with.dot", Arrays.asList("user", "admin"));
+
     return claims;
   }
 
@@ -391,6 +394,23 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     assertTrue(roles.contains("group-one"));
     assertTrue(roles.contains("other-group"));
     assertTrue(roles.contains("group-three"));
+  }
+
+  @Test
+  public void rolesWithDotInKey() {
+    // Special case where a claim key contains dots without being nested
+    testConfig.put("rolesClaim", "roles.with.dot");
+    plugin.init(testConfig);
+    JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
+    assertTrue(resp.getErrorMessage(), resp.isAuthenticated());
+
+    // When 'rolesClaim' is defined in config, then roles from that claim are used instead of claims
+    Principal principal = resp.getPrincipal();
+    assertTrue(principal instanceof VerifiedUserRoles);
+    Set<String> roles = ((VerifiedUserRoles) principal).getVerifiedRoles();
+    assertEquals(2, roles.size());
+    assertTrue(roles.contains("user"));
+    assertTrue(roles.contains("admin"));
   }
 
   @Test
