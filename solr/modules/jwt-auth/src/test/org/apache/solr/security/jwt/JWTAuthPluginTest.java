@@ -386,7 +386,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
     assertTrue(resp.getErrorMessage(), resp.isAuthenticated());
 
-    // When 'rolesClaim' is defined in config, then roles from that claim are used instead of claims
+    // When 'rolesClaim' is defined in config, then roles from that claim are used instead of scopes
     Principal principal = resp.getPrincipal();
     assertTrue(principal instanceof VerifiedUserRoles);
     Set<String> roles = ((VerifiedUserRoles) principal).getVerifiedRoles();
@@ -403,8 +403,6 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     plugin.init(testConfig);
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
     assertTrue(resp.getErrorMessage(), resp.isAuthenticated());
-
-    // When 'rolesClaim' is defined in config, then roles from that claim are used instead of claims
     Principal principal = resp.getPrincipal();
     assertTrue(principal instanceof VerifiedUserRoles);
     Set<String> roles = ((VerifiedUserRoles) principal).getVerifiedRoles();
