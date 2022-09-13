@@ -935,72 +935,94 @@ public class Utils {
     // we should not cache the class references of objects loaded from packages because they will
     // not get garbage collected
     // TODO fix that later
-    List<FieldWriter> reflectData = sameClassLoader ? storedReflectData.get(c) : null;
-    if (reflectData == null) {
-      ArrayList<FieldWriter> l = new ArrayList<>();
-      MethodHandles.Lookup lookup = MethodHandles.publicLookup();
-      for (Field field : lookup.accessClass(c).getFields()) {
-        if (!fieldFilterer.test(field)) continue;
-        int modifiers = field.getModifiers();
-        if (Modifier.isPublic(modifiers) && !Modifier.isStatic(modifiers)) {
-          final String fname = fieldNamer.apply(field);
-          try {
-            if (field.getType() == int.class) {
-              MethodHandle mh = lookup.findGetter(c, field.getName(), int.class);
-              l.add((ew, inst) -> ew.put(fname, (int) mh.invoke(inst)));
-            } else if (field.getType() == long.class) {
-              MethodHandle mh = lookup.findGetter(c, field.getName(), long.class);
-              l.add((ew, inst) -> ew.put(fname, (long) mh.invoke(inst)));
-            } else if (field.getType() == boolean.class) {
-              MethodHandle mh = lookup.findGetter(c, field.getName(), boolean.class);
-              l.add((ew, inst) -> ew.put(fname, (boolean) mh.invoke(inst)));
-            } else if (field.getType() == double.class) {
-              MethodHandle mh = lookup.findGetter(c, field.getName(), double.class);
-              l.add((ew, inst) -> ew.put(fname, (double) mh.invoke(inst)));
-            } else if (field.getType() == float.class) {
-              MethodHandle mh = lookup.findGetter(c, field.getName(), float.class);
-              l.add((ew, inst) -> ew.put(fname, (float) mh.invoke(inst)));
-            } else {
-              MethodHandle mh = lookup.findGetter(c, field.getName(), field.getType());
-              l.add((ew, inst) -> ew.putIfNotNull(fname, mh.invoke(inst)));
-            }
-          } catch (NoSuchFieldException e) {
-            // this is unlikely
-            throw new RuntimeException(e);
-          }
-        }
-      }
-
-      // Look for a method titled $CATCH_ALL_PROPERTIES_METHOD_NAME annotated with the expected flag
-      // annotation that
-      // returns a Map of "unknown properties" that should also be written out.
-      if (catchAllAnnotation != null) {
-        try {
-          final Method catchAllMethod =
-              lookup.accessClass(c).getDeclaredMethod(CATCH_ALL_PROPERTIES_METHOD_NAME);
-          if (catchAllMethod.getAnnotation(catchAllAnnotation) != null) {
-            final MethodType catchAllMethodType = MethodType.methodType(Map.class);
-            final MethodHandle catchAllHandle =
-                lookup.findVirtual(c, CATCH_ALL_PROPERTIES_METHOD_NAME, catchAllMethodType);
-            l.add(
-                (ew, inst) -> {
-                  final Map<String, Object> unknownProperties =
-                      (Map<String, Object>) catchAllHandle.invoke(inst);
-                  for (Map.Entry<String, Object> entry : unknownProperties.entrySet()) {
-                    ew.put(entry.getKey(), entry.getValue());
-                  }
-                });
-          }
-        } catch (NoSuchMethodException e) {
-          // No-op - if the object has no 'unknownProperties' method, then nothing needs to be done.
-        }
-      }
-
+    List<FieldWriter> cachedReflectData = sameClassLoader ? storedReflectData.get(c) : null;
+    MethodHandles.Lookup lookup = MethodHandles.publicLookup();
+    if (cachedReflectData == null) {
+      cachedReflectData = addTraditionalFieldWriters(c, lookup, fieldFilterer, fieldNamer);
       if (sameClassLoader) {
-        storedReflectData.put(c, reflectData = Collections.unmodifiableList(new ArrayList<>(l)));
+        storedReflectData.put(c, Collections.unmodifiableList(new ArrayList<>(cachedReflectData)));
       }
     }
-    return reflectData;
+
+    // Add in any 'catch-all' methods used to support additional or unknown properties.
+    // (These can't be cached, as they would change request-by-request.)
+    final List<FieldWriter> mutableFieldWriters = new ArrayList<>(cachedReflectData);
+    addCatchAllFieldWriter(mutableFieldWriters, catchAllAnnotation, lookup, c);
+    return Collections.unmodifiableList(mutableFieldWriters);
+  }
+
+  private static List<FieldWriter> addTraditionalFieldWriters(
+      Class<?> c,
+      MethodHandles.Lookup lookup,
+      Predicate<Field> fieldFilterer,
+      Function<Field, String> fieldNamer)
+      throws IllegalAccessException {
+
+    final ArrayList<FieldWriter> fieldWriters = new ArrayList<>();
+    for (Field field : lookup.accessClass(c).getFields()) {
+      if (!fieldFilterer.test(field)) continue;
+      int modifiers = field.getModifiers();
+      if (Modifier.isPublic(modifiers) && !Modifier.isStatic(modifiers)) {
+        final String fname = fieldNamer.apply(field);
+        try {
+          if (field.getType() == int.class) {
+            MethodHandle mh = lookup.findGetter(c, field.getName(), int.class);
+            fieldWriters.add((ew, inst) -> ew.put(fname, (int) mh.invoke(inst)));
+          } else if (field.getType() == long.class) {
+            MethodHandle mh = lookup.findGetter(c, field.getName(), long.class);
+            fieldWriters.add((ew, inst) -> ew.put(fname, (long) mh.invoke(inst)));
+          } else if (field.getType() == boolean.class) {
+            MethodHandle mh = lookup.findGetter(c, field.getName(), boolean.class);
+            fieldWriters.add((ew, inst) -> ew.put(fname, (boolean) mh.invoke(inst)));
+          } else if (field.getType() == double.class) {
+            MethodHandle mh = lookup.findGetter(c, field.getName(), double.class);
+            fieldWriters.add((ew, inst) -> ew.put(fname, (double) mh.invoke(inst)));
+          } else if (field.getType() == float.class) {
+            MethodHandle mh = lookup.findGetter(c, field.getName(), float.class);
+            fieldWriters.add((ew, inst) -> ew.put(fname, (float) mh.invoke(inst)));
+          } else {
+            MethodHandle mh = lookup.findGetter(c, field.getName(), field.getType());
+            fieldWriters.add((ew, inst) -> ew.putIfNotNull(fname, mh.invoke(inst)));
+          }
+        } catch (NoSuchFieldException e) {
+          // this is unlikely
+          throw new RuntimeException(e);
+        }
+      }
+    }
+    return fieldWriters;
+  }
+
+  // Look for a method titled $CATCH_ALL_PROPERTIES_METHOD_NAME annotated with the expected flag
+  // annotation that returns a Map of "unknown properties" that should also be written out.
+  private static void addCatchAllFieldWriter(
+      List<FieldWriter> fieldWriters,
+      Class<? extends Annotation> catchAllAnnotation,
+      MethodHandles.Lookup lookup,
+      Class<?> c)
+      throws IllegalAccessException {
+
+    if (catchAllAnnotation != null) {
+      try {
+        final Method catchAllMethod =
+            lookup.accessClass(c).getDeclaredMethod(CATCH_ALL_PROPERTIES_METHOD_NAME);
+        if (catchAllMethod.getAnnotation(catchAllAnnotation) != null) {
+          final MethodType catchAllMethodType = MethodType.methodType(Map.class);
+          final MethodHandle catchAllHandle =
+              lookup.findVirtual(c, CATCH_ALL_PROPERTIES_METHOD_NAME, catchAllMethodType);
+          fieldWriters.add(
+              (ew, inst) -> {
+                final Map<String, Object> unknownProperties =
+                    (Map<String, Object>) catchAllHandle.invoke(inst);
+                for (Map.Entry<String, Object> entry : unknownProperties.entrySet()) {
+                  ew.put(entry.getKey(), entry.getValue());
+                }
+              });
+        }
+      } catch (NoSuchMethodException e) {
+        // No-op - if the object has no 'unknownProperties' method, then nothing needs to be done.
+      }
+    }
   }
 
   private static Map<Class<?>, List<FieldWriter>> storedReflectData = new ConcurrentHashMap<>();
