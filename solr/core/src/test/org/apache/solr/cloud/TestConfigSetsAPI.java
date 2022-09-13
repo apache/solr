@@ -1029,10 +1029,12 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     String configsetName = "regular";
     String configsetSuffix = "testSinglePathUntrusted-1-" + v2;
     uploadConfigSetWithAssertions(configsetName, configsetSuffix, null);
+
     try (SolrZkClient zkClient =
         new SolrZkClient(
             cluster.getZkServer().getZkAddress(), AbstractZkTestCase.TIMEOUT, 45000, null)) {
       // New file with trusted request
+
       assertEquals(
           0,
           uploadSingleConfigSetFile(
@@ -1454,7 +1456,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
               username,
               usePut);
       assertNotNull(map);
-      return (long) getObjectByPath(map, Arrays.asList("responseHeader", "status"));
+      return (Long) getObjectByPath(map, Arrays.asList("responseHeader", "status"));
     } // else "not" a V2 request...
 
     try {

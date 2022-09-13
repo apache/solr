@@ -146,6 +146,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     System.clearProperty("enable.packages");
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   public void testApi() throws Exception {
     int version = phaser.getPhase();
@@ -216,8 +217,9 @@ public class TestContainerPlugin extends SolrCloudTestCase {
             RemoteExecutionException.class,
             () -> getPlugin("/my-random-prefix/their/plugin").call());
     assertEquals(404, e.code());
-    final String msg = e.getMetaData().findRecursive("error", "msg").toString();
-    MatcherAssert.assertThat(msg, containsString("Could not load plugin"));
+
+    final String msg = (String) ((Map<String, Object>) (e.getMetaData().get("error"))).get("msg");
+    MatcherAssert.assertThat(msg, containsString("Cannot find API for the path"));
 
     // test ClusterSingleton plugin
     plugin.name = "clusterSingleton";
@@ -496,7 +498,10 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
   private Callable<V2Response> getPlugin(String path) {
     V2Request req = new V2Request.Builder(path).forceV2(forceV2).GET().build();
-    return () -> req.process(cluster.getSolrClient());
+    return () -> {
+      V2Response rsp = req.process(cluster.getSolrClient());
+      return rsp;
+    };
   }
 
   private V2Request postPlugin(Object payload) {
