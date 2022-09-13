@@ -29,9 +29,12 @@ import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.Writer;
+import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.net.URLDecoder;
@@ -878,11 +881,15 @@ public class Utils {
         ew,
         o,
         field -> field.getAnnotation(JsonProperty.class) != null,
+        null, // No catch-all/unknown-field support for objects annotated with our mimic
+        // annotations.
         field -> {
           final JsonProperty prop = field.getAnnotation(JsonProperty.class);
           return prop.value().isEmpty() ? field.getName() : prop.value();
         });
   }
+
+  public static final String CATCH_ALL_PROPERTIES_METHOD_NAME = "unknownProperties";
 
   /**
    * Convert an input object to a map, writing only those fields that match a provided {@link
@@ -892,16 +899,19 @@ public class Utils {
    *     insertion/writing
    * @param o the object to be converted
    * @param fieldFilterer a predicate used to identify which fields of the object to write
+   * @param catchAllAnnotation the annotation used to identify a method that can return a Map of
+   *     "catch-all" properties. Method is expected to be named "unknownProperties"
    * @param fieldNamer a callback that allows changing field names
    */
   public static void reflectWrite(
       MapWriter.EntryWriter ew,
       Object o,
       Predicate<Field> fieldFilterer,
+      Class<? extends Annotation> catchAllAnnotation,
       Function<Field, String> fieldNamer) {
     List<FieldWriter> fieldWriters = null;
     try {
-      fieldWriters = getReflectData(o.getClass(), fieldFilterer, fieldNamer);
+      fieldWriters = getReflectData(o.getClass(), fieldFilterer, catchAllAnnotation, fieldNamer);
     } catch (IllegalAccessException e) {
       throw new RuntimeException(e);
     }
@@ -916,7 +926,10 @@ public class Utils {
   }
 
   private static List<FieldWriter> getReflectData(
-      Class<?> c, Predicate<Field> fieldFilterer, Function<Field, String> fieldNamer)
+      Class<?> c,
+      Predicate<Field> fieldFilterer,
+      Class<? extends Annotation> catchAllAnnotation,
+      Function<Field, String> fieldNamer)
       throws IllegalAccessException {
     boolean sameClassLoader = c.getClassLoader() == Utils.class.getClassLoader();
     // we should not cache the class references of objects loaded from packages because they will
@@ -955,6 +968,31 @@ public class Utils {
             // this is unlikely
             throw new RuntimeException(e);
           }
+        }
+      }
+
+      // Look for a method titled $CATCH_ALL_PROPERTIES_METHOD_NAME annotated with the expected flag
+      // annotation that
+      // returns a Map of "unknown properties" that should also be written out.
+      if (catchAllAnnotation != null) {
+        try {
+          final Method catchAllMethod =
+              lookup.accessClass(c).getDeclaredMethod(CATCH_ALL_PROPERTIES_METHOD_NAME);
+          if (catchAllMethod.getAnnotation(catchAllAnnotation) != null) {
+            final MethodType catchAllMethodType = MethodType.methodType(Map.class);
+            final MethodHandle catchAllHandle =
+                lookup.findVirtual(c, CATCH_ALL_PROPERTIES_METHOD_NAME, catchAllMethodType);
+            l.add(
+                (ew, inst) -> {
+                  final Map<String, Object> unknownProperties =
+                      (Map<String, Object>) catchAllHandle.invoke(inst);
+                  for (Map.Entry<String, Object> entry : unknownProperties.entrySet()) {
+                    ew.put(entry.getKey(), entry.getValue());
+                  }
+                });
+          }
+        } catch (NoSuchMethodException e) {
+          // No-op - if the object has no 'unknownProperties' method, then nothing needs to be done.
         }
       }
 

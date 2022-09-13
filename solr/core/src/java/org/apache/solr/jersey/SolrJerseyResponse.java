@@ -17,7 +17,11 @@
 
 package org.apache.solr.jersey;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Base response-body POJO to be used by Jersey resources.
@@ -42,5 +46,17 @@ public class SolrJerseyResponse implements JacksonReflectMapWriter {
 
     @JsonProperty("partialResults")
     public Boolean partialResults;
+
+    private Map<String, Object> unknownFields = new HashMap<>();
+
+    @JsonAnyGetter
+    public Map<String, Object> unknownProperties() {
+      return unknownFields;
+    }
+
+    @JsonAnySetter
+    public void setUnknownProperty(String field, Object value) {
+      unknownFields.put(field, value);
+    }
   }
 }

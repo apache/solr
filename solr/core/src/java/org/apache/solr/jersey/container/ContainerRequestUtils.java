@@ -17,19 +17,18 @@
 
 package org.apache.solr.jersey.container;
 
-import org.glassfish.jersey.internal.MapPropertiesDelegate;
-import org.glassfish.jersey.server.ContainerRequest;
-import org.glassfish.jersey.server.internal.ContainerUtils;
-import org.glassfish.jersey.server.spi.ContainerResponseWriter;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.core.Configuration;
-import javax.ws.rs.core.SecurityContext;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.Principal;
 import java.util.Enumeration;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.core.Configuration;
+import javax.ws.rs.core.SecurityContext;
+import org.glassfish.jersey.internal.MapPropertiesDelegate;
+import org.glassfish.jersey.server.ContainerRequest;
+import org.glassfish.jersey.server.internal.ContainerUtils;
+import org.glassfish.jersey.server.spi.ContainerResponseWriter;
 
 /**
  * Utility methods for creating and populating a {@link
@@ -113,7 +112,7 @@ public class ContainerRequestUtils {
       throw new IllegalArgumentException(ex);
     }
   }
-  
+
   private static URI getRequestUri(HttpServletRequest httpServletRequest, URI baseUri)
       throws URISyntaxException {
     final String serverAddress = getServerAddress(baseUri);

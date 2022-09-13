@@ -17,6 +17,7 @@
 
 package org.apache.solr.jersey;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.IOException;
 import org.apache.solr.common.MapWriter;
@@ -40,6 +41,7 @@ public interface JacksonReflectMapWriter extends MapWriter {
         this,
         // TODO Should we be lenient here and accept both the Jackson and our homegrown annotation?
         field -> field.getAnnotation(JsonProperty.class) != null,
+        JsonAnyGetter.class,
         field -> {
           final JsonProperty prop = field.getAnnotation(JsonProperty.class);
           return prop.value().isEmpty() ? field.getName() : prop.value();
