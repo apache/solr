@@ -125,6 +125,10 @@ elif [[ -n "$SOLR_URL" ]]; then
   EXPORTER_ARGS+=(-b "$SOLR_URL")
 fi
 
+if [[ -n "$CLUSTER_ID" ]]; then
+  EXPORTER_ARGS+=(-i "$CLUSTER_ID")
+fi
+
 exec "$JAVACMD" \
   $JAVA_MEM_OPTS \
   $GC_TUNE \

@@ -54,7 +54,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Tests the SolrCLI.RunExampleTool implementation that supports bin/solr -e [example] */
-@LuceneTestCase.Slow
 @SolrTestCaseJ4.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
@@ -312,11 +311,13 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   }
 
   @Test
+  @LuceneTestCase.Nightly
   public void testTechproductsExample() throws Exception {
     testExample("techproducts");
   }
 
   @Test
+  @LuceneTestCase.Nightly
   public void testSchemalessExample() throws Exception {
     testExample("schemaless");
   }

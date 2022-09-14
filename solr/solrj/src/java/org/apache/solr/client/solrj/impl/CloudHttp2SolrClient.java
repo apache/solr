@@ -68,7 +68,8 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
             "Both zkHost(s) & solrUrl(s) have been specified. Only specify one.");
       }
       if (builder.zkHosts != null) {
-        this.stateProvider = new ZkClientClusterStateProvider(builder.zkHosts, builder.zkChroot);
+        this.stateProvider =
+            ClusterStateProvider.newZkClusterStateProvider(builder.zkHosts, builder.zkChroot);
       } else if (builder.solrUrls != null && !builder.solrUrls.isEmpty()) {
         try {
           this.stateProvider = new Http2ClusterStateProvider(builder.solrUrls, builder.httpClient);
@@ -250,7 +251,8 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     public CloudHttp2SolrClient build() {
       if (stateProvider == null) {
         if (!zkHosts.isEmpty()) {
-          stateProvider = new ZkClientClusterStateProvider(zkHosts, zkChroot);
+          stateProvider =
+              ClusterStateProvider.newZkClusterStateProvider(zkHosts, Builder.this.zkChroot);
         } else if (!this.solrUrls.isEmpty()) {
           try {
             stateProvider = new Http2ClusterStateProvider(solrUrls, httpClient);

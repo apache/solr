@@ -42,7 +42,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.NIOFSDirectory;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.BaseDistributedSearchTestCase;
@@ -91,7 +91,7 @@ import org.slf4j.LoggerFactory;
  *
  * @since 1.4
  */
-@Slow
+@Nightly
 @SuppressSSL // Currently, unknown why SSL does not work with this test
 public class TestReplicationHandler extends SolrTestCaseJ4 {
 
@@ -1493,7 +1493,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     }
 
     float approximateTimeInSeconds =
-        Math.round(totalBytes / 1024 / 1024 / 0.1); // maxWriteMBPerSec=0.1 in solrconfig
+        Math.round((float) totalBytes / 1024 / 1024 / 0.1); // maxWriteMBPerSec=0.1 in solrconfig
 
     // Start again and replicate the data
     useFactory(null);

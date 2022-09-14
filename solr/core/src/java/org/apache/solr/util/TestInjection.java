@@ -248,7 +248,7 @@ public class TestInjection {
         int delay = rand.nextInt(randomDelayMaxInCoreCreationInSec);
         log.info("Inject random core creation delay of {}s", delay);
         try {
-          Thread.sleep(delay * 1000);
+          Thread.sleep(delay * 1000L);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
         }

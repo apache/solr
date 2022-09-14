@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -76,7 +75,6 @@ import org.slf4j.LoggerFactory;
  * @see TestCloudJSONFacetJoinDomain
  * @see TestCloudJSONFacetSKGEquiv
  */
-@Slow
 public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
