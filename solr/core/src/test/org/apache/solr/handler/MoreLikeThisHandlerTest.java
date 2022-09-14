@@ -242,8 +242,9 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
     params.set("facet.field", "name");
     try (SolrQueryRequest mltreq = new LocalSolrQueryRequest(core, params)) {
       assertQ(
-              mltreq,"//result/doc[1]/str[@name='id'][.='45']",
-              "//lst[@name='facet_counts']/lst[@name='facet_fields']/lst[@name='name']/int[@name='George'][.='1']");
+          mltreq,
+          "//result/doc[1]/str[@name='id'][.='45']",
+          "//lst[@name='facet_counts']/lst[@name='facet_fields']/lst[@name='name']/int[@name='George'][.='1']");
     }
   }
 
