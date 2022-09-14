@@ -27,9 +27,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
@@ -116,7 +116,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     createReplaceNodeRequest(nodeToBeDecommissioned, emptyNode, null)
         .processAndWait("000", cloudClient, 15);
     ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
-    try (HttpSolrClient coreclient =
+    try (SolrClient coreclient =
         getHttpSolrClient(zkStateReader.getBaseUrlForNodeName(nodeToBeDecommissioned))) {
       CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreclient);
       assertEquals(0, status.getCoreStatus().size());
@@ -138,7 +138,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     replaceNodeRequest.setWaitForFinalState(true);
     replaceNodeRequest.processAndWait("001", cloudClient, 10);
 
-    try (HttpSolrClient coreclient =
+    try (SolrClient coreclient =
         getHttpSolrClient(zkStateReader.getBaseUrlForNodeName(emptyNode))) {
       CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreclient);
       assertEquals(

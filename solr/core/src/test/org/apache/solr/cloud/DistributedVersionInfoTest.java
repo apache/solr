@@ -320,8 +320,8 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
       int lastDocId,
       Set<Integer> deletedDocs)
       throws Exception {
-    HttpSolrClient leaderSolr = getHttpSolrClient(leader);
-    List<HttpSolrClient> replicas = new ArrayList<HttpSolrClient>(notLeaders.size());
+    SolrClient leaderSolr = getHttpSolrClient(leader);
+    List<SolrClient> replicas = new ArrayList<SolrClient>(notLeaders.size());
     for (Replica r : notLeaders) replicas.add(getHttpSolrClient(r));
 
     try {
@@ -331,7 +331,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
 
         String docId = String.valueOf(d);
         Long leaderVers = assertDocExists(leaderSolr, docId, null);
-        for (HttpSolrClient replicaSolr : replicas) {
+        for (SolrClient replicaSolr : replicas) {
           assertDocExists(replicaSolr, docId, leaderVers);
         }
       }
@@ -339,7 +339,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
       if (leaderSolr != null) {
         leaderSolr.close();
       }
-      for (HttpSolrClient replicaSolr : replicas) {
+      for (SolrClient replicaSolr : replicas) {
         replicaSolr.close();
       }
     }
@@ -361,7 +361,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
    * Query the real-time get handler for a specific doc by ID to verify it exists in the provided
    * server, using distrib=false, so it doesn't route to another replica.
    */
-  protected Long assertDocExists(HttpSolrClient solr, String docId, Long expVers) throws Exception {
+  protected Long assertDocExists(SolrClient solr, String docId, Long expVers) throws Exception {
     QueryRequest qr =
         new QueryRequest(
             params("qt", "/get", "id", docId, "distrib", "false", "fl", "id,_version_"));
@@ -369,15 +369,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     SolrDocument doc = (SolrDocument) rsp.get("doc");
     String match = JSONTestUtil.matchObj("/id", doc, docId);
     assertTrue(
-        "Doc with id="
-            + docId
-            + " not found in "
-            + solr.getBaseURL()
-            + " due to: "
-            + match
-            + "; rsp="
-            + rsp,
-        match == null);
+        "Doc with id=" + docId + " not found due to: " + match + "; rsp=" + rsp, match == null);
 
     Long vers = (Long) doc.getFirstValue("_version_");
     assertNotNull(vers);
