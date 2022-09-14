@@ -320,8 +320,6 @@ public class ReplicaMutator {
       log.info("Failed to update state because the replica does not exist, {}", message);
       return ZkStateWriter.NO_OP;
     }
-    boolean persistCollectionState = collection != null && collection.isPerReplicaState();
-
     if (coreNodeName == null) {
       coreNodeName =
           ClusterStateMutator.getAssignedCoreNodeName(
@@ -335,7 +333,6 @@ public class ReplicaMutator {
           log.info("Failed to update state because the replica does not exist, {}", message);
           return ZkStateWriter.NO_OP;
         }
-        persistCollectionState = true;
         // if coreNodeName is null, auto assign one
         coreNodeName = Assign.assignCoreNodeName(stateManager, collection);
       }
@@ -349,7 +346,6 @@ public class ReplicaMutator {
       if (sliceName != null) {
         log.debug("shard={} is already registered", sliceName);
       }
-      persistCollectionState = true;
     }
     if (sliceName == null) {
       // request new shardId
@@ -361,7 +357,6 @@ public class ReplicaMutator {
       }
       sliceName = Assign.assignShard(collection, numShards);
       log.info("Assigning new node to shard shard={}", sliceName);
-      persistCollectionState = true;
     }
 
     Slice slice = collection != null ? collection.getSlice(sliceName) : null;

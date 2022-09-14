@@ -176,9 +176,9 @@ public class SliceMutator {
               replica.getBaseUrl(), replica.getStr(ZkStateReader.CORE_NAME_PROP));
 
       if (replica == oldLeader && !coreURL.equals(leaderUrl)) {
-        replica = new ReplicaMutator(cloudManager).unsetLeader(replica);
+        replica = ReplicaMutator.unsetLeader(replica);
       } else if (coreURL.equals(leaderUrl)) {
-        newLeader = replica = new ReplicaMutator(cloudManager).setLeader(replica);
+        newLeader = replica = ReplicaMutator.setLeader(replica);
       }
 
       newReplicas.put(replica.getName(), replica);
