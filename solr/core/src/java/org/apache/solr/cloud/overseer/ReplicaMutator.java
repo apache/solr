@@ -71,7 +71,7 @@ public class ReplicaMutator {
     this.zkClient = getZkClient(cloudManager);
   }
 
-  protected Replica setProperty(Replica replica, String key, String value) {
+  static Replica setProperty(Replica replica, String key, String value) {
     assert key != null;
     assert value != null;
 
@@ -84,7 +84,7 @@ public class ReplicaMutator {
         replica.getName(), replicaProps, replica.getCollection(), replica.getShard());
   }
 
-  protected Replica unsetProperty(Replica replica, String key) {
+  static Replica unsetProperty(Replica replica, String key) {
     assert key != null;
 
     if (!replica.containsKey(key)) return replica;
@@ -94,15 +94,15 @@ public class ReplicaMutator {
         replica.getName(), replicaProps, replica.getCollection(), replica.getShard());
   }
 
-  protected Replica setLeader(Replica replica) {
+  static Replica setLeader(Replica replica) {
     return setProperty(replica, ZkStateReader.LEADER_PROP, "true");
   }
 
-  protected Replica unsetLeader(Replica replica) {
+  static Replica unsetLeader(Replica replica) {
     return unsetProperty(replica, ZkStateReader.LEADER_PROP);
   }
 
-  protected Replica setState(Replica replica, String state) {
+  static Replica setState(Replica replica, String state) {
     assert state != null;
 
     return setProperty(replica, ZkStateReader.STATE_PROP, state);
@@ -444,18 +444,7 @@ public class ReplicaMutator {
 
     DocCollection newCollection = CollectionMutator.updateSlice(collectionName, collection, slice);
     log.debug("Collection is now: {}", newCollection);
-    if (collection != null && collection.isPerReplicaState()) {
-      PerReplicaStates prs =
-          PerReplicaStatesFetcher.fetch(
-              collection.getZNode(), zkClient, collection.getPerReplicaStates());
-      return new ZkWriteCommand(
-          collectionName,
-          newCollection,
-          PerReplicaStatesOps.flipState(replica.getName(), replica.getState(), prs),
-          persistCollectionState);
-    } else {
-      return new ZkWriteCommand(collectionName, newCollection);
-    }
+    return new ZkWriteCommand(collectionName, newCollection);
   }
 
   private DocCollection checkAndCompleteShardSplit(

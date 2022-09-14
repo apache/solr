@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud.overseer;
 
+import static org.apache.solr.common.cloud.DocCollection.CollectionStateProps.PER_REPLICA_STATE;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CONFIGNAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
@@ -30,17 +31,9 @@ import java.util.Map;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
-import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
-import org.apache.solr.common.cloud.PerReplicaStatesOps;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.Slice.SliceStateProps;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -127,9 +120,13 @@ public class CollectionMutator {
           log.error("trying to set perReplicaState to {} from {}", val, coll.isPerReplicaState());
           continue;
         }
-        replicaOps =
-            PerReplicaStatesOps.modifyCollection(
-                coll, enable, PerReplicaStatesFetcher.fetch(coll.getZNode(), zkClient, null));
+        PerReplicaStates prs = PerReplicaStatesFetcher.fetch(coll.getZNode(), zkClient, null);
+        replicaOps = enable?
+                PerReplicaStatesOps.enable(coll, prs):
+                PerReplicaStatesOps.disable(prs);
+        if(!enable) {
+          coll = updateReplicas(coll, prs);
+        }
       }
 
       if (message.containsKey(prop)) {
@@ -166,16 +163,42 @@ public class CollectionMutator {
       return ZkStateWriter.NO_OP;
     }
 
-    assert !props.containsKey(COLL_CONF);
-
     DocCollection collection =
-        new DocCollection(
-            coll.getName(), coll.getSlicesMap(), props, coll.getRouter(), coll.getZNodeVersion());
-    if (replicaOps == null) {
+            new DocCollection(
+                    coll.getName(), coll.getSlicesMap(), props, coll.getRouter(), coll.getZNodeVersion());
+    if (replicaOps == null){
       return new ZkWriteCommand(coll.getName(), collection);
     } else {
       return new ZkWriteCommand(coll.getName(), collection, replicaOps, true);
     }
+  }
+  public static DocCollection updateReplicas(DocCollection coll, PerReplicaStates prs) {
+    //we are disabling PRS. Update the replica states
+    Map<String, Slice> modifiedSlices = new LinkedHashMap<>();
+    coll.forEachReplica((s, replica) -> {
+      PerReplicaStates.State prsState = prs.states.get(replica.getName());
+      if (prsState != null) {
+        if (prsState.state != replica.getState()) {
+          Slice slice = modifiedSlices.getOrDefault(replica.getShard(), coll.getSlice(replica.getShard()));
+          replica = ReplicaMutator.setState(replica, prsState.state.toString());
+          modifiedSlices.put(replica.getShard(), slice.copyWith(replica));
+        }
+        if (prsState.isLeader != replica.isLeader()) {
+          Slice slice = modifiedSlices.getOrDefault(replica.getShard(), coll.getSlice(replica.getShard()));
+          replica = prsState.isLeader ?
+                  ReplicaMutator.setLeader(replica) :
+                  ReplicaMutator.unsetLeader(replica);
+          modifiedSlices.put(replica.getShard(), slice.copyWith(replica));
+        }
+      }
+    });
+
+    if(!modifiedSlices.isEmpty()) {
+      Map<String,Slice> slices = new LinkedHashMap<>(coll.getSlicesMap());
+      slices.putAll(modifiedSlices);
+      return coll.copyWithSlices(slices);
+    }
+    return coll;
   }
 
   public static DocCollection updateSlice(
