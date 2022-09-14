@@ -115,9 +115,9 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     log.info("excluded_node : {}  ", emptyNode);
     createReplaceNodeRequest(nodeToBeDecommissioned, emptyNode, null)
         .processAndWait("000", cloudClient, 15);
+    ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
     try (HttpSolrClient coreclient =
-        getHttpSolrClient(
-            ZkStateReader.from(cloudClient).getBaseUrlForNodeName(nodeToBeDecommissioned))) {
+        getHttpSolrClient(zkStateReader.getBaseUrlForNodeName(nodeToBeDecommissioned))) {
       CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreclient);
       assertEquals(0, status.getCoreStatus().size());
     }
@@ -139,7 +139,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     replaceNodeRequest.processAndWait("001", cloudClient, 10);
 
     try (HttpSolrClient coreclient =
-        getHttpSolrClient(ZkStateReader.from(cloudClient).getBaseUrlForNodeName(emptyNode))) {
+        getHttpSolrClient(zkStateReader.getBaseUrlForNodeName(emptyNode))) {
       CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreclient);
       assertEquals(
           "Expecting no cores but found some: " + status.getCoreStatus(),

@@ -29,7 +29,7 @@ public class TestAddFieldRealTimeGet extends TestRTGBase {
   private static final String confDir = collection + "/conf";
 
   @Before
-  private void initManagedSchemaCore() throws Exception {
+  public void initManagedSchemaCore() throws Exception {
     final String tmpSolrHomePath = createTempDir().toFile().getAbsolutePath();
     File tmpSolrHome = new File(tmpSolrHomePath).getAbsoluteFile();
     File tmpConfDir = new File(tmpSolrHome, confDir);

@@ -45,6 +45,11 @@ New Features
 
 * SOLR-14319: Add ability to specify replica types when creating collections in Admin UI. (Richard Goodman, Eric Pugh)
 
+* SOLR-16282: CoreAdminHandler supports custom actions via solr.xml configuration. (Artem Abeleshev, Christine Poerschke)
+
+* SOLR-15007: Add ability to roll up core level metrics to be node level metrics for a RequestHandler via configuration. (Justin Sweeney, David Smiley)
+
+* SOLR-15715: Dedicated query coordinator nodes in the solr cluster (noble, Hitesh Khamesra, Ishan Chattopadhyaya)
 
 Improvements
 ---------------------
@@ -59,12 +64,23 @@ Improvements
 
 * SOLR-16181: Initialize the LogWatcher earlier in CoreContainer#load() (janhoy)
 
+* SOLR-16192: Add ZK credentials injectors support (Lamine Idjeraoui with review by Anshum Gupta, Jason Gerlowski, Mike Drob and Houston Putman)
+
 * SOLR-16225: Upgrade dependencies (Carrot2, HPPC) (Dawid Weiss)
 
 * SOLR-16257: Improve ZkStateReader to avoid race condition between collectionWatches and watchedCollectionStates
   (Patson Luk, Houston Putman, Mike Drob)
 
 * SOLR-16323: The Docker image now uses the Solr User ID instead of the User Name, helps with non-root checks (Houston Putman)
+
+* SOLR-16340: Provide a cluster_id label for all metrics exposed by the Solr Prometheus Exporter, making it possible to
+  filter Grafana board by cluster (janhoy, Houston Putman)
+
+* SOLR-16337: implement Zk metrics (noble)
+
+* SOLR-16353: Make SplitShardCmd#checkDiskSpace disableable through a system property. (Haythem Khiri)
+
+* SOLR-16362: Logs: Truncate field values in logs if a doc fails to index. (Nazerke Seidan, David Smiley)
 
 Optimizations
 ---------------------
@@ -78,6 +94,10 @@ Optimizations
 * SOLR-16266: Eliminate unneccessary byte[] copy in Http2SolrClient (hossman)
 
 * SOLR-9359: Enable warming queries to be managed using Config API (Andy Webb, Eric Pugh)
+
+* SOLR-16336: avoid fetching solrconfig.xml & schema.xml for already cached schema and config (noble)
+
+* SOLR-16328: intern() strings in DocCollection to reduce memory footprint (noble)
 
 Bug Fixes
 ---------------------
@@ -113,12 +133,20 @@ Bug Fixes
 
 * SOLR-16142: Fix Admin UI's spatial parameter generation. (Arsal Jalib, Christine Poerschke)
 
-* SOLR-9661: Fix explanation of select() streaming expression that uses replace() operation  (Ahmet Can Kepenek via Eric Pugh) 
+* SOLR-9661: Fix explanation of select() streaming expression that uses replace() operation  (Ahmet Can Kepenek via Eric Pugh)
 
 * SOLR-16316: Fix debugQuery clicking on the Query UI does not show the debug.explain.structured option. (Shiming Li via Eric Pugh)
 
+* SOLR-16399: ExportWriter fails with max values for fields (Kevin Risden)
+
+* SOLR-16357: CaffeineCache ramBytes incorrect accounting on updates and deletes (Alex Deparvu)
+
+* SOLR-16343: Handle MDC snapshot being null (Dee Moore via Kevin Risden)
+
 Other Changes
 ---------------------
+* SOLR-16351: Upgrade Carrot2 to 4.4.3, upgrade randomizedtesting to 2.8.0. (Dawid Weiss)
+
 * SOLR-16245: Make DenseVectorField codec agnostic (Elia Porciani via Alessandro Benedetti)
 
 * SOLR-15897: Remove <jmx/> from all unit test solrconfig.xml files. (Eric Pugh)
@@ -147,9 +175,30 @@ Other Changes
 
 * SOLR-16304: No more @Slow annotation for tests! (Mike Drob)
 
+* SOLR-16331: Migrate remaining managed-schema files to be managed-schema.xml.  (Eric Pugh)
+
+* SOLR-16332: Upgrade Jetty to 9.4.48.v20220622 (Chris Sabelstrom, janhoy)
+
+* SOLR-16339: Refined "no servers hosting shard" SolrException wording. (Christine Poerschke)
+
+* SOLR-15342: SolrJ: Split ZooKeeper based dependencies off to a solr-solrj-zookeeper module /
+  dependency. (David Smiley, Haythem Khiri)
+
+* SOLR-16324: Upgrade commons-configuration2 to 2.8.0 and commons-text to 1.8 (Kevin Risden)
+
+* SOLR-16296: XmlConfigFile and QueryElevationComponent now use SafeXMLParsing. (Haythem Khiri)
+
+* SOLR-16369: Avoid XPath in parsing elevate.xml (Haythem Khiri)
+
+* SOLR-16402: Bump google-cloud-bom to 0.178.0 (Kevin Risden)
+
+* SOLR-16141: Upgrade Apache Tika to 1.28.4 (janhoy)
+
 Build
 ---------------------
 * SOLR-16204: Change Lucene dependency to Lucene 9.1.0 (Elia Porciani via Alessandro Benedetti)
+
+* SOLR-16303: Change Lucene dependency to Lucene 9.3.0 (Mike Drob)
 
 * SOLR-16053: Upgrade scriptDepVersions (Kevin Risden)
 

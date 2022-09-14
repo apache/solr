@@ -833,7 +833,8 @@ if (splitOnWhitespace == false) {
       return this;
     }
   }
-  static private final LookaheadSuccess jj_ls = new LookaheadSuccess();
+    @SuppressWarnings("StaticAssignmentOfThrowable")
+    static private final LookaheadSuccess jj_ls = new LookaheadSuccess();
   private boolean jj_scan_token(int kind) {
      if (jj_scanpos == jj_lastpos) {
        jj_la--;

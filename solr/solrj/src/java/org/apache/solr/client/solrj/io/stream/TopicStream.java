@@ -54,11 +54,9 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -420,12 +418,8 @@ public class TopicStream extends CloudSolrStream implements Expressible {
 
   private void getCheckpoints() throws IOException {
     this.checkpoints = new HashMap<>();
-    ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
-
-    Slice[] slices = CloudSolrStream.getSlices(this.collection, zkStateReader, false);
-
-    ClusterState clusterState = zkStateReader.getClusterState();
-    Set<String> liveNodes = clusterState.getLiveNodes();
+    Slice[] slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);
+    Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
 
     for (Slice slice : slices) {
       String sliceName = slice.getName();
@@ -501,11 +495,9 @@ public class TopicStream extends CloudSolrStream implements Expressible {
   }
 
   private void getPersistedCheckpoints() throws IOException {
-    ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
-    Slice[] slices = CloudSolrStream.getSlices(checkpointCollection, zkStateReader, false);
+    Slice[] slices = CloudSolrStream.getSlices(checkpointCollection, cloudSolrClient, false);
 
-    ClusterState clusterState = zkStateReader.getClusterState();
-    Set<String> liveNodes = clusterState.getLiveNodes();
+    Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
 
     OUTER:
     for (Slice slice : slices) {
@@ -536,8 +528,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
 
   protected void constructStreams() throws IOException {
     try {
-      ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
-      Slice[] slices = CloudSolrStream.getSlices(this.collection, zkStateReader, false);
+      Slice[] slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);
 
       ModifiableSolrParams mParams = new ModifiableSolrParams(params);
       mParams.set(DISTRIB, "false"); // We are the aggregator.
@@ -550,8 +541,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
 
       Random random = new Random();
 
-      ClusterState clusterState = zkStateReader.getClusterState();
-      Set<String> liveNodes = clusterState.getLiveNodes();
+      Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
 
       for (Slice slice : slices) {
         ModifiableSolrParams localParams = new ModifiableSolrParams(mParams);

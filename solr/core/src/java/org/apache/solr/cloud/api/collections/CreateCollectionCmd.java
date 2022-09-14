@@ -62,9 +62,11 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.PerReplicaStates;
+import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -107,7 +109,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
     final boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, false);
     final String alias = message.getStr(ALIAS, collectionName);
     log.info("Create collection {}", collectionName);
-    final boolean isPRS = message.getBool(DocCollection.PER_REPLICA_STATE, false);
+    final boolean isPRS = message.getBool(CollectionStateProps.PER_REPLICA_STATE, false);
     if (clusterState.hasCollection(collectionName)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "collection already exists: " + collectionName);
@@ -134,7 +136,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
     List<String> shardNames = populateShardNames(message, router);
     checkReplicaTypes(message);
     DocCollection newColl = null;
-    final String collectionPath = ZkStateReader.getCollectionPath(collectionName);
+    final String collectionPath = DocCollection.getCollectionPath(collectionName);
 
     try {
 
@@ -333,7 +335,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
               new SliceMutator(ccc.getSolrCloudManager()).addReplica(clusterState, props);
           byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, command.collection));
           //        log.info("collection updated : {}", new String(data, StandardCharsets.UTF_8));
-          ccc.getZkStateReader().getZkClient().setData(collectionPath, data, true);
+          zkStateReader.getZkClient().setData(collectionPath, data, true);
           clusterState = clusterState.copyWith(collectionName, command.collection);
           newColl = command.collection;
         } else {
@@ -426,11 +428,14 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
                 TimeUnit.SECONDS,
                 ccc.getSolrCloudManager().getTimeSource()); // could be a big cluster
         PerReplicaStates prs =
-            PerReplicaStates.fetch(collectionPath, ccc.getZkStateReader().getZkClient(), null);
+            PerReplicaStatesFetcher.fetch(
+                collectionPath, ccc.getZkStateReader().getZkClient(), null);
         while (!timeout.hasTimedOut()) {
           if (prs.allActive()) break;
           Thread.sleep(100);
-          prs = PerReplicaStates.fetch(collectionPath, ccc.getZkStateReader().getZkClient(), null);
+          prs =
+              PerReplicaStatesFetcher.fetch(
+                  collectionPath, ccc.getZkStateReader().getZkClient(), null);
         }
         if (prs.allActive()) {
           // we have successfully found all replicas to be ACTIVE

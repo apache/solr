@@ -45,6 +45,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Replica.ReplicaStateProps;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
@@ -425,7 +426,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
           // No point in this test if these aren't true...
           assertNotNull(
               "Sanity check: leaderProps isn't a leader?: " + leaderProps.toString(),
-              leaderProps.getStr(Slice.LEADER));
+              leaderProps.getStr(ReplicaStateProps.LEADER));
           assertTrue(
               "Sanity check: leaderProps isn't using the proxy port?: " + leaderProps,
               leaderProps.getCoreUrl().contains("" + proxy.getListenPort()));
