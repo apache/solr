@@ -122,6 +122,10 @@ public class SolrZkClient implements Closeable {
       BeforeReconnect beforeReconnect,
       ZkACLProvider zkACLProvider,
       IsClosed higherLevelIsClosed) {
+    if(zkServerAddress == null) {
+      //only tests should create one without server address
+      return;
+    }
     this.zkServerAddress = zkServerAddress;
     this.higherLevelIsClosed = higherLevelIsClosed;
     if (strat == null) {
