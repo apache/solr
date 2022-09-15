@@ -150,7 +150,7 @@ public class RelatednessAgg extends AggValueSource {
     // How do we find our what key we have in the current context?
     // loop over all the stats in the current context until we find one that's '==' to this???
 
-    List<Query> fgFilters = new ArrayList<Query>(3);
+    List<Query> fgFilters = new ArrayList<>(3);
     fgFilters.add(fgQ);
     for (FacetContext ctx = fcontext; ctx != null; ctx = ctx.parent) {
       if (null != ctx.filter) {

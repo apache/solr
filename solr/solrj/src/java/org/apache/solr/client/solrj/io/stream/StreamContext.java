@@ -35,7 +35,7 @@ import org.apache.solr.common.params.SolrParams;
  */
 public class StreamContext implements Serializable {
 
-  private Map<String, Object> entries = new HashMap<String, Object>();
+  private Map<String, Object> entries = new HashMap<>();
   private Map<String, String> tupleContext = new HashMap<>();
   private Map<String, Object> lets = new HashMap<>();
   private ConcurrentMap<String, ConcurrentMap<String, Object>> objectCache;

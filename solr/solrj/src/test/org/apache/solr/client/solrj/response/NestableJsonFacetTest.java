@@ -30,39 +30,39 @@ public class NestableJsonFacetTest extends SolrTestCaseJ4 {
     NamedList<Object> list = new NamedList<>();
     list.add("count", 12);
     NamedList<Object> buckets =
-        new NamedList<Object>() {
+        new NamedList<>() {
           {
             add("val", "Nike");
           }
         };
     NamedList<Object> vals =
-        new NamedList<Object>() {
+        new NamedList<>() {
           {
             add("numBuckets", 10);
             add(
                 "allBuckets",
-                new NamedList<Object>() {
+                new NamedList<>() {
                   {
                     add("count", 12);
                   }
                 });
             add(
                 "before",
-                new NamedList<Object>() {
+                new NamedList<>() {
                   {
                     add("count", 1);
                   }
                 });
             add(
                 "after",
-                new NamedList<Object>() {
+                new NamedList<>() {
                   {
                     add("count", 2);
                   }
                 });
             add(
                 "between",
-                new NamedList<Object>() {
+                new NamedList<>() {
                   {
                     add("count", 9);
                   }
@@ -79,39 +79,39 @@ public class NestableJsonFacetTest extends SolrTestCaseJ4 {
 
     list.add("count", 12L);
     buckets =
-        new NamedList<Object>() {
+        new NamedList<>() {
           {
             add("val", "Nike");
           }
         };
     vals =
-        new NamedList<Object>() {
+        new NamedList<>() {
           {
             add("numBuckets", 10L);
             add(
                 "allBuckets",
-                new NamedList<Object>() {
+                new NamedList<>() {
                   {
                     add("count", 12L);
                   }
                 });
             add(
                 "before",
-                new NamedList<Object>() {
+                new NamedList<>() {
                   {
                     add("count", 1L);
                   }
                 });
             add(
                 "after",
-                new NamedList<Object>() {
+                new NamedList<>() {
                   {
                     add("count", 2L);
                   }
                 });
             add(
                 "between",
-                new NamedList<Object>() {
+                new NamedList<>() {
                   {
                     add("count", 9L);
                   }

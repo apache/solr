@@ -95,7 +95,7 @@ public class SortStream extends TupleStream implements Expressible {
     worker =
         new Worker() {
 
-          private LinkedList<Tuple> tuples = new LinkedList<Tuple>();
+          private LinkedList<Tuple> tuples = new LinkedList<>();
           private Tuple eofTuple;
 
           public void readStream(TupleStream stream) throws IOException {
@@ -172,7 +172,7 @@ public class SortStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l = new ArrayList<TupleStream>();
+    List<TupleStream> l = new ArrayList<>();
     l.add(stream);
     return l;
   }

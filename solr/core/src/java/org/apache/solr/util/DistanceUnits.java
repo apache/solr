@@ -119,7 +119,7 @@ public class DistanceUnits {
   public static synchronized void addUnits(
       String strId, double earthRadius, double multiplierThisToDegrees) {
     // copy-on-write.
-    Map<String, DistanceUnits> map = new HashMap<String, DistanceUnits>(instances);
+    Map<String, DistanceUnits> map = new HashMap<>(instances);
     map.put(strId, new DistanceUnits(strId, earthRadius, multiplierThisToDegrees));
     instances = ImmutableMap.copyOf(map);
   }

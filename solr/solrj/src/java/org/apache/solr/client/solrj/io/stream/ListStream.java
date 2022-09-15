@@ -97,7 +97,7 @@ public class ListStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l = new ArrayList<TupleStream>();
+    List<TupleStream> l = new ArrayList<>();
     for (TupleStream stream : streams) {
       l.add(stream);
     }
