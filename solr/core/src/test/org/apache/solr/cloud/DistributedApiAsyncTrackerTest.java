@@ -35,7 +35,10 @@ public class DistributedApiAsyncTrackerTest extends SolrTestCaseJ4 {
 
     zkServer = new ZkTestServer(createTempDir("zookeeperDir"));
     zkServer.run();
-    zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT);
+    zkClient = new SolrZkClient.Builder()
+            .withServer (zkServer.getZkHost())
+            .withTimeOut(AbstractZkTestCase.TIMEOUT)
+            .build();
   }
 
   @Override
@@ -108,7 +111,10 @@ public class DistributedApiAsyncTrackerTest extends SolrTestCaseJ4 {
         permanentDaat.createNewAsyncJobTracker(asyncPermanent));
 
     try (SolrZkClient transientZkClient =
-        new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT)) {
+        new SolrZkClient.Builder()
+                .withServer (zkServer.getZkHost())
+                .withTimeOut(AbstractZkTestCase.TIMEOUT)
+                .build()) {
       DistributedApiAsyncTracker transientDaat =
           new DistributedApiAsyncTracker(transientZkClient, TRACKER_ROOT);
       assertTrue(
@@ -170,7 +176,10 @@ public class DistributedApiAsyncTrackerTest extends SolrTestCaseJ4 {
     final String asyncId = "theId";
 
     try (SolrZkClient transientZkClient =
-        new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT)) {
+        new SolrZkClient.Builder()
+                .withServer(zkServer.getZkHost())
+                .withTimeOut(AbstractZkTestCase.TIMEOUT)
+                .build()) {
       DistributedApiAsyncTracker transientDaat =
           new DistributedApiAsyncTracker(transientZkClient, TRACKER_ROOT);
       assertTrue(

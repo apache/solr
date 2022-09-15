@@ -215,7 +215,11 @@ public class NodeConfig {
     if (!StringUtils.isEmpty(zkHost)) {
       int startUpZkTimeOut = Integer.getInteger("waitForZk", 30);
       startUpZkTimeOut *= 1000;
-      try (SolrZkClient zkClient = new SolrZkClient(zkHost, startUpZkTimeOut, startUpZkTimeOut)) {
+      try (SolrZkClient zkClient = new SolrZkClient.Builder()
+              .withServer(zkHost)
+              .withTimeOut(startUpZkTimeOut)
+              .withConnectTimeOut(startUpZkTimeOut)
+              .build()) {
         if (zkClient.exists("/solr.xml", true)) {
           log.info("solr.xml found in ZooKeeper. Loading...");
           byte[] data = zkClient.getData("/solr.xml", null, null, true);

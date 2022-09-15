@@ -377,11 +377,11 @@ public class ZkController implements Closeable {
     addOnReconnectListener(getConfigDirListener());
 
     zkClient =
-        new SolrZkClient(
-            zkServerAddress,
-            clientTimeout,
-            zkClientConnectTimeout,
-            strat,
+        new SolrZkClient.Builder()
+                .withServer (zkServerAddress)
+                .withTimeOut(clientTimeout).withConnectTimeOut(zkClientConnectTimeout)
+                .withConnectionStrategy(strat)
+                .withReconnectListener(
             // on reconnect, reload cloud info
             new OnReconnect() {
 
@@ -496,22 +496,19 @@ public class ZkController implements Closeable {
                   throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
                 }
               }
-            },
-            new BeforeReconnect() {
-
-              @Override
-              public void command() {
-                try {
-                  ZkController.this.overseer.close();
-                } catch (Exception e) {
-                  log.error("Error trying to stop any Overseer threads", e);
-                }
-                closeOutstandingElections(descriptorsSupplier);
-                markAllAsNotLeader(descriptorsSupplier);
-              }
-            },
-            zkACLProvider,
-            cc::isShutDown);
+            })
+                .withBeforeReconnect(() -> {
+                  try {
+                    ZkController.this.overseer.close();
+                  } catch (Exception e) {
+                    log.error("Error trying to stop any Overseer threads", e);
+                  }
+                  closeOutstandingElections(descriptorsSupplier);
+                  markAllAsNotLeader(descriptorsSupplier);
+                })
+                .withACLProvider(zkACLProvider)
+                .withIsClosed(cc::isShutDown)
+                .build();
 
     // Refuse to start if ZK has a non empty /clusterstate.json
     checkNoOldClusterstate(zkClient);
@@ -1193,8 +1190,11 @@ public class ZkController implements Closeable {
     log.trace("zkHost includes chroot");
     String chrootPath = zkHost.substring(zkHost.indexOf("/"), zkHost.length());
 
-    SolrZkClient tmpClient =
-        new SolrZkClient(zkHost.substring(0, zkHost.indexOf("/")), 60000, 30000);
+    SolrZkClient tmpClient = new SolrZkClient.Builder()
+            .withServer(zkHost.substring(0, zkHost.indexOf("/")))
+            .withTimeOut(60000)
+            .withConnectTimeOut(30000)
+            .build();
     boolean exists = tmpClient.exists(chrootPath, true);
     if (!exists && create) {
       log.info("creating chroot {}", chrootPath);

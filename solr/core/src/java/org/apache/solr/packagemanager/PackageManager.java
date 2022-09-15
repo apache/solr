@@ -79,7 +79,10 @@ public class PackageManager implements Closeable {
   public PackageManager(HttpSolrClient solrClient, String solrBaseUrl, String zkHost) {
     this.solrBaseUrl = solrBaseUrl;
     this.solrClient = solrClient;
-    this.zkClient = new SolrZkClient(zkHost, 30000);
+    this.zkClient = new SolrZkClient.Builder()
+            .withServer(zkHost)
+            .withTimeOut(30000)
+            .build();
     log.info("Done initializing a zkClient instance...");
   }
 

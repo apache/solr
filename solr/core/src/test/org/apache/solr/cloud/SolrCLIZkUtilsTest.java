@@ -48,7 +48,10 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
             "conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
     zkAddr = cluster.getZkServer().getZkAddress();
-    zkClient = new SolrZkClient(zkAddr, 30000);
+    zkClient = new SolrZkClient.Builder()
+            .withServer (zkAddr)
+            .withTimeOut(30000)
+            .build();
   }
 
   @AfterClass

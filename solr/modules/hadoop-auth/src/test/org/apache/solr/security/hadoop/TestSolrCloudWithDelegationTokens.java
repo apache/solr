@@ -392,12 +392,12 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
   @Test
   public void testZNodePaths() throws Exception {
     getDelegationToken(null, "bar", solrClientPrimary);
-    SolrZkClient zkClient = new SolrZkClient(miniCluster.getZkServer().getZkAddress(), 1000);
-    try {
+    try (SolrZkClient zkClient = new SolrZkClient.Builder()
+            .withServer (miniCluster.getZkServer().getZkAddress())
+            .withTimeOut(1000)
+            .build()){
       assertTrue(zkClient.exists("/security/zkdtsm", true));
       assertTrue(zkClient.exists("/security/token", true));
-    } finally {
-      zkClient.close();
     }
   }
 

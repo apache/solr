@@ -70,11 +70,17 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
 
     System.setProperty("zkHost", zkServer.getZkAddress());
 
-    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT);
+    SolrZkClient zkClient = new SolrZkClient.Builder()
+            .withServer (zkServer.getZkHost())
+            .withTimeOut(AbstractZkTestCase.TIMEOUT)
+            .build();
     zkClient.makePath("/solr", false, true);
     zkClient.close();
 
-    zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
+    zkClient = new SolrZkClient.Builder()
+            .withServer(zkServer.getZkAddress())
+            .withTimeOut(AbstractZkTestCase.TIMEOUT)
+            .build();
     zkClient.create(
         "/protectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
     zkClient.makePath(
@@ -107,7 +113,10 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
 
   @Test
   public void testOutOfBoxSolrZkClient() throws Exception {
-    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
+    SolrZkClient zkClient = new SolrZkClient.Builder()
+            .withServer (zkServer.getZkAddress())
+            .withTimeOut(AbstractZkTestCase.TIMEOUT)
+            .build();
     try {
       AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
           zkClient, true, true, true, true, true, true, true, true, true, true);
@@ -118,7 +127,10 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
 
   @Test
   public void testOpenACLUnsafeAllover() throws Exception {
-    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT);
+    SolrZkClient zkClient = new SolrZkClient.Builder()
+            .withServer (zkServer.getZkHost())
+            .withTimeOut(AbstractZkTestCase.TIMEOUT)
+            .build();
     try {
       List<String> verifiedList = new ArrayList<String>();
       assertOpenACLUnsafeAllover(zkClient, "/", verifiedList);

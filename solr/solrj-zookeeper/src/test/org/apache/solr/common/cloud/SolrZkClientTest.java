@@ -73,16 +73,24 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
 
-    try (SolrZkClient client = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT)) {
+    try (SolrZkClient client = new SolrZkClient.Builder()
+            .withServer (zkServer.getZkHost())
+            .withTimeOut(AbstractZkTestCase.TIMEOUT)
+            .build()) {
       // Set up chroot
       client.makePath("/solr", false, true);
     }
 
-    defaultClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
+    defaultClient = new SolrZkClient.Builder()
+            .withServer(zkServer.getZkAddress())
+            .withTimeOut(AbstractZkTestCase.TIMEOUT)
+            .build();
     defaultClient.makePath(PATH, true);
 
     aclClient =
-        new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT) {
+        new SolrZkClient(new SolrZkClient.Builder()
+                .withServer(zkServer.getZkAddress())
+                .withTimeOut( AbstractZkTestCase.TIMEOUT)) {
           @Override
           protected ZkACLProvider createZkACLProvider() {
             return new DefaultZkACLProvider() {
@@ -100,7 +108,9 @@ public class SolrZkClientTest extends SolrCloudTestCase {
         };
 
     credentialsClient =
-        new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT) {
+        new SolrZkClient(new SolrZkClient.Builder()
+                .withServer(zkServer.getZkAddress())
+                .withTimeOut(AbstractZkTestCase.TIMEOUT)) {
           @Override
           protected ZkCredentialsProvider createZkCredentialsToAddAutomatically() {
             return new DefaultZkCredentialsProvider() {

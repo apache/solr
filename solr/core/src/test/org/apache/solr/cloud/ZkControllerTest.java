@@ -94,7 +94,10 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     try {
       server.run();
 
-      try (SolrZkClient client = new SolrZkClient(server.getZkAddress(), TIMEOUT)) {
+      try (SolrZkClient client = new SolrZkClient.Builder()
+              .withServer(server.getZkAddress())
+              .withTimeOut(TIMEOUT)
+              .build()) {
 
         ZkController.createClusterZkNodes(client);
 
@@ -346,7 +349,10 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     ZkTestServer server = new ZkTestServer(zkDir);
     try {
       server.run();
-      try (SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT)) {
+      try (SolrZkClient zkClient = new SolrZkClient.Builder()
+              .withServer(server.getZkAddress())
+              .withTimeOut(TIMEOUT)
+              .build()) {
         CoreContainer cc = getCoreContainer();
         try {
           CloudConfig cloudConfig =

@@ -257,7 +257,11 @@ public class ZkCLI implements CLIO {
       }
       SolrZkClient zkClient = null;
       try {
-        zkClient = new SolrZkClient(zkServerAddress, 30000, 30000, () -> {});
+        zkClient = new SolrZkClient.Builder()
+                .withServer(zkServerAddress)
+                .withTimeOut(30000)
+                .withConnectTimeOut(30000).withReconnectListener(() -> {})
+                .build();
 
         if (line.getOptionValue(CMD).equalsIgnoreCase(BOOTSTRAP)) {
           if (!line.hasOption(SOLRHOME)) {

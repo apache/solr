@@ -100,52 +100,18 @@ public class SolrZkClient implements Closeable {
   public int getZkClientTimeout() {
     return zkClientTimeout;
   }
-
-  // expert: for tests
-  public SolrZkClient() {}
-
-  public SolrZkClient(String zkServerAddress, int zkClientTimeout) {
-    this(zkServerAddress, zkClientTimeout, DEFAULT_CLIENT_CONNECT_TIMEOUT);
+  public SolrZkClient(Builder builder) {
+    this(builder.zkServerAddress,
+            builder.zkClientTimeout,
+            builder.zkClientConnectTimeout,
+            builder.connectionStrategy,
+            builder.onReconnect,
+            builder.beforeReconnect,
+            builder.zkACLProvider,
+            builder.higherLevelIsClosed);
   }
 
-  public SolrZkClient(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout) {
-    this(zkServerAddress, zkClientTimeout, zkClientConnectTimeout, null);
-  }
-
-  public SolrZkClient(
-      String zkServerAddress,
-      int zkClientTimeout,
-      int zkClientConnectTimeout,
-      OnReconnect onReconnect) {
-    this(zkServerAddress, zkClientTimeout, zkClientConnectTimeout, null, onReconnect);
-  }
-
-  public SolrZkClient(
-      String zkServerAddress,
-      int zkClientTimeout,
-      ZkClientConnectionStrategy strat,
-      final OnReconnect onReconnect) {
-    this(zkServerAddress, zkClientTimeout, DEFAULT_CLIENT_CONNECT_TIMEOUT, strat, onReconnect);
-  }
-
-  public SolrZkClient(
-      String zkServerAddress,
-      int zkClientTimeout,
-      int clientConnectTimeout,
-      ZkClientConnectionStrategy strat,
-      final OnReconnect onReconnect) {
-    this(
-        zkServerAddress,
-        zkClientTimeout,
-        clientConnectTimeout,
-        strat,
-        onReconnect,
-        null,
-        null,
-        null);
-  }
-
-  public SolrZkClient(
+  private SolrZkClient(
       String zkServerAddress,
       int zkClientTimeout,
       int clientConnectTimeout,
@@ -1088,5 +1054,57 @@ public class SolrZkClient implements Closeable {
             }
           });
     }
+  }
+  public static class Builder {
+    public String zkServerAddress;
+    public int zkClientTimeout = DEFAULT_CLIENT_CONNECT_TIMEOUT;
+    public int zkClientConnectTimeout = DEFAULT_CLIENT_CONNECT_TIMEOUT;
+    public OnReconnect onReconnect;
+    public BeforeReconnect beforeReconnect;
+    public ZkClientConnectionStrategy connectionStrategy;
+    public ZkACLProvider zkACLProvider;
+    public IsClosed higherLevelIsClosed;
+
+    public Builder withServer(String server) {
+      this.zkServerAddress = server;
+      return this;
+    }
+
+    public Builder withTimeOut(int i) {
+      this.zkClientTimeout = i;
+      return this;
+    }
+    public Builder withConnectTimeOut(int i) {
+      this.zkClientConnectTimeout = i;
+      return this;
+    }
+    public Builder withReconnectListener(OnReconnect onReconnect) {
+      this.onReconnect = onReconnect;
+      return this;
+    }
+
+    public Builder withConnectionStrategy(ZkClientConnectionStrategy strat) {
+      this.connectionStrategy = strat;
+      return this;
+    }
+
+    public Builder withBeforeReconnect( BeforeReconnect beforeReconnect){
+      this.beforeReconnect = beforeReconnect;
+      return this;
+    }
+    public Builder withACLProvider(ZkACLProvider zkACLProvider) {
+      this.zkACLProvider = zkACLProvider;
+      return this;
+    }
+
+    public Builder withIsClosed(IsClosed higherLevelIsClosed) {
+      this.higherLevelIsClosed = higherLevelIsClosed;
+      return this;
+    }
+
+    public SolrZkClient build() {
+      return new SolrZkClient(this);
+    }
+
   }
 }

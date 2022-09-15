@@ -1937,7 +1937,10 @@ public class SolrCLI implements CLIO {
       }
 
       String confName = cli.getOptionValue("confname");
-      try (SolrZkClient zkClient = new SolrZkClient(zkHost, 30000)) {
+      try (SolrZkClient zkClient = new SolrZkClient.Builder()
+              .withServer (zkHost)
+              .withTimeOut(10000)
+              .build()) {
         echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
         Path confPath =
             ConfigSetService.getConfigsetPath(
@@ -2014,7 +2017,10 @@ public class SolrCLI implements CLIO {
                 + " is running in standalone server mode, downconfig can only be used when running in SolrCloud mode.\n");
       }
 
-      try (SolrZkClient zkClient = new SolrZkClient(zkHost, 30000)) {
+      try (SolrZkClient zkClient = new SolrZkClient.Builder()
+              .withServer (zkHost)
+              .withTimeOut(10000)
+              .build()) {
         echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
         String confName = cli.getOptionValue("confname");
         String confDir = cli.getOptionValue("confdir");
@@ -2103,7 +2109,10 @@ public class SolrCLI implements CLIO {
         throw new SolrServerException("You may not remove the root ZK node ('/')!");
       }
       echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
-      try (SolrZkClient zkClient = new SolrZkClient(zkHost, 30000)) {
+      try (SolrZkClient zkClient = new SolrZkClient.Builder()
+              .withServer (zkHost)
+              .withTimeOut(10000)
+              .build()) {
         if (recurse == false && zkClient.getChildren(znode, null, true).size() != 0) {
           throw new SolrServerException(
               "ZooKeeper node " + znode + " has children and recurse has NOT been specified.");
@@ -2175,7 +2184,10 @@ public class SolrCLI implements CLIO {
                 + " is running in standalone server mode, 'zk ls' can only be used when running in SolrCloud mode.\n");
       }
 
-      try (SolrZkClient zkClient = new SolrZkClient(zkHost, 30000)) {
+      try (SolrZkClient zkClient = new SolrZkClient.Builder()
+              .withServer (zkHost)
+              .withTimeOut(10000)
+              .build()) {
         echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
 
         String znode = cli.getOptionValue("path");
@@ -2242,7 +2254,10 @@ public class SolrCLI implements CLIO {
                 + " is running in standalone server mode, 'zk mkroot' can only be used when running in SolrCloud mode.\n");
       }
 
-      try (SolrZkClient zkClient = new SolrZkClient(zkHost, 30000)) {
+      try (SolrZkClient zkClient = new SolrZkClient.Builder()
+              .withServer (zkHost)
+              .withTimeOut(10000)
+              .build()) {
         echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
 
         String znode = cli.getOptionValue("path");
@@ -2312,7 +2327,10 @@ public class SolrCLI implements CLIO {
                 + " is running in standalone server mode, cp can only be used when running in SolrCloud mode.\n");
       }
 
-      try (SolrZkClient zkClient = new SolrZkClient(zkHost, 30000)) {
+      try (SolrZkClient zkClient = new SolrZkClient.Builder()
+              .withServer (zkHost)
+              .withTimeOut(10000)
+              .build()) {
         echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
         String src = cli.getOptionValue("src");
         String dst = cli.getOptionValue("dst");
@@ -2396,7 +2414,10 @@ public class SolrCLI implements CLIO {
                 + " is running in standalone server mode, downconfig can only be used when running in SolrCloud mode.\n");
       }
 
-      try (SolrZkClient zkClient = new SolrZkClient(zkHost, 30000)) {
+      try (SolrZkClient zkClient = new SolrZkClient.Builder()
+              .withServer (zkHost)
+              .withTimeOut(10000)
+              .build()) {
         echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
         String src = cli.getOptionValue("src");
         String dst = cli.getOptionValue("dst");
@@ -4255,7 +4276,10 @@ public class SolrCLI implements CLIO {
 
             // check if security is already enabled or not
             if (!zkInaccessible) {
-              try (SolrZkClient zkClient = new SolrZkClient(zkHost, 10000)) {
+              try (SolrZkClient zkClient = new SolrZkClient.Builder()
+                      .withServer (zkHost)
+                      .withTimeOut(10000)
+                      .build()) {
                 if (zkClient.exists("/security.json", true)) {
                   byte oldSecurityBytes[] = zkClient.getData("/security.json", null, null, true);
                   if (!"{}".equals(new String(oldSecurityBytes, StandardCharsets.UTF_8).trim())) {
@@ -4280,7 +4304,10 @@ public class SolrCLI implements CLIO {
           if (!updateIncludeFileOnly) {
             if (!zkInaccessible) {
               echoIfVerbose("Uploading following security.json: " + securityJson, cli);
-              try (SolrZkClient zkClient = new SolrZkClient(zkHost, 10000)) {
+              try (SolrZkClient zkClient = new SolrZkClient.Builder()
+                      .withServer (zkHost)
+                      .withTimeOut(10000)
+                      .build()) {
                 zkClient.setData(
                     "/security.json", securityJson.getBytes(StandardCharsets.UTF_8), true);
               } catch (Exception ex) {
@@ -4328,7 +4355,10 @@ public class SolrCLI implements CLIO {
 
             echoIfVerbose("Uploading following security.json: {}", cli);
 
-            try (SolrZkClient zkClient = new SolrZkClient(zkHost, 10000)) {
+            try (SolrZkClient zkClient = new SolrZkClient.Builder()
+                    .withServer (zkHost)
+                    .withTimeOut(10000)
+                    .build()) {
               zkClient.setData("/security.json", "{}".getBytes(StandardCharsets.UTF_8), true);
             }
           }
@@ -4406,7 +4436,10 @@ public class SolrCLI implements CLIO {
             }
 
             // check if security is already enabled or not
-            try (SolrZkClient zkClient = new SolrZkClient(zkHost, 10000)) {
+            try (SolrZkClient zkClient = new SolrZkClient.Builder()
+                    .withServer (zkHost)
+                    .withTimeOut(10000)
+                    .build()) {
               if (zkClient.exists("/security.json", true)) {
                 byte oldSecurityBytes[] = zkClient.getData("/security.json", null, null, true);
                 if (!"{}".equals(new String(oldSecurityBytes, StandardCharsets.UTF_8).trim())) {
@@ -4473,7 +4506,10 @@ public class SolrCLI implements CLIO {
 
           if (!updateIncludeFileOnly) {
             echoIfVerbose("Uploading following security.json: " + securityJson, cli);
-            try (SolrZkClient zkClient = new SolrZkClient(zkHost, 10000)) {
+            try (SolrZkClient zkClient = new SolrZkClient.Builder()
+                    .withServer (zkHost)
+                    .withTimeOut(10000)
+                    .build()) {
               zkClient.setData(
                   "/security.json", securityJson.getBytes(StandardCharsets.UTF_8), true);
             }
@@ -4522,7 +4558,10 @@ public class SolrCLI implements CLIO {
 
             echoIfVerbose("Uploading following security.json: {}", cli);
 
-            try (SolrZkClient zkClient = new SolrZkClient(zkHost, 10000)) {
+            try (SolrZkClient zkClient = new SolrZkClient.Builder()
+                    .withServer (zkHost)
+                    .withTimeOut(10000)
+                    .build()) {
               zkClient.setData("/security.json", "{}".getBytes(StandardCharsets.UTF_8), true);
             }
           }
