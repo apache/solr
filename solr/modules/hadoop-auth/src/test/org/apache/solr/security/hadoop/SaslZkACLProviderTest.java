@@ -178,9 +178,7 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
   private static class SolrZkClientWithACLs extends SolrZkClient {
 
     public SolrZkClientWithACLs(String zkServerAddress, int zkClientTimeout) {
-      super(new Builder()
-              .withServer(zkServerAddress)
-              .withTimeOut(zkClientTimeout));
+      super(new Builder().withServer(zkServerAddress).withTimeOut(zkClientTimeout));
     }
 
     @Override
@@ -193,9 +191,7 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
   private static class SolrZkClientNoACLs extends SolrZkClient {
 
     public SolrZkClientNoACLs(String zkServerAddress, int zkClientTimeout) {
-      super(new Builder()
-              .withServer(zkServerAddress)
-              .withTimeOut(zkClientTimeout));
+      super(new Builder().withServer(zkServerAddress).withTimeOut(zkClientTimeout));
     }
 
     @Override
