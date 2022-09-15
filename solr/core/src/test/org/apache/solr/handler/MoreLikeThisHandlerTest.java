@@ -25,6 +25,7 @@ import org.apache.solr.common.params.MoreLikeThisParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.component.FacetComponent;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
@@ -235,6 +236,15 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
           mltreq,
           "//result/doc[1]/str[@name='id'][.='45']",
           "//lst[@name='debug']/lst[@name='explain']");
+    }
+
+    params.set(FacetComponent.COMPONENT_NAME, "true");
+    params.set("facet.field", "name");
+    try (SolrQueryRequest mltreq = new LocalSolrQueryRequest(core, params)) {
+      assertQ(
+          mltreq,
+          "//result/doc[1]/str[@name='id'][.='45']",
+          "//lst[@name='facet_counts']/lst[@name='facet_fields']/lst[@name='name']/int[@name='George'][.='1']");
     }
   }
 
