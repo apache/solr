@@ -215,7 +215,8 @@ public class NodeConfig {
     if (!StringUtils.isEmpty(zkHost)) {
       int startUpZkTimeOut = Integer.getInteger("waitForZk", 30);
       startUpZkTimeOut *= 1000;
-      try (SolrZkClient zkClient = new SolrZkClient.Builder()
+      try (SolrZkClient zkClient =
+          new SolrZkClient.Builder()
               .withServer(zkHost)
               .withTimeOut(startUpZkTimeOut)
               .withConnectTimeOut(startUpZkTimeOut)

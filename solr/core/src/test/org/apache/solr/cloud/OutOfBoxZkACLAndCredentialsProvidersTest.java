@@ -70,14 +70,16 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
 
     System.setProperty("zkHost", zkServer.getZkAddress());
 
-    SolrZkClient zkClient = new SolrZkClient.Builder()
-            .withServer (zkServer.getZkHost())
+    SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withServer(zkServer.getZkHost())
             .withTimeOut(AbstractZkTestCase.TIMEOUT)
             .build();
     zkClient.makePath("/solr", false, true);
     zkClient.close();
 
-    zkClient = new SolrZkClient.Builder()
+    zkClient =
+        new SolrZkClient.Builder()
             .withServer(zkServer.getZkAddress())
             .withTimeOut(AbstractZkTestCase.TIMEOUT)
             .build();
@@ -113,8 +115,9 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
 
   @Test
   public void testOutOfBoxSolrZkClient() throws Exception {
-    SolrZkClient zkClient = new SolrZkClient.Builder()
-            .withServer (zkServer.getZkAddress())
+    SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withServer(zkServer.getZkAddress())
             .withTimeOut(AbstractZkTestCase.TIMEOUT)
             .build();
     try {
@@ -127,8 +130,9 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
 
   @Test
   public void testOpenACLUnsafeAllover() throws Exception {
-    SolrZkClient zkClient = new SolrZkClient.Builder()
-            .withServer (zkServer.getZkHost())
+    SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withServer(zkServer.getZkHost())
             .withTimeOut(AbstractZkTestCase.TIMEOUT)
             .build();
     try {

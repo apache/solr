@@ -94,7 +94,8 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     try {
       server.run();
 
-      try (SolrZkClient client = new SolrZkClient.Builder()
+      try (SolrZkClient client =
+          new SolrZkClient.Builder()
               .withServer(server.getZkAddress())
               .withTimeOut(TIMEOUT)
               .build()) {
@@ -349,7 +350,8 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     ZkTestServer server = new ZkTestServer(zkDir);
     try {
       server.run();
-      try (SolrZkClient zkClient = new SolrZkClient.Builder()
+      try (SolrZkClient zkClient =
+          new SolrZkClient.Builder()
               .withServer(server.getZkAddress())
               .withTimeOut(TIMEOUT)
               .build()) {

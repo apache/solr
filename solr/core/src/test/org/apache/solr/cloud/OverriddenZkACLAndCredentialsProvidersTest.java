@@ -203,9 +203,9 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
 
     SolrZkClient zkClient =
         new SolrZkClientUsingVMParamsProvidersButWithDifferentVMParamsNames(
-                new SolrZkClient.Builder()
-                        .withServer(zkServer.getZkAddress())
-                        .withTimeOut(AbstractZkTestCase.TIMEOUT));
+            new SolrZkClient.Builder()
+                .withServer(zkServer.getZkAddress())
+                .withTimeOut(AbstractZkTestCase.TIMEOUT));
     try {
       AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
           zkClient, false, false, false, false, false, false, false, false, false, false);
@@ -222,9 +222,9 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
 
     SolrZkClient zkClient =
         new SolrZkClientUsingVMParamsProvidersButWithDifferentVMParamsNames(
-                new SolrZkClient.Builder()
-                        .withServer(zkServer.getZkAddress())
-                        .withTimeOut(AbstractZkTestCase.TIMEOUT));
+            new SolrZkClient.Builder()
+                .withServer(zkServer.getZkAddress())
+                .withTimeOut(AbstractZkTestCase.TIMEOUT));
     try {
       AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
           zkClient, false, false, false, false, false, false, false, false, false, false);
@@ -241,9 +241,9 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
 
     SolrZkClient zkClient =
         new SolrZkClientUsingVMParamsProvidersButWithDifferentVMParamsNames(
-                new SolrZkClient.Builder()
-                        .withServer(zkServer.getZkAddress())
-                        .withTimeOut(AbstractZkTestCase.TIMEOUT));
+            new SolrZkClient.Builder()
+                .withServer(zkServer.getZkAddress())
+                .withTimeOut(AbstractZkTestCase.TIMEOUT));
     try {
       AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
           zkClient, true, true, true, true, true, true, true, true, true, true);
@@ -260,9 +260,9 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
 
     SolrZkClient zkClient =
         new SolrZkClientUsingVMParamsProvidersButWithDifferentVMParamsNames(
-                new SolrZkClient.Builder()
-                        .withServer(zkServer.getZkAddress())
-                        .withTimeOut(AbstractZkTestCase.TIMEOUT));
+            new SolrZkClient.Builder()
+                .withServer(zkServer.getZkAddress())
+                .withTimeOut(AbstractZkTestCase.TIMEOUT));
     try {
       AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
           zkClient, true, true, false, false, false, false, false, false, false, false);
@@ -304,9 +304,8 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
 
     public SolrZkClient getSolrZkClient(String zkServerAddress, int zkClientTimeout) {
 
-      return new SolrZkClient(new SolrZkClient.Builder()
-              .withServer(zkServerAddress)
-              .withTimeOut(zkClientTimeout)) {
+      return new SolrZkClient(
+          new SolrZkClient.Builder().withServer(zkServerAddress).withTimeOut(zkClientTimeout)) {
 
         @Override
         protected ZkCredentialsProvider createZkCredentialsToAddAutomatically() {
@@ -330,7 +329,9 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
             "alternative" + DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME,
             "alternative" + DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME,
             "alternative" + DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME);
-    public SolrZkClientUsingVMParamsProvidersButWithDifferentVMParamsNames(SolrZkClient.Builder builder) {
+
+    public SolrZkClientUsingVMParamsProvidersButWithDifferentVMParamsNames(
+        SolrZkClient.Builder builder) {
       super(builder);
     }
 

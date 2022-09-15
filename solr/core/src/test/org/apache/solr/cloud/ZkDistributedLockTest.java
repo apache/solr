@@ -48,7 +48,8 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
     ZkTestServer server = new ZkTestServer(createTempDir("zkData"));
     try {
       server.run();
-      try (SolrZkClient zkClient = new SolrZkClient.Builder()
+      try (SolrZkClient zkClient =
+          new SolrZkClient.Builder()
               .withServer(server.getZkAddress())
               .withTimeOut(TIMEOUT)
               .build()) {

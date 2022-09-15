@@ -91,14 +91,16 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
     System.setProperty("zkHost", zkServer.getZkAddress());
-    SolrZkClient zkClient = new SolrZkClient.Builder()
+    SolrZkClient zkClient =
+        new SolrZkClient.Builder()
             .withServer(zkServer.getZkHost())
             .withTimeOut(AbstractZkTestCase.TIMEOUT)
             .build();
     zkClient.makePath("/solr", false, true);
     zkClient.close();
 
-    this.zkClient = new SolrZkClient.Builder()
+    this.zkClient =
+        new SolrZkClient.Builder()
             .withServer(zkServer.getZkAddress())
             .withTimeOut(AbstractZkTestCase.TIMEOUT)
             .build();
@@ -418,10 +420,8 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     SolrException ex =
         expectThrows(
             SolrException.class,
-            () -> new SolrZkClient.Builder()
-                    .withServer ("----------:33332")
-                    .withTimeOut(100)
-                    .build());
+            () ->
+                new SolrZkClient.Builder().withServer("----------:33332").withTimeOut(100).build());
     zkClient.close();
   }
 
@@ -478,10 +478,10 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
     boolean excepted = false;
     try (SolrZkClient zkClient =
-                 new SolrZkClient.Builder()
-                         .withServer(zkServer.getZkAddress())
-                         .withTimeOut(AbstractDistribZkTestBase.DEFAULT_CONNECTION_TIMEOUT)
-                         .build()) {
+        new SolrZkClient.Builder()
+            .withServer(zkServer.getZkAddress())
+            .withTimeOut(AbstractDistribZkTestBase.DEFAULT_CONNECTION_TIMEOUT)
+            .build()) {
       zkClient.getData("/", null, null, true);
     } catch (KeeperException.NoAuthException e) {
       excepted = true;

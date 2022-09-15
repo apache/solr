@@ -352,7 +352,8 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     zkServer = new ZkTestServer(createTempDir("zkData"));
     zkServer.run();
     System.setProperty("zkHost", zkServer.getZkAddress());
-    zkClient = new SolrZkClient.Builder()
+    zkClient =
+        new SolrZkClient.Builder()
             .withServer(zkServer.getZkAddress())
             .withTimeOut(AbstractZkTestCase.TIMEOUT)
             .build();

@@ -58,7 +58,8 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
       server = new ZkTestServer(zkDir);
       server.run();
 
-      zkClient = new SolrZkClient.Builder()
+      zkClient =
+          new SolrZkClient.Builder()
               .withServer(server.getZkAddress())
               .withTimeOut(AbstractZkTestCase.TIMEOUT)
               .build();
@@ -91,10 +92,9 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
     try (ZkConnection conn = new ZkConnection()) {
       final SolrZkClient zkClient =
           new SolrZkClient.Builder()
-                  .withServer(conn.getServer()
-                  .getZkHost())
-                  .withTimeOut(AbstractZkTestCase.TIMEOUT)
-                  .build();
+              .withServer(conn.getServer().getZkHost())
+              .withTimeOut(AbstractZkTestCase.TIMEOUT)
+              .build();
       try {
         assertTrue(zkClient.exists("/solr", true));
       } finally {
@@ -126,9 +126,9 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
     server.run();
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
-                .withServer(server.getZkAddress())
-                .withTimeOut(AbstractZkTestCase.TIMEOUT)
-                .build() ) {
+            .withServer(server.getZkAddress())
+            .withTimeOut(AbstractZkTestCase.TIMEOUT)
+            .build()) {
 
       String shardsPath = "/collections/collection1/shards";
       zkClient.makePath(shardsPath, false, true);

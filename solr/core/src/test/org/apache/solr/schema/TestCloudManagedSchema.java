@@ -18,8 +18,6 @@ package org.apache.solr.schema;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.function.Consumer;
-
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
@@ -68,10 +66,8 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
     assertEquals(
         "Schema resource name differs from expected name", "managed-schema.xml", collectionSchema);
 
-    try (SolrZkClient zkClient = new SolrZkClient.Builder()
-            .withServer(zkServer.getZkHost())
-            .withTimeOut(30000)
-            .build()){
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder().withServer(zkServer.getZkHost()).withTimeOut(30000).build()) {
       // Make sure "DO NOT EDIT" is in the content of the managed schema
       String fileContent =
           getFileContentFromZooKeeper(zkClient, "/solr/configs/conf1/managed-schema.xml");
