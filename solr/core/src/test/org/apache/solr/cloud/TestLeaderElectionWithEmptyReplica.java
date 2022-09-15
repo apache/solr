@@ -20,7 +20,6 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;

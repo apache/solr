@@ -77,8 +77,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   /** A basic client for operations at the cloud level, default collection will be set */
   private static CloudSolrClient CLOUD_CLIENT;
   /** One client per node */
-  private static final List<SolrClient> CLIENTS =
-      Collections.synchronizedList(new ArrayList<>(5));
+  private static final List<SolrClient> CLIENTS = Collections.synchronizedList(new ArrayList<>(5));
 
   /** Always included in fl, so we can check what doc we're looking at */
   private static final FlValidator ID_VALIDATOR = new SimpleFieldValueValidator("id");

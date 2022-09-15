@@ -259,7 +259,7 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
    */
   private void assertDocsExistInBothReplicas(int firstDocId, int lastDocId) throws Exception {
     try (SolrClient leaderSolr = getHttpSolrClient(NODE0.getBaseUrl().toString());
-         SolrClient replicaSolr = getHttpSolrClient(NODE1.getBaseUrl().toString())) {
+        SolrClient replicaSolr = getHttpSolrClient(NODE1.getBaseUrl().toString())) {
       for (int d = firstDocId; d <= lastDocId; d++) {
         String docId = String.valueOf(d);
         assertDocExists("leader", leaderSolr, docId);
@@ -272,8 +272,8 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
    * uses distrib=false RTG requests to verify that the specified docId can be found using the
    * specified solr client
    */
-  private void assertDocExists(
-      final String clientName, final SolrClient client, final String docId) throws Exception {
+  private void assertDocExists(final String clientName, final SolrClient client, final String docId)
+      throws Exception {
     final QueryResponse rsp =
         (new QueryRequest(
                 params("qt", "/get", "id", docId, "_trace", clientName, "distrib", "false")))
