@@ -37,7 +37,7 @@ public class NormalizeEvaluatorTest extends SolrTestCase {
   public NormalizeEvaluatorTest() {
     super();
     factory = new StreamFactory().withFunctionName("norm", NormalizeEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @Test

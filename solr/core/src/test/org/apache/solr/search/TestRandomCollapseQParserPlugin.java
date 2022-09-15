@@ -70,7 +70,7 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
         CursorPagingTest.pruneAndDeterministicallySort(
             h.getCore().getLatestSchema().getFields().keySet());
 
-    ALL_COLLAPSE_FIELD_NAMES = new ArrayList<String>(ALL_SORT_FIELD_NAMES.size());
+    ALL_COLLAPSE_FIELD_NAMES = new ArrayList<>(ALL_SORT_FIELD_NAMES.size());
     for (String candidate : ALL_SORT_FIELD_NAMES) {
       if (candidate.startsWith("str")
           || candidate.startsWith("float")

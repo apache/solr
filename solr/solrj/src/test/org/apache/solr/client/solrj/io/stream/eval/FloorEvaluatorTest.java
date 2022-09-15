@@ -36,7 +36,7 @@ public class FloorEvaluatorTest extends SolrTestCase {
     super();
 
     factory = new StreamFactory().withFunctionName("floor", FloorEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @Test

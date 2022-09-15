@@ -161,7 +161,7 @@ public class UniqueStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l = new ArrayList<TupleStream>();
+    List<TupleStream> l = new ArrayList<>();
     l.add(originalStream);
     return l;
   }

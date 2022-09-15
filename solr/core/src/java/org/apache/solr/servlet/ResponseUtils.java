@@ -21,6 +21,7 @@ import java.io.StringWriter;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.jersey.ErrorInfo;
 import org.slf4j.Logger;
 
 /** Response helper methods. */
@@ -30,10 +31,15 @@ public class ResponseUtils {
   /**
    * Adds the given Throwable's message to the given NamedList.
    *
+   * <p>Primarily used by v1 code; v2 endpoints or dispatch code should call {@link
+   * #getTypedErrorInfo(Throwable, Logger)}
+   *
    * <p>If the response code is not a regular code, the Throwable's stack trace is both logged and
    * added to the given NamedList.
    *
    * <p>Status codes less than 100 are adjusted to be 500.
+   *
+   * @see #getTypedErrorInfo(Throwable, Logger)
    */
   public static int getErrorInfo(Throwable ex, NamedList<Object> info, Logger log) {
     int code = 500;
@@ -78,5 +84,55 @@ public class ResponseUtils {
 
     info.add("code", code);
     return code;
+  }
+
+  /**
+   * Adds information about the given Throwable to a returned {@link ErrorInfo}
+   *
+   * <p>Primarily used by v2 API code, which can handle such typed information.
+   *
+   * <p>Status codes less than 100 are adjusted to be 500.
+   *
+   * @see #getErrorInfo(Throwable, NamedList, Logger)
+   */
+  public static ErrorInfo getTypedErrorInfo(Throwable ex, Logger log) {
+    final ErrorInfo errorInfo = new ErrorInfo();
+    int code = 500;
+    if (ex instanceof SolrException) {
+      SolrException solrExc = (SolrException) ex;
+      code = solrExc.code();
+      errorInfo.metadata = new ErrorInfo.ErrorMetadata();
+      errorInfo.metadata.errorClass = ex.getClass().getName();
+      errorInfo.metadata.rootErrorClass = SolrException.getRootCause(ex).getClass().getName();
+      if (ex instanceof ApiBag.ExceptionWithErrObject) {
+        ApiBag.ExceptionWithErrObject exception = (ApiBag.ExceptionWithErrObject) ex;
+        errorInfo.details = exception.getErrs();
+      }
+    }
+
+    for (Throwable th = ex; th != null; th = th.getCause()) {
+      String msg = th.getMessage();
+      if (msg != null) {
+        errorInfo.msg = msg;
+        break;
+      }
+    }
+
+    // For any regular code, don't include the stack trace
+    if (code == 500 || code < 100) {
+      StringWriter sw = new StringWriter();
+      ex.printStackTrace(new PrintWriter(sw));
+      SolrException.log(log, ex);
+      errorInfo.trace = sw.toString();
+
+      // non standard codes have undefined results with various servers
+      if (code < 100) {
+        log.warn("invalid return code: {}", code);
+        code = 500;
+      }
+    }
+
+    errorInfo.code = code;
+    return errorInfo;
   }
 }
