@@ -100,15 +100,17 @@ public class SolrZkClient implements Closeable {
   public int getZkClientTimeout() {
     return zkClientTimeout;
   }
+
   public SolrZkClient(Builder builder) {
-    this(builder.zkServerAddress,
-            builder.zkClientTimeout,
-            builder.zkClientConnectTimeout,
-            builder.connectionStrategy,
-            builder.onReconnect,
-            builder.beforeReconnect,
-            builder.zkACLProvider,
-            builder.higherLevelIsClosed);
+    this(
+        builder.zkServerAddress,
+        builder.zkClientTimeout,
+        builder.zkClientConnectTimeout,
+        builder.connectionStrategy,
+        builder.onReconnect,
+        builder.beforeReconnect,
+        builder.zkACLProvider,
+        builder.higherLevelIsClosed);
   }
 
   private SolrZkClient(
@@ -1055,6 +1057,7 @@ public class SolrZkClient implements Closeable {
           });
     }
   }
+
   public static class Builder {
     public String zkServerAddress;
     public int zkClientTimeout = DEFAULT_CLIENT_CONNECT_TIMEOUT;
@@ -1074,10 +1077,12 @@ public class SolrZkClient implements Closeable {
       this.zkClientTimeout = i;
       return this;
     }
+
     public Builder withConnectTimeOut(int i) {
       this.zkClientConnectTimeout = i;
       return this;
     }
+
     public Builder withReconnectListener(OnReconnect onReconnect) {
       this.onReconnect = onReconnect;
       return this;
@@ -1088,10 +1093,11 @@ public class SolrZkClient implements Closeable {
       return this;
     }
 
-    public Builder withBeforeReconnect( BeforeReconnect beforeReconnect){
+    public Builder withBeforeReconnect(BeforeReconnect beforeReconnect) {
       this.beforeReconnect = beforeReconnect;
       return this;
     }
+
     public Builder withACLProvider(ZkACLProvider zkACLProvider) {
       this.zkACLProvider = zkACLProvider;
       return this;
@@ -1105,6 +1111,5 @@ public class SolrZkClient implements Closeable {
     public SolrZkClient build() {
       return new SolrZkClient(this);
     }
-
   }
 }

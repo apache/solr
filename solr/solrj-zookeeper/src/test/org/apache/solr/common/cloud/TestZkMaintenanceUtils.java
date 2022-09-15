@@ -73,10 +73,8 @@ public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
   public void testClean()
       throws KeeperException, InterruptedException, SolrServerException,
           UnsupportedEncodingException {
-    try (SolrZkClient zkClient = new SolrZkClient.Builder()
-            .withServer(zkServer.getZkHost())
-            .withTimeOut(10000)
-            .build()) {
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder().withServer(zkServer.getZkHost()).withTimeOut(10000).build()) {
       /* PREPARE */
       String path = "/myPath/isTheBest";
       String data1 = "myStringData1";
@@ -135,10 +133,8 @@ public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
 
   @Test
   public void testTraverseZkTree() throws Exception {
-    try (SolrZkClient zkClient = new SolrZkClient.Builder()
-            .withServer (zkServer.getZkHost())
-            .withTimeOut( 10000)
-            .build()) {
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder().withServer(zkServer.getZkHost()).withTimeOut(10000).build()) {
       zkClient.makePath("/testTraverseZkTree/1/1", true, true);
       zkClient.makePath("/testTraverseZkTree/1/2", false, true);
       zkClient.makePath("/testTraverseZkTree/2", false, true);
@@ -166,10 +162,8 @@ public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
   // SOLR-14993
   @Test
   public void testOneByteFile() throws Exception {
-    try (SolrZkClient zkClient = new SolrZkClient.Builder()
-            .withServer(zkServer.getZkHost())
-            .withTimeOut(10000)
-            .build()) {
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder().withServer(zkServer.getZkHost()).withTimeOut(10000).build()) {
       byte[] oneByte = new byte[1];
       oneByte[0] = 0x30;
       zkClient.makePath("/test1byte/one", oneByte, true);

@@ -74,9 +74,10 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
 
     zkServer.ensurePathExists("/solr");
 
-    try (SolrZkClient zkClient = new SolrZkClient.Builder()
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
             .withServer(zkServer.getZkAddress("/solr"))
-            .withTimeOut( 10000)
+            .withTimeOut(10000)
             .build()) {
       ConfigSetService configSetService = new ZkConfigSetService(zkClient);
 
@@ -225,7 +226,8 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
     }
 
     // Client with no auth whatsoever can't even get the list of configs
-    try (SolrZkClient client = new SolrZkClient.Builder()
+    try (SolrZkClient client =
+        new SolrZkClient.Builder()
             .withServer(zkServer.getZkAddress("/acl"))
             .withTimeOut(10000)
             .build()) {
@@ -245,7 +247,8 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
     CoreContainer cc = new CoreContainer(Paths.get(solrHome), new Properties());
     System.setProperty("zkHost", zkServer.getZkAddress());
 
-    SolrZkClient zkClient = new SolrZkClient.Builder()
+    SolrZkClient zkClient =
+        new SolrZkClient.Builder()
             .withServer(zkServer.getZkHost())
             .withTimeOut(AbstractZkTestCase.TIMEOUT)
             .build();
@@ -262,9 +265,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
       String zkAddress,
       final ZkACLProvider aclProvider,
       final ZkCredentialsProvider credentialsProvider) {
-    return new SolrZkClient(new SolrZkClient.Builder()
-            .withServer(zkAddress)
-            .withTimeOut(10000)) {
+    return new SolrZkClient(new SolrZkClient.Builder().withServer(zkAddress).withTimeOut(10000)) {
       @Override
       protected ZkCredentialsProvider createZkCredentialsToAddAutomatically() {
         return credentialsProvider;
