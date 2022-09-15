@@ -17,7 +17,6 @@
 package org.apache.solr.handler.component;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -2431,16 +2430,16 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
   // Useful to check for errors, orders lists and does toString() equality check
   private void testOrderedPivotsStringEquality(
       List<PivotField> expectedPlacePivots, List<PivotField> placePivots) {
-    Collections.sort(expectedPlacePivots, new PivotFieldComparator());
+    expectedPlacePivots.sort(new PivotFieldComparator());
     for (PivotField expectedPivot : expectedPlacePivots) {
       if (expectedPivot.getPivot() != null) {
-        Collections.sort(expectedPivot.getPivot(), new PivotFieldComparator());
+        expectedPivot.getPivot().sort(new PivotFieldComparator());
       }
     }
-    Collections.sort(placePivots, new PivotFieldComparator());
+    placePivots.sort(new PivotFieldComparator());
     for (PivotField pivot : placePivots) {
       if (pivot.getPivot() != null) {
-        Collections.sort(pivot.getPivot(), new PivotFieldComparator());
+        pivot.getPivot().sort(new PivotFieldComparator());
       }
     }
     assertEquals(expectedPlacePivots.toString(), placePivots.toString());

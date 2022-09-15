@@ -1261,7 +1261,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     // Set pf.postFilter
     if (postFilters != null) {
-      Collections.sort(postFilters, sortByCost);
+      postFilters.sort(sortByCost);
       for (int i = postFilters.size() - 1; i >= 0; i--) {
         DelegatingCollector prev = pf.postFilter;
         pf.postFilter = postFilters.get(i).getFilterCollector(this);

@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -268,8 +267,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
         } // end for-each-doc-in-response
       } // end for-each-response
 
-      Collections.sort(
-          shardDocs,
+      shardDocs.sort(
           (o1, o2) -> {
             if (o1.score < o2.score) {
               return 1;
@@ -576,8 +574,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
         } // end for-each-doc-in-response
       } // end for-each-response
 
-      Collections.sort(
-          shardDocs,
+      shardDocs.sort(
           (o1, o2) -> {
             if (o1.score < o2.score) {
               return 1;
@@ -698,8 +695,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
     }
 
     public TopDocs topDocs() {
-      Collections.sort(
-          list,
+      list.sort(
           new Comparator<>() {
             public int compare(ScoreDoc s1, ScoreDoc s2) {
               if (s1.score == s2.score) {
@@ -760,8 +756,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
     }
 
     public TopDocs topDocs() {
-      Collections.sort(
-          list,
+      list.sort(
           new Comparator<>() {
             public int compare(ScoreDoc s1, ScoreDoc s2) {
               if (s1.score == s2.score) {
