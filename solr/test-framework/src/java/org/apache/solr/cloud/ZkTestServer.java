@@ -443,17 +443,17 @@ public class ZkTestServer {
     try {
       rootClient =
           new SolrZkClient.Builder()
-              .withServer(getZkHost())
-              .withTimeOut(TIMEOUT)
-              .withConnectTimeOut(30000)
+              .url(getZkHost())
+              .timeout(TIMEOUT)
+              .connTimeOut(30000)
               .build();
     } catch (Exception e) {
       log.error("error making rootClient, trying one more time", e);
       rootClient =
           new SolrZkClient.Builder()
-              .withServer(getZkHost())
-              .withTimeOut(TIMEOUT)
-              .withConnectTimeOut(30000)
+              .url(getZkHost())
+              .timeout(TIMEOUT)
+              .connTimeOut(30000)
               .build();
     }
 
@@ -464,9 +464,9 @@ public class ZkTestServer {
 
     chRootClient =
         new SolrZkClient.Builder()
-            .withServer(getZkAddress())
-            .withTimeOut(AbstractZkTestCase.TIMEOUT)
-            .withConnectTimeOut(30000)
+            .url(getZkAddress())
+            .timeout(AbstractZkTestCase.TIMEOUT)
+            .connTimeOut(30000)
             .build();
   }
 
@@ -500,7 +500,7 @@ public class ZkTestServer {
    */
   public void ensurePathExists(String path) throws IOException {
     try (SolrZkClient client =
-        new SolrZkClient.Builder().withServer(getZkHost()).withTimeOut(10000).build()) {
+        new SolrZkClient.Builder().url(getZkHost()).timeout(10000).build()) {
       client.makePath(path, null, CreateMode.PERSISTENT, null, false, true, 0);
     } catch (InterruptedException | KeeperException e) {
       e.printStackTrace();

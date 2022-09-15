@@ -50,8 +50,8 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
       server.run();
       try (SolrZkClient zkClient =
           new SolrZkClient.Builder()
-              .withServer(server.getZkAddress())
-              .withTimeOut(TIMEOUT)
+              .url(server.getZkAddress())
+              .timeout(TIMEOUT)
               .build()) {
         DistributedCollectionLockFactory collLockFactory =
             new ZkDistributedCollectionLockFactory(zkClient, "/lockTestCollectionRoot");

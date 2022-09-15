@@ -56,7 +56,7 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
 
   public void testPut() throws KeeperException, InterruptedException {
     try (SolrZkClient zkClient =
-        new SolrZkClient.Builder().withServer(zkServer.getZkHost()).withTimeOut(10000).build()) {
+        new SolrZkClient.Builder().url(zkServer.getZkHost()).timeout(10000).build()) {
       String path = getAndMakeInitialPath(zkClient);
       DistributedMap map = createMap(zkClient, path);
       assertFalse(zkClient.exists(path + "/" + DistributedMap.PREFIX + "foo", true));
@@ -67,7 +67,7 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
 
   public void testGet() throws KeeperException, InterruptedException {
     try (SolrZkClient zkClient =
-        new SolrZkClient.Builder().withServer(zkServer.getZkHost()).withTimeOut(10000).build()) {
+        new SolrZkClient.Builder().url(zkServer.getZkHost()).timeout(10000).build()) {
       String path = getAndMakeInitialPath(zkClient);
       byte[] data = "data".getBytes(Charset.defaultCharset());
       zkClient.makePath(
@@ -84,7 +84,7 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
 
   public void testContains() throws KeeperException, InterruptedException {
     try (SolrZkClient zkClient =
-        new SolrZkClient.Builder().withServer(zkServer.getZkHost()).withTimeOut(10000).build()) {
+        new SolrZkClient.Builder().url(zkServer.getZkHost()).timeout(10000).build()) {
       String path = getAndMakeInitialPath(zkClient);
       DistributedMap map = createMap(zkClient, path);
       assertFalse(map.contains("foo"));
@@ -101,7 +101,7 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
 
   public void testRemove() throws KeeperException, InterruptedException {
     try (SolrZkClient zkClient =
-        new SolrZkClient.Builder().withServer(zkServer.getZkHost()).withTimeOut(10000).build()) {
+        new SolrZkClient.Builder().url(zkServer.getZkHost()).timeout(10000).build()) {
       String path = getAndMakeInitialPath(zkClient);
       DistributedMap map = createMap(zkClient, path);
       assertFalse(map.remove("foo"));
@@ -120,7 +120,7 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
 
   public void testSize() throws KeeperException, InterruptedException {
     try (SolrZkClient zkClient =
-        new SolrZkClient.Builder().withServer(zkServer.getZkHost()).withTimeOut(10000).build()) {
+        new SolrZkClient.Builder().url(zkServer.getZkHost()).timeout(10000).build()) {
       String path = getAndMakeInitialPath(zkClient);
       DistributedMap map = createMap(zkClient, path);
       assertEquals(0, map.size());
@@ -137,7 +137,7 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
 
   public void testPutIfAbsent() throws KeeperException, InterruptedException {
     try (SolrZkClient zkClient =
-        new SolrZkClient.Builder().withServer(zkServer.getZkHost()).withTimeOut(10000).build()) {
+        new SolrZkClient.Builder().url(zkServer.getZkHost()).timeout(10000).build()) {
       String path = getAndMakeInitialPath(zkClient);
       DistributedMap map = createMap(zkClient, path);
       assertEquals(0, map.size());
@@ -159,7 +159,7 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
 
   public void testKeys() throws KeeperException, InterruptedException {
     try (SolrZkClient zkClient =
-        new SolrZkClient.Builder().withServer(zkServer.getZkHost()).withTimeOut(10000).build()) {
+        new SolrZkClient.Builder().url(zkServer.getZkHost()).timeout(10000).build()) {
       String path = getAndMakeInitialPath(zkClient);
       DistributedMap map = createMap(zkClient, path);
       assertEquals(0, map.keys().size());
@@ -180,7 +180,7 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
 
   public void testClear() throws KeeperException, InterruptedException {
     try (SolrZkClient zkClient =
-        new SolrZkClient.Builder().withServer(zkServer.getZkHost()).withTimeOut(10000).build()) {
+        new SolrZkClient.Builder().url(zkServer.getZkHost()).timeout(10000).build()) {
       String path = getAndMakeInitialPath(zkClient);
       DistributedMap map = createMap(zkClient, path);
       map.clear();

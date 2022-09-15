@@ -205,8 +205,8 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     // i.e. the data is really in zookeeper
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .withServer(cluster.getZkServer().getZkAddress())
-            .withTimeOut(30000)
+            .url(cluster.getZkServer().getZkAddress())
+            .timeout(30000)
             .build()) {
       ZkController.createClusterZkNodes(zkClient);
       try (ZkStateReader zkStateReader2 = new ZkStateReader(zkClient)) {

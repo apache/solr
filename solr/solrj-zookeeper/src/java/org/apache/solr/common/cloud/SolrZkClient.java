@@ -1072,42 +1072,42 @@ public class SolrZkClient implements Closeable {
     public ZkACLProvider zkACLProvider;
     public IsClosed higherLevelIsClosed;
 
-    public Builder withServer(String server) {
+    public Builder url(String server) {
       this.zkServerAddress = server;
       return this;
     }
 
-    public Builder withTimeOut(int i) {
+    public Builder timeout(int i) {
       this.zkClientTimeout = i;
       return this;
     }
 
-    public Builder withConnectTimeOut(int i) {
+    public Builder connTimeOut(int i) {
       this.zkClientConnectTimeout = i;
       return this;
     }
 
-    public Builder withReconnectListener(OnReconnect onReconnect) {
+    public Builder reconnectListener(OnReconnect onReconnect) {
       this.onReconnect = onReconnect;
       return this;
     }
 
-    public Builder withConnectionStrategy(ZkClientConnectionStrategy strat) {
+    public Builder connStrategy(ZkClientConnectionStrategy strat) {
       this.connectionStrategy = strat;
       return this;
     }
 
-    public Builder withBeforeReconnect(BeforeReconnect beforeReconnect) {
+    public Builder beforeConnect(BeforeReconnect beforeReconnect) {
       this.beforeReconnect = beforeReconnect;
       return this;
     }
 
-    public Builder withACLProvider(ZkACLProvider zkACLProvider) {
+    public Builder aclProvider(ZkACLProvider zkACLProvider) {
       this.zkACLProvider = zkACLProvider;
       return this;
     }
 
-    public Builder withIsClosed(IsClosed higherLevelIsClosed) {
+    public Builder closedCheck(IsClosed higherLevelIsClosed) {
       this.higherLevelIsClosed = higherLevelIsClosed;
       return this;
     }

@@ -67,7 +67,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     server.run();
 
     zkClient =
-        new SolrZkClient.Builder().withServer(server.getZkAddress()).withTimeOut(TIMEOUT).build();
+        new SolrZkClient.Builder().url(server.getZkAddress()).timeout(TIMEOUT).build();
     zkStateReader = new ZkStateReader(zkClient);
     seqToThread = Collections.synchronizedMap(new HashMap<Integer, Thread>());
     zkClient.makePath("/collections/collection1", true);
@@ -109,10 +109,10 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     public ElectorSetup(OnReconnect onReconnect) {
       zkClient =
           new SolrZkClient.Builder()
-              .withServer(server.getZkAddress())
-              .withTimeOut(TIMEOUT)
-              .withConnectTimeOut(TIMEOUT)
-              .withReconnectListener(onReconnect)
+              .url(server.getZkAddress())
+              .timeout(TIMEOUT)
+              .connTimeOut(TIMEOUT)
+              .reconnectListener(onReconnect)
               .build();
       zkStateReader = new ZkStateReader(zkClient);
       elector = new LeaderElector(zkClient);

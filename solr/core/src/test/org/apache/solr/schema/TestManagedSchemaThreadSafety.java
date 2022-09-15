@@ -56,7 +56,7 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
     AtomicReference<Thread> slowpoke = new AtomicReference<>();
 
     private SuspendingZkClient(String zkServerAddress) {
-      super(new Builder().withServer(zkServerAddress).withTimeOut(ZK_CLIENT_TIMEOUT));
+      super(new Builder().url(zkServerAddress).timeout(ZK_CLIENT_TIMEOUT));
     }
 
     boolean isSlowpoke() {

@@ -100,9 +100,9 @@ public class AbstractDigestZkACLAndCredentialsProvidersTestBase extends SolrTest
 
     SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .withServer(zkServer.getZkHost())
-            .withTimeOut(AbstractZkTestCase.TIMEOUT)
-            .withConnectTimeOut(AbstractZkTestCase.TIMEOUT)
+            .url(zkServer.getZkHost())
+            .timeout(AbstractZkTestCase.TIMEOUT)
+            .connTimeOut(AbstractZkTestCase.TIMEOUT)
             .build();
 
     zkClient.makePath("/solr", false, true);
@@ -110,8 +110,8 @@ public class AbstractDigestZkACLAndCredentialsProvidersTestBase extends SolrTest
 
     zkClient =
         new SolrZkClient.Builder()
-            .withServer(zkServer.getZkAddress())
-            .withTimeOut(AbstractZkTestCase.TIMEOUT)
+            .url(zkServer.getZkAddress())
+            .timeout(AbstractZkTestCase.TIMEOUT)
             .build();
     zkClient.create(
         "/protectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
@@ -129,8 +129,8 @@ public class AbstractDigestZkACLAndCredentialsProvidersTestBase extends SolrTest
 
     zkClient =
         new SolrZkClient.Builder()
-            .withServer(zkServer.getZkAddress())
-            .withTimeOut(AbstractZkTestCase.TIMEOUT)
+            .url(zkServer.getZkAddress())
+            .timeout(AbstractZkTestCase.TIMEOUT)
             .build();
     // Currently, no credentials on ZK connection, because those same VM-params are used for adding
     // ACLs, and here we want
@@ -294,8 +294,8 @@ public class AbstractDigestZkACLAndCredentialsProvidersTestBase extends SolrTest
       testZkCredentialsInjector.setSystemProps();
       try (SolrZkClient zkClient =
           new SolrZkClient.Builder()
-              .withServer(zkServer.getZkAddress())
-              .withTimeOut(AbstractZkTestCase.TIMEOUT)
+              .url(zkServer.getZkAddress())
+              .timeout(AbstractZkTestCase.TIMEOUT)
               .build()) {
         doTest(
             zkClient,
@@ -318,8 +318,8 @@ public class AbstractDigestZkACLAndCredentialsProvidersTestBase extends SolrTest
     clearSecuritySystemProperties();
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .withServer(zkServer.getZkAddress())
-            .withTimeOut(AbstractZkTestCase.TIMEOUT)
+            .url(zkServer.getZkAddress())
+            .timeout(AbstractZkTestCase.TIMEOUT)
             .build()) {
       // Currently, no credentials on ZK connection, because those same VM-params are used for
       // adding ACLs, and here we want
@@ -340,8 +340,8 @@ public class AbstractDigestZkACLAndCredentialsProvidersTestBase extends SolrTest
     setSecuritySystemProperties();
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .withServer(zkServer.getZkAddress())
-            .withTimeOut(AbstractZkTestCase.TIMEOUT)
+            .url(zkServer.getZkAddress())
+            .timeout(AbstractZkTestCase.TIMEOUT)
             .build()) {
       ZkController.createClusterZkNodes(zkClient);
       assertNotEquals(OPEN_ACL_UNSAFE, zkClient.getACL("/security.json", null, false));
@@ -351,8 +351,8 @@ public class AbstractDigestZkACLAndCredentialsProvidersTestBase extends SolrTest
     // useReadonlyCredentials();
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .withServer(zkServer.getZkAddress())
-            .withTimeOut(AbstractZkTestCase.TIMEOUT)
+            .url(zkServer.getZkAddress())
+            .timeout(AbstractZkTestCase.TIMEOUT)
             .build()) {
       NoAuthException e =
           assertThrows(
@@ -463,8 +463,8 @@ public class AbstractDigestZkACLAndCredentialsProvidersTestBase extends SolrTest
 
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .withServer(zkServer.getZkAddress())
-            .withTimeOut(AbstractZkTestCase.TIMEOUT)
+            .url(zkServer.getZkAddress())
+            .timeout(AbstractZkTestCase.TIMEOUT)
             .build()) {
       doTest(zkClient, true, true, true, true, true, true, true, true, true, true);
     }
@@ -476,8 +476,8 @@ public class AbstractDigestZkACLAndCredentialsProvidersTestBase extends SolrTest
 
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .withServer(zkServer.getZkAddress())
-            .withTimeOut(AbstractZkTestCase.TIMEOUT)
+            .url(zkServer.getZkAddress())
+            .timeout(AbstractZkTestCase.TIMEOUT)
             .build()) {
       doTest(zkClient, true, true, false, false, false, false, false, false, false, false);
     }

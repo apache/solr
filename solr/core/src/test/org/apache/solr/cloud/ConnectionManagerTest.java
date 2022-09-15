@@ -48,7 +48,7 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
       server.run();
 
       SolrZkClient zkClient =
-          new SolrZkClient.Builder().withServer(server.getZkAddress()).withTimeOut(TIMEOUT).build();
+          new SolrZkClient.Builder().url(server.getZkAddress()).timeout(TIMEOUT).build();
       ConnectionManager cm = zkClient.getConnectionManager();
       try {
         assertFalse(cm.isLikelyExpired());
@@ -79,7 +79,7 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
       server.run();
 
       SolrZkClient zkClient =
-          new SolrZkClient.Builder().withServer(server.getZkAddress()).withTimeOut(TIMEOUT).build();
+          new SolrZkClient.Builder().url(server.getZkAddress()).timeout(TIMEOUT).build();
       ConnectionManager cm = zkClient.getConnectionManager();
       try {
         assertFalse(cm.isLikelyExpired());
@@ -127,9 +127,9 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
       MockZkClientConnectionStrategy strategy = new MockZkClientConnectionStrategy();
       SolrZkClient zkClient =
           new SolrZkClient.Builder()
-              .withServer(server.getZkAddress())
-              .withTimeOut(TIMEOUT)
-              .withConnectionStrategy(strategy)
+              .url(server.getZkAddress())
+              .timeout(TIMEOUT)
+              .connStrategy(strategy)
               .build();
       ConnectionManager cm = zkClient.getConnectionManager();
 

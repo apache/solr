@@ -377,11 +377,11 @@ public class ZkController implements Closeable {
 
     zkClient =
         new SolrZkClient.Builder()
-            .withServer(zkServerAddress)
-            .withTimeOut(clientTimeout)
-            .withConnectTimeOut(zkClientConnectTimeout)
-            .withConnectionStrategy(strat)
-            .withReconnectListener(
+            .url(zkServerAddress)
+            .timeout(clientTimeout)
+            .connTimeOut(zkClientConnectTimeout)
+            .connStrategy(strat)
+            .reconnectListener(
                 // on reconnect, reload cloud info
                 new OnReconnect() {
 
@@ -501,7 +501,7 @@ public class ZkController implements Closeable {
                     }
                   }
                 })
-            .withBeforeReconnect(
+            .beforeConnect(
                 () -> {
                   try {
                     ZkController.this.overseer.close();
@@ -511,8 +511,8 @@ public class ZkController implements Closeable {
                   closeOutstandingElections(descriptorsSupplier);
                   markAllAsNotLeader(descriptorsSupplier);
                 })
-            .withACLProvider(zkACLProvider)
-            .withIsClosed(cc::isShutDown)
+            .aclProvider(zkACLProvider)
+            .closedCheck(cc::isShutDown)
             .build();
 
     // Refuse to start if ZK has a non empty /clusterstate.json
@@ -1197,9 +1197,9 @@ public class ZkController implements Closeable {
 
     SolrZkClient tmpClient =
         new SolrZkClient.Builder()
-            .withServer(zkHost.substring(0, zkHost.indexOf("/")))
-            .withTimeOut(60000)
-            .withConnectTimeOut(30000)
+            .url(zkHost.substring(0, zkHost.indexOf("/")))
+            .timeout(60000)
+            .connTimeOut(30000)
             .build();
     boolean exists = tmpClient.exists(chrootPath, true);
     if (!exists && create) {

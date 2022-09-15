@@ -117,9 +117,9 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
 
     SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .withServer(solrCluster.getZkServer().getZkAddress())
-            .withTimeOut(AbstractZkTestCase.TIMEOUT)
-            .withConnectTimeOut(AbstractZkTestCase.TIMEOUT)
+            .url(solrCluster.getZkServer().getZkAddress())
+            .timeout(AbstractZkTestCase.TIMEOUT)
+            .connTimeOut(AbstractZkTestCase.TIMEOUT)
             .build();
     try {
 

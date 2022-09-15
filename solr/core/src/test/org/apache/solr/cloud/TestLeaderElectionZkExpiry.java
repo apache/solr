@@ -80,8 +80,8 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
               });
           try (SolrZkClient zc =
               new SolrZkClient.Builder()
-                  .withServer(server.getZkAddress())
-                  .withTimeOut(LeaderElectionTest.TIMEOUT)
+                  .url(server.getZkAddress())
+                  .timeout(LeaderElectionTest.TIMEOUT)
                   .build()) {
             boolean found = false;
             TimeOut timeout = new TimeOut(60, TimeUnit.SECONDS, TimeSource.NANO_TIME);

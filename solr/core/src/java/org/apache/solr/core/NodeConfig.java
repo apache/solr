@@ -217,9 +217,9 @@ public class NodeConfig {
       startUpZkTimeOut *= 1000;
       try (SolrZkClient zkClient =
           new SolrZkClient.Builder()
-              .withServer(zkHost)
-              .withTimeOut(startUpZkTimeOut)
-              .withConnectTimeOut(startUpZkTimeOut)
+              .url(zkHost)
+              .timeout(startUpZkTimeOut)
+              .connTimeOut(startUpZkTimeOut)
               .build()) {
         if (zkClient.exists("/solr.xml", true)) {
           log.info("solr.xml found in ZooKeeper. Loading...");

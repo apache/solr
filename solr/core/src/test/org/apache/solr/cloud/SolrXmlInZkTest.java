@@ -71,8 +71,8 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
 
     zkClient =
         new SolrZkClient.Builder()
-            .withServer(zkServer.getZkAddress())
-            .withTimeOut(AbstractZkTestCase.TIMEOUT)
+            .url(zkServer.getZkAddress())
+            .timeout(AbstractZkTestCase.TIMEOUT)
             .build();
 
     if (toZk) {

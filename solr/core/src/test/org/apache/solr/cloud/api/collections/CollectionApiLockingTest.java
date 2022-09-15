@@ -44,8 +44,8 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
       server.run();
       try (SolrZkClient zkClient =
           new SolrZkClient.Builder()
-              .withServer(server.getZkAddress())
-              .withTimeOut(TIMEOUT)
+              .url(server.getZkAddress())
+              .timeout(TIMEOUT)
               .build()) {
         CollectionApiLockFactory apiLockFactory =
             new CollectionApiLockFactory(

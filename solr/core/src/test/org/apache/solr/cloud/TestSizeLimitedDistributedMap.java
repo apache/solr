@@ -31,7 +31,7 @@ public class TestSizeLimitedDistributedMap extends TestDistributedMap {
     int numResponsesToStore = TEST_NIGHTLY ? Overseer.NUM_RESPONSES_TO_STORE : 100;
 
     try (SolrZkClient zkClient =
-        new SolrZkClient.Builder().withServer(zkServer.getZkHost()).withTimeOut(10000).build()) {
+        new SolrZkClient.Builder().url(zkServer.getZkHost()).timeout(10000).build()) {
       String path = getAndMakeInitialPath(zkClient);
       DistributedMap map =
           new SizeLimitedDistributedMap(

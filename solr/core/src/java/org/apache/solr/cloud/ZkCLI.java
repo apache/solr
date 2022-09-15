@@ -259,10 +259,10 @@ public class ZkCLI implements CLIO {
       try {
         zkClient =
             new SolrZkClient.Builder()
-                .withServer(zkServerAddress)
-                .withTimeOut(30000)
-                .withConnectTimeOut(30000)
-                .withReconnectListener(() -> {})
+                .url(zkServerAddress)
+                .timeout(30000)
+                .connTimeOut(30000)
+                .reconnectListener(() -> {})
                 .build();
 
         if (line.getOptionValue(CMD).equalsIgnoreCase(BOOTSTRAP)) {

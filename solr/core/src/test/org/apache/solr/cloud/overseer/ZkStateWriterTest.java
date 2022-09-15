@@ -73,8 +73,8 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
 
       zkClient =
           new SolrZkClient.Builder()
-              .withServer(server.getZkAddress())
-              .withTimeOut(OverseerTest.DEFAULT_CONNECTION_TIMEOUT)
+              .url(server.getZkAddress())
+              .timeout(OverseerTest.DEFAULT_CONNECTION_TIMEOUT)
               .build();
       ZkController.createClusterZkNodes(zkClient);
 
@@ -140,8 +140,8 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
 
       zkClient =
           new SolrZkClient.Builder()
-              .withServer(server.getZkAddress())
-              .withTimeOut(OverseerTest.DEFAULT_CONNECTION_TIMEOUT)
+              .url(server.getZkAddress())
+              .timeout(OverseerTest.DEFAULT_CONNECTION_TIMEOUT)
               .build();
       ZkController.createClusterZkNodes(zkClient);
 
@@ -192,8 +192,8 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
 
       zkClient =
           new SolrZkClient.Builder()
-              .withServer(server.getZkAddress())
-              .withTimeOut(OverseerTest.DEFAULT_CONNECTION_TIMEOUT)
+              .url(server.getZkAddress())
+              .timeout(OverseerTest.DEFAULT_CONNECTION_TIMEOUT)
               .build();
       ZkController.createClusterZkNodes(zkClient);
 

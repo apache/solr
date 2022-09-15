@@ -41,8 +41,8 @@ public class ConfigSetApiLockingTest extends SolrTestCaseJ4 {
       server.run();
       try (SolrZkClient zkClient =
           new SolrZkClient.Builder()
-              .withServer(server.getZkAddress())
-              .withTimeOut(TIMEOUT)
+              .url(server.getZkAddress())
+              .timeout(TIMEOUT)
               .build()) {
         ConfigSetApiLockFactory apiLockFactory =
             new ConfigSetApiLockFactory(

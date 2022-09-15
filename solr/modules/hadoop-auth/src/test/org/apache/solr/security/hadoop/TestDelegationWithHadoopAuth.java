@@ -356,8 +356,8 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
     getDelegationToken(null, USER_1, primarySolrClient);
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .withServer(cluster.getZkServer().getZkAddress())
-            .withTimeOut(1000)
+            .url(cluster.getZkServer().getZkAddress())
+            .timeout(1000)
             .build()) {
       assertTrue(zkClient.exists("/security/zkdtsm", true));
       assertTrue(zkClient.exists("/security/token", true));

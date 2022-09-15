@@ -108,8 +108,8 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     server.run();
     SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .withServer(server.getZkAddress())
-            .withTimeOut(OverseerTest.DEFAULT_CONNECTION_TIMEOUT)
+            .url(server.getZkAddress())
+            .timeout(OverseerTest.DEFAULT_CONNECTION_TIMEOUT)
             .build();
     ZkController.createClusterZkNodes(zkClient);
 
