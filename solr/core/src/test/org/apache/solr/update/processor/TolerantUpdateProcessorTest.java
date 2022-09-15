@@ -407,7 +407,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
 
     assertEquals("number of errors", idsShouldFail.length, errors.size());
 
-    Set<String> addErrorIdsExpected = new HashSet<String>(Arrays.asList(idsShouldFail));
+    Set<String> addErrorIdsExpected = new HashSet<>(Arrays.asList(idsShouldFail));
 
     for (SimpleOrderedMap<String> err : errors) {
       assertEquals("this method only expects 'add' errors", "ADD", err.get("type"));
@@ -432,7 +432,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
     assertNotNull("No Chain named: " + chain, pc);
 
     SolrQueryResponse rsp = new SolrQueryResponse();
-    rsp.add("responseHeader", new SimpleOrderedMap<Object>());
+    rsp.add("responseHeader", new SimpleOrderedMap<>());
 
     if (requestParams == null) {
       requestParams = new ModifiableSolrParams();

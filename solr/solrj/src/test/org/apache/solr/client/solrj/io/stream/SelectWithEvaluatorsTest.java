@@ -138,7 +138,7 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
 
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
     tupleStream.open();
-    List<Tuple> tuples = new ArrayList<Tuple>();
+    List<Tuple> tuples = new ArrayList<>();
     for (Tuple t = tupleStream.read(); !t.EOF; t = tupleStream.read()) {
       tuples.add(t);
     }

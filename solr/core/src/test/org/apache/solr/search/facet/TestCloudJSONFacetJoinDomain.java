@@ -587,7 +587,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
       return "*:*";
     }
     final int numClauses = TestUtil.nextInt(random(), 3, 10);
-    List<String> clauses = new ArrayList<String>(numClauses);
+    List<String> clauses = new ArrayList<>(numClauses);
     for (int c = 0; c < numClauses; c++) {
       final int fieldNum = random().nextInt(MAX_FIELD_NUM);
       // keep queries simple, just use str fields - not point of test

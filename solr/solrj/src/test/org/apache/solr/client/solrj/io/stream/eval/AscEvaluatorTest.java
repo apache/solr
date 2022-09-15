@@ -37,7 +37,7 @@ public class AscEvaluatorTest extends SolrTestCase {
     super();
 
     factory = new StreamFactory().withFunctionName("asc", AscEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @Test
