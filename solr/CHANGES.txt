@@ -60,6 +60,8 @@ Improvements
 
 * SOLR-16230: JWT nested roles support (Marco Descher, janhoy)
 
+* SOLR-16361: mod() is now accurate for all integers, floats, doubles and longs upto 2^52 (Dan Rosher via Eric Pugh)
+
 Optimizations
 ---------------------
 * SOLR-16120: Optimise hl.fl expansion. (Christine Poerschke, David Smiley, Mike Drob)
