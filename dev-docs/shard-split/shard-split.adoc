@@ -2,14 +2,14 @@
 :toc: macro
 :toclevels: 3
 
-The document explains how shard split works in SolrCloud at a high level.
+The document explains how shard split works in SolrCloud at a high level. This explanation assumes that shard is split into 2 parts using the `default` settings.
 
 toc::[]
 
 == Background
 Constantly adding new documents to Solr will slow down query performance as index size increases. To handle this, shard split is introduced. Shard split feature works in both Standalone and SolrCloud modes.
 
-Shard is a logical partition of collection, containing a subset of documents from collection. Which shard contains which document depends on the sharding strategy. It is the "router" that determines this -- e.g. "implicit" vs "compositeId"  When a document is sent to Solr for indexing, the system first determines which shard the document belongs to and finds a leader of that shard. Then the leader forwards the updates to other replicas.
+Shard is a logical partition of collection, containing a subset of documents from collection. Which shard contains which document depends on the sharding strategy. It is the "router" that determines this -- e.g. "implicit" vs "compositeId"  When a document is sent to Solr for indexing, the system first determines which shard the document belongs to and finds the leader of that shard. Then the leader forwards the updates to other replicas.
 
 == Shard States
 Shard can have one of the following states:
@@ -45,9 +45,9 @@ Replica can have one of the following states:
 * DOWN
 ** replica is actively trying to move to RECOVERING or ACTIVE state.
 * RECOVERING
-** replica is recovering from leader. This includes peer sync, full replication.
+** replica is recovering from leader. This includes peer sync and full replication.
 * RECOVERY_FAILED
-** recovery is not succeeded.
+** recovery didn't succeed.
 
 == Replica State Transition Diagram
 
@@ -55,9 +55,14 @@ image::images/replica-state-transition-diagram.png[]
 
 == Simplified Explanation
 
-Before digging into the explanation, let us define a few terminologies which will help us understand the content better. We explicitly say *parent shard* for a shard which will be split. A *sub shard* is a child of parent shard which is a shard after split. An *initial replica* is a first replica/core to be added for a sub shard. An *additional replica* is a replica to be created in order to meet `replicationFactor` of collection.
+Before digging into the explanation, let us define a few terminologies which will help us understand the content better:
 
-Splitting a shard will take an existing shard (parent shard) and break it into two pieces which are written into disk as two new shards (sub shards).  Behind the scene, original shard's hash range is computed in order to break a shard into two pieces.
+* *parent shard* for a shard which will be split.
+* *sub shard* is a new shard to be created after splitting a parent shard.
+* *initial replica* is a first replica/core to be added for a sub shard.
+* *additional replica* is a replica to be created in order to meet `replicationFactor` of collection.
+
+SPLITSHARD can be split into multiple sub-shards when one of the following params is used: `ranges`, `numSubShards`. In this explanation, shard is split into two pieces which are written into disk as two new shards (sub shards).  Behind the scene, original shard's hash range is computed in order to break a shard into two pieces. Furthermore, we can specify `split method` which can be either `rewrite` (default) or `link`.
 
 Simple Shard Split Steps:
 
@@ -72,6 +77,7 @@ Notes:
 
 * No downtime during split process -- on the fly; client continues to query, index; replication factor is maintained.
 * `SPLITSHARD` operation is executed by Overseer.
+* The demanding I/O when using `splitMethod=rewrite` with the requirement of having enough free disk space i.e., 2x the core size.
 * Split operation is async.
 * `INACTIVE` shards have to be cleaned up manually.
 
@@ -79,11 +85,11 @@ Notes:
 == Updates while in the process of Shard Split
 
 `UpdateLog` starts to buffer updates on initial replica.
-When update request comes to parent shard, parent shard forwards the updates to sub shards. A new transaction log file is created `/var/solr/data/replicaName/data/tlog/buffer.tlog.timestamp` for each initial replica of sub shards. `DirectUpdateHandler2` writes the updates to buffer tlog file. Later new updates will be appended at the end of that tlog file.
+When update request comes to parent shard, parent shard forwards the updates to sub shards. A new transaction log file is created `../replicaName/data/tlog/buffer.tlog.timestamp` for each initial replica of sub shards. `DirectUpdateHandler2` writes the updates to buffer tlog file. Later new updates will be appended at the end of that tlog file.
 
 Apply buffered updates on sub shards:
 
-`UpdateLog` starts log replay. It gets updates from the buffered tlog file (`/var/solr/data/replicaName/data/tlog/buffer.tlog.timestamp`) and creates a new transaction log file, `/var/solr/data/replicaName/data/tlog/tlog.timestamp` `DirectUpdateHandler2` writes the buffered updates into tlog file.
+`UpdateLog` starts log replay. It gets updates from the buffered tlog file (`../replicaName/data/tlog/buffer.tlog.timestamp`) and creates a new transaction log file, `../replicaName/data/tlog/tlog.timestamp` `DirectUpdateHandler2` writes the buffered updates into tlog file.
 
 
 == Shard Split Process Diagram (High Level)
@@ -100,13 +106,13 @@ Shard split code is mostly in `SplitShardCmd`. Actual index split is processed i
 
 2. Verify if there is enough disk space on the parent shard node to create sub shards.
 
-3. Collection Processor creates a sub shard in `CONSTRUCTION` state and put it in ZK.
+3. Collection Processor creates a sub shard in `CONSTRUCTION` state and puts it in ZK.
 
 4. Create initial replica/core, `ADDREPLICA → AddReplicaCmd → CoreAdminOperation.CREATE`
     ** 4.a Only `CoreDescriptor` is created; initial replica state is set to `DOWN` by `SliceMutator` .
     ** 4.b Create `SolrCore` from `CoreDescriptor`; initial replica state is updated to `ACTIVE` by `ReplicaMutator`.
 
-5. Wait for parent shard leader to acknowledge for the created each initial replica, `CoreAdminRequest.WaitForState() → CoreAdminAction.PREPRECOVERY → PrepRecoveryOp`
+5. Initial replica waits for the parent shard leader to acknowledge it, `CoreAdminRequest.WaitForState() → CoreAdminAction.PREPRECOVERY → PrepRecoveryOp`
 
 6. `SPLIT` request is made to `SplitOp` by providing parent shard core, `targetCore` and `splitMethod`; targetCore is the initial replica of each sub shard, `splitMethod=rewrite` by default.
     ** `SplitOp` determines which router is associated with parent shard core.
