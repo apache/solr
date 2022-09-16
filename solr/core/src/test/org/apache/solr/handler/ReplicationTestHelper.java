@@ -214,11 +214,6 @@ public final class ReplicationTestHelper {
     assertEquals("OK", response.get("status"));
   }
 
-  public static HttpSolrClient adminClient(SolrClient client) {
-    String adminUrl = ((HttpSolrClient) client).getBaseURL().replace("/collection1", "");
-    return SolrTestCaseJ4.getHttpSolrClient(adminUrl);
-  }
-
   public static void pullFromTo(String srcUrl, String destUrl) throws IOException {
     URL url;
     InputStream stream;
