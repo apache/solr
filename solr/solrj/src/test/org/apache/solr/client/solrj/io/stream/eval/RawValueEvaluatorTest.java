@@ -40,7 +40,7 @@ public class RawValueEvaluatorTest extends SolrTestCase {
             .withFunctionName("val", RawValueEvaluator.class)
             .withFunctionName("add", AddEvaluator.class)
             .withFunctionName("and", AndEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @Test

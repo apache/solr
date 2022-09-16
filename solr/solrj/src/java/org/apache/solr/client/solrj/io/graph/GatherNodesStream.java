@@ -27,7 +27,15 @@ import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -610,17 +618,17 @@ public class GatherNodesStream extends TupleStream implements Expressible {
         ++i;
         Instant windowInstant =
             size > 0
-                ? instant.plus(10 * i, ChronoUnit.SECONDS)
-                : instant.minus(10 * i, ChronoUnit.SECONDS);
+                ? instant.plus(10L * i, ChronoUnit.SECONDS)
+                : instant.minus(10L * i, ChronoUnit.SECONDS);
         String windowString = windowInstant.toString();
         windowString = windowString.substring(0, 18) + "0Z";
         windowList.add(windowString);
       }
 
       List<String> laggedWindow = windowList.subList(lag, windowList.size());
-      return laggedWindow.toArray(new String[laggedWindow.size()]);
+      return laggedWindow.toArray(new String[0]);
     } catch (ParseException e) {
-      log.warn("Unparseable date:{}", String.valueOf(start));
+      log.warn("Unparseable date: {}", start);
       return new String[0];
     }
   }

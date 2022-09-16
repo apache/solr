@@ -94,7 +94,7 @@ final class HLLUtil {
   public static int registerBitSize(final long expectedUniqueElements) {
     return Math.max(
         HLL.MINIMUM_REGWIDTH_PARAM,
-        (int) Math.ceil(NumberUtil.log2(NumberUtil.log2(expectedUniqueElements))));
+        (int) Math.ceil(NumberUtil.log2(NumberUtil.log2((double) expectedUniqueElements))));
   }
 
   // ========================================================================

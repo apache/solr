@@ -297,7 +297,7 @@ This should help provide performance improvements in busy clusters being monitor
 *ZooKeeper Credentials*
 
 ZooKeeper credentials can now be stored in a file whose location is defined with a system property instead of being passed in plain-text.
-See xref:deployment-guide:zookeeper-access-control.adoc#out-of-the-box-credential-implementations[Out of the Box Credential Implementations] for how to set this up.
+See xref:deployment-guide:zookeeper-access-control.adoc#out-of-the-box-credentials-implementations[Out of the Box Credential Implementations] for how to set this up.
 
 === Solr 8.9
 

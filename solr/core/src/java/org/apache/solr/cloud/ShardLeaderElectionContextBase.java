@@ -23,7 +23,16 @@ import java.util.List;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.PerReplicaStates;
+import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
+import org.apache.solr.common.cloud.PerReplicaStatesOps;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkCmdExecutor;
+import org.apache.solr.common.cloud.ZkMaintenanceUtils;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
@@ -230,7 +239,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
         }
       } else {
         PerReplicaStates prs =
-            PerReplicaStates.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
+            PerReplicaStatesFetcher.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
         PerReplicaStatesOps.flipLeader(
                 zkStateReader
                     .getClusterState()

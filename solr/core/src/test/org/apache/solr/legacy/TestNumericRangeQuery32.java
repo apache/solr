@@ -407,8 +407,8 @@ public class TestNumericRangeQuery32 extends SolrTestCase {
     // 10 random tests
     int num = TestUtil.nextInt(random(), 10, 20);
     for (int i = 0; i < num; i++) {
-      int lower = (int) (random().nextDouble() * noDocs - noDocs / 2);
-      int upper = (int) (random().nextDouble() * noDocs - noDocs / 2);
+      int lower = (int) (random().nextDouble() * noDocs - noDocs / 2.0);
+      int upper = (int) (random().nextDouble() * noDocs - noDocs / 2.0);
       if (lower > upper) {
         int a = lower;
         lower = upper;

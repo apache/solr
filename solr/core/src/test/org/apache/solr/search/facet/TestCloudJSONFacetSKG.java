@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -76,7 +75,6 @@ import org.slf4j.LoggerFactory;
  * @see TestCloudJSONFacetJoinDomain
  * @see TestCloudJSONFacetSKGEquiv
  */
-@Slow
 public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -114,8 +112,8 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
   private static final ArrayList<HttpSolrClient> CLIENTS = new ArrayList<>(5);
 
   @BeforeClass
-  private static void createMiniSolrCloudCluster() throws Exception {
-    // sanity check constants
+  public static void createMiniSolrCloudCluster() throws Exception {
+    // check constants
     assertTrue(
         "bad test constants: some suffixes will never be tested",
         (MULTI_STR_FIELD_SUFFIXES.length < MAX_FIELD_NUM)
@@ -243,7 +241,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
   }
 
   @AfterClass
-  private static void afterClass() throws Exception {
+  public static void afterClass() throws Exception {
     if (null != CLOUD_CLIENT) {
       CLOUD_CLIENT.close();
       CLOUD_CLIENT = null;

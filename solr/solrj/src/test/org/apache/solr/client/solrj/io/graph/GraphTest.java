@@ -39,7 +39,6 @@ import org.junit.Test;
  * All base tests will be done with CloudSolrStream. Under the covers CloudSolrStream uses
  * SolrStream so SolrStream will get fully exercised through these tests.
  */
-@LuceneTestCase.Slow
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40", "Lucene41", "Lucene42", "Lucene45"})
 public class GraphTest extends SolrCloudTestCase {
 

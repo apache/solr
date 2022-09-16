@@ -71,7 +71,7 @@ public class CloudHttp2SolrClientBuilderTest extends SolrTestCase {
 
   @Test
   public void testSeveralZkHostsSpecifiedTogether() throws IOException {
-    final ArrayList<String> zkHosts = new ArrayList<String>();
+    final ArrayList<String> zkHosts = new ArrayList<>();
     zkHosts.add(ANY_ZK_HOST);
     zkHosts.add(ANY_OTHER_ZK_HOST);
     try (CloudHttp2SolrClient createdClient =

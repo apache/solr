@@ -52,11 +52,9 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
@@ -160,7 +158,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
               expression));
     }
 
-    Map<String, String> params = new HashMap<String, String>();
+    Map<String, String> params = new HashMap<>();
     for (StreamExpressionNamedParameter namedParam : namedParams) {
       if (!namedParam.getName().equals("zkHost")) {
         params.put(namedParam.getName(), namedParam.getParameter().toString().trim());
@@ -383,12 +381,9 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
   protected List<String> getShardUrls() throws IOException {
     try {
-      ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
+      Slice[] slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);
 
-      Slice[] slices = CloudSolrStream.getSlices(this.collection, zkStateReader, false);
-
-      ClusterState clusterState = zkStateReader.getClusterState();
-      Set<String> liveNodes = clusterState.getLiveNodes();
+      Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
 
       List<String> baseUrls = new ArrayList<>();
       for (Slice slice : slices) {

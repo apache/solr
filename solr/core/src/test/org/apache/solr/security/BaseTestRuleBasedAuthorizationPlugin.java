@@ -16,7 +16,10 @@
  */
 package org.apache.solr.security;
 
-import static java.util.Collections.*;
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.emptySet;
+import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.util.CommandOperation.captureErrors;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 import static org.hamcrest.CoreMatchers.instanceOf;

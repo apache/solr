@@ -370,7 +370,7 @@ goto done
 @echo   -e example    Name of the example to run; available examples:
 @echo       cloud:          SolrCloud example
 @echo       techproducts:   Comprehensive example illustrating many of Solr's core capabilities
-@echo       schemaless:     Schema-less example
+@echo       schemaless:     Schema-less example (schema is inferred from data during indexing)
 @echo       films:          Example of starting with _default configset and defining explicit fields dynamically
 @echo.
 @echo   -a opts       Additional parameters to pass to the JVM when starting Solr, such as to setup

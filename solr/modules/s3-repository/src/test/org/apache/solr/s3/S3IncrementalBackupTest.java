@@ -89,6 +89,8 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
     System.setProperty("aws.accessKeyId", "foo");
     System.setProperty("aws.secretAccessKey", "bar");
 
+    AbstractS3ClientTest.setS3ConfFile();
+
     configureCluster(NUM_SHARDS) // nodes
         .addConfig("conf1", getFile("conf/solrconfig.xml").getParentFile().toPath())
         .withSolrXml(

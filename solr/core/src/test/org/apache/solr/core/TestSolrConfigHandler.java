@@ -20,7 +20,11 @@ import static java.util.Arrays.asList;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
 import com.google.common.collect.ImmutableList;
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -366,6 +370,51 @@ public class TestSolrConfigHandler extends RestTestBase {
         "/config",
         cloudSolrClient,
         asList("config", "queryConverter", "qc"),
+        null,
+        TIMEOUT_S);
+
+    payload =
+        "{\n"
+            + "'add-listener' : { 'event' : 'firstSearcher', 'class': 'solr.QuerySenderListener', "
+            + "'name':'f7fb2d87bea44464af2401cf33f42b69', "
+            + "'queries':[{'q':'static firstSearcher warming in solrconfig.xml'}]"
+            + "}\n"
+            + "}";
+    runConfigCommand(writeHarness, "/config", payload);
+    testForResponseElement(
+        writeHarness,
+        testServerBaseUrl,
+        "/config",
+        cloudSolrClient,
+        asList("config", "listener[0]", "class"),
+        "solr.QuerySenderListener",
+        TIMEOUT_S);
+
+    payload =
+        "{\n"
+            + "'update-listener' : { 'event' : 'firstSearcher', 'class': 'org.apache.solr.core.QuerySenderListener', "
+            + "'name':'f7fb2d87bea44464af2401cf33f42b69', "
+            + "'queries':[{'q':'static firstSearcher warming in solrconfig.xml'}]"
+            + "}\n"
+            + "}";
+    runConfigCommand(writeHarness, "/config", payload);
+    testForResponseElement(
+        writeHarness,
+        testServerBaseUrl,
+        "/config",
+        cloudSolrClient,
+        asList("config", "listener[0]", "class"),
+        "org.apache.solr.core.QuerySenderListener",
+        TIMEOUT_S);
+
+    payload = "{\n" + "'delete-listener' : 'f7fb2d87bea44464af2401cf33f42b69'" + "}";
+    runConfigCommand(writeHarness, "/config", payload);
+    testForResponseElement(
+        writeHarness,
+        testServerBaseUrl,
+        "/config",
+        cloudSolrClient,
+        asList("config", "listener"),
         null,
         TIMEOUT_S);
 

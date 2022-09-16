@@ -127,13 +127,6 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
     }
   }
 
-  public static final String REPLICAS = "replicas";
-  public static final String RANGE = "range";
-  // FUTURE: do we want to record the leader as a slice property in the JSON (as opposed to isLeader
-  // as a replica property?)
-  public static final String LEADER = "leader";
-  public static final String PARENT = "parent";
-
   private final String name;
   private final DocRouter.Range range;
   // FUTURE: optional per-slice override of the collection replicationFactor
@@ -153,16 +146,16 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   @SuppressWarnings({"unchecked", "rawtypes"})
   public Slice(
       String name, Map<String, Replica> replicas, Map<String, Object> props, String collection) {
-    super(props == null ? new LinkedHashMap<String, Object>(2) : new LinkedHashMap<>(props));
+    super(props == null ? new LinkedHashMap<>(2) : new LinkedHashMap<>(props));
     this.name = name;
     this.collection = collection;
 
-    Object rangeObj = propMap.get(RANGE);
-    if (propMap.get(ZkStateReader.STATE_PROP) != null) {
-      this.state = State.getState((String) propMap.get(ZkStateReader.STATE_PROP));
+    Object rangeObj = propMap.get(SliceStateProps.RANGE);
+    if (propMap.get(SliceStateProps.STATE_PROP) != null) {
+      this.state = State.getState((String) propMap.get(SliceStateProps.STATE_PROP));
     } else {
       this.state = State.ACTIVE; // Default to ACTIVE
-      propMap.put(ZkStateReader.STATE_PROP, state.toString());
+      propMap.put(SliceStateProps.STATE_PROP, state.toString());
     }
     DocRouter.Range tmpRange = null;
     if (rangeObj instanceof DocRouter.Range) {
@@ -177,8 +170,8 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
      * debugging. this isn't an error condition for custom sharding. if (range == null) {
      * System.out.println("###### NO RANGE for " + name + " props=" + props); }
      */
-    if (propMap.containsKey(PARENT) && propMap.get(PARENT) != null)
-      this.parent = (String) propMap.get(PARENT);
+    if (propMap.containsKey(SliceStateProps.PARENT) && propMap.get(SliceStateProps.PARENT) != null)
+      this.parent = (String) propMap.get(SliceStateProps.PARENT);
     else this.parent = null;
 
     replicationFactor = null; // future
@@ -188,8 +181,9 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
     this.replicas =
         replicas != null
             ? replicas
-            : makeReplicas(collection, name, (Map<String, Object>) propMap.get(REPLICAS));
-    propMap.put(REPLICAS, this.replicas);
+            : makeReplicas(
+                collection, name, (Map<String, Object>) propMap.get(SliceStateProps.REPLICAS));
+    propMap.put(SliceStateProps.REPLICAS, this.replicas);
 
     Map<String, Object> rules = (Map<String, Object>) propMap.get("routingRules");
     if (rules != null) {
@@ -309,5 +303,18 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   @Override
   public void write(JSONWriter jsonWriter) {
     jsonWriter.write(propMap);
+  }
+
+  /** JSON properties related to a slice's state. */
+  public interface SliceStateProps {
+
+    String STATE_PROP = "state";
+    String REPLICAS = "replicas";
+    String RANGE = "range";
+    // FUTURE: do we want to record the leader as a slice property in the JSON (as opposed to
+    // isLeader
+    // as a replica property?)
+    String LEADER = "leader";
+    String PARENT = "parent";
   }
 }

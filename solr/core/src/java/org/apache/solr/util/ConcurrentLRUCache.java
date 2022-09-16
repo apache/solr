@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-// import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
@@ -158,7 +157,7 @@ public class ConcurrentLRUCache<K, V> implements Cache<K, V>, Accountable {
     this(
         size,
         lowerWatermark,
-        (int) Math.floor((lowerWatermark + size) / 2),
+        (int) Math.floor((lowerWatermark + size) / 2.0),
         (int) Math.ceil(0.75 * size),
         false,
         false,
@@ -847,7 +846,7 @@ public class ConcurrentLRUCache<K, V> implements Cache<K, V>, Accountable {
             6
                 * (RamUsageEstimator.NUM_BYTES_ARRAY_HEADER
                     + RamUsageEstimator.primitiveSizes.get(long.class)
-                    + 2
+                    + 2L
                         * (RamUsageEstimator.NUM_BYTES_OBJECT_REF
                             + RamUsageEstimator.primitiveSizes.get(long.class)))
             +

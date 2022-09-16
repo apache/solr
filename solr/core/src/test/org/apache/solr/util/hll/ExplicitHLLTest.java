@@ -16,7 +16,7 @@
  */
 package org.apache.solr.util.hll;
 
-import static com.carrotsearch.randomizedtesting.RandomizedTest.*;
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomLong;
 
 import com.carrotsearch.hppc.LongHashSet;
 import java.util.HashSet;
@@ -157,7 +157,7 @@ public class ExplicitHLLTest extends SolrTestCase {
   @Test
   public void randomValuesTest() {
     final int explicitThreshold = 4096;
-    final HashSet<Long> canonical = new HashSet<Long>();
+    final HashSet<Long> canonical = new HashSet<>();
     final HLL hll = newHLL(explicitThreshold);
 
     for (int i = 0; i < explicitThreshold; i++) {

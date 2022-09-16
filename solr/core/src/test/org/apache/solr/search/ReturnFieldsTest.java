@@ -31,7 +31,8 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.response.transform.*;
+import org.apache.solr.response.transform.DocTransformers;
+import org.apache.solr.response.transform.ScoreAugmenter;
 import org.apache.solr.schema.IndexSchema;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -439,7 +440,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
       assertEquals(debug, 5, docOut.size());
       assertEquals(
           debug,
-          new HashSet<String>(Arrays.asList("id", "subword", "uniq", "foo_2_s1", "store")),
+          new HashSet<>(Arrays.asList("id", "subword", "uniq", "foo_2_s1", "store")),
           docOut.getFieldNames());
       assertTrue(debug, docOut.get("id") instanceof StringField);
       assertTrue(debug, docOut.get("store") instanceof StringField);

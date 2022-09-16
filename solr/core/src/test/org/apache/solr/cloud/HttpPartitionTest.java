@@ -32,7 +32,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
@@ -70,7 +70,7 @@ import org.slf4j.LoggerFactory;
  * Simulates HTTP partitions between a leader and replica but the replica does not lose its
  * ZooKeeper connection.
  */
-@Slow
+@LuceneTestCase.Nightly // there are recovery commands that take a while to time out
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
 
@@ -522,7 +522,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
         }
       }
     }
-    List<Replica> replicas = new ArrayList<Replica>();
+    List<Replica> replicas = new ArrayList<>();
     replicas.addAll(activeReplicas.values());
     return replicas;
   }
@@ -538,7 +538,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     Replica leader =
         ZkStateReader.from(cloudClient).getLeaderRetry(testCollectionName, "shard1", 10000);
     HttpSolrClient leaderSolr = getHttpSolrClient(leader, testCollectionName);
-    List<HttpSolrClient> replicas = new ArrayList<HttpSolrClient>(notLeaders.size());
+    List<HttpSolrClient> replicas = new ArrayList<>(notLeaders.size());
 
     for (Replica r : notLeaders) {
       replicas.add(getHttpSolrClient(r, testCollectionName));

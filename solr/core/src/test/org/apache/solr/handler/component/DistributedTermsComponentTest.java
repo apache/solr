@@ -186,7 +186,7 @@ public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase
       // SOLR-9243 doesn't support max/min count
       for (int i = 0; i < q.length; i += 2) {
         if (q[i].equals("terms.sort") && q[i + 1].equals("index") || rarely()) {
-          List<Object> params = new ArrayList<Object>(Arrays.asList(q));
+          List<Object> params = new ArrayList<>(Arrays.asList(q));
           if (usually()) {
             params.add("terms.mincount");
             params.add(random().nextInt(4) - 1);
