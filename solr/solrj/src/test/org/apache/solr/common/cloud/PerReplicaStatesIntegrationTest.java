@@ -17,6 +17,13 @@
 
 package org.apache.solr.common.cloud;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
+import static org.apache.solr.common.params.CollectionAdminParams.PER_REPLICA_STATE;
+
+import java.lang.invoke.MethodHandles;
+import java.util.Collections;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -28,14 +35,6 @@ import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.invoke.MethodHandles;
-import java.util.Collections;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.common.params.CollectionAdminParams.PER_REPLICA_STATE;
 
 /** This test would be faster if we simulated the zk state instead. */
 @LogLevel(
@@ -256,46 +255,47 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
     String NONPRS_COLL = "non_prs_test_coll1";
     String PRS_COLL = "prs_test_coll2";
     MiniSolrCloudCluster cluster =
-            configureCluster(3)
-                    .withDistributedClusterStateUpdates(false, false)
-                    .addConfig(
-                            "conf",
-                            getFile("solrj")
-                                    .toPath()
-                                    .resolve("solr")
-                                    .resolve("configsets")
-                                    .resolve("streaming")
-                                    .resolve("conf"))
-                    .withJettyConfig(jetty -> jetty.enableV2(true))
-                    .configure();
+        configureCluster(3)
+            .withDistributedClusterStateUpdates(false, false)
+            .addConfig(
+                "conf",
+                getFile("solrj")
+                    .toPath()
+                    .resolve("solr")
+                    .resolve("configsets")
+                    .resolve("streaming")
+                    .resolve("conf"))
+            .withJettyConfig(jetty -> jetty.enableV2(true))
+            .configure();
     try {
       Stat stat = null;
       CollectionAdminRequest.createCollection(NONPRS_COLL, "conf", 10, 1)
-              .process(cluster.getSolrClient());
+          .process(cluster.getSolrClient());
       stat = cluster.getZkClient().exists(DocCollection.getCollectionPath(NONPRS_COLL), null, true);
       log.info("");
-      //the actual number can vary depending on batching
+      // the actual number can vary depending on batching
       assertTrue(stat.getVersion() >= 2);
       assertEquals(0, stat.getCversion());
 
       CollectionAdminRequest.createCollection(PRS_COLL, "conf", 10, 1)
-              .setPerReplicaState(Boolean.TRUE)
-              .process(cluster.getSolrClient());
+          .setPerReplicaState(Boolean.TRUE)
+          .process(cluster.getSolrClient());
       stat = cluster.getZkClient().exists(DocCollection.getCollectionPath(PRS_COLL), null, true);
       // 0 from CreateCollectionCmd.create() and
       // +1 each for each replica added CreateCollectionCmd.setData()
       assertEquals(10, stat.getVersion());
-      //For each replica:
+      // For each replica:
       // +1 for ZkController#preRegister, in ZkController#publish, direct write PRS to down
       // +2 for runLeaderProcess, flip the replica to leader
       // +2 for ZkController#register, in ZkController#publish, direct write PRS to active
-      // Hence 5 * 10 = 70. Take note that +1 for ADD, and +2 for all the UPDATE (remove the old PRS and add new PRS entry)
+      // Hence 5 * 10 = 70. Take note that +1 for ADD, and +2 for all the UPDATE (remove the old PRS
+      // and add new PRS entry)
       assertEquals(50, stat.getCversion());
       for (JettySolrRunner j : cluster.getJettySolrRunners()) {
         j.stop();
         j.start(true);
         stat = cluster.getZkClient().exists(DocCollection.getCollectionPath(PRS_COLL), null, true);
-        //ensure restart does not update the state.json
+        // ensure restart does not update the state.json
         assertEquals(10, stat.getVersion());
       }
     } finally {

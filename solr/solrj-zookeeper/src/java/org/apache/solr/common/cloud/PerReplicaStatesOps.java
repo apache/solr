@@ -70,7 +70,7 @@ public class PerReplicaStatesOps {
     try {
       zkClient.multi(ops, true);
     } catch (KeeperException e) {
-      log.error("multi op exception : " + e.getMessage() + zkClient.getChildren(znode, null, true));
+      log.error("Multi-op exception: {}", zkClient.getChildren(znode, null, true));
       throw e;
     }
   }
