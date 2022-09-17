@@ -257,6 +257,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
     String PRS_COLL = "prs_test_coll2";
     MiniSolrCloudCluster cluster =
             configureCluster(3)
+                    .withDistributedClusterStateUpdates(false, false)
                     .addConfig(
                             "conf",
                             getFile("solrj")
@@ -271,7 +272,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       Stat stat = null;
       CollectionAdminRequest.createCollection(NONPRS_COLL, "conf", 10, 1)
               .process(cluster.getSolrClient());
-      stat = cluster.getZkClient().exists(ZkStateReader.getCollectionPath(NONPRS_COLL), null, true);
+      stat = cluster.getZkClient().exists(DocCollection.getCollectionPath(NONPRS_COLL), null, true);
       log.info("");
       //the actual number can vary depending on batching
       assertTrue(stat.getVersion() >= 2);
@@ -281,21 +282,21 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
               .setPerReplicaState(Boolean.TRUE)
               .process(cluster.getSolrClient());
       stat = cluster.getZkClient().exists(DocCollection.getCollectionPath(PRS_COLL), null, true);
-      //1 time from CreateCollectionCmd after all replicaPositions are processed, 10 times from DOWN state for each replica
-      assertEquals(11, stat.getVersion());
+      // 0 from CreateCollectionCmd.create() and
+      // +1 each for each replica added CreateCollectionCmd.setData()
+      assertEquals(10, stat.getVersion());
       //For each replica:
       // +1 for ZkController#preRegister, in ZkController#publish, direct write PRS to down
-      // +2 for Overseer handling on "operation=state", ZkWriteCommand calls PerReplicaStatesOps#touchChildren
       // +2 for runLeaderProcess, flip the replica to leader
       // +2 for ZkController#register, in ZkController#publish, direct write PRS to active
-      // Hence 7 * 10 = 70. Take note that +1 for ADD, and +2 for all the UPDATE (remove the old PRS and add new PRS entry)
-      assertEquals(70, stat.getCversion());
+      // Hence 5 * 10 = 70. Take note that +1 for ADD, and +2 for all the UPDATE (remove the old PRS and add new PRS entry)
+      assertEquals(50, stat.getCversion());
       for (JettySolrRunner j : cluster.getJettySolrRunners()) {
         j.stop();
         j.start(true);
         stat = cluster.getZkClient().exists(DocCollection.getCollectionPath(PRS_COLL), null, true);
         //ensure restart does not update the state.json
-        assertEquals(11, stat.getVersion());
+        assertEquals(10, stat.getVersion());
       }
     } finally {
       cluster.shutdown();
