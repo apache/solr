@@ -63,7 +63,6 @@ except:
 import scriptutil
 from consolemenu import ConsoleMenu
 from consolemenu.items import FunctionItem, SubmenuItem, ExitItem
-from consolemenu.screen import Screen
 from scriptutil import BranchType, Version, download, run
 
 # Solr-to-Java version mapping
@@ -676,7 +675,7 @@ class TodoGroup(SecretYamlObject):
 
     def get_submenu(self):
         menu = ConsoleMenu(title=self.title, subtitle=self.get_subtitle, prologue_text=self.get_description(),
-                           screen=MyScreen())
+                           clear_screen=False)
         menu.exit_item = CustomExitItem("Return")
         for todo in self.get_todos():
             if todo.applies(state.release_type):
@@ -1255,11 +1254,6 @@ def pause(fun=None):
     input("\nPress ENTER to continue...")
 
 
-class MyScreen(Screen):
-    def clear(self):
-        return
-
-
 class CustomExitItem(ExitItem):
     def show(self, index):
         return super(CustomExitItem, self).show(index)
@@ -1274,6 +1268,13 @@ def main():
     global templates
 
     print("Solr releaseWizard v%s" % getScriptVersion())
+
+    try:
+      ConsoleMenu(clear_screen=True)
+    except Exception as e:
+      sys.exit("You need to install 'consolemenu' package version 0.7.1 for the Wizard to function. Please run 'pip "
+               "install -r requirements.txt'")
+
     c = parse_config()
 
     if c.dry:
@@ -1334,13 +1335,13 @@ def main():
                             prologue_text="Welcome to the release wizard. From here you can manage the process including creating new RCs. "
                                           "All changes are persisted, so you can exit any time and continue later. Make sure to read the Help section.",
                             epilogue_text="® 2022 The Solr project. Licensed under the Apache License 2.0\nScript version v%s)" % getScriptVersion(),
-                            screen=MyScreen())
+                            clear_screen=False)
 
     todo_menu = ConsoleMenu(title=get_releasing_text,
                             subtitle=get_subtitle,
                             prologue_text=None,
                             epilogue_text=None,
-                            screen=MyScreen())
+                            clear_screen=False)
     todo_menu.exit_item = CustomExitItem("Return")
 
     for todo_group in state.todo_groups:
