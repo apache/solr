@@ -24,7 +24,10 @@ Bug Fixes
 
 Other Changes
 ---------------------
-(No changes)
+
+* SOLR-15730: SolrJ modules like SolrJ-Zookeeper are now opt-in from a Maven POM perspective.
+  Previously, the modules would come transitively.
+  (David Smiley)
 
 ==================  9.1.0 ==================
 
