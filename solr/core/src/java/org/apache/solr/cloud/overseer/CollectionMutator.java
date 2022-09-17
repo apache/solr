@@ -33,9 +33,9 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
+import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
-import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.Slice.SliceStateProps;
@@ -129,10 +129,9 @@ public class CollectionMutator {
           continue;
         }
         PerReplicaStates prs = PerReplicaStatesFetcher.fetch(coll.getZNode(), zkClient, null);
-        replicaOps = enable?
-                PerReplicaStatesOps.enable(coll, prs):
-                PerReplicaStatesOps.disable(prs);
-        if(!enable) {
+        replicaOps =
+            enable ? PerReplicaStatesOps.enable(coll, prs) : PerReplicaStatesOps.disable(prs);
+        if (!enable) {
           coll = updateReplicas(coll, prs);
         }
       }
@@ -172,37 +171,44 @@ public class CollectionMutator {
     }
 
     DocCollection collection =
-            new DocCollection(
-                    coll.getName(), coll.getSlicesMap(), props, coll.getRouter(), coll.getZNodeVersion());
-    if (replicaOps == null){
+        new DocCollection(
+            coll.getName(), coll.getSlicesMap(), props, coll.getRouter(), coll.getZNodeVersion());
+    if (replicaOps == null) {
       return new ZkWriteCommand(coll.getName(), collection);
     } else {
       return new ZkWriteCommand(coll.getName(), collection, replicaOps, true);
     }
   }
-  public static DocCollection updateReplicas(DocCollection coll, PerReplicaStates prs) {
-    //we are disabling PRS. Update the replica states
-    Map<String, Slice> modifiedSlices = new LinkedHashMap<>();
-    coll.forEachReplica((s, replica) -> {
-      PerReplicaStates.State prsState = prs.states.get(replica.getName());
-      if (prsState != null) {
-        if (prsState.state != replica.getState()) {
-          Slice slice = modifiedSlices.getOrDefault(replica.getShard(), coll.getSlice(replica.getShard()));
-          replica = ReplicaMutator.setState(replica, prsState.state.toString());
-          modifiedSlices.put(replica.getShard(), slice.copyWith(replica));
-        }
-        if (prsState.isLeader != replica.isLeader()) {
-          Slice slice = modifiedSlices.getOrDefault(replica.getShard(), coll.getSlice(replica.getShard()));
-          replica = prsState.isLeader ?
-                  ReplicaMutator.setLeader(replica) :
-                  ReplicaMutator.unsetLeader(replica);
-          modifiedSlices.put(replica.getShard(), slice.copyWith(replica));
-        }
-      }
-    });
 
-    if(!modifiedSlices.isEmpty()) {
-      Map<String,Slice> slices = new LinkedHashMap<>(coll.getSlicesMap());
+  public static DocCollection updateReplicas(DocCollection coll, PerReplicaStates prs) {
+    // we are disabling PRS. Update the replica states
+    Map<String, Slice> modifiedSlices = new LinkedHashMap<>();
+    coll.forEachReplica(
+        (s, replica) -> {
+          PerReplicaStates.State prsState = prs.states.get(replica.getName());
+          if (prsState != null) {
+            if (prsState.state != replica.getState()) {
+              Slice slice =
+                  modifiedSlices.getOrDefault(
+                      replica.getShard(), coll.getSlice(replica.getShard()));
+              replica = ReplicaMutator.setState(replica, prsState.state.toString());
+              modifiedSlices.put(replica.getShard(), slice.copyWith(replica));
+            }
+            if (prsState.isLeader != replica.isLeader()) {
+              Slice slice =
+                  modifiedSlices.getOrDefault(
+                      replica.getShard(), coll.getSlice(replica.getShard()));
+              replica =
+                  prsState.isLeader
+                      ? ReplicaMutator.setLeader(replica)
+                      : ReplicaMutator.unsetLeader(replica);
+              modifiedSlices.put(replica.getShard(), slice.copyWith(replica));
+            }
+          }
+        });
+
+    if (!modifiedSlices.isEmpty()) {
+      Map<String, Slice> slices = new LinkedHashMap<>(coll.getSlicesMap());
       slices.putAll(modifiedSlices);
       return coll.copyWithSlices(slices);
     }

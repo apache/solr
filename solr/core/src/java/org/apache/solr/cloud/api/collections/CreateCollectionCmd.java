@@ -183,9 +183,13 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         // updates.
 
         // TODO: Consider doing this for all collections, not just the PRS collections.
-        ZkWriteCommand command = new ClusterStateMutator(ccc.getSolrCloudManager()).createCollection(clusterState, message);
+        ZkWriteCommand command =
+            new ClusterStateMutator(ccc.getSolrCloudManager())
+                .createCollection(clusterState, message);
         byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, command.collection));
-        ccc.getZkStateReader().getZkClient().create(collectionPath, data, CreateMode.PERSISTENT, true);
+        ccc.getZkStateReader()
+            .getZkClient()
+            .create(collectionPath, data, CreateMode.PERSISTENT, true);
         clusterState = clusterState.copyWith(collectionName, command.collection);
         newColl = command.collection;
         // When cluster state updates are handled by Overseer, ask it to load that collection it

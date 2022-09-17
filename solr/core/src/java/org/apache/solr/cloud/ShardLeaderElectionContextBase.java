@@ -239,9 +239,17 @@ class ShardLeaderElectionContextBase extends ElectionContext {
         }
       }
       if (coll != null && coll.isPerReplicaState()) {
-        PerReplicaStates prs = PerReplicaStatesFetcher.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
-        PerReplicaStatesOps.flipLeader(zkStateReader.getClusterState().getCollection(collection).getSlice(shardId).getReplicaNames(), id, prs)
-                .persist(coll.getZNode(), zkStateReader.getZkClient());
+        PerReplicaStates prs =
+            PerReplicaStatesFetcher.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
+        PerReplicaStatesOps.flipLeader(
+                zkStateReader
+                    .getClusterState()
+                    .getCollection(collection)
+                    .getSlice(shardId)
+                    .getReplicaNames(),
+                id,
+                prs)
+            .persist(coll.getZNode(), zkStateReader.getZkClient());
       }
     }
   }

@@ -188,7 +188,7 @@ public class SliceMutator {
     newSliceProps.put(SliceStateProps.REPLICAS, newReplicas);
     slice = new Slice(slice.getName(), newReplicas, slice.getProperties(), collectionName);
     return new ZkWriteCommand(
-            collectionName, CollectionMutator.updateSlice(collectionName, coll, slice));
+        collectionName, CollectionMutator.updateSlice(collectionName, coll, slice));
   }
 
   public ZkWriteCommand updateShardState(ClusterState clusterState, ZkNodeProps message) {
