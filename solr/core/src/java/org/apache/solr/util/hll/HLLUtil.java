@@ -91,11 +91,10 @@ final class HLLUtil {
    *     expected. This must be greater than zero.
    * @return a register size in bits (i.e. <code>log2(log2(n))</code>)
    */
-  @SuppressWarnings("LongDoubleConversion")
   public static int registerBitSize(final long expectedUniqueElements) {
     return Math.max(
         HLL.MINIMUM_REGWIDTH_PARAM,
-        (int) Math.ceil(NumberUtil.log2(NumberUtil.log2(expectedUniqueElements))));
+        (int) Math.ceil(NumberUtil.log2(NumberUtil.log2((double) expectedUniqueElements))));
   }
 
   // ========================================================================

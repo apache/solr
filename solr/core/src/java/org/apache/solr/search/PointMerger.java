@@ -237,7 +237,7 @@ public class PointMerger {
           count[pos] = 1;
         } else {
           // a new value we don't have room for
-          throw breakException;
+          throw breakException();
         }
       }
     }
@@ -299,7 +299,7 @@ public class PointMerger {
           count[pos] = 1;
         } else {
           // a new value we don't have room for
-          throw breakException;
+          throw breakException();
         }
       }
     }
@@ -361,7 +361,7 @@ public class PointMerger {
           count[pos] = 1;
         } else {
           // a new value we don't have room for
-          throw breakException;
+          throw breakException();
         }
       }
     }
@@ -423,7 +423,7 @@ public class PointMerger {
           count[pos] = 1;
         } else {
           // a new value we don't have room for
-          throw breakException;
+          throw breakException();
         }
       }
     }
@@ -453,6 +453,7 @@ public class PointMerger {
     }
   }
 
-  @SuppressWarnings("StaticAssignmentOfThrowable")
-  static BreakException breakException = new BreakException();
+  static BreakException breakException() {
+    return new BreakException();
+  }
 }

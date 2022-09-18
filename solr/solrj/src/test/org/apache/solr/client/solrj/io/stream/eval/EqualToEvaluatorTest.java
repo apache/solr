@@ -40,7 +40,7 @@ public class EqualToEvaluatorTest extends SolrTestCase {
         new StreamFactory()
             .withFunctionName("eq", EqualToEvaluator.class)
             .withFunctionName("val", RawValueEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @Test

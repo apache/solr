@@ -156,7 +156,7 @@ public class TestFieldLengthFeature extends TestRerankBase {
 
   @Test
   public void testParamsToMap() throws Exception {
-    final LinkedHashMap<String, Object> params = new LinkedHashMap<String, Object>();
+    final LinkedHashMap<String, Object> params = new LinkedHashMap<>();
     params.put("field", "field" + random().nextInt(10));
     doTestParamsToMap(FieldLengthFeature.class.getName(), params);
   }

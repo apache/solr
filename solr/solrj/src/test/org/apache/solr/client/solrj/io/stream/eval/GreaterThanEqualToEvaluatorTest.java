@@ -36,7 +36,7 @@ public class GreaterThanEqualToEvaluatorTest extends SolrTestCase {
     super();
 
     factory = new StreamFactory().withFunctionName("gte", GreaterThanEqualToEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @Test

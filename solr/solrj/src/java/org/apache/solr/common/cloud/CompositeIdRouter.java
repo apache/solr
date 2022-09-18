@@ -213,7 +213,6 @@ public class CompositeIdRouter extends HashBasedRouter {
   }
 
   @Override
-  @SuppressWarnings("NarrowCalculation")
   public List<Range> partitionRange(int partitions, Range range) {
     int min = range.min;
     int max = range.max;
@@ -236,7 +235,7 @@ public class CompositeIdRouter extends HashBasedRouter {
     // With default bits==16, one would need to create more than 4000 shards before this
     // becomes false by default.
     int mask = 0x0000ffff;
-    boolean round = rangeStep >= (1 << bits) * 16;
+    boolean round = rangeStep >= (1L << bits) * 16;
 
     while (end < max) {
       targetEnd = targetStart + rangeStep;

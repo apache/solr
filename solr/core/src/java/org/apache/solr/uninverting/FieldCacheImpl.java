@@ -894,13 +894,12 @@ public class FieldCacheImpl implements FieldCache {
       }
     }
 
-    @SuppressWarnings("NarrowCalculation")
     @Override
     public long ramBytesUsed() {
       return bytes.ramBytesUsed()
           + termOrdToBytesOffset.ramBytesUsed()
           + docToTermOrd.ramBytesUsed()
-          + 3 * RamUsageEstimator.NUM_BYTES_OBJECT_REF
+          + 3L * RamUsageEstimator.NUM_BYTES_OBJECT_REF
           + Integer.BYTES;
     }
 
@@ -1108,12 +1107,11 @@ public class FieldCacheImpl implements FieldCache {
       };
     }
 
-    @SuppressWarnings("NarrowCalculation")
     @Override
     public long ramBytesUsed() {
       return bytes.ramBytesUsed()
           + docToOffset.ramBytesUsed()
-          + 2 * RamUsageEstimator.NUM_BYTES_OBJECT_REF;
+          + 2L * RamUsageEstimator.NUM_BYTES_OBJECT_REF;
     }
 
     @Override

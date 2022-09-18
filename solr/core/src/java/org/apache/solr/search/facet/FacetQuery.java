@@ -38,7 +38,7 @@ public class FacetQuery extends FacetRequest {
 
   @Override
   public Map<String, Object> getFacetDescription() {
-    Map<String, Object> descr = new HashMap<String, Object>();
+    Map<String, Object> descr = new HashMap<>();
     descr.put("query", q);
     return descr;
   }

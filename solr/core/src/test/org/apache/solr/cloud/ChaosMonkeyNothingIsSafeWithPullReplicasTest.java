@@ -354,7 +354,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
   }
 
   private Set<String> getAddFails(List<StoppableIndexingThread> threads) {
-    Set<String> addFails = new HashSet<String>();
+    Set<String> addFails = new HashSet<>();
     for (StoppableIndexingThread thread : threads) {
       addFails.addAll(thread.getAddFails());
       //      addFails.addAll(thread.getAddFailsMinRf());
@@ -363,7 +363,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
   }
 
   private Set<String> getDeleteFails(List<StoppableIndexingThread> threads) {
-    Set<String> deleteFails = new HashSet<String>();
+    Set<String> deleteFails = new HashSet<>();
     for (StoppableIndexingThread thread : threads) {
       deleteFails.addAll(thread.getDeleteFails());
       //      deleteFails.addAll(thread.getDeleteFailsMinRf());

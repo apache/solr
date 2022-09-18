@@ -65,7 +65,7 @@ public class SolrCmdDistributor implements Closeable {
   private int retryPause = 500;
 
   private final List<Error> allErrors = new ArrayList<>();
-  private final List<Error> errors = Collections.synchronizedList(new ArrayList<Error>());
+  private final List<Error> errors = Collections.synchronizedList(new ArrayList<>());
 
   private final CompletionService<Object> completionService;
   private final Set<Future<Object>> pending = new HashSet<>();

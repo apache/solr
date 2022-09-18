@@ -81,7 +81,7 @@ public class SolrClientCache implements Serializable {
     if (solrClients.containsKey(zkHost)) {
       client = (CloudSolrClient) solrClients.get(zkHost);
     } else {
-      final List<String> hosts = new ArrayList<String>();
+      final List<String> hosts = new ArrayList<>();
       hosts.add(zkHost);
       var builder =
           new CloudLegacySolrClient.Builder(hosts, Optional.empty())

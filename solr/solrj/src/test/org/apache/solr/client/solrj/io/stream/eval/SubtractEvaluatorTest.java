@@ -36,7 +36,7 @@ public class SubtractEvaluatorTest extends SolrTestCase {
     super();
 
     factory = new StreamFactory().withFunctionName("sub", SubtractEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @Test
