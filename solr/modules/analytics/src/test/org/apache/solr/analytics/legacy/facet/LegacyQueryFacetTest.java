@@ -42,20 +42,20 @@ public class LegacyQueryFacetTest extends LegacyAbstractAnalyticsFacetTest {
     h.update("<delete><query>*:*</query></delete>");
     // INT
     ArrayList<ArrayList<Integer>> int1TestStart = new ArrayList<>();
-    int1TestStart.add(new ArrayList<Integer>());
+    int1TestStart.add(new ArrayList<>());
     ArrayList<ArrayList<Integer>> int2TestStart = new ArrayList<>();
-    int2TestStart.add(new ArrayList<Integer>());
+    int2TestStart.add(new ArrayList<>());
 
     // LONG
     ArrayList<ArrayList<Long>> longTestStart = new ArrayList<>();
-    longTestStart.add(new ArrayList<Long>());
-    longTestStart.add(new ArrayList<Long>());
+    longTestStart.add(new ArrayList<>());
+    longTestStart.add(new ArrayList<>());
 
     // FLOAT
     ArrayList<ArrayList<Float>> floatTestStart = new ArrayList<>();
-    floatTestStart.add(new ArrayList<Float>());
-    floatTestStart.add(new ArrayList<Float>());
-    floatTestStart.add(new ArrayList<Float>());
+    floatTestStart.add(new ArrayList<>());
+    floatTestStart.add(new ArrayList<>());
+    floatTestStart.add(new ArrayList<>());
 
     for (int j = 0; j < NUM_LOOPS; ++j) {
       int i = j % INT;

@@ -49,6 +49,8 @@ New Features
 
 * SOLR-15007: Add ability to roll up core level metrics to be node level metrics for a RequestHandler via configuration. (Justin Sweeney, David Smiley)
 
+* SOLR-15715: Dedicated query coordinator nodes in the solr cluster (noble, Hitesh Khamesra, Ishan Chattopadhyaya)
+
 Improvements
 ---------------------
 * SOLR-15986: CommitUpdateCommand and SplitIndexCommand can write user commit metadata. (Bruno Roustant)
@@ -71,11 +73,18 @@ Improvements
 
 * SOLR-16323: The Docker image now uses the Solr User ID instead of the User Name, helps with non-root checks (Houston Putman)
 
+* SOLR-16340: Provide a cluster_id label for all metrics exposed by the Solr Prometheus Exporter, making it possible to
+  filter Grafana board by cluster (janhoy, Houston Putman)
+
 * SOLR-16337: implement Zk metrics (noble)
 
 * SOLR-16353: Make SplitShardCmd#checkDiskSpace disableable through a system property. (Haythem Khiri)
 
 * SOLR-16362: Logs: Truncate field values in logs if a doc fails to index. (Nazerke Seidan, David Smiley)
+
+* SOLR-16230: JWT nested roles support (Marco Descher, janhoy)
+
+* SOLR-16361: mod() is now accurate for all integers, floats, doubles and longs upto 2^52 (Dan Rosher via Eric Pugh)
 
 Optimizations
 ---------------------
@@ -134,6 +143,14 @@ Bug Fixes
 
 * SOLR-16399: ExportWriter fails with max values for fields (Kevin Risden)
 
+* SOLR-16357: CaffeineCache ramBytes incorrect accounting on updates and deletes (Alex Deparvu)
+
+* SOLR-16343: Handle MDC snapshot being null (Dee Moore via Kevin Risden)
+
+* SOLR-7883: MoreLikeThisHandler to support facets (Mikhail Khludnev)
+
+* SOLR-16406: Take SOLR_MODULES, configured by solr.in.sh, into account. (Thomas Wöckinger via janhoy)
+
 Other Changes
 ---------------------
 * SOLR-16351: Upgrade Carrot2 to 4.4.3, upgrade randomizedtesting to 2.8.0. (Dawid Weiss)
@@ -179,7 +196,11 @@ Other Changes
 
 * SOLR-16296: XmlConfigFile and QueryElevationComponent now use SafeXMLParsing. (Haythem Khiri)
 
+* SOLR-16369: Avoid XPath in parsing elevate.xml (Haythem Khiri)
+
 * SOLR-16402: Bump google-cloud-bom to 0.178.0 (Kevin Risden)
+
+* SOLR-16141: Upgrade Apache Tika to 1.28.4 (janhoy)
 
 Build
 ---------------------

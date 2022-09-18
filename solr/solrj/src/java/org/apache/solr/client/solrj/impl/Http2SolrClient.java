@@ -48,6 +48,8 @@ import java.util.concurrent.Phaser;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
+import org.apache.http.entity.ContentType;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -755,13 +757,17 @@ public class Http2SolrClient extends SolrClient {
         return rsp;
       }
 
-      String procCt = processor.getContentType();
-      if (procCt != null) {
-        String procMimeType =
-            MimeTypes.getContentTypeWithoutCharset(procCt).trim().toLowerCase(Locale.ROOT);
-        if (!procMimeType.equals(mimeType)) {
+      final Collection<String> processorSupportedContentTypes = processor.getContentTypes();
+      if (processorSupportedContentTypes != null && !processorSupportedContentTypes.isEmpty()) {
+        final Collection<String> processorMimeTypes =
+            processorSupportedContentTypes.stream()
+                .map(ct -> ContentType.parse(ct).getMimeType().trim().toLowerCase(Locale.ROOT))
+                .collect(Collectors.toSet());
+        if (!processorMimeTypes.contains(mimeType)) {
           // unexpected mime type
-          String prefix = "Expected mime type " + procMimeType + " but got " + mimeType + ". ";
+          final String allSupportedTypes = String.join(", ", processorMimeTypes);
+          String prefix =
+              "Expected mime type in [" + allSupportedTypes + "] but got " + mimeType + ". ";
           String exceptionEncoding = encoding != null ? encoding : FALLBACK_CHARSET.name();
           try {
             ByteArrayOutputStream body = new ByteArrayOutputStream();

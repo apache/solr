@@ -759,7 +759,7 @@ public class Overseer implements SolrCloseable {
     ccThread.start();
 
     systemCollectionCompatCheck(
-        new BiConsumer<String, Object>() {
+        new BiConsumer<>() {
           boolean firstPair = true;
 
           @Override

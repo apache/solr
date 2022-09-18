@@ -316,7 +316,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
     if (streamContext.getSolrClientCache() != null) {
       cloudSolrClient = streamContext.getSolrClientCache().getCloudSolrClient(zkHost);
     } else {
-      final List<String> hosts = new ArrayList<String>();
+      final List<String> hosts = new ArrayList<>();
       hosts.add(zkHost);
       cloudSolrClient = new CloudLegacySolrClient.Builder(hosts, Optional.empty()).build();
       this.cloudSolrClient.connect();

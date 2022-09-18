@@ -1280,7 +1280,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       this.errors = errors;
 
       // create a merged copy of the metadata from all wrapped exceptions
-      NamedList<String> metadata = new NamedList<String>();
+      NamedList<String> metadata = new NamedList<>();
       for (Error error : errors) {
         if (error.e instanceof SolrException) {
           SolrException e = (SolrException) error.e;

@@ -66,7 +66,7 @@ public class PivotFacet extends FacetBase {
   public void addRefinement(int shardNumber, PivotFacetValue value) {
 
     if (!queuedRefinements.containsKey(shardNumber)) {
-      queuedRefinements.put(shardNumber, new ArrayList<PivotFacetValue>());
+      queuedRefinements.put(shardNumber, new ArrayList<>());
     }
 
     queuedRefinements.get(shardNumber).add(value);

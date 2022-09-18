@@ -39,7 +39,7 @@ import javax.servlet.descriptor.JspConfigDescriptor;
 
 /** A concrete implementation of {@linkplain ServletContext} which support only attributes. */
 class AttributeOnlyServletContext implements ServletContext {
-  private Map<String, Object> attributes = new HashMap<String, Object>();
+  private Map<String, Object> attributes = new HashMap<>();
 
   @Override
   public void setSessionTrackingModes(Set<SessionTrackingMode> sessionTrackingModes) {}

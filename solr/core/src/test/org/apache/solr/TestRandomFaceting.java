@@ -358,7 +358,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
         e -> {
           List<Object> facetSortedByIndex = (List<Object>) e.getValue();
           Map<Integer, List<Object>> stratas =
-              new HashMap<Integer, List<Object>>() {
+              new HashMap<>() {
                 @Override // poor man multimap, I won't do that anymore, I swear.
                 public List<Object> get(Object key) {
                   if (!containsKey(key)) {

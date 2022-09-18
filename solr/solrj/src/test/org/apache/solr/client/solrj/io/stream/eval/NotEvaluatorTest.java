@@ -35,7 +35,7 @@ public class NotEvaluatorTest extends SolrTestCase {
     super();
 
     factory = new StreamFactory().withFunctionName("not", NotEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @Test

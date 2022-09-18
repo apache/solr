@@ -33,9 +33,9 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
  */
 public class LeftOuterJoinStream extends BiJoinStream implements Expressible {
 
-  private LinkedList<Tuple> joinedTuples = new LinkedList<Tuple>();
-  private LinkedList<Tuple> leftTupleGroup = new LinkedList<Tuple>();
-  private LinkedList<Tuple> rightTupleGroup = new LinkedList<Tuple>();
+  private LinkedList<Tuple> joinedTuples = new LinkedList<>();
+  private LinkedList<Tuple> leftTupleGroup = new LinkedList<>();
+  private LinkedList<Tuple> rightTupleGroup = new LinkedList<>();
 
   public LeftOuterJoinStream(TupleStream leftStream, TupleStream rightStream, StreamEqualitor eq)
       throws IOException {

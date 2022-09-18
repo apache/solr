@@ -94,7 +94,7 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
   }
 
   @Before
-  private void initManagedSchemaCore() throws Exception {
+  public void initManagedSchemaCore() throws Exception {
     File tmpSolrHome = createTempDir().toFile();
     File tmpConfDir = new File(tmpSolrHome, confDir);
     File testHomeConfDir = new File(TEST_HOME(), confDir);
@@ -117,7 +117,7 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
   }
 
   @After
-  private void afterTest() {
+  public void afterTest() {
     clearIndex();
     deleteCore();
     System.clearProperty("managed.schema.mutable");

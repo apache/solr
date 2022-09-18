@@ -54,7 +54,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
   }
 
   @Before
-  private void addUncommittedDoc99() {
+  public void addUncommittedDoc99() {
     // uncommitted doc in transaction log at start of every test
     // Even if an RTG causes ulog to re-open realtime searcher, next test method
     // will get another copy of doc 99 in the ulog

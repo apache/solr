@@ -35,7 +35,7 @@ public class ReverseEvaluatorTest extends SolrTestCase {
   public ReverseEvaluatorTest() {
     super();
     factory = new StreamFactory().withFunctionName("reverse", ReverseEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @Test

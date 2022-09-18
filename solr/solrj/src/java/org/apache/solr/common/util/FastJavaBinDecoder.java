@@ -611,7 +611,7 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
 
       @Override
       public Object readObject(StreamCodec codec, EntryImpl entry) {
-        return Integer.valueOf((int) entry.numericVal);
+        return (int) entry.numericVal;
       }
     },
     _SLONG(SLONG, UPPER_3_BITS, DataEntry.Type.LONG) {
@@ -621,9 +621,8 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
       }
 
       @Override
-      @SuppressWarnings("UnnecessaryLongToIntConversion")
       public Object readObject(StreamCodec codec, EntryImpl entry) {
-        return Long.valueOf((int) entry.numericVal);
+        return entry.numericVal;
       }
     },
     _ARR(ARR, UPPER_3_BITS, DataEntry.Type.ENTRY_ITER) {

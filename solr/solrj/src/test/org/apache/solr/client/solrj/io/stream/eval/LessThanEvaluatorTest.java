@@ -36,7 +36,7 @@ public class LessThanEvaluatorTest extends SolrTestCase {
     super();
 
     factory = new StreamFactory().withFunctionName("lt", LessThanEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @Test
