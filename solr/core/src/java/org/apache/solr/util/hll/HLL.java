@@ -153,7 +153,6 @@ public class HLL implements Cloneable {
    * @param type the type in the promotion hierarchy which this instance should start at. This
    *     cannot be <code>null</code>.
    */
-  @SuppressWarnings("NarrowCalculation")
   public HLL(
       final int log2m,
       final int regwidth,
@@ -233,7 +232,7 @@ public class HLL implements Cloneable {
       // TODO improve this cutoff to include the cost overhead of Java
       //      members/objects
       final int largestPow2LessThanCutoff =
-          (int) NumberUtil.log2((this.m * this.regwidth) / this.shortWordLength);
+          (int) NumberUtil.log2((float) (this.m * this.regwidth) / this.shortWordLength);
       this.sparseThreshold = (1 << largestPow2LessThanCutoff);
     }
 

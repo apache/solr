@@ -70,9 +70,8 @@ public class ConstantLongValue extends ConstantValue implements CastingLongValue
   }
 
   @Override
-  @SuppressWarnings("LongDoubleConversion")
   public void streamDoubles(DoubleConsumer cons) {
-    cons.accept(value);
+    cons.accept((double) value);
   }
 
   @Override

@@ -122,7 +122,7 @@ public class SelectStream extends TupleStream implements Expressible {
 
     stream = factory.constructStream(streamExpressions.get(0));
 
-    selectedFields = new HashMap<String, String>();
+    selectedFields = new HashMap<>();
     selectedEvaluators = new LinkedHashMap<>();
     for (StreamExpressionParameter parameter : selectAsFieldsExpressions) {
       StreamExpressionValue selectField = (StreamExpressionValue) parameter;

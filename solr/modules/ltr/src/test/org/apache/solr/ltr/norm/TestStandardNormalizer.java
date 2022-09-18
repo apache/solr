@@ -45,12 +45,12 @@ public class TestStandardNormalizer {
 
   @Test
   public void testNormalizerNoParams() {
-    implTestStandard(new HashMap<String, Object>(), 0.0f, 1.0f);
+    implTestStandard(new HashMap<>(), 0.0f, 1.0f);
   }
 
   @Test
   public void testInvalidSTD() {
-    final Map<String, Object> params = new HashMap<String, Object>();
+    final Map<String, Object> params = new HashMap<>();
     params.put("std", "0f");
     final NormalizerException expectedException =
         new NormalizerException(
@@ -63,7 +63,7 @@ public class TestStandardNormalizer {
 
   @Test
   public void testInvalidSTD2() {
-    final Map<String, Object> params = new HashMap<String, Object>();
+    final Map<String, Object> params = new HashMap<>();
     params.put("std", "-1f");
     final NormalizerException expectedException =
         new NormalizerException(
@@ -77,7 +77,7 @@ public class TestStandardNormalizer {
 
   @Test
   public void testInvalidSTD3() {
-    final Map<String, Object> params = new HashMap<String, Object>();
+    final Map<String, Object> params = new HashMap<>();
     params.put("avg", "1f");
     params.put("std", "0f");
     final NormalizerException expectedException =
@@ -92,7 +92,7 @@ public class TestStandardNormalizer {
 
   @Test
   public void testNormalizer() {
-    Map<String, Object> params = new HashMap<String, Object>();
+    Map<String, Object> params = new HashMap<>();
     params.put("avg", "0f");
     params.put("std", "1f");
     final Normalizer identity = implTestStandard(params, 0f, 1f);
@@ -101,7 +101,7 @@ public class TestStandardNormalizer {
     assertEquals(value, identity.normalize(value), 0.0001);
     value = 150;
     assertEquals(value, identity.normalize(value), 0.0001);
-    params = new HashMap<String, Object>();
+    params = new HashMap<>();
     params.put("avg", "10f");
     params.put("std", "1.5f");
     final Normalizer norm =

@@ -35,7 +35,7 @@ public class EmpiricalDistributionEvaluatorTest extends SolrTestCase {
   public EmpiricalDistributionEvaluatorTest() {
     super();
     factory = new StreamFactory().withFunctionName("emp", EmpiricalDistributionEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @Test

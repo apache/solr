@@ -77,7 +77,7 @@ public class SuggesterResponse {
     Map<String, List<String>> suggestedTermsPerDictionary = new LinkedHashMap<>();
     for (Map.Entry<String, List<Suggestion>> entry : suggestionsPerDictionary.entrySet()) {
       List<Suggestion> suggestions = entry.getValue();
-      List<String> suggestionTerms = new LinkedList<String>();
+      List<String> suggestionTerms = new LinkedList<>();
       for (Suggestion s : suggestions) {
         suggestionTerms.add(s.getTerm());
       }

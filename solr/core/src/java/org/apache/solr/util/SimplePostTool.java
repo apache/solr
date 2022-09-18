@@ -572,14 +572,13 @@ public class SimplePostTool {
    *
    * @return number of files posted
    */
-  @SuppressWarnings("NarrowCalculation")
   int postFiles(File[] files, OutputStream out, String type) {
     int filesPosted = 0;
     for (File srcFile : files) {
       try {
         if (!srcFile.isFile() || srcFile.isHidden()) continue;
         postFile(srcFile, out, type);
-        Thread.sleep(delay * 1000);
+        Thread.sleep(delay * 1000L);
         filesPosted++;
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
@@ -659,7 +658,6 @@ public class SimplePostTool {
    * @param out output stream to write to
    * @return number of pages crawled on this level and below
    */
-  @SuppressWarnings("NarrowCalculation")
   protected int webCrawl(int level, OutputStream out) {
     int numPages = 0;
     LinkedHashSet<URI> stack = backlog.get(level);
@@ -687,9 +685,9 @@ public class SimplePostTool {
                   appendParam(
                       solrUrl.toString(),
                       "literal.id="
-                          + URLEncoder.encode(url.toString(), "UTF-8")
+                          + URLEncoder.encode(url.toString(), UTF_8)
                           + "&literal.url="
-                          + URLEncoder.encode(url.toString(), "UTF-8")));
+                          + URLEncoder.encode(url.toString(), UTF_8)));
           ByteBuffer content = result.content;
           boolean success =
               postData(
@@ -700,7 +698,7 @@ public class SimplePostTool {
                   postUrl);
           if (success) {
             info("POSTed web resource " + url + " (depth: " + level + ")");
-            Thread.sleep(delay * 1000);
+            Thread.sleep(delay * 1000L);
             numPages++;
             // Pull links from HTML pages only
             if (recursive > level && result.contentType.equals("text/html")) {

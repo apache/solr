@@ -35,7 +35,7 @@ public class NormalDistributionEvaluatorTest extends SolrTestCase {
   public NormalDistributionEvaluatorTest() {
     super();
     factory = new StreamFactory().withFunctionName("norm", NormalDistributionEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @Test

@@ -18,7 +18,6 @@
 package org.apache.solr.handler.api;
 
 import org.apache.solr.api.ApiBag;
-import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.api.AddReplicaAPI;
 import org.apache.solr.handler.admin.api.AddReplicaPropertyAPI;
@@ -38,11 +37,6 @@ import org.apache.solr.handler.admin.api.ReloadCollectionAPI;
 import org.apache.solr.handler.admin.api.SetCollectionPropertyAPI;
 import org.apache.solr.handler.admin.api.SplitShardAPI;
 import org.apache.solr.handler.admin.api.SyncShardAPI;
-import org.apache.solr.handler.configsets.CreateConfigSetAPI;
-import org.apache.solr.handler.configsets.DeleteConfigSetAPI;
-import org.apache.solr.handler.configsets.ListConfigSetsAPI;
-import org.apache.solr.handler.configsets.UploadConfigSetAPI;
-import org.apache.solr.handler.configsets.UploadConfigSetFileAPI;
 
 /**
  * Registers annotation-based V2 APIs with an {@link ApiBag}
@@ -78,13 +72,5 @@ public class ApiRegistrar {
     // really this is a replica API, but since there's only 1 API on the replica path, it's included
     // here for simplicity.
     apiBag.registerObject(new DeleteReplicaAPI(collectionsHandler));
-  }
-
-  public static void registerConfigsetApis(ApiBag apiBag, CoreContainer container) {
-    apiBag.registerObject(new CreateConfigSetAPI(container));
-    apiBag.registerObject(new DeleteConfigSetAPI(container));
-    apiBag.registerObject(new ListConfigSetsAPI(container));
-    apiBag.registerObject(new UploadConfigSetAPI(container));
-    apiBag.registerObject(new UploadConfigSetFileAPI(container));
   }
 }

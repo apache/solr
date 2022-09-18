@@ -74,7 +74,7 @@ public class TestCloudDeduplication extends SolrCloudTestCase {
   }
 
   @AfterClass
-  private static void closeClients() throws Exception {
+  public static void closeClients() throws Exception {
     try {
       IOUtils.close(NODE_CLIENTS);
     } finally {
