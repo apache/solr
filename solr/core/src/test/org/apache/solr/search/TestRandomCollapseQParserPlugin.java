@@ -43,7 +43,7 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
   public static List<String> ALL_SORT_FIELD_NAMES;
   public static List<String> ALL_COLLAPSE_FIELD_NAMES;
 
-  private static String[] NULL_POLICIES =
+  private static final String[] NULL_POLICIES =
       new String[] {
         CollapsingQParserPlugin.NullPolicy.IGNORE.getName(),
         CollapsingQParserPlugin.NullPolicy.COLLAPSE.getName(),
@@ -82,9 +82,9 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
 
   @AfterClass
   public static void cleanupStatics() {
-    deleteCore();
     SOLR = null;
-    ALL_SORT_FIELD_NAMES = ALL_COLLAPSE_FIELD_NAMES = null;
+    ALL_SORT_FIELD_NAMES = null;
+    ALL_COLLAPSE_FIELD_NAMES = null;
   }
 
   public void testEveryIsolatedSortFieldOnSingleGroup() throws Exception {
