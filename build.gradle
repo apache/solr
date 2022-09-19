@@ -20,14 +20,14 @@ import java.time.format.DateTimeFormatter
 
 plugins {
   id "base"
-  id "com.palantir.consistent-versions" version "2.8.0"
-  id "org.owasp.dependencycheck" version "6.5.3"
-  id 'ca.cutterslade.analyze' version "1.8.3"
+  id "com.palantir.consistent-versions" version "2.11.0"
+  id "org.owasp.dependencycheck" version "7.2.0"
+  id 'ca.cutterslade.analyze' version "1.9.0"
   id 'de.thetaphi.forbiddenapis' version '3.3' apply false
-  id "de.undercouch.download" version "4.0.2" apply false
+  id "de.undercouch.download" version "5.2.0" apply false
   id "net.ltgt.errorprone" version "2.0.2" apply false
-  id 'com.diffplug.spotless' version "6.3.0" apply false
-  id 'com.github.node-gradle.node' version '3.1.1' apply false
+  id 'com.diffplug.spotless' version "6.5.2" apply false
+  id 'com.github.node-gradle.node' version '3.4.0' apply false
 }
 
 apply from: file('gradle/globals.gradle')
@@ -108,7 +108,7 @@ configurations {
 
 dependencies {
   // Use a newer groovy that doesn't have illegal reflective accesses.
-  groovy "org.codehaus.groovy:groovy-all:3.0.9"
+  groovy "org.codehaus.groovy:groovy-all:3.0.12"
 }
 
 apply from: file('buildSrc/scriptDepVersions.gradle')

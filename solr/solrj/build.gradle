@@ -54,7 +54,6 @@ dependencies {
   testImplementation 'org.apache.zookeeper:zookeeper'
   permitTestUnusedDeclared 'org.apache.zookeeper:zookeeper'
 
-  testImplementation 'org.apache.lucene:lucene-analysis-common'
   testImplementation 'org.apache.lucene:lucene-core'
   testImplementation 'org.apache.lucene:lucene-test-framework'
 
