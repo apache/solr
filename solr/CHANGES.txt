@@ -127,6 +127,8 @@ Bug Fixes
 
 * SOLR-16406: Take SOLR_MODULES, configured by solr.in.sh, into account. (Thomas Wöckinger via janhoy)
 
+* SOLR-16344: PlacementPlugin throws NPE for PRS collections (noble)
+
 Other Changes
 ---------------------
 * SOLR-16351: Upgrade Carrot2 to 4.4.3, upgrade randomizedtesting to 2.8.0. (Dawid Weiss)
