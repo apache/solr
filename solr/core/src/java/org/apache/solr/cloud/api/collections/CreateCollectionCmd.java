@@ -45,12 +45,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.cloud.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.BadVersionException;
+import org.apache.solr.client.solrj.cloud.DelegatingCloudManager;
+import org.apache.solr.client.solrj.cloud.DelegatingClusterStateProvider;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.NotEmptyException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.VersionedData;
-import org.apache.solr.client.solrj.cloud.DelegatingCloudManager;
-import org.apache.solr.client.solrj.cloud.DelegatingClusterStateProvider;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
@@ -514,7 +514,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
     int numPullReplicas = message.getInt(PULL_REPLICAS, 0);
 
     int numSlices = shardNames.size();
-    cloudManager =  wrapCloudManager(clusterState, cloudManager);
+    cloudManager = wrapCloudManager(clusterState, cloudManager);
 
     // we need to look at every node and see how many cores it serves
     // add our new cores to existing nodes serving the least number of cores
@@ -558,23 +558,25 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
     return replicaPositions;
   }
   // the cloud manager should reflect the latest internal cluster state
-  private static SolrCloudManager wrapCloudManager(ClusterState clusterState, SolrCloudManager solrCloudManager) {
-    final ClusterStateProvider csp = new DelegatingClusterStateProvider(solrCloudManager.getClusterStateProvider()) {
-      @Override
-      public ClusterState.CollectionRef getState(String collection) {
-        return clusterState.getCollectionRef(collection);
-      }
+  private static SolrCloudManager wrapCloudManager(
+      ClusterState clusterState, SolrCloudManager solrCloudManager) {
+    final ClusterStateProvider csp =
+        new DelegatingClusterStateProvider(solrCloudManager.getClusterStateProvider()) {
+          @Override
+          public ClusterState.CollectionRef getState(String collection) {
+            return clusterState.getCollectionRef(collection);
+          }
 
-      @Override
-      public ClusterState getClusterState() {
-        return clusterState;
-      }
+          @Override
+          public ClusterState getClusterState() {
+            return clusterState;
+          }
 
-      @Override
-      public DocCollection getCollection(String name) throws IOException {
-        return clusterState.getCollection(name);
-      }
-    };
+          @Override
+          public DocCollection getCollection(String name) throws IOException {
+            return clusterState.getCollection(name);
+          }
+        };
 
     return new DelegatingCloudManager(solrCloudManager) {
       @Override
