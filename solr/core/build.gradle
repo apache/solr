@@ -54,6 +54,7 @@ dependencies {
   }
 
   compileOnly 'io.swagger.core.v3:swagger-core'
+  testCompileOnly 'io.swagger.core.v3:swagger-core'
 
   // Export these dependencies so that they're imported transitively by
   // other modules.
