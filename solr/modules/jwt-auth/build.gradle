@@ -19,7 +19,17 @@ apply plugin: 'java-library'
 
 description = 'JWT / OpenID Connect / OAuth2 authentication plugin'
 
+// This is a hacky way to use permitTestUnusedDeclared with bom declared dependencies.
+// See https://github.com/gradle-dependency-analyze/gradle-dependency-analyze/issues/108
+configurations {
+  constraintsOnly
+  permitTestUnusedDeclared.extendsFrom constraintsOnly
+  implementation.extendsFrom constraintsOnly
+}
+
 dependencies {
+  constraintsOnly(platform("com.fasterxml.jackson:jackson-bom"))
+
   implementation project(':solr:core')
   implementation project(':solr:solrj')
 
@@ -48,8 +58,7 @@ dependencies {
   })
   // required by mock-oauth2-server
   testImplementation 'com.fasterxml.jackson.core:jackson-databind'
-  // Not working currently https://github.com/gradle-dependency-analyze/gradle-dependency-analyze/issues/108
-  //permitTestUnusedDeclared 'com.fasterxml.jackson.core:jackson-databind'
+  permitTestUnusedDeclared 'com.fasterxml.jackson.core:jackson-databind'
 
   testImplementation 'com.nimbusds:nimbus-jose-jwt'
   testImplementation 'com.squareup.okhttp3:mockwebserver'

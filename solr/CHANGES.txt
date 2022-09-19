@@ -84,6 +84,8 @@ Improvements
 
 * SOLR-16230: JWT nested roles support (Marco Descher, janhoy)
 
+* SOLR-16361: mod() is now accurate for all integers, floats, doubles and longs upto 2^52 (Dan Rosher via Eric Pugh)
+
 Optimizations
 ---------------------
 * SOLR-16120: Optimise hl.fl expansion. (Christine Poerschke, David Smiley, Mike Drob)
@@ -146,6 +148,10 @@ Bug Fixes
 * SOLR-16343: Handle MDC snapshot being null (Dee Moore via Kevin Risden)
 
 * SOLR-7883: MoreLikeThisHandler to support facets (Mikhail Khludnev)
+
+* SOLR-16406: Take SOLR_MODULES, configured by solr.in.sh, into account. (Thomas Wöckinger via janhoy)
+
+* SOLR-16344: PlacementPlugin throws NPE for PRS collections (noble)
 
 Other Changes
 ---------------------
