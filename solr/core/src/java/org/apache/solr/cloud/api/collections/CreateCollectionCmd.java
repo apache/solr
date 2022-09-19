@@ -339,7 +339,6 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
           zkStateReader.getZkClient().setData(collectionPath, data, true);
           clusterState = clusterState.copyWith(collectionName, command.collection);
           newColl = command.collection;
-          zkStateReader.forceUpdateCollection(collectionName);
         } else {
           if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
             scr.record(DistributedClusterStateUpdater.MutatingCommand.SliceAddReplica, props);
