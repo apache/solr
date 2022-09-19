@@ -55,6 +55,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
       "solrconfig-concurrentmergescheduler.xml";
   private static final String solrConfigFileNameSortingMergePolicyFactory =
       "solrconfig-sortingmergepolicyfactory.xml";
+  private static final String solrConfigFileNameIndexSort = "solrconfig-indexSort.xml";
   private static final String schemaFileName = "schema.xml";
 
   private static boolean compoundMergePolicySort = false;
@@ -115,6 +116,8 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     assertEquals("ms.maxMergeCount", 987, ms.getMaxMergeCount());
     assertEquals("ms.maxThreadCount", 42, ms.getMaxThreadCount());
     assertEquals("ms.isAutoIOThrottle", true, ms.getAutoIOThrottle());
+
+    assertNull("indexSort", iwc.getIndexSort());
   }
 
   @Test
@@ -136,6 +139,8 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     assertEquals("ms.maxMergeCount", 987, ms.getMaxMergeCount());
     assertEquals("ms.maxThreadCount", 42, ms.getMaxThreadCount());
     assertEquals("ms.isAutoIOThrottle", false, ms.getAutoIOThrottle());
+
+    assertNull("indexSort", iwc.getIndexSort());
   }
 
   public void testSortingMPSolrIndexConfigCreation() throws Exception {
@@ -166,6 +171,25 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     }
     final Sort actual = sortingMergePolicy.getSort();
     assertEquals("SortingMergePolicy.getSort", expected, actual);
+    assertEquals("indexSort", expected, iwc.getIndexSort());
+  }
+
+  public void testIndexSortSolrIndexConfigCreation() throws Exception {
+    final String expectedFieldName = "timestamp_i_dvo";
+    final SortField.Type expectedFieldType = SortField.Type.INT;
+    final boolean expectedFieldSortDescending = true;
+
+    SolrConfig solrConfig = new SolrConfig(instanceDir, solrConfigFileNameIndexSort);
+    SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null);
+    assertNotNull(solrIndexConfig);
+    IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema(schemaFileName, solrConfig);
+
+    h.getCore().setLatestSchema(indexSchema);
+    IndexWriterConfig iwc = solrIndexConfig.toIndexWriterConfig(h.getCore());
+
+    final Sort expected =
+        new Sort(new SortField(expectedFieldName, expectedFieldType, expectedFieldSortDescending));
+    assertEquals("indexSort", expected, iwc.getIndexSort());
   }
 
   public void testMergedSegmentWarmerIndexConfigCreation() throws Exception {
@@ -181,6 +205,8 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     h.getCore().setLatestSchema(indexSchema);
     IndexWriterConfig iwc = solrIndexConfig.toIndexWriterConfig(h.getCore());
     assertEquals(SimpleMergedSegmentWarmer.class, iwc.getMergedSegmentWarmer().getClass());
+
+    assertNull("indexSort", iwc.getIndexSort());
   }
 
   public void testToMap() throws Exception {
