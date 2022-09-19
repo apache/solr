@@ -35,7 +35,7 @@ public class OrEvaluatorTest extends SolrTestCase {
     super();
 
     factory = new StreamFactory().withFunctionName("or", OrEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @Test

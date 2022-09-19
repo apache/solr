@@ -55,7 +55,7 @@ public class FeatureStore {
   }
 
   public List<Feature> getFeatures() {
-    final List<Feature> storeValues = new ArrayList<Feature>(store.values());
+    final List<Feature> storeValues = new ArrayList<>(store.values());
     return Collections.unmodifiableList(storeValues);
   }
 

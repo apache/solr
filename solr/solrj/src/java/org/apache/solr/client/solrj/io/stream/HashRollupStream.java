@@ -191,7 +191,7 @@ public class HashRollupStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l = new ArrayList<TupleStream>();
+    List<TupleStream> l = new ArrayList<>();
     l.add(tupleStream);
     return l;
   }

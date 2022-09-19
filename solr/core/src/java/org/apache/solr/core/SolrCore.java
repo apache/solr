@@ -176,6 +176,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.glassfish.jersey.server.ApplicationHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -184,7 +185,7 @@ import org.slf4j.LoggerFactory;
  * to make it work. When multi-core support was added to Solr way back in version 1.3, this class
  * was required so that the core functionality could be re-used multiple times.
  */
-public final class SolrCore implements SolrInfoBean, Closeable {
+public class SolrCore implements SolrInfoBean, Closeable {
 
   public static final String version = "1.0";
 
@@ -222,6 +223,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private final Date startTime = new Date();
   private final long startNanoTime = System.nanoTime();
   private final RequestHandlers reqHandlers;
+  private final ApplicationHandler jerseyAppHandler;
   private final PluginBag<SearchComponent> searchComponents =
       new PluginBag<>(SearchComponent.class, this);
   private final PluginBag<UpdateRequestProcessorFactory> updateProcessors =
@@ -1006,8 +1008,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     }
   }
 
-  public <T extends Object> T createInitInstance(
-      PluginInfo info, Class<T> cast, String msg, String defClassName) {
+  public <T> T createInitInstance(PluginInfo info, Class<T> cast, String msg, String defClassName) {
     if (info == null) return null;
     T o =
         createInstance(
@@ -1019,7 +1020,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     return initPlugin(info, o);
   }
 
-  public static <T extends Object> T initPlugin(PluginInfo info, T o) {
+  public static <T> T initPlugin(PluginInfo info, T o) {
     if (o instanceof PluginInfoInitialized) {
       ((PluginInfoInitialized) o).init(info);
     } else if (o instanceof NamedListInitializedPlugin) {
@@ -1133,6 +1134,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       updateProcessorChains = loadUpdateProcessorChains();
       reqHandlers = new RequestHandlers(this);
       reqHandlers.initHandlersFromConfig(solrConfig);
+      jerseyAppHandler =
+          new ApplicationHandler(reqHandlers.getRequestHandlers().getJerseyEndpoints());
 
       // cause the executor to stall so firstSearcher events won't fire
       // until after inform() has been called for all components.
@@ -1953,6 +1956,10 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   /** Returns an unmodifiable Map containing the registered handlers */
   public PluginBag<SolrRequestHandler> getRequestHandlers() {
     return reqHandlers.handlers;
+  }
+
+  public ApplicationHandler getJerseyApplicationHandler() {
+    return jerseyAppHandler;
   }
 
   /**

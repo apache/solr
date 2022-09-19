@@ -236,15 +236,16 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
         .cluster
         .getSolrClient()
         .request(CollectionAdminRequest.createCollection("test", 1, 1));
-    expectThrows(
-        SolrException.class,
-        () -> {
-          testHarness
-              .get()
-              .cluster
-              .getSolrClient()
-              .query("test", new MapSolrParams(Collections.singletonMap("q", "a(bc")));
-        });
+    Exception e =
+        expectThrows(
+            SolrException.class,
+            () -> {
+              testHarness
+                  .get()
+                  .cluster
+                  .getSolrClient()
+                  .query("test", new MapSolrParams(Collections.singletonMap("q", "a(bc")));
+            });
     final List<AuditEvent> events = testHarness.get().receiver.waitForAuditEvents(3);
     assertAuditEvent(events.get(0), COMPLETED, "/admin/cores");
     assertAuditEvent(events.get(1), COMPLETED, "/admin/collections");

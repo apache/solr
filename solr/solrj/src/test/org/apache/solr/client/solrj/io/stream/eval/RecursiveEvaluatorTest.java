@@ -49,7 +49,7 @@ public class RecursiveEvaluatorTest extends SolrTestCase {
             .withFunctionName("sub", SubtractEvaluator.class)
             .withFunctionName("mult", MultiplyEvaluator.class)
             .withFunctionName("if", IfThenElseEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @Test

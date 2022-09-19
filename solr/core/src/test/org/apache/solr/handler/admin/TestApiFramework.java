@@ -155,17 +155,6 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     methodNames.add(rsp.getValues()._getStr("/spec[1]/methods[0]", null));
     assertTrue(methodNames.contains("POST"));
     assertTrue(methodNames.contains("GET"));
-
-    rsp = invoke(coreHandlers, "/", "/collections/hello/_introspect", mockCC);
-    assertConditions(
-        rsp.getValues().asMap(2),
-        Map.of(
-            "/availableSubPaths", NOT_NULL,
-            "availableSubPaths /collections/hello/config/{component}", NOT_NULL,
-            "availableSubPaths /collections/hello/schema", NOT_NULL,
-            "availableSubPaths /collections/hello/shards", NOT_NULL,
-            "availableSubPaths /collections/hello/shards/{shard}", NOT_NULL,
-            "availableSubPaths /collections/hello/shards/{shard}/{replica}", NOT_NULL));
   }
 
   public void testPayload() {

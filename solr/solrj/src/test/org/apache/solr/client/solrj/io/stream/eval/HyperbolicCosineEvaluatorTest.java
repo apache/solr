@@ -36,7 +36,7 @@ public class HyperbolicCosineEvaluatorTest extends SolrTestCase {
     super();
 
     factory = new StreamFactory().withFunctionName("cosh", HyperbolicCosineEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   private void test(Double value) throws IOException {

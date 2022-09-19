@@ -35,7 +35,7 @@ public class ExclusiveOrEvaluatorTest extends SolrTestCase {
     super();
 
     factory = new StreamFactory().withFunctionName("eor", ExclusiveOrEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @Test

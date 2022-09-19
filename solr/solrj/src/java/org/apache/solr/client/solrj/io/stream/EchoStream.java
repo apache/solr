@@ -80,7 +80,7 @@ public class EchoStream extends TupleStream implements Expressible {
   public void setStreamContext(StreamContext context) {}
 
   public List<TupleStream> children() {
-    List<TupleStream> l = new ArrayList<TupleStream>();
+    List<TupleStream> l = new ArrayList<>();
     return l;
   }
 

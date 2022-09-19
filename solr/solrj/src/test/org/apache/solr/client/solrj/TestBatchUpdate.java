@@ -104,7 +104,7 @@ public class TestBatchUpdate extends SolrJettyTestBase {
     final int[] counter = new int[1];
     counter[0] = 0;
     client.add(
-        new Iterator<SolrInputDocument>() {
+        new Iterator<>() {
 
           @Override
           public boolean hasNext() {
