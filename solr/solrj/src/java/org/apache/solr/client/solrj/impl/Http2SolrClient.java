@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import static org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteExecutionException;
+import static org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
 import java.io.ByteArrayOutputStream;
@@ -47,6 +49,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.V2RequestSupport;
@@ -109,7 +112,7 @@ import org.slf4j.LoggerFactory;
  *
  * @lucene.experimental
  */
-public class Http2SolrClient extends BaseHttpSolrClient {
+public class Http2SolrClient extends SolrClient {
   public static final String REQ_PRINCIPAL_KEY = "solr-req-principal";
 
   private static volatile SSLConfig defaultSSLConfig;
@@ -849,7 +852,6 @@ public class Http2SolrClient extends BaseHttpSolrClient {
     httpClient.setFollowRedirects(follow);
   }
 
-  @Override
   public String getBaseURL() {
     return serverBaseUrl;
   }

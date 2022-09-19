@@ -17,7 +17,6 @@
 
 package org.apache.solr.prometheus.exporter;
 
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.CloudZkSolrClientBuilder;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
@@ -31,7 +30,7 @@ public class SolrClientFactory {
     this.settings = settings;
   }
 
-  public BaseHttpSolrClient createStandaloneSolrClient(String solrHost) {
+  public Http2SolrClient createStandaloneSolrClient(String solrHost) {
     Http2SolrClient http2SolrClient =
         new Http2SolrClient.Builder(solrHost)
             .idleTimeout(settings.getHttpReadTimeout())

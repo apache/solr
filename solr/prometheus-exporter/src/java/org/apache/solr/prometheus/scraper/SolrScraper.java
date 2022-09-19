@@ -36,8 +36,8 @@ import net.thisptr.jackson.jq.JsonQuery;
 import net.thisptr.jackson.jq.exception.JsonQueryException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.prometheus.collector.MetricSamples;
@@ -153,9 +153,9 @@ public abstract class SolrScraper implements Closeable {
           }
 
           /* Labels due to client */
-          if (client instanceof BaseHttpSolrClient) {
+          if (client instanceof Http2SolrClient) {
             labelNames.add("base_url");
-            labelValues.add(((BaseHttpSolrClient) client).getBaseURL());
+            labelValues.add(((Http2SolrClient) client).getBaseURL());
           }
 
           if (client instanceof CloudSolrClient) {
