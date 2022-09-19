@@ -160,6 +160,5 @@ public class CloudHttp2SolrClientBuilderTest extends SolrTestCase {
     }
     // it's external, should be NOT closed when closing CloudSolrClient
     verify(http2Client, never()).close();
-    http2Client.close();
   }
 }
