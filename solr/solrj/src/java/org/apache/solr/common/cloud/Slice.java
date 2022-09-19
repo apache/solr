@@ -146,7 +146,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   @SuppressWarnings({"unchecked", "rawtypes"})
   public Slice(
       String name, Map<String, Replica> replicas, Map<String, Object> props, String collection) {
-    super(props == null ? new LinkedHashMap<String, Object>(2) : new LinkedHashMap<>(props));
+    super(props == null ? new LinkedHashMap<>(2) : new LinkedHashMap<>(props));
     this.name = name;
     this.collection = collection;
 

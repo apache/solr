@@ -43,8 +43,11 @@ public class SolrCloudScraper extends SolrScraper {
   private Cache<String, Http2SolrClient> hostClientCache = Caffeine.newBuilder().build();
 
   public SolrCloudScraper(
-      CloudSolrClient solrClient, ExecutorService executor, SolrClientFactory solrClientFactory) {
-    super(executor);
+      CloudSolrClient solrClient,
+      ExecutorService executor,
+      SolrClientFactory solrClientFactory,
+      String clusterId) {
+    super(executor, clusterId);
     this.solrClient = solrClient;
     this.solrClientFactory = solrClientFactory;
   }

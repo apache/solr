@@ -54,7 +54,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.V2ApiMappingTest;
-import org.apache.solr.handler.api.ApiRegistrar;
 import org.junit.Test;
 
 /**
@@ -70,7 +69,14 @@ public class V2ShardsAPIMappingTest extends V2ApiMappingTest<CollectionsHandler>
 
   @Override
   public void populateApiBag() {
-    ApiRegistrar.registerShardApis(apiBag, getRequestHandler());
+    final CollectionsHandler collectionsHandler = getRequestHandler();
+    apiBag.registerObject(new SplitShardAPI(collectionsHandler));
+    apiBag.registerObject(new CreateShardAPI(collectionsHandler));
+    apiBag.registerObject(new AddReplicaAPI(collectionsHandler));
+    apiBag.registerObject(new DeleteShardAPI(collectionsHandler));
+    apiBag.registerObject(new SyncShardAPI(collectionsHandler));
+    apiBag.registerObject(new ForceLeaderAPI(collectionsHandler));
+    apiBag.registerObject(new DeleteReplicaAPI(collectionsHandler));
   }
 
   @Override

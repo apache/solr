@@ -171,7 +171,7 @@ public class IgnoreLargeDocumentProcessorFactoryTest extends SolrTestCase {
       childDocument.addField(entry.getKey(), entry.getValue());
     }
     List<SolrInputDocument> childList =
-        new ArrayList<SolrInputDocument>() {
+        new ArrayList<>() {
           {
             add(childDocument);
             add(new SolrInputDocument(childDocument));

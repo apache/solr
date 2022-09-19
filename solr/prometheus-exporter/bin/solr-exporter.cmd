@@ -82,6 +82,7 @@ IF NOT "%SCRAPE_INTERVAL%"=="" set EXPORTER_ARGS=%EXPORTER_ARGS% -s %SCRAPE_INTE
 IF NOT "%NUM_THREADS%"=="" set EXPORTER_ARGS=%EXPORTER_ARGS% -n %NUM_THREADS%
 IF NOT "%ZK_HOST%"=="" set EXPORTER_ARGS=%EXPORTER_ARGS% -z %ZK_HOST%
 IF NOT "%SOLR_URL%"=="" set EXPORTER_ARGS=%EXPORTER_ARGS% -b %SOLR_URL%
+IF NOT "%CLUSTER_ID%"=="" set EXPORTER_ARGS=%EXPORTER_ARGS% -i "%CLUSTER_ID%"
 goto endInit
 
 @REM Reaching here means variables are defined and arguments have been captured

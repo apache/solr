@@ -123,7 +123,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
   }
 
   @Before
-  private void deleteAllDocs() throws Exception {
+  public void deleteAllDocs() throws Exception {
     assertEquals(
         0, update(params("commit", "true")).deleteByQuery("*:*").process(CLOUD_CLIENT).getStatus());
     assertEquals("index should be empty", 0L, countDocs(CLOUD_CLIENT));

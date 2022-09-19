@@ -174,13 +174,13 @@ public abstract class RequestHandlerBase
                 "NO_OP",
                 "NO_OP"));
 
-    private final Meter numErrors;
-    private final Meter numServerErrors;
-    private final Meter numClientErrors;
-    private final Meter numTimeouts;
-    private final Counter requests;
-    private final Timer requestTimes;
-    private final Counter totalTime;
+    public final Meter numErrors;
+    public final Meter numServerErrors;
+    public final Meter numClientErrors;
+    public final Meter numTimeouts;
+    public final Counter requests;
+    public final Timer requestTimes;
+    public final Counter totalTime;
 
     public HandlerMetrics(SolrMetricsContext solrMetricsContext, String... metricPath) {
       numErrors = solrMetricsContext.meter("errors", metricPath);
@@ -232,54 +232,52 @@ public abstract class RequestHandlerBase
         }
       }
     } catch (Exception e) {
-      if (req.getCore() != null) {
-        boolean isTragic = req.getCoreContainer().checkTragicException(req.getCore());
-        if (isTragic) {
-          if (e instanceof SolrException) {
-            // Tragic exceptions should always throw a server error
-            assert ((SolrException) e).code() == 500;
-          } else {
-            // wrap it in a solr exception
-            e = new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
-          }
-        }
-      }
-      boolean incrementErrors = true;
-      boolean isServerError = true;
-      if (e instanceof SolrException) {
-        SolrException se = (SolrException) e;
-        if (se.code() == SolrException.ErrorCode.CONFLICT.code) {
-          incrementErrors = false;
-        } else if (se.code() >= 400 && se.code() < 500) {
-          isServerError = false;
-        }
-      } else {
-        if (e instanceof SyntaxError) {
-          isServerError = false;
-          e = new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
-        }
-      }
-
+      e = normalizeReceivedException(req, e);
+      processErrorMetricsOnException(e, metrics);
       rsp.setException(e);
-
-      if (incrementErrors) {
-        SolrException.log(log, e);
-
-        metrics.numErrors.mark();
-        if (isServerError) {
-          metrics.numServerErrors.mark();
-        } else {
-          metrics.numClientErrors.mark();
-        }
-      }
     } finally {
       long elapsed = timer.stop();
       metrics.totalTime.inc(elapsed);
     }
   }
 
+  public static void processErrorMetricsOnException(Exception e, HandlerMetrics metrics) {
+    boolean isClientError = false;
+    if (e instanceof SolrException) {
+      final SolrException se = (SolrException) e;
+      if (se.code() == SolrException.ErrorCode.CONFLICT.code) {
+        return;
+      } else if (se.code() >= 400 && se.code() < 500) {
+        isClientError = true;
+      }
+    }
+
+    SolrException.log(log, e);
+    metrics.numErrors.mark();
+    if (isClientError) {
+      metrics.numClientErrors.mark();
+    } else {
+      metrics.numServerErrors.mark();
+    }
+  }
+
+  public static Exception normalizeReceivedException(SolrQueryRequest req, Exception e) {
+    if (req.getCore() != null) {
+      assert req.getCoreContainer() != null;
+      if (req.getCoreContainer().checkTragicException(req.getCore())) {
+        return SolrException.wrapLuceneTragicExceptionIfNecessary(e);
+      }
+    }
+
+    if (e instanceof SyntaxError) {
+      return new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+    }
+
+    return e;
+  }
+
   /** The metrics to be used for this request. */
-  protected HandlerMetrics getMetricsForThisRequest(SolrQueryRequest req) {
+  public HandlerMetrics getMetricsForThisRequest(SolrQueryRequest req) {
     return this.metrics;
   }
 

@@ -35,7 +35,7 @@ public class CoalesceEvaluatorTest extends SolrTestCase {
     super();
 
     factory = new StreamFactory().withFunctionName("coalesce", CoalesceEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
   /*
   @Test(expected = IOException.class)

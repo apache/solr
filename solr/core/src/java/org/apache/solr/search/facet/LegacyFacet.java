@@ -121,8 +121,8 @@ public class LegacyFacet {
 
   protected void addQueryFacet(String q) {
     parseParams(FacetParams.FACET_QUERY, q);
-    Map<String, Object> cmd = new HashMap<String, Object>(2);
-    Map<String, Object> type = new HashMap<String, Object>(1);
+    Map<String, Object> cmd = new HashMap<>(2);
+    Map<String, Object> type = new HashMap<>(1);
     type.put("query", cmd);
     cmd.put("q", q);
     addSub(key, type);
@@ -131,8 +131,8 @@ public class LegacyFacet {
 
   protected void addRangeFacet(String field) {
     parseParams(FacetParams.FACET_RANGE, field);
-    Map<String, Object> cmd = new HashMap<String, Object>(5);
-    Map<String, Object> type = new HashMap<String, Object>(1);
+    Map<String, Object> cmd = new HashMap<>(5);
+    Map<String, Object> type = new HashMap<>(1);
     type.put("range", cmd);
 
     String f = key;

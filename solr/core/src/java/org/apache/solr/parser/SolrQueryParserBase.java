@@ -627,7 +627,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   protected Query newSynonymQuery(TermAndBoost[] terms) {
     switch (synonymQueryStyle) {
       case PICK_BEST:
-        List<Query> currPosnClauses = new ArrayList<Query>(terms.length);
+        List<Query> currPosnClauses = new ArrayList<>(terms.length);
         for (TermAndBoost term : terms) {
           currPosnClauses.add(newTermQuery(term.term, term.boost));
         }

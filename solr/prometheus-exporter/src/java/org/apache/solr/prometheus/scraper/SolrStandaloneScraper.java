@@ -37,8 +37,9 @@ public class SolrStandaloneScraper extends SolrScraper {
 
   private final Http2SolrClient solrClient;
 
-  public SolrStandaloneScraper(Http2SolrClient solrClient, ExecutorService executor) {
-    super(executor);
+  public SolrStandaloneScraper(
+      Http2SolrClient solrClient, ExecutorService executor, String clusterId) {
+    super(executor, clusterId);
     this.solrClient = solrClient;
   }
 
