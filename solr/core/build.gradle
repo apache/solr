@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+plugins {
+  id 'io.swagger.core.v3.swagger-gradle-plugin' version '2.2.2'
+}
+
 apply plugin: 'java-library'
 
 description = 'Apache Solr Core'
@@ -31,6 +35,12 @@ configurations {
   }
 }
 
+resolve {
+  classpath = sourceSets.main.runtimeClasspath
+  outputDir = file("build/generated/openapi")
+  prettyPrint = true
+}
+
 dependencies {
   // Spotbugs Annotations are only needed for old findbugs
   // annotation usage like in Zookeeper during compilation time.
@@ -42,6 +52,8 @@ dependencies {
   configurations.jarValidation {
     exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
   }
+
+  compileOnly 'io.swagger.core.v3:swagger-core'
 
   // Export these dependencies so that they're imported transitively by
   // other modules.
