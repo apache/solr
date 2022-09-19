@@ -129,6 +129,8 @@ Bug Fixes
 
 * SOLR-16344: PlacementPlugin throws NPE for PRS collections (noble)
 
+* SOLR-16417: NPE if facet query hits timeout or exception (Kevin Risden)
+
 Other Changes
 ---------------------
 * SOLR-16351: Upgrade Carrot2 to 4.4.3, upgrade randomizedtesting to 2.8.0. (Dawid Weiss)
