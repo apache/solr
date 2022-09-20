@@ -141,6 +141,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.api.Api;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
@@ -197,6 +199,24 @@ import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.admin.api.AddReplicaAPI;
+import org.apache.solr.handler.admin.api.AddReplicaPropertyAPI;
+import org.apache.solr.handler.admin.api.BalanceShardUniqueAPI;
+import org.apache.solr.handler.admin.api.CollectionStatusAPI;
+import org.apache.solr.handler.admin.api.CreateShardAPI;
+import org.apache.solr.handler.admin.api.DeleteCollectionAPI;
+import org.apache.solr.handler.admin.api.DeleteReplicaAPI;
+import org.apache.solr.handler.admin.api.DeleteReplicaPropertyAPI;
+import org.apache.solr.handler.admin.api.DeleteShardAPI;
+import org.apache.solr.handler.admin.api.ForceLeaderAPI;
+import org.apache.solr.handler.admin.api.MigrateDocsAPI;
+import org.apache.solr.handler.admin.api.ModifyCollectionAPI;
+import org.apache.solr.handler.admin.api.MoveReplicaAPI;
+import org.apache.solr.handler.admin.api.RebalanceLeadersAPI;
+import org.apache.solr.handler.admin.api.ReloadCollectionAPI;
+import org.apache.solr.handler.admin.api.SetCollectionPropertyAPI;
+import org.apache.solr.handler.admin.api.SplitShardAPI;
+import org.apache.solr.handler.admin.api.SyncShardAPI;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -2046,6 +2066,30 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   @Override
   public Boolean registerV2() {
     return Boolean.TRUE;
+  }
+
+  @Override
+  public Collection<Api> getApis() {
+    final List<Api> apis = new ArrayList<>();
+    apis.addAll(AnnotatedApi.getApis(new SplitShardAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new CreateShardAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new AddReplicaAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new DeleteShardAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new SyncShardAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new ForceLeaderAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new DeleteReplicaAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new AddReplicaPropertyAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new BalanceShardUniqueAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new DeleteCollectionAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new DeleteReplicaPropertyAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new MigrateDocsAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new ModifyCollectionAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new MoveReplicaAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new RebalanceLeadersAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new ReloadCollectionAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new SetCollectionPropertyAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new CollectionStatusAPI(this)));
+    return apis;
   }
 
   // These "copy" methods were once SolrParams.getAll but were moved here as there is no universal
