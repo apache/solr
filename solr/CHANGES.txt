@@ -208,6 +208,8 @@ Other Changes
 
 * SOLR-16141: Upgrade Apache Tika to 1.28.4 (janhoy)
 
+* SOLR-16424: Upgrade Netty to 4.1.82.Final (Kevin Risden)
+
 Build
 ---------------------
 * SOLR-16204: Change Lucene dependency to Lucene 9.1.0 (Elia Porciani via Alessandro Benedetti)
