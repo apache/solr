@@ -81,8 +81,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Credits to Megan Carey for documentation
- *
  * <p>Index split request processed by Overseer. Requests from here go to the host of the parent
  * shard, and are processed by SplitOp.
  *
