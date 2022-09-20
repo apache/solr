@@ -62,13 +62,13 @@ Before digging into the explanation, let us define a few terminologies which wil
 * *initial replica* is a first replica/core to be added for a sub shard.
 * *additional replica* is a replica to be created in order to meet `replicationFactor` of collection.
 
-SPLITSHARD can be split into multiple sub-shards when one of the following params is used: `ranges`, `numSubShards`. In this explanation, shard is split into two pieces which are written into disk as two new shards (sub shards).  Behind the scene, original shard's hash range is computed in order to break a shard into two pieces. Furthermore, we can specify `split method` which can be either `rewrite` (default) or `link`.
+SPLITSHARD can be split into multiple sub shards when one of the following params is used: `ranges`, `numSubShards`. In this explanation, shard is split into two pieces which are written into disk as two new shards (sub shards).  Behind the scene, original shard's hash range is computed in order to break a shard into two pieces. Furthermore, we can specify `split method` which can be either `rewrite` (default) or `link`.
 
 Simple Shard Split Steps:
 
 * Sub shards are created in `CONSTRUCTION` state.
 * Initial replica is created for each sub shard.
-* Parent shard leader is “split” (=two new indices of sub shards are created from the parent shard).
+* Parent shard leader is “split” (as parent shard can be split into n sub shards, n new indices of sub shards are created).
 * Buffered updates are applied on sub shards.
 * Additional replicas of sub shards are created (satisfy `replicationFactor` of collection).
 * Sub shards become `ACTIVE` and parent shard becomes `INACTIVE`.
