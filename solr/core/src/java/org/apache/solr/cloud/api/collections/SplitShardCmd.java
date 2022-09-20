@@ -83,10 +83,11 @@ import org.slf4j.LoggerFactory;
 /**
  * Credits to Megan Carey for documentation
  *
- * Index split request processed by Overseer. Requests from here go to the host of the parent shard,
- * and are processed by SplitOp.
+ * <p>Index split request processed by Overseer. Requests from here go to the host of the parent
+ * shard, and are processed by SplitOp.
  *
- * There is a shard split doc (dev-docs/shard-split/shard-split.adoc) on how shard split works; illustrated with diagrams.
+ * <p>There is a shard split doc (dev-docs/shard-split/shard-split.adoc) on how shard split works;
+ * illustrated with diagrams.
  */
 public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -113,18 +114,15 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
   /**
    * Shard splits start here and make additional requests to the host of the parent shard.
    *
-   * The sequence of requests is as follows:
-   *  1. Verify that there is enough disk space to create sub-shards.
-   *  2. If splitByPrefix is true, make request to get prefix ranges.
-   *  3. If this split was attempted previously and there are lingering sub-shards, delete them.
-   *  4. Create sub-shards in CONSTRUCTION state.
-   *  5. Add an initial replica to each sub-shard.
-   *  6. Request that parent shard wait for children to become ACTIVE.
-   *  7. Execute split: either LINK or REWRITE.
-   *  8. Apply buffered updates to the sub-shards so they are up-to-date with parent.
-   *  9. Determine node placement for additional replicas (but do not create yet).
-   *  10. If replicationFactor is more than 1, set shard state for sub-shards to RECOVERY; else mark ACTIVE.
-   *  11. Create additional replicas of sub-shards.
+   * <p>The sequence of requests is as follows: 1. Verify that there is enough disk space to create
+   * sub-shards. 2. If splitByPrefix is true, make request to get prefix ranges. 3. If this split
+   * was attempted previously and there are lingering sub-shards, delete them. 4. Create sub-shards
+   * in CONSTRUCTION state. 5. Add an initial replica to each sub-shard. 6. Request that parent
+   * shard wait for children to become ACTIVE. 7. Execute split: either LINK or REWRITE. 8. Apply
+   * buffered updates to the sub-shards so they are up-to-date with parent. 9. Determine node
+   * placement for additional replicas (but do not create yet). 10. If replicationFactor is more
+   * than 1, set shard state for sub-shards to RECOVERY; else mark ACTIVE. 11. Create additional
+   * replicas of sub-shards.
    */
   public boolean split(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
       throws Exception {
@@ -187,7 +185,9 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
     }
 
     // 1. verify that there is enough space on disk to create sub-shards
-    log.info("SplitShardCmd: verify that there is enough space on disk to create sub-shards for slice: " + parentShardLeader.getShard());
+    log.info(
+        "SplitShardCmd: verify that there is enough space on disk to create sub-shards for slice: "
+            + parentShardLeader.getShard());
     RTimerTree t;
     if (ccc.getCoreContainer().getNodeConfig().getMetricsConfig().isEnabled()) {
       t = timings.sub("checkDiskSpace");
@@ -272,7 +272,8 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
 
       ShardHandler shardHandler = ccc.newShardHandler();
 
-      // 2. if split request has splitByPrefix set to true, make request to SplitOp to get prefix ranges of sub-shards
+      // 2. if split request has splitByPrefix set to true, make request to SplitOp to get prefix
+      // ranges of sub-shards
       if (message.getBool(CommonAdminParams.SPLIT_BY_PREFIX, false)) {
         t = timings.sub("getRanges");
 
@@ -330,7 +331,8 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
               firstNrtReplica);
       t.stop();
 
-      // 3. if this shard has attempted a split before and failed, there will be lingering INACTIVE sub-shards.
+      // 3. if this shard has attempted a split before and failed, there will be lingering INACTIVE
+      // sub-shards.
       //    clean these up before proceeding
       boolean oldShardsDeleted = false;
       for (String subSlice : subSlices) {
@@ -728,7 +730,8 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       // this ensures that the logic inside ReplicaMutator to update sub-shard state to 'active'
       // always gets a chance to execute. See SOLR-7673
 
-      // 10. if replicationFactor > 1, set shard state for sub-shards to RECOVERY; otherwise mark ACTIVE
+      // 10. if replicationFactor > 1, set shard state for sub-shards to RECOVERY; otherwise mark
+      // ACTIVE
       if (repFactor == 1) {
         // A commit is needed so that documents are visible when the sub-shard replicas come up
         // (Note: This commit used to be after the state switch, but was brought here before the
@@ -809,7 +812,8 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         results.add(CommonParams.TIMING, timings.asNamedList());
       }
       success = true;
-      // don't unlock the shard yet - only do this if the final switch-over in ReplicaMutator succeeds (or fails)
+      // don't unlock the shard yet - only do this if the final switch-over in ReplicaMutator
+      // succeeds (or fails)
       return true;
     } catch (SolrException e) {
       throw e;

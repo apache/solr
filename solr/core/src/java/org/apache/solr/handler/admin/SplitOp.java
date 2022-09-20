@@ -59,14 +59,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * CoreAdminOp implementation for shard splits. This request is enqueued when {@link SplitShardCmd} is
- * processed by the Overseer.
+ * CoreAdminOp implementation for shard splits. This request is enqueued when {@link SplitShardCmd}
+ * is processed by the Overseer.
  *
- * This operation handles two types of requests:
- *  1. If {@link CommonAdminParams#SPLIT_BY_PREFIX} is true, the request to calculate document ranges
- *     for the sub-shards is processed here.
- *  2. For any split request, the actual index split is processed here. This calls into
- *     {@link UpdateHandler#split(SplitIndexCommand)} to execute split.
+ * <p>This operation handles two types of requests: 1. If {@link CommonAdminParams#SPLIT_BY_PREFIX}
+ * is true, the request to calculate document ranges for the sub-shards is processed here. 2. For
+ * any split request, the actual index split is processed here. This calls into {@link
+ * UpdateHandler#split(SplitIndexCommand)} to execute split.
  */
 class SplitOp implements CoreAdminHandler.CoreAdminOp {
 
