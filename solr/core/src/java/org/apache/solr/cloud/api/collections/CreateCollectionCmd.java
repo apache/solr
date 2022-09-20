@@ -184,6 +184,8 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         // This code directly updates Zookeeper by creating the collection state.json. It is
         // compatible with both distributed cluster state updates and Overseer based cluster state
         // updates.
+
+        // TODO: Consider doing this for all collections, not just the PRS collections.
         ZkWriteCommand command =
             new ClusterStateMutator(ccc.getSolrCloudManager())
                 .createCollection(clusterState, message);
@@ -337,7 +339,6 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
           ZkWriteCommand command =
               new SliceMutator(ccc.getSolrCloudManager()).addReplica(clusterState, props);
           byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, command.collection));
-          //        log.info("collection updated : {}", new String(data, StandardCharsets.UTF_8));
           zkStateReader.getZkClient().setData(collectionPath, data, true);
           clusterState = clusterState.copyWith(collectionName, command.collection);
           newColl = command.collection;

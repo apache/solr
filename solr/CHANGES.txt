@@ -131,6 +131,8 @@ Bug Fixes
 
 * SOLR-16417: NPE if facet query hits timeout or exception (Kevin Risden)
 
+* SOLR-16414 : Race condition in PRS state updates (noble, Justin Sweeney, Patson Luk, Hitesh Khamesra, Ishan Chattopadhyaya)
+
 Other Changes
 ---------------------
 * SOLR-16351: Upgrade Carrot2 to 4.4.3, upgrade randomizedtesting to 2.8.0. (Dawid Weiss)
