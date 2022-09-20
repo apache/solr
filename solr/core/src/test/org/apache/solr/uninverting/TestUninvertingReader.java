@@ -232,12 +232,12 @@ public class TestUninvertingReader extends SolrTestCase {
     final LegacyFieldType NO_TRIE_TYPE = new LegacyFieldType(LegacyIntField.TYPE_NOT_STORED);
     NO_TRIE_TYPE.setNumericPrecisionStep(Integer.MAX_VALUE);
 
-    final Map<String, Type> UNINVERT_MAP = new LinkedHashMap<String, Type>();
+    final Map<String, Type> UNINVERT_MAP = new LinkedHashMap<>();
     UNINVERT_MAP.put("notrie_single", Type.SORTED_SET_INTEGER);
     UNINVERT_MAP.put("notrie_multi", Type.SORTED_SET_INTEGER);
     UNINVERT_MAP.put("trie_single", Type.SORTED_SET_INTEGER);
     UNINVERT_MAP.put("trie_multi", Type.SORTED_SET_INTEGER);
-    final Set<String> MULTI_VALUES = new LinkedHashSet<String>();
+    final Set<String> MULTI_VALUES = new LinkedHashSet<>();
     MULTI_VALUES.add("trie_multi");
     MULTI_VALUES.add("notrie_multi");
 
@@ -331,7 +331,7 @@ public class TestUninvertingReader extends SolrTestCase {
     final IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
     iw.close();
 
-    final Map<String, Type> UNINVERT_MAP = new LinkedHashMap<String, Type>();
+    final Map<String, Type> UNINVERT_MAP = new LinkedHashMap<>();
     for (Type t : EnumSet.allOf(Type.class)) {
       UNINVERT_MAP.put(t.name(), t);
     }

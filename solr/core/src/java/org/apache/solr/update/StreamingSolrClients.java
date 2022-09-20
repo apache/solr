@@ -44,7 +44,7 @@ public class StreamingSolrClients {
   private Http2SolrClient httpClient;
 
   private Map<String, ConcurrentUpdateHttp2SolrClient> solrClients = new HashMap<>();
-  private List<Error> errors = Collections.synchronizedList(new ArrayList<Error>());
+  private List<Error> errors = Collections.synchronizedList(new ArrayList<>());
 
   private ExecutorService updateExecutor;
 

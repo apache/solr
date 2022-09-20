@@ -949,10 +949,8 @@ public class ExtendedDismaxQParser extends QParser {
     RANGE
   }
 
-  static final RuntimeException unknownField = new RuntimeException("UnknownField");
-
-  static {
-    unknownField.fillInStackTrace();
+  static RuntimeException unknownField() {
+    return new RuntimeException("UnknownField");
   }
 
   /**
@@ -1192,7 +1190,7 @@ public class ExtendedDismaxQParser extends QParser {
         if (exceptions) {
           FieldType ft = schema.getFieldTypeNoEx(field);
           if (ft == null && null == MagicFieldName.get(field)) {
-            throw unknownField;
+            throw unknownField();
           }
         }
 
@@ -1267,7 +1265,7 @@ public class ExtendedDismaxQParser extends QParser {
         if (exceptions) {
           FieldType ft = schema.getFieldTypeNoEx(field);
           if (ft == null && null == MagicFieldName.get(field)) {
-            throw unknownField;
+            throw unknownField();
           }
         }
         return getQuery();

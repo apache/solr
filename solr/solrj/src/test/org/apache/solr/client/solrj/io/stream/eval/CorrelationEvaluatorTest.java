@@ -35,7 +35,7 @@ public class CorrelationEvaluatorTest extends SolrTestCase {
   public CorrelationEvaluatorTest() {
     super();
     factory = new StreamFactory().withFunctionName("corr", CorrelationEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @Test

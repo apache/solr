@@ -36,7 +36,7 @@ public class SquareRootEvaluatorTest extends SolrTestCase {
     super();
 
     factory = new StreamFactory().withFunctionName("sqrt", SquareRootEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   private void test(Double value) throws IOException {

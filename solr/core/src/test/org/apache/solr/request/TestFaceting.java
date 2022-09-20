@@ -109,7 +109,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
       }
       assertEquals(br != null, rnum < size);
       if (rnum < size) {
-        assertEquals(rnum, (int) te.ord());
+        assertEquals(rnum, te.ord());
         assertEquals(s, te.term().utf8ToString());
       }
     }
@@ -129,7 +129,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
         te.seekExact((long) rnum);
         BytesRef br = te.term();
         assertNotNull(br);
-        assertEquals(rnum, (int) te.ord());
+        assertEquals(rnum, te.ord());
         assertEquals(s, te.term().utf8ToString());
       }
     }

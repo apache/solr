@@ -36,7 +36,7 @@ public class DivideEvaluatorTest extends SolrTestCase {
     super();
 
     factory = new StreamFactory().withFunctionName("div", DivideEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @Test

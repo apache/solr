@@ -1493,7 +1493,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     }
 
     float approximateTimeInSeconds =
-        Math.round(totalBytes / 1024 / 1024 / 0.1); // maxWriteMBPerSec=0.1 in solrconfig
+        Math.round((float) totalBytes / 1024 / 1024 / 0.1); // maxWriteMBPerSec=0.1 in solrconfig
 
     // Start again and replicate the data
     useFactory(null);

@@ -51,7 +51,7 @@ class SolrRules {
 
   static List<String> solrFieldNames(final RelDataType rowType) {
     return SqlValidatorUtil.uniquify(
-        new AbstractList<String>() {
+        new AbstractList<>() {
           @Override
           public String get(int index) {
             return rowType.getFieldList().get(index).getName();
