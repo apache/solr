@@ -41,6 +41,7 @@ public class PerReplicaStatesOps {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private PerReplicaStates rs;
   List<PerReplicaStates.Operation> ops;
+  private boolean preOp = true;
   final Function<PerReplicaStates, List<PerReplicaStates.Operation>> fun;
 
   PerReplicaStatesOps(Function<PerReplicaStates, List<PerReplicaStates.Operation>> fun) {
@@ -139,39 +140,42 @@ public class PerReplicaStatesOps {
         .init(rs);
   }
 
-  /** Switch a collection from/to perReplicaState=true */
-  public static PerReplicaStatesOps modifyCollection(
-      DocCollection coll, boolean enable, PerReplicaStates rs) {
-    return new PerReplicaStatesOps(prs -> enable ? enable(coll, prs) : disable(prs)).init(rs);
+  /** Switch a collection /to perReplicaState=true */
+  public static PerReplicaStatesOps enable(DocCollection coll, PerReplicaStates rs) {
+    return new PerReplicaStatesOps(
+            prs -> {
+              List<PerReplicaStates.Operation> result = new ArrayList<>();
+              coll.forEachReplica(
+                  (s, r) -> {
+                    PerReplicaStates.State old = prs.states.get(r.getName());
+                    int version = old == null ? 0 : old.version + 1;
+                    result.add(
+                        new PerReplicaStates.Operation(
+                            PerReplicaStates.Operation.Type.ADD,
+                            new PerReplicaStates.State(
+                                r.getName(), r.getState(), r.isLeader(), version)));
+                    addDeleteStaleNodes(result, old);
+                  });
+              return result;
+            })
+        .init(rs);
   }
 
-  private static List<PerReplicaStates.Operation> enable(DocCollection coll, PerReplicaStates prs) {
-    log.info("ENABLING_PRS ");
-    List<PerReplicaStates.Operation> result = new ArrayList<>();
-    coll.forEachReplica(
-        (s, r) -> {
-          PerReplicaStates.State st = prs.get(r.getName());
-          int newVer = 0;
-          if (st != null) {
-            result.add(new PerReplicaStates.Operation(PerReplicaStates.Operation.Type.DELETE, st));
-            newVer = st.version + 1;
-          }
-          result.add(
-              new PerReplicaStates.Operation(
-                  PerReplicaStates.Operation.Type.ADD,
-                  new PerReplicaStates.State(r.getName(), r.getState(), r.isLeader(), newVer)));
-        });
-    log.info("ENABLING_PRS OPS {}", result);
-    return result;
-  }
-
-  private static List<PerReplicaStates.Operation> disable(PerReplicaStates prs) {
-    List<PerReplicaStates.Operation> result = new ArrayList<>();
-    prs.states.forEachEntry(
-        (s, state) ->
-            result.add(
-                new PerReplicaStates.Operation(PerReplicaStates.Operation.Type.DELETE, state)));
-    return result;
+  /** Switch a collection /to perReplicaState=false */
+  public static PerReplicaStatesOps disable(PerReplicaStates rs) {
+    PerReplicaStatesOps ops =
+        new PerReplicaStatesOps(
+            prs -> {
+              List<PerReplicaStates.Operation> result = new ArrayList<>();
+              prs.states.forEachEntry(
+                  (s, state) ->
+                      result.add(
+                          new PerReplicaStates.Operation(
+                              PerReplicaStates.Operation.Type.DELETE, state)));
+              return result;
+            });
+    ops.preOp = false;
+    return ops.init(rs);
   }
 
   /**
@@ -277,7 +281,7 @@ public class PerReplicaStatesOps {
                       new PerReplicaStates.Operation(
                           PerReplicaStates.Operation.Type.ADD,
                           new PerReplicaStates.State(
-                              replica, Replica.State.DOWN, Boolean.FALSE, r.version + 1)));
+                              replica, Replica.State.DOWN, r.isLeader, r.version + 1)));
                   addDeleteStaleNodes(operations, r);
                 } else {
                   operations.add(
