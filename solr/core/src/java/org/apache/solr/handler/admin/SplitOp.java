@@ -60,12 +60,10 @@ import org.slf4j.LoggerFactory;
 
 /**
  * CoreAdminOp implementation for shard splits. This request is enqueued when {@link SplitShardCmd}
- * is processed by the Overseer.
- *
- * <p>This operation handles two types of requests: 1. If {@link CommonAdminParams#SPLIT_BY_PREFIX}
- * is true, the request to calculate document ranges for the sub-shards is processed here. 2. For
- * any split request, the actual index split is processed here. This calls into {@link
- * UpdateHandler#split(SplitIndexCommand)} to execute split.
+ * is processed. This operation handles two types of requests: 1. If {@link
+ * CommonAdminParams#SPLIT_BY_PREFIX} is true, the request to calculate document ranges for the
+ * sub-shards is processed here. 2. For any split request, the actual index split is processed here.
+ * This calls into {@link UpdateHandler#split(SplitIndexCommand)} to execute split.
  */
 class SplitOp implements CoreAdminHandler.CoreAdminOp {
 
@@ -74,7 +72,6 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
   @Override
   public void execute(CoreAdminHandler.CallInfo it) throws Exception {
     SolrParams params = it.req.getParams();
-    log.info("Request to SplitOp made with params: {}", params);
     String splitKey = params.get("split.key");
     String[] newCoreNames = params.getParams("targetCore");
     String cname = params.get(CoreAdminParams.CORE, "");
@@ -141,7 +138,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       String routeFieldName = null;
       // if in SolrCloud mode, get collection and shard names
       if (it.handler.coreContainer.isZooKeeperAware()) {
-        log.info(
+        log.trace(
             "SplitOp: Determine which router is associated with the shard for core: {}", cname);
         ClusterState clusterState = it.handler.coreContainer.getZkController().getClusterState();
         String collectionName =
@@ -208,7 +205,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       parentCore.getUpdateHandler().split(cmd);
 
       if (it.handler.coreContainer.isZooKeeperAware()) {
-        log.info("SplitOp: Create cloud descriptors for sub-shards of core: {}", cname);
+        log.trace("SplitOp: Create cloud descriptors for sub-shards of core: {}", cname);
         for (SolrCore newcore : newCores) {
           // the index of the core changed from empty to have some data, its term must be not zero
           CloudDescriptor cd = newcore.getCoreDescriptor().getCloudDescriptor();

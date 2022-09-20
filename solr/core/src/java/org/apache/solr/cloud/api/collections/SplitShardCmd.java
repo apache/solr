@@ -81,11 +81,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Index split request processed by Overseer. Requests from here go to the host of the parent shard,
- * and are processed by SplitOp.
- *
- * <p>There is a shard split doc (dev-docs/shard-split/shard-split.adoc) on how shard split works;
- * illustrated with diagrams.
+ * Index split requests from here go to the host of the parent shard, and are processed by SplitOp.
  */
 public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -110,9 +106,8 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   /**
-   * Shard splits start here and make additional requests to the host of the parent shard.
-   *
-   * <p>The sequence of requests is as follows: 1. Verify that there is enough disk space to create
+   * Shard splits start here and make additional requests to the host of the parent shard. The
+   * sequence of requests is as follows: 1. Verify that there is enough disk space to create
    * sub-shards. 2. If splitByPrefix is true, make request to get prefix ranges. 3. If this split
    * was attempted previously and there are lingering sub-shards, delete them. 4. Create sub-shards
    * in CONSTRUCTION state. 5. Add an initial replica to each sub-shard. 6. Request that parent
@@ -121,6 +116,9 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
    * placement for additional replicas (but do not create yet). 10. If replicationFactor is more
    * than 1, set shard state for sub-shards to RECOVERY; else mark ACTIVE. 11. Create additional
    * replicas of sub-shards.
+   *
+   * <p>There is a shard split doc (dev-docs/shard-split/shard-split.adoc) on how shard split works;
+   * illustrated with diagrams.
    */
   public boolean split(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
       throws Exception {
@@ -183,11 +181,11 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
     }
 
     RTimerTree t;
-    // 1. verify that there is enough space on disk to create sub-shards
-    log.info(
-        "SplitShardCmd: verify that there is enough space on disk to create sub-shards for slice: {}",
-        parentShardLeader);
     if (ccc.getCoreContainer().getNodeConfig().getMetricsConfig().isEnabled()) {
+      // 1. verify that there is enough space on disk to create sub-shards
+      log.info(
+          "SplitShardCmd: verify that there is enough space on disk to create sub-shards for slice: {}",
+          parentShardLeader);
       t = timings.sub("checkDiskSpace");
       checkDiskSpace(
           collectionName, slice.get(), parentShardLeader, splitMethod, ccc.getSolrCloudManager());
