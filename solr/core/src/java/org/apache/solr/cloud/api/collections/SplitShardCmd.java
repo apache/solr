@@ -184,11 +184,11 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Interrupted.");
     }
 
+    RTimerTree t;
     // 1. verify that there is enough space on disk to create sub-shards
     log.info(
-        "SplitShardCmd: verify that there is enough space on disk to create sub-shards for slice: "
-            + parentShardLeader.getShard());
-    RTimerTree t;
+        "SplitShardCmd: verify that there is enough space on disk to create sub-shards for slice: {}",
+        parentShardLeader);
     if (ccc.getCoreContainer().getNodeConfig().getMetricsConfig().isEnabled()) {
       t = timings.sub("checkDiskSpace");
       checkDiskSpace(
@@ -761,7 +761,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
           ccc.offerStateUpdate(Utils.toJSON(m));
         }
       } else {
-        log.info("Requesting shard state be set to 'recovery' for sub-shards: " + subSlices);
+        log.info("Requesting shard state be set to 'recovery' for sub-shards: {}", subSlices);
         Map<String, Object> propMap = new HashMap<>();
         propMap.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower());
         for (String subSlice : subSlices) {
