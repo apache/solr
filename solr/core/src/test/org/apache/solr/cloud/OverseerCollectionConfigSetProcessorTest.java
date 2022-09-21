@@ -639,7 +639,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     Mockito.doAnswer(
             new Answer<Void>() {
               public Void answer(InvocationOnMock invocation) {
-                System.out.println("set data: " + invocation.getArgument(0) + " " + new byte[0]);
+                System.out.println(
+                    "set data: " + invocation.getArgument(0) + " " + Arrays.toString(new byte[0]));
                 zkClientData.put(invocation.getArgument(0), new byte[0]);
                 return null;
               }

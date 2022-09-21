@@ -350,7 +350,9 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       knownDocs[docId] = null;
     }
     assertEquals(
-        "Failed delete: " + docIds, 0, getRandClient(random()).deleteById(ids).getStatus());
+        "Failed delete: " + Arrays.toString(docIds),
+        0,
+        getRandClient(random()).deleteById(ids).getStatus());
   }
 
   /**

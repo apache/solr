@@ -819,7 +819,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
       if (longVal == o) {
         foundLong = true;
       } else {
-        assertThat(o, IS_STRING);
+        assertTrue(o instanceof String);
       }
       mixed.values().remove(o);
     }
@@ -840,7 +840,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     d = processAdd(chain, doc(f("id", "341"), f(fieldName, booleans.values())));
     assertNotNull(d);
     for (Object o : d.getFieldValues(fieldName)) {
-      assertThat(o, IS_BOOLEAN);
+      assertTrue(o instanceof Boolean);
       booleans.remove(o);
     }
     assertTrue(booleans.isEmpty());
@@ -852,7 +852,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     d = processAdd(chain, doc(f("id", "333"), f(fieldName, ints.values())));
     assertNotNull(d);
     for (Object o : d.getFieldValues(fieldName)) {
-      assertThat(o, IS_INTEGER);
+      assertTrue(o instanceof Integer);
       ints.remove(o);
     }
     assertTrue(ints.isEmpty());
@@ -864,7 +864,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     d = processAdd(chain, doc(f("id", "342"), f(fieldName, longs.values())));
     assertNotNull(d);
     for (Object o : d.getFieldValues(fieldName)) {
-      assertThat(o, IS_LONG);
+      assertTrue(o instanceof Long);
       longs.remove(o);
     }
     assertTrue(longs.isEmpty());
@@ -891,20 +891,20 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     d = processAdd(chain, doc(f("id", "342"), f(fieldName, doubles.values())));
     assertNotNull(d);
     for (Object o : d.getFieldValues(fieldName)) {
-      assertThat(o, IS_DOUBLE);
+      assertTrue(o instanceof Double);
       longs.remove(o);
     }
 
-    Map<Date, String> dates = new HashMap<>();
+    Map<Instant, String> dates = new HashMap<>();
     String[] dateStrings = {"2020-05-13T18:47", "1989-12-14", "1682-07-22T18:33:00.000Z"};
     for (String dateString : dateStrings) {
-      dates.put(parse(isoDateOptionalTimeFormatter, dateString), dateString);
+      dates.put(parse(isoDateOptionalTimeFormatter, dateString).toInstant(), dateString);
     }
     d = processAdd(chain, doc(f("id", "343"), f(fieldName, dates.values())));
     assertNotNull(d);
     for (Object o : d.getFieldValues(fieldName)) {
-      assertThat(o, IS_DATE);
-      dates.remove(o);
+      assertTrue(o instanceof Date);
+      dates.remove(((Date) o).toInstant());
     }
     assertTrue(dates.isEmpty());
 
@@ -916,7 +916,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     d = processAdd(chain, doc(f("id", "344"), f(fieldName, mixedLongsAndDoubles.values())));
     assertNotNull(d);
     for (Object o : d.getFieldValues(fieldName)) {
-      assertThat(o, IS_DOUBLE);
+      assertTrue(o instanceof Double);
       mixedLongsAndDoubles.remove(o);
     }
     assertTrue(mixedLongsAndDoubles.isEmpty());
@@ -930,7 +930,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     d = processAdd(chain, doc(f("id", "345"), f(fieldName, mixed)));
     assertNotNull(d);
     for (Object o : d.getFieldValues(fieldName)) {
-      assertThat(o, IS_STRING);
+      assertTrue(o instanceof String);
     }
 
     Map<Double, Object> mixedDoubles = new LinkedHashMap<>(); // preserve order
@@ -941,7 +941,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     d = processAdd(chain, doc(f("id", "3391"), f(fieldName, mixedDoubles.values())));
     assertNotNull(d);
     for (Object o : d.getFieldValues(fieldName)) {
-      assertThat(o, IS_DOUBLE);
+      assertTrue(o instanceof Double);
       mixedDoubles.remove(o);
     }
     assertTrue(mixedDoubles.isEmpty());
@@ -954,7 +954,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     d = processAdd(chain, doc(f("id", "3392"), f(fieldName, mixedInts.values())));
     assertNotNull(d);
     for (Object o : d.getFieldValues(fieldName)) {
-      assertThat(o, IS_INTEGER);
+      assertTrue(o instanceof Integer);
       mixedInts.remove(o);
     }
     assertTrue(mixedInts.isEmpty());
@@ -967,7 +967,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     d = processAdd(chain, doc(f("id", "3393"), f(fieldName, mixedLongs.values())));
     assertNotNull(d);
     for (Object o : d.getFieldValues(fieldName)) {
-      assertThat(o, IS_LONG);
+      assertTrue(o instanceof Long);
       mixedLongs.remove(o);
     }
     assertTrue(mixedLongs.isEmpty());
@@ -980,23 +980,23 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     d = processAdd(chain, doc(f("id", "3394"), f(fieldName, mixedBooleans.values())));
     assertNotNull(d);
     for (Object o : d.getFieldValues(fieldName)) {
-      assertThat(o, IS_BOOLEAN);
+      assertTrue(o instanceof Boolean);
       mixedBooleans.remove(o);
     }
     assertTrue(mixedBooleans.isEmpty());
 
-    Map<Date, Object> mixedDates = new HashMap<>();
+    Map<Instant, Object> mixedDates = new HashMap<>();
     dateStrings = new String[] {"2020-05-13T18:47", "1989-12-14", "1682-07-22T18:33:00.000Z"};
     for (String dateString : dateStrings) {
-      mixedDates.put(parse(isoDateOptionalTimeFormatter, dateString), dateString);
+      mixedDates.put(parse(isoDateOptionalTimeFormatter, dateString).toInstant(), dateString);
     }
     Date extraDate = parse(isoDateOptionalTimeFormatter, "2003-04-24");
-    mixedDates.put(extraDate, extraDate); // Date-typed field value
+    mixedDates.put(extraDate.toInstant(), extraDate); // Date-typed field value
     d = processAdd(chain, doc(f("id", "3395"), f(fieldName, mixedDates.values())));
     assertNotNull(d);
     for (Object o : d.getFieldValues(fieldName)) {
-      assertThat(o, IS_DATE);
-      mixedDates.remove(o);
+      assertTrue(o instanceof Date);
+      mixedDates.remove(((Date) o).toInstant());
     }
     assertTrue(mixedDates.isEmpty());
   }
@@ -1190,7 +1190,8 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
         "Date string: " + inputDateString + " was not parsed as a date",
         d.getFieldValue("date_dt"),
         IS_DATE);
-    assertEquals(expectedDate, d.getField("date_dt").getFirstValue());
+    assertEquals(
+        expectedDate.toInstant(), ((Date) d.getField("date_dt").getFirstValue()).toInstant());
   }
 
   private static Date parse(DateTimeFormatter dateTimeFormatter, String dateString) {
