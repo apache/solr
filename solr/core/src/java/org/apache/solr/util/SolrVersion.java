@@ -16,9 +16,10 @@
  */
 package org.apache.solr.util;
 
-import java.util.Locale;
 import org.apache.solr.common.SolrException;
 import org.semver4j.Semver;
+
+import java.util.Locale;
 
 /**
  * Simple Solr version representation backed by a <a href="https://devhints.io/semver">Semantic
@@ -30,7 +31,7 @@ public final class SolrVersion implements Comparable<SolrVersion> {
   private final Semver version;
 
   // This static variable should be bumped for each release
-  private static final String LATEST_STRING = "9.2.0";
+  public static final String LATEST_STRING = "9.2.0";
 
   /** This instance represents the current (latest) version of Solr. */
   public static final SolrVersion LATEST = SolrVersion.valueOf(LATEST_STRING);
