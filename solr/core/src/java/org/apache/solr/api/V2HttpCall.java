@@ -19,6 +19,7 @@ package org.apache.solr.api;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN_OR_REMOTEQUERY;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
 
@@ -141,7 +142,6 @@ public class V2HttpCall extends HttpSolrCall {
 
         DocCollection collection =
             resolveDocCollection(queryParams.get(COLLECTION_PROP, origCorename));
-
         if (collection == null) {
           if (!path.endsWith(CommonParams.INTROSPECT)) {
             throw new SolrException(
@@ -154,6 +154,7 @@ public class V2HttpCall extends HttpSolrCall {
             // this collection exists , but this node does not have a replica for that collection
             extractRemotePath(collection.getName(), collection.getName());
             if (action == REMOTEQUERY) {
+              action = ADMIN_OR_REMOTEQUERY;
               coreUrl = coreUrl.replace("/solr/", "/solr/____v2/c/");
               this.path =
                   path = path.substring(prefix.length() + collection.getName().length() + 2);
@@ -372,6 +373,40 @@ public class V2HttpCall extends HttpSolrCall {
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
+  }
+
+  /**
+   * Differentiate between "admin" and "remotequery"-type requests; executing each as appropriate.
+   *
+   * <p>The JAX-RS framework used by {@link V2HttpCall} doesn't provide any easy way to check in
+   * advance whether a Jersey application can handle an incoming request. This, in turn, makes it
+   * difficult to classify requests as being "admin" or "core, "local" or "remote". The only option
+   * is to submit the request to the JAX-RS application and see whether a quick "404" flag comes
+   * back, or not.
+   *
+   * <p>This method uses this strategy to differentiate between admin requests that don't require a
+   * {@link SolrCore}, but whose path happen to contain a core/collection name (e.g.
+   * ADDREPLICAPROP's path of
+   * /collections/collName/shards/shardName/replicas/replicaName/properties), and "REMOTEQUERY"
+   * requests which do require a local SolrCore to process.
+   */
+  @Override
+  protected void handleAdminOrRemoteRequest() throws IOException {
+
+    final Map<String, String> suppressNotFoundProp =
+        Map.of(RequestContextKeys.SUPPRESS_ERROR_ON_NOT_FOUND_EXCEPTION, "true");
+    SolrQueryResponse solrResp = new SolrQueryResponse();
+    final boolean jerseyResourceFound =
+        invokeJerseyRequest(
+            cores, null, cores.getJerseyApplicationHandler(), solrResp, suppressNotFoundProp);
+    if (jerseyResourceFound) {
+      logAndFlushAdminRequest(solrResp);
+      return;
+    }
+
+    // If no admin/container-level Jersey resource was found for this API, then this should be
+    // treated as a REMOTEQUERY
+    sendRemoteQuery();
   }
 
   @Override
