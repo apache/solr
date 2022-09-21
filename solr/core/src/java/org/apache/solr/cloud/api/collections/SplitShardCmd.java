@@ -107,15 +107,25 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
 
   /**
    * Shard splits start here and make additional requests to the host of the parent shard. The
-   * sequence of requests is as follows: 1. Verify that there is enough disk space to create
-   * sub-shards. 2. If splitByPrefix is true, make request to get prefix ranges. 3. If this split
-   * was attempted previously and there are lingering sub-shards, delete them. 4. Create sub-shards
-   * in CONSTRUCTION state. 5. Add an initial replica to each sub-shard. 6. Request that parent
-   * shard wait for children to become ACTIVE. 7. Execute split: either LINK or REWRITE. 8. Apply
-   * buffered updates to the sub-shards so they are up-to-date with parent. 9. Determine node
-   * placement for additional replicas (but do not create yet). 10. If replicationFactor is more
-   * than 1, set shard state for sub-shards to RECOVERY; else mark ACTIVE. 11. Create additional
-   * replicas of sub-shards.
+   * sequence of requests is as follows:
+   *
+   * <ul>
+   *   <li>1. Verify that there is enough disk space to create sub-shards.
+   *   <li>2. If splitByPrefix is true, make request to get prefix ranges.
+   *   <li>3. If this split was attempted previously and there are lingering sub-shards, delete
+   *       them.
+   *   <li>4. Create sub-shards in CONSTRUCTION state.
+   *   <li>5. Add an initial replica to each sub-shard.
+   *   <li>6. Request that parent shard wait for children to become ACTIVE.
+   *   <li>7. Execute split: either LINK or REWRITE.
+   *   <li>8. Apply buffered updates to the sub-shards so they are up-to-date with parent.
+   *   <li>9. Determine node placement for additional replicas (but do not create yet).
+   *   <li>10. If replicationFactor is more than 1, set shard state for sub-shards to RECOVERY; else
+   *       mark ACTIVE.
+   *   <li>11. Create additional replicas of sub-shards.
+   * </ul>
+   *
+   * <br>
    *
    * <p>There is a shard split doc (dev-docs/shard-split/shard-split.adoc) on how shard split works;
    * illustrated with diagrams.
