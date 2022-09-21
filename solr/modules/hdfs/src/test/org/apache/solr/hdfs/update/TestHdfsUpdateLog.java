@@ -72,7 +72,8 @@ public class TestHdfsUpdateLog extends SolrTestCaseJ4 {
     IOUtils.closeQuietly(fs);
     fs = null;
     try {
-      deleteCore();
+      // Make sure to clean up test resources before shutting down HDFS
+      SolrTestCaseJ4.teardownTestCases();
     } finally {
       try {
         HdfsTestUtil.teardownClass(dfsCluster);
@@ -80,8 +81,6 @@ public class TestHdfsUpdateLog extends SolrTestCaseJ4 {
         dfsCluster = null;
         hdfsUri = null;
         System.clearProperty("solr.ulog.dir");
-        System.clearProperty("test.build.data");
-        System.clearProperty("test.cache.data");
       }
     }
   }
