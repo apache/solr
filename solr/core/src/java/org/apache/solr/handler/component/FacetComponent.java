@@ -34,21 +34,18 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SimpleFacets;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.PointField;
 import org.apache.solr.search.DocSet;
@@ -56,6 +53,7 @@ import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.facet.FacetDebugInfo;
 import org.apache.solr.util.RTimer;
+import org.apache.solr.util.SolrResponseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -715,7 +713,9 @@ public class FacetComponent extends SearchComponent {
 
     for (ShardResponse srsp : sreq.responses) {
       int shardNum = rb.getShardNum(srsp.getShard());
-      NamedList<?> facet_counts = getFacetCountsFromShardResponse(rb, srsp);
+      NamedList<?> facet_counts =
+          (NamedList<?>)
+              SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, FACET_COUNTS_KEY, false);
       if (facet_counts == null) {
         continue; // looks like a shard did not return anything
       }
@@ -837,42 +837,6 @@ public class FacetComponent extends SearchComponent {
     removeFieldFacetsUnderLimits(rb);
     removeRangeFacetsUnderLimits(rb);
     removeQueryFacetsUnderLimits(rb);
-  }
-
-  private static NamedList<?> getFacetCountsFromShardResponse(
-      ResponseBuilder rb, ShardResponse srsp) {
-    NamedList<?> facet_counts;
-    try {
-      SolrResponse solrResponse = srsp.getSolrResponse();
-      NamedList<Object> response = solrResponse.getResponse();
-      facet_counts = (NamedList<?>) response.get(FACET_COUNTS_KEY);
-      if (facet_counts != null) {
-        return facet_counts;
-      } else {
-        NamedList<?> responseHeader =
-            (NamedList<?>) response.get(SolrQueryResponse.RESPONSE_HEADER_KEY);
-        if (responseHeader.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY)) {
-          return null;
-        } else {
-          log.warn("corrupted response on {} : {}", srsp.getShardRequest(), solrResponse);
-          throw new SolrException(
-              ErrorCode.SERVER_ERROR,
-              FACET_COUNTS_KEY
-                  + " is absent in response from "
-                  + srsp.getNodeName()
-                  + ", but "
-                  + SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY
-                  + " isn't set in the response.");
-        }
-      }
-    } catch (Exception ex) {
-      if (ShardParams.getShardsTolerantAsBool(rb.req.getParams())) {
-        return null;
-      } else {
-        throw new SolrException(
-            ErrorCode.SERVER_ERROR, "Unable to read facet info for shard: " + srsp.getShard(), ex);
-      }
-    }
   }
 
   private void removeQueryFacetsUnderLimits(ResponseBuilder rb) {
@@ -1011,7 +975,9 @@ public class FacetComponent extends SearchComponent {
     FacetInfo fi = rb._facetInfo;
 
     for (ShardResponse srsp : sreq.responses) {
-      NamedList<?> facet_counts = getFacetCountsFromShardResponse(rb, srsp);
+      NamedList<?> facet_counts =
+          (NamedList<?>)
+              SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, FACET_COUNTS_KEY, false);
       if (facet_counts == null) {
         continue; // looks like a shard did not return anything
       }
@@ -1051,11 +1017,14 @@ public class FacetComponent extends SearchComponent {
     // This is after the shard has returned the refinement request
     FacetInfo fi = rb._facetInfo;
     for (ShardResponse srsp : sreq.responses) {
-
       int shardNumber = rb.getShardNum(srsp.getShard());
 
       NamedList<?> facetCounts =
-          (NamedList<?>) srsp.getSolrResponse().getResponse().get(FACET_COUNTS_KEY);
+          (NamedList<?>)
+              SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, FACET_COUNTS_KEY, false);
+      if (facetCounts == null) {
+        continue;
+      }
 
       @SuppressWarnings("unchecked")
       NamedList<List<NamedList<Object>>> pivotFacetResponsesFromShard =
