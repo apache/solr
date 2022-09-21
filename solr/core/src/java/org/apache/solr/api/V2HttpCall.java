@@ -332,27 +332,43 @@ public class V2HttpCall extends HttpSolrCall {
     }
   }
 
-  private void invokeJerseyRequest(
-      CoreContainer cores, SolrCore core, ApplicationHandler jerseyHandler, SolrQueryResponse rsp) {
-    try {
-      final ContainerRequest containerRequest =
-          ContainerRequestUtils.createContainerRequest(
-              req, response, jerseyHandler.getConfiguration());
+  private boolean invokeJerseyRequest(
+      CoreContainer cores, SolrCore core, ApplicationHandler primary, SolrQueryResponse rsp) {
+    return invokeJerseyRequest(cores, core, primary, rsp, Map.of());
+  }
 
-      // Set properties that may be used by Jersey filters downstream
-      containerRequest.setProperty(RequestContextKeys.SOLR_QUERY_REQUEST, solrReq);
-      containerRequest.setProperty(RequestContextKeys.SOLR_QUERY_RESPONSE, rsp);
-      containerRequest.setProperty(RequestContextKeys.CORE_CONTAINER, cores);
-      containerRequest.setProperty(RequestContextKeys.HTTP_SERVLET_REQ, req);
-      containerRequest.setProperty(RequestContextKeys.REQUEST_TYPE, requestType);
-      containerRequest.setProperty(RequestContextKeys.SOLR_PARAMS, queryParams);
-      containerRequest.setProperty(RequestContextKeys.COLLECTION_LIST, collectionsList);
-      containerRequest.setProperty(RequestContextKeys.HTTP_SERVLET_RSP, response);
-      if (core != null) {
-        containerRequest.setProperty(RequestContextKeys.SOLR_CORE, core);
+  private boolean invokeJerseyRequest(
+      CoreContainer cores,
+      SolrCore core,
+      ApplicationHandler jerseyHandler,
+      SolrQueryResponse rsp,
+      Map<String, String> additionalProperties) {
+    final ContainerRequest containerRequest =
+        ContainerRequestUtils.createContainerRequest(
+            req, response, jerseyHandler.getConfiguration());
+
+    // Set properties that may be used by Jersey filters downstream
+    containerRequest.setProperty(RequestContextKeys.SOLR_QUERY_REQUEST, solrReq);
+    containerRequest.setProperty(RequestContextKeys.SOLR_QUERY_RESPONSE, rsp);
+    containerRequest.setProperty(RequestContextKeys.CORE_CONTAINER, cores);
+    containerRequest.setProperty(RequestContextKeys.HTTP_SERVLET_REQ, req);
+    containerRequest.setProperty(RequestContextKeys.REQUEST_TYPE, requestType);
+    containerRequest.setProperty(RequestContextKeys.SOLR_PARAMS, queryParams);
+    containerRequest.setProperty(RequestContextKeys.COLLECTION_LIST, collectionsList);
+    containerRequest.setProperty(RequestContextKeys.HTTP_SERVLET_RSP, response);
+    if (core != null) {
+      containerRequest.setProperty(RequestContextKeys.SOLR_CORE, core);
+    }
+    if (additionalProperties != null) {
+      for (Map.Entry<String, String> entry : additionalProperties.entrySet()) {
+        containerRequest.setProperty(entry.getKey(), entry.getValue());
       }
+    }
+
+    try {
       servedByJaxRs = true;
       jerseyHandler.handle(containerRequest);
+      return containerRequest.getProperty(RequestContextKeys.NOT_FOUND_FLAG) == null;
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -374,10 +390,32 @@ public class V2HttpCall extends HttpSolrCall {
     }
   }
 
+  /**
+   * Executes the API or Jersey resource corresponding to a core-level request.
+   *
+   * <p>{@link Api}-based endpoints do this by invoking {@link Api#call(SolrQueryRequest,
+   * SolrQueryResponse)}.
+   *
+   * <p>JAX-RS-based endpoints must check both the core-level and container-level JAX-RS
+   * applications as the resource for a given "core-level request" might be registered in either
+   * place, depending on various legacy factors like the request handler it is associated with. In
+   * support of this, the JAX-RS codepath sets a flag to suppress the normal 404 error response when
+   * checking the first of the two JAX-RS applications.
+   *
+   * @see org.apache.solr.jersey.NotFoundExceptionMapper
+   */
   @Override
   protected void executeCoreRequest(SolrQueryResponse rsp) {
     if (api == null) {
-      invokeJerseyRequest(cores, core, core.getJerseyApplicationHandler(), rsp);
+      final Map<String, String> suppressNotFoundProp =
+          Map.of(RequestContextKeys.SUPPRESS_ERROR_ON_NOT_FOUND_EXCEPTION, "true");
+      final boolean resourceFound =
+          invokeJerseyRequest(
+              cores, core, core.getJerseyApplicationHandler(), rsp, suppressNotFoundProp);
+      if (!resourceFound) {
+        response.getHeaderNames().stream().forEach(name -> response.setHeader(name, null));
+        invokeJerseyRequest(cores, null, cores.getJerseyApplicationHandler(), rsp);
+      }
     } else {
       SolrCore.preDecorateResponse(solrReq, rsp);
       try {
