@@ -2922,19 +2922,30 @@ public class ZkController implements Closeable {
     } else {
       try {
         // Create a concurrently accessible set to avoid repeating collections
-        Set<String> processedCollections = ConcurrentHashMap.newKeySet();
-        cc.getCoreDescriptors().parallelStream()
+        Set<String> collectionsInThisNode = new HashSet<>();
+        for (CoreDescriptor cd : cc.getCoreDescriptors()) {
+          if (cd.getCloudDescriptor() != null
+              && cd.getCloudDescriptor().getCollectionName() != null) {
+            collectionsInThisNode.add(cd.getCloudDescriptor().getCollectionName());
+          }
+        }
+        collectionsInThisNode.parallelStream()
             .forEach(
-                cd -> {
-                  DocCollection coll = zkStateReader.getCollection(cd.getCollectionName());
-                  if (processedCollections.add(coll.getName()) && coll.isPerReplicaState()) {
-                    final List<String> replicasToDown = new ArrayList<>();
-                    coll.forEachReplica(
-                        (s, replica) -> {
-                          if (replica.getNodeName().equals(nodeName)) {
-                            replicasToDown.add(replica.getName());
-                          }
-                        });
+                c -> {
+                  final List<String> replicasToDown = new ArrayList<>();
+                  DocCollection coll = zkStateReader.getCollection(c);
+                  if (coll == null) {
+                    // may be the collection no more exists
+                    return;
+                  }
+                  coll.forEachReplica(
+                      (s, r) -> {
+                        if (r.getNodeName().equals(nodeName)) {
+                          replicasToDown.add(r.getName());
+                        }
+                      });
+
+                  if (!replicasToDown.isEmpty()) {
                     try {
                       PerReplicaStatesOps.downReplicas(
                               replicasToDown,
@@ -2946,6 +2957,7 @@ public class ZkController implements Closeable {
                     }
                   }
                 });
+
         // We always send a down node event to overseer to be safe, but overseer will not need to do
         // anything for PRS collections
         ZkNodeProps m =
