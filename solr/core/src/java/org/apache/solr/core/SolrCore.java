@@ -1008,8 +1008,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
   }
 
-  public <T extends Object> T createInitInstance(
-      PluginInfo info, Class<T> cast, String msg, String defClassName) {
+  public <T> T createInitInstance(PluginInfo info, Class<T> cast, String msg, String defClassName) {
     if (info == null) return null;
     T o =
         createInstance(
@@ -1021,7 +1020,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     return initPlugin(info, o);
   }
 
-  public static <T extends Object> T initPlugin(PluginInfo info, T o) {
+  public static <T> T initPlugin(PluginInfo info, T o) {
     if (o instanceof PluginInfoInitialized) {
       ((PluginInfoInitialized) o).init(info);
     } else if (o instanceof NamedListInitializedPlugin) {

@@ -31,7 +31,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.TestCollectionAPIs;
 import org.apache.solr.handler.admin.V2ApiMappingTest;
-import org.apache.solr.handler.api.ApiRegistrar;
 import org.junit.Test;
 
 /**
@@ -52,7 +51,18 @@ import org.junit.Test;
 public class V2CollectionAPIMappingTest extends V2ApiMappingTest<CollectionsHandler> {
   @Override
   public void populateApiBag() {
-    ApiRegistrar.registerCollectionApis(apiBag, getRequestHandler());
+    final CollectionsHandler collectionsHandler = getRequestHandler();
+    apiBag.registerObject(new AddReplicaPropertyAPI(collectionsHandler));
+    apiBag.registerObject(new BalanceShardUniqueAPI(collectionsHandler));
+    apiBag.registerObject(new DeleteCollectionAPI(collectionsHandler));
+    apiBag.registerObject(new DeleteReplicaPropertyAPI(collectionsHandler));
+    apiBag.registerObject(new MigrateDocsAPI(collectionsHandler));
+    apiBag.registerObject(new ModifyCollectionAPI(collectionsHandler));
+    apiBag.registerObject(new MoveReplicaAPI(collectionsHandler));
+    apiBag.registerObject(new RebalanceLeadersAPI(collectionsHandler));
+    apiBag.registerObject(new ReloadCollectionAPI(collectionsHandler));
+    apiBag.registerObject(new SetCollectionPropertyAPI(collectionsHandler));
+    apiBag.registerObject(new CollectionStatusAPI(collectionsHandler));
   }
 
   @Override

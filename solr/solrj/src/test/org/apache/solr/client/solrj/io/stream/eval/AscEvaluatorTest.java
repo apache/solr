@@ -20,7 +20,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.AscEvaluator;
@@ -49,8 +48,8 @@ public class AscEvaluatorTest extends SolrTestCase {
     values.clear();
     values.put("a", Arrays.asList(2, 4, 1, 3, 5, 8, 7));
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof List<?>);
-    Assert.assertEquals(7, ((List<?>) result).size());
+    assertTrue(result instanceof List<?>);
+    assertEquals(7, ((List<?>) result).size());
     checkOrder(Arrays.asList(1D, 2D, 3D, 4D, 5D, 7D, 8D), (List<Object>) result);
   }
 
@@ -63,8 +62,8 @@ public class AscEvaluatorTest extends SolrTestCase {
     values.clear();
     values.put("a", Arrays.asList(2.3, 2.1, 2.7, 2.6, 2.5));
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof List<?>);
-    Assert.assertEquals(5, ((List<?>) result).size());
+    assertTrue(result instanceof List<?>);
+    assertEquals(5, ((List<?>) result).size());
     checkOrder(Arrays.asList(2.1, 2.3, 2.5, 2.6, 2.7), (List<Object>) result);
   }
 
@@ -77,8 +76,8 @@ public class AscEvaluatorTest extends SolrTestCase {
     values.clear();
     values.put("a", Arrays.asList(2.3, 2.1, 2.0, 2.7, 2.6, 2.5, 3));
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof List<?>);
-    Assert.assertEquals(7, ((List<?>) result).size());
+    assertTrue(result instanceof List<?>);
+    assertEquals(7, ((List<?>) result).size());
     checkOrder(Arrays.asList(2D, 2.1, 2.3, 2.5, 2.6, 2.7, 3D), (List<Object>) result);
   }
 
@@ -91,20 +90,20 @@ public class AscEvaluatorTest extends SolrTestCase {
     values.clear();
     values.put("a", Arrays.asList("a", "c", "b", "e", "d"));
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof List<?>);
-    Assert.assertEquals(5, ((List<?>) result).size());
+    assertTrue(result instanceof List<?>);
+    assertEquals(5, ((List<?>) result).size());
     checkOrder(Arrays.asList("a", "b", "c", "d", "e"), (List<Object>) result);
   }
 
-  private <T> void checkOrder(List<?> expected, List<?> actual) {
-    Assert.assertEquals(expected.size(), actual.size());
+  private void checkOrder(List<?> expected, List<?> actual) {
+    assertEquals(expected.size(), actual.size());
     for (int idx = 0; idx < expected.size(); ++idx) {
       @SuppressWarnings({"unchecked"})
       Comparable<Object> expectedValue = (Comparable<Object>) expected.get(idx);
       @SuppressWarnings({"unchecked"})
       Comparable<Object> actualValue = (Comparable<Object>) actual.get(idx);
 
-      Assert.assertEquals(0, expectedValue.compareTo(actualValue));
+      assertEquals(0, expectedValue.compareTo(actualValue));
     }
   }
 }
