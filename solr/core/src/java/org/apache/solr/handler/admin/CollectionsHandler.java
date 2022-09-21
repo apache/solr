@@ -16,6 +16,117 @@
  */
 package org.apache.solr.handler.admin;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.api.Api;
+import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestSyncShard;
+import org.apache.solr.client.solrj.response.RequestStatusState;
+import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
+import org.apache.solr.cloud.OverseerSolrResponse;
+import org.apache.solr.cloud.OverseerSolrResponseSerializer;
+import org.apache.solr.cloud.OverseerTaskQueue;
+import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
+import org.apache.solr.cloud.ZkController;
+import org.apache.solr.cloud.ZkController.NotInClusterStateException;
+import org.apache.solr.cloud.ZkShardTerms;
+import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
+import org.apache.solr.cloud.api.collections.ReindexCollectionCmd;
+import org.apache.solr.cloud.api.collections.RoutedAlias;
+import org.apache.solr.cloud.overseer.SliceMutator;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.Aliases;
+import org.apache.solr.common.cloud.ClusterProperties;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.CollectionProperties;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
+import org.apache.solr.common.cloud.ImplicitDocRouter;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Replica.State;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkCmdExecutor;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.CloudConfig;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.backup.BackupFilePaths;
+import org.apache.solr.core.backup.BackupId;
+import org.apache.solr.core.backup.BackupManager;
+import org.apache.solr.core.backup.BackupProperties;
+import org.apache.solr.core.backup.repository.BackupRepository;
+import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
+import org.apache.solr.core.snapshots.SolrSnapshotManager;
+import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.admin.api.AddReplicaAPI;
+import org.apache.solr.handler.admin.api.AddReplicaPropertyAPI;
+import org.apache.solr.handler.admin.api.AdminAPIBase;
+import org.apache.solr.handler.admin.api.BalanceShardUniqueAPI;
+import org.apache.solr.handler.admin.api.CollectionStatusAPI;
+import org.apache.solr.handler.admin.api.CreateShardAPI;
+import org.apache.solr.handler.admin.api.DeleteCollectionAPI;
+import org.apache.solr.handler.admin.api.DeleteReplicaAPI;
+import org.apache.solr.handler.admin.api.DeleteReplicaPropertyAPI;
+import org.apache.solr.handler.admin.api.DeleteShardAPI;
+import org.apache.solr.handler.admin.api.ForceLeaderAPI;
+import org.apache.solr.handler.admin.api.MigrateDocsAPI;
+import org.apache.solr.handler.admin.api.ModifyCollectionAPI;
+import org.apache.solr.handler.admin.api.MoveReplicaAPI;
+import org.apache.solr.handler.admin.api.RebalanceLeadersAPI;
+import org.apache.solr.handler.admin.api.ReloadCollectionAPI;
+import org.apache.solr.handler.admin.api.SetCollectionPropertyAPI;
+import org.apache.solr.handler.admin.api.SplitShardAPI;
+import org.apache.solr.handler.admin.api.SyncShardAPI;
+import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
+import org.apache.solr.security.PermissionNameProvider;
+import org.apache.solr.util.tracing.TraceUtils;
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
+
 import static org.apache.solr.client.solrj.response.RequestStatusState.COMPLETED;
 import static org.apache.solr.client.solrj.response.RequestStatusState.FAILED;
 import static org.apache.solr.client.solrj.response.RequestStatusState.NOT_FOUND;
@@ -121,114 +232,6 @@ import static org.apache.solr.common.params.CoreAdminParams.ULOG_DIR;
 import static org.apache.solr.common.params.ShardParams._ROUTE_;
 import static org.apache.solr.common.util.StrUtils.formatString;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.solr.api.AnnotatedApi;
-import org.apache.solr.api.Api;
-import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestSyncShard;
-import org.apache.solr.client.solrj.response.RequestStatusState;
-import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
-import org.apache.solr.cloud.OverseerSolrResponse;
-import org.apache.solr.cloud.OverseerSolrResponseSerializer;
-import org.apache.solr.cloud.OverseerTaskQueue;
-import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
-import org.apache.solr.cloud.ZkController;
-import org.apache.solr.cloud.ZkController.NotInClusterStateException;
-import org.apache.solr.cloud.ZkShardTerms;
-import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
-import org.apache.solr.cloud.api.collections.ReindexCollectionCmd;
-import org.apache.solr.cloud.api.collections.RoutedAlias;
-import org.apache.solr.cloud.overseer.SliceMutator;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.Aliases;
-import org.apache.solr.common.cloud.ClusterProperties;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.CollectionProperties;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
-import org.apache.solr.common.cloud.ImplicitDocRouter;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Replica.State;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkCmdExecutor;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionAdminParams;
-import org.apache.solr.common.params.CollectionParams;
-import org.apache.solr.common.params.CollectionParams.CollectionAction;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.CloudConfig;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.backup.BackupFilePaths;
-import org.apache.solr.core.backup.BackupId;
-import org.apache.solr.core.backup.BackupManager;
-import org.apache.solr.core.backup.BackupProperties;
-import org.apache.solr.core.backup.repository.BackupRepository;
-import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
-import org.apache.solr.core.snapshots.SolrSnapshotManager;
-import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.handler.admin.api.AddReplicaAPI;
-import org.apache.solr.handler.admin.api.AddReplicaPropertyAPI;
-import org.apache.solr.handler.admin.api.BalanceShardUniqueAPI;
-import org.apache.solr.handler.admin.api.CollectionStatusAPI;
-import org.apache.solr.handler.admin.api.CreateShardAPI;
-import org.apache.solr.handler.admin.api.DeleteCollectionAPI;
-import org.apache.solr.handler.admin.api.DeleteReplicaAPI;
-import org.apache.solr.handler.admin.api.DeleteReplicaPropertyAPI;
-import org.apache.solr.handler.admin.api.DeleteShardAPI;
-import org.apache.solr.handler.admin.api.ForceLeaderAPI;
-import org.apache.solr.handler.admin.api.MigrateDocsAPI;
-import org.apache.solr.handler.admin.api.ModifyCollectionAPI;
-import org.apache.solr.handler.admin.api.MoveReplicaAPI;
-import org.apache.solr.handler.admin.api.RebalanceLeadersAPI;
-import org.apache.solr.handler.admin.api.ReloadCollectionAPI;
-import org.apache.solr.handler.admin.api.SetCollectionPropertyAPI;
-import org.apache.solr.handler.admin.api.SplitShardAPI;
-import org.apache.solr.handler.admin.api.SyncShardAPI;
-import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.security.AuthorizationContext;
-import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.util.tracing.TraceUtils;
-import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class CollectionsHandler extends RequestHandlerBase implements PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -320,15 +323,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
   protected CoreContainer checkErrors() {
     CoreContainer cores = getCoreContainer();
-    if (cores == null) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Core container instance missing");
-    }
-
-    // Make sure that the core is ZKAware
-    if (!cores.isZooKeeperAware()) {
-      throw new SolrException(
-          ErrorCode.BAD_REQUEST, "Solr instance is not running in SolrCloud mode.");
-    }
+    AdminAPIBase.validateZooKeeperAwareCoreContainer(cores);
     return cores;
   }
 
@@ -348,6 +343,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     if (props == null) {
       return;
     }
+    // TODO JEGERLOW This is where I've left off
 
     String asyncId = req.getParams().get(ASYNC);
     if (asyncId != null) {
@@ -386,9 +382,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     return submitCollectionApiCommand(m, action, DEFAULT_COLLECTION_OP_TIMEOUT);
   }
 
-  public SolrResponse submitCollectionApiCommand(
-      ZkNodeProps m, CollectionAction action, long timeout)
-      throws KeeperException, InterruptedException {
+  public static SolrResponse submitCollectionApiCommand(CoreContainer coreContainer,
+                                                        Optional<DistributedCollectionConfigSetCommandRunner> distributedCollectionConfigSetCommandRunner,
+                                                        ZkNodeProps m, CollectionAction action, long timeout) throws KeeperException, InterruptedException {
     // Collection API messages are either sent to Overseer and processed there, or processed
     // locally. Distributing Collection API implies we're also distributing Cluster State Updates.
     // Indeed collection creation with non distributed cluster state updates requires for "Per
@@ -401,8 +397,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     // updates (but the other way around is ok). See constructor of CloudConfig.
     if (distributedCollectionConfigSetCommandRunner.isPresent()) {
       return distributedCollectionConfigSetCommandRunner
-          .get()
-          .runCollectionCommand(m, action, timeout);
+              .get()
+              .runCollectionCommand(m, action, timeout);
     } else { // Sending the Collection API message to Overseer via a Zookeeper queue
       String operation = m.getStr(QUEUE_OPERATION);
       if (operation == null) {
@@ -438,35 +434,41 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
       long time = System.nanoTime();
       QueueEvent event =
-          coreContainer
-              .getZkController()
-              .getOverseerCollectionQueue()
-              .offer(Utils.toJSON(m), timeout);
+              coreContainer
+                      .getZkController()
+                      .getOverseerCollectionQueue()
+                      .offer(Utils.toJSON(m), timeout);
       if (event.getBytes() != null) {
         return OverseerSolrResponseSerializer.deserialize(event.getBytes());
       } else {
         if (System.nanoTime() - time
-            >= TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS)) {
+                >= TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS)) {
           throw new SolrException(
-              ErrorCode.SERVER_ERROR,
-              operation + " the collection time out:" + timeout / 1000 + "s");
+                  ErrorCode.SERVER_ERROR,
+                  operation + " the collection time out:" + timeout / 1000 + "s");
         } else if (event.getWatchedEvent() != null) {
           throw new SolrException(
-              ErrorCode.SERVER_ERROR,
-              operation
-                  + " the collection error [Watcher fired on path: "
-                  + event.getWatchedEvent().getPath()
-                  + " state: "
-                  + event.getWatchedEvent().getState()
-                  + " type "
-                  + event.getWatchedEvent().getType()
-                  + "]");
+                  ErrorCode.SERVER_ERROR,
+                  operation
+                          + " the collection error [Watcher fired on path: "
+                          + event.getWatchedEvent().getPath()
+                          + " state: "
+                          + event.getWatchedEvent().getState()
+                          + " type "
+                          + event.getWatchedEvent().getType()
+                          + "]");
         } else {
           throw new SolrException(
-              ErrorCode.SERVER_ERROR, operation + " the collection unknown case");
+                  ErrorCode.SERVER_ERROR, operation + " the collection unknown case");
         }
       }
     }
+  }
+
+  public SolrResponse submitCollectionApiCommand(
+      ZkNodeProps m, CollectionAction action, long timeout)
+      throws KeeperException, InterruptedException {
+    return submitCollectionApiCommand(coreContainer, distributedCollectionConfigSetCommandRunner, m, action, timeout);
   }
 
   private boolean overseerCollectionQueueContains(String asyncId)
@@ -1274,6 +1276,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
                   REPLICA_PROP,
                   PROPERTY_VALUE_PROP);
           copy(req.getParams(), map, SHARD_UNIQUE);
+          // TODO JEGERLOW This is where I'm picking up in the morning.
           String property = (String) map.get(PROPERTY_PROP);
           if (!property.startsWith(PROPERTY_PREFIX)) {
             property = PROPERTY_PREFIX + property;
@@ -2069,6 +2072,11 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   }
 
   @Override
+  public Collection<Class<? extends JerseyResource>> getJerseyResources() {
+    return List.of(AddReplicaPropertyAPI.class);
+  }
+
+  @Override
   public Collection<Api> getApis() {
     final List<Api> apis = new ArrayList<>();
     apis.addAll(AnnotatedApi.getApis(new SplitShardAPI(this)));
@@ -2078,7 +2086,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     apis.addAll(AnnotatedApi.getApis(new SyncShardAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new ForceLeaderAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new DeleteReplicaAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new AddReplicaPropertyAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new BalanceShardUniqueAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new DeleteCollectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new DeleteReplicaPropertyAPI(this)));

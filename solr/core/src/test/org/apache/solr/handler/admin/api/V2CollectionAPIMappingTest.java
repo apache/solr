@@ -17,14 +17,6 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
-import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.apache.solr.common.params.CommonParams.ACTION;
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.params.CoreAdminParams.SHARD;
-
-import java.util.Map;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.SolrParams;
@@ -32,6 +24,15 @@ import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.TestCollectionAPIs;
 import org.apache.solr.handler.admin.V2ApiMappingTest;
 import org.junit.Test;
+
+import java.util.Map;
+
+import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
+import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonParams.ACTION;
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 
 /**
  * Unit tests for the V2 APIs found in {@link org.apache.solr.handler.admin.api} that use the
@@ -52,7 +53,7 @@ public class V2CollectionAPIMappingTest extends V2ApiMappingTest<CollectionsHand
   @Override
   public void populateApiBag() {
     final CollectionsHandler collectionsHandler = getRequestHandler();
-    apiBag.registerObject(new AddReplicaPropertyAPI(collectionsHandler));
+    //apiBag.registerObject(new AddReplicaPropertyAPI(collectionsHandler));
     apiBag.registerObject(new BalanceShardUniqueAPI(collectionsHandler));
     apiBag.registerObject(new DeleteCollectionAPI(collectionsHandler));
     apiBag.registerObject(new DeleteReplicaPropertyAPI(collectionsHandler));
