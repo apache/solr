@@ -157,6 +157,8 @@ Bug Fixes
 
 * SOLR-16414 : Race condition in PRS state updates (noble, Justin Sweeney, Patson Luk, Hitesh Khamesra, Ishan Chattopadhyaya)
 
+* SOLR-16418: Introduce SolrResponseUtil to handle NPE during query timeout or exception when parsing SolrResponse (Kevin Risden)
+
 * SOLR-16219: ICUCollationField protected field IllegalAccessException from different classloader (Michael Gibney)
 
 Other Changes
@@ -209,6 +211,14 @@ Other Changes
 * SOLR-16402: Bump google-cloud-bom to 0.178.0 (Kevin Risden)
 
 * SOLR-16141: Upgrade Apache Tika to 1.28.4 (janhoy)
+
+* SOLR-16424: Upgrade Netty to 4.1.82.Final (Kevin Risden)
+
+* SOLR-16421: Upgrade Apache Calcite to 1.32.0 and Avatica to 1.22.0 (Kevin Risden)
+
+* SOLR-16422: Upgrade Apache Zookeeper to 3.8.0 (Kevin Risden)
+
+* SOLR-16423: Upgrade Apache Hadoop to 3.3.4 (Kevin Risden)
 
 Build
 ---------------------
