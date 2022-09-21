@@ -69,8 +69,10 @@ Due to changes in Lucene 9, that isn't possible any more.
 * Added Lucene91HnswVectorsFormat codec for DenseVectorField. In order to use the new codec, reindex is necessary.
 
 === SolrJ
-SolrJ is beginning to be split up.  If you use ZooKeeper coordinates to create a `CloudSolrClient`, you will need to add a dependency on `solrj-zookeeper`.
-Instead, consider migrating to use of specifying a list of Solr URLs in the client's builder.
+SolrJ is beginning to be split up.
+If you use ZooKeeper coordinates to create a `CloudSolrClient`, you will need to add a dependency on `solrj-zookeeper`.
+If you use SolrJ's Maven POM to depend on SolrJ, then this should happen automatically through transitive resolution.
+Instead of depending on ZooKeeper, consider migrating to use of specifying a list of Solr URLs in the client's builder.
 Not only does this reduce dependencies, but it improves security by being able to limit ZooKeeper access.
 
 == Solr 9.0
