@@ -56,6 +56,7 @@ import org.apache.solr.spelling.suggest.SolrSuggester;
 import org.apache.solr.spelling.suggest.SuggesterOptions;
 import org.apache.solr.spelling.suggest.SuggesterParams;
 import org.apache.solr.spelling.suggest.SuggesterResult;
+import org.apache.solr.util.SolrResponseUtil;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -294,17 +295,18 @@ public class SuggestComponent extends SearchComponent
     // Collect Shard responses
     for (ShardRequest sreq : rb.finished) {
       for (ShardResponse srsp : sreq.responses) {
-        NamedList<Object> resp;
-        if ((resp = srsp.getSolrResponse().getResponse()) != null) {
-          @SuppressWarnings("unchecked")
-          SimpleOrderedMap<SimpleOrderedMap<NamedList<Object>>> namedList =
-              (SimpleOrderedMap<SimpleOrderedMap<NamedList<Object>>>)
-                  resp.get(SuggesterResultLabels.SUGGEST);
-          if (log.isInfoEnabled()) {
-            log.info("{} : {}", srsp.getShard(), namedList);
-          }
-          suggesterResults.add(toSuggesterResult(namedList));
+        @SuppressWarnings("unchecked")
+        SimpleOrderedMap<SimpleOrderedMap<NamedList<Object>>> namedList =
+            (SimpleOrderedMap<SimpleOrderedMap<NamedList<Object>>>)
+                SolrResponseUtil.getSubsectionFromShardResponse(
+                    rb, srsp, SuggesterResultLabels.SUGGEST, false);
+        if (namedList == null) {
+          continue;
         }
+        if (log.isInfoEnabled()) {
+          log.info("{} : {}", srsp.getShard(), namedList);
+        }
+        suggesterResults.add(toSuggesterResult(namedList));
       }
     }
 
