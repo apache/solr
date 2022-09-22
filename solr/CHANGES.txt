@@ -24,7 +24,10 @@ Bug Fixes
 
 Other Changes
 ---------------------
-(No changes)
+
+* SOLR-15730: SolrJ modules like SolrJ-Zookeeper are now opt-in from a Maven POM perspective.
+  Previously, the modules would come transitively.
+  (David Smiley)
 
 ==================  9.1.0 ==================
 
@@ -155,6 +158,16 @@ Bug Fixes
 
 * SOLR-16344: PlacementPlugin throws NPE for PRS collections (noble)
 
+* SOLR-16417: NPE if facet query hits timeout or exception (Kevin Risden)
+
+* SOLR-16414 : Race condition in PRS state updates (noble, Justin Sweeney, Patson Luk, Hitesh Khamesra, Ishan Chattopadhyaya)
+
+* SOLR-16418: Introduce SolrResponseUtil to handle NPE during query timeout or exception when parsing SolrResponse (Kevin Risden)
+
+* SOLR-16219: ICUCollationField protected field IllegalAccessException from different classloader (Michael Gibney)
+
+* SOLR-16426: LBHttp2SolrClient (and therefore CloudHttp2SolrClient) now respect requestWriter, responseParser and queryParam changes (Houston Putman)
+
 Other Changes
 ---------------------
 * SOLR-16351: Upgrade Carrot2 to 4.4.3, upgrade randomizedtesting to 2.8.0. (Dawid Weiss)
@@ -205,6 +218,14 @@ Other Changes
 * SOLR-16402: Bump google-cloud-bom to 0.178.0 (Kevin Risden)
 
 * SOLR-16141: Upgrade Apache Tika to 1.28.4 (janhoy)
+
+* SOLR-16424: Upgrade Netty to 4.1.82.Final (Kevin Risden)
+
+* SOLR-16421: Upgrade Apache Calcite to 1.32.0 and Avatica to 1.22.0 (Kevin Risden)
+
+* SOLR-16422: Upgrade Apache Zookeeper to 3.8.0 (Kevin Risden)
+
+* SOLR-16423: Upgrade Apache Hadoop to 3.3.4 (Kevin Risden)
 
 Build
 ---------------------

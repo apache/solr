@@ -71,6 +71,7 @@ import org.apache.solr.spelling.SpellingOptions;
 import org.apache.solr.spelling.SpellingQueryConverter;
 import org.apache.solr.spelling.SpellingResult;
 import org.apache.solr.spelling.Token;
+import org.apache.solr.util.SolrResponseUtil;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -263,10 +264,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
               }
             }
           }
-        } catch (IOException e) {
-          log.error("Error", e);
-          return null;
-        } catch (SyntaxError e) {
+        } catch (IOException | SyntaxError e) {
           log.error("Error", e);
           return null;
         }
@@ -407,18 +405,9 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     if (maxResultsForSuggest == null || !isCorrectlySpelled) {
       for (ShardRequest sreq : rb.finished) {
         for (ShardResponse srsp : sreq.responses) {
-          NamedList<?> nl = null;
-          try {
-            nl = (NamedList<?>) srsp.getSolrResponse().getResponse().get("spellcheck");
-          } catch (Exception e) {
-            if (ShardParams.getShardsTolerantAsBool(rb.req.getParams())) {
-              continue; // looks like a shard did not return anything
-            }
-            throw new SolrException(
-                SolrException.ErrorCode.SERVER_ERROR,
-                "Unable to read spelling info for shard: " + srsp.getShard(),
-                e);
-          }
+          NamedList<?> nl =
+              (NamedList<?>)
+                  SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "spellcheck", true);
           if (log.isDebugEnabled()) {
             log.debug("{} {}", srsp.getShard(), nl);
           }
