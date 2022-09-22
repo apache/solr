@@ -170,12 +170,10 @@ public abstract class SolrScraper implements Closeable {
           }
 
           /* Labels due to client */
-          if (client instanceof HttpSolrClient) {
+          if (!baseUrlLabelValue.isEmpty()) {
             labelNames.add(BASE_URL_LABEL);
             labelValues.add(baseUrlLabelValue);
-          }
-
-          if (client instanceof CloudSolrClient) {
+          } else if (!zkHostLabelValue.isEmpty()) {
             labelNames.add(ZK_HOST_LABEL);
             labelValues.add(zkHostLabelValue);
           }
