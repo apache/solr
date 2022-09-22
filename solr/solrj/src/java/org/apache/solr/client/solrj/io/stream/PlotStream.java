@@ -82,7 +82,7 @@ public class PlotStream extends TupleStream implements Expressible {
         throw new IOException(
             String.format(
                 Locale.ROOT,
-                "Invalid expression %s - only string, evaluator, or stream named parameters are supported, but param %d is none of those",
+                "Invalid expression %s - only string, evaluator, or stream named parameters are supported, but param %s is none of those",
                 expression,
                 name));
       }

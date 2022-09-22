@@ -72,6 +72,7 @@ public class SolrDocumentTest extends SolrTestCase {
     assertNull(doc.getFieldValues("f"));
   }
 
+  @SuppressWarnings("CollectionUndefinedEquality")
   public void testUnsupportedStuff() {
     SolrDocument doc = new SolrDocument();
 
@@ -219,13 +220,15 @@ public class SolrDocumentTest extends SolrTestCase {
 
     // set field using a collection is documented to be backed by
     // that collection, so changes should affect it.
-    Collection<String> tmp = new ArrayList<>(3);
+    List<String> tmp = new ArrayList<>(3);
     tmp.add("one");
     doc.setField("collection_backed", tmp);
-    assertEquals("collection not the same", tmp, doc.getFieldValues("collection_backed"));
+    assertEquals(
+        "collection not the same", tmp, List.copyOf(doc.getFieldValues("collection_backed")));
     tmp.add("two");
     assertEquals("wrong size", 2, doc.getFieldValues("collection_backed").size());
-    assertEquals("collection not the same", tmp, doc.getFieldValues("collection_backed"));
+    assertEquals(
+        "collection not the same", tmp, List.copyOf(doc.getFieldValues("collection_backed")));
   }
 
   public void testDuplicate() {

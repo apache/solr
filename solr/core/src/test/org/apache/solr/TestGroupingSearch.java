@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.common.SolrException;
@@ -1681,7 +1682,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
         // since groupSortStr defaults to sortStr, we need to normalize null to "score desc" if
         // sortStr != null.
-        if (groupSortStr == null && groupSortStr != sortStr) {
+        if (groupSortStr == null && !Objects.equals(groupSortStr, sortStr)) {
           groupSortStr = "score desc";
         }
 
@@ -1786,7 +1787,9 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
                 "fl",
                 // only docValued fields are not returned by default
                 "*,score_ff,foo_ii,foo_bdv," + FOO_STRING_DOCVAL_FIELD,
-                (groupSortStr == null || groupSortStr == sortStr) ? "noGroupsort" : "group.sort",
+                (groupSortStr == null || groupSortStr.equals(sortStr))
+                    ? "noGroupsort"
+                    : "group.sort",
                 groupSortStr == null ? "" : groupSortStr,
                 "rows",
                 "" + rows,
