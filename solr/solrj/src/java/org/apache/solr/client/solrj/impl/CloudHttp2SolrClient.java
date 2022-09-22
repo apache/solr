@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
 
@@ -245,25 +244,6 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
             "The builder can't accept an httpClient AND an internalClientBuilder, only one of those can be provided");
       }
       this.internalClientBuilder = internalClientBuilder;
-      return this;
-    }
-
-    /**
-     * If provided, the CloudHttp2SolrClient will build it's internal Http2SolrClient using this
-     * builder (instead of the empty default one). Providing this builder allows users to configure
-     * the internal clients (authentication, timeouts, etc).
-     *
-     * @param internalClientBuilderSetup a function that sets-up a builder to use for creating the
-     *     internal http client.
-     * @return this
-     */
-    public Builder withInternalClientBuilder(
-        Function<Http2SolrClient.Builder, Http2SolrClient.Builder> internalClientBuilderSetup) {
-      if (this.httpClient != null) {
-        throw new IllegalStateException(
-            "The builder can't accept an httpClient AND an internalClientBuilder, only one of those can be provided");
-      }
-      this.internalClientBuilder = internalClientBuilderSetup.apply(new Http2SolrClient.Builder());
       return this;
     }
 

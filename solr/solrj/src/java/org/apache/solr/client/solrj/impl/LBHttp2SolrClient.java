@@ -98,7 +98,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
     super.setParser(parser);
     this.httpClient.setParser(parser);
   }
-  
+
   @Override
   public void setRequestWriter(RequestWriter writer) {
     super.setRequestWriter(writer);

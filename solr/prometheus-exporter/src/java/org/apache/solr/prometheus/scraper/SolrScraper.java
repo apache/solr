@@ -208,10 +208,7 @@ public abstract class SolrScraper implements Closeable {
         }
       } catch (JsonQueryException e) {
         log.error("Error apply JSON query={} to result", jsonQuery, e);
-        scrapeErrorTotal.labels(zkHostLabelValue, 
-        
-        
-        , clusterId).inc();
+        scrapeErrorTotal.labels(zkHostLabelValue, baseUrlLabelValue, clusterId).inc();
       }
     }
 

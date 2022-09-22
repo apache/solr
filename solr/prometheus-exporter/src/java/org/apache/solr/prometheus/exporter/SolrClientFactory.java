@@ -17,10 +17,13 @@
 
 package org.apache.solr.prometheus.exporter;
 
+import java.util.Optional;
+import java.util.stream.Collectors;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.CloudZkSolrClientBuilder;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
+import org.apache.zookeeper.client.ConnectStringParser;
 
 public class SolrClientFactory {
 
@@ -43,13 +46,18 @@ public class SolrClientFactory {
   }
 
   public CloudSolrClient createCloudSolrClient(String zookeeperConnectionString) {
+    ConnectStringParser parser = new ConnectStringParser(zookeeperConnectionString);
+
     CloudSolrClient client =
-        CloudZkSolrClientBuilder.from(zookeeperConnectionString)
+        new CloudHttp2SolrClient.Builder(
+                parser.getServerAddresses().stream()
+                    .map(address -> address.getHostString() + ":" + address.getPort())
+                    .collect(Collectors.toList()),
+                Optional.ofNullable(parser.getChrootPath()))
             .withInternalClientBuilder(
-                builder ->
-                    builder
-                        .idleTimeout(settings.getHttpReadTimeout())
-                        .connectionTimeout(settings.getHttpConnectionTimeout()))
+                new Http2SolrClient.Builder()
+                    .idleTimeout(settings.getHttpReadTimeout())
+                    .connectionTimeout(settings.getHttpConnectionTimeout()))
             .build();
 
     client.setParser(new NoOpResponseParser("json"));
