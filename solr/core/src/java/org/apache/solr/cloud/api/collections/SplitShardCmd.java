@@ -80,9 +80,7 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * SolrCloud logic for splitting a shard.  It's complicated!  See {@code split()} below.
- */
+/** SolrCloud logic for splitting a shard. It's complicated! See {@code split()} below. */
 public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final int MIN_NUM_SUB_SHARDS = 2;
