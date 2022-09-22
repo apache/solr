@@ -17,20 +17,25 @@
 
 package org.apache.solr.update.processor;
 
-import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
-import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
-
-import java.io.IOException;
-import java.util.Collection;
-import java.util.IdentityHashMap;
-import java.util.Map;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.Collection;
+import java.util.IdentityHashMap;
+import java.util.Map;
+
+import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 /**
  * Gives system administrators a way to ignore very large update from clients. When an update goes
@@ -41,14 +46,21 @@ import org.apache.solr.update.AddUpdateCommand;
  */
 public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorFactory {
   public static final String LIMIT_SIZE_PARAM = "limit";
+  public static final String ONLY_LOG_ERRORS_PARAM = "onlyLogErrors";
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
 
   // limit of a SolrInputDocument size (in kb)
   private long maxDocumentSize = 1024 * 1024;
+  private boolean onlyLogErrors = false;
 
   @Override
   public void init(NamedList<?> args) {
-    maxDocumentSize = args.toSolrParams().required().getLong(LIMIT_SIZE_PARAM);
+    final SolrParams params = args.toSolrParams();
+    maxDocumentSize = params.required().getLong(LIMIT_SIZE_PARAM);
     args.remove(LIMIT_SIZE_PARAM);
+    onlyLogErrors = params.getBool(ONLY_LOG_ERRORS_PARAM, false);
+    args.remove(ONLY_LOG_ERRORS_PARAM);
 
     if (args.size() > 0) {
       throw new SolrException(SERVER_ERROR, "Unexpected init param(s): '" + args.getName(0) + "'");
@@ -59,15 +71,25 @@ public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorF
   public UpdateRequestProcessor getInstance(
       SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     return new UpdateRequestProcessor(next) {
+
       @Override
       public void processAdd(AddUpdateCommand cmd) throws IOException {
         long docSize = ObjectSizeEstimator.estimate(cmd.getSolrInputDocument());
         if (docSize / 1024 > maxDocumentSize) {
-          throw new SolrException(
-              BAD_REQUEST,
-              "Size of the document " + cmd.getPrintableId() + " is too large, around:" + docSize);
+          handleViolatingDoc(cmd, docSize);
+        } else {
+          super.processAdd(cmd);
         }
-        super.processAdd(cmd);
+      }
+
+      private void handleViolatingDoc(AddUpdateCommand cmd, long estimatedSizeBytes) {
+        if (onlyLogErrors) {
+          log.warn("Skipping doc {} bc size {} exceeds limit {}", cmd.getPrintableId(), estimatedSizeBytes / 1024, maxDocumentSize);
+        } else {
+          throw new SolrException(
+                  BAD_REQUEST,
+                  "Size of the document " + cmd.getPrintableId() + " is too large, around:" + estimatedSizeBytes);
+        }
       }
     };
   }
