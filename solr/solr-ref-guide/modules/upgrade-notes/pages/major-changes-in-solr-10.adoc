@@ -1,3 +1,4 @@
+= Major Changes in Solr 10
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -15,9 +16,16 @@
 // specific language governing permissions and limitations
 // under the License.
 
-* xref:solr-upgrade-notes.adoc[]
-** xref:major-changes-in-solr-10.adoc[]
-** xref:major-changes-in-solr-9.adoc[]
-** xref:major-changes-in-solr-8.adoc[]
-** xref:major-changes-in-solr-7.adoc[]
-** xref:major-changes-in-solr-6.adoc[]
+Solr 10.0 is a major new release of Solr.
+
+This page highlights the most important changes including new features and changes in default behavior as well as previously deprecated features that have now been removed.
+
+== Solr 10 Upgrade Planning
+
+Before starting an upgrade to this version of Solr, please take the time to review all information about changes from the version you are currently on up to this one, to include the minor version number changes as well.
+
+// TODO add similar text that previous releases have at this spot.
+
+=== SolrJ
+
+Starting in 10, the Maven POM for SolrJ does not refer to SolrJ modules like ZooKeeper.  If you require such functionality, you need to add additional dependencies.
