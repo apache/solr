@@ -1118,16 +1118,16 @@ public class StreamingTest extends SolrCloudTestCase {
       avgf = tuple.getDouble("avg(a_f)");
       count = tuple.getDouble("count(*)");
 
-      assertTrue(bucket.equals("hello3"));
-      assertTrue(sumi.doubleValue() == 38.0D);
-      assertTrue(sumf.doubleValue() == 26.0D);
-      assertTrue(mini.doubleValue() == 3.0D);
-      assertTrue(minf.doubleValue() == 3.0D);
-      assertTrue(maxi.doubleValue() == 13.0D);
-      assertTrue(maxf.doubleValue() == 9.0D);
-      assertTrue(avgi.doubleValue() == 9.5D);
-      assertTrue(avgf.doubleValue() == 6.5D);
-      assertTrue(count.doubleValue() == 4);
+      assertEquals("hello3", bucket);
+      assertEquals(38.0D, sumi.doubleValue(), 0.01);
+      assertEquals(26.0D, sumf.doubleValue(), 0.01);
+      assertEquals(3.0D, mini.doubleValue(), 0.01);
+      assertEquals(3.0D, minf.doubleValue(), 0.01);
+      assertEquals(13.0D, maxi.doubleValue(), 0.01);
+      assertEquals(9.0D, maxf.doubleValue(), 0.01);
+      assertEquals(9.5D, avgi.doubleValue(), 0.01);
+      assertEquals(6.5D, avgf.doubleValue(), 0.01);
+      assertEquals(4, count.doubleValue(), 0.01);
 
       tuple = tuples.get(2);
       bucket = tuple.getString("a_s");
@@ -1819,15 +1819,15 @@ public class StreamingTest extends SolrCloudTestCase {
       assert (tuples.size() == 3);
       tuple = tuples.get(0);
       bucket = tuple.getString("a_s");
-      assertTrue(bucket.equals("hello0"));
+      assertEquals("hello0", bucket);
 
       tuple = tuples.get(1);
       bucket = tuple.getString("a_s");
-      assertTrue(bucket.equals("hello3"));
+      assertEquals("hello3", bucket);
 
       tuple = tuples.get(2);
       bucket = tuple.getString("a_s");
-      assertTrue(bucket.equals("hello4"));
+      assertEquals("hello4", bucket);
 
       // Test will null value in the grouping field
       new UpdateRequest()
@@ -1940,7 +1940,7 @@ public class StreamingTest extends SolrCloudTestCase {
       count = tuples.size();
       if (count > 0) {
         Tuple t = tuples.get(0);
-        assertTrue(t.getLong("id") == 50000000);
+        assertEquals(50000000, (long) t.getLong("id"));
       } else {
         System.out.println("###### Waiting for checkpoint #######:" + count);
       }
@@ -2865,59 +2865,51 @@ public class StreamingTest extends SolrCloudTestCase {
       assertEquals(
           "MV should be returned for l_multi", 16, tuple.getLongs("l_multi").get(1).longValue());
 
+      assertEquals("floats should be returned", 1.7, tuple.getDouble("f_sing"), 0.001);
       assertEquals(
-          "floats should be returned", 1.7, tuple.getDouble("f_sing").doubleValue(), 0.001);
+          "MV should be returned for f_multi", 1.8, tuple.getDoubles("f_multi").get(0), 0.001);
       assertEquals(
-          "MV should be returned for f_multi",
-          1.8,
-          tuple.getDoubles("f_multi").get(0).doubleValue(),
-          0.001);
+          "MV should be returned for f_multi", 1.9, tuple.getDoubles("f_multi").get(1), 0.001);
+
+      assertEquals("doubles should be returned", 1.2, tuple.getDouble("d_sing"), 0.001);
       assertEquals(
-          "MV should be returned for f_multi",
-          1.9,
-          tuple.getDoubles("f_multi").get(1).doubleValue(),
-          0.001);
+          "MV should be returned for d_multi", 1.21, tuple.getDoubles("d_multi").get(0), 0.001);
+      assertEquals(
+          "MV should be returned for d_multi", 1.22, tuple.getDoubles("d_multi").get(1), 0.001);
+
+      assertEquals("Strings should be returned", "single", tuple.getString("s_sing"));
+      assertEquals("MV should be returned for s_multi", "sm1", tuple.getStrings("s_multi").get(0));
+      assertEquals("MV should be returned for s_multi", "sm2", tuple.getStrings("s_multi").get(1));
 
       assertEquals(
-          "doubles should be returned", 1.2, tuple.getDouble("d_sing").doubleValue(), 0.001);
-      assertEquals(
-          "MV should be returned for d_multi",
-          1.21,
-          tuple.getDoubles("d_multi").get(0).doubleValue(),
-          0.001);
-      assertEquals(
-          "MV should be returned for d_multi",
-          1.22,
-          tuple.getDoubles("d_multi").get(1).doubleValue(),
-          0.001);
-
-      assertTrue("Strings should be returned", tuple.getString("s_sing").equals("single"));
-      assertTrue(
-          "MV should be returned for s_multi", tuple.getStrings("s_multi").get(0).equals("sm1"));
-      assertTrue(
-          "MV should be returned for s_multi", tuple.getStrings("s_multi").get(1).equals("sm2"));
-
-      assertTrue(
           "Dates should be returned as Strings",
-          tuple.getString("dt_sing").equals("1980-01-02T11:11:33.890Z"));
-      assertTrue(
+          "1980-01-02T11:11:33.890Z",
+          tuple.getString("dt_sing"));
+      assertEquals(
           "MV dates should be returned as Strings for dt_multi",
-          tuple.getStrings("dt_multi").get(0).equals("1981-03-04T01:02:03.780Z"));
-      assertTrue(
+          "1981-03-04T01:02:03.780Z",
+          tuple.getStrings("dt_multi").get(0));
+      assertEquals(
           "MV dates should be returned as Strings for dt_multi",
-          tuple.getStrings("dt_multi").get(1).equals("1981-05-24T04:05:06.990Z"));
+          "1981-05-24T04:05:06.990Z",
+          tuple.getStrings("dt_multi").get(1));
 
       // Also test native type conversion
       Date dt = new Date(Instant.parse("1980-01-02T11:11:33.890Z").toEpochMilli());
-      assertTrue("Dates should be returned as Dates", tuple.getDate("dt_sing").equals(dt));
+      assertEquals(
+          "Dates should be returned as Dates",
+          tuple.getDate("dt_sing").toInstant(),
+          dt.toInstant());
       dt = new Date(Instant.parse("1981-03-04T01:02:03.780Z").toEpochMilli());
-      assertTrue(
+      assertEquals(
           "MV dates should be returned as Dates for dt_multi",
-          tuple.getDates("dt_multi").get(0).equals(dt));
+          tuple.getDates("dt_multi").get(0).toInstant(),
+          dt.toInstant());
       dt = new Date(Instant.parse("1981-05-24T04:05:06.990Z").toEpochMilli());
-      assertTrue(
+      assertEquals(
           "MV dates should be returned as Dates  for dt_multi",
-          tuple.getDates("dt_multi").get(1).equals(dt));
+          tuple.getDates("dt_multi").get(1).toInstant(),
+          dt.toInstant());
 
       assertTrue("Booleans should be returned", tuple.getBool("b_sing"));
       assertFalse("MV boolean should be returned for b_multi", tuple.getBools("b_multi").get(0));
@@ -3051,9 +3043,7 @@ public class StreamingTest extends SolrCloudTestCase {
 
   private ParallelStream parallelStream(TupleStream stream, FieldComparator comparator)
       throws IOException {
-    ParallelStream pstream =
-        new ParallelStream(zkHost, COLLECTIONORALIAS, stream, numWorkers, comparator);
-    return pstream;
+    return new ParallelStream(zkHost, COLLECTIONORALIAS, stream, numWorkers, comparator);
   }
 
   public void testCloudSolrStreamWithoutStreamContext() throws Exception {

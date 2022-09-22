@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
@@ -296,7 +297,7 @@ public class LegacyFacet {
       required = new RequiredSolrParams(params);
 
       // remove local params unless it's a query
-      if (type != FacetParams.FACET_QUERY) {
+      if (!Objects.equals(type, FacetParams.FACET_QUERY)) {
         facetValue = localParams.get(CommonParams.VALUE);
       }
 

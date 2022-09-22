@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.UnaryOperator;
@@ -453,7 +452,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
   }
 
   private static void assertOnlyValue(String expected, SolrInputDocument doc, String field) {
-    assertEquals(Collections.singletonList(expected), doc.getFieldValues(field));
+    assertEquals(List.of(expected), List.copyOf(doc.getFieldValues(field)));
   }
 
   public void testAtomicUpdateFieldValue() throws Exception {
