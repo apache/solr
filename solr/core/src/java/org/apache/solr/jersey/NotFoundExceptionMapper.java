@@ -70,7 +70,7 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
             SolrException.ErrorCode.NOT_FOUND,
             "Cannot find API for the path: "
                 + solrQueryRequest.getContext().get(CommonParams.PATH));
-    solrQueryResponse.setException(exception);
+    solrQueryResponse.setException(stashedException);
 
     return processAndRespondToException(
         stashedException, solrQueryRequest, containerRequestContext);
