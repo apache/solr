@@ -34,11 +34,7 @@ that may affect your existing implementation.
 
 Detailed steps for upgrading a Solr cluster are in the section xref:deployment-guide:upgrading-a-solr-cluster.adoc[].
 
-== Upgrading to 9.1
-
-SolrJ is beginning to be split up.  If you use ZooKeeper coordinates to create a `CloudSolrClient`, you will need to add a dependency on `solrj-zookeeper`.
-Instead, consider migrating to use of specifying a list of Solr URLs in the client's builder.
-Not only does this reduce dependencies, but it improves security by being able to limit ZooKeeper access.
+// DO NOT ADD MINOR VERSION INFO HERE; see child pages
 
 Zookeeper Credentials support now follows a new paradigm.
 Old classes, such as `VMParamsAllAndReadonlyDigestZkACLProvider` and `VMParamsSingleSetCredentialsDigestZkCredentialsProvider`, are deprecated but still supported until at least `10.0`.
