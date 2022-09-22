@@ -81,7 +81,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Index split requests from here go to the host of the parent shard, and are processed by SplitOp.
+ * SolrCloud logic for splitting a shard.  It's complicated!  See {@code split()} below.
  */
 public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
