@@ -164,6 +164,8 @@ Bug Fixes
 
 * SOLR-16219: ICUCollationField protected field IllegalAccessException from different classloader (Michael Gibney)
 
+* SOLR-16426: LBHttp2SolrClient (and therefore CloudHttp2SolrClient) now respect requestWriter, responseParser and queryParam changes (Houston Putman)
+
 Other Changes
 ---------------------
 * SOLR-16351: Upgrade Carrot2 to 4.4.3, upgrade randomizedtesting to 2.8.0. (Dawid Weiss)
