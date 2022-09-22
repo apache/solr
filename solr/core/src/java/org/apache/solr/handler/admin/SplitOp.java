@@ -160,7 +160,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       }
 
       if (pathsArr == null) {
-        log.info("SplitOp: Create array of paths for sub-shards of core: {}", cname);
+        log.trace("SplitOp: Create array of paths for sub-shards of core: {}", cname);
         newCores = new ArrayList<>(partitions);
         for (String newCoreName : newCoreNames) {
           SolrCore newcore = it.handler.coreContainer.getCore(newCoreName);
