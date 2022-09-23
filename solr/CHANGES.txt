@@ -89,7 +89,7 @@ Improvements
 
 * SOLR-16361: mod() is now accurate for all integers, floats, doubles and longs upto 2^52 (Dan Rosher via Eric Pugh)
 
-* SOLR-16404: Prometheus Exporter: Use non-deprecated Solr clients. (Houston Putman)
+* SOLR-16404: Prometheus Exporter: Use HTTP2 Solr clients. (Houston Putman)
 
 Optimizations
 ---------------------
