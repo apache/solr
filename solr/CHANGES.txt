@@ -139,6 +139,8 @@ Bug Fixes
 
 * SOLR-16426: LBHttp2SolrClient (and therefore CloudHttp2SolrClient) now respect requestWriter, responseParser and queryParam changes (Houston Putman)
 
+* SOLR-16232: Fix EnvVar usage in bin/solr (Houston Putman)
+
 Other Changes
 ---------------------
 * SOLR-16351: Upgrade Carrot2 to 4.4.3, upgrade randomizedtesting to 2.8.0. (Dawid Weiss)
