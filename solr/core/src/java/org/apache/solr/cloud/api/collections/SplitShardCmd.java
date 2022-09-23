@@ -190,14 +190,17 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
 
     RTimerTree t;
     if (ccc.getCoreContainer().getNodeConfig().getMetricsConfig().isEnabled()) {
-      // 1. verify that there is enough space on disk to create sub-shards
-      log.info(
-          "SplitShardCmd: verify that there is enough space on disk to create sub-shards for slice: {}",
-          parentShardLeader);
-      t = timings.sub("checkDiskSpace");
-      checkDiskSpace(
-          collectionName, slice.get(), parentShardLeader, splitMethod, ccc.getSolrCloudManager());
-      t.stop();
+      // check disk space for shard split
+      if (Boolean.parseBoolean(System.getProperty(SHARDSPLIT_CHECKDISKSPACE_ENABLED, "true"))) {
+        // 1. verify that there is enough space on disk to create sub-shards
+        log.info(
+            "SplitShardCmd: verify that there is enough space on disk to create sub-shards for slice: {}",
+            parentShardLeader);
+        t = timings.sub("checkDiskSpace");
+        checkDiskSpace(
+            collectionName, slice.get(), parentShardLeader, splitMethod, ccc.getSolrCloudManager());
+        t.stop();
+      }
     }
 
     // let's record the ephemeralOwner of the parent leader node
@@ -856,10 +859,6 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       SolrIndexSplitter.SplitMethod method,
       SolrCloudManager cloudManager)
       throws SolrException {
-    // check that the system property is enabled. It should not be disabled by default.
-    if (!Boolean.parseBoolean(System.getProperty(SHARDSPLIT_CHECKDISKSPACE_ENABLED, "true"))) {
-      return;
-    }
     // check that enough disk space is available on the parent leader node
     // otherwise the actual index splitting will always fail
     NodeStateProvider nodeStateProvider = cloudManager.getNodeStateProvider();
