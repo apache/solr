@@ -66,6 +66,8 @@ Improvements
 
 * SOLR-16404: Prometheus Exporter: Use HTTP2 Solr clients. (Houston Putman)
 
+* SOLR-16429: The s3-repository module now supports AWS STS, and therefore Web Identity Tokens, by default. (Josh Souza via Houston Putman)
+
 Optimizations
 ---------------------
 * SOLR-16120: Optimise hl.fl expansion. (Christine Poerschke, David Smiley, Mike Drob)
