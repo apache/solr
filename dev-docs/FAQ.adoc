@@ -78,9 +78,10 @@ There are Java classes and methods that Solr doesn't allow.  This exclusion is e
 [Forbidden APIs](https://github.com/policeman-tools/forbidden-apis) tool and is applied as
 part of the `check` task.   Learn more about using Forbidden APIs via `./gradlew :helpForbiddenApis`.
 
-We also check for security vulnerable components in Solr using the
-[OWASP](https://plugins.gradle.org/plugin/org.owasp.dependencycheck) Gradle plugin, as part of the
-`check` task.
+To run a check for dependencies of Solr that have security vulnerabilities using the
+[OWASP](https://plugins.gradle.org/plugin/org.owasp.dependencycheck) Gradle plugin.  Run via:
+
+`./gradlew owasp`
 
 There are a number of other tasks that get run to validate the source code, and you
 can find them in the  [./gradle/validation](./gradle/validation) source tree.
