@@ -16,30 +16,6 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.request.beans.AddReplicaPropertyPayload;
-import org.apache.solr.cloud.overseer.SliceMutator;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.params.CollectionParams;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.admin.CollectionsHandler;
-import org.apache.solr.jersey.JacksonReflectMapWriter;
-import org.apache.solr.jersey.PermissionName;
-import org.apache.solr.jersey.SolrJerseyResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-
 import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SHARD_UNIQUE;
@@ -51,6 +27,35 @@ import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFIX;
 import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import java.lang.invoke.MethodHandles;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import javax.inject.Inject;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.request.beans.AddReplicaPropertyPayload;
+import org.apache.solr.cloud.overseer.SliceMutator;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.handler.admin.CollectionsHandler;
+import org.apache.solr.jersey.JacksonReflectMapWriter;
+import org.apache.solr.jersey.PermissionName;
+import org.apache.solr.jersey.SolrJerseyResponse;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * V2 API for adding a property to a collection replica
@@ -65,22 +70,50 @@ public class AddReplicaPropertyAPI extends AdminAPIBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  @Inject
+  public AddReplicaPropertyAPI(
+      CoreContainer coreContainer,
+      SolrQueryRequest solrQueryRequest,
+      SolrQueryResponse solrQueryResponse) {
+    super(coreContainer, solrQueryRequest, solrQueryResponse);
+  }
+
   @PUT
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @PermissionName(COLL_EDIT_PERM)
-  public SolrJerseyResponse addReplicaPropertyJax(@PathParam("collName") String collName,
-                                      @PathParam("shardName") String shardName,
-                                      @PathParam("replicaName") String replicaName,
-                                      @PathParam("propName") String propertyName,
-                                      AddReplicaPropertyRequestBody requestBody) throws Exception {
+  public SolrJerseyResponse addReplicaProperty(
+      @Parameter(
+              description = "The name of the collection the replica belongs to.",
+              required = true)
+          @PathParam("collName")
+          String collName,
+      @Parameter(description = "The name of the shard the replica belongs to.", required = true)
+          @PathParam("shardName")
+          String shardName,
+      @Parameter(description = "The replica, e.g., `core_node1`.", required = true)
+          @PathParam("replicaName")
+          String replicaName,
+      @Parameter(description = "The name of the property to add.", required = true)
+          @PathParam("propName")
+          String propertyName,
+      @RequestBody(
+              description = "The value of the replica property to create or update",
+              required = true)
+          AddReplicaPropertyRequestBody requestBody)
+      throws Exception {
     final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
     final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
-    recordCollectionForLogAndTracing(collName, getSolrQueryRequest());
+    recordCollectionForLogAndTracing(collName, solrQueryRequest);
 
-    final ZkNodeProps remoteMessage = createRemoteMessage(collName, shardName, replicaName, propertyName, requestBody);
-    final SolrResponse remoteResponse = CollectionsHandler.submitCollectionApiCommand(coreContainer,
-            coreContainer.getDistributedCollectionCommandRunner(), remoteMessage,
-            CollectionParams.CollectionAction.ADDREPLICAPROP, DEFAULT_COLLECTION_OP_TIMEOUT);
+    final ZkNodeProps remoteMessage =
+        createRemoteMessage(collName, shardName, replicaName, propertyName, requestBody);
+    final SolrResponse remoteResponse =
+        CollectionsHandler.submitCollectionApiCommand(
+            coreContainer,
+            coreContainer.getDistributedCollectionCommandRunner(),
+            remoteMessage,
+            CollectionParams.CollectionAction.ADDREPLICAPROP,
+            DEFAULT_COLLECTION_OP_TIMEOUT);
     if (remoteResponse.getException() != null) {
       throw remoteResponse.getException();
     }
@@ -89,8 +122,12 @@ public class AddReplicaPropertyAPI extends AdminAPIBase {
     return response;
   }
 
-  public ZkNodeProps createRemoteMessage(String collName, String shardName, String replicaName, String propertyName,
-                                         AddReplicaPropertyRequestBody requestBody) {
+  public ZkNodeProps createRemoteMessage(
+      String collName,
+      String shardName,
+      String replicaName,
+      String propertyName,
+      AddReplicaPropertyRequestBody requestBody) {
     final Map<String, Object> remoteMessage = new HashMap<>();
     remoteMessage.put(COLLECTION_PROP, collName);
     remoteMessage.put(PROPERTY_PROP, propertyName);
@@ -108,25 +145,30 @@ public class AddReplicaPropertyAPI extends AdminAPIBase {
     // property on multiple replicas in a slice on properties that are known to only be
     // one-per-slice and error out if so.
     if (requestBody.shardUnique != null
-            && SliceMutator.SLICE_UNIQUE_BOOLEAN_PROPERTIES.contains(
+        && SliceMutator.SLICE_UNIQUE_BOOLEAN_PROPERTIES.contains(
             prefixedPropertyName.toLowerCase(Locale.ROOT))
-            && uniquePerSlice == false) {
+        && uniquePerSlice == false) {
       throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST,
-              "Overseer replica property command received for property "
-                      + prefixedPropertyName
-                      + " with the "
-                      + SHARD_UNIQUE
-                      + " parameter set to something other than 'true'. No action taken.");
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Overseer replica property command received for property "
+              + prefixedPropertyName
+              + " with the "
+              + SHARD_UNIQUE
+              + " parameter set to something other than 'true'. No action taken.");
     }
 
     return new ZkNodeProps(remoteMessage);
   }
 
   public static class AddReplicaPropertyRequestBody implements JacksonReflectMapWriter {
+    @Schema(description = "The value to assign to the property.", required = true)
     @JsonProperty("value")
     public String value;
 
+    @Schema(
+        description =
+            "If `true`, then setting this property in one replica will remove the property from all other replicas in that shard. The default is `false`.\\nThere is one pre-defined property `preferredLeader` for which `shardUnique` is forced to `true` and an error returned if `shardUnique` is explicitly set to `false`.",
+        defaultValue = "false")
     @JsonProperty("shardUnique")
     public Boolean shardUnique;
   }

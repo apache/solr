@@ -128,7 +128,7 @@ import org.apache.solr.handler.admin.ZookeeperReadAPI;
 import org.apache.solr.handler.admin.ZookeeperStatusHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.designer.SchemaDesignerAPI;
-import org.apache.solr.jersey.CoreContainerFactory;
+import org.apache.solr.jersey.InjectionFactories;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrCoreMetricManager;
@@ -1078,7 +1078,7 @@ public class CoreContainer {
             new AbstractBinder() {
               @Override
               protected void configure() {
-                bindFactory(new CoreContainerFactory(thisCCRef))
+                bindFactory(new InjectionFactories.CoreContainerFactory(thisCCRef))
                     .to(CoreContainer.class)
                     .in(Singleton.class);
               }
