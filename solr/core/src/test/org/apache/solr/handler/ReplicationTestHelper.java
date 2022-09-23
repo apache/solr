@@ -39,7 +39,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
@@ -69,7 +68,7 @@ public final class ReplicationTestHelper {
     return jetty;
   }
 
-  public static HttpSolrClient createNewSolrClient(String baseUrl) {
+  public static SolrClient createNewSolrClient(String baseUrl) {
     try {
       // set up the client...
       return SolrTestCaseJ4.getHttpSolrClient(baseUrl, 15000, 90000);
