@@ -138,8 +138,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       String routeFieldName = null;
       // if in SolrCloud mode, get collection and shard names
       if (it.handler.coreContainer.isZooKeeperAware()) {
-        log.trace(
-            "SplitOp: Determine which router is associated with the shard for core: {}", cname);
+        log.trace("SplitOp: Determine which router is associated with the shard for core");
         ClusterState clusterState = it.handler.coreContainer.getZkController().getClusterState();
         String collectionName =
             parentCore.getCoreDescriptor().getCloudDescriptor().getCollectionName();
@@ -160,7 +159,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       }
 
       if (pathsArr == null) {
-        log.trace("SplitOp: Create array of paths for sub-shards of core: {}", cname);
+        log.trace("SplitOp: Create array of paths for sub-shards of core");
         newCores = new ArrayList<>(partitions);
         for (String newCoreName : newCoreNames) {
           SolrCore newcore = it.handler.coreContainer.getCore(newCoreName);
@@ -205,7 +204,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       parentCore.getUpdateHandler().split(cmd);
 
       if (it.handler.coreContainer.isZooKeeperAware()) {
-        log.trace("SplitOp: Create cloud descriptors for sub-shards of core: {}", cname);
+        log.trace("SplitOp: Create cloud descriptors for sub-shards of core");
         for (SolrCore newcore : newCores) {
           // the index of the core changed from empty to have some data, its term must be not zero
           CloudDescriptor cd = newcore.getCoreDescriptor().getCloudDescriptor();
