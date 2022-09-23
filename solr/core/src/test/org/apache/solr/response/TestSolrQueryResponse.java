@@ -17,8 +17,8 @@
 package org.apache.solr.response;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import org.apache.solr.SolrTestCase;
@@ -251,15 +251,14 @@ public class TestSolrQueryResponse extends SolrTestCase {
     assertFalse(it.hasNext());
     response.addHttpHeader("key1", "value1");
     assertTrue(response.httpHeaders().hasNext());
-    assertEquals(Arrays.asList("value1"), response.removeHttpHeaders("key1"));
+    assertEquals(List.of("value1"), List.copyOf(response.removeHttpHeaders("key1")));
     assertFalse(response.httpHeaders().hasNext());
 
     response.addHttpHeader("key1", "value2");
     response.addHttpHeader("key1", "value3");
     response.addHttpHeader("key2", "value4");
     assertTrue(response.httpHeaders().hasNext());
-    assertEquals(
-        Arrays.asList(new String[] {"value2", "value3"}), response.removeHttpHeaders("key1"));
+    assertEquals(List.of("value2", "value3"), List.copyOf(response.removeHttpHeaders("key1")));
     assertNull(response.removeHttpHeaders("key1"));
     assertEquals("key2", response.httpHeaders().next().getKey());
   }
@@ -267,7 +266,7 @@ public class TestSolrQueryResponse extends SolrTestCase {
   @Test
   public void testException() {
     final SolrQueryResponse response = new SolrQueryResponse();
-    assertEquals("exception initial value", null, response.getException());
+    assertNull("exception initial value", response.getException());
     final Exception newValue =
         (random().nextBoolean()
             ? (random().nextBoolean() ? new ArithmeticException() : new IOException())

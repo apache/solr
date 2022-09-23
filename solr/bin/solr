@@ -1799,6 +1799,11 @@ if [[ -n ${SOLR_LOG_LEVEL:-} ]] ; then
   SOLR_LOG_LEVEL_OPT="-Dsolr.log.level=$SOLR_LOG_LEVEL"
 fi
 
+# Solr modules option
+if [[ -n "${SOLR_MODULES:-}" ]] ; then
+  SOLR_OPTS+=("-Dsolr.modules=$SOLR_MODULES")
+fi
+
 : ${SOLR_SERVER_DIR:=$DEFAULT_SERVER_DIR}
 
 if [ ! -e "$SOLR_SERVER_DIR" ]; then

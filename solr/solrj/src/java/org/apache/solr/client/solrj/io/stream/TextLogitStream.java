@@ -494,7 +494,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
             throw new IOException(
                 String.format(
                     Locale.ROOT,
-                    "invalid expression %s - the number of weights must be %d, found %d",
+                    "invalid expression - the number of weights must be %d, found %d",
                     terms.size() + 1,
                     weights.size()));
           }

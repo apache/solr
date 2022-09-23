@@ -53,6 +53,7 @@ import org.apache.solr.schema.StrField;
 import org.apache.solr.search.PointMerger;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.BoundedTreeSet;
+import org.apache.solr.util.SolrResponseUtil;
 
 /**
  * Return TermEnum information, useful for things like auto suggest.
@@ -383,12 +384,14 @@ public class TermsComponent extends SearchComponent {
       for (ShardResponse srsp : sreq.responses) {
         @SuppressWarnings("unchecked")
         NamedList<NamedList<Object>> terms =
-            (NamedList<NamedList<Object>>) srsp.getSolrResponse().getResponse().get("terms");
+            (NamedList<NamedList<Object>>)
+                SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "terms", false);
         th.parse(terms);
 
         @SuppressWarnings({"unchecked"})
         NamedList<Number> stats =
-            (NamedList<Number>) srsp.getSolrResponse().getResponse().get("indexstats");
+            (NamedList<Number>)
+                SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "indexstats", true);
         if (stats != null) {
           th.numDocs += stats.get("numDocs").longValue();
           th.stats = true;

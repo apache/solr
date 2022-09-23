@@ -24,6 +24,7 @@ import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -274,7 +275,10 @@ public class TopicStream extends CloudSolrStream implements Expressible {
       ModifiableSolrParams mParams = new ModifiableSolrParams(params);
       child.setExpression(
           mParams.getMap().entrySet().stream()
-              .map(e -> String.format(Locale.ROOT, "%s=%s", e.getKey(), e.getValue()))
+              .map(
+                  e ->
+                      String.format(
+                          Locale.ROOT, "%s=%s", e.getKey(), Arrays.toString(e.getValue())))
               .collect(Collectors.joining(",")));
       explanation.addChild(child);
     }
@@ -282,7 +286,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
     {
       // child 2 is a place where we store and read checkpoint info from
       StreamExplanation child = new StreamExplanation(getStreamNodeId() + "-checkpoint");
-      child.setFunctionName(String.format(Locale.ROOT, "solr (checkpoint store)"));
+      child.setFunctionName("solr (checkpoint store)");
       child.setImplementingClass("Solr/Lucene");
       child.setExpressionType(ExpressionType.DATASTORE);
       child.setExpression(

@@ -23,11 +23,14 @@ import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.IsUpdateRequest;
+import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.common.SolrException;
@@ -78,7 +81,7 @@ import org.slf4j.MDC;
  * @since solr 8.0
  */
 public class LBHttp2SolrClient extends LBSolrClient {
-  private Http2SolrClient httpClient;
+  private final Http2SolrClient httpClient;
 
   public LBHttp2SolrClient(Http2SolrClient httpClient, String... baseSolrUrls) {
     super(Arrays.asList(baseSolrUrls));
@@ -88,6 +91,30 @@ public class LBHttp2SolrClient extends LBSolrClient {
   @Override
   protected SolrClient getClient(String baseUrl) {
     return httpClient;
+  }
+
+  @Override
+  public void setParser(ResponseParser parser) {
+    super.setParser(parser);
+    this.httpClient.setParser(parser);
+  }
+
+  @Override
+  public void setRequestWriter(RequestWriter writer) {
+    super.setRequestWriter(writer);
+    this.httpClient.setRequestWriter(writer);
+  }
+
+  @Override
+  public void setQueryParams(Set<String> queryParams) {
+    super.setQueryParams(queryParams);
+    this.httpClient.setQueryParams(queryParams);
+  }
+
+  @Override
+  public void addQueryParams(String queryOnlyParam) {
+    super.addQueryParams(queryOnlyParam);
+    this.httpClient.setQueryParams(getQueryParams());
   }
 
   public Cancellable asyncReq(Req req, AsyncListener<Rsp> asyncListener) {

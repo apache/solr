@@ -45,10 +45,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.cloud.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.BadVersionException;
+import org.apache.solr.client.solrj.cloud.DelegatingCloudManager;
+import org.apache.solr.client.solrj.cloud.DelegatingClusterStateProvider;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.NotEmptyException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.VersionedData;
+import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.RefreshCollectionMessage;
@@ -181,6 +184,8 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         // This code directly updates Zookeeper by creating the collection state.json. It is
         // compatible with both distributed cluster state updates and Overseer based cluster state
         // updates.
+
+        // TODO: Consider doing this for all collections, not just the PRS collections.
         ZkWriteCommand command =
             new ClusterStateMutator(ccc.getSolrCloudManager())
                 .createCollection(clusterState, message);
@@ -334,7 +339,6 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
           ZkWriteCommand command =
               new SliceMutator(ccc.getSolrCloudManager()).addReplica(clusterState, props);
           byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, command.collection));
-          //        log.info("collection updated : {}", new String(data, StandardCharsets.UTF_8));
           zkStateReader.getZkClient().setData(collectionPath, data, true);
           clusterState = clusterState.copyWith(collectionName, command.collection);
           newColl = command.collection;
@@ -511,6 +515,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
     int numPullReplicas = message.getInt(PULL_REPLICAS, 0);
 
     int numSlices = shardNames.size();
+    cloudManager = wrapCloudManager(clusterState, cloudManager);
 
     // we need to look at every node and see how many cores it serves
     // add our new cores to existing nodes serving the least number of cores
@@ -552,6 +557,34 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
       replicaPositions = assignStrategy.assign(cloudManager, assignRequest);
     }
     return replicaPositions;
+  }
+  // the cloud manager should reflect the latest internal cluster state
+  private static SolrCloudManager wrapCloudManager(
+      ClusterState clusterState, SolrCloudManager solrCloudManager) {
+    final ClusterStateProvider csp =
+        new DelegatingClusterStateProvider(solrCloudManager.getClusterStateProvider()) {
+          @Override
+          public ClusterState.CollectionRef getState(String collection) {
+            return clusterState.getCollectionRef(collection);
+          }
+
+          @Override
+          public ClusterState getClusterState() {
+            return clusterState;
+          }
+
+          @Override
+          public DocCollection getCollection(String name) throws IOException {
+            return clusterState.getCollection(name);
+          }
+        };
+
+    return new DelegatingCloudManager(solrCloudManager) {
+      @Override
+      public ClusterStateProvider getClusterStateProvider() {
+        return csp;
+      }
+    };
   }
 
   public static void checkReplicaTypes(ZkNodeProps message) {
