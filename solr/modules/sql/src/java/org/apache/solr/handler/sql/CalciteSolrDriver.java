@@ -78,6 +78,9 @@ public class CalciteSolrDriver extends Driver {
     // which works for multi-valued fields in Solr but looks like nonsense to Calcite.
     Hook.REL_BUILDER_SIMPLIFY.addThread(CalciteSolrDriver::relBuilderSimplify);
 
+    // See SOLR-16433 and CALCITE-5298
+    info.setProperty("calcite.test.dataset", ".");
+
     Connection connection = super.connect(url, info);
     CalciteConnection calciteConnection = (CalciteConnection) connection;
 
