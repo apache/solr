@@ -16,10 +16,9 @@
  */
 package org.apache.solr.util;
 
+import java.util.Locale;
 import org.apache.solr.common.SolrException;
 import org.semver4j.Semver;
-
-import java.util.Locale;
 
 /**
  * Simple Solr version representation backed by a <a href="https://devhints.io/semver">Semantic

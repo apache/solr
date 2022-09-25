@@ -53,8 +53,7 @@ dependencies {
     exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
   }
 
-  compileOnly 'io.swagger.core.v3:swagger-core'
-  testCompileOnly 'io.swagger.core.v3:swagger-core'
+  implementation 'io.swagger.core.v3:swagger-annotations'
 
   // Export these dependencies so that they're imported transitively by
   // other modules.
