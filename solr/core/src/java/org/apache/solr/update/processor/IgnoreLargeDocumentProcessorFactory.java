@@ -50,14 +50,14 @@ public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorF
 
   // limit of a SolrInputDocument size (in kb)
   private long maxDocumentSizeKb = 1024 * 1024;
-  private boolean onlyLogErrors = false;
+  private boolean permissiveModeEnabled = false;
 
   @Override
   public void init(NamedList<?> args) {
     final SolrParams params = args.toSolrParams();
     maxDocumentSizeKb = params.required().getLong(LIMIT_SIZE_PARAM);
     args.remove(LIMIT_SIZE_PARAM);
-    onlyLogErrors = params.getBool(PERMISSIVE_MODE_PARAM, false);
+    permissiveModeEnabled = params.getBool(PERMISSIVE_MODE_PARAM, false);
     args.remove(PERMISSIVE_MODE_PARAM);
 
     if (args.size() > 0) {
@@ -81,7 +81,7 @@ public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorF
       }
 
       private void handleViolatingDoc(AddUpdateCommand cmd, long estimatedSizeBytes) {
-        if (onlyLogErrors) {
+        if (permissiveModeEnabled) {
           log.warn(
               "Skipping doc because estimated size exceeds limit. [docId={}, estimatedSize={} bytes, limitSize={}kb]",
               cmd.getPrintableId(),
