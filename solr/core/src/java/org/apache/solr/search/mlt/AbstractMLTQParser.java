@@ -22,6 +22,9 @@ abstract class AbstractMLTQParser extends QParser {
   // Pattern is thread safe -- TODO? share this with general 'fl' param
   private static final Pattern splitList = Pattern.compile(",| ");
 
+  /**
+   * Retrieves text and string fields fom the schema
+   */
   protected String[] getFieldsFromSchema() {
     Map<String, SchemaField> fieldDefinitions = req.getSearcher().getSchema().getFields();
     ArrayList<String> fields = new ArrayList<>();
@@ -58,6 +61,7 @@ abstract class AbstractMLTQParser extends QParser {
     Query invoke(MoreLikeThis mlt) throws IOException;
   }
 
+  
   protected BooleanQuery parseMLTQuery(Supplier<String[]> fieldsFallback, MLTInvoker invoker, Query docIdQuery) throws IOException {
     return exclude(parseMLTQuery(fieldsFallback, invoker), docIdQuery);
   }

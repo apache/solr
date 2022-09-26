@@ -26,7 +26,6 @@ import java.util.Map;
 
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
