@@ -17,6 +17,14 @@
 
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
+
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.Collection;
+import java.util.IdentityHashMap;
+import java.util.Map;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -28,15 +36,6 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.Collection;
-import java.util.IdentityHashMap;
-import java.util.Map;
-
-import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
-import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
-
 /**
  * Gives system administrators a way to ignore very large update from clients. When an update goes
  * through processors its size can change therefore this processor should be the last processor of
@@ -46,21 +45,20 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
  */
 public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorFactory {
   public static final String LIMIT_SIZE_PARAM = "limit";
-  public static final String ONLY_LOG_ERRORS_PARAM = "onlyLogErrors";
+  public static final String PERMISSIVE_MODE_PARAM = "permissiveMode";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-
   // limit of a SolrInputDocument size (in kb)
-  private long maxDocumentSize = 1024 * 1024;
+  private long maxDocumentSizeKb = 1024 * 1024;
   private boolean onlyLogErrors = false;
 
   @Override
   public void init(NamedList<?> args) {
     final SolrParams params = args.toSolrParams();
-    maxDocumentSize = params.required().getLong(LIMIT_SIZE_PARAM);
+    maxDocumentSizeKb = params.required().getLong(LIMIT_SIZE_PARAM);
     args.remove(LIMIT_SIZE_PARAM);
-    onlyLogErrors = params.getBool(ONLY_LOG_ERRORS_PARAM, false);
-    args.remove(ONLY_LOG_ERRORS_PARAM);
+    onlyLogErrors = params.getBool(PERMISSIVE_MODE_PARAM, false);
+    args.remove(PERMISSIVE_MODE_PARAM);
 
     if (args.size() > 0) {
       throw new SolrException(SERVER_ERROR, "Unexpected init param(s): '" + args.getName(0) + "'");
@@ -74,9 +72,9 @@ public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorF
 
       @Override
       public void processAdd(AddUpdateCommand cmd) throws IOException {
-        long docSize = ObjectSizeEstimator.estimate(cmd.getSolrInputDocument());
-        if (docSize / 1024 > maxDocumentSize) {
-          handleViolatingDoc(cmd, docSize);
+        long docSizeBytes = ObjectSizeEstimator.estimate(cmd.getSolrInputDocument());
+        if (docSizeBytes > maxDocumentSizeKb * 1024) {
+          handleViolatingDoc(cmd, docSizeBytes);
         } else {
           super.processAdd(cmd);
         }
@@ -84,11 +82,19 @@ public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorF
 
       private void handleViolatingDoc(AddUpdateCommand cmd, long estimatedSizeBytes) {
         if (onlyLogErrors) {
-          log.warn("Skipping doc {} bc size {} exceeds limit {}", cmd.getPrintableId(), estimatedSizeBytes / 1024, maxDocumentSize);
+          log.warn(
+              "Skipping doc because estimated size exceeds limit. [docId={}, estimatedSize={} bytes, limitSize={}kb]",
+              cmd.getPrintableId(),
+              estimatedSizeBytes,
+              maxDocumentSizeKb);
         } else {
           throw new SolrException(
-                  BAD_REQUEST,
-                  "Size of the document " + cmd.getPrintableId() + " is too large, around:" + estimatedSizeBytes);
+              BAD_REQUEST,
+              "Size of the document "
+                  + cmd.getPrintableId()
+                  + " is too large, around: "
+                  + estimatedSizeBytes
+                  + " bytes");
         }
       }
     };
