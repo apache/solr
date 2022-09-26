@@ -110,7 +110,7 @@ public class JerseyApplications {
           new AbstractBinder() {
             @Override
             protected void configure() {
-              bindFactory(new InjectionFactories.SolrCoreFactory(solrCore))
+              bindFactory(new InjectionFactories.SingletonFactory<>(solrCore))
                   .to(SolrCore.class)
                   .in(Singleton.class);
             }

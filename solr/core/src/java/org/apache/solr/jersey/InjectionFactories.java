@@ -19,8 +19,6 @@ package org.apache.solr.jersey;
 
 import javax.inject.Inject;
 import javax.ws.rs.container.ContainerRequestContext;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.glassfish.hk2.api.Factory;
@@ -64,43 +62,20 @@ public class InjectionFactories {
     public void dispose(SolrQueryResponse instance) {}
   }
 
-  public static class CoreContainerFactory implements Factory<CoreContainer> {
+  public static class SingletonFactory<T> implements Factory<T> {
 
-    private final CoreContainer singletonCC;
+    private final T singletonVal;
 
-    public CoreContainerFactory(CoreContainer singletonCC) {
-      this.singletonCC = singletonCC;
+    public SingletonFactory(T singletonVal) {
+      this.singletonVal = singletonVal;
     }
 
     @Override
-    public CoreContainer provide() {
-      return singletonCC;
+    public T provide() {
+      return singletonVal;
     }
 
     @Override
-    public void dispose(CoreContainer instance) {}
-  }
-
-  /**
-   * Allows the SolrCore germane to a particular request to be injected into individual resource
-   * instances at call-time.
-   */
-  public static class SolrCoreFactory implements Factory<SolrCore> {
-
-    private final SolrCore solrCore;
-
-    public SolrCoreFactory(SolrCore solrCore) {
-      this.solrCore = solrCore;
-    }
-
-    @Override
-    public SolrCore provide() {
-      return solrCore;
-    }
-
-    @Override
-    public void dispose(SolrCore instance) {
-      /* No-op */
-    }
+    public void dispose(T instance) {}
   }
 }

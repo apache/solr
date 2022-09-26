@@ -67,7 +67,7 @@ public class ListConfigSetsAPITest extends JerseyTest {
         new AbstractBinder() {
           @Override
           protected void configure() {
-            bindFactory(new InjectionFactories.CoreContainerFactory(mockCoreContainer))
+            bindFactory(new InjectionFactories.SingletonFactory<>(mockCoreContainer))
                 .to(CoreContainer.class)
                 .in(Singleton.class);
           }

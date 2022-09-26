@@ -1078,7 +1078,7 @@ public class CoreContainer {
             new AbstractBinder() {
               @Override
               protected void configure() {
-                bindFactory(new InjectionFactories.CoreContainerFactory(thisCCRef))
+                bindFactory(new InjectionFactories.SingletonFactory<>(thisCCRef))
                     .to(CoreContainer.class)
                     .in(Singleton.class);
               }

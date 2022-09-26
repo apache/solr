@@ -161,6 +161,13 @@ public class AddReplicaPropertyAPI extends AdminAPIBase {
   }
 
   public static class AddReplicaPropertyRequestBody implements JacksonReflectMapWriter {
+
+    public AddReplicaPropertyRequestBody() {}
+
+    public AddReplicaPropertyRequestBody(String value) {
+      this.value = value;
+    }
+
     @Schema(description = "The value to assign to the property.", required = true)
     @JsonProperty("value")
     public String value;
