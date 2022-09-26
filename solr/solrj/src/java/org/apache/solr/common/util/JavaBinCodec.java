@@ -1195,7 +1195,7 @@ public class JavaBinCodec implements PushWriter {
       writeTag(NULL);
       return;
     }
-    Integer idx = stringsMap == null ? null : stringsMap.get(s);
+    Integer idx = stringsMap == null ? null : stringsMap.get(s.toString());
     if (idx == null) idx = 0;
     writeTag(EXTERN_STRING, idx);
     if (idx == 0) {

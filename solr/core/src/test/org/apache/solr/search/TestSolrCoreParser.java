@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.spans.SpanNearQuery;
@@ -227,7 +228,11 @@ public class TestSolrCoreParser extends SolrTestCaseJ4 {
     }
     assertEquals(fieldName, term.field());
     assertTrue(
-        "expected term text (" + text + ") not found in (" + expectedTermTexts + ")",
+        "expected term text ("
+            + text
+            + ") not found in ("
+            + Arrays.toString(expectedTermTexts)
+            + ")",
         foundExpected);
   }
 }
