@@ -185,7 +185,6 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.DE
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEBACKUP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETENODE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICAPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESHARD;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESNAPSHOT;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESTATUS;
@@ -320,10 +319,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           "Invoked Collection Action: {} with params {}", action.toLower(), req.getParamString());
     }
 
+    final RequiredSolrParams requiredParams = req.getParams().required();
     switch (action) {
       case ADDREPLICAPROP:
         // Convert query-params to v2 acceptable format
-        final RequiredSolrParams requiredParams = req.getParams().required();
         final AddReplicaPropertyAPI.AddReplicaPropertyRequestBody requestBody =
             new AddReplicaPropertyAPI.AddReplicaPropertyRequestBody();
         requestBody.value = requiredParams.get(PROPERTY_VALUE_PROP);
@@ -346,7 +345,20 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, addReplicaPropResponse);
         break;
       case DELETEREPLICAPROP:
-        // TODO JEGERLOW create new DeleteReplicaPropertyAPI and invoke
+        // Convert query-params to v2 acceptable format
+        final String propNameToDelete = requiredParams.get(PROPERTY_PROP);
+        final String trimmedPropNameToDelete =
+                propNameToDelete.startsWith(PROPERTY_PREFIX)
+                        ? propNameToDelete.substring(PROPERTY_PREFIX.length())
+                        : propNameToDelete;
+        final DeleteReplicaPropertyAPI deleteReplicaPropertyAPI = new DeleteReplicaPropertyAPI(coreContainer, req, rsp);
+        final SolrJerseyResponse deleteReplicaPropResponse = deleteReplicaPropertyAPI.deleteReplicaProperty(
+                requiredParams.get(COLLECTION_PROP),
+                requiredParams.get(SHARD_ID_PROP),
+                requiredParams.get(REPLICA_PROP),
+                trimmedPropNameToDelete
+        );
+        V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, deleteReplicaPropResponse);
         break;
       default:
         CollectionOperation operation = CollectionOperation.get(action);
@@ -1302,20 +1314,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
                   h.coreContainer.getZkController().getZkStateReader(), new ZkNodeProps(all))
               .getClusterStatus(rsp.getValues());
           return null;
-        }),
-    // XXX should this command support followAliases?
-    DELETEREPLICAPROP_OP(
-        DELETEREPLICAPROP,
-        (req, rsp, h) -> {
-          Map<String, Object> map =
-              copy(
-                  req.getParams().required(),
-                  null,
-                  COLLECTION_PROP,
-                  PROPERTY_PROP,
-                  SHARD_ID_PROP,
-                  REPLICA_PROP);
-          return copy(req.getParams(), map, PROPERTY_PROP);
         }),
     // XXX should this command support followAliases?
     BALANCESHARDUNIQUE_OP(
