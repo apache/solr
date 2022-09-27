@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.lucene.search.Query;
@@ -58,7 +57,7 @@ public class CloudMLTQParser extends SimpleMLTQParser {
     }
     try {
       final Query docIdQuery = createIdQuery(req.getSchema().getUniqueKeyField().getName(), id);
-      return parseMLTQuery(() -> getFieldsFromDoc(doc), (mlt)->likeDoc(mlt, doc), docIdQuery);
+      return parseMLTQuery(() -> getFieldsFromDoc(doc), (mlt) -> likeDoc(mlt, doc), docIdQuery);
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Bad Request", e);
     }

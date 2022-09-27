@@ -16,6 +16,8 @@
  */
 package org.apache.solr.search.mlt;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -25,13 +27,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-
 public class CloudMLTQContentParserTest extends SolrCloudTestCase {
 
-  private final String seventeenth = "The quote red fox jumped moon over the lazy brown dogs moon." +
-          " Of course moon. Foxes and moon come back to the foxes and moon";
+  private final String seventeenth =
+      "The quote red fox jumped moon over the lazy brown dogs moon."
+          + " Of course moon. Foxes and moon come back to the foxes and moon";
 
   @Before
   public void setupCluster() throws Exception {
@@ -39,7 +39,7 @@ public class CloudMLTQContentParserTest extends SolrCloudTestCase {
 
     CloudMLTQParserTest.indexDocs();
   }
-  
+
   @After
   public void cleanCluster() throws Exception {
     if (null != cluster) {
@@ -55,8 +55,10 @@ public class CloudMLTQContentParserTest extends SolrCloudTestCase {
     QueryResponse queryResponse =
         cluster
             .getSolrClient()
-            .query(COLLECTION, new SolrQuery("q", "{!mlt_content qf=lowerfilt_u mindf=0}"+ seventeenth,
-                    "fq", "-id:17")
+            .query(
+                COLLECTION,
+                new SolrQuery(
+                        "q", "{!mlt_content qf=lowerfilt_u mindf=0}" + seventeenth, "fq", "-id:17")
                     .setShowDebugInfo(true));
     SolrDocumentList solrDocuments = queryResponse.getResults();
     int[] expectedIds = new int[] {7, 9, 13, 14, 15, 16, 20, 22, 24, 32};
@@ -77,8 +79,13 @@ public class CloudMLTQContentParserTest extends SolrCloudTestCase {
     QueryResponse queryResponse =
         cluster
             .getSolrClient()
-            .query(COLLECTION, new SolrQuery("q", "{!mlt_content qf=lowerfilt_u boost=true mindf=0}"+ seventeenth,
-                    "fq", "-id:17"));
+            .query(
+                COLLECTION,
+                new SolrQuery(
+                    "q",
+                    "{!mlt_content qf=lowerfilt_u boost=true mindf=0}" + seventeenth,
+                    "fq",
+                    "-id:17"));
     SolrDocumentList solrDocuments = queryResponse.getResults();
     int[] expectedIds = new int[] {7, 9, 13, 14, 15, 16, 20, 22, 24, 32};
     int[] actualIds = new int[solrDocuments.size()];
@@ -98,8 +105,11 @@ public class CloudMLTQContentParserTest extends SolrCloudTestCase {
             .query(
                 COLLECTION,
                 new SolrQuery(
-                    "q", "{!mlt_content qf=lowerfilt_u^10,lowerfilt1_u^1000 boost=false mintf=0 mindf=0}" + thirtineenth,
-                        "fq", "-id:30"));
+                    "q",
+                    "{!mlt_content qf=lowerfilt_u^10,lowerfilt1_u^1000 boost=false mintf=0 mindf=0}"
+                        + thirtineenth,
+                    "fq",
+                    "-id:30"));
     solrDocuments = queryResponse.getResults();
     expectedIds = new int[] {31, 18, 23, 13, 14, 20, 22, 32, 19, 21};
     actualIds = new int[solrDocuments.size()];
@@ -118,9 +128,12 @@ public class CloudMLTQContentParserTest extends SolrCloudTestCase {
             .getSolrClient()
             .query(
                 COLLECTION,
-                new SolrQuery("q",
-                    "{!mlt_content qf=lowerfilt_u^10,lowerfilt1_u^1000 boost=true mintf=0 mindf=0}"+thirtineenth,
-                        "fq", "-id:30"));
+                new SolrQuery(
+                    "q",
+                    "{!mlt_content qf=lowerfilt_u^10,lowerfilt1_u^1000 boost=true mintf=0 mindf=0}"
+                        + thirtineenth,
+                    "fq",
+                    "-id:30"));
     solrDocuments = queryResponse.getResults();
     expectedIds = new int[] {29, 31, 32, 18, 23, 13, 14, 20, 22, 19};
     actualIds = new int[solrDocuments.size()];
@@ -145,7 +158,8 @@ public class CloudMLTQContentParserTest extends SolrCloudTestCase {
             .getSolrClient()
             .query(
                 COLLECTION,
-                new SolrQuery("q", "{!mlt_content qf=lowerfilt_u mindf=0 mintf=1}"+"bmw usa").setShowDebugInfo(true));
+                new SolrQuery("q", "{!mlt_content qf=lowerfilt_u mindf=0 mintf=1}" + "bmw usa")
+                    .setShowDebugInfo(true));
     SolrDocumentList solrDocuments = queryResponse.getResults();
     int[] expectedIds = new int[] {29, 27, 26, 28};
     int[] actualIds = new int[solrDocuments.size()];
@@ -186,8 +200,12 @@ public class CloudMLTQContentParserTest extends SolrCloudTestCase {
         cluster
             .getSolrClient()
             .query(
-                COLLECTION, new SolrQuery("q", "{!mlt_content qf=lowerfilt_u,lowerfilt1_u mindf=0 mintf=1}"+"bmw usa 328i",
-                            "fq", "-id:26"));
+                COLLECTION,
+                new SolrQuery(
+                    "q",
+                    "{!mlt_content qf=lowerfilt_u,lowerfilt1_u mindf=0 mintf=1}" + "bmw usa 328i",
+                    "fq",
+                    "-id:26"));
     SolrDocumentList solrDocuments = queryResponse.getResults();
     int[] expectedIds = new int[] {3, 29, 27, 28};
     int[] actualIds = new int[solrDocuments.size()];
@@ -209,7 +227,9 @@ public class CloudMLTQContentParserTest extends SolrCloudTestCase {
     QueryResponse queryResponse =
         cluster
             .getSolrClient()
-            .query(COLLECTION, new SolrQuery("q", "{!mlt_content qf=lowerfilt_u mindf=20 mintf=1}"+"bmw usa"));
+            .query(
+                COLLECTION,
+                new SolrQuery("q", "{!mlt_content qf=lowerfilt_u mindf=20 mintf=1}" + "bmw usa"));
     SolrDocumentList solrDocuments = queryResponse.getResults();
     assertEquals(
         "Expected to match 0 documents with a mindf of 20 but found more", solrDocuments.size(), 0);
@@ -222,7 +242,9 @@ public class CloudMLTQContentParserTest extends SolrCloudTestCase {
     QueryResponse queryResponse =
         cluster
             .getSolrClient()
-            .query(COLLECTION, new SolrQuery("q","{!mlt_content qf=lowerfilt_u minwl=4 mintf=1}"+"bmw usa"));
+            .query(
+                COLLECTION,
+                new SolrQuery("q", "{!mlt_content qf=lowerfilt_u minwl=4 mintf=1}" + "bmw usa"));
     SolrDocumentList solrDocuments = queryResponse.getResults();
     assertEquals(
         "Expected to match 0 documents with a minwl of 4 but found more", solrDocuments.size(), 0);
@@ -235,7 +257,10 @@ public class CloudMLTQContentParserTest extends SolrCloudTestCase {
     QueryResponse queryResponse =
         cluster
             .getSolrClient()
-            .query(COLLECTION, new SolrQuery("q", "{!mlt_content qf=lowerfilt_u minwl=3 mintf=1 mindf=0}"+"bmw usa"));
+            .query(
+                COLLECTION,
+                new SolrQuery(
+                    "q", "{!mlt_content qf=lowerfilt_u minwl=3 mintf=1 mindf=0}" + "bmw usa"));
     SolrDocumentList solrDocuments = queryResponse.getResults();
     assertEquals(
         "Expected to match 4 documents with a minwl of 3 but found more", 4, solrDocuments.size());
@@ -244,10 +269,16 @@ public class CloudMLTQContentParserTest extends SolrCloudTestCase {
   @Test
   public void testUnstoredAndUnanalyzedFieldsAreIgnored() throws Exception {
 
-    // Assert that {!mlt_content}id does not throw an exception i.e. implicitly, only fields that are stored
+    // Assert that {!mlt_content}id does not throw an exception i.e. implicitly, only fields that
+    // are stored
     // + have explicit analyzer are used for MLT Query construction.
     QueryResponse queryResponse =
-        cluster.getSolrClient().query(COLLECTION, new SolrQuery("{!mlt_content}" + "The quote red fox jumped over the lazy brown dogs."));
+        cluster
+            .getSolrClient()
+            .query(
+                COLLECTION,
+                new SolrQuery(
+                    "{!mlt_content}" + "The quote red fox jumped over the lazy brown dogs."));
     SolrDocumentList solrDocuments = queryResponse.getResults();
     int[] actualIds = new int[solrDocuments.size()];
     int[] expectedIds = new int[] {13, 14, 15, 16, 22, 24, 32, 18, 19, 21};

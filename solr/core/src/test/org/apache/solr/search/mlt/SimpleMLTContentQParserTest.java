@@ -36,15 +36,23 @@ public class SimpleMLTContentQParserTest extends SolrTestCaseJ4 {
     // for score tiebreaker, use doc ID order
     final SolrParams sortParams = params("sort", "score desc, id asc");
 
-    final String seventeenth = "The quote red fox jumped moon over the lazy "
+    final String seventeenth =
+        "The quote red fox jumped moon over the lazy "
             + "brown dogs moon. Of course moon. Foxes and moon come back to the foxes and moon";
     assertQ(
-            req(sortParams, CommonParams.Q, "{!mlt_content qf=lowerfilt mintf=0 mindf=0}" + seventeenth),
-            "//result/doc[1]/str[@name='id'][.='17']");
+        req(
+            sortParams,
+            CommonParams.Q,
+            "{!mlt_content qf=lowerfilt mintf=0 mindf=0}" + seventeenth),
+        "//result/doc[1]/str[@name='id'][.='17']");
     assertQ(
-        req(sortParams, CommonParams.Q, "{!mlt_content qf=lowerfilt}" + seventeenth,
-                "fq", "-id:17"),
-            "//result/doc[1]/str[@name='id'][.='13']",
+        req(
+            sortParams,
+            CommonParams.Q,
+            "{!mlt_content qf=lowerfilt}" + seventeenth,
+            "fq",
+            "-id:17"),
+        "//result/doc[1]/str[@name='id'][.='13']",
         "//result/doc[2]/str[@name='id'][.='14']",
         "//result/doc[3]/str[@name='id'][.='15']",
         "//result/doc[4]/str[@name='id'][.='16']",
@@ -56,8 +64,12 @@ public class SimpleMLTContentQParserTest extends SolrTestCaseJ4 {
         "//result/doc[10]/str[@name='id'][.='23']");
 
     assertQ(
-        req(sortParams, CommonParams.Q, "{!mlt_content qf=lowerfilt boost=true}" + seventeenth,
-                "fq", "-id:17"),
+        req(
+            sortParams,
+            CommonParams.Q,
+            "{!mlt_content qf=lowerfilt boost=true}" + seventeenth,
+            "fq",
+            "-id:17"),
         "//result/doc[1]/str[@name='id'][.='13']",
         "//result/doc[2]/str[@name='id'][.='14']",
         "//result/doc[3]/str[@name='id'][.='15']",
@@ -71,28 +83,46 @@ public class SimpleMLTContentQParserTest extends SolrTestCaseJ4 {
     final String thirteenth = "The quote red fox jumped over the lazy brown dogs.";
     final String thirteenth1 = "red green yellow";
     assertQ(
-            req(
-                    sortParams,
-                    CommonParams.Q,
-                    " " /*space matterz*/ + "{!mlt_content qf=lowerfilt boost=false mintf=0 mindf=0 v=$lowerfilt30} "+
-                    "{!mlt_content qf=lowerfilt1^1000 boost=false mintf=0 mindf=0 v=$lowerfilt130}",
-                    "lowerfilt30", thirteenth, "lowerfilt130", thirteenth1,
-                    "fl", "lowerfilt,lowerfilt1,id,score",
-                    "explainOther", "id:31", "indent", "on", "debugQuery", "on"),
-            "//result/doc[1]/str[@name='id'][.='30']","//result/doc[2]/str[@name='id'][.='31']");
-    assertQ(
-            req(
-                    sortParams,
-                    CommonParams.Q,
-                    " " /*space matterz*/ + "{!mlt_content qf=lowerfilt,lowerfilt1^1000 boost=false mintf=0 mindf=0 v=$lowerfilt30} ",
-                    "lowerfilt30", thirteenth + " " + thirteenth1),
-            "//result/doc[1]/str[@name='id'][.='30']","//result/doc[2]/str[@name='id'][.='31']");
+        req(
+            sortParams,
+            CommonParams.Q,
+            " " /*space matterz*/
+                + "{!mlt_content qf=lowerfilt boost=false mintf=0 mindf=0 v=$lowerfilt30} "
+                + "{!mlt_content qf=lowerfilt1^1000 boost=false mintf=0 mindf=0 v=$lowerfilt130}",
+            "lowerfilt30",
+            thirteenth,
+            "lowerfilt130",
+            thirteenth1,
+            "fl",
+            "lowerfilt,lowerfilt1,id,score",
+            "explainOther",
+            "id:31",
+            "indent",
+            "on",
+            "debugQuery",
+            "on"),
+        "//result/doc[1]/str[@name='id'][.='30']",
+        "//result/doc[2]/str[@name='id'][.='31']");
     assertQ(
         req(
             sortParams,
             CommonParams.Q,
-            "{!mlt_content qf=lowerfilt,lowerfilt1^1000 boost=false mintf=0 mindf=0}" + thirteenth + " " + thirteenth1,
-                "fq", "-id:30"),
+            " " /*space matterz*/
+                + "{!mlt_content qf=lowerfilt,lowerfilt1^1000 boost=false mintf=0 mindf=0 v=$lowerfilt30} ",
+            "lowerfilt30",
+            thirteenth + " " + thirteenth1),
+        "//result/doc[1]/str[@name='id'][.='30']",
+        "//result/doc[2]/str[@name='id'][.='31']");
+    assertQ(
+        req(
+            sortParams,
+            CommonParams.Q,
+            "{!mlt_content qf=lowerfilt,lowerfilt1^1000 boost=false mintf=0 mindf=0}"
+                + thirteenth
+                + " "
+                + thirteenth1,
+            "fq",
+            "-id:30"),
         "//result/doc[1]/str[@name='id'][.='31']",
         "//result/doc[2]/str[@name='id'][.='13']",
         "//result/doc[3]/str[@name='id'][.='14']",
@@ -108,8 +138,12 @@ public class SimpleMLTContentQParserTest extends SolrTestCaseJ4 {
         req(
             sortParams,
             CommonParams.Q,
-            "{!mlt_content qf=lowerfilt,lowerfilt1^1000 boost=true mintf=0 mindf=0}"+thirteenth + " " + thirteenth1,
-                "fq", "-id:30"),
+            "{!mlt_content qf=lowerfilt,lowerfilt1^1000 boost=true mintf=0 mindf=0}"
+                + thirteenth
+                + " "
+                + thirteenth1,
+            "fq",
+            "-id:30"),
         "//result/doc[1]/str[@name='id'][.='29']",
         "//result/doc[2]/str[@name='id'][.='31']",
         "//result/doc[3]/str[@name='id'][.='32']",
@@ -123,25 +157,36 @@ public class SimpleMLTContentQParserTest extends SolrTestCaseJ4 {
 
     String s26th = "bmw usa 328i";
     assertQ(
-        req(sortParams, CommonParams.Q, "{!mlt_content qf=lowerfilt mindf=0 mintf=1}"+s26th,
-                "fq", "-id:26"),
+        req(
+            sortParams,
+            CommonParams.Q,
+            "{!mlt_content qf=lowerfilt mindf=0 mintf=1}" + s26th,
+            "fq",
+            "-id:26"),
         "//result/doc[1]/str[@name='id'][.='29']",
         "//result/doc[2]/str[@name='id'][.='27']",
         "//result/doc[3]/str[@name='id'][.='28']");
 
     assertQ(
-        req(CommonParams.Q, "{!mlt_content qf=lowerfilt mindf=10 mintf=1}"+s26th,
-                "fq", "-id:26"), "//result[@numFound='0']");
+        req(CommonParams.Q, "{!mlt_content qf=lowerfilt mindf=10 mintf=1}" + s26th, "fq", "-id:26"),
+        "//result[@numFound='0']");
 
     assertQ(
-        req(CommonParams.Q, "{!mlt_content qf=lowerfilt minwl=3 mintf=1 mindf=1}"+s26th,
-                "fq", "-id:26"),
+        req(
+            CommonParams.Q,
+            "{!mlt_content qf=lowerfilt minwl=3 mintf=1 mindf=1}" + s26th,
+            "fq",
+            "-id:26"),
         "//result[@numFound='3']");
 
     assertQ(
         req(
-            CommonParams.Q, "{!mlt_content qf=lowerfilt minwl=4 mintf=1 mindf=1}"+s26th,
-                "fq", "-id:26", CommonParams.DEBUG, "true"),
+            CommonParams.Q,
+            "{!mlt_content qf=lowerfilt minwl=4 mintf=1 mindf=1}" + s26th,
+            "fq",
+            "-id:26",
+            CommonParams.DEBUG,
+            "true"),
         "//result[@numFound='0']");
   }
 }

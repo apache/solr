@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search.mlt;
 
+import java.io.IOException;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -28,8 +29,6 @@ import org.apache.solr.legacy.LegacyNumericUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrIndexSearcher;
-
-import java.io.IOException;
 
 public class SimpleMLTQParser extends AbstractMLTQParser {
 
@@ -56,8 +55,10 @@ public class SimpleMLTQParser extends AbstractMLTQParser {
                 + uniqueValue
                 + "]");
       ScoreDoc[] scoreDocs = td.scoreDocs;
-      return parseMLTQuery(this::getFieldsFromSchema,
-              moreLikeThis -> moreLikeThis.like(scoreDocs[0].doc), docIdQuery);
+      return parseMLTQuery(
+          this::getFieldsFromSchema,
+          moreLikeThis -> moreLikeThis.like(scoreDocs[0].doc),
+          docIdQuery);
     } catch (IOException e) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "Error completing MLT request" + e.getMessage());

@@ -16,6 +16,12 @@
  */
 package org.apache.solr.search.mlt;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Supplier;
+import java.util.regex.Pattern;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -31,20 +37,11 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryUtils;
 import org.apache.solr.util.SolrPluginUtils;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Supplier;
-import java.util.regex.Pattern;
-
 abstract class AbstractMLTQParser extends QParser {
   // Pattern is thread safe -- TODO? share this with general 'fl' param
   private static final Pattern splitList = Pattern.compile(",| ");
 
-  /**
-   * Retrieves text and string fields fom the schema
-   */
+  /** Retrieves text and string fields fom the schema */
   protected String[] getFieldsFromSchema() {
     Map<String, SchemaField> fieldDefinitions = req.getSearcher().getSchema().getFields();
     ArrayList<String> fields = new ArrayList<>();
@@ -56,16 +53,16 @@ abstract class AbstractMLTQParser extends QParser {
   }
 
   /**
-     * Constructor for the QParser
-     *
-     * @param qstr        The part of the query string specific to this parser
-     * @param localParams The set of parameters that are specific to this QParser. See
-     *                    https://solr.apache.org/guide/solr/latest/query-guide/local-params.html
-     * @param params      The rest of the {@link SolrParams}
-     * @param req         The original {@link SolrQueryRequest}.
-     */
+   * Constructor for the QParser
+   *
+   * @param qstr The part of the query string specific to this parser
+   * @param localParams The set of parameters that are specific to this QParser. See
+   *     https://solr.apache.org/guide/solr/latest/query-guide/local-params.html
+   * @param params The rest of the {@link SolrParams}
+   * @param req The original {@link SolrQueryRequest}.
+   */
   AbstractMLTQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
-      super(qstr, localParams, params, req);
+    super(qstr, localParams, params, req);
   }
 
   /** exclude current document from results */
@@ -81,17 +78,18 @@ abstract class AbstractMLTQParser extends QParser {
     Query invoke(MoreLikeThis mlt) throws IOException;
   }
 
-  
-  protected BooleanQuery parseMLTQuery(Supplier<String[]> fieldsFallback, MLTInvoker invoker, Query docIdQuery) throws IOException {
+  protected BooleanQuery parseMLTQuery(
+      Supplier<String[]> fieldsFallback, MLTInvoker invoker, Query docIdQuery) throws IOException {
     return exclude(parseMLTQuery(fieldsFallback, invoker), docIdQuery);
   }
 
-  protected BooleanQuery parseMLTQuery(Supplier<String[]> fieldsFallback, MLTInvoker invoker) throws IOException {
+  protected BooleanQuery parseMLTQuery(Supplier<String[]> fieldsFallback, MLTInvoker invoker)
+      throws IOException {
     Map<String, Float> boostFields = new HashMap<>();
     MoreLikeThis mlt = new MoreLikeThis(req.getSearcher().getIndexReader());
 
     mlt.setMinTermFreq(localParams.getInt("mintf", MoreLikeThis.DEFAULT_MIN_TERM_FREQ));
-      // TODO def mindf was 0 for cloud, 5 for standalone
+    // TODO def mindf was 0 for cloud, 5 for standalone
     mlt.setMinDocFreq(localParams.getInt("mindf", MoreLikeThis.DEFAULT_MIN_DOC_FREQ));
     mlt.setMinWordLen(localParams.getInt("minwl", MoreLikeThis.DEFAULT_MIN_WORD_LENGTH));
     mlt.setMaxWordLen(localParams.getInt("maxwl", MoreLikeThis.DEFAULT_MAX_WORD_LENGTH));
@@ -127,8 +125,8 @@ abstract class AbstractMLTQParser extends QParser {
     }
     if (fieldNames.length < 1) {
       throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST,
-              "MoreLikeThis requires at least one similarity field: qf");
+          SolrException.ErrorCode.BAD_REQUEST,
+          "MoreLikeThis requires at least one similarity field: qf");
     }
     mlt.setFieldNames(fieldNames);
     final BooleanQuery rawMLTQuery = (BooleanQuery) invoker.invoke(mlt);
@@ -147,9 +145,9 @@ abstract class AbstractMLTQParser extends QParser {
         }
         Float fieldBoost = boostFields.get(((TermQuery) q).getTerm().field());
         q =
-                ((fieldBoost != null)
-                        ? new BoostQuery(q, fieldBoost * originalBoost)
-                        : clause.getQuery());
+            ((fieldBoost != null)
+                ? new BoostQuery(q, fieldBoost * originalBoost)
+                : clause.getQuery());
         newQ.add(q, clause.getOccur());
       }
       return QueryUtils.build(newQ, this);

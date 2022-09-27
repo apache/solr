@@ -40,7 +40,8 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
     indexDocs();
   }
 
-  static void indexDocs() throws org.apache.solr.client.solrj.SolrServerException, java.io.IOException {
+  static void indexDocs()
+      throws org.apache.solr.client.solrj.SolrServerException, java.io.IOException {
     final CloudSolrClient client = cluster.getSolrClient();
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(client);
@@ -136,7 +137,9 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
     QueryResponse queryResponse =
         cluster
             .getSolrClient()
-            .query(COLLECTION, new SolrQuery("{!mlt qf=lowerfilt_u mindf=0}17").setShowDebugInfo(true));
+            .query(
+                COLLECTION,
+                new SolrQuery("{!mlt qf=lowerfilt_u mindf=0}17").setShowDebugInfo(true));
     SolrDocumentList solrDocuments = queryResponse.getResults();
     int[] expectedIds = new int[] {7, 9, 13, 14, 15, 16, 20, 22, 24, 32};
     int[] actualIds = new int[10];
