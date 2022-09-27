@@ -345,6 +345,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
                 requestBody);
         V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, addReplicaPropResponse);
         break;
+      case DELETEREPLICAPROP:
+        // TODO JEGERLOW create new DeleteReplicaPropertyAPI and invoke
+        break;
       default:
         CollectionOperation operation = CollectionOperation.get(action);
         invokeAction(req, rsp, cores, action, operation);
@@ -2072,7 +2075,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
-    return List.of(AddReplicaPropertyAPI.class);
+    return List.of(AddReplicaPropertyAPI.class, DeleteReplicaPropertyAPI.class);
   }
 
   @Override
@@ -2087,7 +2090,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     apis.addAll(AnnotatedApi.getApis(new DeleteReplicaAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new BalanceShardUniqueAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new DeleteCollectionAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new DeleteReplicaPropertyAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new MigrateDocsAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new ModifyCollectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new MoveReplicaAPI(this)));
