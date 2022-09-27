@@ -148,8 +148,8 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
         "nothing changed, searcher should be the same", sr3.getSearcher(), sr4.getSearcher());
     assertEquals(
         "nothing changed, searcher should not have been re-registered",
-        sr3SearcherRegAt,
-        g.getValue());
+        sr3SearcherRegAt.toInstant(),
+        g.getValue().toInstant());
     IndexReader r4 = sr4.getSearcher().getRawReader();
 
     // force an index change so the registered searcher won't be the one we are testing (and

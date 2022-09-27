@@ -900,7 +900,7 @@ public class ExpressionFactory {
       }
       if (c == variableForEachSep && !quoteOn && varLengthParamName != null) {
         int varStart = param.length() - varLengthParamName.length();
-        if (param.subSequence(varStart, param.length()).equals(varLengthParamName)) {
+        if (varLengthParamName.contentEquals(param.subSequence(varStart, param.length()))) {
           inForEach = true;
           forEachStart = i;
           forEachIter = 0;

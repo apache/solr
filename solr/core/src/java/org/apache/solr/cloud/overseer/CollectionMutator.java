@@ -149,7 +149,7 @@ public class CollectionMutator {
           }
         }
         // SOLR-11676 : keep NRT_REPLICAS and REPLICATION_FACTOR in sync
-        if (prop == REPLICATION_FACTOR) {
+        if (prop.equals(REPLICATION_FACTOR)) {
           props.put(NRT_REPLICAS, message.get(REPLICATION_FACTOR));
         }
       }
