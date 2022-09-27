@@ -32,7 +32,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
-import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -42,7 +41,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.request.beans.AddReplicaPropertyPayload;
 import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -54,21 +52,14 @@ import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * V2 API for adding a property to a collection replica
  *
- * <p>This API (POST /v2/collections/collectionName {'add-replica-property': {...}}) is analogous to
- * the v1 /admin/collections?action=ADDREPLICAPROP command.
- *
- * @see AddReplicaPropertyPayload
+ * <p>This API is analogous to the v1 /admin/collections?action=ADDREPLICAPROP command.
  */
 @Path("/collections/{collName}/shards/{shardName}/replicas/{replicaName}/properties/{propName}")
 public class AddReplicaPropertyAPI extends AdminAPIBase {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Inject
   public AddReplicaPropertyAPI(
