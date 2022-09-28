@@ -36,7 +36,11 @@ New Features
 
 Improvements
 ---------------------
-(No changes)
+
+* SOLR-16428: IgnoreLargeDocumentProcessorFactory now supports a "permissive" mode, where it logs and skips
+  offending documents but doesn't short-circuit the entire batch or return a 4xx error.  This mode can be enabled
+  by setting the `permissiveMode` boolean option to `true` in your solrconfig.xml's
+  IgnoreLargeDocumentProcessorFactory declaration. (Jason Gerlowski)
 
 Optimizations
 ---------------------
