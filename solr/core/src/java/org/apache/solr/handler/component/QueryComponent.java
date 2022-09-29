@@ -298,9 +298,7 @@ public class QueryComponent extends SearchComponent {
               && (schemaField.getType() instanceof SortableTextField) == false) {
             throw new SolrException(
                 SolrException.ErrorCode.BAD_REQUEST,
-                String.format(
-                    Locale.ROOT,
-                    "Sorting on a tokenized field that is not a SortableTextField is not supported in cloud mode."));
+                "Sorting on a tokenized field that is not a SortableTextField is not supported in cloud mode.");
           }
         }
       }

@@ -34,6 +34,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
@@ -791,10 +792,6 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return first;
   }
 
-  public static boolean eq(String a, String b) {
-    return a == b || (a != null && a.equals(b));
-  }
-
   public static int flags(Map<String, Integer> handle, Object key) {
     if (key == null) return 0;
     if (handle == null) return 0;
@@ -866,7 +863,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
           bSkipped++;
           continue;
         }
-        if (eq(namea, nameb)) {
+        if (Objects.equals(namea, nameb)) {
           break;
         }
         return "." + namea + "!=" + nameb + " (unordered or missing)";

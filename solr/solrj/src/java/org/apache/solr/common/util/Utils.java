@@ -631,7 +631,7 @@ public class Utils {
                   public MapWriter.EntryWriter put(CharSequence k, Object v) {
                     if (result[0] != null) return this;
                     if (idx < 0) {
-                      if (k.equals(key)) result[0] = v;
+                      if (key.contentEquals(k)) result[0] = v;
                     } else {
                       if (++count == idx) result[0] = new MapWriterEntry<>(k, v);
                     }

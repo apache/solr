@@ -549,11 +549,11 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     comp.setValue(1234).setExists(true);
 
     fill.setValue("not used").setExists(true);
-    assertEquals(new Date(1234), func.getObject());
+    assertEquals(new Date(1234).toInstant(), ((Date) func.getObject()).toInstant());
     assertTrue(func.exists());
 
     fill.setExists(false);
-    assertEquals(new Date(1234), func.getObject());
+    assertEquals(new Date(1234).toInstant(), ((Date) func.getObject()).toInstant());
     assertTrue(func.exists());
 
     // Comp == Val

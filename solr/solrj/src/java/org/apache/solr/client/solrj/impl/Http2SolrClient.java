@@ -854,6 +854,10 @@ public class Http2SolrClient extends SolrClient {
     this.requestWriter = requestWriter;
   }
 
+  protected RequestWriter getRequestWriter() {
+    return requestWriter;
+  }
+
   public void setFollowRedirects(boolean follow) {
     httpClient.setFollowRedirects(follow);
   }
