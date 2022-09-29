@@ -119,7 +119,8 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
     RETRY,
     ADMIN,
     REMOTEQUERY,
-    PROCESS
+    PROCESS,
+    ADMIN_OR_REMOTEQUERY
   }
 
   public SolrDispatchFilter() {}
@@ -264,6 +265,7 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
         case ADMIN:
         case PROCESS:
         case REMOTEQUERY:
+        case ADMIN_OR_REMOTEQUERY:
         case RETURN:
           break;
       }
