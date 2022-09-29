@@ -17,7 +17,18 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
+
 import io.swagger.v3.oas.annotations.Parameter;
+import java.util.Map;
+import javax.inject.Inject;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
@@ -27,17 +38,6 @@ import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-import javax.inject.Inject;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import java.util.Map;
-
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
-
 /**
  * V2 API for removing a property from a collection replica
  *
@@ -46,56 +46,66 @@ import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTIO
 @Path("/collections/{collName}/shards/{shardName}/replicas/{replicaName}/properties/{propName}")
 public class DeleteReplicaPropertyAPI extends AdminAPIBase {
 
-    @Inject
-    public DeleteReplicaPropertyAPI(CoreContainer coreContainer,
-                                    SolrQueryRequest solrQueryRequest,
-                                    SolrQueryResponse solrQueryResponse) {
-        super(coreContainer, solrQueryRequest, solrQueryResponse);
+  @Inject
+  public DeleteReplicaPropertyAPI(
+      CoreContainer coreContainer,
+      SolrQueryRequest solrQueryRequest,
+      SolrQueryResponse solrQueryResponse) {
+    super(coreContainer, solrQueryRequest, solrQueryResponse);
+  }
+
+  public SolrJerseyResponse deleteReplicaProperty(
+      @Parameter(
+              description = "The name of the collection the replica belongs to.",
+              required = true)
+          @PathParam("collName")
+          String collName,
+      @Parameter(description = "The name of the shard the replica belongs to.", required = true)
+          @PathParam("shardName")
+          String shardName,
+      @Parameter(description = "The replica, e.g., `core_node1`.", required = true)
+          @PathParam("replicaName")
+          String replicaName,
+      @Parameter(description = "The name of the property to delete.", required = true)
+          @PathParam("propName")
+          String propertyName)
+      throws Exception {
+    final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
+    final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
+    recordCollectionForLogAndTracing(collName, solrQueryRequest);
+
+    final ZkNodeProps remoteMessage =
+        createRemoteMessage(collName, shardName, replicaName, propertyName);
+    final SolrResponse remoteResponse =
+        CollectionsHandler.submitCollectionApiCommand(
+            coreContainer,
+            coreContainer.getDistributedCollectionCommandRunner(),
+            remoteMessage,
+            CollectionParams.CollectionAction.ADDREPLICAPROP,
+            DEFAULT_COLLECTION_OP_TIMEOUT);
+    if (remoteResponse.getException() != null) {
+      throw remoteResponse.getException();
     }
 
-    public SolrJerseyResponse deleteReplicaProperty(
-            @Parameter(
-                    description = "The name of the collection the replica belongs to.",
-                    required = true)
-            @PathParam("collName")
-            String collName,
-            @Parameter(description = "The name of the shard the replica belongs to.", required = true)
-            @PathParam("shardName")
-            String shardName,
-            @Parameter(description = "The replica, e.g., `core_node1`.", required = true)
-            @PathParam("replicaName")
-            String replicaName,
-            @Parameter(description = "The name of the property to delete.", required = true)
-            @PathParam("propName")
-            String propertyName) throws Exception {
-        final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
-        final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
-        recordCollectionForLogAndTracing(collName, solrQueryRequest);
+    disableResponseCaching();
+    return response;
+  }
 
-        final ZkNodeProps remoteMessage =
-                createRemoteMessage(collName, shardName, replicaName, propertyName);
-        final SolrResponse remoteResponse =
-                CollectionsHandler.submitCollectionApiCommand(
-                        coreContainer,
-                        coreContainer.getDistributedCollectionCommandRunner(),
-                        remoteMessage,
-                        CollectionParams.CollectionAction.ADDREPLICAPROP,
-                        DEFAULT_COLLECTION_OP_TIMEOUT);
-        if (remoteResponse.getException() != null) {
-            throw remoteResponse.getException();
-        }
-
-        disableResponseCaching();
-        return response;
-    }
-
-    // XXX should this command support followAliases?
-    private ZkNodeProps createRemoteMessage(String collName, String shardName, String replicaName, String propName) {
-        final Map<String, Object> messageProperties = Map.of(COLLECTION_PROP, collName,
-                SHARD_ID_PROP, shardName,
-                REPLICA_PROP, replicaName,
-                PROPERTY_PROP, propName);
-        return new ZkNodeProps(messageProperties);
-    }
-
+  // XXX should this command support followAliases?
+  private ZkNodeProps createRemoteMessage(
+      String collName, String shardName, String replicaName, String propName) {
+    final Map<String, Object> messageProperties =
+        Map.of(
+            QUEUE_OPERATION,
+            CollectionParams.CollectionAction.DELETEREPLICAPROP.toLower(),
+            COLLECTION_PROP,
+            collName,
+            SHARD_ID_PROP,
+            shardName,
+            REPLICA_PROP,
+            replicaName,
+            PROPERTY_PROP,
+            propName);
+    return new ZkNodeProps(messageProperties);
+  }
 }
