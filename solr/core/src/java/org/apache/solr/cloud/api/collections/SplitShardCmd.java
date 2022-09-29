@@ -155,7 +155,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       collectionName = extCollectionName;
     }
 
-    log.info("Split shard invoked: {}", message);
+    log.debug("Split shard invoked: {}", message);
     ZkStateReader zkStateReader = ccc.getZkStateReader();
     zkStateReader.forceUpdateCollection(collectionName);
     AtomicReference<String> slice = new AtomicReference<>();
@@ -193,7 +193,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       // check disk space for shard split
       if (Boolean.parseBoolean(System.getProperty(SHARDSPLIT_CHECKDISKSPACE_ENABLED, "true"))) {
         // 1. verify that there is enough space on disk to create sub-shards
-        log.info(
+        log.debug(
             "SplitShardCmd: verify that there is enough space on disk to create sub-shards for slice: {}",
             parentShardLeader);
         t = timings.sub("checkDiskSpace");
@@ -388,7 +388,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         String subShardName = subShardNames.get(i);
         DocRouter.Range subRange = subRanges.get(i);
 
-        log.info("Creating slice {} of collection {} on {}", subSlice, collectionName, nodeName);
+        log.debug("Creating slice {} of collection {} on {}", subSlice, collectionName, nodeName);
 
         Map<String, Object> propMap = new HashMap<>();
         propMap.put(Overseer.QUEUE_OPERATION, CREATESHARD.toLower());
@@ -418,7 +418,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
                 collectionName, subSlice, ccc.getZkStateReader());
 
         // 5. and add the initial replica for each sub-shard
-        log.info(
+        log.debug(
             "Adding first replica {} as part of slice {} of collection {} on {}",
             subShardName,
             subSlice,
@@ -463,7 +463,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
             CollectionHandlingUtils.asyncRequestTracker(asyncId, ccc);
         for (String subShardName : subShardNames) {
           // wait for parent leader to acknowledge the sub-shard core
-          log.info(
+          log.debug(
               "Asking parent leader to wait for: {} to be alive on: {}", subShardName, nodeName);
           String coreNodeName =
               CollectionHandlingUtils.waitForCoreNodeName(
@@ -524,8 +524,8 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       }
       t.stop();
 
-      if (log.isInfoEnabled()) {
-        log.info("Index on shard: {} split into {} successfully", nodeName, subShardNames.size());
+      if (log.isDebugEnabled()) {
+        log.debug("Index on shard: {} split into {} successfully", nodeName, subShardNames.size());
       }
 
       // 8. apply buffered updates on sub-shards
@@ -537,7 +537,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         for (int i = 0; i < subShardNames.size(); i++) {
           String subShardName = subShardNames.get(i);
 
-          log.info("Applying buffered updates on : {}", subShardName);
+          log.debug("Applying buffered updates on : {}", subShardName);
 
           params = new ModifiableSolrParams();
           params.set(
@@ -555,7 +555,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       }
       t.stop();
 
-      log.info("Successfully applied buffered updates on : {}", subShardNames);
+      log.debug("Successfully applied buffered updates on : {}", subShardNames);
 
       // 9. determine node placement for additional replicas
       Set<String> nodes = clusterState.getLiveNodes();
@@ -768,7 +768,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
           ccc.offerStateUpdate(Utils.toJSON(m));
         }
       } else {
-        log.info("Requesting shard state be set to 'recovery' for sub-shards: {}", subSlices);
+        log.debug("Requesting shard state be set to 'recovery' for sub-shards: {}", subSlices);
         Map<String, Object> propMap = new HashMap<>();
         propMap.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower());
         for (String subSlice : subSlices) {
