@@ -34,6 +34,9 @@ dependencies {
     exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
   }
   implementation(group: 'software.amazon.awssdk', name: 'sdk-core')
+  runtimeOnly(group: 'software.amazon.awssdk', name: 'sts') {
+    exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
+  }
 
   implementation 'com.google.guava:guava'
   implementation 'org.slf4j:slf4j-api'

@@ -21,6 +21,7 @@ import static org.apache.solr.common.params.CommonParams.SORT;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -314,7 +315,8 @@ public class ShortestPathStream extends TupleStream implements Expressible {
     ModifiableSolrParams mParams = new ModifiableSolrParams(queryParams);
     child.setExpression(
         mParams.getMap().entrySet().stream()
-            .map(e -> String.format(Locale.ROOT, "%s=%s", e.getKey(), e.getValue()))
+            .map(
+                e -> String.format(Locale.ROOT, "%s=%s", e.getKey(), Arrays.toString(e.getValue())))
             .collect(Collectors.joining(",")));
     explanation.addChild(child);
 
