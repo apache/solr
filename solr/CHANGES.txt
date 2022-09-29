@@ -42,6 +42,9 @@ Improvements
   by setting the `permissiveMode` boolean option to `true` in your solrconfig.xml's
   IgnoreLargeDocumentProcessorFactory declaration. (Jason Gerlowski)
 
+* SOLR-16392: A number of v2 "replica" endpoints have been updated to be more REST-ful, and hopefully, intuitive.
+  ADDREPLICAPROP is now `PUT /api/collections/$coll/shards/$shard/replicas/$rep/properties/$prop {"value": $val}`
+
 Optimizations
 ---------------------
 (No changes)
