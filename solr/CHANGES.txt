@@ -88,6 +88,8 @@ Improvements
 * SOLR-15787: FileSystemConfigSetService: implement the abstraction completely.  It could be useful
  for putting ConfigSets on a shared file system.  (Nazerke Seidan, David Smiley)
 
+* SOLR-16438: Support optional split.setPreferredLeaders prop in shard split command. (Bruno Roustant)
+
 Optimizations
 ---------------------
 
