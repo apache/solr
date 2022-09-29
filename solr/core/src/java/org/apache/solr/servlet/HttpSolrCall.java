@@ -72,6 +72,7 @@ import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.solr.api.ApiBag;
+import org.apache.solr.api.V2HttpCall;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
@@ -481,6 +482,12 @@ public class HttpSolrCall {
     }
   }
 
+  protected void sendRemoteQuery() throws IOException {
+    SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, new SolrQueryResponse(), action));
+    mustClearSolrRequestInfo = true;
+    remoteQuery(coreUrl + path, response);
+  }
+
   /** This method processes the request. */
   public Action call() throws IOException {
 
@@ -526,13 +533,14 @@ public class HttpSolrCall {
 
       HttpServletResponse resp = response;
       switch (action) {
+        case ADMIN_OR_REMOTEQUERY:
+          handleAdminOrRemoteRequest();
+          return RETURN;
         case ADMIN:
           handleAdminRequest();
           return RETURN;
         case REMOTEQUERY:
-          SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, new SolrQueryResponse(), action));
-          mustClearSolrRequestInfo = true;
-          remoteQuery(coreUrl + path, resp);
+          sendRemoteQuery();
           return RETURN;
         case PROCESS:
           final Method reqMethod = Method.getMethod(req.getMethod());
@@ -600,6 +608,21 @@ public class HttpSolrCall {
       }
       return RETURN;
     }
+  }
+
+  /**
+   * Handle a request whose "type" could not be discerned in advance and may be either "admin" or
+   * "remotequery".
+   *
+   * <p>Some implementations (such as {@link V2HttpCall}) may find it difficult to differentiate all
+   * request types in advance. This method serves as a hook; allowing those implementations to
+   * handle these cases gracefully.
+   *
+   * @see V2HttpCall
+   */
+  protected void handleAdminOrRemoteRequest() throws IOException {
+    throw new IllegalStateException(
+        "handleOrForwardRequest should not be invoked when serving v1 requests.");
   }
 
   /** Get the span for this request. Not null. */
@@ -844,6 +867,10 @@ public class HttpSolrCall {
   private void handleAdminRequest() throws IOException {
     SolrQueryResponse solrResp = new SolrQueryResponse();
     handleAdmin(solrResp);
+    logAndFlushAdminRequest(solrResp);
+  }
+
+  protected void logAndFlushAdminRequest(SolrQueryResponse solrResp) throws IOException {
     if (solrResp.getToLog().size() > 0) {
       // has to come second and in it's own if to keep ./gradlew check happy.
       if (log.isInfoEnabled()) {
