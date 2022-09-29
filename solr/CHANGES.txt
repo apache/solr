@@ -41,6 +41,8 @@ New Features
 
 * SOLR-16409: Admin UI - Expose all highlighting parameters in the Query UI (Jeanie Lam via Eric Pugh)
 
+* SOLR-16438: Support optional split.setPreferredLeaders prop in shard split command. (Bruno Roustant)
+
 Improvements
 ---------------------
 
