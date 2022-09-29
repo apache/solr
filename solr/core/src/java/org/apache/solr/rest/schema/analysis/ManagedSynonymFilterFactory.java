@@ -29,7 +29,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.FlattenGraphFilterFactory; // javadocs
+import org.apache.lucene.analysis.core.FlattenGraphFilterFactory;
 import org.apache.lucene.analysis.synonym.SynonymFilterFactory;
 import org.apache.lucene.analysis.synonym.SynonymMap;
 import org.apache.lucene.util.CharsRef;

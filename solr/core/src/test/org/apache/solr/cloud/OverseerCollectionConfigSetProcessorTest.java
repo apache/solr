@@ -738,10 +738,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   }
 
   protected void verifySubmitCaptures(
-      Integer numberOfSlices,
-      Integer numberOfReplica,
-      Collection<String> createNodes,
-      boolean dontShuffleCreateNodeSet) {
+      Integer numberOfSlices, Integer numberOfReplica, Collection<String> createNodes) {
     List<String> coreNames = new ArrayList<>();
     Map<String, Map<String, Integer>>
         sliceToNodeUrlsWithoutProtocolPartToNumberOfShardsRunningMapMap = new HashMap<>();
@@ -771,7 +768,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
       ShardRequest shardRequest = shardRequestCaptor.getAllValues().get(i);
       String nodeUrlsWithoutProtocolPartCapture =
           nodeUrlsWithoutProtocolPartCaptor.getAllValues().get(i);
-      ModifiableSolrParams params = paramsCaptor.getAllValues().get(i);
       assertEquals(
           CoreAdminAction.CREATE.toString(), shardRequest.params.get(CoreAdminParams.ACTION));
       // assertEquals(shardRequest.params, submitCapture.params);
@@ -979,8 +975,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     }
 
     if (collectionExceptedToBeCreated) {
-      verifySubmitCaptures(
-          numberOfSlices, replicationFactor, createNodeList, dontShuffleCreateNodeSet);
+      verifySubmitCaptures(numberOfSlices, replicationFactor, createNodeList);
     }
   }
 

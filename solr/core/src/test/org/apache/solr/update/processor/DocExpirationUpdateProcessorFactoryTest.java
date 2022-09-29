@@ -193,6 +193,8 @@ public class DocExpirationUpdateProcessorFactoryTest extends UpdateProcessorTest
     try {
       recorder.startRecording();
 
+      final int timeout = 30; // in seconds
+
       // more than one iter to verify it's recurring
       final int numItersToCheck = 1 + RANDOM_MULTIPLIER;
 
@@ -200,10 +202,11 @@ public class DocExpirationUpdateProcessorFactoryTest extends UpdateProcessorTest
         UpdateCommand tmp;
 
         // be generous in how long we wait, some jenkins machines are slooooow
-        tmp = recorder.commandQueue.poll(30, TimeUnit.SECONDS);
+        tmp = recorder.commandQueue.poll(timeout, TimeUnit.SECONDS);
+        assertNotNull("Unable to get UpdateCommand from queue within " + timeout + " seconds", tmp);
 
         // we can be confident in the order because DocExpirationUpdateProcessorFactory
-        // uses the same request for both the delete & the commit operations -- and both
+        // uses the same request for both delete & commit operations -- and both
         // RecordingUpdateProcessorFactory's getInstance & startRecording methods are
         // synchronized.  So it should not be possible to start recording in the
         // middle of the two commands
@@ -216,8 +219,11 @@ public class DocExpirationUpdateProcessorFactoryTest extends UpdateProcessorTest
         assertTrue(
             delete.getQuery(), delete.getQuery().startsWith("{!cache=false}eXpField_tdt:[* TO "));
 
+        // be generous in how long we wait, some jenkins machines are slooooow
+        tmp = recorder.commandQueue.poll(timeout, TimeUnit.SECONDS);
+        assertNotNull("Unable to get UpdateCommand from queue within " + timeout + " seconds", tmp);
+
         // commit should be immediately after the delete operation
-        tmp = recorder.commandQueue.poll(5, TimeUnit.SECONDS);
         assertTrue(
             "expected CommitUpdateCommand: " + tmp.getClass(), tmp instanceof CommitUpdateCommand);
 

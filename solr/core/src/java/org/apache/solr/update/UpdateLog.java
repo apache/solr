@@ -27,6 +27,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -984,7 +985,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             entry
                 + " should've been either ADD or UPDATE_INPLACE update"
                 + ", while looking for id="
-                + new String(id.bytes, Charset.forName("UTF-8")));
+                + new String(id.bytes, StandardCharsets.UTF_8));
       }
       // if this is an ADD (i.e. full document update), stop here
       if ((flags & UpdateLog.ADD) == UpdateLog.ADD) {

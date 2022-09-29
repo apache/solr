@@ -18,10 +18,8 @@ package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -38,7 +36,7 @@ public class TestDistribDocBasedVersion extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   String bucket1 = "shard1"; // shard1: top bits:10  80000000:ffffffff
-  String bucket2 = "shard2"; // shard2: top bits:00  00000000:7fffffff
+  // String bucket2 = "shard2"; // shard2: top bits:00  00000000:7fffffff
 
   private static String vfield = "my_version_l";
 
@@ -320,20 +318,6 @@ public class TestDistribDocBasedVersion extends AbstractFullDistribZkTestBase {
     Map<String, Object> obtainedIds = new HashMap<>();
     for (SolrDocument doc : rsp.getResults()) {
       obtainedIds.put((String) doc.get("id"), doc.get(vfield));
-    }
-
-    assertEquals(expectedIds, obtainedIds);
-  }
-
-  void doRTG(String ids) throws Exception {
-    solrClient.query(params("qt", "/get", "ids", ids));
-
-    Set<String> expectedIds = new HashSet<>(StrUtils.splitSmart(ids, ",", true));
-
-    QueryResponse rsp = cloudClient.query(params("qt", "/get", "ids", ids));
-    Set<String> obtainedIds = new HashSet<>();
-    for (SolrDocument doc : rsp.getResults()) {
-      obtainedIds.add((String) doc.get("id"));
     }
 
     assertEquals(expectedIds, obtainedIds);

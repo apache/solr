@@ -17,10 +17,19 @@
 package org.apache.solr.core;
 
 import static java.util.Objects.requireNonNull;
-import static org.apache.solr.common.params.CommonParams.*;
+import static org.apache.solr.common.params.CommonParams.AUTHC_PATH;
+import static org.apache.solr.common.params.CommonParams.AUTHZ_PATH;
+import static org.apache.solr.common.params.CommonParams.COLLECTIONS_HANDLER_PATH;
+import static org.apache.solr.common.params.CommonParams.CONFIGSETS_HANDLER_PATH;
+import static org.apache.solr.common.params.CommonParams.CORES_HANDLER_PATH;
+import static org.apache.solr.common.params.CommonParams.INFO_HANDLER_PATH;
+import static org.apache.solr.common.params.CommonParams.METRICS_PATH;
+import static org.apache.solr.common.params.CommonParams.ZK_PATH;
+import static org.apache.solr.common.params.CommonParams.ZK_STATUS_PATH;
 import static org.apache.solr.core.CorePropertiesLocator.PROPERTIES_FILENAME;
 import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
 
+import com.github.benmanes.caffeine.cache.Interner;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -48,7 +57,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.auth.AuthSchemeProvider;
 import org.apache.http.client.CredentialsProvider;
@@ -80,6 +92,7 @@ import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Aliases;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
@@ -103,6 +116,7 @@ import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.ContainerPluginsApi;
 import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminOp;
 import org.apache.solr.handler.admin.HealthCheckHandler;
 import org.apache.solr.handler.admin.InfoHandler;
 import org.apache.solr.handler.admin.MetricsHandler;
@@ -115,6 +129,7 @@ import org.apache.solr.handler.admin.ZookeeperStatusHandler;
 import org.apache.solr.handler.api.ApiRegistrar;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.designer.SchemaDesignerAPI;
+import org.apache.solr.jersey.CoreContainerFactory;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrCoreMetricManager;
@@ -140,6 +155,10 @@ import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.stats.MetricUtils;
 import org.apache.zookeeper.KeeperException;
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
+import org.glassfish.jersey.server.ApplicationHandler;
+import org.noggit.JSONParser;
+import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -171,6 +190,12 @@ public class CoreContainer {
 
   private volatile PluginBag<SolrRequestHandler> containerHandlers =
       new PluginBag<>(SolrRequestHandler.class, null);
+
+  private volatile ApplicationHandler jerseyAppHandler;
+
+  public ApplicationHandler getJerseyApplicationHandler() {
+    return jerseyAppHandler;
+  }
 
   /** Minimize exposure to CoreContainer. Mostly only ZK interface is required */
   public final Supplier<SolrZkClient> zkClientSupplier = () -> getZkController().getZkClient();
@@ -373,6 +398,7 @@ public class CoreContainer {
     if (null != this.cfg.getBooleanQueryMaxClauseCount()) {
       IndexSearcher.setMaxClauseCount(this.cfg.getBooleanQueryMaxClauseCount());
     }
+    setWeakStringInterner();
     this.coresLocator = locator;
     this.containerProperties = new Properties(config.getSolrProperties());
     this.asyncSolrCoreLoad = asyncSolrCoreLoad;
@@ -742,6 +768,8 @@ public class CoreContainer {
 
     zkSys.initZooKeeper(this, cfg.getCloudConfig());
     if (isZooKeeperAware()) {
+      // initialize ZkClient metrics
+      zkSys.getZkMetricsProducer().initializeMetrics(solrMetricsContext, "zkClient");
       pkiAuthenticationSecurityBuilder =
           new PKIAuthenticationPlugin(
               this,
@@ -801,7 +829,6 @@ public class CoreContainer {
     ClusterAPI clusterAPI = new ClusterAPI(collectionsHandler, configSetsHandler);
     containerHandlers.getApiBag().registerObject(clusterAPI);
     containerHandlers.getApiBag().registerObject(clusterAPI.commands);
-    containerHandlers.getApiBag().registerObject(clusterAPI.configSetCommands);
 
     if (isZooKeeperAware()) {
       containerHandlers.getApiBag().registerObject(new SchemaDesignerAPI(this));
@@ -821,6 +848,16 @@ public class CoreContainer {
     infoHandler = createHandler(INFO_HANDLER_PATH, cfg.getInfoHandlerClass(), InfoHandler.class);
     coreAdminHandler =
         createHandler(CORES_HANDLER_PATH, cfg.getCoreAdminHandlerClass(), CoreAdminHandler.class);
+
+    Map<String, CoreAdminOp> coreAdminHandlerActions =
+        cfg.getCoreAdminHandlerActions().entrySet().stream()
+            .collect(
+                Collectors.toMap(
+                    item -> item.getKey(),
+                    item -> loader.newInstance(item.getValue(), CoreAdminOp.class)));
+
+    // Register custom actions for CoreAdminHandler
+    coreAdminHandler.registerCustomActions(coreAdminHandlerActions);
 
     metricsHandler = new MetricsHandler(this);
     containerHandlers.put(METRICS_PATH, metricsHandler);
@@ -1035,6 +1072,22 @@ public class CoreContainer {
         zkSys.getZkController().checkOverseerDesignate();
       }
     }
+
+    final CoreContainer thisCCRef = this;
+    // Init the Jersey app once all CC endpoints have been registered
+    containerHandlers
+        .getJerseyEndpoints()
+        .register(
+            new AbstractBinder() {
+              @Override
+              protected void configure() {
+                bindFactory(new CoreContainerFactory(thisCCRef))
+                    .to(CoreContainer.class)
+                    .in(Singleton.class);
+              }
+            });
+    jerseyAppHandler = new ApplicationHandler(containerHandlers.getJerseyEndpoints());
+
     // This is a bit redundant but these are two distinct concepts for all they're accomplished at
     // the same time.
     status |= LOAD_COMPLETE | INITIAL_CORE_LOAD_COMPLETE;
@@ -2401,6 +2454,34 @@ public class CoreContainer {
    */
   public void runAsync(Runnable r) {
     coreContainerAsyncTaskExecutor.submit(r);
+  }
+
+  public static void setWeakStringInterner() {
+    boolean enable = "true".equals(System.getProperty("solr.use.str.intern", "true"));
+    if (!enable) return;
+    Interner<String> interner = Interner.newWeakInterner();
+    ClusterState.setStrInternerParser(
+        new Function<>() {
+          @Override
+          public ObjectBuilder apply(JSONParser p) {
+            try {
+              return new ObjectBuilder(p) {
+                @Override
+                public void addKeyVal(Object map, Object key, Object val) throws IOException {
+                  if (key != null) {
+                    key = interner.intern(key.toString());
+                  }
+                  if (val instanceof String) {
+                    val = interner.intern((String) val);
+                  }
+                  super.addKeyVal(map, key, val);
+                }
+              };
+            } catch (IOException e) {
+              throw new RuntimeException(e);
+            }
+          }
+        });
   }
 }
 

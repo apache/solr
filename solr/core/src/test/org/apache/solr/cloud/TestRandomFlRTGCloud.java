@@ -40,7 +40,10 @@ import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.*;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.NoOpResponseParser;
+import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -270,7 +273,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   private static int maybeCommit(
       final Random rand, final int itersSinceLastCommit, final int numIters)
       throws IOException, SolrServerException {
-    final float threshold = itersSinceLastCommit / numIters;
+    final float threshold = (float) itersSinceLastCommit / numIters;
     if (rand.nextFloat() < threshold) {
       log.info("COMMIT");
       assertEquals(0, getRandClient(rand).commit().getStatus());
@@ -496,7 +499,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
           }
         } else {
           // add one or more comma separated ids params
-          params.add(buildCommaSepParams(random(), "ids", idsToRequest));
+          params.add(buildCommaSepParams("ids", idsToRequest));
         }
       }
     } else {
@@ -662,7 +665,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
         params.add(v.getExtraRequestParams());
         fls.add(v.getFlParam());
       }
-      params.add(buildCommaSepParams(random(), "fl", fls));
+      params.add(buildCommaSepParams("fl", fls));
     }
 
     /**
@@ -1391,11 +1394,10 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   }
 
   /**
-   * Given an ordered list of values to include in a (key) param, randomly groups them (ie: comma
-   * separated) into actual param key=values which are returned as a new SolrParams instance
+   * Given an ordered list of values to include in a (key) param, groups them (ie: comma separated)
+   * into actual param key=values which are returned as a new SolrParams instance
    */
-  private static SolrParams buildCommaSepParams(
-      final Random rand, final String key, Collection<String> values) {
+  private static SolrParams buildCommaSepParams(final String key, Collection<String> values) {
     ModifiableSolrParams result = new ModifiableSolrParams();
     List<String> copy = new ArrayList<>(values);
     while (!copy.isEmpty()) {

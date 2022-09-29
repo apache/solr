@@ -48,7 +48,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -220,7 +219,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     try (Writer writer =
         new OutputStreamWriter(
             Files.newOutputStream(coreDirectory.resolve(CORE_PROPERTIES_FILENAME)),
-            Charset.forName("UTF-8"))) {
+            StandardCharsets.UTF_8)) {
       properties.store(writer, testname);
     }
   }

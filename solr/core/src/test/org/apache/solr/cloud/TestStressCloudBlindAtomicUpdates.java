@@ -30,7 +30,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
@@ -68,7 +67,6 @@ import org.slf4j.LoggerFactory;
  * Optimistic Concurrency is not used here because of SOLR-8733, instead we just throw lots of "inc"
  * operations at a numeric field and check that the math works out at the end.
  */
-@Slow
 @SuppressSSL(bugUrl = "SSL overhead seems to cause OutOfMemory when stress testing")
 public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
 
@@ -192,7 +190,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
         0,
         CLOUD_CLIENT.query(params("q", "*:*")).getResults().getNumFound());
 
-    final int injectionPercentage = (int) Math.ceil(atLeast(1) / 2);
+    final int injectionPercentage = (int) Math.ceil((float) atLeast(1) / 2);
     testInjection = usually() ? "false:0" : ("true:" + injectionPercentage);
   }
 

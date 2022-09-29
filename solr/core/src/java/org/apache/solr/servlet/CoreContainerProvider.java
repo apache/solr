@@ -325,6 +325,7 @@ public class CoreContainerProvider implements ServletContextListener {
    *
    * @return the Solr home, absolute and normalized.
    */
+  @SuppressWarnings("BanJNDI")
   private static Path computeSolrHome(ServletContext servletContext) {
 
     // start with explicit check of servlet config...

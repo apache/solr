@@ -16,7 +16,6 @@
  */
 package org.apache.solr.core.snapshots;
 
-import java.lang.invoke.MethodHandles;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,7 +30,6 @@ import org.apache.lucene.index.IndexNotFoundException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.tests.util.LuceneTestCase;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
@@ -53,8 +51,6 @@ import org.apache.solr.handler.BackupRestoreUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Tests for index backing up and restoring index snapshots.
@@ -66,9 +62,7 @@ import org.slf4j.LoggerFactory;
 // Backups do checksum validation against a footer value not present in 'SimpleText'
 @LuceneTestCase.SuppressCodecs({"SimpleText"})
 @SolrTestCaseJ4.SuppressSSL // Currently, unknown why SSL does not work with this test
-@Slow
 public class TestSolrCoreSnapshots extends SolrCloudTestCase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static long docsSeed; // see indexDocs()
 
   @BeforeClass

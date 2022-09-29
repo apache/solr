@@ -472,7 +472,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
       // Wait an exponential interval between retries, start at 4 seconds and work up to a minute.
       // Meanwhile we will check in 2s sub-intervals to see if we've been closed
       // Maximum loop count is 30 because we never want to wait longer than a minute (2s * 30 = 1m)
-      int loopCount = retries < 5 ? (int) Math.pow(2, retries) : 30;
+      long loopCount = retries < 5 ? Math.round(Math.pow(2, retries)) : 30;
       if (log.isInfoEnabled()) {
         log.info(
             "Wait [{}] seconds before trying to recover again (attempt={})",

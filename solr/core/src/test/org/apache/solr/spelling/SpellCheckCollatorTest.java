@@ -19,7 +19,6 @@ package org.apache.solr.spelling;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.lucene.tests.util.LuceneTestCase.SuppressTempFileChecks;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
@@ -41,7 +40,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@Slow
 @SuppressTempFileChecks(
     bugUrl = "https://issues.apache.org/jira/browse/SOLR-1877 Spellcheck IndexReader leak bug?")
 public class SpellCheckCollatorTest extends SolrTestCaseJ4 {

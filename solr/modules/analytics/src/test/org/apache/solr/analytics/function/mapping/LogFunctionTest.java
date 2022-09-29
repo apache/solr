@@ -153,9 +153,9 @@ public class LogFunctionTest extends SolrTestCaseJ4 {
     val.setValue(4.56F).setExists(true);
     Iterator<Double> values =
         Arrays.asList(
-                Math.log(4.56F) / Math.log(4L),
-                Math.log(4.56F) / Math.log(123L),
-                Math.log(4.56F) / Math.log(2L))
+                Math.log(4.56F) / Math.log(4.0D),
+                Math.log(4.56F) / Math.log(123.0D),
+                Math.log(4.56F) / Math.log(2.0D))
             .iterator();
     func.streamDoubles(
         value -> {
@@ -196,9 +196,9 @@ public class LogFunctionTest extends SolrTestCaseJ4 {
     val.setValues(2L, 50L, 3L);
     Iterator<Double> values =
         Arrays.asList(
-                Math.log(2L) / Math.log(4.56F),
-                Math.log(50L) / Math.log(4.56F),
-                Math.log(3L) / Math.log(4.56F))
+                Math.log(2.0D) / Math.log(4.56F),
+                Math.log(50.0D) / Math.log(4.56F),
+                Math.log(3.0D) / Math.log(4.56F))
             .iterator();
     func.streamDoubles(
         value -> {

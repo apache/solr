@@ -77,6 +77,11 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
       return true;
     }
 
+    // ZOOKEEPER-4608, yes it's spelled with 3 n's
+    if (threadName.equals("ConnnectionExpirer")) {
+      return true;
+    }
+
     return threadName.startsWith("closeThreadPool");
   }
 }

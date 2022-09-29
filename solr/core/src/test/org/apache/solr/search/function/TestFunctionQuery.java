@@ -42,8 +42,6 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     initCore("solrconfig-functionquery.xml", "schema11.xml");
   }
 
-  String base = "external_foo_extf";
-
   static long start = System.nanoTime();
 
   void makeExternalFile(String field, String contents) {

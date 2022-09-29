@@ -16,7 +16,11 @@
  */
 package org.apache.solr.handler;
 
-import static org.apache.solr.handler.ReplicationTestHelper.*;
+import static org.apache.solr.handler.ReplicationTestHelper.CONF_DIR;
+import static org.apache.solr.handler.ReplicationTestHelper.SolrInstance;
+import static org.apache.solr.handler.ReplicationTestHelper.assertVersions;
+import static org.apache.solr.handler.ReplicationTestHelper.createNewSolrClient;
+import static org.apache.solr.handler.ReplicationTestHelper.invokeReplicationCommand;
 import static org.junit.matchers.JUnitMatchers.containsString;
 
 import java.io.File;
@@ -26,14 +30,19 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.NIOFSDirectory;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.BaseDistributedSearchTestCase;
@@ -82,7 +91,7 @@ import org.slf4j.LoggerFactory;
  *
  * @since 1.4
  */
-@Slow
+@Nightly
 @SuppressSSL // Currently, unknown why SSL does not work with this test
 public class TestReplicationHandler extends SolrTestCaseJ4 {
 
@@ -939,10 +948,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     assertVersions(leaderClient, followerClient);
 
-    NamedList<Object> details = getDetails(leaderClient);
-
-    details = getDetails(followerClient);
-
     checkForSingleIndex(leaderJetty);
     checkForSingleIndex(followerJetty);
   }
@@ -1488,7 +1493,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     }
 
     float approximateTimeInSeconds =
-        Math.round(totalBytes / 1024 / 1024 / 0.1); // maxWriteMBPerSec=0.1 in solrconfig
+        Math.round((float) totalBytes / 1024 / 1024 / 0.1); // maxWriteMBPerSec=0.1 in solrconfig
 
     // Start again and replicate the data
     useFactory(null);

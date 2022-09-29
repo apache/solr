@@ -25,7 +25,11 @@ import java.util.Map;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.*;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.NoOpResponseParser;
+import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.DelegationTokenResponse;
@@ -92,15 +96,6 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
         400,
         "/c/" + COLL_NAME,
         incorrectPayload);
-  }
-
-  private long getStatus(V2Response response) {
-    Object header = response.getResponse().get("responseHeader");
-    if (header instanceof NamedList) {
-      return (int) ((NamedList<?>) header).get("status");
-    } else {
-      return (long) ((Map<?, ?>) header).get("status");
-    }
   }
 
   @Test

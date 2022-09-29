@@ -44,9 +44,11 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.PerReplicaStates;
+import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.Slice.SliceStateProps;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -433,9 +435,9 @@ public class ReplicaMutator {
     } else {
       replicas = new HashMap<>(1);
       sliceProps = new HashMap<>();
-      sliceProps.put(Slice.RANGE, shardRange);
+      sliceProps.put(SliceStateProps.RANGE, shardRange);
       sliceProps.put(ZkStateReader.STATE_PROP, shardState);
-      sliceProps.put(Slice.PARENT, shardParent);
+      sliceProps.put(SliceStateProps.PARENT, shardParent);
     }
     replicas.put(replica.getName(), replica);
     slice = new Slice(sliceName, replicas, sliceProps, collectionName);
@@ -444,7 +446,8 @@ public class ReplicaMutator {
     log.debug("Collection is now: {}", newCollection);
     if (collection != null && collection.isPerReplicaState()) {
       PerReplicaStates prs =
-          PerReplicaStates.fetch(collection.getZNode(), zkClient, collection.getPerReplicaStates());
+          PerReplicaStatesFetcher.fetch(
+              collection.getZNode(), zkClient, collection.getPerReplicaStates());
       return new ZkWriteCommand(
           collectionName,
           newCollection,
@@ -523,7 +526,7 @@ public class ReplicaMutator {
             // hurray, all sub shard replicas are active
             log.info(
                 "Shard: {} - All replicas across all fellow sub-shards are now ACTIVE.", sliceName);
-            String parentSliceName = (String) sliceProps.remove(Slice.PARENT);
+            String parentSliceName = (String) sliceProps.remove(SliceStateProps.PARENT);
             // now lets see if the parent leader is still the same or else there's a chance of data
             // loss see SOLR-9438 for details
             String shardParentZkSession = (String) sliceProps.remove("shard_parent_zk_session");

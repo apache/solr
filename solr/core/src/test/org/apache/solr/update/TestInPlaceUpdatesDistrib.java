@@ -34,7 +34,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.NoMergePolicy;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -72,7 +71,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Tests the in-place updates (docValues updates) for a one shard, three replica cluster. */
-@Slow
 public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final boolean onlyLeaderIndexes = random().nextBoolean();
@@ -656,7 +654,6 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     assert luceneDocids.size() == valuesList.size();
     final long numFoundExpected = luceneDocids.size();
 
-    CLIENT:
     for (SolrClient client : clients) {
       final String clientDebug =
           client.toString() + (LEADER.equals(client) ? " (leader)" : " (not leader)");
