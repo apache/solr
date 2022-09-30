@@ -424,7 +424,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
               // These are the cores we _expect_ to find on this node according to the CLUSTERSTATUS
               var cores = nodes[node]['cores'];
               if (! cores) {
-                cores = {};
+                cores = [];
               }
               var indexSizeTotal = 0;
               var docsTotal = 0;
