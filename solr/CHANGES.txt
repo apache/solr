@@ -50,6 +50,10 @@ Bug Fixes
 ---------------------
 (No changes)
 
+Build
+---------------------
+* Upgrade forbiddenapis to 3.4 (Uwe Schindler)
+
 Other Changes
 ---------------------
 (No changes)
