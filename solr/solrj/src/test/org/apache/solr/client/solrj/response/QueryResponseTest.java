@@ -26,7 +26,6 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import junit.framework.Assert;
 import org.apache.lucene.tests.util.TestRuleLimitSysouts.Limit;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
@@ -57,7 +56,7 @@ public class QueryResponseTest extends SolrTestCase {
     }
 
     QueryResponse qr = new QueryResponse(response, null);
-    Assert.assertNotNull(qr);
+    assertNotNull(qr);
 
     int counter = 0;
     RangeFacet.Numeric price = null;
@@ -91,10 +90,11 @@ public class QueryResponseTest extends SolrTestCase {
     assertEquals(0, price.getCounts().get(4).getCount());
 
     assertEquals(
-        new Date(Instant.parse("2005-02-13T15:26:37Z").toEpochMilli()),
-        manufacturedateDt.getStart());
+        new Date(Instant.parse("2005-02-13T15:26:37Z").toEpochMilli()).toInstant(),
+        manufacturedateDt.getStart().toInstant());
     assertEquals(
-        new Date(Instant.parse("2008-02-13T15:26:37Z").toEpochMilli()), manufacturedateDt.getEnd());
+        new Date(Instant.parse("2008-02-13T15:26:37Z").toEpochMilli()).toInstant(),
+        manufacturedateDt.getEnd().toInstant());
     assertEquals("+1YEAR", manufacturedateDt.getGap());
     assertEquals("2005-02-13T15:26:37Z", manufacturedateDt.getCounts().get(0).getValue());
     assertEquals(4, manufacturedateDt.getCounts().get(0).getCount());

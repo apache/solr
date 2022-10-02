@@ -17,8 +17,8 @@
 package org.apache.solr.update.processor;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
@@ -57,7 +57,7 @@ public class DefaultValueUpdateProcessorTest extends SolrTestCaseJ4 {
     assertTrue(
         "timestamp not a date: " + d.getFieldValue("timestamp").getClass(),
         d.getFieldValue("timestamp") instanceof Date);
-    assertEquals(Arrays.asList("Existing", "Values"), d.getFieldValues("name"));
+    assertEquals(List.of("Existing", "Values"), List.copyOf(d.getFieldValues("name")));
 
     // defaults already specified
     d =
@@ -76,8 +76,8 @@ public class DefaultValueUpdateProcessorTest extends SolrTestCaseJ4 {
     assertEquals("I HAVE A VALUE", d.getFieldValue("processor_default_s"));
     assertEquals(12345, d.getFieldValue("processor_default_i"));
     assertEquals("550e8400-e29b-41d4-a716-446655440000", d.getFieldValue("uuid"));
-    assertEquals(now, d.getFieldValue("timestamp"));
-    assertEquals(Arrays.asList("Existing", "Values"), d.getFieldValues("name"));
+    assertEquals(now.toInstant(), ((Date) d.getFieldValue("timestamp")).toInstant());
+    assertEquals(List.of("Existing", "Values"), List.copyOf(d.getFieldValues("name")));
   }
 
   /** Convenience method for building up SolrInputDocuments */
