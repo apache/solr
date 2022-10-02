@@ -81,7 +81,7 @@ public class DeleteReplicaPropertyAPI extends AdminAPIBase {
             coreContainer,
             coreContainer.getDistributedCollectionCommandRunner(),
             remoteMessage,
-            CollectionParams.CollectionAction.ADDREPLICAPROP,
+            CollectionParams.CollectionAction.DELETEREPLICAPROP,
             DEFAULT_COLLECTION_OP_TIMEOUT);
     if (remoteResponse.getException() != null) {
       throw remoteResponse.getException();
