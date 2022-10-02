@@ -203,13 +203,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         apiBag,
         "/collections/collName",
         POST,
-        "{add-replica-property : {name:propA , value: VALA, shard: shard1, replica:replica1}}",
-        "{collection: collName, shard: shard1, replica : replica1 , property : propA , operation : addreplicaprop, property.value : 'VALA'}");
-
-    compareOutput(
-        apiBag,
-        "/collections/collName",
-        POST,
         "{delete-replica-property : {property: propA , shard: shard1, replica:replica1} }",
         "{collection: collName, shard: shard1, replica : replica1 , property : propA , operation : deletereplicaprop}");
 
