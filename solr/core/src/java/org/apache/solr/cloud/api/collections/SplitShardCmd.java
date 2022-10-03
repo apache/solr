@@ -339,8 +339,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       t.stop();
 
       // 3. if this shard has attempted a split before and failed, there will be lingering INACTIVE
-      // sub-shards.
-      //    clean these up before proceeding
+      // sub-shards.  Clean these up before proceeding
       boolean oldShardsDeleted = false;
       for (String subSlice : subSlices) {
         Slice oSlice = collection.getSlice(subSlice);
