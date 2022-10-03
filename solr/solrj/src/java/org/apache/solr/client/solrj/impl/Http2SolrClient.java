@@ -451,22 +451,24 @@ public class Http2SolrClient extends SolrClient {
     final ResponseParser parser =
         solrRequest.getResponseParser() == null ? this.parser : solrRequest.getResponseParser();
 
+    Throwable abortCause = null;
     try {
       InputStreamResponseListener listener = new InputStreamResponseListener();
       req.send(listener);
       Response response = listener.get(idleTimeout, TimeUnit.MILLISECONDS);
       InputStream is = listener.getInputStream();
       assert ObjectReleaseTracker.track(is);
-
       return processErrorsAndResponse(solrRequest, parser, response, is);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
+      abortCause = e;
       throw new RuntimeException(e);
     } catch (TimeoutException e) {
       throw new SolrServerException(
           "Timeout occured while waiting response from server at: " + req.getURI(), e);
     } catch (ExecutionException e) {
       Throwable cause = e.getCause();
+      abortCause = cause;
       if (cause instanceof ConnectException) {
         throw new SolrServerException("Server refused connection at: " + req.getURI(), cause);
       }
@@ -477,6 +479,13 @@ public class Http2SolrClient extends SolrClient {
             "IOException occured when talking to server at: " + getBaseURL(), cause);
       }
       throw new SolrServerException(cause.getMessage(), cause);
+    } catch (SolrServerException sse) {
+      abortCause = sse;
+      throw sse;
+    } finally {
+      if (abortCause != null) {
+        req.abort(abortCause);
+      }
     }
   }
 
