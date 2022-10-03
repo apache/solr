@@ -479,7 +479,7 @@ public class Http2SolrClient extends SolrClient {
             "IOException occured when talking to server at: " + getBaseURL(), cause);
       }
       throw new SolrServerException(cause.getMessage(), cause);
-    } catch (SolrServerException sse) {
+    } catch (SolrServerException | RuntimeException sse) {
       abortCause = sse;
       throw sse;
     } finally {
