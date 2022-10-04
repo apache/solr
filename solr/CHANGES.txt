@@ -32,7 +32,8 @@ Other Changes
 ==================  9.2.0 ==================
 New Features
 ---------------------
-(No changes)
+
+* SOLR-16435: Add Request timeout to Http2SolrClient (Tomás Fernández Löbbe)
 
 Improvements
 ---------------------
