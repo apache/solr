@@ -7,7 +7,8 @@ https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-not
 ==================  9.2.0 ==================
 New Features
 ---------------------
-(No changes)
+
+* SOLR-16435: Add Request timeout to Http2SolrClient (Tomás Fernández Löbbe)
 
 Improvements
 ---------------------
