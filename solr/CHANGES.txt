@@ -36,7 +36,14 @@ New Features
 
 Improvements
 ---------------------
-(No changes)
+
+* SOLR-16428: IgnoreLargeDocumentProcessorFactory now supports a "permissive" mode, where it logs and skips
+  offending documents but doesn't short-circuit the entire batch or return a 4xx error.  This mode can be enabled
+  by setting the `permissiveMode` boolean option to `true` in your solrconfig.xml's
+  IgnoreLargeDocumentProcessorFactory declaration. (Jason Gerlowski)
+
+* SOLR-16392: A number of v2 "replica" endpoints have been updated to be more REST-ful, and hopefully, intuitive.
+  ADDREPLICAPROP is now `PUT /api/collections/$coll/shards/$shard/replicas/$rep/properties/$prop {"value": $val}`
 
 Optimizations
 ---------------------
@@ -45,6 +52,10 @@ Optimizations
 Bug Fixes
 ---------------------
 (No changes)
+
+Build
+---------------------
+* Upgrade forbiddenapis to 3.4 (Uwe Schindler)
 
 Other Changes
 ---------------------
@@ -183,7 +194,7 @@ Bug Fixes
 
 * SOLR-16417: NPE if facet query hits timeout or exception (Kevin Risden)
 
-* SOLR-16414 : Race condition in PRS state updates (noble, Justin Sweeney, Patson Luk, Hitesh Khamesra, Ishan Chattopadhyaya)
+* SOLR-16414: Race condition in PRS state updates (noble, Justin Sweeney, Patson Luk, Hitesh Khamesra, Ishan Chattopadhyaya)
 
 * SOLR-16418: Introduce SolrResponseUtil to handle NPE during query timeout or exception when parsing SolrResponse (Kevin Risden)
 
@@ -192,6 +203,8 @@ Bug Fixes
 * SOLR-16426: LBHttp2SolrClient (and therefore CloudHttp2SolrClient) now respect requestWriter, responseParser and queryParam changes (Houston Putman)
 
 * SOLR-16232: Fix EnvVar usage in bin/solr (Houston Putman)
+
+* SOLR-16229: Http2SolrClient aborts requests on exception (Daniel Rabus, Tomás Fernández Löbbe)
 
 Other Changes
 ---------------------

@@ -18,6 +18,7 @@
 package org.apache.solr.update.processor;
 
 import static org.apache.solr.update.processor.IgnoreLargeDocumentProcessorFactory.ObjectSizeEstimator.estimate;
+import static org.hamcrest.Matchers.containsString;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -31,6 +32,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.update.AddUpdateCommand;
+import org.apache.solr.util.LogListener;
 import org.junit.Test;
 
 public class IgnoreLargeDocumentProcessorFactoryTest extends SolrTestCase {
@@ -54,10 +56,30 @@ public class IgnoreLargeDocumentProcessorFactoryTest extends SolrTestCase {
     requestProcessor.processAdd(getUpdate(1024));
   }
 
-  public AddUpdateCommand getUpdate(int size) {
+  @Test
+  public void testProcessorInPermissiveMode() throws IOException {
+    NamedList<Object> args = new NamedList<>();
+    args.add(IgnoreLargeDocumentProcessorFactory.LIMIT_SIZE_PARAM, 1);
+    args.add(IgnoreLargeDocumentProcessorFactory.PERMISSIVE_MODE_PARAM, true);
+
+    IgnoreLargeDocumentProcessorFactory factory = new IgnoreLargeDocumentProcessorFactory();
+    factory.init(args);
+
+    UpdateRequestProcessor processor = factory.getInstance(null, null, null);
+    try (LogListener listener = LogListener.warn(IgnoreLargeDocumentProcessorFactory.class)) {
+      processor.processAdd(getUpdate(1024));
+
+      assertThat(
+          listener.pollMessage(),
+          containsString("Skipping doc because estimated size exceeds limit"));
+    }
+  }
+
+  public AddUpdateCommand getUpdate(int sizeBytes) {
     SolrInputDocument document = new SolrInputDocument();
-    document.addField(new String(new byte[size], Charset.defaultCharset()), 1L);
-    assertTrue(IgnoreLargeDocumentProcessorFactory.ObjectSizeEstimator.estimate(document) > size);
+    document.addField(new String(new byte[sizeBytes], Charset.defaultCharset()), 1L);
+    assertTrue(
+        IgnoreLargeDocumentProcessorFactory.ObjectSizeEstimator.estimate(document) > sizeBytes);
 
     AddUpdateCommand cmd = new AddUpdateCommand(null);
     cmd.solrDoc = document;
