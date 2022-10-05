@@ -36,8 +36,18 @@ public class TestFieldLengthFeature extends TestRerankBase {
     assertU(adoc("id", "4", "title", "w4", "description", "w4"));
     assertU(adoc("id", "5", "title", "w5", "description", "w5"));
     assertU(adoc("id", "6", "title", "w1 w2", "description", "w1 w2", "x_t", "1 2"));
-    assertU(adoc("id", "7", "title", "w1 w2 w3 w4 w5", "description", "w1 w2 w3 w4 w5 w8", "x_t", "1"));
-    assertU(adoc("id", "8", "title", "w1 w1 w1 w2 w2 w8", "description", "w1 w1 w1 w2 w2", "x_t", "1 2 3"));
+    assertU(
+        adoc("id", "7", "title", "w1 w2 w3 w4 w5", "description", "w1 w2 w3 w4 w5 w8", "x_t", "1"));
+    assertU(
+        adoc(
+            "id",
+            "8",
+            "title",
+            "w1 w1 w1 w2 w2 w8",
+            "description",
+            "w1 w1 w1 w2 w2",
+            "x_t",
+            "1 2 3"));
     assertU(commit());
   }
 
@@ -159,10 +169,10 @@ public class TestFieldLengthFeature extends TestRerankBase {
     loadFeature("dynfield-length", FieldLengthFeature.class.getName(), "{\"field\":\"x_t\"}");
 
     loadModel(
-            "dynfield-model",
-            LinearModel.class.getName(),
-            new String[] {"dynfield-length"},
-            "{\"weights\":{\"dynfield-length\":1.0}}");
+        "dynfield-model",
+        LinearModel.class.getName(),
+        new String[] {"dynfield-length"},
+        "{\"weights\":{\"dynfield-length\":1.0}}");
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("title:w1");

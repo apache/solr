@@ -84,9 +84,7 @@ public class TestFeatureLogging extends TestRerankBase {
     restTestHarness.query("/query" + query.toQueryString());
     assertJQ(
         "/query" + query.toQueryString(),
-        "/response/docs/[0]/=={'id':'7', 'popularity':2,  '[fv]':'"
-            + docs0fv_default_csv
-            + "'}");
+        "/response/docs/[0]/=={'id':'7', 'popularity':2,  '[fv]':'" + docs0fv_default_csv + "'}");
 
     query.remove("fl");
     query.add("fl", "[fv]");
