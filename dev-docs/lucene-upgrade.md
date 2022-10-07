@@ -48,6 +48,17 @@ git add lucene-*-9.4.0.jar.sha1
 
 ## Code
 
+```
+gradlew compileJava
+```
+
+* adjust for signature changes e.g.
+  * `int` to `long` type change
+  * additional or removed constructor arguments
+  * additional abstract base class or interface methods
+  * inner classes becoming outer classes
+* codec changes, conceptually `s/org.apache.lucene.codecs.lucene93.Lucene93/org.apache.lucene.codecs.lucene94.Lucene94`
+
 ## Test
 
 ## Finish
