@@ -29,6 +29,39 @@ Other Changes
   Previously, the modules would come transitively.
   (David Smiley)
 
+==================  9.2.0 ==================
+New Features
+---------------------
+
+* SOLR-16435: Add Request timeout to Http2SolrClient (Tomás Fernández Löbbe)
+
+Improvements
+---------------------
+
+* SOLR-16428: IgnoreLargeDocumentProcessorFactory now supports a "permissive" mode, where it logs and skips
+  offending documents but doesn't short-circuit the entire batch or return a 4xx error.  This mode can be enabled
+  by setting the `permissiveMode` boolean option to `true` in your solrconfig.xml's
+  IgnoreLargeDocumentProcessorFactory declaration. (Jason Gerlowski)
+
+* SOLR-16392: A number of v2 "replica" endpoints have been updated to be more REST-ful, and hopefully, intuitive.
+  ADDREPLICAPROP is now `PUT /api/collections/$coll/shards/$shard/replicas/$rep/properties/$prop {"value": $val}`
+
+Optimizations
+---------------------
+(No changes)
+
+Bug Fixes
+---------------------
+(No changes)
+
+Build
+---------------------
+* Upgrade forbiddenapis to 3.4 (Uwe Schindler)
+
+Other Changes
+---------------------
+(No changes)
+
 ==================  9.1.0 ==================
 
 New Features
@@ -89,6 +122,10 @@ Improvements
 
 * SOLR-16361: mod() is now accurate for all integers, floats, doubles and longs upto 2^52 (Dan Rosher via Eric Pugh)
 
+* SOLR-16404: Prometheus Exporter: Use HTTP2 Solr clients. (Houston Putman)
+
+* SOLR-16429: The s3-repository module now supports AWS STS, and therefore Web Identity Tokens, by default. (Josh Souza via Houston Putman)
+
 Optimizations
 ---------------------
 * SOLR-16120: Optimise hl.fl expansion. (Christine Poerschke, David Smiley, Mike Drob)
@@ -108,6 +145,8 @@ Optimizations
 
 Bug Fixes
 ---------------------
+* SOLR-13219: Fix NPE in FieldLengthFeature with non-stored/missing fields (Nick Veenhof, Tomasz Elendt)
+
 * SOLR-15918: Skip repetitive parent znode creation on config set upload (Mike Drob)
 
 * SOLR-15964: Transient cores: don't evict a core when it's still being used. (David Smiley)
@@ -158,13 +197,17 @@ Bug Fixes
 
 * SOLR-16417: NPE if facet query hits timeout or exception (Kevin Risden)
 
-* SOLR-16414 : Race condition in PRS state updates (noble, Justin Sweeney, Patson Luk, Hitesh Khamesra, Ishan Chattopadhyaya)
+* SOLR-16414: Race condition in PRS state updates (noble, Justin Sweeney, Patson Luk, Hitesh Khamesra, Ishan Chattopadhyaya)
 
 * SOLR-16418: Introduce SolrResponseUtil to handle NPE during query timeout or exception when parsing SolrResponse (Kevin Risden)
 
 * SOLR-16219: ICUCollationField protected field IllegalAccessException from different classloader (Michael Gibney)
 
 * SOLR-16426: LBHttp2SolrClient (and therefore CloudHttp2SolrClient) now respect requestWriter, responseParser and queryParam changes (Houston Putman)
+
+* SOLR-16232: Fix EnvVar usage in bin/solr (Houston Putman)
+
+* SOLR-16229: Http2SolrClient aborts requests on exception (Daniel Rabus, Tomás Fernández Löbbe)
 
 * SOLR-16453: Overseer doesn't handle PRS and non-PRS messages properly (Justin Sweeney, Hitesh Khamesra)
 

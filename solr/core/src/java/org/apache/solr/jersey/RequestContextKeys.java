@@ -49,4 +49,23 @@ public interface RequestContextKeys {
   String HANDLER_METRICS = RequestHandlerBase.HandlerMetrics.class.getName();
   String TIMER = Timer.Context.class.getName();
   String SOLR_JERSEY_RESPONSE = SolrJerseyResponse.class.getName();
+
+  /**
+   * A flag read by {@link NotFoundExceptionMapper} to suppress its normal error response
+   *
+   * <p>Used primarily to allow Solr to lookup certain APIs in multiple JAX-RS applications.
+   *
+   * @see NotFoundExceptionMapper
+   */
+  String SUPPRESS_ERROR_ON_NOT_FOUND_EXCEPTION = "ERROR_IF_RESOURCE_NOT_FOUND";
+
+  /**
+   * A flag set by {@link NotFoundExceptionMapper} indicating that a 404 error response was
+   * suppressed.
+   *
+   * <p>Used primarily to allow Solr to lookup certian APIs in multiple JAX-RS applications.
+   *
+   * @see NotFoundExceptionMapper
+   */
+  String NOT_FOUND_FLAG = "RESOURCE_NOT_FOUND";
 }
