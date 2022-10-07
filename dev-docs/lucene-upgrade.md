@@ -61,6 +61,10 @@ gradlew compileJava
 
 ## Test
 
+```
+gradlew compileTestJava
+```
+
 ## Finish
 
 Push the local branch to github (fork) and open a pull request.
