@@ -75,7 +75,7 @@ public class SortableBinaryField extends BinaryField {
                 final int numHits,
                 final boolean enableSkipping,
                 final boolean reversed) {
-              final boolean sortMissingLast = true; // TODO
+              final boolean sortMissingLast = false;
               return new TermOrdValComparator(
                   numHits, fieldname, sortMissingLast, reversed, enableSkipping);
             }
