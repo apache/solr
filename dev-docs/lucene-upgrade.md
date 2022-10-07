@@ -30,6 +30,12 @@ Create a new branch locally e.g. `git checkout -b lucene940 -t origin/main` for 
 + org.apache.lucene:*=9.4.0
 ```
 
+### `versions.lock` update
+
+```
+gradlew --write-locks
+```
+
 ## Code
 
 ## Test
