@@ -36,6 +36,16 @@ Create a new branch locally e.g. `git checkout -b lucene940 -t origin/main` for 
 gradlew --write-locks
 ```
 
+### `solr/licenses` update
+
+```
+git rm lucene-*-9.3.0.jar.sha1
+
+# ???manually get new .sha1 files???
+
+git add lucene-*-9.4.0.jar.sha1
+```
+
 ## Code
 
 ## Test
