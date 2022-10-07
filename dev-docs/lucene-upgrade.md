@@ -65,6 +65,10 @@ gradlew compileJava
 gradlew compileTestJava
 ```
 
+```
+gradlew precommit
+```
+
 ## Finish
 
 Push the local branch to github (fork) and open a pull request.
