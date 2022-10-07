@@ -22,6 +22,7 @@ import com.codahale.metrics.Timer;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.cloud.Overseer;
@@ -216,7 +217,7 @@ public class ZkStateWriter {
     }
 
     if (log.isDebugEnabled()) {
-      log.debug(String.format("Request to write pending updates with updates of length: %d, " +
+      log.debug(String.format(Locale.ROOT, "Request to write pending updates with updates of length: %d, " +
               "pending updates of length: %d, writing all pending updates: %b", updates.size(), this.updates.size(), updates == this.updates));
     }
 
