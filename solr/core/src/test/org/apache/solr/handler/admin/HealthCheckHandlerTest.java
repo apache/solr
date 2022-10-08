@@ -97,8 +97,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
     try (SolrClient solrClient = getHttpSolrClient(newJetty.getBaseUrl().toString())) {
 
       // positive check that our (new) "healthy" node works with direct http client
-      assertEquals(
-          CommonParams.OK, req.process(solrClient).getResponse().get(CommonParams.STATUS));
+      assertEquals(CommonParams.OK, req.process(solrClient).getResponse().get(CommonParams.STATUS));
 
       // now "break" our (new) node
       newJetty.getCoreContainer().getZkController().getZkClient().close();
@@ -122,8 +121,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
     try (SolrClient solrClient = getHttpSolrClient(newJetty.getBaseUrl().toString())) {
 
       // positive check that our (new) "healthy" node works with direct http client
-      assertEquals(
-          CommonParams.OK, req.process(solrClient).getResponse().get(CommonParams.STATUS));
+      assertEquals(CommonParams.OK, req.process(solrClient).getResponse().get(CommonParams.STATUS));
 
       // shutdown the core container of new node
       newJetty.getCoreContainer().shutdown();
@@ -152,8 +150,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
     try (SolrClient solrClient =
         getHttpSolrClient(cluster.getJettySolrRunner(0).getBaseUrl().toString())) {
 
-      assertEquals(
-          CommonParams.OK, req.process(solrClient).getResponse().get(CommonParams.STATUS));
+      assertEquals(CommonParams.OK, req.process(solrClient).getResponse().get(CommonParams.STATUS));
     }
   }
 

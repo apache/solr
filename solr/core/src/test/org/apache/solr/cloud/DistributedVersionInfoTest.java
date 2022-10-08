@@ -30,13 +30,11 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -58,7 +56,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@LuceneTestCase.Nightly // Lots of sleeps to introduce timing delays?
+// @LuceneTestCase.Nightly // Lots of sleeps to introduce timing delays?
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class DistributedVersionInfoTest extends SolrCloudTestCase {
 
@@ -320,9 +318,9 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
       int lastDocId,
       Set<Integer> deletedDocs)
       throws Exception {
-    SolrClient leaderSolr = getHttpSolrClient(leader);
+    SolrClient leaderSolr = getSolrClient(leader);
     List<SolrClient> replicas = new ArrayList<SolrClient>(notLeaders.size());
-    for (Replica r : notLeaders) replicas.add(getHttpSolrClient(r));
+    for (Replica r : notLeaders) replicas.add(getSolrClient(r));
 
     try {
       for (int d = firstDocId; d <= lastDocId; d++) {
@@ -345,7 +343,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     }
   }
 
-  protected HttpSolrClient getHttpSolrClient(Replica replica) {
+  protected SolrClient getSolrClient(Replica replica) {
     return getHttpSolrClient(replica.getCoreUrl());
   }
 
@@ -383,7 +381,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     ZkCoreNodeProps coreProps = new ZkCoreNodeProps(replica);
     String coreName = coreProps.getCoreName();
     boolean reloadedOk = false;
-    try (HttpSolrClient client = getHttpSolrClient(coreProps.getBaseUrl())) {
+    try (SolrClient client = getHttpSolrClient(coreProps.getBaseUrl())) {
       CoreAdminResponse statusResp = CoreAdminRequest.getStatus(coreName, client);
       long leaderCoreStartTime = statusResp.getStartTime(coreName).getTime();
 
