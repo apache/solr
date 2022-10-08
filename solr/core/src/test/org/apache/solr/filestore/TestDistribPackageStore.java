@@ -192,10 +192,10 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
       assertResponseValues(10, new Fetcher(url, jettySolrRunner), expected);
 
       if (verifyContent) {
-        try (HttpSolrClient solrClient = (HttpSolrClient) jettySolrRunner.newClient()) {
+        try (HttpSolrClient httpSolrClient = (HttpSolrClient) jettySolrRunner.newClient()) {
           ByteBuffer buf =
               Utils.executeGET(
-                  solrClient.getHttpClient(),
+                      httpSolrClient.getHttpClient(),
                   baseUrl + "/node/files" + path,
                   Utils.newBytesConsumer(Integer.MAX_VALUE));
           assertEquals(
@@ -217,9 +217,9 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
 
     @Override
     public NavigableObject call() throws Exception {
-      try (HttpSolrClient solrClient = (HttpSolrClient) jetty.newClient()) {
+      try (HttpSolrClient httpSolrClient = (HttpSolrClient) jetty.newClient()) {
         return (NavigableObject)
-            Utils.executeGET(solrClient.getHttpClient(), this.url, JAVABINCONSUMER);
+            Utils.executeGET(httpSolrClient.getHttpClient(), this.url, JAVABINCONSUMER);
       }
     }
 
@@ -309,11 +309,11 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
   public static void uploadKey(byte[] bytes, String path, MiniSolrCloudCluster cluster)
       throws Exception {
     JettySolrRunner jetty = cluster.getRandomJetty(random());
-    try (HttpSolrClient client = (HttpSolrClient) jetty.newClient()) {
+    try (HttpSolrClient httpSolrClient = (HttpSolrClient) jetty.newClient()) {
       PackageUtils.uploadKey(
-          bytes, path, Paths.get(jetty.getCoreContainer().getSolrHome()), client);
+          bytes, path, Paths.get(jetty.getCoreContainer().getSolrHome()));
       String url = jetty.getBaseURLV2() + "/node/files" + path + "?sync=true";
-      Object resp = Utils.executeGET(client.getHttpClient(), url, null);
+      Object resp = Utils.executeGET(httpSolrClient.getHttpClient(), url, null);
       log.info("sync resp: {} was {}", url, resp);
     }
     checkAllNodesForFile(
