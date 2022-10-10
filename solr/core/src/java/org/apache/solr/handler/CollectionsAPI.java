@@ -40,6 +40,7 @@ import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.request.beans.BackupCollectionPayload;
+import org.apache.solr.client.solrj.request.beans.ClusterPropPayload;
 import org.apache.solr.client.solrj.request.beans.CreateAliasPayload;
 import org.apache.solr.client.solrj.request.beans.CreatePayload;
 import org.apache.solr.client.solrj.request.beans.DeleteAliasPayload;
@@ -61,6 +62,7 @@ public class CollectionsAPI {
   public static final String V2_CREATE_ALIAS_CMD = "create-alias";
   public static final String V2_SET_ALIAS_PROP_CMD = "set-alias-property";
   public static final String V2_DELETE_ALIAS_CMD = "delete-alias";
+  public static final String V2_CLUSTER_STATUS_CMD = "cluster-status";
 
   private final CollectionsHandler collectionsHandler;
 
@@ -174,6 +176,17 @@ public class CollectionsAPI {
 
       v1Params.put(ACTION, CollectionAction.CREATE.toLower());
       convertV2CreateCollectionMapToV1ParamMap(v1Params);
+
+      collectionsHandler.handleRequestBody(
+          wrapParams(obj.getRequest(), v1Params), obj.getResponse());
+    }
+
+    @Command(name = V2_CLUSTER_STATUS_CMD)
+    public void clusterStatus(PayloadObj<ClusterPropPayload> obj) throws Exception {
+      final ClusterPropPayload v2Body = obj.get();
+      final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
+
+      v1Params.put(ACTION, CollectionAction.CLUSTERSTATUS.toLower());
 
       collectionsHandler.handleRequestBody(
           wrapParams(obj.getRequest(), v1Params), obj.getResponse());
