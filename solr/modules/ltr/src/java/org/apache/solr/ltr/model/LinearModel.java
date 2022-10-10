@@ -108,7 +108,7 @@ public class LinearModel extends LTRScoringModel {
   protected void validate() throws ModelException {
     super.validate();
 
-    final ArrayList<String> missingWeightFeatureNames = new ArrayList<String>();
+    final ArrayList<String> missingWeightFeatureNames = new ArrayList<>();
     for (int i = 0; i < features.size(); ++i) {
       if (featureToWeight[i] == null) {
         missingWeightFeatureNames.add(features.get(i).getName());

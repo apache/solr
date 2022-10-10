@@ -86,7 +86,7 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
    * Known errors that occurred in this batch, in order encountered (may not be the same as the
    * order the commands were originally executed in due to the async distributed updates).
    */
-  private final List<ToleratedUpdateError> knownErrors = new ArrayList<ToleratedUpdateError>();
+  private final List<ToleratedUpdateError> knownErrors = new ArrayList<>();
 
   // Kludge: Because deleteByQuery updates are forwarded to every leader, we can get identical
   // errors reported by every leader for the same underlying problem.
@@ -372,7 +372,7 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
 
       NamedList<String> firstErrMetadata = first.getMetadata();
       if (null == firstErrMetadata) { // obnoxious
-        firstErrMetadata = new NamedList<String>();
+        firstErrMetadata = new NamedList<>();
         first.setMetadata(firstErrMetadata);
       } else {
         // any existing metadata representing ToleratedUpdateErrors in this single exception needs

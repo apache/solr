@@ -281,7 +281,7 @@ class SubQueryAugmenter extends DocTransformer {
     @Override
     public Iterator<String> getParameterNamesIterator() {
       final Iterator<String> fieldNames = doc.getFieldNames().iterator();
-      return new Iterator<String>() {
+      return new Iterator<>() {
 
         @Override
         public boolean hasNext() {

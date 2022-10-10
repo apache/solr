@@ -126,10 +126,9 @@ import org.apache.solr.handler.admin.SecurityConfHandlerZk;
 import org.apache.solr.handler.admin.ZookeeperInfoHandler;
 import org.apache.solr.handler.admin.ZookeeperReadAPI;
 import org.apache.solr.handler.admin.ZookeeperStatusHandler;
-import org.apache.solr.handler.api.ApiRegistrar;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.designer.SchemaDesignerAPI;
-import org.apache.solr.jersey.CoreContainerFactory;
+import org.apache.solr.jersey.InjectionFactories;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrCoreMetricManager;
@@ -817,8 +816,6 @@ public class CoreContainer {
         createHandler(
             COLLECTIONS_HANDLER_PATH, cfg.getCollectionsHandlerClass(), CollectionsHandler.class);
     final CollectionsAPI collectionsAPI = new CollectionsAPI(collectionsHandler);
-    ApiRegistrar.registerCollectionApis(containerHandlers.getApiBag(), collectionsHandler);
-    ApiRegistrar.registerShardApis(containerHandlers.getApiBag(), collectionsHandler);
     containerHandlers.getApiBag().registerObject(collectionsAPI);
     containerHandlers.getApiBag().registerObject(collectionsAPI.collectionsCommands);
     final CollectionBackupsAPI collectionBackupsAPI = new CollectionBackupsAPI(collectionsHandler);
@@ -1081,7 +1078,7 @@ public class CoreContainer {
             new AbstractBinder() {
               @Override
               protected void configure() {
-                bindFactory(new CoreContainerFactory(thisCCRef))
+                bindFactory(new InjectionFactories.SingletonFactory<>(thisCCRef))
                     .to(CoreContainer.class)
                     .in(Singleton.class);
               }

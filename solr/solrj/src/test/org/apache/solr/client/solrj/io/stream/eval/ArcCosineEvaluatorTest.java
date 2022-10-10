@@ -36,7 +36,7 @@ public class ArcCosineEvaluatorTest extends SolrTestCase {
     super();
 
     factory = new StreamFactory().withFunctionName("acos", ArcCosineEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   private void test(Double value) throws IOException {

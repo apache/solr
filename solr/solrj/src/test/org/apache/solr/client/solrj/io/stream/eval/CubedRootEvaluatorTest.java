@@ -36,7 +36,7 @@ public class CubedRootEvaluatorTest extends SolrTestCase {
     super();
 
     factory = new StreamFactory().withFunctionName("cbrt", CubedRootEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   private void test(Double value) throws IOException {

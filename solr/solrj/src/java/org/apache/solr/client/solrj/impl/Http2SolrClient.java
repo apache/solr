@@ -128,6 +128,7 @@ public class Http2SolrClient extends SolrClient {
   private HttpClient httpClient;
   private volatile Set<String> queryParams = Collections.emptySet();
   private int idleTimeout;
+  private int requestTimeout;
 
   private ResponseParser parser = new BinaryResponseParser();
   private volatile RequestWriter requestWriter = new BinaryRequestWriter();
@@ -169,6 +170,11 @@ public class Http2SolrClient extends SolrClient {
               builder.basicAuthUser, builder.basicAuthPassword);
     } else {
       basicAuthAuthorizationStr = null;
+    }
+    if (builder.requestTimeout == null) {
+      requestTimeout = -1;
+    } else {
+      requestTimeout = builder.requestTimeout;
     }
     assert ObjectReleaseTracker.track(this);
   }
@@ -451,22 +457,24 @@ public class Http2SolrClient extends SolrClient {
     final ResponseParser parser =
         solrRequest.getResponseParser() == null ? this.parser : solrRequest.getResponseParser();
 
+    Throwable abortCause = null;
     try {
       InputStreamResponseListener listener = new InputStreamResponseListener();
       req.send(listener);
       Response response = listener.get(idleTimeout, TimeUnit.MILLISECONDS);
       InputStream is = listener.getInputStream();
       assert ObjectReleaseTracker.track(is);
-
       return processErrorsAndResponse(solrRequest, parser, response, is);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
+      abortCause = e;
       throw new RuntimeException(e);
     } catch (TimeoutException e) {
       throw new SolrServerException(
-          "Timeout occured while waiting response from server at: " + req.getURI(), e);
+          "Timeout occurred while waiting response from server at: " + req.getURI(), e);
     } catch (ExecutionException e) {
       Throwable cause = e.getCause();
+      abortCause = cause;
       if (cause instanceof ConnectException) {
         throw new SolrServerException("Server refused connection at: " + req.getURI(), cause);
       }
@@ -474,9 +482,16 @@ public class Http2SolrClient extends SolrClient {
         throw (SolrServerException) cause;
       } else if (cause instanceof IOException) {
         throw new SolrServerException(
-            "IOException occured when talking to server at: " + getBaseURL(), cause);
+            "IOException occurred when talking to server at: " + getBaseURL(), cause);
       }
       throw new SolrServerException(cause.getMessage(), cause);
+    } catch (SolrServerException | RuntimeException sse) {
+      abortCause = sse;
+      throw sse;
+    } finally {
+      if (abortCause != null) {
+        req.abort(abortCause);
+      }
     }
   }
 
@@ -519,7 +534,11 @@ public class Http2SolrClient extends SolrClient {
 
   private void decorateRequest(Request req, SolrRequest<?> solrRequest) {
     req.header(HttpHeader.ACCEPT_ENCODING, null);
-    req.timeout(idleTimeout, TimeUnit.MILLISECONDS);
+    if (requestTimeout > 0) {
+      req.timeout(requestTimeout, TimeUnit.MILLISECONDS);
+    } else {
+      req.timeout(idleTimeout, TimeUnit.MILLISECONDS);
+    }
     if (solrRequest.getUserPrincipal() != null) {
       req.attribute(REQ_PRINCIPAL_KEY, solrRequest.getUserPrincipal());
     }
@@ -854,6 +873,10 @@ public class Http2SolrClient extends SolrClient {
     this.requestWriter = requestWriter;
   }
 
+  protected RequestWriter getRequestWriter() {
+    return requestWriter;
+  }
+
   public void setFollowRedirects(boolean follow) {
     httpClient.setFollowRedirects(follow);
   }
@@ -909,6 +932,7 @@ public class Http2SolrClient extends SolrClient {
     private SSLConfig sslConfig = defaultSSLConfig;
     private Integer idleTimeout;
     private Integer connectionTimeout;
+    private Integer requestTimeout;
     private Integer maxConnectionsPerHost;
     private String basicAuthUser;
     private String basicAuthPassword;
@@ -1007,6 +1031,17 @@ public class Http2SolrClient extends SolrClient {
 
     public Builder connectionTimeout(int connectionTimeOut) {
       this.connectionTimeout = connectionTimeOut;
+      return this;
+    }
+
+    /**
+     * Set a timeout in milliseconds for requests issued by this client.
+     *
+     * @param requestTimeout The timeout in milliseconds
+     * @return this Builder.
+     */
+    public Builder requestTimeout(int requestTimeout) {
+      this.requestTimeout = requestTimeout;
       return this;
     }
   }

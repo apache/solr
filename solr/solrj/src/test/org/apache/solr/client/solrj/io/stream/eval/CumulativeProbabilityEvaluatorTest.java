@@ -39,7 +39,7 @@ public class CumulativeProbabilityEvaluatorTest extends SolrTestCase {
         new StreamFactory()
             .withFunctionName("prob", CumulativeProbabilityEvaluator.class)
             .withFunctionName("norm", NormalDistributionEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @Test

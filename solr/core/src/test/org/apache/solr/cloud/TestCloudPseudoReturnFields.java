@@ -59,7 +59,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
   private static final ArrayList<SolrClient> CLIENTS = new ArrayList<>(5);
 
   @BeforeClass
-  private static void createMiniSolrCloudCluster() throws Exception {
+  public static void createMiniSolrCloudCluster() throws Exception {
     // multi replicas should matter...
     final int repFactor = usually() ? 1 : 2;
     // ... but we definitely want to ensure forwarded requests to other shards work ...
@@ -117,7 +117,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
   }
 
   @Before
-  private void addUncommittedDoc99() throws Exception {
+  public void addUncommittedDoc99() throws Exception {
     // uncommitted doc in transaction log at start of every test
     // Even if an RTG causes ulog to re-open realtime searcher, next test method
     // will get another copy of doc 99 in the ulog
@@ -129,7 +129,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
   }
 
   @AfterClass
-  private static void afterClass() throws Exception {
+  public static void afterClass() throws Exception {
     if (null != CLOUD_CLIENT) {
       CLOUD_CLIENT.close();
       CLOUD_CLIENT = null;

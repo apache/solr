@@ -36,7 +36,7 @@ public class ModuloEvaluatorTest extends SolrTestCase {
     super();
 
     factory = new StreamFactory().withFunctionName("mod", ModuloEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @Test

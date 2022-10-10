@@ -158,7 +158,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
               expression));
     }
 
-    Map<String, String> params = new HashMap<String, String>();
+    Map<String, String> params = new HashMap<>();
     for (StreamExpressionNamedParameter namedParam : namedParams) {
       if (!namedParam.getName().equals("zkHost")) {
         params.put(namedParam.getName(), namedParam.getParameter().toString().trim());
@@ -494,7 +494,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
             throw new IOException(
                 String.format(
                     Locale.ROOT,
-                    "invalid expression %s - the number of weights must be %d, found %d",
+                    "invalid expression - the number of weights must be %d, found %d",
                     terms.size() + 1,
                     weights.size()));
           }

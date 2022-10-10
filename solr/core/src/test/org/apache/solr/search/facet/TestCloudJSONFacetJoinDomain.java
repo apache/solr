@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.tests.util.TestUtil;
@@ -87,8 +88,8 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   private static final ArrayList<SolrClient> CLIENTS = new ArrayList<>(5);
 
   @BeforeClass
-  private static void createMiniSolrCloudCluster() throws Exception {
-    // sanity check constants
+  public static void createMiniSolrCloudCluster() throws Exception {
+    // check constants
     assertTrue(
         "bad test constants: some suffixes will never be tested",
         (STR_FIELD_SUFFIXES.length < MAX_FIELD_NUM) && (INT_FIELD_SUFFIXES.length < MAX_FIELD_NUM));
@@ -188,7 +189,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   }
 
   @AfterClass
-  private static void afterClass() throws Exception {
+  public static void afterClass() throws Exception {
     if (null != CLOUD_CLIENT) {
       CLOUD_CLIENT.close();
       CLOUD_CLIENT = null;
@@ -290,15 +291,17 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   public void testSanityCheckDomainMethods() {
     {
       final JoinDomain empty = new JoinDomain(null, null, null);
-      assertEquals(null, empty.toJSONFacetParamValue());
+      assertNull(empty.toJSONFacetParamValue());
       final SolrParams out = empty.applyDomainToQuery("safe_key", params("q", "qqq"));
       assertNotNull(out);
-      assertEquals(null, out.get("safe_key"));
+      assertNull(out.get("safe_key"));
       assertEquals("qqq", out.get("q"));
     }
     {
       final JoinDomain join = new JoinDomain("xxx", "yyy", null);
-      assertEquals("domain:{join:{from:xxx,to:yyy}}", join.toJSONFacetParamValue().toString());
+      assertEquals(
+          "domain:{join:{from:xxx,to:yyy}}",
+          Objects.requireNonNull(join.toJSONFacetParamValue()).toString());
       final SolrParams out = join.applyDomainToQuery("safe_key", params("q", "qqq"));
       assertNotNull(out);
       assertEquals("qqq", out.get("safe_key"));
@@ -306,16 +309,19 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
     }
     {
       final JoinDomain filter = new JoinDomain(null, null, "zzz");
-      assertEquals("domain:{filter:'zzz'}", filter.toJSONFacetParamValue().toString());
+      assertEquals(
+          "domain:{filter:'zzz'}",
+          Objects.requireNonNull(filter.toJSONFacetParamValue()).toString());
       final SolrParams out = filter.applyDomainToQuery("safe_key", params("q", "qqq"));
       assertNotNull(out);
-      assertEquals(null, out.get("safe_key"));
+      assertNull(out.get("safe_key"));
       assertEquals("zzz AND qqq", out.get("q"));
     }
     {
       final JoinDomain both = new JoinDomain("xxx", "yyy", "zzz");
       assertEquals(
-          "domain:{join:{from:xxx,to:yyy},filter:'zzz'}", both.toJSONFacetParamValue().toString());
+          "domain:{join:{from:xxx,to:yyy},filter:'zzz'}",
+          Objects.requireNonNull(both.toJSONFacetParamValue()).toString());
       final SolrParams out = both.applyDomainToQuery("safe_key", params("q", "qqq"));
       assertNotNull(out);
       assertEquals("qqq", out.get("safe_key"));
@@ -586,7 +592,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
       return "*:*";
     }
     final int numClauses = TestUtil.nextInt(random(), 3, 10);
-    List<String> clauses = new ArrayList<String>(numClauses);
+    List<String> clauses = new ArrayList<>(numClauses);
     for (int c = 0; c < numClauses; c++) {
       final int fieldNum = random().nextInt(MAX_FIELD_NUM);
       // keep queries simple, just use str fields - not point of test

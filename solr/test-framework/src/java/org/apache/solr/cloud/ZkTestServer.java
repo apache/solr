@@ -191,7 +191,7 @@ public class ZkTestServer {
         String[] maxKeys = maxCounters.keySet().toArray(new String[maxCounters.size()]);
         Arrays.sort(
             maxKeys,
-            new Comparator<String>() {
+            new Comparator<>() {
               private final Comparator<Long> valComp = Comparator.<Long>naturalOrder().reversed();
 
               @Override

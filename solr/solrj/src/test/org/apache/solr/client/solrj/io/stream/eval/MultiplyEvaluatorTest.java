@@ -35,7 +35,7 @@ public class MultiplyEvaluatorTest extends SolrTestCase {
     super();
 
     factory = new StreamFactory().withFunctionName("mult", MultiplyEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @Test

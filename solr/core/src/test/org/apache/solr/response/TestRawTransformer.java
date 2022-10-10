@@ -119,7 +119,7 @@ public class TestRawTransformer extends SolrCloudTestCase {
   }
 
   @AfterClass
-  private static void afterClass() throws Exception {
+  public static void afterClass() throws Exception {
     if (JSR != null) {
       JSR.stop();
     }

@@ -522,7 +522,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
         }
       }
     }
-    List<Replica> replicas = new ArrayList<Replica>();
+    List<Replica> replicas = new ArrayList<>();
     replicas.addAll(activeReplicas.values());
     return replicas;
   }

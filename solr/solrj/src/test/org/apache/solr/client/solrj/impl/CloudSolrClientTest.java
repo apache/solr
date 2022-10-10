@@ -373,13 +373,14 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       n = random().nextInt(9) + 2;
     }
 
+    List<Slice> expectedSlicesList = List.copyOf(expectedSlices);
     List<String> sameShardRoutes = Lists.newArrayList();
     sameShardRoutes.add("0");
     for (int i = 1; i < n; i++) {
       String shardKey = Integer.toString(i);
-      Collection<Slice> slices = router.getSearchSlicesSingle(shardKey, null, col);
+      List<Slice> slices = List.copyOf(router.getSearchSlicesSingle(shardKey, null, col));
       log.info("Expected Slices {}", slices);
-      if (expectedSlices.equals(slices)) {
+      if (expectedSlicesList.equals(slices)) {
         sameShardRoutes.add(shardKey);
       }
     }

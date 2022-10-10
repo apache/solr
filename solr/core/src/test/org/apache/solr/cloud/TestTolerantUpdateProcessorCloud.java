@@ -229,7 +229,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
   }
 
   @Before
-  private void clearCollection() throws Exception {
+  public void clearCollection() throws Exception {
     assertEquals(0, CLOUD_CLIENT.deleteByQuery("*:*").getStatus());
     assertEquals(0, CLOUD_CLIENT.commit().getStatus());
   }

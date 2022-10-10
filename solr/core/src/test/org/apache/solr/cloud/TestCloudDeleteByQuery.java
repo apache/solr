@@ -102,7 +102,7 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
   }
 
   @BeforeClass
-  private static void createMiniSolrCloudCluster() throws Exception {
+  public static void createMiniSolrCloudCluster() throws Exception {
 
     final String configName = "solrCloudCollectionConfig";
     final Path configDir = TEST_COLL1_CONF();

@@ -33,6 +33,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
+import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
@@ -127,9 +128,12 @@ public class CollectionMutator {
           log.error("trying to set perReplicaState to {} from {}", val, coll.isPerReplicaState());
           continue;
         }
+        PerReplicaStates prs = PerReplicaStatesFetcher.fetch(coll.getZNode(), zkClient, null);
         replicaOps =
-            PerReplicaStatesOps.modifyCollection(
-                coll, enable, PerReplicaStatesFetcher.fetch(coll.getZNode(), zkClient, null));
+            enable ? PerReplicaStatesOps.enable(coll, prs) : PerReplicaStatesOps.disable(prs);
+        if (!enable) {
+          coll = updateReplicas(coll, prs);
+        }
       }
 
       if (message.containsKey(prop)) {
@@ -145,7 +149,7 @@ public class CollectionMutator {
           }
         }
         // SOLR-11676 : keep NRT_REPLICAS and REPLICATION_FACTOR in sync
-        if (prop == REPLICATION_FACTOR) {
+        if (prop.equals(REPLICATION_FACTOR)) {
           props.put(NRT_REPLICAS, message.get(REPLICATION_FACTOR));
         }
       }
@@ -166,8 +170,6 @@ public class CollectionMutator {
       return ZkStateWriter.NO_OP;
     }
 
-    assert !props.containsKey(COLL_CONF);
-
     DocCollection collection =
         new DocCollection(
             coll.getName(), coll.getSlicesMap(), props, coll.getRouter(), coll.getZNodeVersion());
@@ -176,6 +178,41 @@ public class CollectionMutator {
     } else {
       return new ZkWriteCommand(coll.getName(), collection, replicaOps, true);
     }
+  }
+
+  public static DocCollection updateReplicas(DocCollection coll, PerReplicaStates prs) {
+    // we are disabling PRS. Update the replica states
+    Map<String, Slice> modifiedSlices = new LinkedHashMap<>();
+    coll.forEachReplica(
+        (s, replica) -> {
+          PerReplicaStates.State prsState = prs.states.get(replica.getName());
+          if (prsState != null) {
+            if (prsState.state != replica.getState()) {
+              Slice slice =
+                  modifiedSlices.getOrDefault(
+                      replica.getShard(), coll.getSlice(replica.getShard()));
+              replica = ReplicaMutator.setState(replica, prsState.state.toString());
+              modifiedSlices.put(replica.getShard(), slice.copyWith(replica));
+            }
+            if (prsState.isLeader != replica.isLeader()) {
+              Slice slice =
+                  modifiedSlices.getOrDefault(
+                      replica.getShard(), coll.getSlice(replica.getShard()));
+              replica =
+                  prsState.isLeader
+                      ? ReplicaMutator.setLeader(replica)
+                      : ReplicaMutator.unsetLeader(replica);
+              modifiedSlices.put(replica.getShard(), slice.copyWith(replica));
+            }
+          }
+        });
+
+    if (!modifiedSlices.isEmpty()) {
+      Map<String, Slice> slices = new LinkedHashMap<>(coll.getSlicesMap());
+      slices.putAll(modifiedSlices);
+      return coll.copyWithSlices(slices);
+    }
+    return coll;
   }
 
   public static DocCollection updateSlice(
