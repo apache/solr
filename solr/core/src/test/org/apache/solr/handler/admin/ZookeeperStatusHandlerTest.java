@@ -76,12 +76,12 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
       throws IOException, SolrServerException, InterruptedException, ExecutionException,
           TimeoutException {
     URL baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
-    HttpSolrClient solr = new HttpSolrClient.Builder(baseUrl.toString()).build();
+    HttpSolrClient solrClient = new HttpSolrClient.Builder(baseUrl.toString()).build();
     GenericSolrRequest mntrReq =
         new GenericSolrRequest(
             SolrRequest.METHOD.GET, "/admin/zookeeper/status", new ModifiableSolrParams());
     mntrReq.setResponseParser(new DelegationTokenResponse.JsonMapResponseParser());
-    NamedList<Object> nl = solr.httpUriRequest(mntrReq).future.get(10000, TimeUnit.MILLISECONDS);
+    NamedList<Object> nl = solrClient.httpUriRequest(mntrReq).future.get(10000, TimeUnit.MILLISECONDS);
 
     assertEquals("zkStatus", nl.getName(1));
     @SuppressWarnings({"unchecked"})
@@ -96,7 +96,7 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
     Map<String, Object> details = (Map<String, Object>) detailsList.get(0);
     assertEquals(true, details.get("ok"));
     assertTrue(Integer.parseInt((String) details.get("zk_znode_count")) > 50);
-    solr.close();
+    solrClient.close();
   }
 
   @Test

@@ -224,7 +224,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
 
       CollectionAdminRequest.Reload reload = CollectionAdminRequest.reloadCollection(COLLECTION);
 
-      try (HttpSolrClient solrClient = getHttpSolrClient(baseUrl)) {
+      try (SolrClient solrClient = getHttpSolrClient(baseUrl)) {
         expectThrows(
             BaseHttpSolrClient.RemoteSolrException.class, () -> solrClient.request(reload));
         reload.setMethod(SolrRequest.METHOD.POST);
