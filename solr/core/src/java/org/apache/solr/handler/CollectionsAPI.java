@@ -80,6 +80,22 @@ public class CollectionsAPI {
     collectionsHandler.handleRequestBody(wrapParams(req, v1Params), rsp);
   }
 
+  /**
+   * V2 API for displaying basic information about all collections.
+   *
+   * <p>This API (GET /v2/collections?) is analogous to the v1
+   * /admin/collections?action=CLUSTERSTATUS command.
+   */
+  @EndPoint(
+      path = {"/c?", "/collections?"},
+      method = GET,
+      permission = COLL_READ_PERM)
+  public void getCollectionsStatuses(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    final Map<String, Object> v1Params = Maps.newHashMap();
+    v1Params.put(ACTION, CollectionAction.CLUSTERSTATUS.toLower());
+    collectionsHandler.handleRequestBody(wrapParams(req, v1Params), rsp);
+  }
+
   @EndPoint(
       path = {"/c", "/collections"},
       method = POST,

@@ -281,4 +281,12 @@ public class V2CollectionsAPIMappingTest extends V2ApiMappingTest<CollectionsHan
     assertEquals("bar2", v1Params.get("property.foo2"));
     assertEquals(3, v1Params.getPrimitiveInt(ZkStateReader.REPLICATION_FACTOR));
   }
+
+  @Test
+  public void testListCollectionsStatusesAllProperties() throws Exception {
+    final String noBody = null;
+    final SolrParams v1Params = captureConvertedV1Params("/collections?", "GET", noBody);
+
+    assertEquals(CollectionParams.CollectionAction.CLUSTERSTATUS.lowerName, v1Params.get(ACTION));
+  }
 }
