@@ -106,7 +106,13 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
               .setData(Utils.fromJSONString(multiAuthPluginSecurityJson)));
       securityConfHandler.securityConfEdited();
       verifySecurityStatus(
-          httpClient, baseUrl + authcPrefix, "authentication/class", "solr.MultiAuthPlugin", 5, user, pass);
+          httpClient,
+          baseUrl + authcPrefix,
+          "authentication/class",
+          "solr.MultiAuthPlugin",
+          5,
+          user,
+          pass);
       verifySecurityStatus(
           httpClient,
           baseUrl + authzPrefix,
@@ -168,7 +174,13 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
 
       // give the users role a custom permission
       verifySecurityStatus(
-          httpClient, baseUrl + authzPrefix, "authorization/permissions[6]", NULL_PREDICATE, 5, user, pass);
+          httpClient,
+          baseUrl + authzPrefix,
+          "authorization/permissions[6]",
+          NULL_PREDICATE,
+          5,
+          user,
+          pass);
       command =
           "{\n"
               + "'set-permission': { 'name':'k8s-zk', 'role':'users', 'collection':null, 'path':'/admin/zookeeper/status' }\n"
@@ -201,7 +213,13 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
       command = "{\n" + "'delete-permission': 7\n" + "}";
       doHttpPost(httpClient, baseUrl + authzPrefix, command, user, pass, 200);
       verifySecurityStatus(
-          httpClient, baseUrl + authzPrefix, "authorization/permissions[6]", NULL_PREDICATE, 5, user, pass);
+          httpClient,
+          baseUrl + authzPrefix,
+          "authorization/permissions[6]",
+          NULL_PREDICATE,
+          5,
+          user,
+          pass);
 
       // delete the user
       command = "{\n" + "'delete-user': { 'basic': 'harry' }\n" + "}";
@@ -220,7 +238,11 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
       command = "{\n" + "'set-property': { 'mock': { 'blockUnknown':false } }\n" + "}";
 
       doHttpPostWithHeader(
-          httpClient, baseUrl + authcPrefix, command, new BasicHeader("Authorization", "mock foo"), 200);
+          httpClient,
+          baseUrl + authcPrefix,
+          command,
+          new BasicHeader("Authorization", "mock foo"),
+          200);
       verifySecurityStatus(
           httpClient,
           baseUrl + authcPrefix,

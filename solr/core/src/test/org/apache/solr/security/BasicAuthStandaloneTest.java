@@ -114,7 +114,11 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
 
       doHttpPost(httpClient, baseUrl + authcPrefix, command, "solr", "SolrRocks");
       verifySecurityStatus(
-          httpClient, baseUrl + authcPrefix, "authentication/credentials/harry", NOT_NULL_PREDICATE, 20);
+          httpClient,
+          baseUrl + authcPrefix,
+          "authentication/credentials/harry",
+          NOT_NULL_PREDICATE,
+          20);
 
       // Read file from SOLR_HOME and verify that it contains our new user
       assertTrue(
@@ -133,8 +137,7 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
       command = "{\n" + "'set-permission': {'name': 'read', 'role':'solr'}\n" + "}";
       doHttpPost(httpClient, baseUrl + authzPrefix, command, "solr", "SolrRocks");
       try {
-        solrClient.query(
-            "collection1", new MapSolrParams(Collections.singletonMap("q", "foo")));
+        solrClient.query("collection1", new MapSolrParams(Collections.singletonMap("q", "foo")));
         fail("Should return a 401 response");
       } catch (Exception e) {
         // Test that the second doPost request to /security/authorization went through

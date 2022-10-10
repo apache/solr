@@ -195,7 +195,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
         try (HttpSolrClient solrClient = (HttpSolrClient) jettySolrRunner.newClient()) {
           ByteBuffer buf =
               Utils.executeGET(
-                      solrClient.getHttpClient(),
+                  solrClient.getHttpClient(),
                   baseUrl + "/node/files" + path,
                   Utils.newBytesConsumer(Integer.MAX_VALUE));
           assertEquals(
@@ -310,8 +310,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
       throws Exception {
     JettySolrRunner jetty = cluster.getRandomJetty(random());
     try (HttpSolrClient solrClient = (HttpSolrClient) jetty.newClient()) {
-      PackageUtils.uploadKey(
-          bytes, path, Paths.get(jetty.getCoreContainer().getSolrHome()));
+      PackageUtils.uploadKey(bytes, path, Paths.get(jetty.getCoreContainer().getSolrHome()));
       String url = jetty.getBaseURLV2() + "/node/files" + path + "?sync=true";
       Object resp = Utils.executeGET(solrClient.getHttpClient(), url, null);
       log.info("sync resp: {} was {}", url, resp);

@@ -62,7 +62,8 @@ public class ZookeeperReadAPITest extends SolrCloudTestCase {
 
     try (HttpSolrClient solrClient = new HttpSolrClient.Builder(baseUrl.toString()).build()) {
       Object o =
-          Utils.executeGET(solrClient.getHttpClient(), basezk + "/security.json", Utils.JSONCONSUMER);
+          Utils.executeGET(
+              solrClient.getHttpClient(), basezk + "/security.json", Utils.JSONCONSUMER);
       assertNotNull(o);
       o = Utils.executeGET(solrClient.getHttpClient(), basezkls + "/configs", Utils.JSONCONSUMER);
       assertEquals(
@@ -84,7 +85,7 @@ public class ZookeeperReadAPITest extends SolrCloudTestCase {
           .getZkClient()
           .create("/configs/_default/testdata", bytes, CreateMode.PERSISTENT, true);
       Utils.executeGET(
-              solrClient.getHttpClient(),
+          solrClient.getHttpClient(),
           basezk + "/configs/_default/testdata",
           is -> {
             byte[] newBytes = new byte[bytes.length];

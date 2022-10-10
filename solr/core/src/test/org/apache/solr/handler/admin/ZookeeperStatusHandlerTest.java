@@ -81,7 +81,8 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
         new GenericSolrRequest(
             SolrRequest.METHOD.GET, "/admin/zookeeper/status", new ModifiableSolrParams());
     mntrReq.setResponseParser(new DelegationTokenResponse.JsonMapResponseParser());
-    NamedList<Object> nl = solrClient.httpUriRequest(mntrReq).future.get(10000, TimeUnit.MILLISECONDS);
+    NamedList<Object> nl =
+        solrClient.httpUriRequest(mntrReq).future.get(10000, TimeUnit.MILLISECONDS);
 
     assertEquals("zkStatus", nl.getName(1));
     @SuppressWarnings({"unchecked"})
