@@ -491,8 +491,8 @@ public class ExportTool extends SolrCLI.ToolBase {
       }
 
       boolean exportDocsFromCore() throws IOException, SolrServerException {
-        SolrClient client = new HttpSolrClient.Builder(baseurl).build();
-        try {
+
+        try (SolrClient client = new HttpSolrClient.Builder(baseurl).build()) {
           expectedDocs = getDocCount(replica.getCoreName(), client);
           GenericSolrRequest request;
           ModifiableSolrParams params = new ModifiableSolrParams();
@@ -555,8 +555,6 @@ public class ExportTool extends SolrCLI.ToolBase {
               return false;
             }
           }
-        } finally {
-          client.close();
         }
       }
     }
