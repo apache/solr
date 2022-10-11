@@ -52,7 +52,9 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+
+* SOLR-16436: Fix "false positive" suggestions from DirectSolrSpellChecker when using maxQueryFrequency > 1 in
+  multi-shard collections (hossman)
 
 Build
 ---------------------
