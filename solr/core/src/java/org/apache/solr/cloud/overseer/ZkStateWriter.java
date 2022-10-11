@@ -209,7 +209,8 @@ public class ZkStateWriter {
    * @throws KeeperException if any ZooKeeper operation results in an error
    * @throws InterruptedException if the current thread is interrupted
    */
-  public ClusterState writePendingUpdates(Map<String, ZkWriteCommand> updates, boolean resetPendingUpdateCounters)
+  public ClusterState writePendingUpdates(
+      Map<String, ZkWriteCommand> updates, boolean resetPendingUpdateCounters)
       throws IllegalStateException, KeeperException, InterruptedException {
     if (invalidState) {
       throw new IllegalStateException(
@@ -217,8 +218,14 @@ public class ZkStateWriter {
     }
 
     if (log.isDebugEnabled()) {
-      log.debug(String.format(Locale.ROOT, "Request to write pending updates with updates of length: %d, " +
-              "pending updates of length: %d, writing all pending updates: %b", updates.size(), this.updates.size(), updates == this.updates));
+      log.debug(
+          String.format(
+              Locale.ROOT,
+              "Request to write pending updates with updates of length: %d, "
+                  + "pending updates of length: %d, writing all pending updates: %b",
+              updates.size(),
+              this.updates.size(),
+              updates == this.updates));
     }
 
     if ((updates == this.updates) && !hasPendingUpdates()) {
