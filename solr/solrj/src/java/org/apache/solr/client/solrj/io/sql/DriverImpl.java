@@ -54,9 +54,6 @@ public class DriverImpl implements Driver {
 
     loadParams(uri, props);
 
-    // See SOLR-16433 and CALCITE-5298
-    props.setProperty("calcite.test.dataset", ".");
-
     if (!props.containsKey("collection")) {
       throw new SQLException(
           "The connection url has no connection properties. At a minimum the collection must be specified.");
