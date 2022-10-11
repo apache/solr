@@ -1191,7 +1191,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     JettySolrRunner jsr = null;
     try {
-      //jsr = cluster.startJettySolrRunner();
+      jsr = cluster.startJettySolrRunner();
 
       // Now let's do an add replica
       CollectionAdminRequest.addReplicaToShard(testCollection, "shard1")
