@@ -19,10 +19,16 @@ package org.apache.solr.common.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
-@Deprecated
+import org.apache.solr.client.solrj.request.RequestWriter;
+
 /**
  * @since solr 1.2
  */
+
+/**
+ * @deprecated Extend {@link RequestWriter} instead.
+ */
+@Deprecated
 public interface ContentStream {
   String getName();
 
