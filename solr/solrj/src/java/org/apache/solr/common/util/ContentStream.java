@@ -23,10 +23,7 @@ import org.apache.solr.client.solrj.request.RequestWriter;
 
 /**
  * @since solr 1.2
- */
-
-/**
- * @deprecated Extend {@link RequestWriter} instead.
+ * @deprecated Use {@link RequestWriter.ContentWriter} instead.
  */
 @Deprecated
 public interface ContentStream {
