@@ -110,7 +110,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
   @Monster("Only useful to verify the performance of serialization+ deserialization")
   // ant -Dtestcase=SolrExampleBinaryTest -Dtests.method=testQueryPerf -Dtests.monster=true test
   public void testQueryPerf() throws Exception {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    SolrClient client = getSolrClient();
     client.deleteByQuery("*:*");
     client.commit();
     ArrayList<SolrInputDocument> docs = new ArrayList<>();
@@ -438,7 +438,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     if (jetty != null) {
       // check system wide system handler + "/admin/info/system"
       String url = jetty.getBaseUrl().toString();
-      try (HttpSolrClient adminClient = getHttpSolrClient(url)) {
+      try (SolrClient adminClient = getHttpSolrClient(url)) {
         SolrQuery q = new SolrQuery();
         q.set("qt", "/admin/info/system");
         QueryResponse rsp = adminClient.query(q);

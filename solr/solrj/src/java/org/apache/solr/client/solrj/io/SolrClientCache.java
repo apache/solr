@@ -100,10 +100,11 @@ public class SolrClientCache implements Serializable {
   }
 
   @Deprecated(since = "9.0")
-  public synchronized HttpSolrClient getHttpSolrClient(String host) {
-    HttpSolrClient client;
+  // is this really deprecated?  what if it's getSolrClient?  It COULD be!
+  public synchronized SolrClient getHttpSolrClient(String host) {
+    SolrClient client;
     if (solrClients.containsKey(host)) {
-      client = (HttpSolrClient) solrClients.get(host);
+      client = solrClients.get(host);
     } else {
       HttpSolrClient.Builder builder =
           new HttpSolrClient.Builder(host)

@@ -79,8 +79,8 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
     }
   }
 
-  private String getDelegationToken(
-      final String renewer, final String user, SolrClient solrClient) throws Exception {
+  private String getDelegationToken(final String renewer, final String user, SolrClient solrClient)
+      throws Exception {
     DelegationTokenRequest.Get get =
         new DelegationTokenRequest.Get(renewer) {
           @Override

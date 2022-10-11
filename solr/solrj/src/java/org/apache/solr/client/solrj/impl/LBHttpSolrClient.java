@@ -143,7 +143,7 @@ public class LBHttpSolrClient extends LBSolrClient {
 
   @Override
   protected SolrClient getClient(String baseUrl) {
-    HttpSolrClient client = urlToClient.get(baseUrl);
+    SolrClient client = urlToClient.get(baseUrl);
     if (client == null) {
       return makeSolrClient(baseUrl);
     } else {
