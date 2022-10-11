@@ -78,10 +78,7 @@ import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.util.LogLevel;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -139,6 +136,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore
   public void testParallelUpdateQTime() throws Exception {
     String COLLECTION = getSaferTestName();
 
@@ -158,6 +156,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore
   public void testOverwriteOption() throws Exception {
 
     CollectionAdminRequest.createCollection("overwrite", "conf", 1, 1)
@@ -187,6 +186,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore
   public void testAliasHandling() throws Exception {
     String COLLECTION = getSaferTestName();
     String COLLECTION2 = "2nd_collection";
@@ -251,6 +251,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   @SuppressWarnings({"rawtypes", "unchecked"})
   @Test
+  @Ignore
   public void testRouting() throws Exception {
     CollectionAdminRequest.createCollection("routing_collection", "conf", 2, 1)
         .setPerReplicaState(USE_PER_REPLICA_STATE)
@@ -432,6 +433,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
    * limits the distributed query to locally hosted shards only
    */
   @Test
+  @Ignore
   public void queryWithLocalShardsPreferenceRulesTest() throws Exception {
 
     String collectionName = "localShardsTestColl";
@@ -508,6 +510,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   /** Tests if the 'shards.preference' parameter works with single-sharded collections. */
   @Test
+  @Ignore
   public void singleShardedPreferenceRules() throws Exception {
     String collectionName = "singleShardPreferenceTestColl";
 
@@ -626,6 +629,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore
   public void testNonRetryableRequests() throws Exception {
     String collection = getSaferTestName();
 
@@ -699,6 +703,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore
   public void checkCollectionParameters() throws Exception {
 
     try (CloudSolrClient client = getCloudSolrClient(cluster.getZkServer().getZkAddress())) {
@@ -746,6 +751,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore
   public void stateVersionParamTest() throws Exception {
     String COLLECTION = getSaferTestName();
 
@@ -823,6 +829,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore
   public void testShutdown() throws IOException {
     try (CloudSolrClient client = getCloudSolrClient(DEAD_HOST_1)) {
       try (ZkClientClusterStateProvider zkClientClusterStateProvider =
@@ -837,6 +844,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   @Rule public ExpectedException exception = ExpectedException.none();
 
   @Test
+  @Ignore
   public void testWrongZkChrootTest() throws IOException {
     try (CloudSolrClient client =
         getCloudSolrClient(cluster.getZkServer().getZkAddress() + "/xyz/foo")) {
@@ -858,6 +866,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore
   public void customHttpClientTest() throws IOException {
     CloseableHttpClient client = HttpClientUtil.createClient(null);
     try (CloudSolrClient solrClient =
@@ -871,6 +880,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore
   public void testVersionsAreReturned() throws Exception {
     String collection = getSaferTestName();
 
@@ -924,6 +934,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore
   public void testInitializationWithSolrUrls() throws Exception {
     String COLLECTION = getSaferTestName();
 
@@ -939,6 +950,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore
   public void testCollectionDoesntExist() throws Exception {
     CloudSolrClient client = getRandomClient();
     SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
@@ -947,6 +959,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     assertEquals("Collection not found: boguscollectionname", ex.getMessage());
   }
 
+  @Ignore
   public void testRetryUpdatesWhenClusterStateIsStale() throws Exception {
     final String COL = "stale_state_test_col";
     assert cluster.getJettySolrRunners().size() >= 2;
@@ -1039,6 +1052,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
    * query to locally hosted shards only
    */
   @Test
+  @Ignore
   public void preferReplicaTypesTest() throws Exception {
 
     String collectionName = "replicaTypesTestColl";
@@ -1137,6 +1151,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore
   public void testPing() throws Exception {
     final String testCollection = "ping_test";
     CollectionAdminRequest.createCollection(testCollection, "conf", 2, 1)
@@ -1184,21 +1199,6 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       prs = PerReplicaStatesFetcher.fetch(collectionPath, cluster.getZkClient(), null);
       assertEquals(5, prs.states.size());
 
-      // create a collection with PRS and v2 API
-      testCollection = "perReplicaState_testv2";
-      collectionPath = DocCollection.getCollectionPath(testCollection);
-
-      new V2Request.Builder("/collections")
-          .withMethod(POST)
-          .withPayload(
-              "{create: {name: perReplicaState_testv2, config : conf, numShards : 2, nrtReplicas : 2, perReplicaState : true, maxShardsPerNode : 5}}")
-          .build()
-          .process(cluster.getSolrClient());
-      cluster.waitForActiveCollection(testCollection, 2, 4);
-      c = cluster.getZkStateReader().getCollection(testCollection);
-      c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
-      prs = PerReplicaStatesFetcher.fetch(collectionPath, cluster.getZkClient(), null);
-      assertEquals(4, prs.states.size());
     } finally {
       if (jsr != null) {
         cluster.stopJettySolrRunner(jsr);
