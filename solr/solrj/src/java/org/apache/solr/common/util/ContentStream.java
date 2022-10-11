@@ -20,10 +20,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.request.RequestWriter.ContentWriter;
 
 /**
  * @since solr 1.2
- * @deprecated Use {@link RequestWriter.ContentWriter} instead.
+ * @deprecated Use {@link ContentWriter} instead.
  */
 @Deprecated
 public interface ContentStream {
