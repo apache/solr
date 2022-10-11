@@ -22,6 +22,7 @@ description = 'Prometheus exporter for exposing metrics from Solr using Metrics 
 
 dependencies {
   implementation project(':solr:solrj')
+  runtimeOnly project(':solr:solrj-zookeeper')
   // ideally remove ZK dep
   implementation('org.apache.zookeeper:zookeeper', {
     exclude group: "org.apache.yetus", module: "audience-annotations"
