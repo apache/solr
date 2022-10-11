@@ -509,10 +509,10 @@ public class TopicStream extends CloudSolrStream implements Expressible {
       for (Replica replica : replicas) {
         if (replica.getState() == Replica.State.ACTIVE
             && liveNodes.contains(replica.getNodeName())) {
-          SolrClient httpClient =
+          SolrClient solrClient =
               streamContext.getSolrClientCache().getHttpSolrClient(replica.getCoreUrl());
           try {
-            SolrDocument doc = httpClient.getById(id);
+            SolrDocument doc = solrClient.getById(id);
             if (doc != null) {
               @SuppressWarnings({"unchecked"})
               List<String> checkpoints = (List<String>) doc.getFieldValue("checkpoint_ss");
