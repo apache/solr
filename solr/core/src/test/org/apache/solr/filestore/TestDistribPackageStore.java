@@ -170,8 +170,8 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
       JettySolrRunner j = cluster.getRandomJetty(random());
       String path = j.getBaseURLV2() + "/cluster/files" + "/package/mypkg/v1.0/runtimelibs.jar";
       HttpDelete del = new HttpDelete(path);
-      try (HttpSolrClient solrClient = (HttpSolrClient) j.newClient()) {
-        Utils.executeHttpMethod(solrClient.getHttpClient(), path, Utils.JSONCONSUMER, del);
+      try (HttpSolrClient cl = (HttpSolrClient) j.newClient()) {
+        Utils.executeHttpMethod(cl.getHttpClient(), path, Utils.JSONCONSUMER, del);
       }
       expected = Collections.singletonMap(":files:/package/mypkg/v1.0/runtimelibs.jar", null);
       checkAllNodesForFile(cluster, "/package/mypkg/v1.0/runtimelibs.jar", expected, false);
@@ -309,10 +309,10 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
   public static void uploadKey(byte[] bytes, String path, MiniSolrCloudCluster cluster)
       throws Exception {
     JettySolrRunner jetty = cluster.getRandomJetty(random());
-    try (HttpSolrClient solrClient = (HttpSolrClient) jetty.newClient()) {
+    try (HttpSolrClient client = (HttpSolrClient) jetty.newClient()) {
       PackageUtils.uploadKey(bytes, path, Paths.get(jetty.getCoreContainer().getSolrHome()));
       String url = jetty.getBaseURLV2() + "/node/files" + path + "?sync=true";
-      Object resp = Utils.executeGET(solrClient.getHttpClient(), url, null);
+      Object resp = Utils.executeGET(client.getHttpClient(), url, null);
       log.info("sync resp: {} was {}", url, resp);
     }
     checkAllNodesForFile(
@@ -322,7 +322,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
         false);
   }
 
-  public static void postFile(SolrClient solrClient, ByteBuffer buffer, String name, String sig)
+  public static void postFile(SolrClient client, ByteBuffer buffer, String name, String sig)
       throws SolrServerException, IOException {
     String resource = "/cluster/files" + name;
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -335,7 +335,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
             .withMimeType("application/octet-stream")
             .withParams(params)
             .build()
-            .process(solrClient);
+            .process(client);
     assertEquals(name, rsp.getResponse().get(CommonParams.FILE));
   }
 
