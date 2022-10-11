@@ -19,7 +19,7 @@ package org.apache.solr.common.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
-
+@Deprecated
 /**
  * @since solr 1.2
  */
