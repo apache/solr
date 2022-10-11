@@ -169,6 +169,9 @@ solrAdminApp.controller('QueryController',
       purgeParams(params, ["q.alt", "qf", "mm", "pf", "ps", "qs", "tie", "bq", "bf"], $scope.val.defType !== "dismax" && $scope.val.defType !== "edismax");
       purgeParams(params, ["uf", "pf2", "pf3", "ps2", "ps3", "boost", "stopwords", "lowercaseOperators"], $scope.val.defType !== "edismax");
       purgeParams(params, getDependentFields("hl"), $scope.val.hl !== true);
+      purgeParams(params, getDependentFields("hl.tag"), $scope.val["hl.method"] !== "unified" && $scope.val["hl.method"] !== "fastVector");
+      purgeParams(params, getDependentFields("hl.simple"), $scope.val["hl.method"] !== "original");
+      // TODO purge highlighter-implementation-specific params
       purgeParams(params, getDependentFields("facet"), $scope.val.facet !== true);
       purgeParams(params, ["spatial", "pt", "sfield", "d"], $scope.val.spatial !== true);
       purgeParams(params, getDependentFields("spellcheck"), $scope.val.spellcheck !== true);
