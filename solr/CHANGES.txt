@@ -32,7 +32,8 @@ Other Changes
 ==================  9.2.0 ==================
 New Features
 ---------------------
-(No changes)
+
+* SOLR-16435: Add Request timeout to Http2SolrClient (Tomás Fernández Löbbe)
 
 Improvements
 ---------------------
@@ -42,13 +43,22 @@ Improvements
   by setting the `permissiveMode` boolean option to `true` in your solrconfig.xml's
   IgnoreLargeDocumentProcessorFactory declaration. (Jason Gerlowski)
 
+* SOLR-16392: A number of v2 "replica" endpoints have been updated to be more REST-ful, and hopefully, intuitive.
+  ADDREPLICAPROP is now `PUT /api/collections/$coll/shards/$shard/replicas/$rep/properties/$prop {"value": $val}`
+
 Optimizations
 ---------------------
 (No changes)
 
 Bug Fixes
 ---------------------
-(No changes)
+
+* SOLR-16436: Fix "false positive" suggestions from DirectSolrSpellChecker when using maxQueryFrequency > 1 in
+  multi-shard collections (hossman)
+
+Build
+---------------------
+* Upgrade forbiddenapis to 3.4 (Uwe Schindler)
 
 Other Changes
 ---------------------
@@ -137,6 +147,8 @@ Optimizations
 
 Bug Fixes
 ---------------------
+* SOLR-13219: Fix NPE in FieldLengthFeature with non-stored/missing fields (Nick Veenhof, Tomasz Elendt)
+
 * SOLR-15918: Skip repetitive parent znode creation on config set upload (Mike Drob)
 
 * SOLR-15964: Transient cores: don't evict a core when it's still being used. (David Smiley)
@@ -187,7 +199,7 @@ Bug Fixes
 
 * SOLR-16417: NPE if facet query hits timeout or exception (Kevin Risden)
 
-* SOLR-16414 : Race condition in PRS state updates (noble, Justin Sweeney, Patson Luk, Hitesh Khamesra, Ishan Chattopadhyaya)
+* SOLR-16414: Race condition in PRS state updates (noble, Justin Sweeney, Patson Luk, Hitesh Khamesra, Ishan Chattopadhyaya)
 
 * SOLR-16418: Introduce SolrResponseUtil to handle NPE during query timeout or exception when parsing SolrResponse (Kevin Risden)
 
@@ -198,6 +210,8 @@ Bug Fixes
 * SOLR-16232: Fix EnvVar usage in bin/solr (Houston Putman)
 
 * SOLR-16439: Cloud Node does not have Core, the admin UI cannot be displayed properly. (Shiming Li)
+
+* SOLR-16229: Http2SolrClient aborts requests on exception (Daniel Rabus, Tomás Fernández Löbbe)
 
 Other Changes
 ---------------------
