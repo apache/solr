@@ -143,8 +143,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestSyncShard;
@@ -698,7 +698,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           ZkNodeProps leaderProps = docCollection.getLeader(shard);
           ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(leaderProps);
 
-          try (HttpSolrClient client =
+          try (SolrClient client =
               new Builder(nodeProps.getBaseUrl())
                   .withConnectionTimeout(15000)
                   .withSocketTimeout(60000)
