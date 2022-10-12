@@ -89,7 +89,7 @@ public class SliceMutator {
     } catch (SolrException e) {
       try {
         Stat stat = zkClient.exists(DocCollection.getCollectionPath(coll), null, true);
-        log.info("NO COLL. current version : {}", stat.getVersion());
+        log.info("NO COLL. current version : {}, clusterstate : ", stat.getVersion(), clusterState);
       } catch (Exception ex) {
       }
       throw e;
