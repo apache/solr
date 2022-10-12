@@ -34,6 +34,7 @@ import java.util.Map;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -99,6 +100,13 @@ public class V2ClusterAPIMappingTest {
     final SolrParams v1Params = captureConvertedV1Params("/cluster", "GET", null);
 
     assertEquals(CollectionParams.CollectionAction.LIST.lowerName, v1Params.get(ACTION));
+  }
+
+  @Test
+  public void testClusterStatusAllParams() throws Exception {
+    final SolrParams v1Params = captureConvertedV1Params("/cluster/cluster-status", "GET", null);
+
+    assertEquals(CollectionAction.CLUSTERSTATUS.lowerName, v1Params.get(ACTION));
   }
 
   @Test
