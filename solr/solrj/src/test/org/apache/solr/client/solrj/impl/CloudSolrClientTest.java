@@ -1164,45 +1164,4 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     assertEquals("This should be OK", 0, response.getStatus());
   }
-
-  public void testPerReplicaStateCollection() throws Exception {
-    String collection = getSaferTestName();
-
-    CollectionAdminRequest.createCollection(collection, "conf", 2, 1)
-        .process(cluster.getSolrClient());
-
-    String testCollection = "perReplicaState_test";
-    String collectionPath = DocCollection.getCollectionPath(testCollection);
-
-    int liveNodes = cluster.getJettySolrRunners().size();
-    CollectionAdminRequest.createCollection(testCollection, "conf", 2, 2)
-        .setPerReplicaState(Boolean.TRUE)
-        .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(testCollection, 2, 4);
-    final SolrClient clientUnderTest = getRandomClient();
-    final SolrPingResponse response = clientUnderTest.ping(testCollection);
-    assertEquals("This should be OK", 0, response.getStatus());
-
-    DocCollection c = cluster.getZkStateReader().getCollection(testCollection);
-    c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
-    PerReplicaStates prs =
-        PerReplicaStatesFetcher.fetch(collectionPath, cluster.getZkClient(), null);
-    assertEquals(4, prs.states.size());
-
-    JettySolrRunner jsr = null;
-    try {
-      jsr = cluster.startJettySolrRunner();
-
-      // Now let's do an add replica
-      CollectionAdminRequest.addReplicaToShard(testCollection, "shard1")
-          .process(cluster.getSolrClient());
-      prs = PerReplicaStatesFetcher.fetch(collectionPath, cluster.getZkClient(), null);
-      assertEquals(5, prs.states.size());
-
-    } finally {
-      if (jsr != null) {
-        cluster.stopJettySolrRunner(jsr);
-      }
-    }
-  }
 }
