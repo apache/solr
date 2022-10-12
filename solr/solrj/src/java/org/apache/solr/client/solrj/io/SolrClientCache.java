@@ -98,7 +98,7 @@ public class SolrClientCache implements Serializable {
 
     return client;
   }
-  
+
   @Deprecated(since = "9.0")
   public synchronized SolrClient getHttpSolrClient(String baseUrl) {
     SolrClient client;
