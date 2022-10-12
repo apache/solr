@@ -46,6 +46,9 @@ Improvements
 * SOLR-16392: A number of v2 "replica" endpoints have been updated to be more REST-ful, and hopefully, intuitive.
   ADDREPLICAPROP is now `PUT /api/collections/$coll/shards/$shard/replicas/$rep/properties/$prop {"value": $val}`
 
+* SOLR-15478: A v2 equivalent of CLUSTERSTATUS command is now available.
+  V2 API is curl -X GET http://localhost:8983/api/cluster (Joshua Ouma)
+
 Optimizations
 ---------------------
 (No changes)
