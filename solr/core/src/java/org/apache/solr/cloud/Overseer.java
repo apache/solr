@@ -352,6 +352,11 @@ public class Overseer implements SolrCloseable {
                   Message m = unprocessedMessages.remove(0);
                   log.info("a_Message({})", m);
                   clusterState = m.run(clusterState, Overseer.this);
+                  if (m instanceof RefreshCollectionMessage) {
+                    RefreshCollectionMessage refreshCollectionMessage = (RefreshCollectionMessage) m;
+                    log.info("coll :{}, found : {}",refreshCollectionMessage.collection,
+                            clusterState.getCollectionOrNull(refreshCollectionMessage.collection) );
+                  }
                 }
                 // The callback always be called on this thread
                 clusterState =
