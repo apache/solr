@@ -151,6 +151,8 @@ Bug Fixes
 
 * SOLR-16457: solr.data.home should not be set to empty string in bin/solr (Kevin Risden)
 
+* SOLR-16433: Security Manager prevents Solr SQL from working (Kevin Risden)
+
 Other Changes
 ---------------------
 * SOLR-16351: Upgrade Carrot2 to 4.4.3, upgrade randomizedtesting to 2.8.0. (Dawid Weiss)
