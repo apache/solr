@@ -277,8 +277,10 @@ public class Overseer implements SolrCloseable {
                       message);
                 }
                 try {
+                  log.info("CHECKPOINT1: going to process message: "+message+", CS: "+clusterState);
                   clusterState =
                       processQueueItem(message, clusterState, zkStateWriter, false, null);
+                  log.info("CHECKPOINT2: processed the message, CS is now: "+clusterState);
                 } catch (Exception e) {
                   if (isBadMessage(e)) {
                     log.warn(
@@ -294,7 +296,9 @@ public class Overseer implements SolrCloseable {
               }
               // force flush at the end of the loop, if there are no pending updates, this is a no
               // op call
+              log.info("CHECKPOINT3: now writing pending, CS: "+clusterState);
               clusterState = zkStateWriter.writePendingUpdates();
+              log.info("CHECKPOINT4: written pending updates, CS: "+clusterState);
               // the workQueue is empty now, use stateUpdateQueue as fallback queue
               fallbackQueue = stateUpdateQueue;
               fallbackQueueSize = 0;
@@ -358,6 +362,9 @@ public class Overseer implements SolrCloseable {
                             clusterState.getCollectionOrNull(refreshCollectionMessage.collection) );
                   }
                 }
+
+                log.info("CHECKPOINT5: Going to process queue item, CS: "+clusterState);
+
                 // The callback always be called on this thread
                 clusterState =
                     processQueueItem(
@@ -369,6 +376,8 @@ public class Overseer implements SolrCloseable {
                           stateUpdateQueue.remove(processedNodes);
                           processedNodes.clear();
                         });
+                log.info("CHECKPOINT6: Processed the queue item, CS: "+clusterState);
+
               }
               if (isClosed) break;
               // if an event comes in the next 100ms batch it together

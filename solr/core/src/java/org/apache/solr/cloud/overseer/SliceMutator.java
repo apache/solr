@@ -79,7 +79,7 @@ public class SliceMutator {
   }
 
   public ZkWriteCommand addReplica(ClusterState clusterState, ZkNodeProps message) {
-    log.info("createReplica() {} ", message);
+    log.info("createReplica() {}, CS: {} ", message, clusterState);
     String coll = message.getStr(ZkStateReader.COLLECTION_PROP);
     if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
     String slice = message.getStr(ZkStateReader.SHARD_ID_PROP);
