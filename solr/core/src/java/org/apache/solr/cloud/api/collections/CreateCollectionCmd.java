@@ -195,6 +195,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
             .create(collectionPath, data, CreateMode.PERSISTENT, true);
         clusterState = clusterState.copyWith(collectionName, command.collection);
         newColl = command.collection;
+        ccc.submitIntraProcessMessage(new RefreshCollectionMessage(collectionName));
       } else {
         if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
           // The message has been crafted by CollectionsHandler.CollectionOperation.CREATE_OP and
