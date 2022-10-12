@@ -25,7 +25,6 @@ import static org.apache.solr.common.params.CollectionParams.ACTION;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESTATUS;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.LIST;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.OVERSEERSTATUS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REQUESTSTATUS;
@@ -258,7 +257,7 @@ public class ClusterAPI {
     rsp.add("nodes", getCoreContainer().getZkController().getClusterState().getLiveNodes());
   }
 
-  @EndPoint(method = GET, path = "/cluster",  permission = COLL_READ_PERM)
+  @EndPoint(method = GET, path = "/cluster", permission = COLL_READ_PERM)
   public void getClusterStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     final Map<String, Object> v1Params = Maps.newHashMap();
     v1Params.put(CommonParams.ACTION, CollectionAction.CLUSTERSTATUS.toLower());
