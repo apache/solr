@@ -195,15 +195,6 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
             .create(collectionPath, data, CreateMode.PERSISTENT, true);
         clusterState = clusterState.copyWith(collectionName, command.collection);
         newColl = command.collection;
-        // When cluster state updates are handled by Overseer, ask it to load that collection it
-        // doesn't know about. When cluster state updates are distributed, ZK is the source of truth
-        // for all nodes so no reload needed.
-        if (!ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
-          // If cluster state update is not distributed and we execute here, the Collection API is
-          // not distributed either and this execution happens on the Overseer node, so direct
-          // memory access as done below is ok.
-          ccc.submitIntraProcessMessage(new RefreshCollectionMessage(collectionName));
-        }
       } else {
         if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
           // The message has been crafted by CollectionsHandler.CollectionOperation.CREATE_OP and
@@ -383,10 +374,6 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
       // PRS collections updated ZK state.json in the loop above. When Overseer is managing cluster
       // state updates, need to tell it to refresh itself to know about the replicas and be able to
       // execute nodes shard requests regarding the replicas.
-      if (isPRS && !ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
-        ccc.submitIntraProcessMessage(new RefreshCollectionMessage(collectionName));
-      }
-
       // Distributed updates don't need to do anything for PRS collections that wrote state.json
       // directly. For non PRS collections, distributed updates have to be executed if that's how
       // the cluster is configured
@@ -445,15 +432,6 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
           // we have successfully found all replicas to be ACTIVE
         } else {
           failure = true;
-        }
-        // When cluster state updates are distributed, Overseer state updater is not used and
-        // doesn't have to be notified of a new collection created elsewhere (which is how all
-        // collections are created). Note it is likely possibly to skip the the whole if (isPRS)
-        // bloc, but keeping distributed state updates as close in behavior to Overseer state
-        // updates for now.
-        if (!ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
-          // Now ask Overseer to fetch the latest state of collection from ZK
-          ccc.submitIntraProcessMessage(new RefreshCollectionMessage(collectionName));
         }
       }
       if (failure) {
