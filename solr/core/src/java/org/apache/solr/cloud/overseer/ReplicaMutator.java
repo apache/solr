@@ -267,6 +267,7 @@ public class ReplicaMutator {
     DocCollection collection = clusterState.getCollectionOrNull(collectionName);
     Slice slice = collection != null ? collection.getSlice(sliceName) : null;
     if (slice == null) {
+      log.error("no_sclice", new RuntimeException("NO_SUCH_SLICE"));
       log.error("No such slice exists {}", message);
       return ZkStateWriter.NO_OP;
     }

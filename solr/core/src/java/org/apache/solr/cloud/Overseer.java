@@ -350,6 +350,7 @@ public class Overseer implements SolrCloseable {
                 while (unprocessedMessages.size() > 0) {
                   clusterState = zkStateWriter.writePendingUpdates();
                   Message m = unprocessedMessages.remove(0);
+                  log.info("a_Message({})", m);
                   clusterState = m.run(clusterState, Overseer.this);
                 }
                 // The callback always be called on this thread
@@ -1197,6 +1198,7 @@ public class Overseer implements SolrCloseable {
    * ClusterStateUpdater}'s loop runs next time
    */
   public void submit(Message message) {
+    log.info("unprocessedMessages.add({})", message);
     unprocessedMessages.add(message);
   }
 

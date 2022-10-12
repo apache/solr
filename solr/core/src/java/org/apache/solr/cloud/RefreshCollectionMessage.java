@@ -20,9 +20,15 @@ package org.apache.solr.cloud;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.zookeeper.data.Stat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.lang.invoke.MethodHandles;
 
 /** Refresh the Cluster State for a given collection */
 public class RefreshCollectionMessage implements Overseer.Message {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   public final String collection;
 
   public RefreshCollectionMessage(String collection) {
@@ -30,6 +36,7 @@ public class RefreshCollectionMessage implements Overseer.Message {
   }
 
   public ClusterState run(ClusterState clusterState, Overseer overseer) throws Exception {
+    log.info("RefreshCollectionMessage({})", collection);
     Stat stat =
         overseer
             .getZkStateReader()
@@ -41,9 +48,11 @@ public class RefreshCollectionMessage implements Overseer.Message {
     }
     DocCollection coll = clusterState.getCollectionOrNull(collection);
     if (coll != null && !coll.isModified(stat.getVersion(), stat.getCversion())) {
+      log.info("RefreshCollectionMessage({}). not modified", collection);
       // our state is up to date
       return clusterState;
     } else {
+      log.info("RefreshCollectionMessage({}). stale, refreshed", collection);
       coll = overseer.getZkStateReader().getCollectionLive(collection);
       return clusterState.copyWith(collection, coll);
     }

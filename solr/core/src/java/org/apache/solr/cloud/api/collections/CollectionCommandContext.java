@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import java.lang.invoke.MethodHandles;
 import java.util.concurrent.ExecutorService;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
@@ -29,6 +30,8 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.zookeeper.KeeperException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Data passed to Collection API command execution, to allow calls from either the {@link
@@ -37,6 +40,8 @@ import org.apache.zookeeper.KeeperException;
  * depending upon Overseer abstractions (including overseer collection message handling).
  */
 public interface CollectionCommandContext {
+  Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   /**
    * When this method returns {@code true}, Overseer specific actions do not make sense and commands
    * should not be doing them.
@@ -99,6 +104,7 @@ public interface CollectionCommandContext {
    * updates are distributed.
    */
   default void submitIntraProcessMessage(Overseer.Message message) {
+    log.info("submitIntraProcessMessage({}), dropped", message);
     //this is ignored
   }
 }

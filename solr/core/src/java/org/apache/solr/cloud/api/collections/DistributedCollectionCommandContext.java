@@ -44,6 +44,7 @@ public class DistributedCollectionCommandContext implements CollectionCommandCon
 
     solrCloudManager = this.coreContainer.getZkController().getSolrCloudManager();
     zkStateReader = this.coreContainer.getZkController().getZkStateReader();
+    log.error("DistributedCollectionCommandContext", new RuntimeException("DistributedCollectionCommandContext.new"));
   }
 
   @Override

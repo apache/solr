@@ -128,6 +128,7 @@ public class CollApiCmds {
      */
     CommandMap(CollectionCommandContext ccc, OverseerNodePrioritizer overseerPrioritizer) {
       this(overseerPrioritizer, ccc);
+      log.info("CommandMap: {}", ccc.getClass().getName());
       assert !ccc.isDistributedCollectionAPI();
     }
 

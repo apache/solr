@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import java.lang.invoke.MethodHandles;
 import java.util.concurrent.ExecutorService;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
@@ -27,9 +28,13 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.zookeeper.KeeperException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Context passed to Collection API commands when they execute in the Overseer. */
 public class OcmhCollectionCommandContext implements CollectionCommandContext {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   private final OverseerCollectionMessageHandler ocmh;
 
   public OcmhCollectionCommandContext(OverseerCollectionMessageHandler ocmh) {
@@ -93,6 +98,7 @@ public class OcmhCollectionCommandContext implements CollectionCommandContext {
 
   @Override
   public void submitIntraProcessMessage(Overseer.Message message) {
+    log.info("submitIntraProcessMessage({})", message);
     ocmh.overseer.submit(message);
   }
 }
