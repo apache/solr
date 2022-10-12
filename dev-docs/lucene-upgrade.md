@@ -57,7 +57,8 @@ gradlew compileJava
   * additional or removed constructor arguments
   * additional abstract base class or interface methods
   * inner classes becoming outer classes
-* codec changes, conceptually `s/org.apache.lucene.codecs.lucene93.Lucene93/org.apache.lucene.codecs.lucene94.Lucene94`
+* codec changes (if any)
+  * conceptually `s/org.apache.lucene.codecs.lucene9x.Lucene9x/org.apache.lucene.codecs.lucene94.Lucene94`
 
 ## Test
 
