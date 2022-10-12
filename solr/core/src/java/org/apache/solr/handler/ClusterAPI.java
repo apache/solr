@@ -211,11 +211,6 @@ public class ClusterAPI {
     collectionsHandler.handleRequestBody(wrapParams(req, "action", OVERSEERSTATUS.lowerName), rsp);
   }
 
-  @EndPoint(method = GET, path = "/cluster", permission = COLL_READ_PERM)
-  public void getCluster(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    collectionsHandler.handleRequestBody(wrapParams(req, "action", LIST.lowerName), rsp);
-  }
-
   @EndPoint(method = DELETE, path = "/cluster/command-status/{id}", permission = COLL_EDIT_PERM)
   public void deleteCommandStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     final Map<String, Object> v1Params = Maps.newHashMap();
@@ -263,7 +258,7 @@ public class ClusterAPI {
     rsp.add("nodes", getCoreContainer().getZkController().getClusterState().getLiveNodes());
   }
 
-  @EndPoint(method = GET, path = "/cluster/cluster-status",  permission = COLL_READ_PERM)
+  @EndPoint(method = GET, path = "/cluster",  permission = COLL_READ_PERM)
   public void getClusterStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     final Map<String, Object> v1Params = Maps.newHashMap();
     v1Params.put(CommonParams.ACTION, CollectionAction.CLUSTERSTATUS.toLower());
