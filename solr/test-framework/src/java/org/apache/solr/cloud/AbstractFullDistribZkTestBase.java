@@ -1123,7 +1123,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
     controlClient.add(doc);
 
-    HttpSolrClient client = (HttpSolrClient) clients.get(serverNumber);
+    SolrClient client = clients.get(serverNumber);
 
     UpdateRequest ureq = new UpdateRequest();
     ureq.add(doc);
@@ -2192,7 +2192,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       // setup the server...
       String baseUrl = buildUrl(port);
       String url = baseUrl + (baseUrl.endsWith("/") ? "" : "/") + coreName;
-      HttpSolrClient client = getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT, 60000);
+      SolrClient client = getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT, 60000);
       return client;
     } catch (Exception ex) {
       throw new RuntimeException(ex);
@@ -2205,7 +2205,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       // setup the server...
       String baseUrl = buildUrl(port);
       String url = baseUrl + (baseUrl.endsWith("/") ? "" : "/") + coreName;
-      HttpSolrClient client = getHttpSolrClient(url, connectionTimeoutMillis, socketTimeoutMillis);
+      SolrClient client = getHttpSolrClient(url, connectionTimeoutMillis, socketTimeoutMillis);
       return client;
     } catch (Exception ex) {
       throw new RuntimeException(ex);
@@ -2215,7 +2215,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected SolrClient createNewSolrClient(String collection, String baseUrl) {
     try {
       // setup the server...
-      HttpSolrClient client =
+      SolrClient client =
           getHttpSolrClient(baseUrl + "/" + collection, DEFAULT_CONNECTION_TIMEOUT, 60000);
       return client;
     } catch (Exception ex) {
@@ -2563,7 +2563,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     ZkCoreNodeProps coreProps = new ZkCoreNodeProps(replica);
     String coreName = coreProps.getCoreName();
     boolean reloadedOk = false;
-    try (HttpSolrClient client = getHttpSolrClient(coreProps.getBaseUrl())) {
+    try (SolrClient client = getHttpSolrClient(coreProps.getBaseUrl())) {
       CoreAdminResponse statusResp = CoreAdminRequest.getStatus(coreName, client);
       long leaderCoreStartTime = statusResp.getStartTime(coreName).getTime();
 
@@ -2747,7 +2747,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   protected long getIndexVersion(Replica replica) throws IOException {
-    try (HttpSolrClient client = new HttpSolrClient.Builder(replica.getCoreUrl()).build()) {
+    try (SolrClient client = new HttpSolrClient.Builder(replica.getCoreUrl()).build()) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("qt", "/replication");
       params.set(ReplicationHandler.COMMAND, ReplicationHandler.CMD_SHOW_COMMITS);
@@ -2794,7 +2794,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   protected void logReplicationDetails(Replica replica, StringBuilder builder) throws IOException {
-    try (HttpSolrClient client = new HttpSolrClient.Builder(replica.getCoreUrl()).build()) {
+    try (SolrClient client = new HttpSolrClient.Builder(replica.getCoreUrl()).build()) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("qt", "/replication");
       params.set(ReplicationHandler.COMMAND, ReplicationHandler.CMD_DETAILS);

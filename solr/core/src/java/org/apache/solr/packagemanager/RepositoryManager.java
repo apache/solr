@@ -141,7 +141,7 @@ public class RepositoryManager {
 
     // put the public key into package store's trusted key store and request a sync.
     String path = PackageStoreAPI.KEYS_DIR + "/" + destinationKeyFilename;
-    PackageUtils.uploadKey(key, path, Paths.get(solrHome), solrClient);
+    PackageUtils.uploadKey(key, path, Paths.get(solrHome));
     PackageUtils.getJsonStringFromUrl(
         solrClient.getHttpClient(),
         solrClient.getBaseURL() + "/api/node/files" + path + "?sync=true");

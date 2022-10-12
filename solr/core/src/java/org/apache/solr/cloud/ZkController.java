@@ -59,9 +59,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
@@ -2153,7 +2153,7 @@ public class ZkController implements Closeable {
 
         // short timeouts, we may be in a storm and this is best effort and maybe we should be the
         // leader now
-        try (HttpSolrClient client =
+        try (SolrClient client =
             new Builder(leaderBaseUrl)
                 .withConnectionTimeout(8000)
                 .withSocketTimeout(30000)
