@@ -52,8 +52,9 @@ public class RefreshCollectionMessage implements Overseer.Message {
       // our state is up to date
       return clusterState;
     } else {
-      log.info("RefreshCollectionMessage({}). stale, refreshed", collection);
-      coll = overseer.getZkStateReader().getCollectionLive(collection);
+      log.info("RefreshCollectionMessage({}). stale, refreshed to ver {}", collection, stat.getVersion());
+      overseer.getZkStateReader().forceUpdateCollection(collection);
+      coll = overseer.getZkStateReader().getCollection(collection);
       return clusterState.copyWith(collection, coll);
     }
   }

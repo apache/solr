@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.Assign;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.PerReplicaStates;
@@ -44,6 +45,8 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.Utils;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,7 +83,17 @@ public class SliceMutator {
     String coll = message.getStr(ZkStateReader.COLLECTION_PROP);
     if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
     String slice = message.getStr(ZkStateReader.SHARD_ID_PROP);
-    DocCollection collection = clusterState.getCollection(coll);
+    DocCollection collection = null;
+    try {
+      collection = clusterState.getCollection(coll);
+    } catch (SolrException e) {
+      try {
+        Stat stat = zkClient.exists(DocCollection.getCollectionPath(coll), null, true);
+        log.info("NO COLL. current version : {}", stat.getVersion());
+      } catch (Exception ex) {
+      }
+      throw e;
+    }
     Slice sl = collection.getSlice(slice);
     if (sl == null) {
       log.error("Invalid Collection/Slice {}/{} ", coll, slice);
