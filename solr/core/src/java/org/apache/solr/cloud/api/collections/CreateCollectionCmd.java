@@ -390,6 +390,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
             .flatMap(slice -> slice.getReplicas().stream())
             .filter(r -> coresToCreate.containsKey(r.getCoreName()))
             .forEach(r -> replicas.putIfAbsent(r.getCoreName(), r)); // ...get added to the map
+        ccc.submitIntraProcessMessage(new RefreshCollectionMessage(collectionName));
       } else {
         // wait for all replica entries to be created and visible in local cluster state (updated by
         // ZK watches)
