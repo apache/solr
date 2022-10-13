@@ -83,8 +83,8 @@ public class ClusterState implements JSONWriter.Writable {
     this.liveNodes = new HashSet<>(liveNodes.size());
     this.liveNodes.addAll(liveNodes);
     this.collectionStates = new LinkedHashMap<>(collectionStates);
-    this.immutableCollectionStates = Collections.unmodifiableMap(collectionStates);
-    log.info("new ClusterState() hash:{}, colls:{}, called from: {} ", this.hashCode(),collectionStates.keySet(),  Utils.getStack(5));
+    this.immutableCollectionStates = Collections.unmodifiableMap(this.collectionStates);
+    log.info("new ClusterState() hash:{}, colls:{}, called from: {} ", this.hashCode(), this.collectionStates.keySet(),  Utils.getStack(5));
   }
 
   /**
