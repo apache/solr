@@ -353,6 +353,7 @@ public class Overseer implements SolrCloseable {
                 // are removed from workQueue but fail to be written to ZK
                 while (unprocessedMessages.size() > 0) {
                   clusterState = zkStateWriter.writePendingUpdates();
+                  log.info("CHECKPOINT9 , CS : {}", clusterState.hashCode());
                   Message m = unprocessedMessages.remove(0);
                   log.info("a_Message({})", m);
                   clusterState = m.run(clusterState, Overseer.this);
@@ -391,6 +392,8 @@ public class Overseer implements SolrCloseable {
             // we should force write all pending updates because the next iteration might sleep
             // until there are more items in the main queue
             clusterState = zkStateWriter.writePendingUpdates();
+            log.info("CHECKPOINT7: zkStateWriter.writePendingUpdates() CS: {}",clusterState.hashCode());
+
             // clean work queue
             stateUpdateQueue.remove(processedNodes);
             processedNodes.clear();
