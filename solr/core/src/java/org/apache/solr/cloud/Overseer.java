@@ -356,17 +356,8 @@ public class Overseer implements SolrCloseable {
                   log.info("CHECKPOINT9 , CS : {}", clusterState.hashCode());
                   Message m = unprocessedMessages.remove(0);
                   log.info("a_Message({})", m);
-                  ClusterState clusterStateModified = m.run(clusterState, Overseer.this);
-                  if(clusterStateModified != clusterState) {
-                    zkStateWriter.clusterState = clusterStateModified;
-                  }
-                  clusterState = clusterStateModified;
+                  clusterState = m.run(clusterState, Overseer.this, zkStateWriter);
                   log.info("CHECKPOINT0 , CS : {}", clusterState.hashCode());
-                  if (m instanceof RefreshCollectionMessage) {
-                    RefreshCollectionMessage refreshCollectionMessage = (RefreshCollectionMessage) m;
-                    log.info("coll :{}, found : {}",refreshCollectionMessage.collection,
-                            clusterState.getCollectionOrNull(refreshCollectionMessage.collection) );
-                  }
                 }
 
                 log.info("CHECKPOINT5: Going to process queue item, hash:{}, " ,clusterState.hashCode());
@@ -1225,7 +1216,7 @@ public class Overseer implements SolrCloseable {
   }
 
   public interface Message {
-    ClusterState run(ClusterState clusterState, Overseer overseer) throws Exception;
+    ClusterState run(ClusterState clusterState, Overseer overseer, ZkStateWriter zksw) throws Exception;
   }
 
   /**

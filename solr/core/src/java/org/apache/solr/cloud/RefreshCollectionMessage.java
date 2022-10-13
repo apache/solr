@@ -17,13 +17,16 @@
 
 package org.apache.solr.cloud;
 
+import org.apache.solr.cloud.overseer.ZkStateWriter;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
+import java.util.function.Function;
 
 /** Refresh the Cluster State for a given collection */
 public class RefreshCollectionMessage implements Overseer.Message {
@@ -35,7 +38,7 @@ public class RefreshCollectionMessage implements Overseer.Message {
     this.collection = collection;
   }
 
-  public ClusterState run(ClusterState clusterState, Overseer overseer) throws Exception {
+  public ClusterState run(ClusterState clusterState, Overseer overseer, ZkStateWriter zksw) throws Exception {
     log.info("RefreshCollectionMessage({})", collection);
     Stat stat =
         overseer
@@ -54,11 +57,10 @@ public class RefreshCollectionMessage implements Overseer.Message {
     } else {
       log.info("RefreshCollectionMessage({}). stale, refreshed to ver {}", collection, stat.getVersion());
       overseer.getZkStateReader().forceUpdateCollection(collection);
-      coll = overseer.getZkStateReader().getCollectionLive(collection);
+      coll = overseer.getZkStateReader().getCollection(collection);
+      zksw.updateClusterState(it -> it.copyWith(collection, overseer.getZkStateReader().getCollection(collection)));
       log.info("getCollectionLive coll {}",  coll);
-      ClusterState copiedCS = clusterState.copyWith(collection, coll);
-      log.info("copied CS {}",  copiedCS);
-      return copiedCS;
+      return clusterState.copyWith(collection, coll);
     }
   }
 }
