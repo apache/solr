@@ -209,7 +209,13 @@ Bug Fixes
 
 * SOLR-16232: Fix EnvVar usage in bin/solr (Houston Putman)
 
+* SOLR-16439: Cloud Node does not have Core, the admin UI cannot be displayed properly. (Shiming Li)
+
 * SOLR-16229: Http2SolrClient aborts requests on exception (Daniel Rabus, Tomás Fernández Löbbe)
+
+* SOLR-16457: solr.data.home should not be set to empty string in bin/solr (Kevin Risden)
+
+* SOLR-16433: Security Manager prevents Solr SQL from working (Kevin Risden)
 
 Other Changes
 ---------------------

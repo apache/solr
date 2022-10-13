@@ -30,7 +30,6 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
@@ -365,7 +364,7 @@ public abstract class AbstractMoveReplicaTestBase extends SolrCloudTestCase {
   private int getNumOfCores(
       CloudSolrClient cloudClient, String nodeName, String collectionName, String replicaType)
       throws IOException, SolrServerException {
-    try (HttpSolrClient coreclient =
+    try (SolrClient coreclient =
         getHttpSolrClient(ZkStateReader.from(cloudClient).getBaseUrlForNodeName(nodeName))) {
       CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreclient);
       if (status.getCoreStatus().size() == 0) {
