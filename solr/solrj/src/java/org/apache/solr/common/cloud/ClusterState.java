@@ -307,13 +307,10 @@ public class ClusterState implements JSONWriter.Writable {
     jsonWriter.write(map);
   }
 
-  /*@Override
+  @Override
   public int hashCode() {
-    final int prime = 31;
-    int result = 1;
-    result = prime * result + ((liveNodes == null) ? 0 : liveNodes.hashCode());
-    return result;
-  }*/
+  return super.hashCode();
+  }
 
   @Override
   public boolean equals(Object obj) {
