@@ -79,7 +79,7 @@ public class SliceMutator {
   }
 
   public ZkWriteCommand addReplica(ClusterState clusterState, ZkNodeProps message) {
-    log.info("createReplica() {}, CS: {} ", message, clusterState);
+    log.info("createReplica() {}, CS: {} ", message, clusterState.hashCode());
     String coll = message.getStr(ZkStateReader.COLLECTION_PROP);
     if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
     String slice = message.getStr(ZkStateReader.SHARD_ID_PROP);
@@ -89,7 +89,7 @@ public class SliceMutator {
     } catch (SolrException e) {
       try {
         Stat stat = zkClient.exists(DocCollection.getCollectionPath(coll), null, true);
-        log.info("NO COLL. current version : {}, clusterstate : {}", stat.getVersion(), clusterState);
+        log.info("NO COLL. current version : {}, hash {} clusterstate : {}", stat.getVersion(), clusterState.hashCode(), clusterState);
       } catch (Exception ex) {
       }
       throw e;

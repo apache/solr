@@ -745,6 +745,7 @@ public class ZkStateReader implements SolrCloseable {
           }
         }
       }
+      log.info("refreshCollectionList lazy:{}, watches : {}", lazyCollectionStates.keySet(), collectionWatches.statefulWatchesByCollectionName.keySet());
     }
   }
 
