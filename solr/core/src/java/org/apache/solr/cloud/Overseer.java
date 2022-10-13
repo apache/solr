@@ -356,7 +356,11 @@ public class Overseer implements SolrCloseable {
                   log.info("CHECKPOINT9 , CS : {}", clusterState.hashCode());
                   Message m = unprocessedMessages.remove(0);
                   log.info("a_Message({})", m);
-                  clusterState = m.run(clusterState, Overseer.this);
+                  ClusterState clusterStateModified = m.run(clusterState, Overseer.this);
+                  if(clusterStateModified != clusterState) {
+                    zkStateWriter.clusterState = clusterStateModified;
+                  }
+                  clusterState = clusterStateModified;
                   log.info("CHECKPOINT0 , CS : {}", clusterState.hashCode());
                   if (m instanceof RefreshCollectionMessage) {
                     RefreshCollectionMessage refreshCollectionMessage = (RefreshCollectionMessage) m;

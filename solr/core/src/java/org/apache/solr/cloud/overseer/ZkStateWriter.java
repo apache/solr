@@ -67,7 +67,7 @@ public class ZkStateWriter {
 
   protected Map<String, ZkWriteCommand> updates = new HashMap<>();
   private int numUpdates = 0;
-  protected ClusterState clusterState = null;
+  public ClusterState clusterState = null;
   protected long lastUpdatedTime = 0;
 
   /**
