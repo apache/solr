@@ -95,13 +95,13 @@ public class ClusterState implements JSONWriter.Writable {
    * @return the updated cluster state which preserves the current live nodes
    */
   public ClusterState copyWith(String collectionName, DocCollection collection) {
-    ClusterState result = new ClusterState(new LinkedHashMap<>(collectionStates), liveNodes);
+    LinkedHashMap<String, CollectionRef> copyCollectionStates = new LinkedHashMap<>(collectionStates);
     if (collection == null) {
-      result.collectionStates.remove(collectionName);
+      copyCollectionStates.remove(collectionName);
     } else {
-      result.collectionStates.put(collectionName, new CollectionRef(collection));
+      copyCollectionStates.put(collectionName, new CollectionRef(collection));
     }
-    return result;
+    return new ClusterState(copyCollectionStates, liveNodes);
   }
 
   /**
