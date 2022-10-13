@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud;
 
+import org.apache.solr.cloud.overseer.ZkStateWriter;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.zookeeper.data.Stat;
@@ -29,7 +30,7 @@ public class RefreshCollectionMessage implements Overseer.Message {
     this.collection = collection;
   }
 
-  public ClusterState run(ClusterState clusterState, Overseer overseer) throws Exception {
+  public ClusterState run(ClusterState clusterState, Overseer overseer, ZkStateWriter zksw) throws Exception {
     Stat stat =
         overseer
             .getZkStateReader()
@@ -44,7 +45,9 @@ public class RefreshCollectionMessage implements Overseer.Message {
       // our state is up to date
       return clusterState;
     } else {
-      coll = overseer.getZkStateReader().getCollectionLive(collection);
+      overseer.getZkStateReader().forceUpdateCollection(collection);
+      coll = overseer.getZkStateReader().getCollection(collection);
+      zksw.updateClusterState(it -> it.copyWith(collection, overseer.getZkStateReader().getCollection(collection)));
       return clusterState.copyWith(collection, coll);
     }
   }
