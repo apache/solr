@@ -277,10 +277,10 @@ public class Overseer implements SolrCloseable {
                       message);
                 }
                 try {
-                  log.info("CHECKPOINT1: going to process message: "+message+", CS: "+clusterState);
+                  log.info("CHECKPOINT1: going to process message: {}, CS: {} ", message, clusterState.hashCode());
                   clusterState =
                       processQueueItem(message, clusterState, zkStateWriter, false, null);
-                  log.info("CHECKPOINT2: processed the message, CS is now: "+clusterState);
+                  log.info("CHECKPOINT2: processed the message, CS is now: {}",clusterState.hashCode());
                 } catch (Exception e) {
                   if (isBadMessage(e)) {
                     log.warn(
@@ -296,9 +296,9 @@ public class Overseer implements SolrCloseable {
               }
               // force flush at the end of the loop, if there are no pending updates, this is a no
               // op call
-              log.info("CHECKPOINT3: now writing pending, CS: "+clusterState);
+              log.info("CHECKPOINT3: now writing pending, CS {}: ",clusterState.hashCode());
               clusterState = zkStateWriter.writePendingUpdates();
-              log.info("CHECKPOINT4: written pending updates, CS: "+clusterState);
+              log.info("CHECKPOINT4: written pending updates, CS {}: ",clusterState.hashCode());
               // the workQueue is empty now, use stateUpdateQueue as fallback queue
               fallbackQueue = stateUpdateQueue;
               fallbackQueueSize = 0;
@@ -356,6 +356,7 @@ public class Overseer implements SolrCloseable {
                   Message m = unprocessedMessages.remove(0);
                   log.info("a_Message({})", m);
                   clusterState = m.run(clusterState, Overseer.this);
+                  log.info("CHECKPOINT0 , CS : {}", clusterState.hashCode());
                   if (m instanceof RefreshCollectionMessage) {
                     RefreshCollectionMessage refreshCollectionMessage = (RefreshCollectionMessage) m;
                     log.info("coll :{}, found : {}",refreshCollectionMessage.collection,
@@ -363,7 +364,7 @@ public class Overseer implements SolrCloseable {
                   }
                 }
 
-                log.info("CHECKPOINT5: Going to process queue item, CS: "+clusterState);
+                log.info("CHECKPOINT5: Going to process queue item, hash:{}, " ,clusterState.hashCode());
 
                 // The callback always be called on this thread
                 clusterState =
@@ -376,7 +377,7 @@ public class Overseer implements SolrCloseable {
                           stateUpdateQueue.remove(processedNodes);
                           processedNodes.clear();
                         });
-                log.info("CHECKPOINT6: Processed the queue item, CS: "+clusterState);
+                log.info("CHECKPOINT6: Processed the queue item, CS: {}",clusterState.hashCode());
 
               }
               if (isClosed) break;

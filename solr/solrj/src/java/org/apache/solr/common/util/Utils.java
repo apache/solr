@@ -935,4 +935,12 @@ public class Utils {
   interface FieldWriter {
     void write(MapWriter.EntryWriter ew, Object inst) throws Throwable;
   }
+  public static String getStack(int depth) {
+    StackTraceElement[] traces = new RuntimeException().getStackTrace();
+    StringBuilder sb = new StringBuilder();
+    for (int i = 1; i < depth + 1 && i < traces.length; i++) {
+      sb.append(traces[i].toString()).append("\n");
+    }
+    return sb.toString();
+  }
 }
