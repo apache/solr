@@ -238,10 +238,12 @@ public class TestSolrXml extends SolrTestCaseJ4 {
             + "<coreAdminHandlerActions><str name=\"action1\">testCoreAdminHandlerAction1</str></coreAdminHandlerActions>"
             + "<coreAdminHandlerActions><str name=\"action2\">testCoreAdminHandlerAction2</str></coreAdminHandlerActions>"
             + "</solr>";
-    expectedException.expect(SolrException.class);
-    expectedException.expectMessage(
-        "Multiple instances of coreAdminHandlerActions section found in solr.xml");
-    SolrXmlConfig.fromString(solrHome, solrXml); // return not used, only for validation
+
+    SolrException thrown =
+        assertThrows(SolrException.class, () -> SolrXmlConfig.fromString(solrHome, solrXml));
+    assertEquals(
+        "Multiple instances of coreAdminHandlerActions section found in solr.xml",
+        thrown.getMessage());
   }
 
   public void testValidStringValueWhenBoolTypeIsExpected() {
@@ -417,11 +419,11 @@ public class TestSolrXml extends SolrTestCaseJ4 {
             v1,
             v2);
 
-    expectedException.expect(SolrException.class);
-    expectedException.expectMessage(
-        "<coreAdminHandlerActions> section of solr.xml contains duplicated 'action'");
-
-    SolrXmlConfig.fromString(solrHome, solrXml); // return not used, only for validation
+    SolrException thrown =
+        assertThrows(SolrException.class, () -> SolrXmlConfig.fromString(solrHome, solrXml));
+    assertEquals(
+        "<coreAdminHandlerActions> section of solr.xml contains duplicated 'action'",
+        thrown.getMessage());
   }
 
   public void testCloudConfigRequiresHostPort() {
