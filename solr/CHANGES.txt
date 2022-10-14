@@ -280,6 +280,8 @@ Other Changes
 
 * SOLR-16423: Upgrade Apache Hadoop to 3.3.4 (Kevin Risden)
 
+* SOLR-16450: Proper handling on watcher registration failure in ZkStateReader#waitForState() (Hitesh Khamesra via Ishan Chattopadhyaya)
+
 Build
 ---------------------
 * SOLR-16204: Change Lucene dependency to Lucene 9.1.0 (Elia Porciani via Alessandro Benedetti)
