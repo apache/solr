@@ -3,10 +3,10 @@
 # https://help.sonatype.com/lift/configuration-reference
 
 jdkVersion = "11"
+disableTools = [ "refactor-first" ]
 ignoreFiles = '''
 **/test/**
 **/*.min.js
 solr/webapp/web/libs/*.js
 '''
 build = "./gradlew jar"
-
