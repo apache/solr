@@ -92,6 +92,10 @@ public class RequestMetricHandling {
     public void filter(
         ContainerRequestContext requestContext, ContainerResponseContext responseContext)
         throws IOException {
+      if (requestContext.getPropertyNames().contains(RequestContextKeys.NOT_FOUND_FLAG)) {
+        return;
+      }
+
       final RequestHandlerBase.HandlerMetrics metrics =
           (RequestHandlerBase.HandlerMetrics) requestContext.getProperty(HANDLER_METRICS);
       if (metrics == null) return;

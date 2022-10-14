@@ -30,8 +30,8 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -410,7 +410,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
 
     public NamedList<?> call() throws Exception {
       ModifiableSolrParams params = new ModifiableSolrParams();
-      HttpSolrClient solrClient = cache.getHttpSolrClient(baseUrl);
+      SolrClient solrClient = cache.getHttpSolrClient(baseUrl);
 
       params.add(DISTRIB, "false");
       params.add("fq", "{!significantTerms}");

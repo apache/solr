@@ -32,6 +32,7 @@ import org.apache.solr.handler.ClusterAPI;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.component.ShardRequest;
+import org.apache.solr.handler.component.ShardResponse;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -121,6 +122,12 @@ public class OverseerNodePrioritizer {
         log.info("asking the old first in line {} to rejoin election  ", electionNodes.get(1));
       }
       invokeOverseerOp(electionNodes.get(1), "rejoin"); // ask second inline to go behind
+      if (log.isInfoEnabled()) {
+        List<String> newElectionNodes =
+            OverseerTaskProcessor.getSortedElectionNodes(
+                zk, Overseer.OVERSEER_ELECT + LeaderElector.ELECTION_NODE);
+        log.info("sorted nodes after prioritization {}", newElectionNodes);
+      }
     }
     // now ask the current leader to QUIT , so that the designate can takeover
     overseer.sendQuitToOverseer(OverseerTaskProcessor.getLeaderId(zkStateReader.getZkClient()));
@@ -140,6 +147,10 @@ public class OverseerNodePrioritizer {
     sreq.actualShards = sreq.shards;
     sreq.params = params;
     shardHandler.submit(sreq, replica, sreq.params);
-    shardHandler.takeCompletedOrError();
+    ShardResponse response = shardHandler.takeCompletedOrError();
+    if (response.getException() != null) {
+      log.error(
+          "Exception occurred while invoking Overseer Operation: {}", op, response.getException());
+    }
   }
 }

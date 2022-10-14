@@ -24,6 +24,46 @@ Bug Fixes
 
 Other Changes
 ---------------------
+
+* SOLR-15730: SolrJ modules like SolrJ-Zookeeper are now opt-in from a Maven POM perspective.
+  Previously, the modules would come transitively.
+  (David Smiley)
+
+==================  9.2.0 ==================
+New Features
+---------------------
+
+* SOLR-16435: Add Request timeout to Http2SolrClient (Tomás Fernández Löbbe)
+
+Improvements
+---------------------
+
+* SOLR-16428: IgnoreLargeDocumentProcessorFactory now supports a "permissive" mode, where it logs and skips
+  offending documents but doesn't short-circuit the entire batch or return a 4xx error.  This mode can be enabled
+  by setting the `permissiveMode` boolean option to `true` in your solrconfig.xml's
+  IgnoreLargeDocumentProcessorFactory declaration. (Jason Gerlowski)
+
+* SOLR-16392: A number of v2 "replica" endpoints have been updated to be more REST-ful, and hopefully, intuitive.
+  ADDREPLICAPROP is now `PUT /api/collections/$coll/shards/$shard/replicas/$rep/properties/$prop {"value": $val}`
+
+* SOLR-11657: Deprecate ContentStream in favour of RequestWriter.ContentWriter.   (Joshua Ouma via Eric Pugh)
+
+Optimizations
+---------------------
+(No changes)
+
+Bug Fixes
+---------------------
+
+* SOLR-16436: Fix "false positive" suggestions from DirectSolrSpellChecker when using maxQueryFrequency > 1 in
+  multi-shard collections (hossman)
+
+Build
+---------------------
+* Upgrade forbiddenapis to 3.4 (Uwe Schindler)
+
+Other Changes
+---------------------
 (No changes)
 
 ==================  9.1.0 ==================
@@ -84,6 +124,12 @@ Improvements
 
 * SOLR-16230: JWT nested roles support (Marco Descher, janhoy)
 
+* SOLR-16361: mod() is now accurate for all integers, floats, doubles and longs upto 2^52 (Dan Rosher via Eric Pugh)
+
+* SOLR-16404: Prometheus Exporter: Use HTTP2 Solr clients. (Houston Putman)
+
+* SOLR-16429: The s3-repository module now supports AWS STS, and therefore Web Identity Tokens, by default. (Josh Souza via Houston Putman)
+
 Optimizations
 ---------------------
 * SOLR-16120: Optimise hl.fl expansion. (Christine Poerschke, David Smiley, Mike Drob)
@@ -101,8 +147,12 @@ Optimizations
 
 * SOLR-16328: intern() strings in DocCollection to reduce memory footprint (noble)
 
+* SOLR-16445: Leader message should only be sent when there is more than one (NRT+Tlog) replica (Hitesh Khamesra, noble via Ishan Chattopadhyaya)
+
 Bug Fixes
 ---------------------
+* SOLR-13219: Fix NPE in FieldLengthFeature with non-stored/missing fields (Nick Veenhof, Tomasz Elendt)
+
 * SOLR-15918: Skip repetitive parent znode creation on config set upload (Mike Drob)
 
 * SOLR-15964: Transient cores: don't evict a core when it's still being used. (David Smiley)
@@ -146,6 +196,34 @@ Bug Fixes
 * SOLR-16343: Handle MDC snapshot being null (Dee Moore via Kevin Risden)
 
 * SOLR-7883: MoreLikeThisHandler to support facets (Mikhail Khludnev)
+
+* SOLR-16406: Take SOLR_MODULES, configured by solr.in.sh, into account. (Thomas Wöckinger via janhoy)
+
+* SOLR-16344: PlacementPlugin throws NPE for PRS collections (noble)
+
+* SOLR-16417: NPE if facet query hits timeout or exception (Kevin Risden)
+
+* SOLR-16414: Race condition in PRS state updates (noble, Justin Sweeney, Patson Luk, Hitesh Khamesra, Ishan Chattopadhyaya)
+
+* SOLR-16418: Introduce SolrResponseUtil to handle NPE during query timeout or exception when parsing SolrResponse (Kevin Risden)
+
+* SOLR-16219: ICUCollationField protected field IllegalAccessException from different classloader (Michael Gibney)
+
+* SOLR-16426: LBHttp2SolrClient (and therefore CloudHttp2SolrClient) now respect requestWriter, responseParser and queryParam changes (Houston Putman)
+
+* SOLR-16232: Fix EnvVar usage in bin/solr (Houston Putman)
+
+* SOLR-16439: Cloud Node does not have Core, the admin UI cannot be displayed properly. (Shiming Li)
+
+* SOLR-16229: Http2SolrClient aborts requests on exception (Daniel Rabus, Tomás Fernández Löbbe)
+
+* SOLR-16457: solr.data.home should not be set to empty string in bin/solr (Kevin Risden)
+
+* SOLR-16433: Security Manager prevents Solr SQL from working (Kevin Risden)
+
+* SOLR-16460: ClusterState.copyWith is inconsistent (noble)
+
+* SOLR-16440: RefreshCollectionMessage in PRS should update Overseer's ZkStateWriter (noble, Ishan Chattopadhyaya)
 
 Other Changes
 ---------------------
@@ -197,6 +275,18 @@ Other Changes
 * SOLR-16402: Bump google-cloud-bom to 0.178.0 (Kevin Risden)
 
 * SOLR-16141: Upgrade Apache Tika to 1.28.4 (janhoy)
+
+* SOLR-16424: Upgrade Netty to 4.1.82.Final (Kevin Risden)
+
+* SOLR-16421: Upgrade Apache Calcite to 1.32.0 and Avatica to 1.22.0 (Kevin Risden)
+
+* SOLR-16422: Upgrade Apache Zookeeper to 3.8.0 (Kevin Risden)
+
+* SOLR-16423: Upgrade Apache Hadoop to 3.3.4 (Kevin Risden)
+
+* SOLR-16450: Proper handling on watcher registration failure in ZkStateReader#waitForState() (Hitesh Khamesra via Ishan Chattopadhyaya)
+
+* SOLR-16451: Don't fetch the PRS states while registering the collection watch (Hitesh Khamesra via Ishan Chattopadhyaya)
 
 Build
 ---------------------

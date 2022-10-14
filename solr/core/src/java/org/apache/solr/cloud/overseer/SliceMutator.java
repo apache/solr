@@ -146,16 +146,7 @@ public class SliceMutator {
       }
       newSlices.put(slice.getName(), slice);
     }
-
-    if (coll.isPerReplicaState()) {
-      PerReplicaStatesOps replicaOps =
-          PerReplicaStatesOps.deleteReplica(
-              cnn,
-              PerReplicaStatesFetcher.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates()));
-      return new ZkWriteCommand(collection, coll.copyWithSlices(newSlices), replicaOps, true);
-    } else {
-      return new ZkWriteCommand(collection, coll.copyWithSlices(newSlices));
-    }
+    return new ZkWriteCommand(collection, coll.copyWithSlices(newSlices));
   }
 
   public ZkWriteCommand setShardLeader(ClusterState clusterState, ZkNodeProps message) {
@@ -185,9 +176,9 @@ public class SliceMutator {
               replica.getBaseUrl(), replica.getStr(ZkStateReader.CORE_NAME_PROP));
 
       if (replica == oldLeader && !coreURL.equals(leaderUrl)) {
-        replica = new ReplicaMutator(cloudManager).unsetLeader(replica);
+        replica = ReplicaMutator.unsetLeader(replica);
       } else if (coreURL.equals(leaderUrl)) {
-        newLeader = replica = new ReplicaMutator(cloudManager).setLeader(replica);
+        newLeader = replica = ReplicaMutator.setLeader(replica);
       }
 
       newReplicas.put(replica.getName(), replica);
@@ -196,19 +187,8 @@ public class SliceMutator {
     Map<String, Object> newSliceProps = slice.shallowCopy();
     newSliceProps.put(SliceStateProps.REPLICAS, newReplicas);
     slice = new Slice(slice.getName(), newReplicas, slice.getProperties(), collectionName);
-    if (coll.isPerReplicaState()) {
-      PerReplicaStates prs =
-          PerReplicaStatesFetcher.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
-      return new ZkWriteCommand(
-          collectionName,
-          CollectionMutator.updateSlice(collectionName, coll, slice),
-          PerReplicaStatesOps.flipLeader(
-              slice.getReplicaNames(), newLeader == null ? null : newLeader.getName(), prs),
-          false);
-    } else {
-      return new ZkWriteCommand(
-          collectionName, CollectionMutator.updateSlice(collectionName, coll, slice));
-    }
+    return new ZkWriteCommand(
+        collectionName, CollectionMutator.updateSlice(collectionName, coll, slice));
   }
 
   public ZkWriteCommand updateShardState(ClusterState clusterState, ZkNodeProps message) {

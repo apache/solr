@@ -210,8 +210,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
           String.format(
               Locale.ROOT,
               "invalid expression %s - at least one bucket expected. eg. 'buckets=\"name\"'",
-              expression,
-              collectionName));
+              expression));
     }
 
     // Construct the metrics
@@ -233,15 +232,14 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
       bucketSortString = ((StreamExpressionValue) bucketSortExpression.getParameter()).getValue();
       if (bucketSortString.contains("(")
           && metricExpressions.size() == 0
-          && (!bucketSortExpression.equals("count(*) desc")
-              && !bucketSortExpression.equals("count(*) asc"))) {
+          && (!bucketSortString.equals("count(*) desc")
+              && !bucketSortString.equals("count(*) asc"))) {
         // Attempting bucket sort on a metric that is not going to be calculated.
         throw new IOException(
             String.format(
                 Locale.ROOT,
                 "invalid expression %s - the bucketSort is being performed on a metric that is not being calculated.",
-                expression,
-                collectionName));
+                expression));
       }
     }
 
@@ -252,8 +250,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
           String.format(
               Locale.ROOT,
               "invalid expression %s - at least one bucket sort expected. eg. 'bucketSorts=\"name asc\"'",
-              expression,
-              collectionName));
+              expression));
     }
 
     boolean refine = false;

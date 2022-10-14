@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+plugins {
+  id 'io.swagger.core.v3.swagger-gradle-plugin' version '2.2.2'
+}
+
 apply plugin: 'java-library'
 
 description = 'Apache Solr Core'
@@ -31,6 +35,12 @@ configurations {
   }
 }
 
+resolve {
+  classpath = sourceSets.main.runtimeClasspath
+  outputDir = file("build/generated/openapi")
+  prettyPrint = true
+}
+
 dependencies {
   // Spotbugs Annotations are only needed for old findbugs
   // annotation usage like in Zookeeper during compilation time.
@@ -42,6 +52,8 @@ dependencies {
   configurations.jarValidation {
     exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
   }
+
+  implementation 'io.swagger.core.v3:swagger-annotations'
 
   // Export these dependencies so that they're imported transitively by
   // other modules.
@@ -81,9 +93,12 @@ dependencies {
 
   implementation 'javax.servlet:javax.servlet-api'
 
-  implementation "org.glassfish.jersey.containers:jersey-container-jetty-http"
+  implementation 'org.glassfish.jersey.containers:jersey-container-jetty-http'
+  permitUnusedDeclared 'org.glassfish.jersey.containers:jersey-container-jetty-http'
   implementation 'org.glassfish.jersey.inject:jersey-hk2'
+  permitUnusedDeclared 'org.glassfish.jersey.inject:jersey-hk2'
   implementation 'org.glassfish.jersey.media:jersey-media-json-jackson'
+  permitUnusedDeclared 'org.glassfish.jersey.media:jersey-media-json-jackson'
   implementation 'org.glassfish.jersey.core:jersey-common'
   implementation 'org.glassfish.jersey.core:jersey-server'
   implementation 'org.glassfish.hk2:hk2-api'
@@ -98,6 +113,7 @@ dependencies {
   runtimeOnly "org.apache.lucene:lucene-backward-codecs"
   implementation "org.apache.lucene:lucene-codecs"
   implementation "org.apache.lucene:lucene-backward-codecs"
+  permitUnusedDeclared "org.apache.lucene:lucene-backward-codecs"
   implementation "org.apache.lucene:lucene-classification"
   implementation "org.apache.lucene:lucene-expressions"
   implementation "org.apache.lucene:lucene-grouping"
@@ -139,13 +155,12 @@ dependencies {
   // ZooKeeper
   implementation('org.apache.zookeeper:zookeeper', {
     exclude group: "org.apache.yetus", module: "audience-annotations"
-    exclude group: "log4j", module: "log4j"
-    exclude group: "org.slf4j", module: "slf4j-log4j12"
   })
-  implementation ('org.apache.zookeeper:zookeeper-jute') {
+  implementation('org.apache.zookeeper:zookeeper-jute') {
     exclude group: 'org.apache.yetus', module: 'audience-annotations'
   }
   testImplementation 'org.apache.zookeeper:zookeeper::tests'
+
   // required for instantiating a Zookeeper server (for embedding ZK or running tests)
   runtimeOnly ('org.xerial.snappy:snappy-java')
 
@@ -194,6 +209,7 @@ dependencies {
 
   testImplementation 'org.glassfish.jersey.test-framework:jersey-test-framework-core'
   testImplementation 'org.glassfish.jersey.test-framework.providers:jersey-test-framework-provider-grizzly2'
+  permitTestUnusedDeclared 'org.glassfish.jersey.test-framework.providers:jersey-test-framework-provider-grizzly2'
 
 
   testImplementation('org.mockito:mockito-core', {
