@@ -916,7 +916,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     for (Slice slice : dColl.getActiveSlices()) {
       long sliceDocCount = -1;
       for (Replica rep : slice.getReplicas()) {
-        try (HttpSolrClient one = getHttpSolrClient(rep.getCoreUrl())) {
+        try (SolrClient one = getHttpSolrClient(rep.getCoreUrl())) {
           SolrQuery query = new SolrQuery("*:*");
           query.setDistrib(false);
           QueryResponse resp = one.query(query);
@@ -1045,7 +1045,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
 
   private void testStopAndStartCoresInOneInstance() throws Exception {
     JettySolrRunner jetty = jettys.get(0);
-    try (final HttpSolrClient httpSolrClient = (HttpSolrClient) jetty.newClient(15000, 60000)) {
+    try (final SolrClient httpSolrClient = (HttpSolrClient) jetty.newClient(15000, 60000)) {
       ThreadPoolExecutor executor = null;
       try {
         executor =
@@ -1084,7 +1084,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
   }
 
   /** Create a collection in single node */
-  protected void createCollectionInOneInstance(
+  public static void createCollectionInOneInstance(
       final SolrClient client,
       String nodeName,
       ThreadPoolExecutor executor,
@@ -1304,7 +1304,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     String collection = elements[elements.length - 1];
     String urlString = url.toString();
     urlString = urlString.substring(0, urlString.length() - collection.length() - 1);
-    try (HttpSolrClient client = getHttpSolrClient(urlString, 15000, 60000)) {
+    try (SolrClient client = getHttpSolrClient(urlString, 15000, 60000)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       // params.set("qt", "/admin/metrics?prefix=UPDATE.updateHandler&registry=solr.core." +
       // collection);
@@ -1401,7 +1401,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
                 .getLeader("shard1"));
 
     // now test that unloading a core gets us a new leader
-    try (HttpSolrClient unloadClient =
+    try (SolrClient unloadClient =
         getHttpSolrClient(jettys.get(0).getBaseUrl().toString(), 15000, 60000)) {
       Unload unloadCmd = new Unload(true);
       unloadCmd.setCoreName(props.getCoreName());
@@ -1545,7 +1545,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
       final String shardId) {
     Callable<Object> call =
         () -> {
-          try (HttpSolrClient client = getHttpSolrClient(baseUrl)) {
+          try (SolrClient client = getHttpSolrClient(baseUrl)) {
             // client.setConnectionTimeout(15000);
             Create createCmd = new Create();
             createCmd.setRoles("none");
@@ -1712,7 +1712,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
   protected SolrClient createNewSolrClient(String collection, String baseUrl) {
     try {
       // setup the server...
-      HttpSolrClient client = getHttpSolrClient(baseUrl + "/" + collection);
+      SolrClient client = getHttpSolrClient(baseUrl + "/" + collection);
 
       return client;
     } catch (Exception ex) {
@@ -1724,7 +1724,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
       String collection, String baseUrl, int connectionTimeoutMillis, int socketTimeoutMillis) {
     try {
       // setup the server...
-      HttpSolrClient client =
+      SolrClient client =
           getHttpSolrClient(
               baseUrl + "/" + collection, connectionTimeoutMillis, socketTimeoutMillis);
 

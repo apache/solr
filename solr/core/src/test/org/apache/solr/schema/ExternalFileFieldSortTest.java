@@ -57,7 +57,7 @@ public class ExternalFileFieldSortTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testPointKeyFieldType() throws Exception {
+  public void testPointKeyFieldType() {
     // This one should fail though, no "node" parameter specified
     SolrException e =
         expectThrows(

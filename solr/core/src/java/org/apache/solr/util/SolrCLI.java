@@ -2949,7 +2949,7 @@ public class SolrCLI implements CLIO {
               "exampledocs directory not found, skipping indexing step for the techproducts example");
         }
       } else if ("films".equals(exampleName) && !alreadyExists) {
-        HttpSolrClient solrClient = new HttpSolrClient.Builder(solrUrl).build();
+        SolrClient solrClient = new HttpSolrClient.Builder(solrUrl).build();
 
         echo("Adding name and initial_release_data fields to films schema \"_default\"");
         try {
@@ -3978,7 +3978,7 @@ public class SolrCLI implements CLIO {
     }
 
     private static boolean runningSolrIsCloud(String url) throws Exception {
-      try (final HttpSolrClient client = new HttpSolrClient.Builder(url).build()) {
+      try (final SolrClient client = new HttpSolrClient.Builder(url).build()) {
         final SolrRequest<CollectionAdminResponse> request =
             new CollectionAdminRequest.ClusterStatus();
         final CollectionAdminResponse response = request.process(client);

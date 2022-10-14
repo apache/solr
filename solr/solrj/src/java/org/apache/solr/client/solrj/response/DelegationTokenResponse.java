@@ -79,7 +79,7 @@ public abstract class DelegationTokenResponse extends SolrResponseBase {
       } catch (IOException | JSONParser.ParseException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "parsing error", e);
       }
-      NamedList<Object> list = new NamedList<Object>();
+      NamedList<Object> list = new NamedList<>();
       list.addAll(map);
       return list;
     }

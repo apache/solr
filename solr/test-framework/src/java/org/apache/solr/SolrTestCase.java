@@ -25,9 +25,9 @@ import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.util.regex.Pattern;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.QuickPatchThreadsFilter;
-import org.apache.lucene.util.VerifyTestClassNamingConvention;
+import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
+import org.apache.lucene.tests.util.VerifyTestClassNamingConvention;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ExternalPaths;
@@ -59,7 +59,11 @@ import org.slf4j.LoggerFactory;
 @ThreadLeakFilters(
     defaultFilters = true,
     filters = {SolrIgnoredThreadsFilter.class, QuickPatchThreadsFilter.class})
-@ThreadLeakLingering(linger = 0)
+// The ThreadLeakLingering is set to 1s to allow ThreadPools to finish
+// joining on termination. Ideally this should only be 10-100ms, but
+// on slow machines it could take up to 1s. See discussion on SOLR-15660
+// and SOLR-16187 regarding why this is necessary.
+@ThreadLeakLingering(linger = 1000)
 public class SolrTestCase extends LuceneTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -117,6 +121,11 @@ public class SolrTestCase extends LuceneTestCase {
               + "for tests to run properly",
           SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE,
           ExternalPaths.DEFAULT_CONFIGSET);
+    }
+
+    // set solr.install.dir needed by some test configs outside of the test sandbox (!)
+    if (ExternalPaths.SOURCE_HOME != null) {
+      System.setProperty("solr.install.dir", ExternalPaths.SOURCE_HOME);
     }
 
     if (!TEST_NIGHTLY) {

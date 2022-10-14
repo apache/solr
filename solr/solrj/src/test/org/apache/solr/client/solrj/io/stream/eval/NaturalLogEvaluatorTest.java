@@ -40,7 +40,7 @@ public class NaturalLogEvaluatorTest extends SolrTestCase {
         new StreamFactory()
             .withFunctionName("log", NaturalLogEvaluator.class)
             .withFunctionName("add", AddEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @Test

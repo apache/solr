@@ -31,7 +31,7 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
  * Simple TokenFilter that lookup only Tokens with more as the parsed number of chars.
  *
  * <p><b>NOTE:</b>This implementation is only intended to be used as an example and for unit testing
- * the {@link TaggingAttribute} feature. Typically implementations will be based on NLP results
+ * the {@link TaggingAttribute} feature. Typically, implementations will be based on NLP results
  * (e.g. using POS tags or detected Named Entities).
  *
  * <p><b>Example Usage:</b>
@@ -69,19 +69,11 @@ public class WordLengthTaggingFilter extends TokenFilter {
   private int minLength;
 
   /**
-   * TokenFilter only marks tokens to be looked up with equals or more as {@link
-   * #DEFAULT_MIN_LENGTH} characters
-   */
-  public WordLengthTaggingFilter(TokenStream input) {
-    this(input, null);
-  }
-
-  /**
    * TokenFilter only marks tokens to be looked up with equals or more characters as the parsed
    * minimum.
    *
    * @param input the TokenStream to consume tokens from
-   * @param minLength The minimum length to lookup a Token. <code>null</code> or &lt;= 0 to use the
+   * @param minLength The minimum length to look up a Token. <code>null</code> or &lt;= 0 to use the
    *     #DEFAULT_MIN_LENGTH
    */
   public WordLengthTaggingFilter(TokenStream input, Integer minLength) {

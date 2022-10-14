@@ -201,10 +201,6 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
       rulesBasedAuthorizationPlugin.init(new HashMap<>());
     }
 
-    public Map<String, SecurityConfig> getM() {
-      return m;
-    }
-
     @Override
     Object getPlugin(String key) {
       if (key.equals("authentication")) {

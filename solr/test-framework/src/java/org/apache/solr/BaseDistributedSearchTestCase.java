@@ -34,6 +34,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
@@ -46,8 +47,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.Filter;
 import junit.framework.Assert;
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -78,8 +79,9 @@ import org.slf4j.LoggerFactory;
 /**
  * Helper base class for distributed search test cases
  *
- * <p>By default, all tests in sub-classes will be executed with 1, 2, ... DEFAULT_MAX_SHARD_COUNT
- * number of shards set up repeatedly.
+ * <p>By default, for Nightly runs, all tests in sub-classes will execute with 1, 2, ...
+ * DEFAULT_MAX_SHARD_COUNT number of shards set up repeatedly. For non-nightly tests, they will
+ * execute with 2 shards, to speed up total execution time.
  *
  * <p>In general, it's preferable to annotate the tests in sub-classes with a
  * {@literal @}ShardsFixed(num = N) or a {@literal @}ShardsRepeat(min = M, max = N) to indicate
@@ -222,6 +224,11 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     this.context = context;
     this.deadServers =
         new String[] {DEAD_HOST_1 + context, DEAD_HOST_2 + context, DEAD_HOST_3 + context};
+
+    // Speed up the test cycle by only running a single configuration instead of the repeat rule
+    if (TEST_NIGHTLY == false) {
+      fixShardCount(2);
+    }
   }
 
   private static final int DEFAULT_MAX_SHARD_COUNT = 3;
@@ -785,10 +792,6 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return first;
   }
 
-  public static boolean eq(String a, String b) {
-    return a == b || (a != null && a.equals(b));
-  }
-
   public static int flags(Map<String, Integer> handle, Object key) {
     if (key == null) return 0;
     if (handle == null) return 0;
@@ -860,7 +863,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
           bSkipped++;
           continue;
         }
-        if (eq(namea, nameb)) {
+        if (Objects.equals(namea, nameb)) {
           break;
         }
         return "." + namea + "!=" + nameb + " (unordered or missing)";

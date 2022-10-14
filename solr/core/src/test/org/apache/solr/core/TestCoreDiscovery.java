@@ -35,10 +35,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.RetryUtil;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -139,10 +141,10 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   }
 
   @After
-  public void after() throws Exception {}
+  public void after() {}
 
   // Test the basic setup, create some dirs with core.properties files in them, but solr.xml has
-  // discoverCores set and insure that we find all the cores and can load them.
+  // discoverCores set and ensure that we find all the cores and can load them.
   @Test
   @SuppressWarnings({"try"})
   public void testDiscovery() throws Exception {
@@ -278,7 +280,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
           "Failed corep4 should not have left a core.properties file around",
           Files.exists(corePropFile));
 
-      // Finally, just for yucks, let's determine that a this create path also leaves a prop file.
+      // Finally, let's determine that this create path operation also leaves a prop file.
 
       corePropFile = Paths.get(solrHomeDirectory.toString(), "corep5", "core.properties");
       assertFalse("Should not be a properties file yet for corep5", Files.exists(corePropFile));
@@ -293,18 +295,19 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     }
   }
 
-  // Insure that if the number of transient cores that are loaded on startup is greater than the
+  // Ensure that if the number of transient cores that are loaded on startup is greater than the
   // cache size that Solr "does the right thing". Which means
   // 1> stop loading cores after transient cache size is reached, in this case that magic number is
   // 3 one non-transient and two transient.
   // 2> still loads cores as time passes.
   //
-  // This seems like a silly test, but it hangs forever on 4.10 so let's guard against it in future.
+  // This seems like a silly test, but it hangs forever on 4.10 so let's guard against it in the
+  // future.
   // The behavior has gone away with the removal of the complexity around the old-style solr.xml
   // files.
   //
   // NOTE: The order that cores are loaded depends upon how the core discovery is traversed. I don't
-  // think we can make the test depend on that order, so after load just insure that the cores
+  // think we can make the test depend on that order, so after load just ensure that the cores
   // counts are correct.
 
   @Test
@@ -327,10 +330,12 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       cc.load();
       // Just check that the proper number of cores are loaded since making the test depend on order
       // would be fragile
-      assertEquals(
+      RetryUtil.retryUntil(
           "There should only be 3 cores loaded, coreLOS and two coreT? cores",
-          3,
-          cc.getLoadedCoreNames().size());
+          5,
+          200,
+          TimeUnit.MILLISECONDS,
+          () -> 3 == cc.getLoadedCoreNames().size());
 
       SolrCore c1 = cc.getCore("coreT1");
       assertNotNull("Core T1 should NOT BE NULL", c1);
@@ -481,7 +486,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
         makeCoreProperties("core1", false, true),
         new File(coreDir, "core1" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));
 
-    // Insure that another core is opened successfully
+    // Ensure that another core is opened successfully
     addCoreWithProps(
         makeCoreProperties("core2", false, false, "dataDir=core2"),
         new File(coreDir, "core2" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));
@@ -609,7 +614,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       "<solr> "
           + "<int name=\"transientCacheSize\">2</int> "
           + "<str name=\"configSetBaseDir\">"
-          + Paths.get(TEST_HOME()).resolve("configsets").toString()
+          + Paths.get(TEST_HOME()).resolve("configsets")
           + "</str>"
           + "<solrcloud> "
           + "<str name=\"hostContext\">solrprop</str> "

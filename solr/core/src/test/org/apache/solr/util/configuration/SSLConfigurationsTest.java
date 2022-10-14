@@ -20,11 +20,10 @@ package org.apache.solr.util.configuration;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.lucene.util.TestRuleRestoreSystemProperties;
+import org.apache.lucene.tests.util.TestRuleRestoreSystemProperties;
 import org.apache.solr.util.configuration.providers.EnvSSLCredentialProvider;
 import org.apache.solr.util.configuration.providers.SysPropSSLCredentialProvider;
 import org.junit.Before;
@@ -180,7 +179,7 @@ public class SSLConfigurationsTest {
   }
 
   @Test
-  public void testSystemPropertyPriorityOverEnvVar() throws IOException {
+  public void testSystemPropertyPriorityOverEnvVar() {
     envs.put(EnvSSLCredentialProvider.EnvVars.SOLR_SSL_KEY_STORE_PASSWORD, SAMPLE_PW2);
     assertThat(createSut().getKeyStorePassword(), is(SAMPLE_PW2));
     System.setProperty(KEY_STORE_PASSWORD, SAMPLE_PW1);

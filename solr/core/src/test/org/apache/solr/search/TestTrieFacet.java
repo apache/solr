@@ -16,7 +16,7 @@
  */
 package org.apache.solr.search;
 
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.schema.SchemaField;
@@ -134,7 +134,7 @@ public class TestTrieFacet extends SolrTestCaseJ4 {
     return 0 != TestUtil.nextInt(random(), 0, 9);
   }
 
-  private static void doTestNoZeros(final String field, final String method) throws Exception {
+  private static void doTestNoZeros(final String field, final String method) {
 
     assertQ(
         "sanity check # docs in index: " + NUM_DOCS,

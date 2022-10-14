@@ -133,7 +133,7 @@ public class Explanation implements MapSerializable {
 
   public void addHelper(Explanation helper) {
     if (null == helpers) {
-      helpers = new ArrayList<Explanation>(1);
+      helpers = new ArrayList<>(1);
     }
     helpers.add(helper);
   }

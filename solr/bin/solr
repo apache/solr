@@ -61,6 +61,11 @@ if [ "${THIS_OS:0:6}" == "CYGWIN" ]; then
   echo -e "This script does not support cygwin due to severe limitations and lack of adherence\nto BASH standards, such as lack of lsof, curl, and ps options.\n\nPlease use the native solr.cmd script on Windows!"
   exit 1
 fi
+# Alpine Linux BusyBox comes with a stripped down ps, make sure we have a fully featured one
+if [ $$ -ne $(ps -o pid='' -p $$ || echo 0) ] ; then
+  echo -e "This script relies on a version of ps that supports the -p flag.\n\nPlease install a POSIX compliant version and try again."
+  exit 1
+fi
 
 # This helps with debugging when running bats tests but not the whole script is compliant yet
 # set -u
@@ -389,7 +394,7 @@ function print_usage() {
     echo "  -e <example>  Name of the example to run; available examples:"
     echo "      cloud:         SolrCloud example"
     echo "      techproducts:  Comprehensive example illustrating many of Solr's core capabilities"
-    echo "      schemaless:    Schema-less example"
+    echo "      schemaless:    Schema-less example (schema is inferred from data during indexing)"
     echo "      films:         Example of starting with _default configset and adding explicit fields dynamically"
     echo ""
     echo "  -a            Additional parameters to pass to the JVM when starting Solr, such as to setup"
@@ -682,7 +687,7 @@ function spinner() {
   local pid=$1
   local delay=0.5
   local spinstr='|/-\'
-  while [ "$(ps aux | awk '{print $2}' | grep -w $pid)" ]; do
+  while ps -o pid='' -p $pid &> /dev/null ; do
       local temp=${spinstr#?}
       printf " [%c]  " "$spinstr"
       local spinstr=$temp${spinstr%"$temp"}
@@ -697,7 +702,7 @@ function solr_pid_by_port() {
   THE_PORT="$1"
   if [ -e "$SOLR_PID_DIR/solr-$THE_PORT.pid" ]; then
     PID=`cat "$SOLR_PID_DIR/solr-$THE_PORT.pid"`
-    CHECK_PID=`ps -o pid='' $PID | tr -d ' '`
+    CHECK_PID=`ps -o pid='' -p $PID | tr -d ' '`
     if [ -n "$CHECK_PID" ]; then
       echo $PID
     fi
@@ -707,7 +712,7 @@ function solr_pid_by_port() {
 # extract the value of the -Djetty.port parameter from a running Solr process
 function jetty_port() {
   SOLR_PID="$1"
-  SOLR_PROC=`ps auxww | grep -w $SOLR_PID | grep start\.jar | grep jetty\.port`
+  SOLR_PROC=`ps -o command='' -p "$SOLR_PID" | grep start\.jar | grep jetty\.port`
   IFS=' ' read -a proc_args <<< "$SOLR_PROC"
   for arg in "${proc_args[@]}"
     do
@@ -825,7 +830,7 @@ function run_package() {
     fi
   fi
 
-  run_tool package -solrUrl "$runningSolrUrl" $@
+  run_tool package -solrUrl "$runningSolrUrl" "$@"
   #exit $?
 }
 
@@ -849,7 +854,7 @@ function stop_solr() {
         # Check if a process is running with the specified PID.
         # -o stat will output the STAT, where Z indicates a zombie
         # stat='' removes the header (--no-headers isn't supported on all platforms)
-        STAT=`(ps -o stat='' $SOLR_PID || :) | tr -d ' '`
+        STAT=`(ps -o stat='' -p $SOLR_PID || :) | tr -d ' '`
         if [[ "${STAT:-Z}" != "Z" ]]; then
           slept=$((loops * 2))
           if [ $slept -lt $SOLR_STOP_WAIT ]; then
@@ -869,9 +874,9 @@ function stop_solr() {
     exit 0
   fi
 
-  STAT=`(ps -o stat='' $SOLR_PID || :) | tr -d ' '`
+  STAT=`(ps -o stat='' -p $SOLR_PID || :) | tr -d ' '`
   if [[ "${STAT:-Z}" != "Z" ]]; then
-    if [ -n "{$JSTACK:-}" ]; then
+    if [ -n "${JSTACK:-}" ]; then
       echo -e "Solr process $SOLR_PID is still running; jstacking it now."
       $JSTACK $SOLR_PID
     elif [ "$JATTACH" != "" ]; then
@@ -885,7 +890,7 @@ function stop_solr() {
     sleep 10
   fi
 
-  STAT=`(ps -o stat='' $SOLR_PID || :) | tr -d ' '`
+  STAT=`(ps -o stat='' -p $SOLR_PID || :) | tr -d ' '`
   if [ "${STAT:-}" == "Z" ]; then
     # This can happen if, for example, you are running Solr inside a docker container with multiple processes
     # rather than running it is as the only service. The --init flag on docker avoids that particular problem.
@@ -1428,12 +1433,12 @@ fi
 
 
 if [[ "$SCRIPT_CMD" == "export" ]]; then
-  run_tool export $@
+  run_tool export "$@"
   exit $?
 fi
 
 if [[ "$SCRIPT_CMD" == "package" ]]; then
-  run_package $@
+  run_package "$@"
   exit $?
 fi
 
@@ -1569,7 +1574,7 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
         fi
       done
   fi
-  run_tool auth ${AUTH_PARAMS[@]} -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:${AUTH_PORT:-8983}/solr" -authConfDir "$SOLR_HOME" $VERBOSE
+  run_tool auth "${AUTH_PARAMS[@]}" -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:${AUTH_PORT:-8983}/solr" -authConfDir "$SOLR_HOME" $VERBOSE
   exit $?
 fi
 
@@ -1794,6 +1799,11 @@ if [[ -n ${SOLR_LOG_LEVEL:-} ]] ; then
   SOLR_LOG_LEVEL_OPT="-Dsolr.log.level=$SOLR_LOG_LEVEL"
 fi
 
+# Solr modules option
+if [[ -n "${SOLR_MODULES:-}" ]] ; then
+  SOLR_OPTS+=("-Dsolr.modules=$SOLR_MODULES")
+fi
+
 : ${SOLR_SERVER_DIR:=$DEFAULT_SERVER_DIR}
 
 if [ ! -e "$SOLR_SERVER_DIR" ]; then
@@ -1860,7 +1870,7 @@ if [[ "$SCRIPT_CMD" == "stop" && -z "${SOLR_PORT:-}" ]]; then
     if [ $numSolrs -eq 1 ]; then
       # only do this if there is only 1 node running, otherwise they must provide the -p or -all
       PID="$(cat "$(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f)")"
-      CHECK_PID=`ps -o pid='' $PID | tr -d ' '`
+      CHECK_PID=`ps -o pid='' -p $PID | tr -d ' '`
       if [ "$CHECK_PID" != "" ]; then
         port=`jetty_port "$CHECK_PID"`
         if [ "$port" != "" ]; then
@@ -1976,11 +1986,6 @@ fi
 if [[ -n ${SOLR_DATA_HOME:-} ]] && [ ! -e "$SOLR_DATA_HOME" ]; then
   echo -e "\nSolr data home directory $SOLR_DATA_HOME not found!\n"
   exit 1
-fi
-if $verbose ; then
-  q=""
-else
-  q="-q"
 fi
 
 # Establish default GC logging opts if no env var set (otherwise init to sensible default)
@@ -2193,17 +2198,17 @@ function start_solr() {
     echo -e "    SOLR_HOST       = ${SOLR_HOST:-}"
     echo -e "    SOLR_PORT       = $SOLR_PORT"
     echo -e "    STOP_PORT       = $STOP_PORT"
-    echo -e "    JAVA_MEM_OPTS   = ${JAVA_MEM_OPTS[@]}"
-    echo -e "    GC_TUNE         = ${GC_TUNE[@]}"
-    echo -e "    GC_LOG_OPTS     = ${GC_LOG_OPTS[@]}"
+    echo -e "    JAVA_MEM_OPTS   = ${JAVA_MEM_OPTS[*]}"
+    echo -e "    GC_TUNE         = ${GC_TUNE[*]}"
+    echo -e "    GC_LOG_OPTS     = ${GC_LOG_OPTS[*]}"
     echo -e "    SOLR_TIMEZONE   = $SOLR_TIMEZONE"
 
     if [ "$SOLR_MODE" == "solrcloud" ]; then
-      echo -e "    CLOUD_MODE_OPTS = ${CLOUD_MODE_OPTS[@]}"
+      echo -e "    CLOUD_MODE_OPTS = ${CLOUD_MODE_OPTS[*]}"
     fi
 
     if [ -n "${SOLR_OPTS:-}" ]; then
-      echo -e "    SOLR_OPTS       = ${SOLR_OPTS[@]}"
+      echo -e "    SOLR_OPTS       = ${SOLR_OPTS[*]}"
     fi
 
     if [ -n "${SOLR_ADDL_ARGS:-}" ]; then
@@ -2212,7 +2217,7 @@ function start_solr() {
 
     if [ "${ENABLE_REMOTE_JMX_OPTS:-false}" == "true" ]; then
       echo -e "    RMI_PORT        = ${RMI_PORT:-}"
-      echo -e "    REMOTE_JMX_OPTS = ${REMOTE_JMX_OPTS[@]}"
+      echo -e "    REMOTE_JMX_OPTS = ${REMOTE_JMX_OPTS[*]}"
     fi
 
     if [ -n "${SOLR_LOG_LEVEL:-}" ]; then
@@ -2220,6 +2225,7 @@ function start_solr() {
     fi
 
     if [ -n "${SOLR_DATA_HOME:-}" ]; then
+      SOLR_OPTS+=("-Dsolr.data.home=$SOLR_DATA_HOME")
       echo -e "    SOLR_DATA_HOME  = $SOLR_DATA_HOME"
     fi
     echo
@@ -2240,7 +2246,7 @@ function start_solr() {
     # users who don't care about useful error msgs can override in SOLR_OPTS with +OmitStackTraceInFastThrow
     "${SOLR_HOST_ARG[@]}" "-Duser.timezone=$SOLR_TIMEZONE" "-XX:-OmitStackTraceInFastThrow" \
     "-XX:OnOutOfMemoryError=$SOLR_TIP/bin/oom_solr.sh $SOLR_PORT $SOLR_LOGS_DIR" \
-    "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.data.home=${SOLR_DATA_HOME:-}" "-Dsolr.install.dir=$SOLR_TIP" \
+    "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.install.dir=$SOLR_TIP" \
     "-Dsolr.default.confdir=$DEFAULT_CONFDIR" "${LOG4J_CONFIG[@]}" "${SOLR_OPTS[@]}" "${SECURITY_MANAGER_OPTS[@]}" "${SOLR_ADMIN_UI}")
 
   mk_writable_dir "$SOLR_LOGS_DIR" "Logs"

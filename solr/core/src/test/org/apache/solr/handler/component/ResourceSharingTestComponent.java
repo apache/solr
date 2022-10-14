@@ -20,11 +20,10 @@ package org.apache.solr.handler.component;
 import static org.junit.Assert.assertEquals;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -44,7 +43,7 @@ public class ResourceSharingTestComponent extends SearchComponent implements Sol
 
   @SuppressWarnings("SynchronizeOnNonFinalField")
   @Override
-  public void prepare(ResponseBuilder rb) throws IOException {
+  public void prepare(ResponseBuilder rb) {
     SolrParams params = rb.req.getParams();
     ModifiableSolrParams mParams = new ModifiableSolrParams(params);
     String q = "text:" + getTestObj().getLastCollection();
@@ -55,7 +54,7 @@ public class ResourceSharingTestComponent extends SearchComponent implements Sol
   }
 
   @Override
-  public void process(ResponseBuilder rb) throws IOException {}
+  public void process(ResponseBuilder rb) {}
 
   @Override
   public String getDescription() {
@@ -109,8 +108,7 @@ public class ResourceSharingTestComponent extends SearchComponent implements Sol
       // baz,bam
 
       try (Stream<String> lines =
-          new BufferedReader(new InputStreamReader(inputStream, Charset.forName("UTF-8")))
-              .lines()) {
+          new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8)).lines()) {
         lines.forEach(this::processSimpleCsvRow);
       } catch (Exception e) {
         log.error("failed to read dictionary {}", getResourceName());
@@ -124,7 +122,7 @@ public class ResourceSharingTestComponent extends SearchComponent implements Sol
       }
 
       // if we get here we have seen the data from the blob and all we need is to test that two
-      // collections are able to see the same object..
+      // collections are able to see the same object...
       return new TestObject();
     }
   }

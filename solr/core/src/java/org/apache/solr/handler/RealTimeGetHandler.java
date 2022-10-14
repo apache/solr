@@ -16,11 +16,13 @@
  */
 package org.apache.solr.handler;
 
+import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
-import org.apache.solr.api.ApiBag;
+import org.apache.solr.handler.admin.api.RealTimeGetAPI;
 import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.handler.component.RealTimeGetComponent;
 import org.apache.solr.handler.component.SearchHandler;
@@ -51,7 +53,7 @@ public class RealTimeGetHandler extends SearchHandler {
 
   @Override
   public Collection<Api> getApis() {
-    return ApiBag.wrapRequestHandlers(this, "core.RealtimeGet");
+    return Lists.newArrayList(AnnotatedApi.getApis(new RealTimeGetAPI(this)));
   }
 
   @Override

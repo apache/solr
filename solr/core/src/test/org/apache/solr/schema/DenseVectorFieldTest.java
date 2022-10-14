@@ -114,9 +114,9 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
   }
 
   @Test
-  public void fieldDefinition_advancedCodecHyperParamer_shouldLoadSchemaField() throws Exception {
+  public void fieldDefinition_advancedCodecHyperParameter_shouldLoadSchemaField() throws Exception {
     try {
-      initCore("solrconfig_codec.xml", "schema-densevector-codec-hyperparamer.xml");
+      initCore("solrconfig_codec.xml", "schema-densevector-codec-hyperparameter.xml");
       IndexSchema schema = h.getCore().getLatestSchema();
 
       SchemaField vector = schema.getField("vector");
@@ -125,7 +125,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       DenseVectorField type1 = (DenseVectorField) vector.getType();
       MatcherAssert.assertThat(type1.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
       MatcherAssert.assertThat(type1.getDimension(), is(4));
-      MatcherAssert.assertThat(type1.getCodecFormat(), is("Lucene90HnswVectorsFormat"));
+      MatcherAssert.assertThat(type1.getKnnAlgorithm(), is("hnsw"));
       MatcherAssert.assertThat(type1.getHnswMaxConn(), is(10));
       MatcherAssert.assertThat(type1.getHnswBeamWidth(), is(40));
 
@@ -135,9 +135,19 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       DenseVectorField type2 = (DenseVectorField) vector2.getType();
       MatcherAssert.assertThat(type2.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
       MatcherAssert.assertThat(type2.getDimension(), is(4));
-      MatcherAssert.assertThat(type2.getCodecFormat(), is("Lucene90HnswVectorsFormat"));
+      MatcherAssert.assertThat(type2.getKnnAlgorithm(), is("hnsw"));
       MatcherAssert.assertThat(type2.getHnswMaxConn(), is(6));
       MatcherAssert.assertThat(type2.getHnswBeamWidth(), is(60));
+
+      SchemaField vector3 = schema.getField("vector3");
+      assertNotNull(vector3);
+
+      DenseVectorField type3 = (DenseVectorField) vector3.getType();
+      MatcherAssert.assertThat(type3.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
+      MatcherAssert.assertThat(type3.getDimension(), is(5));
+      MatcherAssert.assertThat(type3.getKnnAlgorithm(), is("hnsw"));
+      MatcherAssert.assertThat(type3.getHnswMaxConn(), is(8));
+      MatcherAssert.assertThat(type3.getHnswBeamWidth(), is(46));
 
       SchemaField vectorDefault = schema.getField("vector_default");
       assertNotNull(vectorDefault);
@@ -146,7 +156,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       MatcherAssert.assertThat(
           typeDefault.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
       MatcherAssert.assertThat(typeDefault.getDimension(), is(4));
-      assertNull(typeDefault.getCodecFormat());
+      assertNull(typeDefault.getKnnAlgorithm());
       MatcherAssert.assertThat(typeDefault.getHnswMaxConn(), is(16));
       MatcherAssert.assertThat(typeDefault.getHnswBeamWidth(), is(100));
     } finally {
@@ -237,7 +247,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
   }
 
   /**
-   * The inputValue is an ArrayList with a type that dipends on the loader used: - {@link
+   * The inputValue is an ArrayList with a type that depends on the loader used: - {@link
    * org.apache.solr.handler.loader.XMLLoader}, {@link org.apache.solr.handler.loader.CSVLoader}
    * produces an ArrayList of String
    */
@@ -250,7 +260,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
   }
 
   /**
-   * The inputValue is an ArrayList with a type that dipends on the loader used: - {@link
+   * The inputValue is an ArrayList with a type that depends on the loader used: - {@link
    * org.apache.solr.handler.loader.JsonLoader} produces an ArrayList of Double
    */
   @Test
@@ -262,7 +272,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
   }
 
   /**
-   * The inputValue is an ArrayList with a type that dipends on the loader used: - {@link
+   * The inputValue is an ArrayList with a type that depends on the loader used: - {@link
    * org.apache.solr.handler.loader.JavabinLoader} produces an ArrayList of Float
    */
   @Test

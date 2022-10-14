@@ -21,6 +21,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.mockito.Mockito.mock;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
@@ -28,15 +29,19 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ClusterProperties;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.*;
+import org.apache.solr.core.CloudConfig;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -44,22 +49,21 @@ import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.data.Stat;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
-@Slow
 @SolrTestCaseJ4.SuppressSSL
 public class ZkControllerTest extends SolrTestCaseJ4 {
-
-  private static final String COLLECTION_NAME = "collection1";
 
   static final int TIMEOUT = 10000;
 
   @BeforeClass
-  public static void beforeClass() throws Exception {}
+  public static void beforeClass() {}
 
   @AfterClass
-  public static void afterClass() throws Exception {}
+  public static void afterClass() {}
 
   public void testNodeNameUrlConversion() throws Exception {
 
@@ -201,15 +205,14 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     }
   }
 
-  @Slow
   @LogLevel(value = "org.apache.solr.cloud=DEBUG;org.apache.solr.cloud.overseer=DEBUG")
   public void testPublishAndWaitForDownStates() throws Exception {
 
     /*
     This test asserts that if zkController.publishAndWaitForDownStates uses only core name to check if all local
     cores are down then the method will return immediately but if it uses coreNodeName (as it does after SOLR-6665 then
-    the method will timeout).
-    We setup the cluster state in such a way that two replicas with same core name exist on non-existent nodes
+    the method will time out).
+    We set up the cluster state in such a way that two replicas with same core name exist on non-existent nodes
     and core container also has a dummy core that has the same core name. The publishAndWaitForDownStates before SOLR-6665
     would only check the core names and therefore return immediately but after SOLR-6665 it should time out.
      */
@@ -255,7 +258,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
         zkController
             .getZkClient()
             .makePath(
-                ZkStateReader.getCollectionPathRoot(collectionName),
+                DocCollection.getCollectionPathRoot(collectionName),
                 new byte[0],
                 CreateMode.PERSISTENT,
                 true);
@@ -331,6 +334,63 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       } finally {
         if (zkController != null) zkController.close();
         cc.shutdown();
+      }
+    } finally {
+      server.shutdown();
+    }
+  }
+
+  @Test
+  public void testTouchConfDir() throws Exception {
+    Path zkDir = createTempDir("zkData");
+    ZkTestServer server = new ZkTestServer(zkDir);
+    try {
+      server.run();
+      try (SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT)) {
+        CoreContainer cc = getCoreContainer();
+        try {
+          CloudConfig cloudConfig =
+              new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "solr").build();
+          try (ZkController zkController =
+              new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig, () -> null)) {
+            final Path dir = createTempDir();
+            final String configsetName = "testconfigset";
+            try (ZkSolrResourceLoader loader =
+                new ZkSolrResourceLoader(dir, configsetName, null, zkController)) {
+              String zkpath = "/configs/" + configsetName;
+
+              // touchConfDir doesn't make the znode
+              Stat s = new Stat();
+              assertFalse(zkClient.exists(zkpath, true));
+              zkClient.makePath(zkpath, true);
+              assertTrue(zkClient.exists(zkpath, true));
+              assertNull(zkClient.getData(zkpath, null, s, true));
+              assertEquals(0, s.getVersion());
+
+              // touchConfDir should only set the data to new byte[] {0}
+              ZkController.touchConfDir(loader);
+              assertTrue(zkClient.exists(zkpath, true));
+              assertArrayEquals(
+                  ZkController.TOUCHED_ZNODE_DATA, zkClient.getData(zkpath, null, s, true));
+              assertEquals(1, s.getVersion());
+
+              // set new data to check if touchConfDir overwrites later
+              byte[] data = "{\"key\", \"new data\"".getBytes(StandardCharsets.UTF_8);
+              s = zkClient.setData(zkpath, data, true);
+              assertEquals(2, s.getVersion());
+
+              // make sure touchConfDir doesn't overwrite existing data.
+              // touchConfDir should update version.
+              assertTrue(zkClient.exists(zkpath, true));
+              ZkController.touchConfDir(loader);
+              assertTrue(zkClient.exists(zkpath, true));
+              assertArrayEquals(data, zkClient.getData(zkpath, null, s, true));
+              assertEquals(3, s.getVersion());
+            }
+          }
+        } finally {
+          cc.shutdown();
+        }
       }
     } finally {
       server.shutdown();

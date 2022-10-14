@@ -64,7 +64,7 @@ public class SolrQueryParserBaseTest {
   private MockSolrQueryParser solrQueryParser;
 
   @Before
-  public void setUp() throws Exception {
+  public void setUp() {
     solrQueryParser = new MockSolrQueryParser();
   }
 

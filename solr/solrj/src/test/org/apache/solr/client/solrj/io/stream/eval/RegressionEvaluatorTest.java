@@ -35,7 +35,7 @@ public class RegressionEvaluatorTest extends SolrTestCase {
   public RegressionEvaluatorTest() {
     super();
     factory = new StreamFactory().withFunctionName("regress", RegressionEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @Test

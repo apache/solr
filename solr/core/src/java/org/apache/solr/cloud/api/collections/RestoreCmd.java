@@ -17,7 +17,13 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import static org.apache.solr.common.cloud.ZkStateReader.*;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
@@ -50,6 +56,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaPosition;
@@ -313,7 +320,9 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
         ConfigSetService configSetService)
         throws IOException {
       if (configSetService.checkConfigExists(restoreConfigName)) {
-        log.info("Using existing config {}", restoreConfigName);
+        log.warn(
+            "Config with name {} already exists. Skipping upload to Zookeeper and using existing config.",
+            restoreConfigName);
         // TODO add overwrite option?
       } else {
         log.info("Uploading config {}", restoreConfigName);
@@ -355,9 +364,10 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       // router.*
       @SuppressWarnings({"unchecked"})
       Map<String, Object> routerProps =
-          (Map<String, Object>) backupCollectionState.getProperties().get(DocCollection.DOC_ROUTER);
+          (Map<String, Object>)
+              backupCollectionState.getProperties().get(CollectionStateProps.DOC_ROUTER);
       for (Map.Entry<String, Object> pair : routerProps.entrySet()) {
-        propMap.put(DocCollection.DOC_ROUTER + "." + pair.getKey(), pair.getValue());
+        propMap.put(CollectionStateProps.DOC_ROUTER + "." + pair.getKey(), pair.getValue());
       }
 
       Set<String> sliceNames = backupCollectionState.getActiveSlicesMap().keySet();

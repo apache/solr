@@ -36,7 +36,7 @@ public class TangentEvaluatorTest extends SolrTestCase {
     super();
 
     factory = new StreamFactory().withFunctionName("tan", TangentEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   private void test(Double value) throws IOException {

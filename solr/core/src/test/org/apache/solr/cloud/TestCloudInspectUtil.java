@@ -41,7 +41,7 @@ public class TestCloudInspectUtil extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testCheckIfDiffIsLegal() throws Exception {
+  public void testCheckIfDiffIsLegal() {
     Set<String> addFails = null;
     Set<String> deleteFails = null;
     SolrDocumentList a = getDocList("2", "3");
@@ -53,8 +53,8 @@ public class TestCloudInspectUtil extends SolrTestCaseJ4 {
 
     // ################################
 
-    addFails = new HashSet<String>();
-    deleteFails = new HashSet<String>();
+    addFails = new HashSet<>();
+    deleteFails = new HashSet<>();
 
     a = getDocList("2", "3", "4");
     b = getDocList("2", "3");
@@ -66,8 +66,8 @@ public class TestCloudInspectUtil extends SolrTestCaseJ4 {
 
     // ################################
 
-    addFails = new HashSet<String>();
-    deleteFails = new HashSet<String>();
+    addFails = new HashSet<>();
+    deleteFails = new HashSet<>();
 
     a = getDocList("2", "3", "4");
     b = getDocList("2", "3", "5");
@@ -80,8 +80,8 @@ public class TestCloudInspectUtil extends SolrTestCaseJ4 {
 
     // ################################
 
-    addFails = new HashSet<String>();
-    deleteFails = new HashSet<String>();
+    addFails = new HashSet<>();
+    deleteFails = new HashSet<>();
 
     a = getDocList("2", "3", "4");
     b = getDocList("2", "3", "5");
@@ -94,8 +94,8 @@ public class TestCloudInspectUtil extends SolrTestCaseJ4 {
 
     // ################################
 
-    final HashSet<String> addFailsExpectEx = new HashSet<String>();
-    final HashSet<String> deleteFailsExpectEx = new HashSet<String>();
+    final HashSet<String> addFailsExpectEx = new HashSet<>();
+    final HashSet<String> deleteFailsExpectEx = new HashSet<>();
 
     final SolrDocumentList aExpectEx = getDocList("2", "3", "4");
     final SolrDocumentList bExpectEx = getDocList("2", "3", "4");

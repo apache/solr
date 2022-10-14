@@ -16,7 +16,18 @@
  */
 package org.apache.solr.metrics;
 
-import com.codahale.metrics.*;
+import com.codahale.metrics.Clock;
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.ExponentiallyDecayingReservoir;
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Reservoir;
+import com.codahale.metrics.SlidingTimeWindowReservoir;
+import com.codahale.metrics.SlidingWindowReservoir;
+import com.codahale.metrics.Timer;
+import com.codahale.metrics.UniformReservoir;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
@@ -101,7 +112,7 @@ public class MetricSuppliers {
     }
   }
 
-  private static Clock getClock(PluginInfo info, String param) {
+  public static Clock getClock(PluginInfo info, String param) {
     if (info == null) {
       return Clock.defaultClock();
     }

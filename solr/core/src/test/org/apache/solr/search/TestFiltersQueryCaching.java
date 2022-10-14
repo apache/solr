@@ -16,6 +16,10 @@
  */
 package org.apache.solr.search;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
@@ -193,5 +197,24 @@ public class TestFiltersQueryCaching extends SolrTestCaseJ4 {
     filterCacheMetrics = lookupFilterCacheMetrics(core);
     assertEquals(3, (long) filterCacheMetrics.get("inserts")); // added top-level
     assertEquals(6, (long) filterCacheMetrics.get("hits"));
+  }
+
+  @Test
+  public void testAbsentParams() throws Exception {
+    // no `fqs` at all
+    doTestAbsentParams(Collections.emptyList(), NUM_DOCS);
+    // simple term query `fqs`
+    doTestAbsentParams(List.of("fqs", "{!term f=field_s v='d0'}"), 1);
+    // empty `fqs`
+    doTestAbsentParams(List.of("fqs", ""), NUM_DOCS);
+  }
+
+  private static void doTestAbsentParams(Collection<String> fqsArgs, int expectNumFound)
+      throws Exception {
+    List<String> request = new ArrayList<>();
+    request.addAll(List.of("q", "*:*", "indent", "true", "fq", "{!filters param=$fqs}"));
+    request.addAll(fqsArgs);
+    assertJQ(
+        req(request.toArray(new String[request.size()])), "/response/numFound==" + expectNumFound);
   }
 }

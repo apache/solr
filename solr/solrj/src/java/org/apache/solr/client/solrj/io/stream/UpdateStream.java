@@ -166,7 +166,7 @@ public class UpdateStream extends TupleStream implements Expressible {
 
   @Override
   public List<TupleStream> children() {
-    ArrayList<TupleStream> sourceList = new ArrayList<TupleStream>(1);
+    ArrayList<TupleStream> sourceList = new ArrayList<>(1);
     sourceList.add(tupleSource);
     return sourceList;
   }

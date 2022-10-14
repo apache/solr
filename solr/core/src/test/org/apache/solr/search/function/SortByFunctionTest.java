@@ -36,7 +36,7 @@ public class SortByFunctionTest extends SolrTestCaseJ4 {
     assertU(commit());
   }
 
-  public void test() throws Exception {
+  public void test() {
     assertU(
         adoc("id", "1", "x_td1", "0", "y_td1", "2", "w_td1", "25", "z_td1", "5", "f_t", "ipod"));
     assertU(
@@ -133,7 +133,7 @@ public class SortByFunctionTest extends SolrTestCaseJ4 {
         "//result/doc[4]/str[@name='id'][.='3']");
   }
 
-  public void testSortJoinDocFreq() throws Exception {
+  public void testSortJoinDocFreq() {
     assertU(
         adoc(
             "id",
@@ -187,11 +187,11 @@ public class SortByFunctionTest extends SolrTestCaseJ4 {
   /**
    * Sort by function normally compares the double value, but if a function is specified that
    * identifies a single field, we should use the underlying field's SortField to save of a lot of
-   * type converstion (and RAM), and keep the sort precision as high as possible
+   * type conversion (and RAM), and keep the sort precision as high as possible
    *
    * @see #getFieldFunctionClausesToTest
    */
-  public void testFieldSortSpecifiedAsFunction() throws Exception {
+  public void testFieldSortSpecifiedAsFunction() {
     final long A = Long.MIN_VALUE;
     final long B = A + 1L;
     final long C = B + 1L;
@@ -200,9 +200,9 @@ public class SortByFunctionTest extends SolrTestCaseJ4 {
     final long Y = Z - 1L;
     final long X = Y - 1L;
 
-    // test is predicated on the idea that if long -> double converstion is happening under the hood
+    // test is predicated on the idea that if long -> double conversion is happening under the hood
     // then we lose precision in sorting; so lets sanity check that our JVM isn't doing something
-    // wacky in converstion that violates the principle of the test
+    // wacky in conversion that violates the principle of the test
 
     assertEquals(
         "WTF? small longs cast to double aren't equivalent?", (double) A, (double) B, 0.0D);

@@ -86,7 +86,6 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
 
     SolrClient client0 = clients.get(0);
     SolrClient client1 = clients.get(1);
-    SolrClient client2 = clients.get(2);
 
     int v = 0;
     add(client0, seenLeader, sdoc("id", "1", "_version_", ++v));
@@ -190,7 +189,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     // Test that handling reorders work when applying docs retrieved from peer
     //
 
-    // this should cause us to retrieve the delete (but not the following add)
+    // this should cause us to retrieve the delete operation (but not the following add)
     // the reorder in application shouldn't affect anything
     add(client0, seenLeader, sdoc("id", "3000", "_version_", 3001));
     add(client1, seenLeader, sdoc("id", "3000", "_version_", 3001));
@@ -238,11 +237,11 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
       System.clearProperty("solr.disableFingerprint");
     }
 
-    // lets add the missing document and verify that order doesn't matter
+    // let's add the missing document and verify that order doesn't matter
     add(client1, seenLeader, sdoc("id", Integer.toString(v), "_version_", v));
     assertSync(client1, numVersions, true, shardsArr[0]);
 
-    // lets do some overwrites to ensure that repeated updates and maxDoc don't matter
+    // let's do some overwrites to ensure that repeated updates and maxDoc don't matter
     for (int i = 0; i < 10; i++) {
       // add individually instead of in batch to create more writes
       add(client0, seenLeader, sdoc("id", Integer.toString(v + i + 1), "_version_", v + i + 1));
@@ -251,7 +250,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
 
     validateDocs(docsAdded, client0, client1);
 
-    // lets add some in-place updates
+    // let's add some in-place updates
     add(
         client0,
         seenLeader,
@@ -395,7 +394,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     // sync should fail since there's not enough overlap to give us confidence
     assertSync(client1, numVersions, false, shardsArr[0]);
 
-    // add some of the docs that were missing... just enough to give enough overlap
+    // add some docs that were missing... just enough to give enough overlap
     int toAdd2 = (int) (numVersions * .25);
     for (int i = 0; i < toAdd2; i++) {
       add(client1, seenLeader, sdoc("id", Integer.toString(i + 11), "_version_", v + i + 1));
@@ -440,7 +439,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     assertEquals(docsAdded.size(), qacResponse.getResults().getNumFound());
   }
 
-  private static void handleVersionsWithRangesTests() throws Exception {
+  private static void handleVersionsWithRangesTests() {
     testHandleVersionsWithRangesNoOther();
     testHandleVersionsWithRangesSameOne();
     testHandleVersionsWithRangesMissingOneOfTwo(false /* highestMissing */);
@@ -451,7 +450,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     testHandleVersionsWithRangesMissingTwoRanges();
   }
 
-  private static void testHandleVersionsWithRangesNoOther() throws Exception {
+  private static void testHandleVersionsWithRangesNoOther() {
     // no other, solitary us
     for (boolean completeList : new boolean[] {false, true}) {
       List<Long> otherVersions = Collections.emptyList();
@@ -467,7 +466,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     }
   }
 
-  private static void testHandleVersionsWithRangesSameOne() throws Exception {
+  private static void testHandleVersionsWithRangesSameOne() {
     for (boolean completeList : new boolean[] {false, true}) {
       List<Long> otherVersions = Collections.singletonList(42L);
       List<Long> ourUpdates = Collections.singletonList(42L);
@@ -482,8 +481,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     }
   }
 
-  private static void testHandleVersionsWithRangesMissingOneOfTwo(boolean highestMissing)
-      throws Exception {
+  private static void testHandleVersionsWithRangesMissingOneOfTwo(boolean highestMissing) {
     for (boolean completeList : new boolean[] {false, true}) {
       LinkedList<Long> otherVersions = new LinkedList<>(List.of(44L, 22L));
       LinkedList<Long> ourUpdates = new LinkedList<>(otherVersions);
@@ -502,13 +500,13 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
         /*
          * request one update for the missing one, because
          * the missing one is the highest (i.e. latest) or because
-         * it's not the highest/latest but we need a complete list
+         * it's not the highest/latest, but we need a complete list
          */
         assertEquals(1L, mur.totalRequestedUpdates);
         assertEquals(missing + "..." + missing, mur.versionsAndRanges);
       } else {
         /*
-         * request no updates because we already have the highest/latest and
+         * request no updates because we already have the highest/latest, and
          * we don't need a complete list i.e. missing earlier-than-latest is okay
          */
         assertTrue(missing < ourLowThreshold);
@@ -518,7 +516,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     }
   }
 
-  private static void testHandleVersionsWithRangesMissingMiddleOfThree() throws Exception {
+  private static void testHandleVersionsWithRangesMissingMiddleOfThree() {
     for (boolean completeList : new boolean[] {false, true}) {
       List<Long> otherVersions = List.of(55L, 33L, 11L);
       LinkedList<Long> ourUpdates = new LinkedList<>(otherVersions);
@@ -555,8 +553,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     }
   }
 
-  private static void testHandleVersionsWithRangesMissingOneRange(boolean duplicateMiddle)
-      throws Exception {
+  private static void testHandleVersionsWithRangesMissingOneRange(boolean duplicateMiddle) {
     for (boolean completeList : new boolean[] {false, true}) {
       List<Long> otherVersions =
           duplicateMiddle
@@ -627,7 +624,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     }
   }
 
-  private static void testHandleVersionsWithRangesMissingTwoRanges() throws Exception {
+  private static void testHandleVersionsWithRangesMissingTwoRanges() {
     for (boolean completeList : new boolean[] {false, true}) {
       LinkedList<Long> otherVersions =
           new LinkedList<>(List.of(9L, 8L, 7L, 6L, 5L, 4L, 3L, 2L, 1L));

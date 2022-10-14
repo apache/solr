@@ -44,7 +44,7 @@ import org.apache.solr.search.SolrIndexSearcher;
  * Abstract base class for all Lucene-based spell checking implementations.
  *
  * <p>Refer to <a
- * href="https://solr.apache.org/guide/spell-checking.html">https://solr.apache.org/guide/spell-checking.html</a>
+ * href="https://solr.apache.org/guide/solr/latest/query-guide/spell-checking.html">https://solr.apache.org/guide/solr/latest/query-guide/spell-checking.html</a>
  * for more details.
  *
  * @since solr 1.3
@@ -141,6 +141,10 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
 
     int count = Math.max(options.count, AbstractLuceneSpellChecker.DEFAULT_SUGGESTION_COUNT);
     for (Token token : options.tokens) {
+      if (token.length() == 0) {
+        result.add(token, Collections.emptyList());
+        continue;
+      }
       String tokenText = new String(token.buffer(), 0, token.length());
       term = new Term(field, tokenText);
       int docFreq = 0;

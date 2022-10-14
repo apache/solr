@@ -18,9 +18,10 @@ package org.apache.solr.spelling;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressTempFileChecks;
+import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase.SuppressTempFileChecks;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -80,8 +81,8 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
               Collection<Token> tokens = queryConverter.convert("fob");
               SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.getIndexReader());
               SpellingResult result = checker.getSuggestions(spellOpts);
-              assertTrue("result is null and it shouldn't be", result != null);
-              Map<String, Integer> suggestions = result.get(tokens.iterator().next());
+              assertNotNull("result shouldn't be null", result);
+              Map<String, Integer> suggestions = result.get(spellOpts.tokens.iterator().next());
               Map.Entry<String, Integer> entry = suggestions.entrySet().iterator().next();
               assertTrue(
                   entry.getKey() + " is not equal to " + "foo",
@@ -92,9 +93,18 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
 
               spellOpts.tokens = queryConverter.convert("super");
               result = checker.getSuggestions(spellOpts);
-              assertTrue("result is null and it shouldn't be", result != null);
-              suggestions = result.get(tokens.iterator().next());
-              assertTrue("suggestions is not null and it should be", suggestions == null);
+              assertNotNull("result shouldn't be null", result);
+              suggestions = result.get(spellOpts.tokens.iterator().next());
+              assertNotNull("suggestions shouldn't be null", suggestions);
+              assertTrue("suggestions should be empty", suggestions.isEmpty());
+
+              // Check empty token due to spellcheck.q = ""
+              spellOpts.tokens = Collections.singletonList(new Token("", 0, 0));
+              result = checker.getSuggestions(spellOpts);
+              assertNotNull("result shouldn't be null", result);
+              suggestions = result.get(spellOpts.tokens.iterator().next());
+              assertNotNull("suggestions shouldn't be null", suggestions);
+              assertTrue("suggestions should be empty", suggestions.isEmpty());
               return null;
             });
   }
@@ -125,7 +135,7 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
               SpellingResult result = checker.getSuggestions(spellOpts);
               assertTrue("result is null and it shouldn't be", result != null);
               // should be lowercased, b/c we are using a lowercasing analyzer
-              Map<String, Integer> suggestions = result.get(tokens.iterator().next());
+              Map<String, Integer> suggestions = result.get(spellOpts.tokens.iterator().next());
               assertTrue(
                   "suggestions Size: " + suggestions.size() + " is not: " + 1,
                   suggestions.size() == 1);
@@ -140,9 +150,10 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
               // test something not in the spell checker
               spellOpts.tokens = queryConverter.convert("super");
               result = checker.getSuggestions(spellOpts);
-              assertTrue("result is null and it shouldn't be", result != null);
-              suggestions = result.get(tokens.iterator().next());
-              assertTrue("suggestions is not null and it should be", suggestions == null);
+              assertNotNull("result shouldn't be null", result);
+              suggestions = result.get(spellOpts.tokens.iterator().next());
+              assertNotNull("suggestions shouldn't be null", suggestions);
+              assertTrue("suggestions should be empty", suggestions.isEmpty());
               return null;
             });
   }
@@ -172,9 +183,9 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
               Collection<Token> tokens = queryConverter.convert("solar");
               SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.getIndexReader());
               SpellingResult result = checker.getSuggestions(spellOpts);
-              assertTrue("result is null and it shouldn't be", result != null);
+              assertNotNull("result shouldn't be null", result);
               // should be lowercased, b/c we are using a lowercasing analyzer
-              Map<String, Integer> suggestions = result.get(tokens.iterator().next());
+              Map<String, Integer> suggestions = result.get(spellOpts.tokens.iterator().next());
               assertTrue(
                   "suggestions Size: " + suggestions.size() + " is not: " + 1,
                   suggestions.size() == 1);
@@ -188,9 +199,10 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
 
               spellOpts.tokens = queryConverter.convert("super");
               result = checker.getSuggestions(spellOpts);
-              assertTrue("result is null and it shouldn't be", result != null);
+              assertNotNull("result shouldn't be null", result);
               suggestions = result.get(spellOpts.tokens.iterator().next());
-              assertTrue("suggestions size should be 0", suggestions.size() == 0);
+              assertNotNull("suggestions shouldn't be null", suggestions);
+              assertTrue("suggestions should be empty", suggestions.isEmpty());
               return null;
             });
   }

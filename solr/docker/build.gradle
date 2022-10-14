@@ -269,8 +269,7 @@ ext {
       //
       // Values identical in both Dockerfiles should use consistent names in both templates and
       // be defined in the task creation
-      
-      'SOLR_VERSION': version,
+
       // NOTE: SHA is lazy computed...
       'SOLR_TGZ_SHA': "${ -> checksum(configurations.solrTgz.singleFile) }",
       'RELEASE_MANAGER_GPG_FINGERPRINT': "${releaseGpgFingerprint}"
@@ -296,6 +295,7 @@ The final Dockerfiles are merely the snippet headers combined with the snippet b
   def props = [
     // Values defined here should be common (and consistent) across both Dockerfiles
     'BASE_IMAGE': baseDockerImage,
+    'SOLR_VERSION': version,
     * : details.props
   ]
   tasks.create("createDockerfile${details.name}", Copy) {

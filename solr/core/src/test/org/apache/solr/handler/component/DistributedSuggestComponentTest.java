@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import junit.framework.Assert;
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.util.NamedList;
@@ -34,7 +33,6 @@ import org.junit.Test;
  *
  * @see org.apache.solr.handler.component.SuggestComponent
  */
-@Slow
 public class DistributedSuggestComponentTest extends BaseDistributedSearchTestCase {
 
   public DistributedSuggestComponentTest() {
@@ -52,7 +50,7 @@ public class DistributedSuggestComponentTest extends BaseDistributedSearchTestCa
   }
 
   @Override
-  public void validateControlData(QueryResponse control) throws Exception {
+  public void validateControlData(QueryResponse control) {
     NamedList<Object> nl = control.getResponse();
     @SuppressWarnings("unchecked")
     NamedList<SimpleOrderedMap<NamedList<Object>>> sc =

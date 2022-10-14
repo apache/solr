@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import java.io.IOException;
 import java.io.StringReader;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -41,19 +40,16 @@ import org.junit.Test;
 /** Tests the UpdateRequestHandler support for XML updates. */
 public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
   private static XMLInputFactory inputFactory;
-  protected static UpdateRequestHandler handler;
 
   @BeforeClass
   public static void beforeTests() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
-    handler = new UpdateRequestHandler();
     inputFactory = XMLInputFactory.newInstance();
   }
 
   @AfterClass
   public static void afterTests() {
     inputFactory = null;
-    handler = null;
   }
 
   @Test
@@ -135,7 +131,7 @@ public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
     req.close();
   }
 
-  public void testNamedEntity() throws Exception {
+  public void testNamedEntity() {
     assertU(
         "<?xml version=\"1.0\" ?>\n"
             + "<!DOCTYPE add [\n<!ENTITY wacky \"zzz\" >\n]>"
@@ -193,7 +189,7 @@ public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void XMLLoader_denseVector_shouldIndexCorrectly() throws Exception {
+  public void XMLLoader_denseVector_shouldIndexCorrectly() {
     assertU(
         "<?xml version=\"1.0\" ?>\n"
             + "<add><doc>"
@@ -239,7 +235,7 @@ public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    public void processDelete(DeleteUpdateCommand cmd) throws IOException {
+    public void processDelete(DeleteUpdateCommand cmd) {
       DeleteUpdateCommand expected = deleteCommands.poll();
       assertNotNull("Unexpected delete command: [" + cmd + "]", expected);
       assertTrue(

@@ -97,7 +97,7 @@ public class KnnStream extends TupleStream implements Expressible {
     }
 
     // pull out known named params
-    Map<String, String> params = new HashMap<String, String>();
+    Map<String, String> params = new HashMap<>();
     for (StreamExpressionNamedParameter namedParam : namedParams) {
       if (!namedParam.getName().equals("zkHost") && !namedParam.getName().equals("id")) {
         params.put(namedParam.getName(), namedParam.getParameter().toString().trim());

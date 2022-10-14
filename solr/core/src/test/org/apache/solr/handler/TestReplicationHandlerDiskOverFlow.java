@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -60,8 +60,6 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
   JettySolrRunner leaderJetty, followerJetty;
   SolrClient leaderClient, followerClient;
   ReplicationTestHelper.SolrInstance leader = null, follower = null;
-
-  static String context = "/solr";
 
   @Before
   public void setUp() throws Exception {
@@ -235,7 +233,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
                 .add("qt", "/replication")
                 .add("command", ReplicationHandler.CMD_DETAILS));
     if (log.isInfoEnabled()) {
-      log.info("DETAILS {}", Utils.writeJson(response, new StringWriter(), true).toString());
+      log.info("DETAILS {}", Utils.writeJson(response, new StringWriter(), true));
     }
     assertEquals(
         "follower's clearedLocalIndexFirst (from rep details)",

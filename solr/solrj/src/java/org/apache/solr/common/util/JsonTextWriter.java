@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 
@@ -293,15 +294,15 @@ public interface JsonTextWriter extends TextWriter {
     String namedListStyle = getNamedListStyle();
     if (val instanceof SimpleOrderedMap) {
       writeNamedListAsMapWithDups(name, val);
-    } else if (namedListStyle == JSON_NL_FLAT) {
+    } else if (Objects.equals(namedListStyle, JSON_NL_FLAT)) {
       writeNamedListAsFlat(name, val);
-    } else if (namedListStyle == JSON_NL_MAP) {
+    } else if (Objects.equals(namedListStyle, JSON_NL_MAP)) {
       writeNamedListAsMapWithDups(name, val);
-    } else if (namedListStyle == JSON_NL_ARROFARR) {
+    } else if (Objects.equals(namedListStyle, JSON_NL_ARROFARR)) {
       writeNamedListAsArrArr(name, val);
-    } else if (namedListStyle == JSON_NL_ARROFMAP) {
+    } else if (Objects.equals(namedListStyle, JSON_NL_ARROFMAP)) {
       writeNamedListAsArrMap(name, val);
-    } else if (namedListStyle == JSON_NL_ARROFNTV) {
+    } else if (Objects.equals(namedListStyle, JSON_NL_ARROFNTV)) {
       throw new UnsupportedOperationException(
           namedListStyle + " namedListStyle must only be used with ArrayOfNameTypeValueJSONWriter");
     }

@@ -26,10 +26,12 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
-import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.zookeeper.KeeperException;
 
 // Collect useful operations for testing assigning properties to individual replicas
 // Could probably expand this to do something creative with getting random slices
@@ -38,9 +40,8 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
 
   public static NamedList<Object> doPropertyAction(CloudSolrClient client, String... paramsIn)
       throws IOException, SolrServerException {
-    assertTrue(
-        "paramsIn must be an even multiple of 2, it is: " + paramsIn.length,
-        (paramsIn.length % 2) == 0);
+    assertEquals(
+        "paramsIn must be a multiple of 2, it is: " + paramsIn.length, 0, (paramsIn.length % 2));
     ModifiableSolrParams params = new ModifiableSolrParams();
     for (int idx = 0; idx < paramsIn.length; idx += 2) {
       params.set(paramsIn[idx], paramsIn[idx + 1]);
@@ -52,7 +53,7 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
 
   public static void verifyPropertyNotPresent(
       CloudSolrClient client, String collectionName, String replicaName, String property)
-      throws KeeperException, InterruptedException {
+      throws InterruptedException {
     ClusterState clusterState = null;
     Replica replica = null;
     for (int idx = 0; idx < 300; ++idx) {
@@ -75,7 +76,7 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
             + ". Replica props: "
             + replica.getProperties().toString()
             + ". Cluster state is "
-            + clusterState.toString());
+            + clusterState);
   }
 
   // The params are triplets,
@@ -88,7 +89,7 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
       String replicaName,
       String property,
       String val)
-      throws InterruptedException, KeeperException {
+      throws InterruptedException {
     Replica replica = null;
     ClusterState clusterState = null;
 
@@ -122,20 +123,18 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
   // 1> the property is only set once in all the replicas in a slice.
   // 2> the property is balanced evenly across all the nodes hosting collection
   public static void verifyUniqueAcrossCollection(
-      CloudSolrClient client, String collectionName, String property)
-      throws KeeperException, InterruptedException {
+      CloudSolrClient client, String collectionName, String property) throws InterruptedException {
     verifyUnique(client, collectionName, property, true);
   }
 
   public static void verifyUniquePropertyWithinCollection(
-      CloudSolrClient client, String collectionName, String property)
-      throws KeeperException, InterruptedException {
+      CloudSolrClient client, String collectionName, String property) throws InterruptedException {
     verifyUnique(client, collectionName, property, false);
   }
 
   public static void verifyUnique(
       CloudSolrClient client, String collectionName, String property, boolean balanced)
-      throws KeeperException, InterruptedException {
+      throws InterruptedException {
 
     DocCollection col = null;
     for (int idx = 0; idx < 300; ++idx) {
@@ -200,6 +199,6 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
         "Collection "
             + collectionName
             + " does not have roles evenly distributed. Collection is: "
-            + col.toString());
+            + col);
   }
 }

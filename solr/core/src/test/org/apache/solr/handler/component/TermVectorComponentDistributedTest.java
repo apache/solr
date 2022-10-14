@@ -16,8 +16,8 @@
  */
 package org.apache.solr.handler.component;
 
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.TermVectorParams;

@@ -47,8 +47,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.xml.parsers.ParserConfigurationException;
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
@@ -107,9 +105,7 @@ import org.mockito.plugins.MemberAccessor;
 import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xml.sax.SAXException;
 
-@Slow
 @SolrTestCaseJ4.SuppressSSL
 public class OverseerTest extends SolrTestCaseJ4 {
 
@@ -144,7 +140,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     private List<Overseer> overseers;
 
     public MockZKController(String zkAddress, String nodeName, List<Overseer> overseers)
-        throws InterruptedException, TimeoutException, IOException, KeeperException {
+        throws InterruptedException, IOException, KeeperException {
       this.overseers = overseers;
       this.nodeName = nodeName;
       zkClient = new SolrZkClient(zkAddress, TIMEOUT);
@@ -191,7 +187,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
      * OverseerTest#createCollection(String, int)}.
      */
     public void createCollection(String collection, int numShards) throws Exception {
-      // Create collection znode before having ClusterStateUpdater create state.json below it or it
+      // Create collection znode before having ClusterStateUpdater create state.json below, or it
       // will fail.
       zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection, true);
 
@@ -343,10 +339,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
       }
       return null;
     }
-
-    public ZkStateReader getZkReader() {
-      return zkStateReader;
-    }
   }
 
   @BeforeClass
@@ -449,7 +441,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
    * obtained.
    */
   private void createCollection(String collection, int numShards) throws Exception {
-    // Create collection znode before having ClusterStateUpdater create state.json below it or it
+    // Create collection znode before having ClusterStateUpdater create state.json below, or it
     // will fail.
     zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection, true);
 
@@ -756,7 +748,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
   // wait until collections are available
   private void waitForCollections(ZkStateReader stateReader, String... collections)
-      throws InterruptedException, KeeperException, TimeoutException {
+      throws InterruptedException, TimeoutException {
     int maxIterations = 100;
     while (0 < maxIterations--) {
 
@@ -856,7 +848,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
   private void verifyShardLeader(
       ZkStateReader reader, String collection, String shard, String expectedCore)
-      throws InterruptedException, KeeperException, TimeoutException {
+      throws InterruptedException, TimeoutException {
 
     reader.waitForState(
         collection,
@@ -915,8 +907,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
       overseerClient = electNewOverseer(server.getZkAddress());
 
       mockController.createCollection(COLLECTION, 1);
-
-      ZkController zkController = createMockZkController(server.getZkAddress(), zkClient, reader);
 
       mockController.publishState(
           COLLECTION,
@@ -1193,7 +1183,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       ZkController.createClusterZkNodes(zkClient);
 
       killer = new OverseerRestarter(server.getZkAddress());
-      killerThread = new Thread(killer);
+      killerThread = new Thread(killer, "OverseerRestarter");
       killerThread.start();
 
       reader = new ZkStateReader(zkClient);
@@ -1385,8 +1375,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
       overseerClient = electNewOverseer(server.getZkAddress());
 
       mockController.createCollection(COLLECTION, 1);
-
-      ZkController zkController = createMockZkController(server.getZkAddress(), zkClient, reader);
 
       mockController.publishState(
           COLLECTION,
@@ -1831,15 +1819,14 @@ public class OverseerTest extends SolrTestCaseJ4 {
     }
   }
 
-  private void close(SolrZkClient client) throws InterruptedException {
+  private void close(SolrZkClient client) {
     if (client != null) {
       client.close();
     }
   }
 
   private SolrZkClient electNewOverseer(String address)
-      throws InterruptedException, TimeoutException, IOException, KeeperException,
-          ParserConfigurationException, SAXException, NoSuchFieldException, SecurityException,
+      throws InterruptedException, KeeperException, NoSuchFieldException, SecurityException,
           IllegalAccessException {
     SolrZkClient zkClient = new SolrZkClient(address, TIMEOUT);
     zkClients.add(zkClient);
@@ -1938,14 +1925,11 @@ public class OverseerTest extends SolrTestCaseJ4 {
     when(zkController.getLeaderProps(anyString(), anyString(), anyInt())).thenCallRealMethod();
     when(zkController.getLeaderProps(anyString(), anyString(), anyInt(), anyBoolean()))
         .thenCallRealMethod();
-    doReturn(getCloudDataProvider(zkAddress, zkClient, reader))
-        .when(zkController)
-        .getSolrCloudManager();
+    doReturn(getCloudDataProvider(zkAddress, zkClient)).when(zkController).getSolrCloudManager();
     return zkController;
   }
 
-  private SolrCloudManager getCloudDataProvider(
-      String zkAddress, SolrZkClient zkClient, ZkStateReader reader) {
+  private SolrCloudManager getCloudDataProvider(String zkAddress, SolrZkClient zkClient) {
     var client =
         new CloudLegacySolrClient.Builder(Collections.singletonList(zkAddress), Optional.empty())
             .withSocketTimeout(30000)

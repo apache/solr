@@ -36,7 +36,7 @@ public class ArcSineEvaluatorTest extends SolrTestCase {
     super();
 
     factory = new StreamFactory().withFunctionName("asin", ArcSineEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   private void test(Double value) throws IOException {

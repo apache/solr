@@ -16,9 +16,12 @@
  */
 package org.apache.solr.client.solrj.request;
 
-import static org.apache.solr.common.cloud.DocCollection.PER_REPLICA_STATE;
-import static org.apache.solr.common.cloud.ZkStateReader.*;
-import static org.apache.solr.common.params.CollectionAdminParams.*;
+import static org.apache.solr.common.params.CollectionAdminParams.ALIAS;
+import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
+import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM;
+import static org.apache.solr.common.params.CollectionAdminParams.ROUTER_PREFIX;
+import static org.apache.solr.common.params.CollectionAdminParams.SKIP_NODE_ASSIGNMENT;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -46,7 +49,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
@@ -68,11 +70,15 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
 
   /** The set of modifiable collection properties */
   public static final java.util.List<String> MODIFIABLE_COLLECTION_PROPERTIES =
-      Arrays.asList(REPLICATION_FACTOR, COLL_CONF, PER_REPLICA_STATE, READ_ONLY);
+      Arrays.asList(
+          CollectionAdminParams.REPLICATION_FACTOR,
+          CollectionAdminParams.COLL_CONF,
+          CollectionAdminParams.PER_REPLICA_STATE,
+          CollectionAdminParams.READ_ONLY);
 
   protected final CollectionAction action;
 
-  public static String PROPERTY_PREFIX = "property.";
+  @Deprecated public static String PROPERTY_PREFIX = CollectionAdminParams.PROPERTY_PREFIX;
 
   public CollectionAdminRequest(CollectionAction action) {
     this("/admin/collections", action);
@@ -221,6 +227,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      */
     public RequestStatusState processAndWait(String asyncId, SolrClient client, long timeoutSeconds)
         throws IOException, SolrServerException, InterruptedException {
+      // This is kind of slow, see SOLR-16313
       processAsync(asyncId, client);
       return propagateBasicAuthCreds(requestStatus(asyncId)).waitFor(client, timeoutSeconds);
     }
@@ -673,7 +680,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       if (configName != null) params.set("collection.configName", configName);
       if (createNodeSet != null) params.set(CREATE_NODE_SET_PARAM, createNodeSet);
       if (numShards != null) {
-        params.set(ZkStateReader.NUM_SHARDS_PROP, numShards);
+        params.set(CollectionAdminParams.NUM_SHARDS, numShards);
       }
       if (routerName != null) params.set("router.name", routerName);
       if (shards != null) params.set("shards", shards);
@@ -681,19 +688,19 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
         params.set("router.field", routerField);
       }
       if (nrtReplicas != null) {
-        params.set(ZkStateReader.NRT_REPLICAS, nrtReplicas);
+        params.set(CollectionAdminParams.NRT_REPLICAS, nrtReplicas);
       }
       if (properties != null) {
         addProperties(params, properties);
       }
       if (pullReplicas != null) {
-        params.set(ZkStateReader.PULL_REPLICAS, pullReplicas);
+        params.set(CollectionAdminParams.PULL_REPLICAS, pullReplicas);
       }
       if (tlogReplicas != null) {
-        params.set(ZkStateReader.TLOG_REPLICAS, tlogReplicas);
+        params.set(CollectionAdminParams.TLOG_REPLICAS, tlogReplicas);
       }
       if (Boolean.TRUE.equals(perReplicaState)) {
-        params.set(PER_REPLICA_STATE, perReplicaState);
+        params.set(CollectionAdminParams.PER_REPLICA_STATE, perReplicaState);
       }
       params.setNonNull(ALIAS, alias);
       return params;
@@ -908,6 +915,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
   }
 
   public static class ReindexCollection extends AsyncCollectionSpecificAdminRequest {
+    // not moving to CollectionAdminParams because there is COLL_CONF there already; confusing
+    private static final String CONFIGNAME_PARAM = "configName";
+
     String target;
     String query;
     String fields;
@@ -974,7 +984,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
       params.setNonNull("target", target);
       params.setNonNull("cmd", cmd);
-      params.setNonNull(ZkStateReader.CONFIGNAME_PROP, configName);
+      params.setNonNull(CONFIGNAME_PARAM, configName);
       params.setNonNull(CommonParams.Q, query);
       params.setNonNull(CommonParams.FL, fields);
       params.setNonNull("removeSource", removeSource);
@@ -1349,16 +1359,16 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
             "Cannot set both replicationFactor and nrtReplicas as they mean the same thing");
       }
       if (replicationFactor != null) {
-        params.set(ZkStateReader.REPLICATION_FACTOR, replicationFactor);
+        params.set(CollectionAdminParams.REPLICATION_FACTOR, replicationFactor);
       }
       if (nrtReplicas != null) {
-        params.set(ZkStateReader.NRT_REPLICAS, nrtReplicas);
+        params.set(CollectionAdminParams.NRT_REPLICAS, nrtReplicas);
       }
       if (pullReplicas != null) {
-        params.set(ZkStateReader.PULL_REPLICAS, pullReplicas);
+        params.set(CollectionAdminParams.PULL_REPLICAS, pullReplicas);
       }
       if (tlogReplicas != null) {
-        params.set(ZkStateReader.TLOG_REPLICAS, tlogReplicas);
+        params.set(CollectionAdminParams.TLOG_REPLICAS, tlogReplicas);
       }
       if (properties != null) {
         addProperties(params, properties);
@@ -1791,6 +1801,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
           propagateBasicAuthCreds(deleteAsyncId(requestId)).process(client);
           return state;
         }
+        // This is kind of slow, see SOLR-16313
         TimeUnit.SECONDS.sleep(1);
       }
       return state;
@@ -2327,6 +2338,8 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
   // ADDREPLICA request
   public static class AddReplica extends AsyncCollectionAdminRequest {
 
+    private static final String REPLICA_TYPE_PARAM = "type";
+
     protected String collection;
     protected String shard;
     protected String node;
@@ -2489,19 +2502,19 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
         params.add(CoreAdminParams.NAME, coreName);
       }
       if (type != null) {
-        params.add(ZkStateReader.REPLICA_TYPE, type.name());
+        params.add(REPLICA_TYPE_PARAM, type.name());
       }
       if (properties != null) {
         addProperties(params, properties);
       }
       if (nrtReplicas != null) {
-        params.add(NRT_REPLICAS, String.valueOf(nrtReplicas));
+        params.add(CollectionAdminParams.NRT_REPLICAS, String.valueOf(nrtReplicas));
       }
       if (tlogReplicas != null) {
-        params.add(TLOG_REPLICAS, String.valueOf(tlogReplicas));
+        params.add(CollectionAdminParams.TLOG_REPLICAS, String.valueOf(tlogReplicas));
       }
       if (pullReplicas != null) {
-        params.add(PULL_REPLICAS, String.valueOf(pullReplicas));
+        params.add(CollectionAdminParams.PULL_REPLICAS, String.valueOf(pullReplicas));
       }
       if (createNodeSet != null) {
         params.add(CREATE_NODE_SET_PARAM, createNodeSet);
@@ -2579,10 +2592,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       // AsyncCollectionSpecificAdminRequest uses 'name' rather than 'collection'
       // TODO - deal with this inconsistency
       params.remove(CoreAdminParams.NAME);
-      params.set(ZkStateReader.COLLECTION_PROP, this.collection);
+      params.set(CollectionAdminParams.COLLECTION, this.collection);
 
-      if (this.replica != null) params.set(ZkStateReader.REPLICA_PROP, this.replica);
-      if (this.shard != null) params.set(ZkStateReader.SHARD_ID_PROP, this.shard);
+      if (this.replica != null) params.set(CollectionAdminParams.REPLICA, this.replica);
+      if (this.shard != null) params.set(CollectionAdminParams.SHARD, this.shard);
 
       if (onlyIfDown != null) {
         params.set("onlyIfDown", onlyIfDown);
@@ -3208,8 +3221,8 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
   // DELETEREPLICAPROP request
   public static class DeleteReplicaProp extends AsyncShardSpecificAdminRequest {
 
-    private String replica;
-    private String propertyName;
+    private final String replica;
+    private final String propertyName;
 
     private DeleteReplicaProp(
         String collection, String shard, String replica, String propertyName) {
@@ -3314,7 +3327,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      * Sets the collection attribute to the given value
      *
      * @param key a string attribute key, must be one of the entries documented in the <a
-     *     href="https://solr.apache.org/guide/collections-api.html#modifycollection">Modify
+     *     href="https://solr.apache.org/guide/solr/latest/deployment-guide/collection-management.html#modifycollection">Modify
      *     Collection API documentation</a>
      * @param value the attribute value for the given key
      */
@@ -3344,7 +3357,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      * Removes the given key from the collection
      *
      * @param key the string attribute key, must be one of the entries documented in the <a
-     *     href="https://solr.apache.org/guide/collections-api.html#modifycollection">Modify
+     *     href="https://solr.apache.org/guide/solr/latest/deployment-guide/collection-management.html#modifycollection">Modify
      *     Collection API documentation</a>
      */
     public Modify unsetAttribute(String key) {

@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -26,7 +25,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -42,14 +40,9 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Test of the Collections API with the MiniSolrCloudCluster. */
-@LuceneTestCase.Slow
 public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final int numShards = 2;
   private static final int numReplicas = 2;
@@ -193,7 +186,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
     // create collection
     createCollection(collectionName, CollectionHandlingUtils.CREATE_NODE_SET_EMPTY);
 
-    // check the collection's corelessness
+    // check the collection has no cores.
     int coreCount = 0;
     DocCollection docCollection = client.getClusterState().getCollection(collectionName);
     for (Map.Entry<String, Slice> entry : docCollection.getSlicesMap().entrySet()) {

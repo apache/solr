@@ -16,12 +16,10 @@
  */
 package org.apache.solr;
 
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.junit.Test;
 
 /** Tests sortMissingFirst and sortMissingLast in distributed sort */
-@Slow
 public class TestDistributedMissingSort extends BaseDistributedSearchTestCase {
 
   public TestDistributedMissingSort() {

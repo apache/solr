@@ -25,12 +25,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest.Field;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -57,10 +56,10 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
   /** A basic client for operations at the cloud level, default collection will be set */
   private static CloudSolrClient CLOUD_CLIENT;
   /** One client per node */
-  private static final ArrayList<HttpSolrClient> CLIENTS = new ArrayList<>(5);
+  private static final ArrayList<SolrClient> CLIENTS = new ArrayList<>(5);
 
   @BeforeClass
-  private static void createMiniSolrCloudCluster() throws Exception {
+  public static void createMiniSolrCloudCluster() throws Exception {
     // multi replicas should matter...
     final int repFactor = usually() ? 1 : 2;
     // ... but we definitely want to ensure forwarded requests to other shards work ...
@@ -115,11 +114,10 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
             .add(sdoc("id", "46", "val_i", "3", "ssto", "X", "subject", "ggg"))
             .getStatus());
     assertEquals(0, CLOUD_CLIENT.commit().getStatus());
-    ;
   }
 
   @Before
-  private void addUncommittedDoc99() throws Exception {
+  public void addUncommittedDoc99() throws Exception {
     // uncommitted doc in transaction log at start of every test
     // Even if an RTG causes ulog to re-open realtime searcher, next test method
     // will get another copy of doc 99 in the ulog
@@ -131,12 +129,12 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
   }
 
   @AfterClass
-  private static void afterClass() throws Exception {
+  public static void afterClass() throws Exception {
     if (null != CLOUD_CLIENT) {
       CLOUD_CLIENT.close();
       CLOUD_CLIENT = null;
     }
-    for (HttpSolrClient client : CLIENTS) {
+    for (SolrClient client : CLIENTS) {
       client.close();
     }
     CLIENTS.clear();
@@ -145,7 +143,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
   public void testMultiValued() throws Exception {
     // the response writers used to consult isMultiValued on the field
     // but this doesn't work when you alias a single valued field to
-    // a multi valued field (the field value is copied first, then
+    // a multivalued field (the field value is copied first, then
     // if the type lookup is done again later, we get the wrong thing). SOLR-4036
 
     // score as pseudo field - precondition checks
@@ -161,23 +159,20 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
         assertNotNull(
             "Test depends on a (dynamic) field matching '" + name + "', Null response", frsp);
         assertEquals(
-            "Test depends on a (dynamic) field matching '"
-                + name
-                + "', bad status: "
-                + frsp.toString(),
+            "Test depends on a (dynamic) field matching '" + name + "', bad status: " + frsp,
             0,
             frsp.getStatus());
         assertNotNull(
             "Test depends on a (dynamic) field matching '"
                 + name
                 + "', schema was changed out from under us? ... "
-                + frsp.toString(),
+                + frsp,
             frsp.getField());
         assertEquals(
             "Test depends on a multivalued dynamic field matching '"
                 + name
                 + "', schema was changed out from under us? ... "
-                + frsp.toString(),
+                + frsp,
             Boolean.TRUE,
             frsp.getField().get("multiValued"));
       } catch (SolrServerException e) {
@@ -205,7 +200,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     // returning a an List)
     //
     // (NOTE: not doing this yet due to how it will impact most other tests, many of which are
-    // currently @AwaitsFix'ed)
+    // currently @AwaitsFix status)
     //
     // assertTrue(doc.getFieldValue("val_ss").getClass().toString(),
     //           doc.getFieldValue("val_ss") instanceof List);
@@ -303,7 +298,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
   }
 
   public void testScoreAndAllRealFieldsRTG() throws Exception {
-    // also shouldn't matter if we use RTG (committed or otherwise) .. score should be ignored
+    // shouldn't matter if we use RTG (committed or otherwise), score should be ignored
     for (String fl : TestPseudoReturnFields.SCORE_AND_REAL_FIELDS) {
       for (int i : Arrays.asList(42, 43, 44, 45, 46, 99)) {
         SolrDocument doc = getRandClient(random()).getById("" + i, params("fl", fl));
@@ -346,7 +341,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     SolrDocumentList docs = null;
     SolrDocument doc = null;
 
-    // shouldn't matter if we use RTG (committed or otherwise) .. score should be ignored
+    // shouldn't matter if we use RTG (committed or otherwise), score should be ignored
     for (int i : Arrays.asList(42, 43, 44, 45, 46, 99)) {
       for (SolrParams p :
           Arrays.asList(params("fl", "score,val_i"), params("fl", "score", "fl", "val_i"))) {
@@ -691,7 +686,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
       String msg = id + ": fl=[docid] => " + doc;
       assertEquals(msg, 1, doc.size());
       assertTrue(msg, doc.getFieldValue("[docid]") instanceof Integer);
-      assertTrue(msg, -1 <= ((Integer) doc.getFieldValue("[docid]")).intValue());
+      assertTrue(msg, -1 <= (Integer) doc.getFieldValue("[docid]"));
     }
   }
 
@@ -721,7 +716,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
         assertTrue(msg, doc.getFieldValue("x_alias") instanceof Integer);
         assertEquals(msg, 10, doc.getFieldValue("x_alias"));
         assertTrue(msg, doc.getFieldValue("[docid]") instanceof Integer);
-        assertTrue(msg, -1 <= ((Integer) doc.getFieldValue("[docid]")).intValue());
+        assertTrue(msg, -1 <= (Integer) doc.getFieldValue("[docid]"));
       }
     }
   }
@@ -782,7 +777,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
         assertTrue(msg, doc.getFieldValue("x_alias") instanceof Integer);
         assertEquals(msg, 10, doc.getFieldValue("x_alias"));
         assertTrue(msg, doc.getFieldValue("[docid]") instanceof Integer);
-        assertTrue(msg, -1 <= ((Integer) doc.getFieldValue("[docid]")).intValue());
+        assertTrue(msg, -1 <= (Integer) doc.getFieldValue("[docid]"));
       }
     }
   }
@@ -872,7 +867,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
         assertEquals(msg, 10, doc.getFieldValue("x_alias"));
         // RTG: [explain] and score should be missing (ignored)
         assertTrue(msg, doc.getFieldValue("d_alias") instanceof Integer);
-        assertTrue(msg, -1 <= ((Integer) doc.getFieldValue("d_alias")).intValue());
+        assertTrue(msg, -1 <= (Integer) doc.getFieldValue("d_alias"));
       }
     }
   }
@@ -940,7 +935,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
           assertEquals(msg, 1, doc.getFieldValue("val_i"));
           assertTrue(msg, doc.getFieldValue("subject") instanceof String);
           assertTrue(msg, doc.getFieldValue("[docid]") instanceof Integer);
-          assertTrue(msg, -1 <= ((Integer) doc.getFieldValue("[docid]")).intValue());
+          assertTrue(msg, -1 <= (Integer) doc.getFieldValue("[docid]"));
           // RTG: [explain] and score should be missing (ignored)
         }
       }
@@ -957,10 +952,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
         "does not match exactly one doc: " + p.toString() + " => " + docs.toString(),
         1,
         docs.getNumFound());
-    assertEquals(
-        "does not contain exactly one doc: " + p.toString() + " => " + docs.toString(),
-        1,
-        docs.size());
+    assertEquals("does not contain exactly one doc: " + p + " => " + docs, 1, docs.size());
     return docs.get(0);
   }
 
@@ -972,11 +964,10 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     QueryResponse rsp = getRandClient(random()).query(p);
     assertEquals("failed request: " + p.toString() + " => " + rsp.toString(), 0, rsp.getStatus());
     assertTrue(
-        "does not match at least one doc: " + p.toString() + " => " + rsp.toString(),
+        "does not match at least one doc: " + p + " => " + rsp,
         1 <= rsp.getResults().getNumFound());
     assertTrue(
-        "rsp does not contain at least one doc: " + p.toString() + " => " + rsp.toString(),
-        1 <= rsp.getResults().size());
+        "rsp does not contain at least one doc: " + p + " => " + rsp, 1 <= rsp.getResults().size());
     return rsp.getResults();
   }
 

@@ -26,7 +26,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -35,7 +34,6 @@ import org.junit.Test;
 import org.junit.runners.model.MultipleFailureException;
 
 /** */
-@LuceneTestCase.Slow
 public class TestSolrCachePerf extends SolrTestCaseJ4 {
 
   @SuppressWarnings({"unchecked", "rawtypes"})

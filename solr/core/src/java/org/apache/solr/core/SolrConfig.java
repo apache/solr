@@ -18,7 +18,6 @@ package org.apache.solr.core;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.PATH;
-import static org.apache.solr.common.util.Utils.fromJSON;
 import static org.apache.solr.core.ConfigOverlay.ZNODEVER;
 import static org.apache.solr.core.SolrConfig.PluginOpts.LAZY;
 import static org.apache.solr.core.SolrConfig.PluginOpts.MULTI_OK;
@@ -50,7 +49,6 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -174,13 +172,13 @@ public class SolrConfig implements MapSerializable {
     InputStream in;
     String fileName;
 
-    ResourceProvider(InputStream in) {
-      this.in = in;
+    ResourceProvider(SolrResourceLoader loader, String res) throws IOException {
+      this.in = loader.openResource(res);
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
         ZkSolrResourceLoader.ZkByteArrayInputStream zkin =
             (ZkSolrResourceLoader.ZkByteArrayInputStream) in;
         zkVersion = zkin.getStat().getVersion();
-        hash = Objects.hash(zkVersion, overlay.getZnodeVersion());
+        hash = Objects.hash(zkin.getStat().getCtime(), zkVersion, overlay.getZnodeVersion());
         this.fileName = zkin.fileName;
       }
     }
@@ -214,33 +212,19 @@ public class SolrConfig implements MapSerializable {
     this.substituteProperties = substitutableProperties;
     getOverlay(); // just in case it is not initialized
     // insist we have non-null substituteProperties; it might get overlaid
-    Map<String, IndexSchemaFactory.VersionedConfig> configCache = null;
-    if (loader.getCoreContainer() != null && loader.getCoreContainer().getObjectCache() != null) {
-      configCache =
-          (Map<String, IndexSchemaFactory.VersionedConfig>)
-              loader
-                  .getCoreContainer()
-                  .getObjectCache()
-                  .computeIfAbsent(
-                      ConfigSetService.ConfigResource.class.getName(),
-                      s -> new ConcurrentHashMap<>());
-      ResourceProvider rp = new ResourceProvider(loader.openResource(name));
-      IndexSchemaFactory.VersionedConfig cfg =
-          rp.fileName == null ? null : configCache.get(rp.fileName);
-      if (cfg != null) {
-        if (rp.hash != -1) {
-          if (rp.hash == cfg.version) {
-            log.debug("LOADED_FROM_CACHE");
-            root = cfg.data;
-          } else {
-            readXml(loader, name, configCache, rp);
-          }
-        }
-      }
-    }
-    if (root == null) {
-      readXml(loader, name, configCache, new ResourceProvider(loader.openResource(name)));
-    }
+
+    IndexSchemaFactory.VersionedConfig cfg =
+        IndexSchemaFactory.getFromCache(
+            name,
+            loader,
+            () -> {
+              if (loader.getCoreContainer() == null) return null;
+              return loader.getCoreContainer().getObjectCache();
+            },
+            () -> readXml(loader, name));
+    this.root = cfg.data;
+    this.znodeVersion = cfg.version;
+
     ConfigNode.SUBSTITUTES.set(
         key -> {
           if (substitutableProperties != null && substitutableProperties.containsKey(key)) {
@@ -408,17 +392,15 @@ public class SolrConfig implements MapSerializable {
     }
   }
 
-  private void readXml(
-      SolrResourceLoader loader,
-      String name,
-      Map<String, IndexSchemaFactory.VersionedConfig> configCache,
-      ResourceProvider rp)
-      throws IOException {
-    XmlConfigFile xml = new XmlConfigFile(loader, rp, name, null, "/config/", null);
-    root = new DataConfigNode(new DOMConfigNode(xml.getDocument().getDocumentElement()));
-    this.znodeVersion = rp.zkVersion;
-    if (configCache != null && rp.fileName != null) {
-      configCache.put(rp.fileName, new IndexSchemaFactory.VersionedConfig(rp.hash, root));
+  private IndexSchemaFactory.VersionedConfig readXml(SolrResourceLoader loader, String name) {
+    try {
+      ResourceProvider rp = new ResourceProvider(loader, name);
+      XmlConfigFile xml = new XmlConfigFile(loader, rp, name, null, "/config/", null);
+      return new IndexSchemaFactory.VersionedConfig(
+          rp.zkVersion,
+          new DataConfigNode(new DOMConfigNode(xml.getDocument().getDocumentElement())));
+    } catch (IOException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
   }
 
@@ -600,7 +582,7 @@ public class SolrConfig implements MapSerializable {
         log.debug("Config overlay loaded. version : {} ", version);
       }
       @SuppressWarnings("unchecked")
-      Map<String, Object> m = (Map<String, Object>) fromJSON(in);
+      Map<String, Object> m = (Map<String, Object>) Utils.fromJSON(in);
       return new ConfigOverlay(m, version);
     } catch (Exception e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error reading config overlay", e);

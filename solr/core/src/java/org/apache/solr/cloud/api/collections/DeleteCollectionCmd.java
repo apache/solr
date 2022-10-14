@@ -209,7 +209,7 @@ public class DeleteCollectionCmd implements CollApiCmds.CollectionApiCommand {
     } finally {
 
       try {
-        String collectionPath = ZkStateReader.getCollectionPathRoot(collection);
+        String collectionPath = DocCollection.getCollectionPathRoot(collection);
         if (zkStateReader.getZkClient().exists(collectionPath, true)) {
           if (removeCounterNode) {
             zkStateReader.getZkClient().clean(collectionPath);

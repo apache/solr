@@ -136,7 +136,7 @@ public class PreAnalyzedFieldTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testIndexAndQueryNoSchemaAnalyzer() throws Exception {
+  public void testIndexAndQueryNoSchemaAnalyzer() {
     assertU(addTwoDocs(1, "pre_no_analyzer"));
     assertU(commit());
     assertQ(

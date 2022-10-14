@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search.mlt;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -40,9 +39,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
 
     final CloudSolrClient client = cluster.getSolrClient();
 
-    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
-        .processAndWait(client, DEFAULT_TIMEOUT);
-
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(client);
     cluster.waitForActiveCollection(COLLECTION, 2, 2);
 
     String id = "id";
@@ -336,7 +333,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
     assertArrayEquals(expectedIds, actualIds);
   }
 
-  public void testInvalidSourceDocument() throws IOException {
+  public void testInvalidSourceDocument() {
     SolrException e =
         expectThrows(
             SolrException.class,

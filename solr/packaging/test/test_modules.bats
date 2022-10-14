@@ -18,10 +18,13 @@
 load bats_helper
 
 setup() {
-  common_setup
+  common_clean_setup
 }
 
 teardown() {
+  # save a snapshot of SOLR_HOME for failed tests
+  save_home_on_failure
+
   delete_all_collections
   solr stop -all >/dev/null 2>&1
 }
@@ -34,4 +37,10 @@ teardown() {
   assert_output --partial '"EOF":true'
   assert_output --partial '"RESPONSE_TIME":'
   refute_output --partial '"EXCEPTION"'
+}
+
+@test "icu collation in analysis-extras module" {
+  run solr start -c -Dsolr.modules=analysis-extras
+  run solr create_collection -c COLL_NAME -d test/analysis_extras_config/conf
+  assert_output --partial "Created collection 'COLL_NAME'"
 }

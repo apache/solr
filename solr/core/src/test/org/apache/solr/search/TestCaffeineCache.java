@@ -29,8 +29,8 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -44,7 +44,7 @@ public class TestCaffeineCache extends SolrTestCase {
   String scope = TestUtil.randomSimpleString(random(), 2, 10);
 
   @Test
-  public void testSimple() throws IOException {
+  public void testSimple() {
     CaffeineCache<Integer, String> lfuCache = new CaffeineCache<>();
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
     lfuCache.initializeMetrics(solrMetricsContext, scope + "-1");
@@ -288,5 +288,71 @@ public class TestCaffeineCache extends SolrTestCase {
     assertTrue("total ram bytes should be greater than 0", total > 0);
     assertTrue("total ram bytes exceeded limit", total < 1024 * 1024);
     cache.close();
+  }
+
+  @Test
+  public void testRamBytesSync() throws IOException {
+    CaffeineCache<Integer, String> cache = new CaffeineCache<>();
+    Map<String, String> params =
+        Map.of(
+            SolrCache.SIZE_PARAM, "100",
+            SolrCache.INITIAL_SIZE_PARAM, "10",
+            SolrCache.ASYNC_PARAM, Boolean.FALSE.toString());
+    cache.init(params, null, new NoOpRegenerator());
+
+    long emptySize = cache.ramBytesUsed();
+
+    // noop rm
+    cache.remove(0);
+    assertEquals(emptySize, cache.ramBytesUsed());
+
+    cache.put(0, "test");
+    long nonEmptySize = cache.ramBytesUsed();
+    cache.put(0, "test");
+    assertEquals(nonEmptySize, cache.ramBytesUsed());
+
+    cache.remove(0);
+    assertEquals(emptySize, cache.ramBytesUsed());
+
+    cache.put(1, "test2");
+    cache.clear();
+    assertEquals(emptySize, cache.ramBytesUsed());
+
+    cache.put(1, "test3");
+    cache.close();
+    assertEquals(emptySize, cache.ramBytesUsed());
+  }
+
+  @Test
+  public void testRamBytesAsync() throws IOException {
+    CaffeineCache<Integer, String> cache = new CaffeineCache<>();
+    Map<String, String> params =
+        Map.of(
+            SolrCache.SIZE_PARAM, "100",
+            SolrCache.INITIAL_SIZE_PARAM, "10",
+            SolrCache.ASYNC_PARAM, Boolean.TRUE.toString());
+    cache.init(params, null, new NoOpRegenerator());
+
+    long emptySize = cache.ramBytesUsed();
+
+    // noop rm
+    cache.remove(0);
+    assertEquals(emptySize, cache.ramBytesUsed());
+
+    cache.put(0, "test");
+    long nonEmptySize = cache.ramBytesUsed();
+    cache.put(0, "test");
+    assertEquals(nonEmptySize, cache.ramBytesUsed());
+
+    cache.remove(0);
+    assertEquals(emptySize, cache.ramBytesUsed());
+
+    cache.put(1, "test2");
+    cache.clear();
+    assertEquals(emptySize, cache.ramBytesUsed());
+
+    cache.put(1, "test3");
+    cache.close();
+    assertEquals(emptySize, cache.ramBytesUsed());
   }
 }

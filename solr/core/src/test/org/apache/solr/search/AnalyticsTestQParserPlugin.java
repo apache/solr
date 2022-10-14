@@ -47,7 +47,7 @@ public class AnalyticsTestQParserPlugin extends QParserPlugin {
       super(query, localParams, params, req);
     }
 
-    public Query parse() throws SyntaxError {
+    public Query parse() {
       int base = localParams.getInt("base", 0);
       boolean iterate = localParams.getBool("iterate", false);
       if (iterate) return new TestAnalyticsQuery(base, new TestIterative());
@@ -124,7 +124,7 @@ public class AnalyticsTestQParserPlugin extends QParserPlugin {
         @SuppressWarnings({"rawtypes"})
         NamedList analytics = (NamedList) response.get("analytics");
         Integer c = (Integer) analytics.get("mycount");
-        count += c.intValue();
+        count += c;
       }
 
       merged.add("mycount", count);
@@ -143,7 +143,7 @@ public class AnalyticsTestQParserPlugin extends QParserPlugin {
         @SuppressWarnings({"rawtypes"})
         NamedList analytics = (NamedList) response.get("analytics");
         Integer c = (Integer) analytics.get("mycount");
-        count += c.intValue();
+        count += c;
       }
 
       ModifiableSolrParams params = new ModifiableSolrParams();
@@ -165,7 +165,7 @@ public class AnalyticsTestQParserPlugin extends QParserPlugin {
         @SuppressWarnings({"rawtypes"})
         NamedList analytics = (NamedList) response.getResponse().get("analytics");
         Integer c = (Integer) analytics.get("mycount");
-        nextCount += c.intValue();
+        nextCount += c;
       }
 
       @SuppressWarnings({"rawtypes"})

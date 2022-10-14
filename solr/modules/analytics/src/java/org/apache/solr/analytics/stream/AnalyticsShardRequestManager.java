@@ -31,6 +31,7 @@ import java.util.concurrent.Future;
 import org.apache.solr.analytics.AnalyticsRequestManager;
 import org.apache.solr.analytics.AnalyticsRequestParser;
 import org.apache.solr.analytics.TimeExceededStubException;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -41,7 +42,6 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -104,8 +104,7 @@ public class AnalyticsShardRequestManager {
   protected void pickShards(String collection) throws IOException {
     try {
 
-      ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
-      ClusterState clusterState = zkStateReader.getClusterState();
+      ClusterState clusterState = cloudSolrClient.getClusterState();
       Set<String> liveNodes = clusterState.getLiveNodes();
 
       Slice[] slices = clusterState.getCollection(collection).getActiveSlicesArr();
@@ -205,7 +204,7 @@ public class AnalyticsShardRequestManager {
    */
   protected class AnalyticsShardRequester implements Callable<SolrException> {
     private String baseUrl;
-    HttpSolrClient client;
+    SolrClient client;
 
     /**
      * Create a requester for analytics shard data.

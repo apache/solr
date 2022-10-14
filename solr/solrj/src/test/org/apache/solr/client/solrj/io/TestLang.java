@@ -21,8 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorDay;
 import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorDayOfQuarter;
@@ -39,7 +38,6 @@ import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
 
-@Slow
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40", "Lucene41", "Lucene42", "Lucene45"})
 public class TestLang extends SolrTestCase {
 
@@ -103,6 +101,8 @@ public class TestLang extends SolrTestCase {
     "sum",
     "count",
     "replace",
+    "withValue",
+    "withField",
     "concat",
     "group",
     "distinct",

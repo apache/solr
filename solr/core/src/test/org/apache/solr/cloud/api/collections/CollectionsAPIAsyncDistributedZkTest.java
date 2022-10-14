@@ -24,8 +24,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -48,7 +47,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Tests the Cloud Collections API. */
-@Slow
 public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
 
   private static final int MAX_TIMEOUT_SECONDS = 90;
@@ -58,16 +56,13 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
   @Before
   public void setupCluster() throws Exception {
     // we recreate per test - they need to be isolated to be solid
-    configureCluster(2)
-        .addConfig(
-            "conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
-        .configure();
+    configureCluster(2).addConfig("conf1", configset("cloud-minimal")).configure();
   }
 
   @After
   public void tearDown() throws Exception {
-    super.tearDown();
     shutdownCluster();
+    super.tearDown();
   }
 
   @Test
@@ -296,8 +291,8 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
       assertEquals(1, numSuccess.get());
       assertEquals(numThreads - 1, numFailure.get());
     } finally {
-      for (int i = 0; i < clients.length; i++) {
-        clients[i].close();
+      for (SolrClient client : clients) {
+        client.close();
       }
     }
   }

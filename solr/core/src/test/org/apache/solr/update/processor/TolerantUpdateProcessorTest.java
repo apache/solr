@@ -93,7 +93,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
   }
 
   /**
-   * future proof TolerantUpdateProcessor against new default method impls being added to
+   * future-proof TolerantUpdateProcessor against new default method impls being added to
    * UpdateProcessor to ensure that every method involved in a processor chain life cycle is
    * overridden with exception catching/tracking.
    */
@@ -105,7 +105,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
       assertEquals(
           "base class(es) has changed, TolerantUpdateProcessor needs updated to ensure it "
               + "overrides all solr update lifcycle methods with exception tracking: "
-              + method.toString(),
+              + method,
           TolerantUpdateProcessor.class,
           method.getDeclaringClass());
     }
@@ -114,10 +114,10 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
   @Test
   public void testValidAdds() throws IOException {
     SolrInputDocument validDoc = doc(field("id", "1"), field("text", "the quick brown fox"));
-    add("tolerant-chain-max-errors-10", null, validDoc);
+    add("tolerant-chain-max-errors-10", validDoc);
 
     validDoc = doc(field("id", "2"), field("text", "the quick brown fox"));
-    add("tolerant-chain-max-errors-not-set", null, validDoc);
+    add("tolerant-chain-max-errors-not-set", validDoc);
 
     assertU(commit());
     assertQ(req("q", "*:*"), "//result[@numFound='2']");
@@ -129,7 +129,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
   public void testInvalidAdds() throws IOException {
     SolrInputDocument invalidDoc1 = doc(field("text", "the quick brown fox")); // no id
     // This doc should fail without being tolerant
-    Exception e = expectThrows(Exception.class, () -> add("not-tolerant", null, invalidDoc1));
+    Exception e = expectThrows(Exception.class, () -> add("not-tolerant", invalidDoc1));
     assertTrue(e.getMessage().contains("Document is missing mandatory uniqueKey field"));
 
     assertAddsSucceedWithErrors(
@@ -215,7 +215,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
   }
 
   @Test
-  public void testMaxErrorsThrowsException() throws IOException {
+  public void testMaxErrorsThrowsException() {
     ModifiableSolrParams requestParams = new ModifiableSolrParams();
     requestParams.add("maxErrors", "5");
 
@@ -246,7 +246,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
   }
 
   @Test
-  public void testMaxErrors0() throws IOException {
+  public void testMaxErrors0() {
     // make the TolerantUpdateProcessor intolerant
     List<SolrInputDocument> smallBatch = docs.subList(0, 2);
     ModifiableSolrParams requestParams = new ModifiableSolrParams();
@@ -407,7 +407,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
 
     assertEquals("number of errors", idsShouldFail.length, errors.size());
 
-    Set<String> addErrorIdsExpected = new HashSet<String>(Arrays.asList(idsShouldFail));
+    Set<String> addErrorIdsExpected = new HashSet<>(Arrays.asList(idsShouldFail));
 
     for (SimpleOrderedMap<String> err : errors) {
       assertEquals("this method only expects 'add' errors", "ADD", err.get("type"));
@@ -418,10 +418,9 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
     }
   }
 
-  protected SolrQueryResponse add(
-      final String chain, SolrParams requestParams, final SolrInputDocument doc)
+  protected SolrQueryResponse add(final String chain, final SolrInputDocument doc)
       throws IOException {
-    return add(chain, requestParams, Arrays.asList(new SolrInputDocument[] {doc}));
+    return add(chain, null, Arrays.asList(new SolrInputDocument[] {doc}));
   }
 
   protected SolrQueryResponse add(
@@ -433,7 +432,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
     assertNotNull("No Chain named: " + chain, pc);
 
     SolrQueryResponse rsp = new SolrQueryResponse();
-    rsp.add("responseHeader", new SimpleOrderedMap<Object>());
+    rsp.add("responseHeader", new SimpleOrderedMap<>());
 
     if (requestParams == null) {
       requestParams = new ModifiableSolrParams();

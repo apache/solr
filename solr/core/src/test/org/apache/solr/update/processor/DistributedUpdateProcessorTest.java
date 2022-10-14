@@ -65,7 +65,7 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
 
   @AfterClass
   public static void AfterClass() {
-    if (null != executor) { // may not have inited due to lack of mockito
+    if (null != executor) { // may not have been initialized due to lack of mockito
       executor.shutdown();
     }
     System.clearProperty("enable.update.log");
@@ -82,7 +82,7 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
       assertFalse(processor.shouldBufferUpdate(cmd, true, UpdateLog.State.APPLYING_BUFFERED));
 
       assertTrue(processor.shouldBufferUpdate(cmd, false, UpdateLog.State.BUFFERING));
-      // this is not an buffer updates and it depend on other updates
+      // this is not a buffering update, and it depends on other updates
       cmd.prevVersion = 10;
       assertTrue(processor.shouldBufferUpdate(cmd, false, UpdateLog.State.APPLYING_BUFFERED));
     }

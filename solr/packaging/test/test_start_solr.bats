@@ -18,10 +18,13 @@
 load bats_helper
 
 setup() {
-  common_setup
+  common_clean_setup
 }
 
 teardown() {
+  # save a snapshot of SOLR_HOME for failed tests
+  save_home_on_failure
+
   solr stop -all >/dev/null 2>&1
 }
 

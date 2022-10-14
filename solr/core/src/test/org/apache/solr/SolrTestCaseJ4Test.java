@@ -25,13 +25,11 @@ import org.junit.Test;
 
 public class SolrTestCaseJ4Test extends SolrTestCaseJ4 {
 
-  private static String tmpSolrHome;
-
   @BeforeClass
   public static void beforeClass() throws Exception {
     // Create a temporary directory that holds a core NOT named "collection1". Use the smallest
-    // configuration sets we can so we don't copy that much junk around.
-    tmpSolrHome = createTempDir().toFile().getAbsolutePath();
+    // configuration sets we can, so we don't copy that much junk around.
+    String tmpSolrHome = createTempDir().toFile().getAbsolutePath();
 
     File subHome = new File(new File(tmpSolrHome, "core0"), "conf");
     assertTrue("Failed to make subdirectory ", subHome.mkdirs());
@@ -55,15 +53,15 @@ public class SolrTestCaseJ4Test extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void AfterClass() throws Exception {}
+  public static void AfterClass() {}
 
   @Test
-  public void testCorrectCore() throws Exception {
+  public void testCorrectCore() {
     assertEquals("should be core1", "core1", h.getCore().getName());
   }
 
   @Test
-  public void testParams() throws Exception {
+  public void testParams() {
     final ModifiableSolrParams params = new ModifiableSolrParams();
     assertEquals(params.toString(), params().toString());
 

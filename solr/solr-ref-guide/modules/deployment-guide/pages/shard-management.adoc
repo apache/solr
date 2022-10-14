@@ -274,6 +274,12 @@ The output will include the status of the request and the new shard names, which
 For example, "shard1" will become "shard1_0" and "shard1_1".
 If the status is anything other than "success", an error message will explain why the request failed.
 
+=== Miscellaneous Configuration
+
+When splitting a shard, a free disk space check is performed on the local file system of the leader shard.
+This can be disabled through the `solr.shardSplit.checkDiskSpace.enabled` system property (i.e. `-Dsolr.shardSplit.checkDiskSpace.enabled=false`).
+It is already disabled by default for xref:solr-on-hdfs.adoc[HDFS].
+
 [[createshard]]
 == CREATESHARD: Create a Shard
 

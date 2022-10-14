@@ -19,13 +19,11 @@ package org.apache.solr.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import junit.framework.Assert;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocIdSet;
@@ -39,6 +37,7 @@ import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.tests.index.RandomIndexWriter;
 import org.apache.solr.SolrTestCase;
 
 public class TestFilteredDocIdSet extends SolrTestCase {
@@ -94,17 +93,16 @@ public class TestFilteredDocIdSet extends SolrTestCase {
     ArrayList<Integer> list = new ArrayList<>();
     int doc = iter.advance(3);
     if (doc != DocIdSetIterator.NO_MORE_DOCS) {
-      list.add(Integer.valueOf(doc));
+      list.add(doc);
       while ((doc = iter.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-        list.add(Integer.valueOf(doc));
+        list.add(doc);
       }
     }
 
     int[] docs = new int[list.size()];
     int c = 0;
-    Iterator<Integer> intIter = list.iterator();
-    while (intIter.hasNext()) {
-      docs[c++] = intIter.next().intValue();
+    for (Integer integer : list) {
+      docs[c++] = integer.intValue();
     }
     int[] answer = new int[] {4, 6, 8};
     boolean same = Arrays.equals(answer, docs);

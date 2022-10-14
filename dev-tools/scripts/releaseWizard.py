@@ -88,6 +88,7 @@ def expand_jinja(text, vars=None):
         'git_checkout_folder': state.get_git_checkout_folder(),
         'ref_guide_svn_folder': state.get_ref_guide_svn_folder(),
         'git_website_folder': state.get_website_git_folder(),
+        'git_solr_docker_folder': state.get_solr_docker_git_folder(),
         'dist_url_base': 'https://dist.apache.org/repos/dist/dev/solr',
         'm2_repository_url': 'https://repository.apache.org/service/local/staging/deploy/maven2',
         'dist_file_path': state.get_dist_folder(),
@@ -245,7 +246,7 @@ def maybe_remove_rc_from_svn():
                  logfile="svn_rm.log",
                  tee=True,
                  vars={
-                     'dist_folder': """solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}""",
+                     'dist_folder': """solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}""",
                      'dist_url': "{{ dist_url_base }}/{{ dist_folder }}"
                  }
              )],
@@ -571,6 +572,10 @@ class ReleaseState:
 
     def get_website_git_folder(self):
         folder = os.path.join(self.get_release_folder(), "solr-site")
+        return folder
+
+    def get_solr_docker_git_folder(self):
+        folder = os.path.join(self.get_release_folder(), "solr-docker")
         return folder
 
     def get_minor_branch_name(self):
@@ -1128,21 +1133,23 @@ def configure_pgp(gpg_todo):
     if keyid_linenum:
         keyid_line = lines[keyid_linenum]
         assert keyid_line.startswith('LDAP PGP key: ')
-        gpg_id = keyid_line[14:].replace(" ", "")[-8:]
+        gpg_fingerprint = keyid_line[14:].replace(" ", "")
+        gpg_id = gpg_fingerprint[-8:]
         print("Found gpg key id %s on file at Apache (%s)" % (gpg_id, key_url))
     else:
         print(textwrap.dedent("""\
             Could not find your GPG key from Apache servers.
             Please make sure you have registered your key ID in
             id.apache.org, see links for more info."""))
-        gpg_id = str(input("Enter your key ID manually, 8 last characters (ENTER=skip): "))
-        if gpg_id.strip() == '':
+        gpg_fingerprint = str(input("Enter your key fingerprint manually, all 40 characters (ENTER=skip): "))
+        if gpg_fingerprint.strip() == '':
             return False
-        elif len(gpg_id) != 8:
-            print("gpg id must be the last 8 characters of your key id")
-        gpg_id = gpg_id.upper()
+        elif len(gpg_fingerprint) != 40:
+            print("gpg fingerprint must be 40 characters long, do not just input the last 8")
+        gpg_fingerprint = gpg_fingerprint.upper()
+        gpg_id = gpg_fingerprint[-8:]
     try:
-        res = run("gpg --list-secret-keys %s" % gpg_id)
+        res = run("gpg --list-secret-keys %s" % gpg_fingerprint)
         print("Found key %s on your private gpg keychain" % gpg_id)
         # Check rsa and key length >= 4096
         match = re.search(r'^sec +((rsa|dsa)(\d{4})) ', res)
@@ -1180,7 +1187,7 @@ def configure_pgp(gpg_todo):
             need to fix this, then try again"""))
         return False
     try:
-        lines = run("gpg --check-signatures %s" % gpg_id).splitlines()
+        lines = run("gpg --check-signatures %s" % gpg_fingerprint).splitlines()
         sigs = 0
         apache_sigs = 0
         for line in lines:
@@ -1222,6 +1229,7 @@ def configure_pgp(gpg_todo):
 
     gpg_state['apache_id'] = id
     gpg_state['gpg_key'] = gpg_id
+    gpg_state['gpg_fingerprint'] = gpg_fingerprint
 
     print(textwrap.dedent("""\
             You can choose between signing the release with the gpg program or with
@@ -1947,7 +1955,7 @@ today = datetime.utcnow().date()
 sundays = {(today + timedelta(days=x)): 'Sunday' for x in range(10) if (today + timedelta(days=x)).weekday() == 6}
 y = datetime.utcnow().year
 years = [y, y+1]
-non_working = holidays.CA(years=years) + holidays.US(years=years) + holidays.England(years=years) \
+non_working = holidays.CA(years=years) + holidays.US(years=years) + holidays.UK(years=years) \
               + holidays.DE(years=years) + holidays.NO(years=years) + holidays.IND(years=years) + holidays.RU(years=years)
 
 
@@ -1988,7 +1996,7 @@ def prepare_announce_solr(todo): # pylint: disable=unused-argument
 
 def check_artifacts_available(todo): # pylint: disable=unused-argument
   try:
-    cdnUrl = expand_jinja("https://dlcdn.apache.org/solr/{{ release_version }}/solr-{{ release_version }}-src.tgz.asc")
+    cdnUrl = expand_jinja("https://dlcdn.apache.org/solr/solr/{{ release_version }}/solr-{{ release_version }}-src.tgz.asc")
     load(cdnUrl)
     print("Found %s" % cdnUrl)
   except Exception as e:

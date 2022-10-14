@@ -32,6 +32,7 @@ import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME;
 import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME_IN_OVERLAY;
 import static org.apache.solr.schema.FieldType.CLASS_NAME;
 
+import com.google.common.collect.Lists;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -52,6 +53,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.SolrClient;
@@ -83,6 +85,9 @@ import org.apache.solr.core.RequestParams;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.handler.admin.api.GetConfigAPI;
+import org.apache.solr.handler.admin.api.ModifyConfigComponentAPI;
+import org.apache.solr.handler.admin.api.ModifyParamSetAPI;
 import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -105,7 +110,7 @@ public class SolrConfigHandler extends RequestHandlerBase
   public static final boolean configEditing_disabled =
       Boolean.getBoolean(CONFIGSET_EDITING_DISABLED_ARG);
   private static final Map<String, SolrConfig.SolrPluginInfo> namedPlugins;
-  private Lock reloadLock = new ReentrantLock(true);
+  private final Lock reloadLock = new ReentrantLock(true);
 
   public Lock getReloadLock() {
     return reloadLock;
@@ -317,6 +322,7 @@ public class SolrConfigHandler extends RequestHandlerBase
       boolean showParams = req.getParams().getBool("expandParams", false);
       Map<String, Object> map = this.req.getCore().getSolrConfig().toMap(new LinkedHashMap<>());
       if (componentType != null && !SolrRequestHandler.TYPE.equals(componentType)) return map;
+
       @SuppressWarnings({"unchecked"})
       Map<String, Object> reqHandlers =
           (Map<String, Object>)
@@ -1035,12 +1041,11 @@ public class SolrConfigHandler extends RequestHandlerBase
 
   @Override
   public Collection<Api> getApis() {
-    return ApiBag.wrapRequestHandlers(
-        this,
-        "core.config",
-        "core.config.Commands",
-        "core.config.Params",
-        "core.config.Params.Commands");
+    final List<Api> apis = Lists.newArrayList();
+    apis.addAll(AnnotatedApi.getApis(new GetConfigAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new ModifyConfigComponentAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new ModifyParamSetAPI(this)));
+    return apis;
   }
 
   @Override

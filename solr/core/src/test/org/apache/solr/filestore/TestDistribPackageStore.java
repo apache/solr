@@ -284,7 +284,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
                   return Objects.equals(val, v);
                 };
         Object actual = rsp._get(key, null);
-        // Important: check all of the values, not just the first one
+        // Important: check all the values, not just the first one
         passed = passed && p.test(actual);
         if (!passed && i >= repeats - 1) {
           String description = Utils.toJSONString(rsp);
@@ -310,8 +310,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
       throws Exception {
     JettySolrRunner jetty = cluster.getRandomJetty(random());
     try (HttpSolrClient client = (HttpSolrClient) jetty.newClient()) {
-      PackageUtils.uploadKey(
-          bytes, path, Paths.get(jetty.getCoreContainer().getSolrHome()), client);
+      PackageUtils.uploadKey(bytes, path, Paths.get(jetty.getCoreContainer().getSolrHome()));
       String url = jetty.getBaseURLV2() + "/node/files" + path + "?sync=true";
       Object resp = Utils.executeGET(client.getHttpClient(), url, null);
       log.info("sync resp: {} was {}", url, resp);

@@ -65,7 +65,7 @@ public class FieldValueEvaluator extends SourceEvaluator {
     if (null != value) {
       if (value instanceof Object[]) {
         Object[] array = (Object[]) value;
-        List<Object> list = new ArrayList<Object>(array.length);
+        List<Object> list = new ArrayList<>(array.length);
         for (Object obj : array) {
           list.add(obj);
         }
@@ -76,7 +76,7 @@ public class FieldValueEvaluator extends SourceEvaluator {
         return value;
       } else if (value instanceof Iterable && !(value instanceof List<?>)) {
         Iterable<?> iter = (Iterable<?>) value;
-        List<Object> list = new ArrayList<Object>();
+        List<Object> list = new ArrayList<>();
         for (Object obj : iter) {
           list.add(obj);
         }

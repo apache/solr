@@ -55,7 +55,7 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
     }
   }
 
-  private void monothreadedTests(CollectionApiLockFactory apiLockingHelper) throws Exception {
+  private void monothreadedTests(CollectionApiLockFactory apiLockingHelper) {
     // Lock at collection level (which prevents locking + acquiring on any other level of the
     // hierarchy)
     DistributedMultiLock collLock =
@@ -169,7 +169,7 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
     new Thread(
             () -> {
               replicaShard1Lock.waitUntilAcquired();
-              // countDown() will not be called if waitUntilAcquired() threw exception of any kind
+              // countDown() will not be called if waitUntilAcquired() threw any kind of exception
               latch.countDown();
             })
         .start();

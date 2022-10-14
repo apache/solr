@@ -43,12 +43,13 @@ import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.SolrPluginUtils;
+import org.apache.solr.util.SolrResponseUtil;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
 /**
  * Highlights query words in the search results. See the <a
- * href="https://solr.apache.org/guide/highlighting.html">ref guide</a>.
+ * href="https://solr.apache.org/guide/solr/latest/query-guide/highlighting.html">ref guide</a>.
  *
  * @since solr 1.3
  */
@@ -224,7 +225,12 @@ public class HighlightComponent extends SearchComponent
             // this should only happen when using shards.tolerant=true
             continue;
           }
-          Object hl = srsp.getSolrResponse().getResponse().get(highlightingResponseField);
+          Object hl =
+              SolrResponseUtil.getSubsectionFromShardResponse(
+                  rb, srsp, highlightingResponseField, false);
+          if (hl == null) {
+            continue;
+          }
           addHighlights(objArr, hl, rb.resultIds);
         }
       }

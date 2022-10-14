@@ -35,7 +35,7 @@ public class AndEvaluatorTest extends SolrTestCase {
     super();
 
     factory = new StreamFactory().withFunctionName("and", AndEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @Test
