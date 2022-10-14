@@ -17,6 +17,10 @@
 
 # Lucene upgrade steps
 
+## Read
+
+https://lucene.apache.org/core/9_4_0/MIGRATE.html
+
 ## Start
 
 Create a new branch locally e.g. `git checkout -b lucene940 -t origin/main` for upgrading to Lucene 9.4.0 version.
