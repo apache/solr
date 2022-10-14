@@ -17,13 +17,12 @@
 
 package org.apache.solr.client.solrj.request.beans;
 
+import java.util.List;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 
-import java.util.List;
-
 public class InvokeClassPayload implements ReflectMapWriter {
 
-    @JsonProperty(required = true)
-    public List<String> classes;
+  @JsonProperty(required = true)
+  public List<String> classes;
 }

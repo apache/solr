@@ -18,9 +18,8 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.Locale;
 import java.util.List;
-
+import java.util.Locale;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
@@ -33,14 +32,19 @@ public class IndexOfEvaluator extends RecursiveObjectEvaluator implements TwoVal
 
   @Override
   public Object doWork(Object value1, Object value2) throws IOException {
-    if(!(value1 instanceof List)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for value, expecting an array",toExpression(constructingFactory), value1.getClass().getSimpleName()));
+    if (!(value1 instanceof List)) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - found type %s for value, expecting an array",
+              toExpression(constructingFactory),
+              value1.getClass().getSimpleName()));
     } else {
-      List<?> list = (List<?>)value1;
-      String find = value2.toString().replace("\"","");
-      for(int i=0; i<list.size(); i++) {
+      List<?> list = (List<?>) value1;
+      String find = value2.toString().replace("\"", "");
+      for (int i = 0; i < list.size(); i++) {
         Object o = list.get(i);
-        if(o.toString().equals(find)) {
+        if (o.toString().equals(find)) {
           return i;
         }
       }

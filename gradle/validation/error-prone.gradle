@@ -15,12 +15,21 @@
  * limitations under the License.
  */
 
-def skipErrorProne = rootProject.usesAltJvm && rootProject.runtimeJavaVersion > JavaVersion.VERSION_15;
-if (skipErrorProne) {
+def skipReason
+
+if (rootProject.usesAltJvm && rootProject.runtimeJavaVersion > JavaVersion.VERSION_15) {
+  skipReason = "won't work with JDK ${rootProject.runtimeJavaVersion} if used as alternative java toolchain"
+}
+
+if (!propertyOrDefault("validation.errorprone", isCIBuild).asBoolean()) {
+  skipReason = "skipped on builds not running inside CI environments, pass -Pvalidation.errorprone=true to enable"
+}
+
+if (skipReason) {
   configure(rootProject) {
     task errorProneSkipped() {
       doFirst {
-        logger.warn("WARNING: errorprone disabled (won't work with JDK ${rootProject.runtimeJavaVersion} if used as alternative java toolchain)")
+        logger.warn("WARNING: errorprone disabled (${skipReason})")
       }
     }
   }
@@ -33,7 +42,7 @@ allprojects { prj ->
     // additional module system opens in place.
     // This is a hack to keep the dependency (so that palantir's version check doesn't complain)
     // but don't include the plugin (which fails on JDK16+).
-    if (skipErrorProne) {
+    if (skipReason) {
       tasks.withType(JavaCompile) { task -> task.dependsOn ":errorProneSkipped" }
       configurations {
         errorprone
@@ -49,61 +58,46 @@ allprojects { prj ->
       }
 
       tasks.withType(JavaCompile) { task ->
+        task.dependsOn ":checkJdkInternalsExportedToGradle"
+
         options.errorprone.disableWarningsInGeneratedCode = true
         options.errorprone.errorproneArgs = [
             '-Xep:InlineMeSuggester:OFF', // We don't use this annotation
 
-            // test
-            '-Xep:ExtendingJUnitAssert:OFF',
-            '-Xep:UseCorrectAssertInTests:OFF',
-            '-Xep:DefaultPackage:OFF',
-            '-Xep:FloatingPointLiteralPrecision:OFF',
-            '-Xep:CatchFail:OFF',
-            '-Xep:TryFailThrowable:OFF',
-            '-Xep:MathAbsoluteRandom:OFF',
-            '-Xep:AssertionFailureIgnored:OFF',
-            '-Xep:JUnit4TestNotRun:OFF',
-            '-Xep:FallThrough:OFF',
-            '-Xep:CatchAndPrintStackTrace:OFF',
-            '-Xep:ToStringReturnsNull:OFF',
-            '-Xep:ArrayAsKeyOfSetOrMap:OFF',
-            '-Xep:StaticAssignmentInConstructor:OFF',
-            '-Xep:SelfAssignment:OFF',
-            '-Xep:InvalidPatternSyntax:OFF',
-            '-Xep:MissingFail:OFF',
-            '-Xep:ComparableType:OFF',
-            '-Xep:InfiniteRecursion:OFF',
-            '-Xep:MisusedDayOfYear:OFF',
+            // bug patterns related to our tests
+            '-Xep:ExtendingJUnitAssert:OFF', // we inherit from LuceneTestCase which extends Assert
+            '-Xep:UseCorrectAssertInTests:OFF', // and this is a consequence of the above
+            '-Xep:CatchFail:OFF', // our code is generally descriptive enough, fix case by case if tests fail
+            '-Xep:JUnit4TestNotRun:OFF', // RandomizedRunner finds unannotated test methods no problem
+            '-Xep:CatchAndPrintStackTrace:OFF', // TODO: there's a lot of these but they should be easy to address
+            '-Xep:FloatingPointLiteralPrecision:OFF', // TODO: a lot of these in our tests, likely unintentional
+            '-Xep:StaticAssignmentInConstructor:OFF', // we assign SolrTestCaseJ4.configString in many tests, difficult to untangle
+            '-Xep:ComparableType:OFF', // SolrTestCaseJ4.Doc and Fld are messy
 
             '-Xep:AlmostJavadoc:OFF',
+            '-Xep:AlreadyChecked:OFF',
             '-Xep:AmbiguousMethodReference:OFF',
             '-Xep:ArgumentSelectionDefectChecker:OFF',
-            '-Xep:ArrayEquals:OFF',
-            '-Xep:ArrayHashCode:OFF',
-            '-Xep:ArrayToString:OFF',
-            '-Xep:BadImport:OFF',
+            '-Xep:BadImport:OFF', // style preference that we don't want to enforce
             '-Xep:BadInstanceof:OFF',
             '-Xep:BadShiftAmount:OFF',
+            '-Xep:CanIgnoreReturnValueSuggester:OFF',
             '-Xep:ClassCanBeStatic:OFF',
-            '-Xep:CollectionUndefinedEquality:OFF',
             '-Xep:ComplexBooleanConstant:OFF',
             '-Xep:DoubleBraceInitialization:OFF',
             '-Xep:DoubleCheckedLocking:OFF',
             '-Xep:EmptyCatch:OFF',
             '-Xep:EqualsGetClass:OFF',
-            '-Xep:EqualsIncompatibleType:OFF',
             '-Xep:EqualsUnsafeCast:OFF',
             '-Xep:EscapedEntity:OFF',
             '-Xep:Finally:OFF',
-            '-Xep:FormatString:OFF',
             '-Xep:FutureReturnValueIgnored:OFF',
             '-Xep:HidingField:OFF',
             '-Xep:IdentityBinaryExpression:OFF',
             '-Xep:IdentityHashMapUsage:OFF',
             '-Xep:ImmutableEnumChecker:OFF',
             '-Xep:InconsistentCapitalization:OFF',
-            '-Xep:InconsistentHashCode:OFF',
-            '-Xep:InlineFormatString:OFF',
+            '-Xep:InlineFormatString:OFF', // this introduces redundancy in format strings
             '-Xep:InputStreamSlowMultibyteRead:OFF',
             '-Xep:IntLongMath:OFF',
             '-Xep:InvalidBlockTag:OFF',
@@ -112,22 +106,20 @@ allprojects { prj ->
             '-Xep:JavaLangClash:OFF',
             '-Xep:JavaUtilDate:OFF',
             '-Xep:JdkObsolete:OFF',
-            '-Xep:LockNotBeforeTry:OFF',
             '-Xep:LogicalAssignment:OFF',
             '-Xep:MissingOverride:OFF',
             '-Xep:MissingSummary:OFF',
             '-Xep:MixedMutabilityReturnType:OFF',
             '-Xep:ModifiedButNotUsed:OFF',
-            '-Xep:MutableConstantField:OFF',
             '-Xep:MutablePublicArray:OFF',
             '-Xep:NarrowingCompoundAssignment:OFF',
+            '-Xep:NegativeCharLiteral:OFF',
             '-Xep:NonAtomicVolatileUpdate:OFF',
             '-Xep:NonCanonicalType:OFF',
             '-Xep:ObjectToString:OFF',
             '-Xep:ObjectsHashCodePrimitive:OFF',
             '-Xep:OperatorPrecedence:OFF',
             '-Xep:ProtectedMembersInFinalClass:OFF',
-            '-Xep:PublicConstructorForAbstractClass:OFF',
             '-Xep:ReferenceEquality:OFF',
             '-Xep:ReturnValueIgnored:OFF',
             '-Xep:SameNameButDifferent:OFF',
@@ -141,7 +133,6 @@ allprojects { prj ->
             '-Xep:ThreadPriorityCheck:OFF',
             '-Xep:TypeParameterShadowing:OFF',
             '-Xep:TypeParameterUnusedInFormals:OFF',
-            '-Xep:UndefinedEquals:OFF',
             '-Xep:UnescapedEntity:OFF',
             '-Xep:UnicodeEscape:OFF',
             '-Xep:UnnecessaryParentheses:OFF',

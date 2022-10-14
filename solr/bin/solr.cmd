@@ -150,6 +150,9 @@ IF "%SOLR_SSL_ENABLED%"=="true" (
 )
 
 REM Requestlog options
+IF NOT DEFINED SOLR_REQUESTLOG_ENABLED (
+  set SOLR_REQUESTLOG_ENABLED=true
+)
 IF "%SOLR_REQUESTLOG_ENABLED%"=="true" (
   set "SOLR_JETTY_CONFIG=!SOLR_JETTY_CONFIG! --module=requestlog"
 )
@@ -367,7 +370,7 @@ goto done
 @echo   -e example    Name of the example to run; available examples:
 @echo       cloud:          SolrCloud example
 @echo       techproducts:   Comprehensive example illustrating many of Solr's core capabilities
-@echo       schemaless:     Schema-less example
+@echo       schemaless:     Schema-less example (schema is inferred from data during indexing)
 @echo       films:          Example of starting with _default configset and defining explicit fields dynamically
 @echo.
 @echo   -a opts       Additional parameters to pass to the JVM when starting Solr, such as to setup
@@ -979,6 +982,11 @@ IF NOT "%SOLR_HOST%"=="" (
   set SOLR_HOST_ARG=
 )
 
+REM Solr modules option
+IF DEFINED SOLR_MODULES (
+  set "SOLR_OPTS=%SOLR_OPTS% -Dsolr.modules=%SOLR_MODULES%"
+)
+
 IF "%SOLR_SERVER_DIR%"=="" set "SOLR_SERVER_DIR=%DEFAULT_SERVER_DIR%"
 
 IF NOT EXIST "%SOLR_SERVER_DIR%" (
@@ -1160,12 +1168,18 @@ IF "%SOLR_MODE%"=="solrcloud" (
     set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -DcreateZkChroot=%ZK_CREATE_CHROOT%"
   )
 
+  IF "%SOLR_SOLRXML_REQUIRED%"=="true" (
+    set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -Dsolr.solrxml.required=true"
+  )
+
   IF EXIST "%SOLR_HOME%\collection1\core.properties" set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -Dbootstrap_confdir=./solr/collection1/conf -Dcollection.configName=myconf -DnumShards=1"
 ) ELSE (
   set CLOUD_MODE_OPTS=
   IF NOT EXIST "%SOLR_HOME%\solr.xml" (
-    set "SCRIPT_ERROR=Solr home directory %SOLR_HOME% must contain solr.xml!"
-    goto err
+    IF "%SOLR_SOLRXML_REQUIRED%"=="true" (
+      set "SCRIPT_ERROR=Solr home directory %SOLR_HOME% must contain solr.xml!"
+      goto err
+    )
   )
 )
 

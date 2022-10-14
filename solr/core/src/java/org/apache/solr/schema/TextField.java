@@ -19,7 +19,6 @@ package org.apache.solr.schema;
 import java.io.IOException;
 import java.util.Locale;
 import java.util.Map;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
@@ -27,7 +26,10 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortedSetSelector;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.QueryBuilder;
@@ -38,9 +40,9 @@ import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 
-/** <code>TextField</code> is the basic type for configurable text analysis.
- * Analyzers for field types using this implementation should be defined in the schema.
- *
+/**
+ * <code>TextField</code> is the basic type for configurable text analysis. Analyzers for field
+ * types using this implementation should be defined in the schema.
  */
 public class TextField extends FieldType {
   protected boolean autoGeneratePhraseQueries;
@@ -48,23 +50,23 @@ public class TextField extends FieldType {
   protected SolrQueryParserBase.SynonymQueryStyle synonymQueryStyle;
 
   /**
-   * Analyzer set by schema for text types to use when searching fields
-   * of this type, subclasses can set analyzer themselves or override
-   * getIndexAnalyzer()
-   * This analyzer is used to process wildcard, prefix, regex and other multiterm queries. It
-   * assembles a list of tokenizer +filters that "make sense" for this, primarily accent folding and
-   * lowercasing filters, and charfilters.
+   * Analyzer set by schema for text types to use when searching fields of this type, subclasses can
+   * set analyzer themselves or override getIndexAnalyzer() This analyzer is used to process
+   * wildcard, prefix, regex and other multiterm queries. It assembles a list of tokenizer +filters
+   * that "make sense" for this, primarily accent folding and lowercasing filters, and charfilters.
    *
    * @see #getMultiTermAnalyzer
    * @see #setMultiTermAnalyzer
    */
-  protected Analyzer multiTermAnalyzer=null;
+  protected Analyzer multiTermAnalyzer = null;
+
   private boolean isExplicitMultiTermAnalyzer = false;
 
   @Override
-  protected void init(IndexSchema schema, Map<String,String> args) {
+  protected void init(IndexSchema schema, Map<String, String> args) {
     properties |= TOKENIZED;
-    if (schema.getVersion() > 1.1F &&
+    if (schema.getVersion() > 1.1F
+        &&
         // only override if it's not explicitly true
         0 == (trueProperties & OMIT_TF_POSITIONS)) {
       properties &= ~OMIT_TF_POSITIONS;
@@ -81,22 +83,24 @@ public class TextField extends FieldType {
     synonymQueryStyle = SolrQueryParserBase.SynonymQueryStyle.AS_SAME_TERM;
     String synonymQueryStyle = args.remove(SYNONYM_QUERY_STYLE);
     if (synonymQueryStyle != null) {
-      this.synonymQueryStyle = SolrQueryParserBase.SynonymQueryStyle.valueOf(synonymQueryStyle.toUpperCase(Locale.ROOT));
+      this.synonymQueryStyle =
+          SolrQueryParserBase.SynonymQueryStyle.valueOf(synonymQueryStyle.toUpperCase(Locale.ROOT));
     }
-    
+
     enableGraphQueries = true;
     String enableGraphQueriesStr = args.remove(ENABLE_GRAPH_QUERIES);
     if (enableGraphQueriesStr != null)
       enableGraphQueries = Boolean.parseBoolean(enableGraphQueriesStr);
 
-    super.init(schema, args);    
+    super.init(schema, args);
   }
 
   /**
-   * Returns the Analyzer to be used when searching fields of this type when mult-term queries are specified.
-   * <p>
-   * This method may be called many times, at any time.
-   * </p>
+   * Returns the Analyzer to be used when searching fields of this type when mult-term queries are
+   * specified.
+   *
+   * <p>This method may be called many times, at any time.
+   *
    * @see #getIndexAnalyzer
    */
   public Analyzer getMultiTermAnalyzer() {
@@ -110,30 +114,35 @@ public class TextField extends FieldType {
   public boolean getAutoGeneratePhraseQueries() {
     return autoGeneratePhraseQueries;
   }
-  
+
   public boolean getEnableGraphQueries() {
     return enableGraphQueries;
   }
 
-  public SolrQueryParserBase.SynonymQueryStyle getSynonymQueryStyle() {return synonymQueryStyle;}
+  public SolrQueryParserBase.SynonymQueryStyle getSynonymQueryStyle() {
+    return synonymQueryStyle;
+  }
 
   @Override
   public SortField getSortField(SchemaField field, boolean reverse) {
     /* :TODO: maybe warn if isTokenized(), but doesn't use LimitTokenCountFilter in its chain? */
-    return getSortedSetSortField(field,
-                                 // historical behavior based on how the early versions of the FieldCache
-                                 // would deal with multiple indexed terms in a singled valued field...
-                                 //
-                                 // Always use the 'min' value from the (Uninverted) "pseudo doc values"
-                                 SortedSetSelector.Type.MIN,
-                                 reverse, SortField.STRING_FIRST, SortField.STRING_LAST);
+    return getSortedSetSortField(
+        field,
+        // historical behavior based on how the early versions of the FieldCache
+        // would deal with multiple indexed terms in a singled valued field...
+        //
+        // Always use the 'min' value from the (Uninverted) "pseudo doc values"
+        SortedSetSelector.Type.MIN,
+        reverse,
+        SortField.STRING_FIRST,
+        SortField.STRING_LAST);
   }
-  
+
   @Override
   public ValueSource getValueSource(SchemaField field, QParser parser) {
     return new SortedSetFieldSource(field.getName());
   }
-  
+
   @Override
   public Type getUninversionType(SchemaField sf) {
     return Type.SORTED_SET_BINARY;
@@ -148,7 +157,7 @@ public class TextField extends FieldType {
   public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
     return parseFieldQuery(parser, getQueryAnalyzer(), field.getName(), externalVal);
   }
-  
+
   @Override
   public Query getFieldTermQuery(QParser parser, SchemaField field, String externalVal) {
     BytesRefBuilder br = new BytesRefBuilder();
@@ -167,7 +176,13 @@ public class TextField extends FieldType {
   }
 
   @Override
-  protected Query getSpecializedRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
+  protected Query getSpecializedRangeQuery(
+      QParser parser,
+      SchemaField field,
+      String part1,
+      String part2,
+      boolean minInclusive,
+      boolean maxInclusive) {
     Analyzer multiAnalyzer = getMultiTermAnalyzer();
     BytesRef lower = analyzeMultiTerm(field.getName(), part1, multiAnalyzer);
     BytesRef upper = analyzeMultiTerm(field.getName(), part2, multiAnalyzer);
@@ -176,18 +191,18 @@ public class TextField extends FieldType {
 
   /**
    * Analyzes a text part using the provided {@link Analyzer} for a multi-term query.
-   * <p>
-   * Expects a single token to be used as multi-term term. This single token might also be filtered out
-   * so zero token is supported and null is returned in this case.
+   *
+   * <p>Expects a single token to be used as multi-term term. This single token might also be
+   * filtered out so zero token is supported and null is returned in this case.
    *
    * @return The multi-term term bytes; or null if there is no multi-term terms.
-   * @throws SolrException If the {@link Analyzer} tokenizes more than one token;
-   * or if an underlying {@link IOException} occurs.
+   * @throws SolrException If the {@link Analyzer} tokenizes more than one token; or if an
+   *     underlying {@link IOException} occurs.
    */
   public static BytesRef analyzeMultiTerm(String field, String part, Analyzer analyzerIn) {
     if (part == null || analyzerIn == null) return null;
 
-    try (TokenStream source = analyzerIn.tokenStream(field, part)){
+    try (TokenStream source = analyzerIn.tokenStream(field, part)) {
       source.reset();
 
       TermToBytesRefAttribute termAtt = source.getAttribute(TermToBytesRefAttribute.class);
@@ -198,18 +213,21 @@ public class TextField extends FieldType {
       }
       BytesRef bytes = BytesRef.deepCopyOf(termAtt.getBytesRef());
       if (source.incrementToken())
-        throw  new SolrException(SolrException.ErrorCode.BAD_REQUEST,"analyzer returned too many terms for multiTerm term: " + part);
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "analyzer returned too many terms for multiTerm term: " + part);
 
       source.end();
       return bytes;
     } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,"error analyzing range part: " + part, e);
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "error analyzing range part: " + part, e);
     }
   }
 
-
   static Query parseFieldQuery(QParser parser, Analyzer analyzer, String field, String queryText) {
-    // note, this method always worked this way (but nothing calls it?) because it has no idea of quotes...
+    // note, this method always worked this way (but nothing calls it?) because it has no idea of
+    // quotes...
     return new QueryBuilder(analyzer).createPhraseQuery(field, queryText);
   }
 

@@ -21,7 +21,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
@@ -34,10 +33,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Tests the exclusivity of the ConfigSets API.
- * Submits a number of API requests concurrently and checks that
- * the responses indicate the requests are handled sequentially for
- * the same ConfigSet and base ConfigSet.
+ * Tests the exclusivity of the ConfigSets API. Submits a number of API requests concurrently and
+ * checks that the responses indicate the requests are handled sequentially for the same ConfigSet
+ * and base ConfigSet.
  */
 public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -74,8 +72,8 @@ public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
         new CreateThread(solrCluster, CONFIGSET_NAME, BASE_CONFIGSET_NAME, trials);
     DeleteThread deleteBaseThread = new DeleteThread(solrCluster, BASE_CONFIGSET_NAME, trials);
     DeleteThread deleteThread = new DeleteThread(solrCluster, CONFIGSET_NAME, trials);
-    List<ConfigSetsAPIThread> threads = Arrays.asList(
-        createBaseThread, createThread, deleteBaseThread, deleteThread);
+    List<ConfigSetsAPIThread> threads =
+        Arrays.asList(createBaseThread, createThread, deleteBaseThread, deleteThread);
 
     for (ConfigSetsAPIThread thread : threads) {
       thread.start();
@@ -83,32 +81,40 @@ public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
     for (ConfigSetsAPIThread thread : threads) {
       thread.join();
     }
-    List<Exception> exceptions = new LinkedList<Exception>();
+    List<Exception> exceptions = new LinkedList<>();
     for (ConfigSetsAPIThread thread : threads) {
       exceptions.addAll(thread.getUnexpectedExceptions());
     }
-    assertEquals("Unexpected exception: " + getFirstExceptionOrNull(exceptions),
-        0, exceptions.size());
+    assertEquals(
+        "Unexpected exception: " + getFirstExceptionOrNull(exceptions), 0, exceptions.size());
   }
 
   private void setupBaseConfigSet(String baseConfigSetName) throws Exception {
     solrCluster.uploadConfigSet(configset("configset-2"), baseConfigSetName);
-    //Make configset untrusted
-    solrCluster.getZkClient().setData("/configs/" + baseConfigSetName, "{\"trusted\": false}".getBytes(StandardCharsets.UTF_8), true);
+    // Make configset untrusted
+    solrCluster
+        .getZkClient()
+        .setData(
+            "/configs/" + baseConfigSetName,
+            "{\"trusted\": false}".getBytes(StandardCharsets.UTF_8),
+            true);
   }
 
   private Exception getFirstExceptionOrNull(List<Exception> list) {
     return list.size() == 0 ? null : list.get(0);
   }
 
-  private static abstract class ConfigSetsAPIThread extends Thread {
+  private abstract static class ConfigSetsAPIThread extends Thread {
     private MiniSolrCloudCluster solrCluster;
     private int trials;
-    private List<Exception> unexpectedExceptions = new LinkedList<Exception>();
-    private List<String> allowedExceptions = Arrays.asList(new String[] {
-        "ConfigSet already exists",
-        "ConfigSet does not exist to delete",
-        "Base ConfigSet does not exist"});
+    private List<Exception> unexpectedExceptions = new LinkedList<>();
+    private List<String> allowedExceptions =
+        Arrays.asList(
+            new String[] {
+              "ConfigSet already exists",
+              "ConfigSet does not exist to delete",
+              "Base ConfigSet does not exist"
+            });
 
     public ConfigSetsAPIThread(MiniSolrCloudCluster solrCluster, int trials) {
       this.solrCluster = solrCluster;
@@ -154,8 +160,8 @@ public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
     private String configSet;
     private String baseConfigSet;
 
-    public CreateThread(MiniSolrCloudCluster solrCluster, String configSet,
-        String baseConfigSet, int trials) {
+    public CreateThread(
+        MiniSolrCloudCluster solrCluster, String configSet, String baseConfigSet, int trials) {
       super(solrCluster, trials);
       this.configSet = configSet;
       this.baseConfigSet = baseConfigSet;

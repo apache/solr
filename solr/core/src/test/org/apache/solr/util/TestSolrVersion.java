@@ -40,7 +40,8 @@ public class TestSolrVersion extends SolrTestCase {
   }
 
   public void testForwardsCompatibility() {
-    assertTrue(SolrVersion.valueOf("9.10.20").greaterThanOrEqualTo(SolrVersion.forIntegers(9, 0, 0)));
+    assertTrue(
+        SolrVersion.valueOf("9.10.20").greaterThanOrEqualTo(SolrVersion.forIntegers(9, 0, 0)));
   }
 
   public void testParseExceptions() {
@@ -61,7 +62,7 @@ public class TestSolrVersion extends SolrTestCase {
   }
 
   public void testSatisfiesParseFailure() {
-    assertThrows(SolrVersion.InvalidSemVerExpressionException.class, () ->
-        SOLR_9_0_1.satisfies(":"));
+    assertThrows(
+        SolrVersion.InvalidSemVerExpressionException.class, () -> SOLR_9_0_1.satisfies(":"));
   }
 }

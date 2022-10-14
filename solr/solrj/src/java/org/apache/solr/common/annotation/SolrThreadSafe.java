@@ -24,12 +24,11 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * This annotation is applied to a class that is thread safe. This means that the objects of this class will never be
- * in an inconsistent state, irrespective of interleaving accesses to the object.
+ * This annotation is applied to a class that is thread safe. This means that the objects of this
+ * class will never be in an inconsistent state, irrespective of interleaving accesses to the
+ * object.
  */
 @Documented
 @Retention(SOURCE)
 @Target(TYPE)
-public @interface SolrThreadSafe {
-
-}
+public @interface SolrThreadSafe {}

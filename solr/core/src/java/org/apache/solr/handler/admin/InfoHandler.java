@@ -16,7 +16,13 @@
  */
 package org.apache.solr.handler.admin;
 
+import static org.apache.solr.common.params.CommonParams.PATH;
+
 import com.google.common.collect.ImmutableList;
+import java.util.Collection;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.solr.api.Api;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
@@ -25,15 +31,9 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
 
-import java.util.Collection;
-import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
-import static org.apache.solr.common.params.CommonParams.PATH;
-
-public class InfoHandler extends RequestHandlerBase  {
+public class InfoHandler extends RequestHandlerBase {
 
   protected final CoreContainer coreContainer;
   private Map<String, RequestHandlerBase> handlers = new ConcurrentHashMap<>();
@@ -50,19 +50,18 @@ public class InfoHandler extends RequestHandlerBase  {
     handlers.put("logging", new LoggingHandler(coreContainer));
     handlers.put("system", new SystemInfoHandler(coreContainer));
     if (coreContainer.getHealthCheckHandler() == null) {
-      throw new IllegalStateException("HealthCheckHandler needs to be initialized before creating InfoHandler");
+      throw new IllegalStateException(
+          "HealthCheckHandler needs to be initialized before creating InfoHandler");
     }
     handlers.put("health", coreContainer.getHealthCheckHandler());
-
   }
 
-
   @Override
-  final public void init(NamedList<?> args) { }
+  public final void init(NamedList<?> args) {}
 
   /**
-   * The instance of CoreContainer this handler handles. This should be the CoreContainer instance that created this
-   * handler.
+   * The instance of CoreContainer this handler handles. This should be the CoreContainer instance
+   * that created this handler.
    *
    * @return a CoreContainer instance
    */
@@ -75,8 +74,8 @@ public class InfoHandler extends RequestHandlerBase  {
     // Make sure the cores is enabled
     CoreContainer cores = getCoreContainer();
     if (cores == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "Core container instance missing");
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "Core container instance missing");
     }
 
     String path = (String) req.getContext().get(PATH);
@@ -87,13 +86,14 @@ public class InfoHandler extends RequestHandlerBase  {
     int i = path.lastIndexOf('/');
     String name = path.substring(i + 1, path.length());
     RequestHandlerBase handler = handlers.get(name.toLowerCase(Locale.ROOT));
-    if(handler == null) {
-      throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No handler by name "+name + " available names are "+ handlers.keySet());
+    if (handler == null) {
+      throw new SolrException(
+          SolrException.ErrorCode.NOT_FOUND,
+          "No handler by name " + name + " available names are " + handlers.keySet());
     }
     handler.handleRequest(req, rsp);
     rsp.setHttpCaching(false);
   }
-
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
@@ -109,7 +109,6 @@ public class InfoHandler extends RequestHandlerBase  {
 
   public PropertiesRequestHandler getPropertiesHandler() {
     return (PropertiesRequestHandler) handlers.get("properties");
-
   }
 
   public ThreadDumpHandler getThreadDumpHandler() {
@@ -167,5 +166,18 @@ public class InfoHandler extends RequestHandlerBase  {
     list.addAll(handlers.get("system").getApis());
     list.addAll(handlers.get("health").getApis());
     return list.build();
+  }
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    // Delegate permission to the actual handler
+    String path = request.getResource();
+    String lastPath = path.substring(path.lastIndexOf("/") + 1);
+    RequestHandlerBase handler = handlers.get(lastPath.toLowerCase(Locale.ROOT));
+    if (handler != null) {
+      return handler.getPermissionName(request);
+    } else {
+      return null;
+    }
   }
 }

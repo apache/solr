@@ -17,13 +17,12 @@
 
 package org.apache.solr.core;
 
-import java.lang.invoke.MethodHandles;
-import java.util.concurrent.atomic.AtomicReference;
-
 import io.opentracing.Scope;
 import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.opentracing.util.GlobalTracer;
+import java.lang.invoke.MethodHandles;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.slf4j.Logger;
@@ -42,12 +41,13 @@ public abstract class TracerConfigurator implements NamedListInitializedPlugin {
     //   static singleton pattern and assumptions based on this.
 
     if (info != null && info.isEnabled()) {
-      GlobalTracer.registerIfAbsent(() -> {
-        TracerConfigurator configurator =
-            loader.newInstance(info.className, TracerConfigurator.class);
-        configurator.init(info.initArgs);
-        return configurator.getTracer();
-      });
+      GlobalTracer.registerIfAbsent(
+          () -> {
+            TracerConfigurator configurator =
+                loader.newInstance(info.className, TracerConfigurator.class);
+            configurator.init(info.initArgs);
+            return configurator.getTracer();
+          });
     }
     if (GlobalTracer.isRegistered()) {
       // ideally we would furthermore check that it's not a no-op impl either but

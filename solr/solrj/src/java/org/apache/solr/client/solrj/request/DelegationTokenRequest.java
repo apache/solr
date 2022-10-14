@@ -20,7 +20,6 @@ package org.apache.solr.client.solrj.request;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.TreeSet;
-
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
@@ -33,8 +32,8 @@ import org.apache.solr.common.params.SolrParams;
  *
  * @since Solr 6.2
  */
-public abstract class DelegationTokenRequest
-    <Q extends DelegationTokenRequest<Q,R>, R extends DelegationTokenResponse>
+public abstract class DelegationTokenRequest<
+        Q extends DelegationTokenRequest<Q, R>, R extends DelegationTokenResponse>
     extends SolrRequest<R> {
 
   protected static final String OP_KEY = "op";
@@ -63,7 +62,7 @@ public abstract class DelegationTokenRequest
       super(METHOD.GET);
       this.renewer = renewer;
       setResponseParser(new DelegationTokenResponse.JsonMapResponseParser());
-      setQueryParams(new TreeSet<String>(Arrays.asList(OP_KEY)));
+      setQueryParams(new TreeSet<>(Arrays.asList(OP_KEY)));
     }
 
     @Override
@@ -80,7 +79,9 @@ public abstract class DelegationTokenRequest
     }
 
     @Override
-    public DelegationTokenResponse.Get createResponse(SolrClient client) { return new DelegationTokenResponse.Get(); }
+    public DelegationTokenResponse.Get createResponse(SolrClient client) {
+      return new DelegationTokenResponse.Get();
+    }
 
     @Override
     public String getRequestType() {
@@ -100,7 +101,7 @@ public abstract class DelegationTokenRequest
       super(METHOD.PUT);
       this.token = token;
       setResponseParser(new DelegationTokenResponse.JsonMapResponseParser());
-      setQueryParams(new TreeSet<String>(Arrays.asList(OP_KEY, TOKEN_KEY)));
+      setQueryParams(new TreeSet<>(Arrays.asList(OP_KEY, TOKEN_KEY)));
     }
 
     @Override
@@ -112,7 +113,9 @@ public abstract class DelegationTokenRequest
     }
 
     @Override
-    public DelegationTokenResponse.Renew createResponse(SolrClient client) { return new DelegationTokenResponse.Renew(); }
+    public DelegationTokenResponse.Renew createResponse(SolrClient client) {
+      return new DelegationTokenResponse.Renew();
+    }
 
     @Override
     public String getRequestType() {
@@ -120,15 +123,16 @@ public abstract class DelegationTokenRequest
     }
   }
 
-  public static class Cancel extends DelegationTokenRequest<Cancel, DelegationTokenResponse.Cancel> {
+  public static class Cancel
+      extends DelegationTokenRequest<Cancel, DelegationTokenResponse.Cancel> {
     protected String token;
 
     public Cancel(String token) {
       super(METHOD.PUT);
       this.token = token;
       setResponseParser(new NoOpResponseParser());
-      Set<String> queryParams = new TreeSet<String>();
-      setQueryParams(new TreeSet<String>(Arrays.asList(OP_KEY, TOKEN_KEY)));
+      Set<String> queryParams = new TreeSet<>();
+      setQueryParams(new TreeSet<>(Arrays.asList(OP_KEY, TOKEN_KEY)));
     }
 
     @Override
@@ -145,7 +149,9 @@ public abstract class DelegationTokenRequest
     }
 
     @Override
-    public DelegationTokenResponse.Cancel createResponse(SolrClient client) { return new DelegationTokenResponse.Cancel(); }
+    public DelegationTokenResponse.Cancel createResponse(SolrClient client) {
+      return new DelegationTokenResponse.Cancel();
+    }
 
     @Override
     public String getRequestType() {

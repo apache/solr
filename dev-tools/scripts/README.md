@@ -72,25 +72,33 @@ of the other tools in this folder.
 
 ### buildAndPushRelease.py
 
-    usage: buildAndPushRelease.py [-h] [--no-prepare] [--local-keys PATH]
-                                  [--push-local PATH] [--sign KEYID]
-                                  [--rc-num NUM] [--root PATH] [--logfile PATH]
+    usage: buildAndPushRelease.py [-h] [--no-prepare] [--local-keys PATH] [--push-local PATH] [--sign FINGERPRINT]
+    [--sign-method-gradle] [--gpg-pass-noprompt] [--gpg-home PATH] [--rc-num NUM]
+    [--root PATH] [--logfile PATH] [--dev-mode]
     
     Utility to build, push, and test a release.
     
     optional arguments:
-      -h, --help         show this help message and exit
-      --no-prepare       Use the already built release in the provided checkout
-      --local-keys PATH  Uses local KEYS file to validate presence of RM's gpg key
-      --push-local PATH  Push the release to the local path
-      --sign KEYID       Sign the release with the given gpg key
-      --rc-num NUM       Release Candidate number. Default: 1
-      --root PATH        Root of Git working tree for solr. Default: "."
-                         (the current directory)
-      --logfile PATH     Specify log file path (default /tmp/release.log)
+    -h, --help            show this help message and exit
+    --no-prepare          Use the already built release in the provided checkout
+    --local-keys PATH     Uses local KEYS file to validate presence of RM's gpg key
+    --push-local PATH     Push the release to the local path
+    --sign FINGERPRINT    Sign the release with the given gpg key. This must be the full GPG fingerprint, not just the
+                          last 8 characters.
+    --sign-method-gradle  Use Gradle built-in GPG signing instead of gpg command for signing artifacts. This may require
+    --gpg-secring argument if your keychain cannot be resolved automatically.
+    --gpg-pass-noprompt   Do not prompt for gpg passphrase. For the default gnupg method, this means your gpg-agent needs
+                          a non-TTY pin-entry program. For gradle signing method, passphrase must be provided in
+                          gradle.properties or by env.var/sysprop. See ./gradlew helpPublishing for more info
+    --gpg-home PATH       Path to gpg home containing your secring.gpg Optional, will use $HOME/.gnupg/secring.gpg by
+                          default
+    --rc-num NUM          Release Candidate number. Default: 1
+    --root PATH           Root of Git working tree for solr. Default: "." (the current directory)
+    --logfile PATH        Specify log file path (default /tmp/release.log)
+    --dev-mode            Enable development mode, which disables some strict checks
     
     Example usage for a Release Manager:
-    python3 -u dev-tools/scripts/buildAndPushRelease.py --push-local /tmp/releases/6.0.1 --sign 6E68DA61 --rc-num 1
+    python3 -u dev-tools/scripts/buildAndPushRelease.py --push-local /tmp/releases/6.0.1 --sign 3782CBB60147010B330523DD26FBCC7836BF353A --rc-num 1
 
 ### addVersion.py
 
@@ -155,7 +163,46 @@ and prints a regular expression that will match all of them
       --json         Output as json
       --token TOKEN  Github access token in case you query too often anonymously
 
+### scaffoldNewModule.py
+
+Scaffold a new module and include it into the build. It will set up the folders
+and all for you, so the only thing you need to do is add classes, tests and test-data.
+
+    usage: scaffoldNewModule.py [-h] name full_name description
+    
+    Scaffold new module into solr/modules/<name>
+    
+    positional arguments:
+        name         code-name/id, e.g. my-module
+        full_name    Readable name, e.g. "My Module"
+        description  Short description for docs
+    
+    optional arguments:
+     -h, --help   show this help message and exit
+
+    Example: ./scaffoldNewModule.py foo "My Module" "Very Useful module here"
+
 ### gitignore-gen.sh
 
 TBD
 
+
+### cherrypick.sh
+
+    Usage: dev-tools/scripts/cherrypick.sh [<options>] <commit-hash> [<commit-hash>...]
+     -b <branch> Sets the branch(es) to cherry-pick to, typically branch_Nx or branch_x_y
+     -s          Skips precommit test. WARNING: Always run precommit for code- and doc changes
+     -t          Run the full test suite during check, not only precommit
+     -n          Skips git pull of target branch. Useful if you are without internet access
+     -a          Enters automated mode. Aborts cherry-pick and exits on error
+     -r <remote> Specify remote to push to. Defaults to 'origin'
+     -p          Push to remote. Only done if both cherry-pick and tests succeeded
+     WARNING: Never push changes to a remote branch before a thorough local test
+    
+    Simple script for aiding in back-porting one or more (trivial) commits to other branches.
+    On merge conflict the script will run 'git mergetool'. See 'git mergetool --help'
+    for help on configuring your favourite merge tool. Check out Sublime Merge (smerge).
+    
+    Example:
+      # Backport two commits to both stable and release branches
+      dev-tools/scripts/cherrypick.sh -b branch_9x -b branch_9_0 deadbeef0000 cafebabe1111

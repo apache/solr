@@ -16,15 +16,13 @@
  */
 package org.apache.solr.client.solrj.io.eq;
 
-
 /**
  * Interface defining a way to determine if two items are equal
- * 
- * This borrows from Java 8's BiPredicate interface but to keep Java 7 compatible 
- * we will not use that interface directory. We will use the test method, however,
- * so that future refactoring for Java 8 is simplified.
+ *
+ * <p>This borrows from Java 8's BiPredicate interface but to keep Java 7 compatible we will not use
+ * that interface directory. We will use the test method, however, so that future refactoring for
+ * Java 8 is simplified.
  */
 public interface Equalitor<T> {
   public boolean test(T left, T right);
-  
 }

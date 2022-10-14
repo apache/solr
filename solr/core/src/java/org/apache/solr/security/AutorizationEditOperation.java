@@ -17,18 +17,17 @@
 
 package org.apache.solr.security;
 
+import static org.apache.solr.common.util.Utils.getDeepCopy;
+import static org.apache.solr.handler.admin.SecurityConfHandler.getListValue;
+import static org.apache.solr.handler.admin.SecurityConfHandler.getMapValue;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-
 import org.apache.solr.common.util.CommandOperation;
-
-import static org.apache.solr.common.util.Utils.getDeepCopy;
-import static org.apache.solr.handler.admin.SecurityConfHandler.getListValue;
-import static org.apache.solr.handler.admin.SecurityConfHandler.getMapValue;
 
 // TODO is this a typo - should be Authorization?
 enum AutorizationEditOperation {
@@ -79,7 +78,8 @@ enum AutorizationEditOperation {
       }
       if (op.hasError()) return null;
 
-      List<Map<String, Object>> permissions = AutorizationEditOperation.ensureIndexOnPermissions(latestConf);
+      List<Map<String, Object>> permissions =
+          AutorizationEditOperation.ensureIndexOnPermissions(latestConf);
       List<Map<String, Object>> permissionsCopy = new ArrayList<>();
       boolean beforeSatisfied = beforeIdx == null;
       boolean indexSatisfied = index == null;
@@ -90,7 +90,7 @@ enum AutorizationEditOperation {
           permissionsCopy.add(dataMap);
           permissionsCopy.add(perm);
         } else if (thisIdx.equals(index)) {
-          //overwriting an existing one
+          // overwriting an existing one
           indexSatisfied = true;
           permissionsCopy.add(dataMap);
         } else {
@@ -117,7 +117,6 @@ enum AutorizationEditOperation {
       latestConf.put(PERMISSIONS, permissionsCopy);
       return latestConf;
     }
-
   },
   UPDATE_PERMISSION("update-permission") {
     @Override
@@ -125,7 +124,8 @@ enum AutorizationEditOperation {
       Integer index = op.getInt(INDEX);
       if (op.hasError()) return null;
 
-      List<Map<String, Object>> permissions = AutorizationEditOperation.ensureIndexOnPermissions(latestConf);
+      List<Map<String, Object>> permissions =
+          AutorizationEditOperation.ensureIndexOnPermissions(latestConf);
       for (Map<String, Object> permission : permissions) {
         if (index.equals(getIndex(permission))) {
           LinkedHashMap<String, Object> copy = new LinkedHashMap<>(permission);
@@ -149,7 +149,8 @@ enum AutorizationEditOperation {
       List<Map<String, Object>> p = AutorizationEditOperation.ensureIndexOnPermissions(latestConf);
       if (p.stream().anyMatch(map -> id.equals(getIndex(map)))) {
         // filter out the deleted index, then re-order the remaining indexes
-        List<Map<String, Object>> c = p.stream().filter(map -> !id.equals(getIndex(map))).collect(Collectors.toList());
+        List<Map<String, Object>> c =
+            p.stream().filter(map -> !id.equals(getIndex(map))).collect(Collectors.toList());
         setIndex(c);
         latestConf.put(PERMISSIONS, c);
         return latestConf;
@@ -186,8 +187,10 @@ enum AutorizationEditOperation {
   }
 
   @SuppressWarnings("unchecked")
-  private static List<Map<String, Object>> ensureIndexOnPermissions(Map<String, Object> latestConf) {
-    List<Map<String, Object>> permissions = (List<Map<String, Object>>) getListValue(latestConf, PERMISSIONS);
+  private static List<Map<String, Object>> ensureIndexOnPermissions(
+      Map<String, Object> latestConf) {
+    List<Map<String, Object>> permissions =
+        (List<Map<String, Object>>) getListValue(latestConf, PERMISSIONS);
     // see if any permissions have "index" set ...
     if (permissions.stream().noneMatch(map -> map.containsKey(INDEX))) {
       // "index" not set on the list of permissions, add it now ...

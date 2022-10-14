@@ -20,18 +20,22 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class LeftShiftEvaluator extends RecursiveObjectEvaluator implements TwoValueWorker {
   protected static final long serialVersionUID = 1L;
 
-  public LeftShiftEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public LeftShiftEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
 
-    if(2 != containedEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting exactly 2 value but found %d",expression,containedEvaluators.size()));
+    if (2 != containedEvaluators.size()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting exactly 2 value but found %d",
+              expression,
+              containedEvaluators.size()));
     }
   }
 
@@ -47,7 +51,8 @@ public class LeftShiftEvaluator extends RecursiveObjectEvaluator implements TwoV
       }
       return shifted;
     } else {
-      throw new IOException("The ltrim function takes two parameters: an array and number to trim it by");
+      throw new IOException(
+          "The ltrim function takes two parameters: an array and number to trim it by");
     }
   }
 }

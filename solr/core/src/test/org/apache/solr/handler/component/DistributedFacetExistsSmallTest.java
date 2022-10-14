@@ -16,13 +16,11 @@
  */
 package org.apache.solr.handler.component;
 
-import java.io.IOException;
+import static org.hamcrest.CoreMatchers.is;
+
 import java.util.List;
 import java.util.Random;
-
 import org.apache.solr.BaseDistributedSearchTestCase;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
@@ -30,37 +28,34 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Before;
 
-import static org.hamcrest.CoreMatchers.is;
-
 public class DistributedFacetExistsSmallTest extends BaseDistributedSearchTestCase {
 
   public static final String FLD = "t_s";
   private int maxId;
-  
-  public DistributedFacetExistsSmallTest() {
-  }
+
+  public DistributedFacetExistsSmallTest() {}
 
   @Before
   public void prepareIndex() throws Exception {
     del("*:*");
 
     final Random rnd = random();
-    index(id, maxId=rnd.nextInt(5), FLD, "AAA");
-    index(id, maxId+=1+rnd.nextInt(5), FLD, "B");
-    index(id, maxId+=1+rnd.nextInt(5), FLD, "BB");
-    index(id, maxId+=1+rnd.nextInt(5), FLD, "BB");
-    index(id, maxId+=1+rnd.nextInt(5), FLD, "BBB");
-    index(id, maxId+=1+rnd.nextInt(5), FLD, "BBB");
-    index(id, maxId+=1+rnd.nextInt(5), FLD, "BBB");
-    index(id, maxId+=1+rnd.nextInt(5), FLD, "CC");
-    index(id, maxId+=1+rnd.nextInt(5), FLD, "CC");
-    index(id, maxId+=1+rnd.nextInt(5), FLD, "CCC");
-    index(id, maxId+=1+rnd.nextInt(5), FLD, "CCC");
-    index(id, maxId+=1+rnd.nextInt(5), FLD, "CCC");
+    index(id, maxId = rnd.nextInt(5), FLD, "AAA");
+    index(id, maxId += 1 + rnd.nextInt(5), FLD, "B");
+    index(id, maxId += 1 + rnd.nextInt(5), FLD, "BB");
+    index(id, maxId += 1 + rnd.nextInt(5), FLD, "BB");
+    index(id, maxId += 1 + rnd.nextInt(5), FLD, "BBB");
+    index(id, maxId += 1 + rnd.nextInt(5), FLD, "BBB");
+    index(id, maxId += 1 + rnd.nextInt(5), FLD, "BBB");
+    index(id, maxId += 1 + rnd.nextInt(5), FLD, "CC");
+    index(id, maxId += 1 + rnd.nextInt(5), FLD, "CC");
+    index(id, maxId += 1 + rnd.nextInt(5), FLD, "CCC");
+    index(id, maxId += 1 + rnd.nextInt(5), FLD, "CCC");
+    index(id, maxId += 1 + rnd.nextInt(5), FLD, "CCC");
 
-    final SolrClient shard0 = clients.get(0);
-    // expectidly fails test
-    //shard0.add(sdoc("id", 13, FLD, "DDD"));
+    // final SolrClient shard0 = clients.get(0);
+    // expectedly fails test
+    // shard0.add(sdoc("id", 13, FLD, "DDD"));
     commit();
 
     handle.clear();
@@ -70,22 +65,22 @@ public class DistributedFacetExistsSmallTest extends BaseDistributedSearchTestCa
     handle.put("_version_", SKIPVAL);
   }
 
-  @ShardsFixed(num=4)
-  public void test() throws Exception{
+  @ShardsFixed(num = 4)
+  public void test() throws Exception {
     checkBasicRequest();
     checkWithMinCountEqOne();
     checkWithSortCount();
     checkWithMethodSetPerField();
-    
+
     {
       // empty enum for checking npe
       final ModifiableSolrParams params = buildParams();
       params.remove("facet.exists");
       QueryResponse rsp = query(params);
     }
-    
+
     checkRandomParams();
-    
+
     checkInvalidMincount();
   }
 
@@ -95,15 +90,21 @@ public class DistributedFacetExistsSmallTest extends BaseDistributedSearchTestCa
 
     if (rand.nextBoolean()) {
       int from;
-      params.set("q", "["+(from = rand.nextInt(maxId/2))+
-                  " TO "+((from-1)+(rand.nextInt(maxId)))+"]");
+      params.set(
+          "q",
+          "["
+              + (from = rand.nextInt(maxId / 2))
+              + " TO "
+              + ((from - 1) + (rand.nextInt(maxId)))
+              + "]");
     }
-    
+
     int offset = 0;
     int indexSize = 6;
-    if (rand .nextInt(100) < 20) {
+    if (rand.nextInt(100) < 20) {
       if (rand.nextBoolean()) {
-        offset = rand.nextInt(100) < 10 ? rand.nextInt(indexSize *2) : rand.nextInt(indexSize/3+1);
+        offset =
+            rand.nextInt(100) < 10 ? rand.nextInt(indexSize * 2) : rand.nextInt(indexSize / 3 + 1);
       }
       params.add("facet.offset", Integer.toString(offset));
     }
@@ -111,7 +112,8 @@ public class DistributedFacetExistsSmallTest extends BaseDistributedSearchTestCa
     int limit = 100;
     if (rand.nextInt(100) < 20) {
       if (rand.nextBoolean()) {
-        limit = rand.nextInt(100) < 10 ? rand.nextInt(indexSize/2+1) : rand.nextInt(indexSize*2);
+        limit =
+            rand.nextInt(100) < 10 ? rand.nextInt(indexSize / 2 + 1) : rand.nextInt(indexSize * 2);
       }
       params.add("facet.limit", Integer.toString(limit));
     }
@@ -120,46 +122,49 @@ public class DistributedFacetExistsSmallTest extends BaseDistributedSearchTestCa
       params.add("facet.sort", rand.nextBoolean() ? "index" : "count");
     }
 
-    if ( rand.nextInt(100) < 20) {
-      final String[] prefixes = new String[] {"A","B","C"};
+    if (rand.nextInt(100) < 20) {
+      final String[] prefixes = new String[] {"A", "B", "C"};
       params.add("facet.prefix", prefixes[rand.nextInt(prefixes.length)]);
     }
 
-    // don't bother trying to to test facet.missing=true + facet.limit=0
-    // distrib & non-distrib are known to behave differently in this 
+    // don't bother trying to test facet.missing=true + facet.limit=0
+    // distrib & non-distrib are known to behave differently in this
     if (rand.nextInt(100) < 20 && 0 < params.getInt("facet.limit", 100)) {
       params.add("facet.missing", "true");
     }
-    
+
     if (rand.nextInt(100) < 20) { // assigning only valid vals
-      params.add("facet.mincount", rand.nextBoolean() ? "0": "1" );
+      params.add("facet.mincount", rand.nextBoolean() ? "0" : "1");
     }
-    
+
     query(params);
   }
-  
-  private void checkInvalidMincount() throws SolrServerException, IOException {
+
+  private void checkInvalidMincount() {
     final ModifiableSolrParams params = buildParams();
     if (random().nextBoolean()) {
       params.remove("facet.exists");
-      params.set("f."+FLD+".facet.exists","true");
-    }
-    
-    if (random().nextBoolean()) {
-      params.set("facet.mincount",  ""+(2+random().nextInt(100)) );
-    } else {
-      params.set("f."+FLD+".facet.mincount",  ""+(2+random().nextInt(100)) );
+      params.set("f." + FLD + ".facet.exists", "true");
     }
 
-    SolrException e = expectThrows(SolrException.class, () -> {
-      if (random().nextBoolean()) {
-        setDistributedParams(params);
-        queryServer(params);
-      } else {
-        params.set("distrib", "false");
-        controlClient.query(params);
-      }
-    });
+    if (random().nextBoolean()) {
+      params.set("facet.mincount", "" + (2 + random().nextInt(100)));
+    } else {
+      params.set("f." + FLD + ".facet.mincount", "" + (2 + random().nextInt(100)));
+    }
+
+    SolrException e =
+        expectThrows(
+            SolrException.class,
+            () -> {
+              if (random().nextBoolean()) {
+                setDistributedParams(params);
+                queryServer(params);
+              } else {
+                params.set("distrib", "false");
+                controlClient.query(params);
+              }
+            });
     assertEquals(e.code(), ErrorCode.BAD_REQUEST.code);
     assertTrue(e.getMessage().contains("facet.exists"));
     assertTrue(e.getMessage().contains("facet.mincount"));
@@ -173,13 +178,13 @@ public class DistributedFacetExistsSmallTest extends BaseDistributedSearchTestCa
   }
 
   private void checkWithMinCountEqOne() throws Exception {
-    final ModifiableSolrParams params = buildParams("facet.mincount","1");
+    final ModifiableSolrParams params = buildParams("facet.mincount", "1");
     QueryResponse rsp = query(params);
     assertResponse(rsp);
   }
 
   private void checkWithSortCount() throws Exception {
-    final ModifiableSolrParams params = buildParams("facet.sort","count");
+    final ModifiableSolrParams params = buildParams("facet.sort", "count");
     QueryResponse rsp = query(params);
     assertResponse(rsp);
   }
@@ -196,17 +201,17 @@ public class DistributedFacetExistsSmallTest extends BaseDistributedSearchTestCa
 
     params.add("q", "*:*");
     params.add("rows", "0");
-    //params.add("debugQuery", "true");
+    // params.add("debugQuery", "true");
     params.add("facet", "true");
     params.add("sort", "id asc");
-    
-    if(random().nextBoolean()){
+
+    if (random().nextBoolean()) {
       params.add("facet.method", "enum");
     }
-    
+
     params.add("facet.exists", "true");
     params.add("facet.field", FLD);
-    for(int i = 0; i < additionalParams.length;) {
+    for (int i = 0; i < additionalParams.length; ) {
       params.add(additionalParams[i++], additionalParams[i++]);
     }
     return params;

@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
@@ -53,7 +52,12 @@ public class WeightedSumMetric extends Metric {
 
     // validate expression contains only what we want.
     if (null == valueCol) {
-      throw new IOException(String.format(Locale.ROOT, "Invalid expression %s - expected %s(valueCol,countCol)", expression, FUNC));
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expected %s(valueCol,countCol)",
+              expression,
+              FUNC));
     }
 
     boolean ol = false;
@@ -90,7 +94,7 @@ public class WeightedSumMetric extends Metric {
   }
 
   public String[] getColumns() {
-    return new String[]{valueCol, countCol};
+    return new String[] {valueCol, countCol};
   }
 
   public Number getValue() {
@@ -116,7 +120,10 @@ public class WeightedSumMetric extends Metric {
 
   @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
-    return new StreamExpression(getFunctionName()).withParameter(valueCol).withParameter(countCol).withParameter(Boolean.toString(outputLong));
+    return new StreamExpression(getFunctionName())
+        .withParameter(valueCol)
+        .withParameter(countCol)
+        .withParameter(Boolean.toString(outputLong));
   }
 
   private static final class Part {

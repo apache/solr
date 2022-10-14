@@ -21,8 +21,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 /**
- * Checking QParser plugin initialization, failing with NPE during Solr startup.
- * Ensures that query is working by registered in solrconfig.xml "fail" query parser.
+ * Checking QParser plugin initialization, failing with NPE during Solr startup. Ensures that query
+ * is working by registered in solrconfig.xml "fail" query parser.
  */
 public class TestInitQParser extends SolrTestCaseJ4 {
   private static void createIndex() {
@@ -31,7 +31,8 @@ public class TestInitQParser extends SolrTestCaseJ4 {
     assertU(adoc("id", "1", "text", v, "text_np", v));
     v = "now cow";
     assertU(adoc("id", "2", "text", v, "text_np", v));
-    assertU(adoc("id", "3", "foo_s", "a ' \" \\ {! ) } ( { z"));  // A value filled with special chars
+    assertU(
+        adoc("id", "3", "foo_s", "a ' \" \\ {! ) } ( { z")); // A value filled with special chars
 
     assertU(adoc("id", "10", "qqq_s", "X"));
     assertU(adoc("id", "11", "www_s", "X"));
@@ -39,7 +40,6 @@ public class TestInitQParser extends SolrTestCaseJ4 {
     assertU(adoc("id", "13", "eee_s", "'balance'"));
 
     assertU(commit());
-
   }
 
   @Override
@@ -52,11 +52,8 @@ public class TestInitQParser extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testQueryParserInit() throws Exception {
+  public void testQueryParserInit() {
     // should query using registered fail (defType=fail) QParser and match only one doc
-    assertQ(req("q", "id:1", "indent", "true", "defType", "fail")
-        , "//*[@numFound='1']"
-    );
+    assertQ(req("q", "id:1", "indent", "true", "defType", "fail"), "//*[@numFound='1']");
   }
-
 }

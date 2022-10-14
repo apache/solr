@@ -19,7 +19,6 @@ package org.apache.solr.update.processor;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -34,9 +33,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/**
- * 
- */
+/** */
 public class UniqFieldsUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
 
   @BeforeClass
@@ -56,41 +53,56 @@ public class UniqFieldsUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
   @Test
   public void testUniqFields() throws Exception {
     SolrCore core = h.getCore();
-    UpdateRequestProcessorChain chained = core
-      .getUpdateProcessingChain("uniq-fields");
-    UniqFieldsUpdateProcessorFactory factory = ((UniqFieldsUpdateProcessorFactory) chained.getProcessors().get(0));
+    UpdateRequestProcessorChain chained = core.getUpdateProcessingChain("uniq-fields");
     assertNotNull(chained);
+    UniqFieldsUpdateProcessorFactory factory =
+        ((UniqFieldsUpdateProcessorFactory) chained.getProcessors().get(0));
+    assertNotNull(factory);
 
-    addDoc(adoc("id", "1a", 
-                "uniq", "value1", 
-                "uniq", "value1", 
-                "uniq", "value2"));
-    addDoc(adoc("id", "2a", 
-                "uniq2", "value1", 
-                "uniq2", "value2", 
-                "uniq2", "value1", 
-                "uniq2", "value3", 
-                "uniq", "value1", 
-                "uniq", "value1"));
-    addDoc(adoc("id", "1b", 
-                "uniq3", "value1", 
-                "uniq3", "value1"));
-    addDoc(adoc("id", "1c", 
-                "nouniq", "value1", 
-                "nouniq", "value1", 
-                "nouniq", "value2"));
-    addDoc(adoc("id", "2c", 
-                "nouniq", "value1", 
-                "nouniq", "value1", 
-                "nouniq", "value2", 
-                "uniq2", "value1", 
-                "uniq2", "value1"));
+    addDoc(
+        adoc(
+            "id", "1a",
+            "uniq", "value1",
+            "uniq", "value1",
+            "uniq", "value2"));
+    addDoc(
+        adoc(
+            "id", "2a",
+            "uniq2", "value1",
+            "uniq2", "value2",
+            "uniq2", "value1",
+            "uniq2", "value3",
+            "uniq", "value1",
+            "uniq", "value1"));
+    addDoc(
+        adoc(
+            "id", "1b",
+            "uniq3", "value1",
+            "uniq3", "value1"));
+    addDoc(
+        adoc(
+            "id", "1c",
+            "nouniq", "value1",
+            "nouniq", "value1",
+            "nouniq", "value2"));
+    addDoc(
+        adoc(
+            "id", "2c",
+            "nouniq", "value1",
+            "nouniq", "value1",
+            "nouniq", "value2",
+            "uniq2", "value1",
+            "uniq2", "value1"));
 
     assertU(commit());
-    assertQ(req("id:1a"), "count(//*[@name='uniq']/*)=2",
+    assertQ(
+        req("id:1a"),
+        "count(//*[@name='uniq']/*)=2",
         "//arr[@name='uniq']/str[1][.='value1']",
         "//arr[@name='uniq']/str[2][.='value2']");
-    assertQ(req("id:2a"), "count(//*[@name='uniq2']/*)=3",
+    assertQ(
+        req("id:2a"),
+        "count(//*[@name='uniq2']/*)=3",
         "//arr[@name='uniq2']/str[1][.='value1']",
         "//arr[@name='uniq2']/str[2][.='value2']",
         "//arr[@name='uniq2']/str[3][.='value3']");
@@ -99,16 +111,13 @@ public class UniqFieldsUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     assertQ(req("id:1c"), "count(//*[@name='nouniq']/*)=3");
     assertQ(req("id:2c"), "count(//*[@name='nouniq']/*)=3");
     assertQ(req("id:2c"), "count(//*[@name='uniq2']/*)=1");
-
   }
 
   private void addDoc(String doc) throws Exception {
     Map<String, String[]> params = new HashMap<>();
     MultiMapSolrParams mmparams = new MultiMapSolrParams(params);
-    params.put(UpdateParams.UPDATE_CHAIN, new String[] { "uniq-fields" });
-    SolrQueryRequestBase req = new SolrQueryRequestBase(h.getCore(),
-        (SolrParams) mmparams) {
-    };
+    params.put(UpdateParams.UPDATE_CHAIN, new String[] {"uniq-fields"});
+    SolrQueryRequestBase req = new SolrQueryRequestBase(h.getCore(), (SolrParams) mmparams) {};
 
     UpdateRequestHandler handler = new UpdateRequestHandler();
     handler.init(null);

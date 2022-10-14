@@ -16,41 +16,42 @@
  */
 package org.apache.solr.client.solrj.response;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
 /**
  * A test case for the {@link FieldAnalysisResponse} class.
- *
  *
  * @since solr 1.4
  */
 public class FieldAnalysisResponseTest extends SolrTestCase {
 
   /**
-   * Tests the {@link FieldAnalysisResponse#setResponse(org.apache.solr.common.util.NamedList)} method.
+   * Tests the {@link FieldAnalysisResponse#setResponse(org.apache.solr.common.util.NamedList)}
+   * method.
    */
   @Test
   public void testSetResponse() throws Exception {
 
-    // the parsing of the analysis phases is already tested in the AnalysisResponseBaseTest. So we can just fake
-    // the phases list here and use it.
+    // the parsing of the analysis phases is already tested in the AnalysisResponseBaseTest. So we
+    // can just fake the phases list here and use it.
     final List<AnalysisResponseBase.AnalysisPhase> phases = new ArrayList<>(1);
-    AnalysisResponseBase.AnalysisPhase expectedPhase = new AnalysisResponseBase.AnalysisPhase("Tokenizer");
+    AnalysisResponseBase.AnalysisPhase expectedPhase =
+        new AnalysisResponseBase.AnalysisPhase("Tokenizer");
     phases.add(expectedPhase);
 
     NamedList<Object> responseNL = buildResponse();
-    FieldAnalysisResponse response = new FieldAnalysisResponse() {
-      @Override
-      protected List<AnalysisPhase> buildPhases(NamedList<Object> phaseNL) {
-        return phases;
-      }
-    };
+    FieldAnalysisResponse response =
+        new FieldAnalysisResponse() {
+          @Override
+          protected List<AnalysisPhase> buildPhases(NamedList<Object> phaseNL) {
+            return phases;
+          }
+        };
 
     response.setResponse(responseNL);
 
@@ -76,7 +77,7 @@ public class FieldAnalysisResponseTest extends SolrTestCase {
     assertFalse(iter.hasNext());
   }
 
-  //================================================ Helper Methods ==================================================
+  // ===== Helper Methods =====
 
   private NamedList<Object> buildResponse() {
     NamedList<Object> response = new NamedList<>();

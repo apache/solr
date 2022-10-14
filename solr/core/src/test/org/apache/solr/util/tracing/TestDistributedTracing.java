@@ -17,15 +17,13 @@
 
 package org.apache.solr.util.tracing;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
-
 import io.opentracing.mock.MockSpan;
 import io.opentracing.mock.MockTracer;
 import io.opentracing.util.GlobalTracer;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -55,10 +53,10 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     assertTrue(GlobalTracer.registerIfAbsent(tracer));
 
     configureCluster(4)
-        .addConfig("config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .addConfig(
+            "config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
-    CollectionAdminRequest
-        .createCollection(COLLECTION, "config", 2, 2)
+    CollectionAdminRequest.createCollection(COLLECTION, "config", 2, 2)
         .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 4);
@@ -70,7 +68,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
   }
 
   @Test
-  public void test() throws IOException, SolrServerException, TimeoutException, InterruptedException {
+  public void test() throws IOException, SolrServerException {
     // TODO it would be clearer if we could compare the complete Span tree between reality
     //   and what we assert it looks like in a structured visual way.
 
@@ -80,8 +78,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     // Indexing
     cloudClient.add(COLLECTION, sdoc("id", "1"));
     finishedSpans = getAndClearSpans();
-    finishedSpans.removeIf(x ->
-        !x.tags().get("http.url").toString().endsWith("/update"));
+    finishedSpans.removeIf(x -> !x.tags().get("http.url").toString().endsWith("/update"));
     assertEquals(2, finishedSpans.size());
     assertOneSpanIsChildOfAnother(finishedSpans);
     // core because cloudClient routes to core
@@ -97,18 +94,20 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     // Searching
     cloudClient.query(COLLECTION, new SolrQuery("*:*"));
     finishedSpans = getAndClearSpans();
-    finishedSpans.removeIf(x ->
-        !x.tags().get("http.url").toString().endsWith("/select"));
+    finishedSpans.removeIf(x -> !x.tags().get("http.url").toString().endsWith("/select"));
     // one from client to server, 2 for execute query, 2 for fetching documents
     assertEquals(5, finishedSpans.size());
     assertEquals(1, finishedSpans.stream().filter(s -> s.parentId() == 0).count());
-    long parentId = finishedSpans.stream()
-        .filter(s -> s.parentId() == 0)
-        .collect(Collectors.toList())
-        .get(0).context().spanId();
-    for (MockSpan span: finishedSpans) {
+    long parentId =
+        finishedSpans.stream()
+            .filter(s -> s.parentId() == 0)
+            .collect(Collectors.toList())
+            .get(0)
+            .context()
+            .spanId();
+    for (MockSpan span : finishedSpans) {
       if (span.parentId() != 0 && parentId != span.parentId()) {
-        fail("All spans must belong to single span, but:"+finishedSpans);
+        fail("All spans must belong to single span, but:" + finishedSpans);
       }
     }
     assertEquals("get:/{collection}/select", finishedSpans.get(0).operationName());
@@ -137,9 +136,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
 
     new V2Request.Builder("/c/" + COLLECTION)
         .withMethod(SolrRequest.METHOD.POST)
-        .withPayload("{\n" +
-            " \"reload\" : {}\n" +
-            "}")
+        .withPayload("{\n" + " \"reload\" : {}\n" + "}")
         .build()
         .process(cloudClient);
     finishedSpans = getAndClearSpans();
@@ -148,9 +145,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
 
     new V2Request.Builder("/c/" + COLLECTION + "/update/json")
         .withMethod(SolrRequest.METHOD.POST)
-        .withPayload("{\n" +
-            " \"id\" : \"9\"\n" +
-            "}")
+        .withPayload("{\n" + " \"id\" : \"9\"\n" + "}")
         .withParams(params("commit", "true"))
         .build()
         .process(cloudClient);
@@ -158,15 +153,16 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     assertEquals("post:/c/{collection}/update/json", finishedSpans.get(0).operationName());
     assertDbInstanceColl(finishedSpans.get(0));
 
-    final V2Response v2Response = new V2Request.Builder("/c/" + COLLECTION + "/select")
-        .withMethod(SolrRequest.METHOD.GET)
-        .withParams(params("q", "id:9"))
-        .build()
-        .process(cloudClient);
+    final V2Response v2Response =
+        new V2Request.Builder("/c/" + COLLECTION + "/select")
+            .withMethod(SolrRequest.METHOD.GET)
+            .withParams(params("q", "id:9"))
+            .build()
+            .process(cloudClient);
     finishedSpans = getAndClearSpans();
     assertEquals("get:/c/{collection}/select", finishedSpans.get(0).operationName());
     assertDbInstanceColl(finishedSpans.get(0));
-    assertEquals(1, ((SolrDocumentList)v2Response.getResponse().get("response")).getNumFound());
+    assertEquals(1, ((SolrDocumentList) v2Response.getResponse().get("response")).getNumFound());
   }
 
   private void assertDbInstanceColl(MockSpan mockSpan) {

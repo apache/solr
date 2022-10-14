@@ -77,6 +77,15 @@ limitations under the License.
         </label>
         <input type="text" ng-model="val['df']" name="df" id="df" value="" title="Default search field">
 
+        <label for="useParams">paramset(s)</label>
+        <select id="useParams"
+          ng-model="useParams"
+          title="The paramsets to apply to the query."
+          chosen
+          multiple
+          data-placeholder="Select paramset(s)..."
+          ng-options="item for item in paramsetList"><option value=""></option></select>
+
         <label for="wt" title="The writer type (response format).">
           <a rel="help">wt</a>
         </label>
@@ -105,7 +114,7 @@ limitations under the License.
             debugQuery
           </label>
         </legend>
-        <div class="fieldset" ng-show="isDebugQuery">
+        <div class="fieldset" ng-show="val['debugQuery']">
 
         <label for="debug_explain_structured" class="checkbox" title="Show Score explanations as nested structures.">
           <input type="checkbox" ng-model="val['debug.explain.structured']" name="debug.explain.structured" id="debug_explain_structured" value="true">
@@ -269,6 +278,11 @@ limitations under the License.
             <input type="checkbox" ng-model="val['facet.missing']" name="facet.missing" id="facet_missing">
             facet.missing
           </label>
+
+          <label for="json_facet" title="JSON Facet API">
+            json.facet <a href="https://solr.apache.org/guide/solr/latest/query-guide/json-facet-api.html" target="_blank" class="help"></a>
+          </label>
+          <textarea ng-model="val['json.facet']" name="json.facet" id="json_facet" rows="6"></textarea>
         </div>
       </fieldset>
 
@@ -282,13 +296,13 @@ limitations under the License.
         <div class="fieldset" ng-show="val['spatial']">
 
         <label for="pt">pt</label>
-        <input type="text" ng-model="val['spatial.pt']" name="pt" id="pt">
+        <input type="text" ng-model="val['pt']" name="pt" id="pt">
 
         <label for="sfield">sfield</label>
-        <input type="text" ng-model="val['spatial.sfield']" name="sfield" id="sfield">
+        <input type="text" ng-model="val['sfield']" name="sfield" id="sfield">
 
         <label for="d">d</label>
-        <input type="text" ng-model="val['spatial.d']" name="d" id="d">
+        <input type="text" ng-model="val['d']" name="d" id="d">
 
         </div>
       </fieldset>
@@ -359,6 +373,10 @@ limitations under the License.
         </div>
       </div>
 
+      <label for="json_query" title="JSON Request API">
+        JSON Query <a href="https://solr.apache.org/guide/solr/latest/query-guide/json-request-api.html" target="_blank" class="help"></a>
+      </label>
+      <textarea name="json" ng-model="val['json']" id="json_query" title="JSON Query"></textarea>
 
       <button type="submit" ng-click="doQuery()">Execute Query</button>
     </form>

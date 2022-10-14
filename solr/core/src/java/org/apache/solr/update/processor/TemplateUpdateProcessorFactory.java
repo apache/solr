@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.Cache;
 import org.apache.solr.request.SolrQueryRequest;
@@ -32,17 +31,20 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.util.ConcurrentLRUCache;
 
 /**
-* Adds new fields to documents based on a template pattern specified via Template.field
-* request parameters (multi-valued) or 'field' value specified in initArgs.
-* <p>
-* The format of the parameter is &lt;field-name&gt;:&lt;the-template-string&gt;, for example: <br>
-* <b>Template.field=fname:${somefield}some_string${someotherfield}</b>
-*
-* @since 6.3.0
-*/
+ * Adds new fields to documents based on a template pattern specified via Template.field request
+ * parameters (multi-valued) or 'field' value specified in initArgs.
+ *
+ * <p>The format of the parameter is &lt;field-name&gt;:&lt;the-template-string&gt;, for example:
+ * <br>
+ * <b>Template.field=fname:${somefield}some_string${someotherfield}</b>
+ *
+ * @since 6.3.0
+ */
 public class TemplateUpdateProcessorFactory extends SimpleUpdateProcessorFactory {
-  private Cache<String, Resolved> templateCache = new ConcurrentLRUCache<>(1000, 800, 900, 10, false, false, null);
+  private Cache<String, Resolved> templateCache =
+      new ConcurrentLRUCache<>(1000, 800, 900, 10, false, false, null);
   public static final String NAME = "template";
+
   @Override
   protected void process(AddUpdateCommand cmd, SolrQueryRequest req, SolrQueryResponse rsp) {
     String[] vals = getParams("field");
@@ -52,17 +54,23 @@ public class TemplateUpdateProcessorFactory extends SimpleUpdateProcessorFactory
         if (val == null || val.isEmpty()) continue;
         int idx = val.indexOf(':');
         if (idx == -1)
-          throw new RuntimeException("'field' must be of the format <field-name>:<the-template-string>");
+          throw new RuntimeException(
+              "'field' must be of the format <field-name>:<the-template-string>");
 
         String fName = val.substring(0, idx);
         String template = val.substring(idx + 1);
-        doc.addField(fName, replaceTokens(template, templateCache, s -> {
-          Object v = doc.getFieldValue(s);
-          return v == null ? "" : v;
-        }, BRACES_PLACEHOLDER_PATTERN));
+        doc.addField(
+            fName,
+            replaceTokens(
+                template,
+                templateCache,
+                s -> {
+                  Object v = doc.getFieldValue(s);
+                  return v == null ? "" : v;
+                },
+                BRACES_PLACEHOLDER_PATTERN));
       }
     }
-
   }
 
   @Override
@@ -70,7 +78,8 @@ public class TemplateUpdateProcessorFactory extends SimpleUpdateProcessorFactory
     return NAME;
   }
 
-  public static Resolved getResolved(String template, Cache<String, Resolved> cache, Pattern pattern) {
+  public static Resolved getResolved(
+      String template, Cache<String, Resolved> cache, Pattern pattern) {
     Resolved r = cache == null ? null : cache.get(template);
     if (r == null) {
       r = new Resolved();
@@ -86,18 +95,21 @@ public class TemplateUpdateProcessorFactory extends SimpleUpdateProcessorFactory
     return r;
   }
 
-  /**
-   * Get a list of variables embedded in the template string.
-   */
-  public static List<String> getVariables(String template, Cache<String, Resolved> cache, Pattern pattern) {
-    Resolved r = getResolved(template, cache, pattern );
+  /** Get a list of variables embedded in the template string. */
+  public static List<String> getVariables(
+      String template, Cache<String, Resolved> cache, Pattern pattern) {
+    Resolved r = getResolved(template, cache, pattern);
     if (r == null) {
       return Collections.emptyList();
     }
     return new ArrayList<>(r.variables);
   }
 
-  public static String replaceTokens(String template, Cache<String, Resolved> cache, Function<String, Object> fun, Pattern pattern) {
+  public static String replaceTokens(
+      String template,
+      Cache<String, Resolved> cache,
+      Function<String, Object> fun,
+      Pattern pattern) {
     if (template == null) {
       return null;
     }
@@ -114,15 +126,12 @@ public class TemplateUpdateProcessorFactory extends SimpleUpdateProcessorFactory
     }
   }
 
-
   public static class Resolved {
     public List<Integer> startIndexes = new ArrayList<>(2);
     public List<Integer> endOffsets = new ArrayList<>(2);
     public List<String> variables = new ArrayList<>(2);
   }
 
-  public static final Pattern DOLLAR_BRACES_PLACEHOLDER_PATTERN = Pattern
-      .compile("[$][{](.*?)[}]");
-  public static final Pattern BRACES_PLACEHOLDER_PATTERN = Pattern
-      .compile("[{](.*?)[}]");
+  public static final Pattern DOLLAR_BRACES_PLACEHOLDER_PATTERN = Pattern.compile("[$][{](.*?)[}]");
+  public static final Pattern BRACES_PLACEHOLDER_PATTERN = Pattern.compile("[{](.*?)[}]");
 }

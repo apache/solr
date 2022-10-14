@@ -22,9 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
@@ -47,50 +45,60 @@ public class ManagedSchemaRoundRobinCloudTest extends SolrCloudTestCase {
     configureCluster(NUM_SHARDS).addConfig(CONFIG, configset(CONFIG)).configure();
     CollectionAdminRequest.createCollection(COLLECTION, CONFIG, NUM_SHARDS, 1)
         .process(cluster.getSolrClient());
-    cluster.getSolrClient().waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
-        (n, c) -> DocCollection.isFullyActive(n, c, NUM_SHARDS, 1));
+    cluster
+        .getZkStateReader()
+        .waitForState(
+            COLLECTION,
+            DEFAULT_TIMEOUT,
+            TimeUnit.SECONDS,
+            (n, c) -> DocCollection.isFullyActive(n, c, NUM_SHARDS, 1));
   }
 
   @AfterClass
-  public static void clearSysProps() throws Exception {
+  public static void clearSysProps() {
     System.clearProperty("managed.schema.mutable");
   }
 
   @Test
   public void testAddFieldsRoundRobin() throws Exception {
-    List<HttpSolrClient> clients = new ArrayList<>(NUM_SHARDS);
+    List<SolrClient> clients = new ArrayList<>(NUM_SHARDS);
     try {
-      for (int shardNum = 0 ; shardNum < NUM_SHARDS ; ++shardNum) {
-        clients.add(getHttpSolrClient(cluster.getJettySolrRunners().get(shardNum).getBaseUrl().toString()));
+      for (int shardNum = 0; shardNum < NUM_SHARDS; ++shardNum) {
+        clients.add(
+            getHttpSolrClient(cluster.getJettySolrRunners().get(shardNum).getBaseUrl().toString()));
       }
       int shardNum = 0;
-      for (int fieldNum = 0 ; fieldNum < NUM_FIELDS_TO_ADD ; ++fieldNum) {
-        addField(clients.get(shardNum), keyValueArrayToMap("name", FIELD_PREFIX + fieldNum, "type", "string"));
-        if (++shardNum == NUM_SHARDS) { 
+      for (int fieldNum = 0; fieldNum < NUM_FIELDS_TO_ADD; ++fieldNum) {
+        addField(
+            clients.get(shardNum),
+            keyValueArrayToMap("name", FIELD_PREFIX + fieldNum, "type", "string"));
+        if (++shardNum == NUM_SHARDS) {
           shardNum = 0;
         }
       }
     } finally {
-      for (int shardNum = 0 ; shardNum < NUM_SHARDS ; ++shardNum) {
+      for (int shardNum = 0; shardNum < NUM_SHARDS; ++shardNum) {
         clients.get(shardNum).close();
       }
     }
   }
 
-  private void addField(SolrClient client, Map<String,Object> field) throws Exception {
-    SchemaResponse.UpdateResponse addFieldResponse = new SchemaRequest.AddField(field).process(client, COLLECTION);
+  private void addField(SolrClient client, Map<String, Object> field) throws Exception {
+    SchemaResponse.UpdateResponse addFieldResponse =
+        new SchemaRequest.AddField(field).process(client, COLLECTION);
     assertNotNull(addFieldResponse);
     assertEquals(0, addFieldResponse.getStatus());
     assertNull(addFieldResponse.getResponse().get("errors"));
     String fieldName = field.get("name").toString();
-    SchemaResponse.FieldResponse fieldResponse = new SchemaRequest.Field(fieldName).process(client, COLLECTION);
+    SchemaResponse.FieldResponse fieldResponse =
+        new SchemaRequest.Field(fieldName).process(client, COLLECTION);
     assertNotNull(fieldResponse);
     assertEquals(0, fieldResponse.getStatus());
   }
 
-  private Map<String,Object> keyValueArrayToMap(String... alternatingKeysAndValues) {
-    Map<String,Object> map = new HashMap<>();
-    for (int i = 0 ; i < alternatingKeysAndValues.length ; i += 2)
+  private Map<String, Object> keyValueArrayToMap(String... alternatingKeysAndValues) {
+    Map<String, Object> map = new HashMap<>();
+    for (int i = 0; i < alternatingKeysAndValues.length; i += 2)
       map.put(alternatingKeysAndValues[i], alternatingKeysAndValues[i + 1]);
     return map;
   }

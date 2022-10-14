@@ -35,7 +35,7 @@ For quick local development
 gradlew -p solr/packaging dev
 ls solr/packaging/build/dev                  # expanded directory
 
-Generate the release tar and zip archives (see publishing.txt for details)
+Generate the release tar archive (see publishing.txt for details)
 gradlew -p solr/distribution assembleRelease
 ls solr/distribution/build/release           # release archives
 

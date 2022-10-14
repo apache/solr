@@ -16,15 +16,13 @@
  */
 package org.apache.solr.search.join;
 
+import com.codahale.metrics.Metric;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
-
-import com.codahale.metrics.Metric;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.join.ScoreMode;
@@ -59,38 +57,31 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
     clearIndex();
 
     // 0
-    assertU(add(doc("t_description", "random text",
-        "name", "name1",
-        idField, "1")));
+    assertU(add(doc("t_description", "random text", "name", "name1", idField, "1")));
 
-// 1
+    // 1
 
-    assertU(add(doc("price_s", "10.0",
-        idField, "2",
-        toField, "1")));
-// 2
-    assertU(add(doc("price_s", "20.0",
-        idField, "3",
-        toField, "1")));
-// 3
-    assertU(add(doc("t_description", "more random text",
-        "name", "name2",
-        idField, "4")));
-// 4
-    assertU(add(doc("price_s", "10.0",
-        idField, "5",
-        toField, "4")));
-// 5
-    assertU(add(doc("price_s", "20.0",
-        idField, "6",
-        toField, "4")));
+    assertU(add(doc("price_s", "10.0", idField, "2", toField, "1")));
+    // 2
+    assertU(add(doc("price_s", "20.0", idField, "3", toField, "1")));
+    // 3
+    assertU(add(doc("t_description", "more random text", "name", "name2", idField, "4")));
+    // 4
+    assertU(add(doc("price_s", "10.0", idField, "5", toField, "4")));
+    // 5
+    assertU(add(doc("price_s", "20.0", idField, "6", toField, "4")));
 
     assertU(commit());
 
     // Search for product
-    assertJQ(req("q", "{!join from=" + idField + " to=" + toField + " score=None}name:name2", "fl", "id")
-        , "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'5'},{'id':'6'}]}");
-    
+    assertJQ(
+        req(
+            "q",
+            "{!join from=" + idField + " to=" + toField + " score=None}name:name2",
+            "fl",
+            "id"),
+        "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'5'},{'id':'6'}]}");
+
     /*Query joinQuery =
         JoinUtil.createJoinQuery(idField, false, toField, new TermQuery(new Term("name", "name2")), indexSearcher, ScoreMode.None);
 
@@ -99,8 +90,13 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
     assertEquals(4, result.scoreDocs[0].doc);
     assertEquals(5, result.scoreDocs[1].doc);
     */
-    assertJQ(req("q", "{!join from=" + idField + " to=" + toField + " score=None}name:name1", "fl", "id")
-        , "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'2'},{'id':'3'}]}");
+    assertJQ(
+        req(
+            "q",
+            "{!join from=" + idField + " to=" + toField + " score=None}name:name1",
+            "fl",
+            "id"),
+        "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'2'},{'id':'3'}]}");
 
     /*joinQuery = JoinUtil.createJoinQuery(idField, false, toField, new TermQuery(new Term("name", "name1")), indexSearcher, ScoreMode.None);
     result = indexSearcher.search(joinQuery, 10);
@@ -109,8 +105,9 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
     assertEquals(2, result.scoreDocs[1].doc);*/
 
     // Search for offer
-    assertJQ(req("q", "{!join from=" + toField + " to=" + idField + " score=None}id:5", "fl", "id")
-        , "/response=={'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'4'}]}");
+    assertJQ(
+        req("q", "{!join from=" + toField + " to=" + idField + " score=None}id:5", "fl", "id"),
+        "/response=={'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'4'}]}");
     /*joinQuery = JoinUtil.createJoinQuery(toField, false, idField, new TermQuery(new Term("id", "5")), indexSearcher, ScoreMode.None);
     result = indexSearcher.search(joinQuery, 10);
     assertEquals(1, result.totalHits);
@@ -121,21 +118,31 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
   }
 
   public void testDeleteByScoreJoinQuery() throws Exception {
-    indexDataForScorring();
+    indexDataForScoring();
     String joinQuery = "{!join from=" + toField + " to=" + idField + " score=Max}title:random";
-    assertJQ(req("q", joinQuery, "fl", "id"), "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'1'},{'id':'4'}]}");
+    assertJQ(
+        req("q", joinQuery, "fl", "id"),
+        "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'1'},{'id':'4'}]}");
     assertU(delQ(joinQuery));
     assertU(commit());
-    assertJQ(req("q", joinQuery, "fl", "id"), "/response=={'numFound':0,'start':0,'numFoundExact':true,'docs':[]}");
+    assertJQ(
+        req("q", joinQuery, "fl", "id"),
+        "/response=={'numFound':0,'start':0,'numFoundExact':true,'docs':[]}");
   }
 
   public void testSimpleWithScoring() throws Exception {
-    indexDataForScorring();
+    indexDataForScoring();
 
     // Search for movie via subtitle
-    assertJQ(req("q", "{!join from=" + toField + " to=" + idField + " score=Max}title:random", "fl", "id")
-        , "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'1'},{'id':'4'}]}");
-    //dump(req("q","{!scorejoin from="+toField+" to="+idField+" score=Max}title:random", "fl","id,score", "debug", "true"));
+    assertJQ(
+        req(
+            "q",
+            "{!join from=" + toField + " to=" + idField + " score=Max}title:random",
+            "fl",
+            "id"),
+        "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'1'},{'id':'4'}]}");
+    // dump(req("q","{!scorejoin from="+toField+" to="+idField+" score=Max}title:random",
+    // "fl","id,score", "debug", "true"));
     /*
     Query joinQuery =
         JoinUtil.createJoinQuery(toField, false, idField, new TermQuery(new Term("title", "random")), indexSearcher, ScoreMode.Max);
@@ -144,14 +151,19 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
     assertEquals(0, result.scoreDocs[0].doc);
     assertEquals(3, result.scoreDocs[1].doc);*/
 
-
     // Score mode max.
-    //dump(req("q","{!scorejoin from="+toField+" to="+idField+" score=Max}title:movie", "fl","id,score", "debug", "true"));
+    // dump(req("q","{!scorejoin from="+toField+" to="+idField+" score=Max}title:movie",
+    // "fl","id,score", "debug", "true"));
 
     // dump(req("q","title:movie", "fl","id,score", "debug", "true"));
-    assertJQ(req("q", "{!join from=" + toField + " to=" + idField + " score=Max}title:movie", "fl", "id")
-        , "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'4'},{'id':'1'}]}");
-    
+    assertJQ(
+        req(
+            "q",
+            "{!join from=" + toField + " to=" + idField + " score=Max}title:movie",
+            "fl",
+            "id"),
+        "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'4'},{'id':'1'}]}");
+
     /*joinQuery = JoinUtil.createJoinQuery(toField, false, idField, new TermQuery(new Term("title", "movie")), indexSearcher, ScoreMode.Max);
     result = indexSearcher.search(joinQuery, 10);
     assertEquals(2, result.totalHits);
@@ -159,19 +171,29 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
     assertEquals(0, result.scoreDocs[1].doc);*/
 
     // Score mode total
-    assertJQ(req("q", "{!join from=" + toField + " to=" + idField + " score=Total}title:movie", "fl", "id")
-        , "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'1'},{'id':'4'}]}");
-  /*  joinQuery = JoinUtil.createJoinQuery(toField, false, idField, new TermQuery(new Term("title", "movie")), indexSearcher, ScoreMode.Total);
-    result = indexSearcher.search(joinQuery, 10);
-    assertEquals(2, result.totalHits);
-    assertEquals(0, result.scoreDocs[0].doc);
-    assertEquals(3, result.scoreDocs[1].doc);
-*/
-    //Score mode avg
-    assertJQ(req("q", "{!join from=" + toField + " to=" + idField + " score=Avg}title:movie", "fl", "id")
-        , "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'4'},{'id':'1'}]}");
-    
-  /*  joinQuery = JoinUtil.createJoinQuery(toField, false, idField, new TermQuery(new Term("title", "movie")), indexSearcher, ScoreMode.Avg);
+    assertJQ(
+        req(
+            "q",
+            "{!join from=" + toField + " to=" + idField + " score=Total}title:movie",
+            "fl",
+            "id"),
+        "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'1'},{'id':'4'}]}");
+    /*  joinQuery = JoinUtil.createJoinQuery(toField, false, idField, new TermQuery(new Term("title", "movie")), indexSearcher, ScoreMode.Total);
+        result = indexSearcher.search(joinQuery, 10);
+        assertEquals(2, result.totalHits);
+        assertEquals(0, result.scoreDocs[0].doc);
+        assertEquals(3, result.scoreDocs[1].doc);
+    */
+    // Score mode avg
+    assertJQ(
+        req(
+            "q",
+            "{!join from=" + toField + " to=" + idField + " score=Avg}title:movie",
+            "fl",
+            "id"),
+        "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'4'},{'id':'1'}]}");
+
+    /*  joinQuery = JoinUtil.createJoinQuery(toField, false, idField, new TermQuery(new Term("title", "movie")), indexSearcher, ScoreMode.Avg);
     result = indexSearcher.search(joinQuery, 10);
     assertEquals(2, result.totalHits);
     assertEquals(3, result.scoreDocs[0].doc);
@@ -179,19 +201,24 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
 
   }
 
-  final static Comparator<String> lessFloat = (o1, o2) -> {
-    assertTrue(Float.parseFloat(o1) < Float.parseFloat(o2));
-    return 0;
-  };
-
   @Ignore("SOLR-7814, also don't forget cover boost at testCacheHit()")
   public void testBoost() throws Exception {
-    indexDataForScorring();
+    indexDataForScoring();
     ScoreMode score = ScoreMode.values()[random().nextInt(ScoreMode.values().length)];
 
-    final SolrQueryRequest req = req("q", "{!join from=movieId_s to=id score=" + score + " b=200}title:movie", "fl", "id,score", "omitHeader", "true");
+    final SolrQueryRequest req =
+        req(
+            "q",
+            "{!join from=movieId_s to=id score=" + score + " b=200}title:movie",
+            "fl",
+            "id,score",
+            "omitHeader",
+            "true");
     SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, new SolrQueryResponse()));
-    final Query luceneQ = QParser.getParser(req.getParams().get("q"), req).getQuery().rewrite(req.getSearcher().getSlowAtomicReader());
+    final Query luceneQ =
+        QParser.getParser(req.getParams().get("q"), req)
+            .getQuery()
+            .rewrite(req.getSearcher().getSlowAtomicReader());
     assertTrue(luceneQ instanceof BoostQuery);
     float boost = ((BoostQuery) luceneQ).getBoost();
     assertEquals("" + luceneQ, Float.floatToIntBits(200), Float.floatToIntBits(boost));
@@ -200,26 +227,47 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
   }
 
   public void testCacheHit() throws Exception {
-    indexDataForScorring();
+    indexDataForScoring();
 
-    Map<String, Metric> metrics = h.getCoreContainer().getMetricManager().registry(h.getCore().getCoreMetricManager().getRegistryName()).getMetrics();
+    Map<String, Metric> metrics =
+        h.getCoreContainer()
+            .getMetricManager()
+            .registry(h.getCore().getCoreMetricManager().getRegistryName())
+            .getMetrics();
 
     @SuppressWarnings("rawtypes")
-    MetricsMap mm = (MetricsMap)((SolrMetricManager.GaugeWrapper)metrics.get("CACHE.searcher.queryResultCache")).getGauge();
+    MetricsMap mm =
+        (MetricsMap)
+            ((SolrMetricManager.GaugeWrapper) metrics.get("CACHE.searcher.queryResultCache"))
+                .getGauge();
     {
-      Map<String,Object> statPre = mm.getValue();
-      h.query(req("q", "{!join from=movieId_s to=id score=Avg}title:first", "fl", "id", "omitHeader", "true"));
+      Map<String, Object> statPre = mm.getValue();
+      h.query(
+          req(
+              "q",
+              "{!join from=movieId_s to=id score=Avg}title:first",
+              "fl",
+              "id",
+              "omitHeader",
+              "true"));
       assertHitOrInsert(mm.getValue(), statPre);
     }
 
     {
-      Map<String,Object> statPre = mm.getValue();
-      h.query(req("q", "{!join from=movieId_s to=id score=Avg}title:first", "fl", "id", "omitHeader", "true"));
+      Map<String, Object> statPre = mm.getValue();
+      h.query(
+          req(
+              "q",
+              "{!join from=movieId_s to=id score=Avg}title:first",
+              "fl",
+              "id",
+              "omitHeader",
+              "true"));
       assertHit(mm.getValue(), statPre);
     }
 
     {
-      Map<String,Object> statPre = mm.getValue();
+      Map<String, Object> statPre = mm.getValue();
 
       Random r = random();
       boolean changed = false;
@@ -235,33 +283,67 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
       changed |= x; */
       String q = (!changed) ? (r.nextBoolean() ? "title:first^67" : "title:night") : "title:first";
 
-      final String resp = h.query(req("q", "{!join from=" + from + " to=" + to +
-              " score=" + score + 
-              //" b=" + boost + 
-              "}" + q, "fl", "id", "omitHeader", "true")
-      );
+      final String resp =
+          h.query(
+              req(
+                  "q",
+                  "{!join from="
+                      + from
+                      + " to="
+                      + to
+                      + " score="
+                      + score
+                      +
+                      // " b=" + boost +
+                      "}"
+                      + q,
+                  "fl",
+                  "id",
+                  "omitHeader",
+                  "true"));
       assertInsert(mm.getValue(), statPre);
 
       statPre = mm.getValue();
-      final String repeat = h.query(req("q", "{!join from=" + from + " to=" + to + " score=" + score.toLowerCase(Locale.ROOT) +
-          //" b=" + boost
-              "}" + q, "fl", "id", "omitHeader", "true")
-      );
+      final String repeat =
+          h.query(
+              req(
+                  "q",
+                  "{!join from="
+                      + from
+                      + " to="
+                      + to
+                      + " score="
+                      + score.toLowerCase(Locale.ROOT)
+                      +
+                      // " b=" + boost
+                      "}"
+                      + q,
+                  "fl",
+                  "id",
+                  "omitHeader",
+                  "true"));
       assertHit(mm.getValue(), statPre);
 
       assertEquals("lowercase shouldn't change anything", resp, repeat);
 
-        final String aMod = score.substring(0, score.length() - 1);
-        assertQEx("exception on "+aMod, "ScoreMode", 
-            req("q", "{!join from=" + from + " to=" + to + " score=" + aMod +
-                "}" + q, "fl", "id", "omitHeader", "true"), 
-                SolrException.ErrorCode.BAD_REQUEST);
+      final String aMod = score.substring(0, score.length() - 1);
+      assertQEx(
+          "exception on " + aMod,
+          "ScoreMode",
+          req(
+              "q",
+              "{!join from=" + from + " to=" + to + " score=" + aMod + "}" + q,
+              "fl",
+              "id",
+              "omitHeader",
+              "true"),
+          SolrException.ErrorCode.BAD_REQUEST);
     }
-    // this queries are not overlap, with other in this test case. 
-    // however it might be better to extract this method into the separate suite
+    // these queries are not overlapping with others in this test case.
+    // however, it might be better to extract this method into a separate suite
     // for a while let's nuke a cache content, in case of repetitions
     @SuppressWarnings("rawtypes")
-    SolrCache cache = (SolrCache)h.getCore().getInfoRegistry().get("queryResultCache");
+    SolrCache cache = (SolrCache) h.getCore().getInfoRegistry().get("queryResultCache");
     cache.clear();
   }
 
@@ -272,72 +354,60 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
     return l.get(r.nextInt(l.size()));
   }
 
-  private void assertInsert(Map<String,Object> current, final Map<String,Object> statPre) {
-    assertEquals("it lookups", 1,
-        delta("lookups", current, statPre));
+  private void assertInsert(Map<String, Object> current, final Map<String, Object> statPre) {
+    assertEquals("it lookups", 1, delta("lookups", current, statPre));
     assertEquals("it doesn't hit", 0, delta("hits", current, statPre));
-    assertEquals("it inserts", 1,
-        delta("inserts", current, statPre));
+    assertEquals("it inserts", 1, delta("inserts", current, statPre));
   }
 
-  private void assertHit(Map<String,Object> current, final Map<String,Object> statPre) {
-    assertEquals("it lookups", 1,
-        delta("lookups", current, statPre));
+  private void assertHit(Map<String, Object> current, final Map<String, Object> statPre) {
+    assertEquals("it lookups", 1, delta("lookups", current, statPre));
     assertEquals("it hits", 1, delta("hits", current, statPre));
-    assertEquals("it doesn't insert", 0,
-        delta("inserts", current, statPre));
+    assertEquals("it doesn't insert", 0, delta("inserts", current, statPre));
   }
 
-  private void assertHitOrInsert(Map<String,Object> current, final Map<String,Object> statPre) {
-    assertEquals("it lookups", 1,
-        delta("lookups", current, statPre));
+  private void assertHitOrInsert(Map<String, Object> current, final Map<String, Object> statPre) {
+    assertEquals("it lookups", 1, delta("lookups", current, statPre));
     final long mayHit = delta("hits", current, statPre);
     assertTrue("it may hit", 0 == mayHit || 1 == mayHit);
-    assertEquals("or insert on cold", 1,
-        delta("inserts", current, statPre) + mayHit);
+    assertEquals("or insert on cold", 1, delta("inserts", current, statPre) + mayHit);
   }
 
-  private long delta(String key, Map<String,Object> a, Map<String,Object> b) {
+  private long delta(String key, Map<String, Object> a, Map<String, Object> b) {
     return (Long) a.get(key) - (Long) b.get(key);
   }
 
-  private void indexDataForScorring() {
+  private void indexDataForScoring() {
     clearIndex();
-// 0
-    assertU(add(doc("t_description", "A random movie",
-        "name", "Movie 1",
-        idField, "1")));
-// 1
+    // 0
+    assertU(add(doc("t_description", "A random movie", "name", "Movie 1", idField, "1")));
+    // 1
 
-    assertU(add(doc("title", "The first subtitle of this movie",
-        idField, "2",
-        toField, "1")));
+    assertU(add(doc("title", "The first subtitle of this movie", idField, "2", toField, "1")));
 
+    // 2
 
-// 2
+    assertU(add(doc("title", "random subtitle; random event movie", idField, "3", toField, "1")));
 
-    assertU(add(doc("title", "random subtitle; random event movie",
-        idField, "3",
-        toField, "1")));
+    // 3
 
-// 3
+    assertU(add(doc("t_description", "A second random movie", "name", "Movie 2", idField, "4")));
+    // 4
 
-    assertU(add(doc("t_description", "A second random movie",
-        "name", "Movie 2",
-        idField, "4")));
-// 4
+    assertU(
+        add(
+            doc(
+                "title",
+                "a very random event happened during christmas night",
+                idField,
+                "5",
+                toField,
+                "4")));
 
-    assertU(add(doc("title", "a very random event happened during christmas night",
-        idField, "5",
-        toField, "4")));
+    // 5
 
-
-// 5
-
-    assertU(add(doc("title", "movie end movie test 123 test 123 random",
-        idField, "6",
-        toField, "4")));
-
+    assertU(
+        add(doc("title", "movie end movie test 123 test 123 random", idField, "6", toField, "4")));
 
     assertU(commit());
   }

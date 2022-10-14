@@ -19,19 +19,28 @@ package org.apache.solr.update;
 
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 
-public class PeerSyncWithLeaderAndIndexFingerprintCachingTest extends PeerSyncWithIndexFingerprintCachingTest {
+public class PeerSyncWithLeaderAndIndexFingerprintCachingTest
+    extends PeerSyncWithIndexFingerprintCachingTest {
   @Override
-  void assertSync(SolrClient client, int numVersions, boolean expectedResult, String... syncWith) throws IOException, SolrServerException {
-    QueryRequest qr = new QueryRequest(params("qt","/get", "getVersions",Integer.toString(numVersions), "syncWithLeader", StrUtils.join(Arrays.asList(syncWith), ',')));
+  void assertSync(SolrClient client, int numVersions, String... syncWith)
+      throws IOException, SolrServerException {
+    QueryRequest qr =
+        new QueryRequest(
+            params(
+                "qt",
+                "/get",
+                "getVersions",
+                Integer.toString(numVersions),
+                "syncWithLeader",
+                StrUtils.join(Arrays.asList(syncWith), ',')));
     @SuppressWarnings({"rawtypes"})
     NamedList rsp = client.request(qr);
-    assertEquals(expectedResult, (Boolean) rsp.get("syncWithLeader"));
+    assertEquals(true, (Boolean) rsp.get("syncWithLeader"));
   }
 }

@@ -27,7 +27,7 @@ apply plugin: 'base'
 def dockerImageRepo = propertyOrEnvOrDefault("solr.docker.imageRepo", "SOLR_DOCKER_IMAGE_REPO", "apache/solr")
 def dockerImageTag = propertyOrEnvOrDefault("solr.docker.imageTag", "SOLR_DOCKER_IMAGE_TAG", "${version}")
 def dockerImageName = propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}:${dockerImageTag}")
-def baseDockerImage = propertyOrEnvOrDefault("solr.docker.baseImage", "SOLR_DOCKER_BASE_IMAGE", 'openjdk:11-jre-slim')
+def baseDockerImage = propertyOrEnvOrDefault("solr.docker.baseImage", "SOLR_DOCKER_BASE_IMAGE", 'eclipse-temurin:17-jre')
 def officialDockerImageName = propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}-official:${dockerImageTag}")
 
 def releaseGpgFingerprint = propertyOrDefault('signing.gnupg.keyName',propertyOrDefault('signing.keyId',''));
@@ -40,6 +40,9 @@ def imageIdFileOfficial = "$smokeTestOfficial/image-id"
 
 configurations {
   packaging {
+    canBeResolved = true
+  }
+  packagingLocal {
     canBeResolved = true
   }
   packagingOfficial {
@@ -70,6 +73,10 @@ ext {
 dependencies {
   packaging files(packagingDir) {
     builtBy 'assemblePackaging'
+  }
+
+  packagingLocal files("${dockerfilesDirPath}/Dockerfile.local") {
+    builtBy 'createDockerfileLocal'
   }
 
   packagingOfficial files("${dockerfilesDirPath}/Dockerfile.official") {
@@ -106,9 +113,13 @@ task assemblePackaging(type: Sync) {
 
   from(projectDir, {
     include "scripts/**"
+    include "README.md"
   })
   from(dockerfilesDirPath, {
     include 'Dockerfile.local'
+    rename {
+      'Dockerfile'
+    }
   })
   into packagingDir
 }
@@ -127,7 +138,7 @@ task dockerBuild(dependsOn: configurations.solrTgz) {
     exec {
       standardInput = configurations.solrTgz.singleFile.newDataInputStream()
       commandLine "docker", "build",
-              "-f", "solr-${version}/docker/Dockerfile.local",
+              "-f", "solr-${version}/docker/Dockerfile",
               "--iidfile", imageIdFile,
               "--build-arg", "BASE_IMAGE=${inputs.properties.baseDockerImage}",
               "-"
@@ -173,7 +184,7 @@ task dockerTag(dependsOn: tasks.dockerBuild) {
 
 task testDocker(type: TestDockerImageTask, dependsOn: tasks.dockerBuild) {
   group = 'Docker'
-  description = 'Test Solr docker image built from Dockerfile.local'
+  description = 'Test Solr docker image built from the local Dockerfile'
 
   idFile = tasks.dockerBuild.outputs.files.singleFile
   outputDir = file("$buildDir/test-results")
@@ -258,8 +269,7 @@ ext {
       //
       // Values identical in both Dockerfiles should use consistent names in both templates and
       // be defined in the task creation
-      
-      'SOLR_VERSION': version,
+
       // NOTE: SHA is lazy computed...
       'SOLR_TGZ_SHA': "${ -> checksum(configurations.solrTgz.singleFile) }",
       'RELEASE_MANAGER_GPG_FINGERPRINT': "${releaseGpgFingerprint}"
@@ -285,6 +295,7 @@ The final Dockerfiles are merely the snippet headers combined with the snippet b
   def props = [
     // Values defined here should be common (and consistent) across both Dockerfiles
     'BASE_IMAGE': baseDockerImage,
+    'SOLR_VERSION': version,
     * : details.props
   ]
   tasks.create("createDockerfile${details.name}", Copy) {
@@ -436,7 +447,7 @@ task testBuildDockerfileOfficial(type: Copy) {
 }
 
 task testDockerfileOfficial(type: TestDockerImageTask, dependsOn: configurations.dockerOfficialSmokeCheckImage) {
-  description = 'Smoke Test Solr docker image built from Dockerfile.official'
+  description = 'Smoke Test Solr docker image built from the official Dockerfile'
 
   idFile = file(imageIdFileOfficial)
   outputDir = file("$smokeTestOfficial/test-results")

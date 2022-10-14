@@ -17,6 +17,18 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
+import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
+import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
+import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFIX;
+import static org.apache.solr.common.params.CommonParams.ACTION;
+import static org.apache.solr.handler.ClusterAPI.wrapParams;
+import static org.apache.solr.handler.api.V2ApiUtils.flattenMapWithPrefix;
+import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
@@ -25,29 +37,18 @@ import org.apache.solr.client.solrj.request.beans.CreateShardPayload;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.handler.admin.CollectionsHandler;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.common.params.CollectionAdminParams.*;
-import static org.apache.solr.common.params.CommonParams.ACTION;
-import static org.apache.solr.handler.ClusterAPI.wrapParams;
-import static org.apache.solr.handler.api.V2ApiUtils.flattenMapWithPrefix;
-import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
-
 /**
  * V2 API for creating a new shard in a collection.
  *
- * This API (POST /v2/collections/collectionName/shards {'create': {...}}) is analogous to the v1
+ * <p>This API (POST /v2/collections/collectionName/shards {'create': {...}}) is analogous to the v1
  * /admin/collections?action=CREATESHARD command.
  *
  * @see CreateShardAPI
  */
 @EndPoint(
-        path = {"/c/{collection}/shards", "/collections/{collection}/shards"},
-        method = POST,
-        permission = COLL_EDIT_PERM)
+    path = {"/c/{collection}/shards", "/collections/{collection}/shards"},
+    method = POST,
+    permission = COLL_EDIT_PERM)
 public class CreateShardAPI {
   private static final String V2_CREATE_CMD = "create";
 

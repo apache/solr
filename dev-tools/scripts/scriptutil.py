@@ -21,7 +21,6 @@ import os
 from enum import Enum
 import time
 import urllib.request, urllib.error, urllib.parse
-import urllib.parse
 
 class Version(object):
   def __init__(self, major, minor, bugfix, prerelease):
@@ -130,8 +129,7 @@ def find_branch_type():
     return BranchType.stable
   if re.match(r'branch_(\d+)_(\d+)', branchName.decode('UTF-8')):
     return BranchType.release
-  return BranchType.release
-  # raise Exception('Cannot run %s on feature branch' % sys.argv[0].rsplit('/', 1)[-1])
+  raise Exception('Cannot run %s on feature branch' % sys.argv[0].rsplit('/', 1)[-1])
 
 
 def download(name, urlString, tmpDir, quiet=False, force_clean=True):
@@ -158,7 +156,10 @@ def download(name, urlString, tmpDir, quiet=False, force_clean=True):
 
 
 def attemptDownload(urlString, fileName):
-  fIn = urllib.request.urlopen(urlString)
+  raw_request = urllib.request.Request(urlString)
+  raw_request.add_header('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0) Gecko/20100101 Firefox/78.0')
+  raw_request.add_header('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8')
+  fIn = urllib.request.urlopen(raw_request)
   fOut = open(fileName, 'wb')
   success = False
   try:
