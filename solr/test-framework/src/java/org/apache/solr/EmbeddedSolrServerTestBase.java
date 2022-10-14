@@ -64,52 +64,6 @@ public abstract class EmbeddedSolrServerTestBase extends SolrTestCaseJ4 {
     return new EmbeddedSolrServer(h.getCoreContainer(), DEFAULT_CORE_NAME);
   }
 
-  public void upload(final String collection, final ContentStream... contents) {
-    final Path base = Paths.get(getSolrClient().getCoreContainer().getSolrHome(), collection);
-    writeTo(base, contents);
-  }
-
-  private void writeTo(final Path base, final ContentStream... contents) {
-    try {
-      Files.createDirectories(base);
-
-      for (final ContentStream content : contents) {
-        final File file = new File(base.toFile(), content.getName());
-        file.getParentFile().mkdirs();
-
-        try (OutputStream os = new FileOutputStream(file)) {
-          ByteStreams.copy(content.getStream(), os);
-        }
-      }
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
-    }
-  }
-
-  public Collection<ContentStream> download(final String collection, final String... names) {
-    final Path base = Paths.get(getSolrClient().getCoreContainer().getSolrHome(), collection);
-    final List<ContentStream> result = new ArrayList<>();
-
-    if (Files.exists(base)) {
-      for (final String name : names) {
-        final File file = new File(base.toFile(), name);
-        if (file.exists() && file.canRead()) {
-          try {
-            final ByteArrayOutputStream os = new ByteArrayOutputStream();
-            ByteStreams.copy(new FileInputStream(file), os);
-            final ByteArrayStream stream =
-                new ContentStreamBase.ByteArrayStream(os.toByteArray(), name);
-            result.add(stream);
-          } catch (final IOException e) {
-            throw new RuntimeException(e);
-          }
-        }
-      }
-    }
-
-    return result;
-  }
-
   public static void initCore() throws Exception {
     final String home = SolrJettyTestBase.legacyExampleCollection1SolrHome();
     final String config = home + "/" + DEFAULT_CORE_NAME + "/conf/solrconfig.xml";
