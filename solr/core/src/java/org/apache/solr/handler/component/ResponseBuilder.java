@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TotalHits;
@@ -149,7 +150,7 @@ public class ResponseBuilder {
 
   public int getShardNum(String shard) {
     for (int i = 0; i < shards.length; i++) {
-      if (shards[i] == shard || shards[i].equals(shard)) return i;
+      if (Objects.equals(shards[i], shard)) return i;
     }
     return -1;
   }

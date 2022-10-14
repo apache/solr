@@ -35,7 +35,6 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest.Field;
@@ -78,7 +77,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
   /** A basic client for operations at the cloud level, default collection will be set */
   private static CloudSolrClient CLOUD_CLIENT;
   /** One client per node */
-  private static final ArrayList<HttpSolrClient> CLIENTS = new ArrayList<>(5);
+  private static final ArrayList<SolrClient> CLIENTS = new ArrayList<>(5);
 
   /**
    * Service to execute all parallel work
@@ -108,7 +107,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
 
   @BeforeClass
   @SuppressWarnings({"unchecked"})
-  private static void createMiniSolrCloudCluster() throws Exception {
+  public static void createMiniSolrCloudCluster() throws Exception {
     // NOTE: numDocsToCheck uses atLeast, so nightly & multiplier are already a factor in index size
     // no need to redundantly factor them in here as well
     DOC_ID_INCR = TestUtil.nextInt(random(), 1, 7);
@@ -158,7 +157,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
   }
 
   @AfterClass
-  private static void afterClass() {
+  public static void afterClass() {
     TestInjection.reset();
     if (null != EXEC_SERVICE) {
       ExecutorUtil.shutdownAndAwaitTermination(EXEC_SERVICE);
@@ -168,7 +167,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
       IOUtils.closeQuietly(CLOUD_CLIENT);
       CLOUD_CLIENT = null;
     }
-    for (HttpSolrClient client : CLIENTS) {
+    for (SolrClient client : CLIENTS) {
       if (null == client) {
         log.error("CLIENTS contains a null SolrClient???");
       }
@@ -178,7 +177,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
   }
 
   @Before
-  private void clearCloudCollection() throws Exception {
+  public void clearCloudCollection() throws Exception {
     TestInjection.reset();
     waitForRecoveriesToFinish(CLOUD_CLIENT);
 

@@ -18,9 +18,9 @@ package org.apache.solr.analytics.function.mapping;
 
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.value.AnalyticsValueStream;
 import org.apache.solr.analytics.value.DateValue;
@@ -58,13 +58,13 @@ public class DateMathFunctionTest extends SolrTestCaseJ4 {
 
     // Value exists
     val.setValue("1800-01-01T10:30:15Z").setExists(true);
-    assertEquals(date1, func.getDate());
+    assertEquals(date1.toInstant(), func.getDate().toInstant());
     assertTrue(func.exists());
     assertEquals(date1.getTime(), func.getLong());
     assertTrue(func.exists());
 
     val.setValue("1920-04-15T18:15:45Z").setExists(true);
-    assertEquals(date2, func.getDate());
+    assertEquals(date2.toInstant(), func.getDate().toInstant());
     assertTrue(func.exists());
     assertEquals(date2.getTime(), func.getLong());
     assertTrue(func.exists());
@@ -92,23 +92,23 @@ public class DateMathFunctionTest extends SolrTestCaseJ4 {
     val.setValues();
     func.streamDates(
         value -> {
-          assertTrue("There should be no values to stream", false);
+          fail("There should be no values to stream");
         });
     func.streamLongs(
         value -> {
-          assertTrue("There should be no values to stream", false);
+          fail("There should be no values to stream");
         });
 
     // One value
     val.setValues("1800-01-01T10:30:15Z");
-    Iterator<Date> values1 = Arrays.asList(date1).iterator();
+    Iterator<Date> values1 = List.of(date1).iterator();
     func.streamDates(
         value -> {
           assertTrue(values1.hasNext());
-          assertEquals(values1.next(), value);
+          assertEquals(values1.next().toInstant(), value.toInstant());
         });
     assertFalse(values1.hasNext());
-    Iterator<Long> times1 = Arrays.asList(date1.getTime()).iterator();
+    Iterator<Long> times1 = List.of(date1.getTime()).iterator();
     func.streamLongs(
         value -> {
           assertTrue(times1.hasNext());
@@ -118,15 +118,14 @@ public class DateMathFunctionTest extends SolrTestCaseJ4 {
 
     // Multiple values
     val.setValues("1800-01-01T10:30:15Z", "1920-04-15T18:15:45Z", "2012-11-30T20:30:15Z");
-    Iterator<Date> values2 = Arrays.asList(date1, date2, date3).iterator();
+    Iterator<Date> values2 = List.of(date1, date2, date3).iterator();
     func.streamDates(
         value -> {
           assertTrue(values2.hasNext());
-          assertEquals(values2.next(), value);
+          assertEquals(values2.next().toInstant(), value.toInstant());
         });
     assertFalse(values2.hasNext());
-    Iterator<Long> times2 =
-        Arrays.asList(date1.getTime(), date2.getTime(), date3.getTime()).iterator();
+    Iterator<Long> times2 = List.of(date1.getTime(), date2.getTime(), date3.getTime()).iterator();
     func.streamLongs(
         value -> {
           assertTrue(times2.hasNext());

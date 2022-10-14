@@ -59,9 +59,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
@@ -73,7 +73,6 @@ import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.StringUtils;
-import org.apache.solr.common.cloud.BeforeReconnect;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DefaultConnectionStrategy;
 import org.apache.solr.common.cloud.DefaultZkACLProvider;
@@ -382,133 +381,15 @@ public class ZkController implements Closeable {
             clientTimeout,
             zkClientConnectTimeout,
             strat,
-            // on reconnect, reload cloud info
-            new OnReconnect() {
-
-              @Override
-              public void command() throws SessionExpiredException {
-                log.info(
-                    "ZooKeeper session re-connected ... refreshing core states after session expiration.");
-                clearZkCollectionTerms();
-                try {
-                  // recreate our watchers first so that they exist even on any problems below
-                  zkStateReader.createClusterStateWatchersAndUpdate();
-
-                  // this is troublesome - we dont want to kill anything the old
-                  // leader accepted
-                  // though I guess sync will likely get those updates back? But
-                  // only if
-                  // he is involved in the sync, and he certainly may not be
-                  // ExecutorUtil.shutdownAndAwaitTermination(cc.getCmdDistribExecutor());
-                  // we need to create all of our lost watches
-
-                  // seems we dont need to do this again...
-                  // Overseer.createClientNodes(zkClient, getNodeName());
-
-                  // start the overseer first as following code may need it's processing
-                  if (!zkRunOnly) {
-                    ElectionContext context =
-                        new OverseerElectionContext(zkClient, overseer, getNodeName());
-
-                    ElectionContext prevContext = overseerElector.getContext();
-                    if (prevContext != null) {
-                      prevContext.cancelElection();
-                      prevContext.close();
-                    }
-
-                    overseerElector.setup(context);
-
-                    if (cc.nodeRoles.isOverseerAllowedOrPreferred()) {
-                      overseerElector.joinElection(context, true);
-                    }
-                  }
-
-                  cc.cancelCoreRecoveries();
-
-                  try {
-                    registerAllCoresAsDown(descriptorsSupplier, false);
-                  } catch (SessionExpiredException e) {
-                    // zk has to reconnect and this will all be tried again
-                    throw e;
-                  } catch (Exception e) {
-                    // this is really best effort - in case of races or failure cases where we now
-                    // need to be the leader, if anything fails, just continue
-                    log.warn("Exception while trying to register all cores as DOWN", e);
-                  }
-
-                  // we have to register as live first to pick up docs in the buffer
-                  createEphemeralLiveNode();
-
-                  List<CoreDescriptor> descriptors = descriptorsSupplier.get();
-                  // re register all descriptors
-                  ExecutorService executorService =
-                      (cc != null) ? cc.getCoreZkRegisterExecutorService() : null;
-                  if (descriptors != null) {
-                    for (CoreDescriptor descriptor : descriptors) {
-                      // TODO: we need to think carefully about what happens when it was a leader
-                      // that was expired - as well as what to do about leaders/overseers with
-                      // connection loss
-                      try {
-                        // unload solrcores that have been 'failed over'
-                        throwErrorIfReplicaReplaced(descriptor);
-
-                        if (executorService != null) {
-                          executorService.submit(new RegisterCoreAsync(descriptor, true, true));
-                        } else {
-                          register(descriptor.getName(), descriptor, true, true, false);
-                        }
-                      } catch (Exception e) {
-                        SolrException.log(log, "Error registering SolrCore", e);
-                      }
-                    }
-                  }
-
-                  // notify any other objects that need to know when the session was re-connected
-                  HashSet<OnReconnect> clonedListeners;
-                  synchronized (reconnectListeners) {
-                    clonedListeners = (HashSet<OnReconnect>) reconnectListeners.clone();
-                  }
-                  // the OnReconnect operation can be expensive per listener, so do that async in
-                  // the background
-                  for (OnReconnect listener : clonedListeners) {
-                    try {
-                      if (executorService != null) {
-                        executorService.submit(new OnReconnectNotifyAsync(listener));
-                      } else {
-                        listener.command();
-                      }
-                    } catch (Exception exc) {
-                      // not much we can do here other than warn in the log
-                      log.warn(
-                          "Error when notifying OnReconnect listener {} after session re-connected.",
-                          listener,
-                          exc);
-                    }
-                  }
-                } catch (InterruptedException e) {
-                  // Restore the interrupted status
-                  Thread.currentThread().interrupt();
-                  throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
-                } catch (SessionExpiredException e) {
-                  throw e;
-                } catch (Exception e) {
-                  SolrException.log(log, "", e);
-                  throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
-                }
+            () -> onReconnect(descriptorsSupplier),
+            () -> {
+              try {
+                this.overseer.close();
+              } catch (Exception e) {
+                log.error("Error trying to stop any Overseer threads", e);
               }
-            },
-            new BeforeReconnect() {
-
-              @Override
-              public void command() {
-                try {
-                  ZkController.this.overseer.close();
-                } catch (Exception e) {
-                  log.error("Error trying to stop any Overseer threads", e);
-                }
-                closeOutstandingElections(descriptorsSupplier);
-                markAllAsNotLeader(descriptorsSupplier);
-              }
+              closeOutstandingElections(descriptorsSupplier);
+              markAllAsNotLeader(descriptorsSupplier);
             },
             zkACLProvider,
             cc::isShutDown);
@@ -542,6 +423,116 @@ public class ZkController implements Closeable {
             ((HttpShardHandlerFactory) getCoreContainer().getShardHandlerFactory()).getClient(),
             zkStateReader);
     assert ObjectReleaseTracker.track(this);
+  }
+
+  private void onReconnect(Supplier<List<CoreDescriptor>> descriptorsSupplier)
+      throws SessionExpiredException {
+    // on reconnect, reload cloud info
+    log.info("ZooKeeper session re-connected ... refreshing core states after session expiration.");
+    clearZkCollectionTerms();
+    try {
+      // recreate our watchers first so that they exist even on any problems below
+      zkStateReader.createClusterStateWatchersAndUpdate();
+
+      // this is troublesome - we don't want to kill anything the old
+      // leader accepted
+      // though I guess sync will likely get those updates back? But
+      // only if
+      // he is involved in the sync, and he certainly may not be
+      // ExecutorUtil.shutdownAndAwaitTermination(cc.getCmdDistribExecutor());
+      // we need to create all of our lost watches
+
+      // seems we don't need to do this again...
+      // Overseer.createClientNodes(zkClient, getNodeName());
+
+      // start the overseer first as following code may need it's processing
+      if (!zkRunOnly) {
+        ElectionContext context = new OverseerElectionContext(zkClient, overseer, getNodeName());
+
+        ElectionContext prevContext = overseerElector.getContext();
+        if (prevContext != null) {
+          prevContext.cancelElection();
+          prevContext.close();
+        }
+
+        overseerElector.setup(context);
+
+        if (cc.nodeRoles.isOverseerAllowedOrPreferred()) {
+          overseerElector.joinElection(context, true);
+        }
+      }
+
+      cc.cancelCoreRecoveries();
+
+      try {
+        registerAllCoresAsDown(descriptorsSupplier, false);
+      } catch (SessionExpiredException e) {
+        // zk has to reconnect and this will all be tried again
+        throw e;
+      } catch (Exception e) {
+        // this is really best effort - in case of races or failure cases where we now
+        // need to be the leader, if anything fails, just continue
+        log.warn("Exception while trying to register all cores as DOWN", e);
+      }
+
+      // we have to register as live first to pick up docs in the buffer
+      createEphemeralLiveNode();
+
+      List<CoreDescriptor> descriptors = descriptorsSupplier.get();
+      // re register all descriptors
+      ExecutorService executorService = (cc != null) ? cc.getCoreZkRegisterExecutorService() : null;
+      if (descriptors != null) {
+        for (CoreDescriptor descriptor : descriptors) {
+          // TODO: we need to think carefully about what happens when it was a leader
+          // that was expired - as well as what to do about leaders/overseers with
+          // connection loss
+          try {
+            // unload solr cores that have been 'failed over'
+            throwErrorIfReplicaReplaced(descriptor);
+
+            if (executorService != null) {
+              executorService.submit(new RegisterCoreAsync(descriptor, true, true));
+            } else {
+              register(descriptor.getName(), descriptor, true, true, false);
+            }
+          } catch (Exception e) {
+            SolrException.log(log, "Error registering SolrCore", e);
+          }
+        }
+      }
+
+      // notify any other objects that need to know when the session was re-connected
+      HashSet<OnReconnect> clonedListeners;
+      synchronized (reconnectListeners) {
+        clonedListeners = new HashSet<>(reconnectListeners);
+      }
+      // the OnReconnect operation can be expensive per listener, so do that async in
+      // the background
+      for (OnReconnect listener : clonedListeners) {
+        try {
+          if (executorService != null) {
+            executorService.submit(new OnReconnectNotifyAsync(listener));
+          } else {
+            listener.command();
+          }
+        } catch (Exception exc) {
+          // not much we can do here other than warn in the log
+          log.warn(
+              "Error when notifying OnReconnect listener {} after session re-connected.",
+              listener,
+              exc);
+        }
+      }
+    } catch (InterruptedException e) {
+      // Restore the interrupted status
+      Thread.currentThread().interrupt();
+      throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "", e);
+    } catch (SessionExpiredException e) {
+      throw e;
+    } catch (Exception e) {
+      SolrException.log(log, "", e);
+      throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "", e);
+    }
   }
 
   /**
@@ -1790,10 +1781,10 @@ public class ZkController implements Closeable {
         } else {
           overseerJobQueue.offer(Utils.toJSON(m));
         }
-      } else {
-        if (log.isDebugEnabled()) {
-          log.debug("bypassed overseer for message : {}", Utils.toJSONString(m));
-        }
+      }
+      // extra handling for PRS, we need to write the PRS entries from this node directly,
+      // as overseer does not and should not handle those entries
+      if (coll != null && coll.isPerReplicaState() && coreNodeName != null) {
         PerReplicaStates perReplicaStates =
             PerReplicaStatesFetcher.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
         PerReplicaStatesOps.flipState(coreNodeName, state, perReplicaStates)
@@ -1815,7 +1806,6 @@ public class ZkController implements Closeable {
     if (r == null) return true;
     Slice shard = coll.getSlice(r.shard);
     if (shard == null) return true; // very unlikely
-    if (shard.getState() == Slice.State.RECOVERY) return true;
     if (shard.getParent() != null) return true;
     for (Slice slice : coll.getSlices()) {
       if (Objects.equals(shard.getName(), slice.getParent())) return true;
@@ -2163,7 +2153,7 @@ public class ZkController implements Closeable {
 
         // short timeouts, we may be in a storm and this is best effort and maybe we should be the
         // leader now
-        try (HttpSolrClient client =
+        try (SolrClient client =
             new Builder(leaderBaseUrl)
                 .withConnectionTimeout(8000)
                 .withSocketTimeout(30000)
@@ -2930,13 +2920,52 @@ public class ZkController implements Closeable {
       // immediately return.
       distributedClusterStateUpdater.executeNodeDownStateUpdate(nodeName, zkStateReader);
     } else {
-      ZkNodeProps m =
-          new ZkNodeProps(
-              Overseer.QUEUE_OPERATION,
-              OverseerAction.DOWNNODE.toLower(),
-              ZkStateReader.NODE_NAME_PROP,
-              nodeName);
       try {
+        // Create a concurrently accessible set to avoid repeating collections
+        Set<String> collectionsInThisNode = new HashSet<>();
+        for (CoreDescriptor cd : cc.getCoreDescriptors()) {
+          if (cd.getCloudDescriptor() != null
+              && cd.getCloudDescriptor().getCollectionName() != null) {
+            collectionsInThisNode.add(cd.getCloudDescriptor().getCollectionName());
+          }
+        }
+        collectionsInThisNode.parallelStream()
+            .forEach(
+                c -> {
+                  final List<String> replicasToDown = new ArrayList<>();
+                  DocCollection coll = zkStateReader.getCollection(c);
+                  if (coll == null) {
+                    // may be the collection no more exists
+                    return;
+                  }
+                  coll.forEachReplica(
+                      (s, r) -> {
+                        if (r.getNodeName().equals(nodeName)) {
+                          replicasToDown.add(r.getName());
+                        }
+                      });
+
+                  if (!replicasToDown.isEmpty()) {
+                    try {
+                      PerReplicaStatesOps.downReplicas(
+                              replicasToDown,
+                              PerReplicaStatesFetcher.fetch(
+                                  coll.getZNode(), zkClient, coll.getPerReplicaStates()))
+                          .persist(coll.getZNode(), zkClient);
+                    } catch (KeeperException | InterruptedException e) {
+                      throw new RuntimeException(e);
+                    }
+                  }
+                });
+
+        // We always send a down node event to overseer to be safe, but overseer will not need to do
+        // anything for PRS collections
+        ZkNodeProps m =
+            new ZkNodeProps(
+                Overseer.QUEUE_OPERATION,
+                OverseerAction.DOWNNODE.toLower(),
+                ZkStateReader.NODE_NAME_PROP,
+                nodeName);
         overseer.getStateUpdateQueue().offer(Utils.toJSON(m));
       } catch (AlreadyClosedException e) {
         log.info(

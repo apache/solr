@@ -35,7 +35,7 @@ public class UniformDistributionEvaluatorTest extends SolrTestCase {
   public UniformDistributionEvaluatorTest() {
     super();
     factory = new StreamFactory().withFunctionName("unif", UniformDistributionEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @Test

@@ -117,7 +117,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   }
 
   Iterator<SolrInputDocument> manyDocs(final int base, final int numDocs) {
-    return new Iterator<SolrInputDocument>() {
+    return new Iterator<>() {
       int count = 0;
 
       @Override

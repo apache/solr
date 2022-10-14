@@ -17,12 +17,12 @@
 package org.apache.solr.handler.component;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import junit.framework.AssertionFailedError;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
@@ -2402,7 +2402,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
 
   private void assertNullFacetTypeInsidePivot(String facetType, List<PivotField> pivots) {
     for (PivotField pivot : pivots) {
-      if (facetType == FacetParams.FACET_QUERY) {
+      if (Objects.equals(facetType, FacetParams.FACET_QUERY)) {
         assertNull(
             "pivot="
                 + pivot
@@ -2411,7 +2411,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
                 + " should've been null. Found: "
                 + pivot.getFacetQuery(),
             pivot.getFacetQuery());
-      } else if (facetType == FacetParams.FACET_RANGE) {
+      } else if (Objects.equals(facetType, FacetParams.FACET_RANGE)) {
         assertNull(
             "pivot="
                 + pivot
@@ -2431,16 +2431,16 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
   // Useful to check for errors, orders lists and does toString() equality check
   private void testOrderedPivotsStringEquality(
       List<PivotField> expectedPlacePivots, List<PivotField> placePivots) {
-    Collections.sort(expectedPlacePivots, new PivotFieldComparator());
+    expectedPlacePivots.sort(new PivotFieldComparator());
     for (PivotField expectedPivot : expectedPlacePivots) {
       if (expectedPivot.getPivot() != null) {
-        Collections.sort(expectedPivot.getPivot(), new PivotFieldComparator());
+        expectedPivot.getPivot().sort(new PivotFieldComparator());
       }
     }
-    Collections.sort(placePivots, new PivotFieldComparator());
+    placePivots.sort(new PivotFieldComparator());
     for (PivotField pivot : placePivots) {
       if (pivot.getPivot() != null) {
-        Collections.sort(pivot.getPivot(), new PivotFieldComparator());
+        pivot.getPivot().sort(new PivotFieldComparator());
       }
     }
     assertEquals(expectedPlacePivots.toString(), placePivots.toString());

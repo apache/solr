@@ -36,7 +36,7 @@ public class HyperbolicSineEvaluatorTest extends SolrTestCase {
     super();
 
     factory = new StreamFactory().withFunctionName("sinh", HyperbolicSineEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   private void test(Double value) throws IOException {

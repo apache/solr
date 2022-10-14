@@ -485,7 +485,7 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
                   } else {
                     fail(
                         String.format(
-                            Locale.ENGLISH, "There were more than one result: {}", response));
+                            Locale.ENGLISH, "There were more than one result: %s", response));
                   }
                 }
               } catch (Throwable e) {

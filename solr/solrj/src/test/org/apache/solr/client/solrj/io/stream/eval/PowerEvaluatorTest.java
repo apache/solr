@@ -37,7 +37,7 @@ public class PowerEvaluatorTest extends SolrTestCase {
     super();
 
     factory = new StreamFactory().withFunctionName("pow", PowerEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @Test

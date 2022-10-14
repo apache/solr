@@ -137,7 +137,7 @@ public class PluginBag<T> implements AutoCloseable {
       if (log.isDebugEnabled()) {
         log.debug("{} : '{}' created with startup=lazy ", meta.getCleanTag(), info.name);
       }
-      return new LazyPluginHolder<T>(meta, info, core, core.getResourceLoader());
+      return new LazyPluginHolder<>(meta, info, core, core.getResourceLoader());
     } else {
       if (info.pkgName != null) {
         PackagePluginHolder<T> holder = new PackagePluginHolder<>(info, core, meta);
@@ -329,7 +329,7 @@ public class PluginBag<T> implements AutoCloseable {
     }
     for (Map.Entry<String, T> e : defaults.entrySet()) {
       if (!contains(e.getKey())) {
-        put(e.getKey(), new PluginHolder<T>(null, e.getValue()));
+        put(e.getKey(), new PluginHolder<>(null, e.getValue()));
       }
     }
   }

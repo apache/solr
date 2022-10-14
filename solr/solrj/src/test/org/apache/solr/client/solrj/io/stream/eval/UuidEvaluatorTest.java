@@ -35,7 +35,7 @@ public class UuidEvaluatorTest extends SolrTestCase {
     super();
 
     factory = new StreamFactory().withFunctionName("uuid", UuidEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @Test

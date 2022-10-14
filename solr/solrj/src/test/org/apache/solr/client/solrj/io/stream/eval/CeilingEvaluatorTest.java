@@ -36,7 +36,7 @@ public class CeilingEvaluatorTest extends SolrTestCase {
     super();
 
     factory = new StreamFactory().withFunctionName("ceil", CeilingEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @Test
