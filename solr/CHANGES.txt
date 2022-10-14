@@ -48,6 +48,8 @@ Improvements
 
 * SOLR-11657: Deprecate ContentStream in favour of RequestWriter.ContentWriter.   (Joshua Ouma via Eric Pugh)
 
+* SOLR-16302: WARN when restoring backup if ConfigSet with same name already exists (Albert Moser via Kevin Risden)
+
 Optimizations
 ---------------------
 (No changes)
