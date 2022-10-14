@@ -282,6 +282,8 @@ Other Changes
 
 * SOLR-16450: Proper handling on watcher registration failure in ZkStateReader#waitForState() (Hitesh Khamesra via Ishan Chattopadhyaya)
 
+* SOLR-16451: Don't fetch the PRS states while registering the collection watch (Hitesh Khamesra via Ishan Chattopadhyaya)
+
 Build
 ---------------------
 * SOLR-16204: Change Lucene dependency to Lucene 9.1.0 (Elia Porciani via Alessandro Benedetti)
