@@ -2466,10 +2466,14 @@ public class SolrCLI implements CLIO {
                   configName);
             }
 
-          Optional<String> inUse = collections.stream()
-              .filter(name -> !name.equals(collectionName)) // ignore this collection
-              .filter(name -> configName.equals(zkStateReader.getClusterState().getCollection(name).getConfigName()))
-              .findFirst();
+          Optional<String> inUse =
+              collections.stream()
+                  .filter(name -> !name.equals(collectionName)) // ignore this collection
+                  .filter(
+                      name ->
+                          configName.equals(
+                              zkStateReader.getClusterState().getCollection(name).getConfigName()))
+                  .findFirst();
           if (inUse.isPresent()) {
             deleteConfig = false;
             log.warn(
@@ -2830,12 +2834,13 @@ public class SolrCLI implements CLIO {
                 + " is not a directory!");
 
       echoIfVerbose(
-            "Running with\nserverDir="
-                + serverDir.getAbsolutePath()
-                + ",\nexampleDir="
-                + exampleDir.getAbsolutePath()
-                + "\nscript="
-                + script, cli);
+          "Running with\nserverDir="
+              + serverDir.getAbsolutePath()
+              + ",\nexampleDir="
+              + exampleDir.getAbsolutePath()
+              + "\nscript="
+              + script,
+          cli);
 
       String exampleType = cli.getOptionValue("example");
       if ("cloud".equals(exampleType)) {
