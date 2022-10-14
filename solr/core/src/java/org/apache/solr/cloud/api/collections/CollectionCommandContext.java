@@ -99,6 +99,6 @@ public interface CollectionCommandContext {
    * updates are distributed.
    */
   default void submitIntraProcessMessage(Overseer.Message message) {
-    //this is ignored
+    // this is ignored
   }
 }

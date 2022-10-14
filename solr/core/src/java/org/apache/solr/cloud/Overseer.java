@@ -1201,7 +1201,8 @@ public class Overseer implements SolrCloseable {
   }
 
   public interface Message {
-    ClusterState run(ClusterState clusterState, Overseer overseer, ZkStateWriter zksw) throws Exception;
+    ClusterState run(ClusterState clusterState, Overseer overseer, ZkStateWriter zksw)
+        throws Exception;
   }
 
   /**

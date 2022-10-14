@@ -30,7 +30,8 @@ public class RefreshCollectionMessage implements Overseer.Message {
     this.collection = collection;
   }
 
-  public ClusterState run(ClusterState clusterState, Overseer overseer, ZkStateWriter zksw) throws Exception {
+  public ClusterState run(ClusterState clusterState, Overseer overseer, ZkStateWriter zksw)
+      throws Exception {
     Stat stat =
         overseer
             .getZkStateReader()
@@ -47,7 +48,8 @@ public class RefreshCollectionMessage implements Overseer.Message {
     } else {
       overseer.getZkStateReader().forceUpdateCollection(collection);
       coll = overseer.getZkStateReader().getCollection(collection);
-      zksw.updateClusterState(it -> it.copyWith(collection, overseer.getZkStateReader().getCollection(collection)));
+      zksw.updateClusterState(
+          it -> it.copyWith(collection, overseer.getZkStateReader().getCollection(collection)));
       return clusterState.copyWith(collection, coll);
     }
   }

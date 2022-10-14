@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.Stats;
 import org.apache.solr.common.cloud.ClusterState;
@@ -87,7 +86,8 @@ public class ZkStateWriter {
   }
 
   /**
-   * if any collection is updated not through this class (directly written to ZK, then it needs to be updated locally)
+   * if any collection is updated not through this class (directly written to ZK, then it needs to
+   * be updated locally)
    */
   public void updateClusterState(Function<ClusterState, ClusterState> fun) {
     clusterState = fun.apply(clusterState);
