@@ -217,6 +217,8 @@ Bug Fixes
 
 * SOLR-16433: Security Manager prevents Solr SQL from working (Kevin Risden)
 
+* SOLR-16460: ClusterState.copyWith is inconsistent (noble)
+
 Other Changes
 ---------------------
 * SOLR-16351: Upgrade Carrot2 to 4.4.3, upgrade randomizedtesting to 2.8.0. (Dawid Weiss)
