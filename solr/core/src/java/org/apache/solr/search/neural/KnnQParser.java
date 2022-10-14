@@ -54,6 +54,10 @@ public class KnnQParser extends QParser {
 
   @Override
   public Query parse() {
+    return implParse("Dense Vector");
+  }
+
+  protected Query implParse(String valueDescription) {
     String denseVectorField = localParams.get(QueryParsing.F);
     String vectorToSearch = localParams.get(QueryParsing.V);
     int topK = localParams.getInt(TOP_K, DEFAULT_TOP_K);
@@ -65,7 +69,8 @@ public class KnnQParser extends QParser {
 
     if (vectorToSearch == null || vectorToSearch.isEmpty()) {
       throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST, "the Dense Vector value 'v' to search is missing");
+          SolrException.ErrorCode.BAD_REQUEST,
+          "the " + valueDescription + " value 'v' to search is missing");
     }
 
     SchemaField schemaField = req.getCore().getLatestSchema().getField(denseVectorField);
@@ -77,7 +82,7 @@ public class KnnQParser extends QParser {
     }
 
     DenseVectorField denseVectorType = (DenseVectorField) fieldType;
-    float[] parsedVectorToSearch = parseVector(vectorToSearch, denseVectorType.getDimension());
+    float[] parsedVectorToSearch = toVector(vectorToSearch, denseVectorType.getDimension());
 
     return denseVectorType.getKnnVectorQuery(
         schemaField.getName(), parsedVectorToSearch, topK, getFilterQuery());
@@ -109,6 +114,10 @@ public class KnnQParser extends QParser {
     }
 
     return null;
+  }
+
+  protected float[] toVector(String value, int dimension) {
+    return parseVector(value, dimension);
   }
 
   /**
