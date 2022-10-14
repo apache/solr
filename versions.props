@@ -6,7 +6,6 @@ com.fasterxml.jackson:jackson-bom=2.13.3
 com.fasterxml.woodstox:woodstox-core=6.2.8
 com.github.ben-manes.caffeine:caffeine=3.1.1
 com.github.spotbugs:*=4.7.2
-com.github.zafarkhaja:java-semver=0.9.0
 com.google.cloud:google-cloud-bom=0.178.0
 com.google.errorprone:*=2.15.0
 com.google.guava:guava=31.1-jre

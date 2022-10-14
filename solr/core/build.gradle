@@ -165,6 +165,8 @@ dependencies {
   runtimeOnly ('org.xerial.snappy:snappy-java')
 
   // For Package Manager
+  implementation 'org.semver4j:semver4j'
+
   implementation('com.jayway.jsonpath:json-path', {
     exclude group: "net.minidev", module: "json-smart"
   })

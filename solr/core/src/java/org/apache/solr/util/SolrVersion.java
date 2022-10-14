@@ -18,10 +18,7 @@ package org.apache.solr.util;
 
 import java.util.Locale;
 import org.apache.solr.common.SolrException;
-
-import java.util.Arrays;
-import java.util.Locale;
-import java.util.stream.Collectors;
+import org.semver4j.Semver;
 
 /**
  * Simple Solr version representation backed by a <a href="https://devhints.io/semver">Semantic
@@ -40,7 +37,7 @@ public final class SolrVersion implements Comparable<SolrVersion> {
 
   /** Create a SolrVersion instance from string value. The string must comply to the SemVer spec */
   public static SolrVersion valueOf(String version) {
-    return new SolrVersion(new Semver(version, Semver.SemverType.STRICT));
+    return new SolrVersion(new Semver(version));
   }
 
   /** Create a SolrVersion instance from set of integer values. Must comply to the SemVer spec */
@@ -51,27 +48,7 @@ public final class SolrVersion implements Comparable<SolrVersion> {
   /** Return version as plain SemVer string, e.g. "9.0.1" */
   @Override
   public String toString() {
-<<<<<<< HEAD
     return version.toString();
-=======
-    // Workaround for bug https://github.com/zafarkhaja/jsemver/issues/32
-    // TODO: Needs to find a newer SemVer lib
-    StringBuilder sb =
-        new StringBuilder(
-            String.format(
-                Locale.ROOT,
-                "%d.%d.%d",
-                version.getMajorVersion(),
-                version.getMinorVersion(),
-                version.getPatchVersion()));
-    if (!version.getPreReleaseVersion().isEmpty()) {
-      sb.append("-").append(version.getPreReleaseVersion());
-    }
-    if (!version.getBuildMetadata().isEmpty()) {
-      sb.append("+").append(version.getBuildMetadata());
-    }
-    return sb.toString();
->>>>>>> main
   }
 
   public boolean greaterThan(SolrVersion other) {
@@ -95,15 +72,9 @@ public final class SolrVersion implements Comparable<SolrVersion> {
    * Expression</a>
    *
    * @param semVerExpression the expression to test
-   * @throws InvalidSemVerExpressionException if the SemVer expression is invalid
    */
   public boolean satisfies(String semVerExpression) {
-    try {
-      Semver semNPM = new Semver(toString(), Semver.SemverType.NPM);
-      return semNPM.satisfies(semVerExpression); // true
-    } catch (Exception parseException) {
-      throw new InvalidSemVerExpressionException(parseException, semVerExpression);
-    }
+    return version.satisfies(semVerExpression);
   }
 
   public int getMajorVersion() {
@@ -119,7 +90,7 @@ public final class SolrVersion implements Comparable<SolrVersion> {
   }
 
   public String getPrereleaseVersion() {
-    return Arrays.stream(version.getSuffixTokens()).collect(Collectors.joining("."));
+    return String.join(".", version.getPreRelease());
   }
 
   // Private constructor. Should be instantiated from static factory methods
@@ -150,7 +121,10 @@ public final class SolrVersion implements Comparable<SolrVersion> {
 
   public static class InvalidSemVerExpressionException extends SolrException {
     public InvalidSemVerExpressionException(Exception exception, String expression) {
-      super(ErrorCode.BAD_REQUEST, String.format(Locale.ROOT, "Invalid SemVer expression: %s", expression), exception);
+      super(
+          ErrorCode.BAD_REQUEST,
+          String.format(Locale.ROOT, "Invalid SemVer expression: %s", expression),
+          exception);
     }
   }
 }
