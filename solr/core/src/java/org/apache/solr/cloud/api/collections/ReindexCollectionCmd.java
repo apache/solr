@@ -409,7 +409,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
                 ccc.getSolrCloudManager(),
                 ccc.getZkStateReader());
       } else {
-        ccc.offerStateUpdate(Utils.toJSON(cmd));
+        ccc.offerStateUpdate(cmd);
       }
 
       TestInjection.injectReindexLatch();
@@ -563,7 +563,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
                   ccc.getSolrCloudManager(),
                   ccc.getZkStateReader());
         } else {
-          ccc.offerStateUpdate(Utils.toJSON(props));
+          ccc.offerStateUpdate(props);
         }
       }
       // 9. set FINISHED state on the target and clear the state on the source
@@ -583,7 +583,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
                 ccc.getSolrCloudManager(),
                 ccc.getZkStateReader());
       } else {
-        ccc.offerStateUpdate(Utils.toJSON(props));
+        ccc.offerStateUpdate(props);
       }
 
       reindexingState.put(STATE, State.FINISHED.toLower());
@@ -964,7 +964,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
               ccc.getSolrCloudManager(),
               ccc.getZkStateReader());
     } else {
-      ccc.offerStateUpdate(Utils.toJSON(props));
+      ccc.offerStateUpdate(props);
     }
     removeReindexingState(collection);
   }

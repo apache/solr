@@ -44,7 +44,6 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZkStateReaderAccessor;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ZkContainer;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
@@ -281,7 +280,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
               cluster.getOpenOverseer().getSolrCloudManager(),
               cluster.getOpenOverseer().getZkStateReader());
     } else {
-      cluster.getOpenOverseer().getStateUpdateQueue().offer(Utils.toJSON(m));
+      cluster.getOpenOverseer().getStateUpdateQueue().offer(m);
     }
 
     waitForState(
@@ -373,7 +372,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
                         cluster.getOpenOverseer().getSolrCloudManager(),
                         cluster.getOpenOverseer().getZkStateReader());
               } else {
-                cluster.getOpenOverseer().getStateUpdateQueue().offer(Utils.toJSON(m));
+                cluster.getOpenOverseer().getStateUpdateQueue().offer(m);
               }
 
               boolean replicaDeleted = false;
