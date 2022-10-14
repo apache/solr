@@ -60,6 +60,8 @@ Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
 
+* SOLR-16464: Upgrade commons-text to 1.10.0 (Kevin Risden)
+
 Other Changes
 ---------------------
 (No changes)
