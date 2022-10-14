@@ -25,7 +25,7 @@ dependencies {
 
   implementation 'org.apache.lucene:lucene-core'
 
-  implementation 'org.slf4j:slf4j-api'
+  // implementation 'org.slf4j:slf4j-api'
 
   testImplementation project(':solr:test-framework')
   testImplementation 'org.apache.lucene:lucene-test-framework'
