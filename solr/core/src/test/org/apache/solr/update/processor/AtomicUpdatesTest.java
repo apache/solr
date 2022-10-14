@@ -78,7 +78,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "1");
-    List<String> removeList = new ArrayList<String>();
+    List<String> removeList = new ArrayList<>();
     removeList.add("bbb");
     removeList.add("ccc");
     doc.setField(
@@ -94,7 +94,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "21");
-    removeList = new ArrayList<String>();
+    removeList = new ArrayList<>();
     removeList.add("bbb");
     removeList.add("ccc");
     doc.setField(
@@ -149,7 +149,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "1001");
-    List<Long> removeList = new ArrayList<Long>();
+    List<Long> removeList = new ArrayList<>();
     removeList.add(222L);
     removeList.add(333L);
     doc.setField(
@@ -166,7 +166,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "1021");
-    removeList = new ArrayList<Long>();
+    removeList = new ArrayList<>();
     removeList.add(222L);
     removeList.add(333L);
     doc.setField(
@@ -240,7 +240,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "1001");
-    List<Long> removeList = new ArrayList<Long>();
+    List<Long> removeList = new ArrayList<>();
     removeList.add(222L);
     removeList.add(333L);
     doc.setField(
@@ -257,7 +257,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "1021");
-    removeList = new ArrayList<Long>();
+    removeList = new ArrayList<>();
     removeList.add(222L);
     removeList.add(333L);
     doc.setField(
@@ -329,7 +329,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "1001");
-    List<String> removeList = new ArrayList<String>();
+    List<String> removeList = new ArrayList<>();
     removeList.add("222");
     removeList.add("333");
     doc.setField(
@@ -346,7 +346,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "1021");
-    removeList = new ArrayList<String>();
+    removeList = new ArrayList<>();
     removeList.add("222");
     removeList.add("333");
     doc.setField(
@@ -402,7 +402,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "1001");
-    List<Long> removeList = new ArrayList<Long>();
+    List<Long> removeList = new ArrayList<>();
     removeList.add(222L);
     removeList.add(333L);
     doc.setField(
@@ -419,7 +419,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "1021");
-    removeList = new ArrayList<Long>();
+    removeList = new ArrayList<>();
     removeList.add(222L);
     removeList.add(333L);
     doc.setField(
@@ -494,7 +494,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "1001");
-    List<Float> removeList = new ArrayList<Float>();
+    List<Float> removeList = new ArrayList<>();
     removeList.add(222.20F);
     removeList.add(333.30F);
     doc.setField(
@@ -511,7 +511,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "1021");
-    removeList = new ArrayList<Float>();
+    removeList = new ArrayList<>();
     removeList.add(222.20F);
     removeList.add(333.30F);
     doc.setField(
@@ -569,7 +569,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "1001");
-    List<Double> removeList = new ArrayList<Double>();
+    List<Double> removeList = new ArrayList<>();
     removeList.add(22222222D);
     removeList.add(33333333D);
     doc.setField(
@@ -586,7 +586,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "1021");
-    removeList = new ArrayList<Double>();
+    removeList = new ArrayList<>();
     removeList.add(22222222D);
     removeList.add(33333333D);
     doc.setField(
@@ -672,7 +672,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "10001");
-    List<String> removeList = new ArrayList<String>();
+    List<String> removeList = new ArrayList<>();
     removeList.add("2014-09-02T12:00:00Z");
     removeList.add("2014-09-03T12:00:00Z");
 
@@ -693,7 +693,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "10021");
-    removeList = new ArrayList<String>();
+    removeList = new ArrayList<>();
     removeList.add("2014-09-02T12:00:00Z");
     removeList.add("2014-09-03T12:00:00Z");
     doc.setField(
@@ -800,7 +800,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "10001");
-    List<Date> removeList = new ArrayList<Date>();
+    List<Date> removeList = new ArrayList<>();
     removeList.add(DateMathParser.parseMath(null, "2014-09-02T12:00:00Z"));
     removeList.add(DateMathParser.parseMath(null, "2014-09-03T12:00:00Z"));
 
@@ -820,7 +820,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "10021");
-    removeList = new ArrayList<Date>();
+    removeList = new ArrayList<>();
     removeList.add(DateMathParser.parseMath(null, "2014-09-02T12:00:00Z"));
     removeList.add(DateMathParser.parseMath(null, "2014-09-03T12:00:00Z"));
     doc.setField(
@@ -884,7 +884,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "10001");
-    List<Float> removeList = new ArrayList<Float>();
+    List<Float> removeList = new ArrayList<>();
     removeList.add(222.222F);
     removeList.add(333.333F);
 
@@ -899,7 +899,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "10021");
-    removeList = new ArrayList<Float>();
+    removeList = new ArrayList<>();
     removeList.add(222.222F);
     removeList.add(333.333F);
     doc.setField(
@@ -958,7 +958,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "10001");
-    List<String> removeList = new ArrayList<String>();
+    List<String> removeList = new ArrayList<>();
     removeList.add("222.222");
     removeList.add("333.333");
 
@@ -976,7 +976,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "10021");
-    removeList = new ArrayList<String>();
+    removeList = new ArrayList<>();
     removeList.add("222.222");
     removeList.add("333.333");
     doc.setField(

@@ -46,7 +46,7 @@ public class TestSearcherReuse extends SolrTestCaseJ4 {
    * modification results in getting a new searcher with the new schema linked to it.
    */
   @BeforeClass
-  private static void setupTempDirAndCoreWithManagedSchema() throws Exception {
+  public static void setupTempDirAndCoreWithManagedSchema() throws Exception {
     solrHome = createTempDir().toFile();
     solrHome = solrHome.getAbsoluteFile();
 
@@ -69,7 +69,7 @@ public class TestSearcherReuse extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  private static void afterClass() {
+  public static void afterClass() {
     solrHome = null;
   }
 

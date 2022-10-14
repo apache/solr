@@ -297,9 +297,9 @@ public class SolrQueryTest extends SolrTestCase {
   public void testFacetDateRange() {
     SolrQuery q = new SolrQuery("dog");
     Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"), Locale.UK);
-    calendar.set(2010, 1, 1);
+    calendar.set(2010, Calendar.FEBRUARY, 1);
     Date start = calendar.getTime();
-    calendar.set(2011, 1, 1);
+    calendar.set(2011, Calendar.FEBRUARY, 1);
     Date end = calendar.getTime();
     q.addDateRangeFacet("field", start, end, "+1MONTH");
     assertEquals("true", q.get(FacetParams.FACET));

@@ -618,17 +618,17 @@ public class GatherNodesStream extends TupleStream implements Expressible {
         ++i;
         Instant windowInstant =
             size > 0
-                ? instant.plus(10 * i, ChronoUnit.SECONDS)
-                : instant.minus(10 * i, ChronoUnit.SECONDS);
+                ? instant.plus(10L * i, ChronoUnit.SECONDS)
+                : instant.minus(10L * i, ChronoUnit.SECONDS);
         String windowString = windowInstant.toString();
         windowString = windowString.substring(0, 18) + "0Z";
         windowList.add(windowString);
       }
 
       List<String> laggedWindow = windowList.subList(lag, windowList.size());
-      return laggedWindow.toArray(new String[laggedWindow.size()]);
+      return laggedWindow.toArray(new String[0]);
     } catch (ParseException e) {
-      log.warn("Unparseable date:{}", String.valueOf(start));
+      log.warn("Unparseable date: {}", start);
       return new String[0];
     }
   }

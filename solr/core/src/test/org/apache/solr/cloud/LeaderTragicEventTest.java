@@ -126,7 +126,7 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
       Replica oldLeader = dc.getLeader("shard1");
       log.info("Will crash leader : {}", oldLeader);
 
-      try (HttpSolrClient solrClient =
+      try (SolrClient solrClient =
           new HttpSolrClient.Builder(dc.getLeader("shard1").getCoreUrl()).build()) {
         new UpdateRequest().add("id", "99").commit(solrClient, null);
         fail("Should have injected tragedy");

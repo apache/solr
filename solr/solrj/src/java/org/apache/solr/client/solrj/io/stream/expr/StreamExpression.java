@@ -27,7 +27,7 @@ public class StreamExpression implements StreamExpressionParameter {
 
   public StreamExpression(String functionName) {
     this.functionName = functionName;
-    parameters = new ArrayList<StreamExpressionParameter>();
+    parameters = new ArrayList<>();
   }
 
   public String getFunctionName() {

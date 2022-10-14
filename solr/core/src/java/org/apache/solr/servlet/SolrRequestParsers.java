@@ -613,7 +613,7 @@ public class SolrRequestParsers {
           new MultipartConfigElement(
               null, // temp dir (null=default)
               -1, // maxFileSize  (-1=none)
-              uploadLimitKB * 1024, // maxRequestSize
+              uploadLimitKB * 1024L, // maxRequestSize
               100 * 1024); // fileSizeThreshold after which will go to disk
     }
 

@@ -24,7 +24,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 public class OverseerSolrResponseTest extends SolrTestCaseJ4 {
 
   public void testEmpty() {
-    assertSerializeDeserialize(new NamedList<Object>());
+    assertSerializeDeserialize(new NamedList<>());
   }
 
   public void testWithSingleObject() {

@@ -61,7 +61,11 @@ import org.slf4j.LoggerFactory;
 @ThreadLeakFilters(
     defaultFilters = true,
     filters = {SolrIgnoredThreadsFilter.class, QuickPatchThreadsFilter.class})
-@ThreadLeakLingering(linger = 0)
+// The ThreadLeakLingering is set to 1s to allow ThreadPools to finish
+// joining on termination. Ideally this should only be 10-100ms, but
+// on slow machines it could take up to 1s. See discussion on SOLR-15660
+// and SOLR-16187 regarding why this is necessary.
+@ThreadLeakLingering(linger = 1000)
 public class SolrTestCase extends LuceneTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.common.cloud;
 
+import static org.apache.solr.common.util.Utils.STANDARDOBJBUILDER;
+
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
@@ -28,6 +30,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
@@ -35,7 +38,9 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 import org.apache.solr.common.cloud.Replica.ReplicaStateProps;
 import org.apache.solr.common.util.Utils;
+import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
+import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,7 +83,7 @@ public class ClusterState implements JSONWriter.Writable {
     this.liveNodes = new HashSet<>(liveNodes.size());
     this.liveNodes.addAll(liveNodes);
     this.collectionStates = new LinkedHashMap<>(collectionStates);
-    this.immutableCollectionStates = Collections.unmodifiableMap(collectionStates);
+    this.immutableCollectionStates = Collections.unmodifiableMap(this.collectionStates);
   }
 
   /**
@@ -89,13 +94,13 @@ public class ClusterState implements JSONWriter.Writable {
    * @return the updated cluster state which preserves the current live nodes
    */
   public ClusterState copyWith(String collectionName, DocCollection collection) {
-    ClusterState result = new ClusterState(new LinkedHashMap<>(collectionStates), liveNodes);
+    LinkedHashMap<String, CollectionRef> collections = new LinkedHashMap<>(collectionStates);
     if (collection == null) {
-      result.collectionStates.remove(collectionName);
+      collections.remove(collectionName);
     } else {
-      result.collectionStates.put(collectionName, new CollectionRef(collection));
+      collections.put(collectionName, new CollectionRef(collection));
     }
-    return result;
+    return new ClusterState(collections, liveNodes);
   }
 
   /**
@@ -227,7 +232,8 @@ public class ClusterState implements JSONWriter.Writable {
       return new ClusterState(liveNodes, Collections.<String, DocCollection>emptyMap());
     }
     @SuppressWarnings({"unchecked"})
-    Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(bytes);
+    Map<String, Object> stateMap =
+        (Map<String, Object>) Utils.fromJSON(bytes, 0, bytes.length, STR_INTERNER_OBJ_BUILDER);
     return createFromCollectionMap(version, stateMap, liveNodes);
   }
 
@@ -476,5 +482,13 @@ public class ClusterState implements JSONWriter.Writable {
       if (perReplicaStates == null) perReplicaStates = replicaStatesSupplier.get();
       return perReplicaStates;
     }
+  }
+
+  private static volatile Function<JSONParser, ObjectBuilder> STR_INTERNER_OBJ_BUILDER =
+      STANDARDOBJBUILDER;
+
+  public static void setStrInternerParser(Function<JSONParser, ObjectBuilder> fun) {
+    if (fun == null) return;
+    STR_INTERNER_OBJ_BUILDER = fun;
   }
 }

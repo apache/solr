@@ -36,7 +36,7 @@ public class NodeRoles {
   private Map<Role, String> nodeRoles;
 
   public NodeRoles(String rolesString) {
-    Map<Role, String> roles = new EnumMap<Role, String>(Role.class);
+    Map<Role, String> roles = new EnumMap<>(Role.class);
     if (StringUtils.isEmpty(rolesString)) {
       rolesString = DEFAULT_ROLES_STRING;
     }
@@ -101,6 +101,18 @@ public class NodeRoles {
       @Override
       public String modeWhenRoleIsAbsent() {
         return MODE_DISALLOWED;
+      }
+    },
+
+    COORDINATOR("coordinator") {
+      @Override
+      public String modeWhenRoleIsAbsent() {
+        return MODE_OFF;
+      }
+
+      @Override
+      public Set<String> supportedModes() {
+        return Set.of(MODE_ON, MODE_OFF);
       }
     };
 

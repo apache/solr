@@ -62,6 +62,7 @@ import org.slf4j.LoggerFactory;
 
 public class Assign {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static final String SYSTEM_COLL_PREFIX = ".sys.";
 
   public static String getCounterNodePath(String collection) {
     return ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/counter";
@@ -177,8 +178,7 @@ public class Assign {
       map.put(shardId, cnt);
     }
 
-    Collections.sort(
-        shardIdNames,
+    shardIdNames.sort(
         (String o1, String o2) -> {
           Integer one = map.get(o1);
           Integer two = map.get(o2);

@@ -65,7 +65,9 @@ dependencies {
 
   // Zookeeper dependency - some tests like HdfsCloudBackupRestore need this
   permitTestUnusedDeclared 'org.apache.zookeeper:zookeeper'
-  testImplementation 'org.apache.zookeeper:zookeeper'
+  testImplementation('org.apache.zookeeper:zookeeper', {
+    exclude group: "org.apache.yetus", module: "audience-annotations"
+  })
   // required for instantiating a Zookeeper server in tests or embedded
   testRuntimeOnly 'org.xerial.snappy:snappy-java'
 }

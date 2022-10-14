@@ -22,4 +22,11 @@ import org.apache.zookeeper.data.ACL;
 public interface ZkACLProvider {
 
   List<ACL> getACLsToAdd(String zNodePath);
+
+  /**
+   * @param zkCredentialsInjector The ZkCredentialsInjector that injects ZK credentials
+   */
+  default void setZkCredentialsInjector(ZkCredentialsInjector zkCredentialsInjector) {
+    // no-op
+  }
 }

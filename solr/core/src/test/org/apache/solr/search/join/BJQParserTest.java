@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import javax.xml.xpath.XPathConstants;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TopDocs;
@@ -116,7 +117,8 @@ public class BJQParserTest extends SolrTestCaseJ4 {
     // add grandchildren after children
     for (ListIterator<String[]> iter = block.listIterator(); iter.hasNext(); ) {
       String[] child = iter.next();
-      assert child[0] == "child_s" && child[2] == "parentchild_s" : Arrays.toString(child);
+      assert Objects.equals(child[0], "child_s") && Objects.equals(child[2], "parentchild_s")
+          : Arrays.toString(child);
       String child_s = child[1];
       String parentchild_s = child[3];
       int grandChildPos = 0;
@@ -176,7 +178,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
         "//doc/arr[@name='child_s']/str='" + klm[0] + "'",
         "//doc/arr[@name='child_s']/str='" + klm[1] + "'",
         "//doc/arr[@name='child_s']/str='" + klm[2] + "'");
-    assert klm.length == 3 : "change asserts pls " + klm;
+    assert klm.length == 3 : "change asserts pls " + Arrays.toString(klm);
   }
 
   private static final String beParents[] =

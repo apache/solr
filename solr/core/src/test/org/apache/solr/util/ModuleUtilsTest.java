@@ -64,12 +64,13 @@ public class ModuleUtilsTest extends TestCase {
   public void testResolveModules() {
     assertEquals(
         Set.of("foo", "bar", "baz", "mod1"),
-        ModuleUtils.resolveModulesFromStringOrSyspropOrEnv("foo ,bar, baz,mod1"));
-    assertEquals(Collections.emptySet(), ModuleUtils.resolveModulesFromStringOrSyspropOrEnv(""));
+        Set.copyOf(ModuleUtils.resolveModulesFromStringOrSyspropOrEnv("foo ,bar, baz,mod1")));
+    assertEquals(
+        Collections.emptySet(), Set.copyOf(ModuleUtils.resolveModulesFromStringOrSyspropOrEnv("")));
     System.setProperty("solr.modules", "foo ,bar, baz,mod1");
     assertEquals(
         Set.of("foo", "bar", "baz", "mod1"),
-        ModuleUtils.resolveModulesFromStringOrSyspropOrEnv(null));
+        Set.copyOf(ModuleUtils.resolveModulesFromStringOrSyspropOrEnv(null)));
     System.clearProperty("solr.modules");
   }
 

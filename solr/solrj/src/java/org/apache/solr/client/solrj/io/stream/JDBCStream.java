@@ -594,7 +594,7 @@ public class JDBCStream extends TupleStream implements Expressible {
                   throw new SQLException(
                       String.format(
                           Locale.ROOT,
-                          "Encountered a clob of length #%l in column '%s' (col #%d).  Max supported length is #%i.",
+                          "Encountered a clob of length #%d in column '%s' (col #%d).  Max supported length is #%d.",
                           length,
                           columnName,
                           columnNumber,

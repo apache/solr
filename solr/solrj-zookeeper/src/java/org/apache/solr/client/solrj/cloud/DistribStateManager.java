@@ -96,8 +96,8 @@ public interface DistribStateManager extends SolrCloseable {
    */
   default List<String> listTree(String root)
       throws NoSuchElementException, IOException, KeeperException, InterruptedException {
-    Deque<String> queue = new LinkedList<String>();
-    List<String> tree = new ArrayList<String>();
+    Deque<String> queue = new LinkedList<>();
+    List<String> tree = new ArrayList<>();
     if (!root.startsWith("/")) {
       root = "/" + root;
     }

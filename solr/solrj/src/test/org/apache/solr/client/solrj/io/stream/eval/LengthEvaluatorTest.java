@@ -41,7 +41,7 @@ public class LengthEvaluatorTest extends SolrTestCase {
         new StreamFactory()
             .withFunctionName("length", LengthEvaluator.class)
             .withFunctionName("sequence", SequenceEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @Test
