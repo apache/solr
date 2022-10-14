@@ -125,8 +125,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
               .getClusterState()
               .getCollection(collection)
               .getSlice(shardId)
-              .getReplicas()
-              .size()
+              .getNumLeaderReplicas()
           > 1) {
         // Clear the leader in clusterstate. We only need to worry about this if there is actually
         // more than one replica.

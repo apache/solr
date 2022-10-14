@@ -85,6 +85,8 @@ Optimizations
 
 * SOLR-16328: intern() strings in DocCollection to reduce memory footprint (noble)
 
+* SOLR-16445: Leader message should only be sent when there is more than one (NRT+Tlog) replica (Hitesh Khamesra, noble via Ishan Chattopadhyaya)
+
 Bug Fixes
 ---------------------
 * SOLR-13219: Fix NPE in FieldLengthFeature with non-stored/missing fields (Nick Veenhof, Tomasz Elendt)
