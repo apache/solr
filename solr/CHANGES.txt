@@ -60,8 +60,7 @@ Bug Fixes
 * SOLR-16436: Fix "false positive" suggestions from DirectSolrSpellChecker when using maxQueryFrequency > 1 in
   multi-shard collections (hossman)
 
-* SOLR-15854: Use new semver library to fix versioning constraint bugs in the PackageManager.
-    This library is forked from https://github.com/vdurmont/semver4j (Houston Putman)
+* SOLR-15854: Upgrade semver library to fix versioning constraint bugs in the PackageManager. (Houston Putman, Kevin Risden)
 
 Build
 ---------------------
