@@ -17,7 +17,7 @@
 
 package org.apache.solr.util;
 
-import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;

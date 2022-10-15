@@ -16,7 +16,7 @@
  */
 package org.apache.solr.internal.csv;
 
-import junit.framework.TestCase;
+import org.apache.solr.SolrTestCase;
 
 /**
  * CSVStrategyTest
@@ -26,7 +26,7 @@ import junit.framework.TestCase;
  * approach for fixing a potential bug (it's likely that the strategy itself fails if the lexer has
  * problems...).
  */
-public class CSVStrategyTest extends TestCase {
+public class CSVStrategyTest extends SolrTestCase {
 
   // ======================================================
   //   getters
