@@ -17,14 +17,13 @@ import static org.apache.solr.handler.ClusterAPI.wrapParams;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
 @EndPoint(
-        path = {"/cluster/rename/{cluster}"},
+        path = {"/clusters/rename/{cluster}"},
         method = POST,
         permission = COLL_EDIT_PERM)
 public class RenameClusterAPI {
+
     private static final String V2_RENAME_CLUSTER_CMD = "rename";
-
     private final CollectionsHandler collectionsHandler;
-
 
     public RenameClusterAPI(CollectionsHandler collectionsHandler) {
         this.collectionsHandler = collectionsHandler;
