@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj;
 
 import java.util.Arrays;
 import org.apache.solr.EmbeddedSolrServerTestBase;
+import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
@@ -26,11 +27,11 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class GetByIdTest extends EmbeddedSolrServerTestBase {
+public class GetByIdTest extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore();
+    createAndStartJetty(legacyExampleCollection1SolrHome());
   }
 
   @Before
