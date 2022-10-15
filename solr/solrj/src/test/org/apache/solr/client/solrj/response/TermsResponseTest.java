@@ -19,6 +19,10 @@ package org.apache.solr.client.solrj.response;
 import java.util.List;
 import junit.framework.Assert;
 import org.apache.solr.EmbeddedSolrServerTestBase;
+import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestCaseHS;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.TermsResponse.Term;
@@ -28,20 +32,11 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /** Test for TermComponent's response in Solrj */
-public class TermsResponseTest extends EmbeddedSolrServerTestBase {
+public class TermsResponseTest extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore();
-  }
-
-  @Before
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    clearIndex();
-    assertU(commit());
-    assertU(optimize());
+    createAndStartJetty(legacyExampleCollection1SolrHome());
   }
 
   @Test
