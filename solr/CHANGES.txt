@@ -39,6 +39,8 @@ Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
 
+* SOLR-16432: Upgrade the gradle wrapper to 7.5.1 (Shawn Heisey, Kevin Risden)
+
 Other Changes
 ---------------------
 (No changes)
