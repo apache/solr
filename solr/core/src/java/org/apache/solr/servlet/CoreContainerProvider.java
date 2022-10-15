@@ -29,7 +29,8 @@ import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
 import com.google.common.annotations.VisibleForTesting;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.FileSystems;
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
@@ -38,6 +39,7 @@ import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.WeakHashMap;
@@ -282,34 +284,36 @@ public class CoreContainerProvider implements ServletContextListener {
     if (log.isInfoEnabled()) {
       log.info("|___/\\___/_|_|    Start time: {}", Instant.now());
     }
-    long pid = 0L;
     try {
-      pid = ProcessHandle.current().pid();
+      RuntimeMXBean mx = ManagementFactory.getRuntimeMXBean();
+      Optional<String> crashOnOutOfMemoryErrorArg =
+          mx.getInputArguments().stream()
+              .filter(x -> x.startsWith("-XX:+CrashOnOutOfMemoryError"))
+              .findFirst();
+      if (crashOnOutOfMemoryErrorArg.isPresent()) {
+        String errorFileArg =
+            mx.getInputArguments().stream()
+                .filter(x -> x.startsWith("-XX:ErrorFile"))
+                .findFirst()
+                .orElse("-XX:ErrorFile=hs_err_%p.log");
+        String errorFilePath =
+            errorFileArg
+                .substring(errorFileArg.indexOf('=') + 1)
+                .replace("%p", String.valueOf(mx.getPid()));
+        String logMessage =
+            "Solr started with \"-XX:+CrashOnOutOfMemoryError\" that will crash on any OutOfMemoryError exception. "
+                + "The cause of the OOME will be logged in the crash file: {}.";
+        log.info(logMessage, errorFilePath);
+      }
     } catch (Exception e) {
-      if (log.isErrorEnabled()) {
-        log.error("Error trying to get PID.", e);
-      }
-    }
-    if (log.isWarnEnabled()) {
-      String logsDir = System.getProperty("solr.log.dir");
-      StringBuilder sb = new StringBuilder();
-      sb.append(logsDir);
-      sb.append(FileSystems.getDefault().getSeparator());
-      sb.append("jvm_crash_");
-      sb.append(pid);
-      sb.append(".log");
-      String crashFile = sb.toString();
-      log.warn("Java crash filename:");
-      log.warn(crashFile);
-      if (pid == 0L) {
-        log.warn("Could not get PID of this process.  Displayed as 0.");
-      }
-    }
-    if (log.isInfoEnabled()) {
-      log.info("Solr starts with an option that will crash");
-      log.info("on any OutOfMemoryError exception.  The");
-      log.info("cause of the OOME will be logged in the");
-      log.info("crash file in the logs directory.", pid);
+      String logMessage =
+          String.format(
+              Locale.ROOT,
+              "Solr typically starts with \"-XX:+CrashOnOutOfMemoryError\" that will crash on any OutOfMemoryError exception. "
+                  + "The cause of the OOME will be logged in a crash file in the logs directory %s. "
+                  + "Unable to get the specific file due to an exception.",
+              System.getProperty("solr.log.dir"));
+      log.info(logMessage, e);
     }
   }
 
