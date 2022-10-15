@@ -15,6 +15,7 @@
 
 junit.framework.TestCase @ All classes should derive from LuceneTestCase
 junit.framework.Assert @ Use org.junit.Assert
+junit.framework.** @ Use org.junit
 org.junit.Assert#assertThat(**) @ Use org.hamcrest.MatcherAssert.assertThat()
 org.junit.matchers.JUnitMatchers @ Use org.hamcrest.CoreMatchers
 org.junit.rules.ExpectedException @ Use Assert.assertThrows
