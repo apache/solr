@@ -17,17 +17,12 @@
 package org.apache.solr.client.solrj.response;
 
 import java.util.List;
-import junit.framework.Assert;
-import org.apache.solr.EmbeddedSolrServerTestBase;
+import org.junit.Assert;
 import org.apache.solr.SolrJettyTestBase;
-import org.apache.solr.SolrTestCase;
-import org.apache.solr.SolrTestCaseHS;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.TermsResponse.Term;
 import org.apache.solr.common.SolrInputDocument;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
