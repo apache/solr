@@ -50,6 +50,11 @@ Improvements
 
 * SOLR-16302: WARN when restoring backup if ConfigSet with same name already exists (Albert Moser via Kevin Risden)
 
+* SOLR-8803: Java will now crash the Solr process on OOME and create a crash file that logs the
+  cause.  This capability is now also present on Windows.  Before, with bin/solr but not
+  bin/solr.cmd, Solr would execute a script that killed the Solr pid, leaving a very small time
+  window where Solr would continue to execute in an unpredictable state. (Shawn Heisey)
+
 Optimizations
 ---------------------
 (No changes)
