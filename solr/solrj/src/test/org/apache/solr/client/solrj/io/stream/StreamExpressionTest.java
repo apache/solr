@@ -26,7 +26,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -694,8 +693,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
       assertTrue(different);
 
-      Collections.sort(tuples1, new FieldComparator("id", ComparatorOrder.ASCENDING));
-      Collections.sort(tuples2, new FieldComparator("id", ComparatorOrder.ASCENDING));
+      tuples1.sort(new FieldComparator("id", ComparatorOrder.ASCENDING));
+      tuples2.sort(new FieldComparator("id", ComparatorOrder.ASCENDING));
 
       for (int i = 0; i < tuples1.size(); i++) {
         Tuple tuple1 = tuples1.get(i);
@@ -743,8 +742,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
       assertTrue(different);
 
-      Collections.sort(tuples10, new FieldComparator("id", ComparatorOrder.ASCENDING));
-      Collections.sort(tuples11, new FieldComparator("id", ComparatorOrder.ASCENDING));
+      tuples10.sort(new FieldComparator("id", ComparatorOrder.ASCENDING));
+      tuples11.sort(new FieldComparator("id", ComparatorOrder.ASCENDING));
 
       for (int i = 0; i < tuples10.size(); i++) {
         Tuple tuple1 = tuples10.get(i);

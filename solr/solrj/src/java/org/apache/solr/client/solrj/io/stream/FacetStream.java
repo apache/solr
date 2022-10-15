@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.stream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -703,7 +702,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
       getTuples(response, buckets, metrics);
 
       if (resortNeeded) {
-        Collections.sort(tuples, getStreamSort());
+        tuples.sort(getStreamSort());
       }
 
       index = this.offset;
