@@ -25,6 +25,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.SolrTestCaseJ4;
+import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
 public class TestObjectReleaseTracker extends SolrTestCaseJ4 {
@@ -79,7 +80,7 @@ public class TestObjectReleaseTracker extends SolrTestCaseJ4 {
   public void testAnonymousClasses() {
     ObjectReleaseTracker.track(new Object() {});
     String message = ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty();
-    assertThat(message, containsString("[Object]"));
+    MatcherAssert.assertThat(message, containsString("[Object]"));
   }
 
   @Test
@@ -96,7 +97,7 @@ public class TestObjectReleaseTracker extends SolrTestCaseJ4 {
 
     result.get(); // make sure that track has been called
     String message = ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty();
-    assertThat(
+    MatcherAssert.assertThat(
         message,
         stringContainsInOrder(
             ObjectReleaseTracker.ObjectTrackerException.class.getName(),
@@ -117,7 +118,7 @@ public class TestObjectReleaseTracker extends SolrTestCaseJ4 {
     result.get();
     indirectResult.get().get();
     message = ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty();
-    assertThat(
+    MatcherAssert.assertThat(
         message,
         stringContainsInOrder(
             ObjectReleaseTracker.ObjectTrackerException.class.getName(),
@@ -144,7 +145,7 @@ public class TestObjectReleaseTracker extends SolrTestCaseJ4 {
     indirectResult.get().get();
     indirectIndirect.get().get();
     message = ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty();
-    assertThat(
+    MatcherAssert.assertThat(
         message,
         stringContainsInOrder(
             ObjectReleaseTracker.ObjectTrackerException.class.getName(),

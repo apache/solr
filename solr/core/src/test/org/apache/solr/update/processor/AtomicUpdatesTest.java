@@ -27,6 +27,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.util.DateMathParser;
+import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -1589,7 +1590,8 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     SolrException e = expectThrows(SolrException.class, () -> assertU(adoc(invalidDoc)));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    assertThat(e.getMessage(), containsString("'inc' is not supported on non-numeric field cat"));
+    MatcherAssert.assertThat(
+        e.getMessage(), containsString("'inc' is not supported on non-numeric field cat"));
   }
 
   public void testFieldsWithDefaultValuesWhenAtomicUpdatesAgainstTlog() {

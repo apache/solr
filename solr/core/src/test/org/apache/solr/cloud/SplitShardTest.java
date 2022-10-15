@@ -41,6 +41,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -132,7 +133,7 @@ public class SplitShardTest extends SolrCloudTestCase {
             .setShardName("shard1");
     SolrException thrown =
         assertThrows(SolrException.class, () -> splitShard.process(cluster.getSolrClient()));
-    assertThat(
+    MatcherAssert.assertThat(
         thrown.getMessage(),
         containsString("numSubShards can not be specified with split.key or ranges parameters"));
   }

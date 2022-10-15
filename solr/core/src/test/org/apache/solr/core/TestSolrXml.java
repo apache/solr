@@ -33,6 +33,7 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.update.UpdateShardHandlerConfig;
+import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -81,7 +82,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
         "config set handler class", "testConfigSetsHandler", cfg.getConfigSetsHandlerClass());
     assertEquals("core load threads", 11, cfg.getCoreLoadThreadCount(false));
     assertEquals("replay update threads", 100, cfg.getReplayUpdatesThreads());
-    assertThat(
+    MatcherAssert.assertThat(
         "core root dir",
         cfg.getCoreRootDirectory().toString(),
         containsString("testCoreRootDirectory"));
@@ -153,7 +154,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     Files.copy(testSrcRoot.resolve("solr-50-all.xml"), solrHome.resolve("solr.xml"));
 
     NodeConfig cfg = SolrXmlConfig.fromSolrHome(solrHome, new Properties());
-    assertThat(cfg.getCoreRootDirectory().toString(), containsString("myCoreRoot"));
+    MatcherAssert.assertThat(cfg.getCoreRootDirectory().toString(), containsString("myCoreRoot"));
     assertEquals("solr host port", 8888, cfg.getCloudConfig().getSolrHostPort());
     assertFalse("schema cache", cfg.hasSchemaCache());
   }

@@ -21,9 +21,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Set;
-import junit.framework.TestCase;
+import org.apache.solr.SolrTestCase;
 
-public class ModuleUtilsTest extends TestCase {
+public class ModuleUtilsTest extends SolrTestCase {
   private Path mockRootDir;
   private final Set<String> expectedMods = Set.of("mod1", "mod2");
 

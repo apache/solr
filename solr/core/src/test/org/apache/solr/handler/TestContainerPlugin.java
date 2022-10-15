@@ -64,6 +64,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.ErrorLogMuter;
+import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -217,7 +218,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
             () -> getPlugin("/my-random-prefix/their/plugin").call());
     assertEquals(404, e.code());
     final String msg = (String) ((Map<String, Object>) (e.getMetaData().get("error"))).get("msg");
-    assertThat(msg, containsString("Cannot find API for the path"));
+    MatcherAssert.assertThat(msg, containsString("Cannot find API for the path"));
 
     // test ClusterSingleton plugin
     plugin.name = "clusterSingleton";

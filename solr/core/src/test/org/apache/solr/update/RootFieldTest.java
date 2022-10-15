@@ -27,6 +27,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
+import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -66,15 +67,15 @@ public class RootFieldTest extends EmbeddedSolrServerTestBase {
     query.set(CommonParams.FL, "id,name,_root_");
 
     SolrDocumentList results = client.query(query).getResults();
-    assertThat(results.getNumFound(), is(1L));
+    MatcherAssert.assertThat(results.getNumFound(), is(1L));
     SolrDocument foundDoc = results.get(0);
 
     // Check retrieved field values
-    assertThat(foundDoc.getFieldValue("id"), is(docId));
-    assertThat(foundDoc.getFieldValue("name"), is("child free doc"));
+    MatcherAssert.assertThat(foundDoc.getFieldValue("id"), is(docId));
+    MatcherAssert.assertThat(foundDoc.getFieldValue("name"), is("child free doc"));
 
     String expectedRootValue = expectRoot() ? docId : null;
-    assertThat(MESSAGE, foundDoc.getFieldValue("_root_"), is(expectedRootValue));
+    MatcherAssert.assertThat(MESSAGE, foundDoc.getFieldValue("_root_"), is(expectedRootValue));
 
     // Update the doc
     docToUpdate.setField("name", "updated doc");
@@ -86,9 +87,9 @@ public class RootFieldTest extends EmbeddedSolrServerTestBase {
     foundDoc = results.get(0);
 
     // Check updated field values
-    assertThat(foundDoc.getFieldValue("id"), is(docId));
-    assertThat(foundDoc.getFieldValue("name"), is("updated doc"));
-    assertThat(MESSAGE, foundDoc.getFieldValue("_root_"), is(expectedRootValue));
+    MatcherAssert.assertThat(foundDoc.getFieldValue("id"), is(docId));
+    MatcherAssert.assertThat(foundDoc.getFieldValue("name"), is("updated doc"));
+    MatcherAssert.assertThat(MESSAGE, foundDoc.getFieldValue("_root_"), is(expectedRootValue));
   }
 
   @Test

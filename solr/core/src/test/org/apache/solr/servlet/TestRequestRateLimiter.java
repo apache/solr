@@ -36,6 +36,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.core.RateLimiterConfig;
+import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -186,7 +187,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
         try {
           assertTrue(future.get() != null);
         } catch (Exception e) {
-          assertThat(
+          MatcherAssert.assertThat(
               e.getMessage(), containsString("non ok status: 429, message:Too Many Requests"));
         }
       }
