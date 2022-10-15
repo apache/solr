@@ -56,37 +56,34 @@ allprojects { prj ->
         .collect { id -> "${id.name}-unsafe-${id.version}" as String }
     }
 
-    // Configure defaults for sourceSets.main
-    forbiddenApisMain {
+    // Configure defaults for all sourceSets (main and test)
+    forbiddenApis {
       bundledSignatures += [
           'jdk-unsafe',
           'jdk-deprecated',
           'jdk-non-portable',
           'jdk-reflection',
-          'jdk-system-out',
       ]
 
       suppressAnnotations += [
           "**.SuppressForbidden"
+      ]
+
+      ignoreSignaturesOfMissingClasses = true
+    }
+
+    // Configure defaults for sourceSets.main
+    forbiddenApisMain {
+      bundledSignatures += [
+          'jdk-system-out'
       ]
     }
 
     // Configure defaults for sourceSets.test
     forbiddenApisTest {
-      bundledSignatures += [
-          'jdk-unsafe',
-          'jdk-deprecated',
-          'jdk-non-portable',
-          'jdk-reflection',
-      ]
-
       signaturesFiles = files(
           file("${resources}/defaults.tests.txt")
       )
-
-      suppressAnnotations += [
-          "**.SuppressForbidden"
-      ]
     }
 
     // Configure defaults for sourceSets.tools (if present).
@@ -131,6 +128,11 @@ allprojects { prj ->
     // Disable checks on JMH generated files.
     if (prj.path == ":solr:benchmark") {
       forbiddenApisMain.exclude("**/jmh_generated/**")
+    }
+
+    // Disable checks on code copied from Hadoop
+    if (prj.path == ":solr:modules:hdfs") {
+      forbiddenApisTest.exclude("**/org/apache/hadoop/**")
     }
 
     // We rely on resolved configurations to compute the relevant set of rule

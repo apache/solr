@@ -18,7 +18,7 @@ package org.apache.solr.client.solrj.io.stream.eval;
 
 import java.util.HashMap;
 import java.util.Map;
-
+import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.MultiplyEvaluator;
@@ -26,39 +26,36 @@ import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
 
-import junit.framework.Assert;
-
 public class MultiplyEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;
-  
+
   public MultiplyEvaluatorTest() {
     super();
-    
-    factory = new StreamFactory()
-      .withFunctionName("mult", MultiplyEvaluator.class);
-    values = new HashMap<String,Object>();
+
+    factory = new StreamFactory().withFunctionName("mult", MultiplyEvaluator.class);
+    values = new HashMap<>();
   }
-    
+
   @Test
-  public void multTwoFieldsWithValues() throws Exception{
+  public void multTwoFieldsWithValues() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("mult(a,b)");
     Object result;
-    
+
     values.clear();
     values.put("a", 1);
     values.put("b", 2);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertEquals(2D, result);
-    
+
     values.clear();
     values.put("a", 1.1);
     values.put("b", 2);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Double);
     Assert.assertEquals(2.2D, result);
-    
+
     values.clear();
     values.put("a", 1.1);
     values.put("b", 2.1);
@@ -68,15 +65,15 @@ public class MultiplyEvaluatorTest extends SolrTestCase {
   }
 
   @Test
-  public void multOneField() throws Exception{
+  public void multOneField() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("mult(a)");
     Object result;
-    
+
     values.clear();
     values.put("a", 6);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertEquals(6D, result);
-    
+
     values.clear();
     values.put("a", 6.5);
     result = evaluator.evaluate(new Tuple(values));
@@ -84,21 +81,21 @@ public class MultiplyEvaluatorTest extends SolrTestCase {
     Assert.assertEquals(6.5D, result);
   }
 
-  @Test//(expected = NumberFormatException.class)
-  public void multTwoFieldWithNulls() throws Exception{
+  @Test // (expected = NumberFormatException.class)
+  public void multTwoFieldWithNulls() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("mult(a,b)");
     Object result;
-    
+
     values.clear();
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertNull(result);
   }
 
-  @Test//(expected = NumberFormatException.class)
-  public void multTwoFieldsWithNull() throws Exception{
+  @Test // (expected = NumberFormatException.class)
+  public void multTwoFieldsWithNull() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("mult(a,b)");
     Object result;
-    
+
     values.clear();
     values.put("a", 1);
     values.put("b", null);
@@ -110,40 +107,40 @@ public class MultiplyEvaluatorTest extends SolrTestCase {
     values.put("b", 1.1);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertNull(result);
-    
+
     values.clear();
     values.put("a", 1.1);
-    values.put("b", null);    
+    values.put("b", null);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertNull(result);
   }
 
-  @Test//(expected = NumberFormatException.class)
-  public void multTwoFieldsWithMissingField() throws Exception{
+  @Test // (expected = NumberFormatException.class)
+  public void multTwoFieldsWithMissingField() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("mult(a,b)");
     Object result;
-    
+
     values.clear();
     values.put("a", 1);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertNull(result);
-    
+
     values.clear();
     values.put("b", 1.1);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertNull(result);
-    
+
     values.clear();
-    values.put("a", 1.1);    
+    values.put("a", 1.1);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertNull(result);
   }
 
   @Test
-  public void multManyFieldsWithValues() throws Exception{
+  public void multManyFieldsWithValues() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("mult(a,b,c,d)");
     Object result;
-    
+
     values.clear();
     values.put("a", 1);
     values.put("b", 2);
@@ -151,7 +148,7 @@ public class MultiplyEvaluatorTest extends SolrTestCase {
     values.put("d", 4);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertEquals(24D, result);
-    
+
     values.clear();
     values.put("a", 1.1);
     values.put("b", 2);
@@ -160,7 +157,7 @@ public class MultiplyEvaluatorTest extends SolrTestCase {
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Double);
     Assert.assertEquals(26.4D, result);
-    
+
     values.clear();
     values.put("a", 10.1);
     values.put("b", 2.1);
@@ -170,12 +167,12 @@ public class MultiplyEvaluatorTest extends SolrTestCase {
     Assert.assertTrue(result instanceof Double);
     Assert.assertEquals(269.5791D, result);
   }
-  
+
   @Test
-  public void multManyFieldsWithSubmults() throws Exception{
+  public void multManyFieldsWithSubmults() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("mult(a,b,mult(c,d))");
     Object result;
-    
+
     values.clear();
     values.put("a", 1);
     values.put("b", 2);

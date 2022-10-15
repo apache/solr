@@ -21,7 +21,6 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
@@ -37,8 +36,9 @@ public class TestEmbeddedSolrServerSchemaAPI extends SolrTestCaseJ4 {
   private String fieldName = "VerificationTest";
   private static EmbeddedSolrServer server;
   private final Map<String, Object> fieldAttributes;
+
   {
-    Map<String,Object> field = new LinkedHashMap<>();
+    Map<String, Object> field = new LinkedHashMap<>();
     field.put("name", fieldName);
     field.put("type", "string");
     field.put("stored", false);
@@ -50,21 +50,20 @@ public class TestEmbeddedSolrServerSchemaAPI extends SolrTestCaseJ4 {
   @BeforeClass
   public static void initClass() throws Exception {
     assertNull("no system props clash please", System.getProperty("managed.schema.mutable"));
-    System.setProperty("managed.schema.mutable", ""+//true
-    random().nextBoolean()
-    );
+    System.setProperty("managed.schema.mutable", "" + random().nextBoolean());
     Path tmpHome = createTempDir("tmp-home");
     Path coreDir = tmpHome.resolve(DEFAULT_TEST_CORENAME);
     copyMinConf(coreDir.toFile(), null, "solrconfig-managed-schema.xml");
-    initCore("solrconfig.xml" /*it's renamed to to*/, "schema.xml", tmpHome.toAbsolutePath().toString());
-    
+    initCore(
+        "solrconfig.xml" /*it's renamed to*/, "schema.xml", tmpHome.toAbsolutePath().toString());
+
     server = new EmbeddedSolrServer(h.getCoreContainer(), DEFAULT_TEST_CORENAME);
   }
 
   @AfterClass
   public static void destroyClass() throws IOException {
     if (null != server) {
-      server.close(); 
+      server.close();
       server = null;
     }
     System.clearProperty("managed.schema.mutable");
@@ -72,36 +71,43 @@ public class TestEmbeddedSolrServerSchemaAPI extends SolrTestCaseJ4 {
 
   @Before
   public void thereIsNoFieldYet() {
-    SolrException ex = expectThrows(SolrException.class, () -> new SchemaRequest.Field(fieldName).process(server));
+    SolrException ex =
+        expectThrows(SolrException.class, () -> new SchemaRequest.Field(fieldName).process(server));
     assertTrue(ex.getMessage().contains("No") && ex.getMessage().contains("VerificationTest"));
   }
-  
+
   @Test
   public void testSchemaAddFieldAndVerifyExistence() throws Exception {
-    assumeTrue("it needs to ammend schema", Boolean.getBoolean("managed.schema.mutable"));
-    SchemaResponse.UpdateResponse addFieldResponse = new SchemaRequest.AddField(fieldAttributes).process(server);
+    assumeTrue("it needs to amend schema", Boolean.getBoolean("managed.schema.mutable"));
+    SchemaResponse.UpdateResponse addFieldResponse =
+        new SchemaRequest.AddField(fieldAttributes).process(server);
 
     assertEquals(addFieldResponse.toString(), 0, addFieldResponse.getStatus());
 
     // This asserts that the field was actually created
     // this is due to the fact that the response gave OK but actually never created the field.
-    Map<String,Object> foundFieldAttributes = new SchemaRequest.Field(fieldName).process(server).getField();
+    Map<String, Object> foundFieldAttributes =
+        new SchemaRequest.Field(fieldName).process(server).getField();
     assertEquals(fieldAttributes, foundFieldAttributes);
 
-    assertEquals("removing " + fieldName, 0,
+    assertEquals(
+        "removing " + fieldName,
+        0,
         new SchemaRequest.DeleteField(fieldName).process(server).getStatus());
   }
 
-  @Test 
+  @Test
   public void testSchemaAddFieldAndFailOnImmutable() {
     assumeFalse("it needs a readonly schema", Boolean.getBoolean("managed.schema.mutable"));
 
-    SchemaRequest.AddField addFieldUpdateSchemaRequest = new SchemaRequest.AddField(fieldAttributes);
-    assertFailedSchemaResponse(() -> addFieldUpdateSchemaRequest.process(server),
-        "schema is not editable");
+    SchemaRequest.AddField addFieldUpdateSchemaRequest =
+        new SchemaRequest.AddField(fieldAttributes);
+    assertFailedSchemaResponse(
+        () -> addFieldUpdateSchemaRequest.process(server), "schema is not editable");
   }
 
-  private static void assertFailedSchemaResponse(ThrowingRunnable runnable, String expectedErrorMessage) {
+  private static void assertFailedSchemaResponse(
+      ThrowingRunnable runnable, String expectedErrorMessage) {
     ApiBag.ExceptionWithErrObject e = expectThrows(ApiBag.ExceptionWithErrObject.class, runnable);
     String msg = e.getErrs().get(0).get("errorMessages").toString();
     assertTrue(msg.contains(expectedErrorMessage));

@@ -8,6 +8,9 @@
 <!-- ============================================================= -->
 <Configure id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory$Server">
   <Call class="org.apache.solr.util.configuration.SSLConfigurationsFactory" name="current">
+    <Call name="init" />
+  </Call>
+  <Call class="org.apache.solr.util.configuration.SSLConfigurationsFactory" name="current">
     <Get name="keyStorePassword" id="keyStorePassword"/>
     <Get name="trustStorePassword" id="trustStorePassword"/>
   </Call>

@@ -21,12 +21,9 @@ import org.apache.solr.common.util.ReflectMapWriter;
 
 public class ListBackupPayload implements ReflectMapWriter {
 
-  @JsonProperty
-  public String name;
+  @JsonProperty public String name;
 
-  @JsonProperty
-  public String location;
+  @JsonProperty public String location;
 
-  @JsonProperty
-  public String repository;
+  @JsonProperty public String repository;
 }

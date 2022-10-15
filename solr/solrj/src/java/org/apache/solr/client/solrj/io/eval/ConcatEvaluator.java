@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.List;
-
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -27,19 +26,18 @@ public class ConcatEvaluator extends RecursiveObjectEvaluator implements ManyVal
   protected static final long serialVersionUID = 1L;
   private String delim = "";
 
-  public ConcatEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public ConcatEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
 
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
 
-    for(StreamExpressionNamedParameter namedParam : namedParams){
-      if(namedParam.getName().equals("delim")){
+    for (StreamExpressionNamedParameter namedParam : namedParams) {
+      if (namedParam.getName().equals("delim")) {
         this.delim = namedParam.getParameter().toString().trim();
       } else {
-        throw new IOException("Unexpected named parameter:"+namedParam.getName());
+        throw new IOException("Unexpected named parameter:" + namedParam.getName());
       }
     }
-
   }
 
   @Override
@@ -47,15 +45,15 @@ public class ConcatEvaluator extends RecursiveObjectEvaluator implements ManyVal
 
     StringBuilder buff = new StringBuilder();
 
-    for(Object o : values) {
-        if(buff.length() > 0) {
-          buff.append(delim);
-        }
-        String s = o.toString();
-        if(s.startsWith("\"") && s.endsWith("\"")) {
-          s = s.substring(1, s.length()-1);
-        }
-        buff.append(s.toString());
+    for (Object o : values) {
+      if (buff.length() > 0) {
+        buff.append(delim);
+      }
+      String s = o.toString();
+      if (s.startsWith("\"") && s.endsWith("\"")) {
+        s = s.substring(1, s.length() - 1);
+      }
+      buff.append(s.toString());
     }
 
     return buff.toString();

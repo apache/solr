@@ -21,15 +21,14 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 
 public class RecordCountStream extends TupleStream implements Expressible, Serializable {
 
@@ -39,59 +38,64 @@ public class RecordCountStream extends TupleStream implements Expressible, Seria
   public RecordCountStream(TupleStream stream) {
     this.stream = stream;
   }
-  
-  public RecordCountStream(StreamExpression expression, StreamFactory factory) throws IOException{
-    List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
-    
+
+  public RecordCountStream(StreamExpression expression, StreamFactory factory) throws IOException {
+    List<StreamExpression> streamExpressions =
+        factory.getExpressionOperandsRepresentingTypes(
+            expression, Expressible.class, TupleStream.class);
+
     // validate expression contains only what we want.
-    if(expression.getParameters().size() != streamExpressions.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - unknown operands found", expression));
+    if (expression.getParameters().size() != streamExpressions.size()) {
+      throw new IOException(
+          String.format(Locale.ROOT, "Invalid expression %s - unknown operands found", expression));
     }
-        
-    if(1 != streamExpressions.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting a single stream but found %d",expression, streamExpressions.size()));
+
+    if (1 != streamExpressions.size()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting a single stream but found %d",
+              expression,
+              streamExpressions.size()));
     }
-    
+
     stream = factory.constructStream(streamExpressions.get(0));
   }
-  
+
   @Override
-  public StreamExpression toExpression(StreamFactory factory) throws IOException{
+  public StreamExpression toExpression(StreamFactory factory) throws IOException {
     return toExpression(factory, true);
   }
-  
-  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams) throws IOException {
+
+  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams)
+      throws IOException {
     // function name
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
-    
-    if(includeStreams){
+
+    if (includeStreams) {
       // stream
-      if(stream instanceof Expressible){
-        expression.addParameter(((Expressible)stream).toExpression(factory));
+      if (stream instanceof Expressible) {
+        expression.addParameter(((Expressible) stream).toExpression(factory));
+      } else {
+        throw new IOException(
+            "This RecordCountStream contains a non-expressible TupleStream - it cannot be converted to an expression");
       }
-      else{
-        throw new IOException("This RecordCountStream contains a non-expressible TupleStream - it cannot be converted to an expression");
-      }
-    }
-    else{
+    } else {
       expression.addParameter("<stream>");
     }
-    
+
     return expression;
   }
-  
+
   @Override
   public Explanation toExplanation(StreamFactory factory) throws IOException {
 
     return new StreamExplanation(getStreamNodeId().toString())
-      .withChildren(new Explanation[]{
-        stream.toExplanation(factory)
-      })
-      .withFunctionName(factory.getFunctionName(this.getClass()))
-      .withImplementingClass(this.getClass().getName())
-      .withExpressionType(ExpressionType.STREAM_DECORATOR)
-      .withExpression(toExpression(factory, false).toString())
-      ;    
+        .withChildren(new Explanation[] {stream.toExplanation(factory)})
+        .withFunctionName(factory.getFunctionName(this.getClass()))
+        .withImplementingClass(this.getClass().getName())
+        .withExpressionType(ExpressionType.STREAM_DECORATOR)
+        .withExpression(toExpression(factory, false).toString());
   }
 
   public void close() throws IOException {
@@ -114,7 +118,7 @@ public class RecordCountStream extends TupleStream implements Expressible, Seria
 
   public Tuple read() throws IOException {
     Tuple t = stream.read();
-    if(t.EOF) {
+    if (t.EOF) {
       t.put("count", count);
       return t;
     } else {

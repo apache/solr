@@ -20,27 +20,26 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.common.util.SimpleOrderedMap;
 
 public class FacetDebugInfo {
   String processor;
   long elapse = -1;
   String filter;
-  Map<String, Object> info;  // additional information
+  Map<String, Object> info; // additional information
   final List<FacetDebugInfo> children;
-  
+
   Map<String, Object> reqDescription;
-  
+
   public FacetDebugInfo() {
-    children = new ArrayList<FacetDebugInfo>();
-    info = new LinkedHashMap<String, Object>();
+    children = new ArrayList<>();
+    info = new LinkedHashMap<>();
   }
-  
+
   public void addChild(FacetDebugInfo child) {
     children.add(child);
   }
-  
+
   public void setProcessor(String processor) {
     this.processor = processor;
   }
@@ -60,31 +59,31 @@ public class FacetDebugInfo {
   public void putInfoItem(String key, Object value) {
     info.put(key, value);
   }
-  
+
   public Map<String, Object> getInfo() {
     return info;
   }
-  
+
   public SimpleOrderedMap<Object> getFacetDebugInfo() {
     SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
-    
+
     if (filter != null) info.add("filter", filter);
     if (processor != null) info.add("processor", processor);
     if (elapse != -1) info.add("elapse", elapse);
     if (reqDescription != null) {
       info.addAll(reqDescription);
-    } 
+    }
     info.addAll(this.info);
-    
+
     if (children != null && children.size() > 0) {
-      List<Object> subfacet = new ArrayList<Object>();
+      List<Object> subfacet = new ArrayList<>();
       info.add("sub-facet", subfacet);
       for (FacetDebugInfo child : children) {
         subfacet.add(child.getFacetDebugInfo());
       }
-    }     
+    }
     return info;
-  } 
+  }
 
   @Override
   public String toString() {

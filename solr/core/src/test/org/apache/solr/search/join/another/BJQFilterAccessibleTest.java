@@ -17,8 +17,9 @@
 
 package org.apache.solr.search.join.another;
 
-import java.io.IOException;
+import static org.apache.solr.search.join.BJQParserTest.createIndex;
 
+import java.io.IOException;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
@@ -31,9 +32,7 @@ import org.apache.solr.search.join.BlockJoinParentQParser;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 
-import static org.apache.solr.search.join.BJQParserTest.createIndex;
-
-public class BJQFilterAccessibleTest  extends SolrTestCaseJ4 {
+public class BJQFilterAccessibleTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -45,9 +44,12 @@ public class BJQFilterAccessibleTest  extends SolrTestCaseJ4 {
     try (SolrQueryRequest req = lrf.makeRequest()) {
       TermQuery childQuery = new TermQuery(new Term("child_s", "l"));
       Query parentQuery = new WildcardQuery(new Term("parent_s", "*"));
-      ToParentBlockJoinQuery tpbjq = new ToParentBlockJoinQuery(childQuery,
-          BlockJoinParentQParser.getCachedBitSetProducer(req,parentQuery), ScoreMode.Max);
-      Assert.assertEquals(6, req.getSearcher().search(tpbjq,10).totalHits.value);
+      ToParentBlockJoinQuery tpbjq =
+          new ToParentBlockJoinQuery(
+              childQuery,
+              BlockJoinParentQParser.getCachedBitSetProducer(req, parentQuery),
+              ScoreMode.Max);
+      Assert.assertEquals(6, req.getSearcher().search(tpbjq, 10).totalHits.value);
     }
   }
 }

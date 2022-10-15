@@ -19,7 +19,7 @@ package org.apache.solr.client.solrj.io.stream.eval;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
+import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.ModuloEvaluator;
@@ -27,38 +27,35 @@ import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
 
-import junit.framework.Assert;
-
 public class ModuloEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;
-  
+
   public ModuloEvaluatorTest() {
     super();
-    
-    factory = new StreamFactory()
-      .withFunctionName("mod", ModuloEvaluator.class);
-    values = new HashMap<String,Object>();
+
+    factory = new StreamFactory().withFunctionName("mod", ModuloEvaluator.class);
+    values = new HashMap<>();
   }
-    
+
   @Test
-  public void modTwoFieldsWithValues() throws Exception{
+  public void modTwoFieldsWithValues() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("mod(a,b)");
     Object result;
-    
+
     values.clear();
     values.put("a", 1);
     values.put("b", 2);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertEquals(1 % 2, ((Number)result).doubleValue(), 0.0);
-    
+    Assert.assertEquals(1 % 2, ((Number) result).doubleValue(), 0.0);
+
     values.clear();
     values.put("a", 1.1);
     values.put("b", 2);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertEquals(1.1 % 2, result);
-    
+
     values.clear();
     values.put("a", 1.1);
     values.put("b", 2.1);
@@ -67,89 +64,87 @@ public class ModuloEvaluatorTest extends SolrTestCase {
   }
 
   @Test(expected = IOException.class)
-  public void modOneField() throws Exception{
+  public void modOneField() throws Exception {
     factory.constructEvaluator("mod(a)");
   }
-  
+
   @Test(expected = IOException.class)
-  public void modTwoFieldWithNulls() throws Exception{
+  public void modTwoFieldWithNulls() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("mod(a,b)");
-    
+
     values.clear();
-    evaluator.evaluate(new Tuple(values));
-  }
-  
-  @Test(expected = IOException.class)
-  public void modTwoFieldsWithNullDenominator() throws Exception{
-    StreamEvaluator evaluator = factory.constructEvaluator("mod(a,b)");
-    
-    values.clear();
-    values.put("a", 1);
     evaluator.evaluate(new Tuple(values));
   }
 
   @Test(expected = IOException.class)
-  public void modTwoFieldsWithNullNumerator() throws Exception{
+  public void modTwoFieldsWithNullDenominator() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("mod(a,b)");
-    
-    values.clear();
-    values.put("b", 1);
-    evaluator.evaluate(new Tuple(values));
-  }
 
-
-  @Test(expected = IOException.class)
-  public void modTwoFieldsWithMissingDenominator() throws Exception{
-    StreamEvaluator evaluator = factory.constructEvaluator("mod(a,b)");
-    
     values.clear();
     values.put("a", 1);
     evaluator.evaluate(new Tuple(values));
   }
 
   @Test(expected = IOException.class)
-  public void modTwoFieldsWithMissingNumerator() throws Exception{
+  public void modTwoFieldsWithNullNumerator() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("mod(a,b)");
-    
+
     values.clear();
     values.put("b", 1);
     evaluator.evaluate(new Tuple(values));
   }
 
-  
   @Test(expected = IOException.class)
-  public void modManyFieldsWithValues() throws Exception{
+  public void modTwoFieldsWithMissingDenominator() throws Exception {
+    StreamEvaluator evaluator = factory.constructEvaluator("mod(a,b)");
+
+    values.clear();
+    values.put("a", 1);
+    evaluator.evaluate(new Tuple(values));
+  }
+
+  @Test(expected = IOException.class)
+  public void modTwoFieldsWithMissingNumerator() throws Exception {
+    StreamEvaluator evaluator = factory.constructEvaluator("mod(a,b)");
+
+    values.clear();
+    values.put("b", 1);
+    evaluator.evaluate(new Tuple(values));
+  }
+
+  @Test(expected = IOException.class)
+  public void modManyFieldsWithValues() throws Exception {
     factory.constructEvaluator("mod(a,b,c,d)");
   }
-  
+
   @Test
-  public void modManyFieldsWithSubmods() throws Exception{
+  public void modManyFieldsWithSubmods() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("mod(a,mod(b,c))");
     Object result;
-    
+
     values.clear();
     values.put("a", 1);
     values.put("b", 2);
     values.put("c", 9);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertEquals(1 % (2 % 9), ((Number)result).doubleValue(), 0.0);
+    Assert.assertEquals(1 % (2 % 9), ((Number) result).doubleValue(), 0.0);
   }
-  
+
   @Test(expected = IOException.class)
-  public void modByZero() throws Exception{
+  public void modByZero() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("mod(a,b)");
-    
+
     values.clear();
     values.put("a", 1);
     values.put("b", 0);
     evaluator.evaluate(new Tuple(values));
   }
-  
+
   @Test
-  public void modZeroByValue() throws Exception{
+  public void modZeroByValue() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("mod(a,b)");
     Object result;
-    
+
     values.clear();
     values.put("a", 0);
     values.put("b", 2);

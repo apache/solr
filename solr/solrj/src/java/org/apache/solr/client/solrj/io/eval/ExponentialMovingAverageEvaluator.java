@@ -21,61 +21,102 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-
-public class ExponentialMovingAverageEvaluator extends RecursiveNumericEvaluator implements ManyValueWorker {
+public class ExponentialMovingAverageEvaluator extends RecursiveNumericEvaluator
+    implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
 
-  public ExponentialMovingAverageEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+  public ExponentialMovingAverageEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
-    if (!(2 == containedEvaluators.size() ||  containedEvaluators.size() == 3)){
-        throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting two or three values but found %d",expression, containedEvaluators.size()));
+    if (!(2 == containedEvaluators.size() || containedEvaluators.size() == 3)) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting two or three values but found %d",
+              expression,
+              containedEvaluators.size()));
     }
   }
 
   @Override
   public Object doWork(Object... values) throws IOException {
-    if (!(2 == values.length ||  values.length == 3)){
-      throw new IOException(String.format(Locale.ROOT,"%s(...) only works with 2 or 3 values but %d were provided", constructingFactory.getFunctionName(getClass()), values.length));
+    if (!(2 == values.length || values.length == 3)) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "%s(...) only works with 2 or 3 values but %d were provided",
+              constructingFactory.getFunctionName(getClass()),
+              values.length));
     }
-    List<?> observations = (List<?> )values[0];
-    Number window = (Number)values[1];
+    List<?> observations = (List<?>) values[0];
+    Number window = (Number) values[1];
     Number alpha;
-    if(2 == values.length){
-      if(!(observations instanceof List<?>)){
-        throw new IOException(String.format(Locale.ROOT, "Invalid expression %s - found type %s for the first value, expecting a List", toExpression(constructingFactory), values[0].getClass().getSimpleName()));
+    if (2 == values.length) {
+      if (!(observations instanceof List<?>)) {
+        throw new IOException(
+            String.format(
+                Locale.ROOT,
+                "Invalid expression %s - found type %s for the first value, expecting a List",
+                toExpression(constructingFactory),
+                values[0].getClass().getSimpleName()));
       }
-      if(!(observations.size() > 1)){
-        throw new IOException(String.format(Locale.ROOT, "Invalid expression %s - found list size of %s for the first value, expecting a List of size > 0.", toExpression(constructingFactory), observations.size()));
+      if (!(observations.size() > 1)) {
+        throw new IOException(
+            String.format(
+                Locale.ROOT,
+                "Invalid expression %s - found list size of %s for the first value, expecting a List of size > 0.",
+                toExpression(constructingFactory),
+                observations.size()));
       }
-      if(!(window instanceof Number)){
-        throw new IOException(String.format(Locale.ROOT, "Invalid expression %s - found type %s for the second value, expecting a Number", toExpression(constructingFactory), values[1].getClass().getSimpleName()));
+      if (!(window instanceof Number)) {
+        throw new IOException(
+            String.format(
+                Locale.ROOT,
+                "Invalid expression %s - found type %s for the second value, expecting a Number",
+                toExpression(constructingFactory),
+                values[1].getClass().getSimpleName()));
       }
-      if (window.doubleValue() >  observations.size()) {
-        throw new IOException(String.format(Locale.ROOT, "Invalid expression %s - found a window size of %s for the second value, the first value has a List size of %s, expecting a window value smaller or equal to the List size", toExpression(constructingFactory), window.intValue(), observations.size() ));
+      if (window.doubleValue() > observations.size()) {
+        throw new IOException(
+            String.format(
+                Locale.ROOT,
+                "Invalid expression %s - found a window size of %s for the second value, the first value has a List size of %s, expecting a window value smaller or equal to the List size",
+                toExpression(constructingFactory),
+                window.intValue(),
+                observations.size()));
       }
     }
 
-    if(3 == values.length){
+    if (3 == values.length) {
       alpha = (Number) values[2];
-      if(!(alpha instanceof Number)){
-        throw new IOException(String.format(Locale.ROOT, "Invalid expression %s - found type %s for the third value, expecting a Number", toExpression(constructingFactory), values[2].getClass().getSimpleName()));
+      if (!(alpha instanceof Number)) {
+        throw new IOException(
+            String.format(
+                Locale.ROOT,
+                "Invalid expression %s - found type %s for the third value, expecting a Number",
+                toExpression(constructingFactory),
+                values[2].getClass().getSimpleName()));
       }
       if (!(alpha.doubleValue() >= 0 && alpha.doubleValue() <= 1.0)) {
-        throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - out of range, found %s for the third value, expecting a range between 0 and 1.0",toExpression(constructingFactory), alpha.doubleValue()));
+        throw new IOException(
+            String.format(
+                Locale.ROOT,
+                "Invalid expression %s - out of range, found %s for the third value, expecting a range between 0 and 1.0",
+                toExpression(constructingFactory),
+                alpha.doubleValue()));
       }
-    }else {
-         alpha = 2.0/(window.doubleValue() + 1.0);
+    } else {
+      alpha = 2.0 / (window.doubleValue() + 1.0);
     }
 
     List<Number> sequence = new ArrayList<>();
     DescriptiveStatistics slider = new DescriptiveStatistics(window.intValue());
     Number lastValue = 0;
-    for(Object value : observations) {
+    for (Object value : observations) {
       slider.addValue(((Number) value).doubleValue());
       if (slider.getN() == window.intValue()) {
         lastValue = slider.getMean();
@@ -84,11 +125,13 @@ public class ExponentialMovingAverageEvaluator extends RecursiveNumericEvaluator
     }
 
     sequence.add(lastValue);
-    int i=0;
+    int i = 0;
 
-    for(Object value : observations) {
-      if(i >= window.intValue()) {
-        Number val = (alpha.doubleValue() * (((Number) value).doubleValue() - lastValue.doubleValue())+lastValue.doubleValue());
+    for (Object value : observations) {
+      if (i >= window.intValue()) {
+        Number val =
+            (alpha.doubleValue() * (((Number) value).doubleValue() - lastValue.doubleValue())
+                + lastValue.doubleValue());
         sequence.add(val);
         lastValue = val;
       }

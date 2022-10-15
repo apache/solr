@@ -17,17 +17,13 @@
 package org.apache.solr.client.solrj.request;
 
 import java.io.File;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
 import org.apache.solr.common.params.ConfigSetParams;
-
 import org.junit.Test;
 
-/**
- * Basic error checking of ConfigSetAdminRequests.
- */
+/** Basic error checking of ConfigSetAdminRequests. */
 public class TestConfigSetAdminRequest extends SolrTestCaseJ4 {
 
   @Test
@@ -41,30 +37,33 @@ public class TestConfigSetAdminRequest extends SolrTestCaseJ4 {
     final File tmpFile = createTempFile().toFile();
     ConfigSetAdminRequest.Upload upload = new ConfigSetAdminRequest.Upload();
     verifyException(upload, "ConfigSet");
-    
+
     upload.setConfigSetName("name");
     verifyException(upload, "There must be a ContentStream");
-    
+
     upload.setUploadFile(tmpFile, "application/zip");
-    
+
     assertEquals(1, upload.getContentStreams().size());
-    assertEquals("application/zip", upload.getContentStreams().stream().findFirst().get().getContentType());
-    
+    assertEquals(
+        "application/zip", upload.getContentStreams().stream().findFirst().get().getContentType());
+
     assertNull(upload.getParams().get(ConfigSetParams.FILE_PATH));
     assertNull(upload.getParams().get(ConfigSetParams.OVERWRITE));
     assertNull(upload.getParams().get(ConfigSetParams.CLEANUP));
-    
-    upload.setUploadFile(tmpFile, "application/xml")
-      .setFilePath("solrconfig.xml")
-      .setOverwrite(true);
-    
+
+    upload
+        .setUploadFile(tmpFile, "application/xml")
+        .setFilePath("solrconfig.xml")
+        .setOverwrite(true);
+
     assertEquals(1, upload.getContentStreams().size());
-    assertEquals("application/xml", upload.getContentStreams().stream().findFirst().get().getContentType());
-    
+    assertEquals(
+        "application/xml", upload.getContentStreams().stream().findFirst().get().getContentType());
+
     assertEquals("solrconfig.xml", upload.getParams().get(ConfigSetParams.FILE_PATH));
     assertEquals("true", upload.getParams().get(ConfigSetParams.OVERWRITE));
   }
-  
+
   @Test
   public void testCreate() {
     ConfigSetAdminRequest.Create create = new ConfigSetAdminRequest.Create();
@@ -79,23 +78,25 @@ public class TestConfigSetAdminRequest extends SolrTestCaseJ4 {
     verifyException(delete, "ConfigSet");
   }
 
-  private void verifyException(ConfigSetAdminRequest<?,?> request, String errorContains) {
+  private void verifyException(ConfigSetAdminRequest<?, ?> request, String errorContains) {
     Exception e = expectThrows(Exception.class, request::getParams);
-    assertTrue("Expected exception message to contain: " + errorContains,
+    assertTrue(
+        "Expected exception message to contain: " + errorContains,
         e.getMessage().contains(errorContains));
   }
 
-  private static class MyConfigSetAdminRequest extends ConfigSetAdminRequest<MyConfigSetAdminRequest, ConfigSetAdminResponse> {
-      public MyConfigSetAdminRequest() {}
+  private static class MyConfigSetAdminRequest
+      extends ConfigSetAdminRequest<MyConfigSetAdminRequest, ConfigSetAdminResponse> {
+    public MyConfigSetAdminRequest() {}
 
-      @Override
-      public MyConfigSetAdminRequest getThis() {
-        return this;
-      }
+    @Override
+    public MyConfigSetAdminRequest getThis() {
+      return this;
+    }
 
-      @Override
-      public ConfigSetAdminResponse createResponse(SolrClient client) {
-        return new ConfigSetAdminResponse();
-      }
-    };
+    @Override
+    public ConfigSetAdminResponse createResponse(SolrClient client) {
+      return new ConfigSetAdminResponse();
+    }
+  }
 }

@@ -20,34 +20,31 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class AppendEvaluator extends RecursiveObjectEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
-  
-  public AppendEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+
+  public AppendEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
   }
 
   @Override
-  public Object doWork(Object ... values){
+  public Object doWork(Object... values) {
     List<Object> newList = new ArrayList<>();
-    
-    for(Object value : values){
-      if(null == value){
+
+    for (Object value : values) {
+      if (null == value) {
         // skip nulls
         continue;
-      }
-      else if(value instanceof Collection<?>){
-        newList.addAll((Collection<?>)value);
-      }
-      else{
+      } else if (value instanceof Collection<?>) {
+        newList.addAll((Collection<?>) value);
+      } else {
         newList.add(value);
       }
     }
-    
+
     return newList;
   }
 }

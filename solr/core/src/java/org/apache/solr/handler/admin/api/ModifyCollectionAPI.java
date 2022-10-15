@@ -16,6 +16,16 @@
  */
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
+import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
+import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
+import static org.apache.solr.common.params.CommonParams.ACTION;
+import static org.apache.solr.handler.ClusterAPI.wrapParams;
+import static org.apache.solr.handler.api.V2ApiUtils.flattenMapWithPrefix;
+import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
+
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
@@ -23,28 +33,18 @@ import org.apache.solr.client.solrj.request.beans.ModifyCollectionPayload;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.handler.admin.CollectionsHandler;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
-import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
-import static org.apache.solr.common.params.CommonParams.ACTION;
-import static org.apache.solr.handler.ClusterAPI.wrapParams;
-import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
-
 /**
  * V2 API for modifying collections.
  *
- * The new API (POST /v2/collections/collectionName {'modify-collection': {...}}) is equivalent to the v1
- * /admin/collections?action=MODIFYCOLLECTION command.
+ * <p>The new API (POST /v2/collections/collectionName {'modify-collection': {...}}) is equivalent
+ * to the v1 /admin/collections?action=MODIFYCOLLECTION command.
  *
  * @see ModifyCollectionPayload
  */
 @EndPoint(
-        path = {"/c/{collection}", "/collections/{collection}"},
-        method = POST,
-        permission = COLL_EDIT_PERM)
+    path = {"/c/{collection}", "/collections/{collection}"},
+    method = POST,
+    permission = COLL_EDIT_PERM)
 public class ModifyCollectionAPI {
   private static final String V2_MODIFY_COLLECTION_CMD = "modify";
 
@@ -71,14 +71,5 @@ public class ModifyCollectionAPI {
     }
 
     collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
-  }
-
-  private void flattenMapWithPrefix(Map<String, Object> toFlatten, Map<String, Object> destination,
-                                    String additionalPrefix) {
-    if (toFlatten == null || toFlatten.isEmpty() || destination == null) {
-      return;
-    }
-
-    toFlatten.forEach((k, v) -> destination.put(additionalPrefix + k, v));
   }
 }

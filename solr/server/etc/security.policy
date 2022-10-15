@@ -27,6 +27,10 @@ grant {
   // system jar resources
   permission java.io.FilePermission "${java.home}${/}-", "read";
 
+  // tmpdir
+  permission java.io.FilePermission "${java.io.tmpdir}", "read,write";
+  permission java.io.FilePermission "${java.io.tmpdir}${/}-", "read,write,delete";
+
   // Test launchers (randomizedtesting, etc.)
   permission java.io.FilePermission "${junit4.childvm.cwd}", "read";
   permission java.io.FilePermission "${junit4.childvm.cwd}${/}temp", "read,write,delete";
@@ -112,9 +116,6 @@ grant {
   // These two *have* to be spelled out a separate
   permission java.lang.management.ManagementPermission "control";
   permission java.lang.management.ManagementPermission "monitor";
-
-  // needed by hadoop htrace
-  permission java.net.NetPermission "getNetworkInformation";
 
   // needed by DIH - possibly even after DIH is a package
   permission java.sql.SQLPermission "deregisterDriver";

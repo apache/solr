@@ -16,12 +16,14 @@
  */
 package org.apache.solr.common.util;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
 public class URLUtilTest {
-  
+
   @Test
   public void test() {
     assertTrue(URLUtil.hasScheme("http://host:1234/"));
@@ -33,5 +35,4 @@ public class URLUtilTest {
     assertEquals("http://", URLUtil.getScheme("http://host:1928"));
     assertEquals("https://", URLUtil.getScheme("https://host:1928"));
   }
-  
 }

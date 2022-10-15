@@ -161,16 +161,6 @@
 
   <fieldType name="random" class="solr.RandomSortField" indexed="true"/>
 
-  <!-- Poly field -->
-  <fieldType name="xy" class="solr.PointType" dimension="2" subFieldType="double"/>
-  <fieldType name="xyd" class="solr.PointType" dimension="2" subFieldSuffix="*_d"/>
-  <fieldType name="geohash" class="solr.GeoHashField"/>
-
-  <fieldType name="point" class="solr.PointType" dimension="2" subFieldSuffix="_d"/>
-  <!-- A specialized field for geospatial search. If indexed, this fieldType must not be multivalued. -->
-  <fieldType name="location" class="solr.LatLonType" subFieldSuffix="_coordinate"/>
-
-
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
   <field name="signatureField" type="string" indexed="true" stored="false"/>
   <field name="uuid" type="uuid" stored="true"/>
@@ -216,12 +206,6 @@
   -->
   <field name="timestamp" type="date" indexed="true" stored="true"/>
 
-  <!-- Test a point field for distances -->
-  <field name="point" type="xy" indexed="true" stored="true" multiValued="false"/>
-  <field name="pointD" type="xyd" indexed="true" stored="true" multiValued="false"/>
-  <field name="point_hash" type="geohash" indexed="true" stored="true" multiValued="false"/>
-  <field name="store" type="location" indexed="true" stored="true"/>
-
   <!-- to test uniq fields -->
   <field name="uniq" type="string" indexed="true" stored="true" multiValued="true"/>
   <field name="uniq2" type="string" indexed="true" stored="true" multiValued="true"/>
@@ -237,8 +221,6 @@
   <field name="_root_" type="string" indexed="true" stored="true"/>
 
   <field name="multi_int_with_docvals" type="tint" multiValued="true" docValues="true" indexed="false"/>
-
-  <dynamicField name="*_coordinate" type="tdouble" indexed="true" stored="false"/>
 
   <dynamicField name="*_sI" type="string" indexed="true" stored="false"/>
   <dynamicField name="*_sS" type="string" indexed="false" stored="true"/>

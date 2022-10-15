@@ -15,8 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Streaming Graph Traversals
- **/
+/** Streaming Graph Traversals */
 package org.apache.solr.client.solrj.io.graph;
-

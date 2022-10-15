@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.util.Collection;
-
 import org.apache.http.cookie.ClientCookie;
 import org.apache.http.cookie.Cookie;
 import org.apache.http.cookie.CookieOrigin;
@@ -49,8 +48,8 @@ public class SolrPortAwareCookieSpecFactory implements CookieSpecFactory, Cookie
   public CookieSpec newInstance(final HttpParams params) {
     if (params != null) {
       String[] patterns = null;
-      final Collection<?> param = (Collection<?>) params.getParameter(
-          CookieSpecPNames.DATE_PATTERNS);
+      final Collection<?> param =
+          (Collection<?>) params.getParameter(CookieSpecPNames.DATE_PATTERNS);
       if (param != null) {
         patterns = new String[param.size()];
         patterns = param.toArray(patterns);
@@ -78,9 +77,9 @@ public class SolrPortAwareCookieSpecFactory implements CookieSpecFactory, Cookie
   }
 
   /**
-   * A domain handler to validate and match cookies based on the domain and origin.
-   * The domain is tested against host and port both, and if it doesn't match, it
-   * delegates the handling to the base class' matching/validation logic.
+   * A domain handler to validate and match cookies based on the domain and origin. The domain is
+   * tested against host and port both, and if it doesn't match, it delegates the handling to the
+   * base class' matching/validation logic.
    */
   public static class PortAwareDomainHandler extends NetscapeDomainHandler {
 
@@ -110,4 +109,3 @@ public class SolrPortAwareCookieSpecFactory implements CookieSpecFactory, Cookie
     }
   }
 }
-

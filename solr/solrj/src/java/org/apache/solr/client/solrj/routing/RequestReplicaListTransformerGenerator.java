@@ -22,10 +22,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.NodesSysPropsCacher;
+import org.apache.solr.common.cloud.NodesSysProps;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.slf4j.Logger;
@@ -36,15 +35,17 @@ public class RequestReplicaListTransformerGenerator {
 
   private static final Random r = new Random();
 
-  private static final ReplicaListTransformer shufflingReplicaListTransformer = new ShufflingReplicaListTransformer(r);
+  private static final ReplicaListTransformer shufflingReplicaListTransformer =
+      new ShufflingReplicaListTransformer(r);
   public static final ReplicaListTransformerFactory RANDOM_RLTF =
-      (String configSpec, SolrParams requestParams, ReplicaListTransformerFactory fallback) -> shufflingReplicaListTransformer;
+      (String configSpec, SolrParams requestParams, ReplicaListTransformerFactory fallback) ->
+          shufflingReplicaListTransformer;
   private final ReplicaListTransformerFactory stableRltFactory;
   private final ReplicaListTransformerFactory defaultRltFactory;
   private final String defaultShardPreferences;
   private final String nodeName;
   private final String localHostAddress;
-  private final NodesSysPropsCacher sysPropsCacher;
+  private final NodesSysProps sysProps;
 
   public RequestReplicaListTransformerGenerator() {
     this(null);
@@ -54,34 +55,55 @@ public class RequestReplicaListTransformerGenerator {
     this(defaultRltFactory, null);
   }
 
-  public RequestReplicaListTransformerGenerator(ReplicaListTransformerFactory defaultRltFactory, ReplicaListTransformerFactory stableRltFactory) {
+  public RequestReplicaListTransformerGenerator(
+      ReplicaListTransformerFactory defaultRltFactory,
+      ReplicaListTransformerFactory stableRltFactory) {
     this(defaultRltFactory, stableRltFactory, null, null, null, null);
   }
 
-  public RequestReplicaListTransformerGenerator(String defaultShardPreferences, String nodeName, String localHostAddress, NodesSysPropsCacher sysPropsCacher) {
-    this(null, null, defaultShardPreferences, nodeName, localHostAddress, sysPropsCacher);
+  public RequestReplicaListTransformerGenerator(
+      String defaultShardPreferences,
+      String nodeName,
+      String localHostAddress,
+      NodesSysProps sysProps) {
+    this(null, null, defaultShardPreferences, nodeName, localHostAddress, sysProps);
   }
 
-  public RequestReplicaListTransformerGenerator(ReplicaListTransformerFactory defaultRltFactory, ReplicaListTransformerFactory stableRltFactory, String defaultShardPreferences, String nodeName, String localHostAddress, NodesSysPropsCacher sysPropsCacher) {
+  public RequestReplicaListTransformerGenerator(
+      ReplicaListTransformerFactory defaultRltFactory,
+      ReplicaListTransformerFactory stableRltFactory,
+      String defaultShardPreferences,
+      String nodeName,
+      String localHostAddress,
+      NodesSysProps sysProps) {
     this.defaultRltFactory = Objects.requireNonNullElse(defaultRltFactory, RANDOM_RLTF);
-    this.stableRltFactory = Objects.requireNonNullElseGet(stableRltFactory, AffinityReplicaListTransformerFactory::new);
+    this.stableRltFactory =
+        Objects.requireNonNullElseGet(stableRltFactory, AffinityReplicaListTransformerFactory::new);
     this.defaultShardPreferences = Objects.requireNonNullElse(defaultShardPreferences, "");
     this.nodeName = nodeName;
     this.localHostAddress = localHostAddress;
-    this.sysPropsCacher = sysPropsCacher;
+    this.sysProps = sysProps;
   }
 
   public ReplicaListTransformer getReplicaListTransformer(final SolrParams requestParams) {
     return getReplicaListTransformer(requestParams, null);
   }
 
-  public ReplicaListTransformer getReplicaListTransformer(final SolrParams requestParams, String defaultShardPreferences) {
+  public ReplicaListTransformer getReplicaListTransformer(
+      final SolrParams requestParams, String defaultShardPreferences) {
     return getReplicaListTransformer(requestParams, defaultShardPreferences, null, null, null);
   }
 
-  public ReplicaListTransformer getReplicaListTransformer(final SolrParams requestParams, String defaultShardPreferences, String nodeName, String localHostAddress, NodesSysPropsCacher sysPropsCacher) {
-    defaultShardPreferences = Objects.requireNonNullElse(defaultShardPreferences, this.defaultShardPreferences);
-    final String shardsPreferenceSpec = requestParams.get(ShardParams.SHARDS_PREFERENCE, defaultShardPreferences);
+  public ReplicaListTransformer getReplicaListTransformer(
+      final SolrParams requestParams,
+      String defaultShardPreferences,
+      String nodeName,
+      String localHostAddress,
+      NodesSysProps sysProps) {
+    defaultShardPreferences =
+        Objects.requireNonNullElse(defaultShardPreferences, this.defaultShardPreferences);
+    final String shardsPreferenceSpec =
+        requestParams.get(ShardParams.SHARDS_PREFERENCE, defaultShardPreferences);
 
     if (!shardsPreferenceSpec.isEmpty()) {
       List<PreferenceRule> preferenceRules = PreferenceRule.from(shardsPreferenceSpec);
@@ -90,11 +112,14 @@ public class RequestReplicaListTransformerGenerator {
               preferenceRules,
               requestParams,
               nodeName != null ? nodeName : this.nodeName, // could be still null
-              localHostAddress != null ? localHostAddress : this.localHostAddress, // could still be null
-              sysPropsCacher != null ? sysPropsCacher : this.sysPropsCacher, // could still be null
+              localHostAddress != null
+                  ? localHostAddress
+                  : this.localHostAddress, // could still be null
+              sysProps != null ? sysProps : this.sysProps, // could still be null
               defaultRltFactory,
               stableRltFactory);
-      ReplicaListTransformer baseReplicaListTransformer = replicaComp.getBaseReplicaListTransformer();
+      ReplicaListTransformer baseReplicaListTransformer =
+          replicaComp.getBaseReplicaListTransformer();
       if (replicaComp.getSortRules() == null) {
         // only applying base transformation
         return baseReplicaListTransformer;
@@ -107,16 +132,18 @@ public class RequestReplicaListTransformerGenerator {
   }
 
   /**
-   * Private class responsible for applying pairwise sort based on inherent replica attributes,
-   * and subsequently reordering any equivalent replica sets according to behavior specified
-   * by the baseReplicaListTransformer.
+   * Private class responsible for applying pairwise sort based on inherent replica attributes, and
+   * subsequently reordering any equivalent replica sets according to behavior specified by the
+   * baseReplicaListTransformer.
    */
   private static final class TopLevelReplicaListTransformer implements ReplicaListTransformer {
 
     private final NodePreferenceRulesComparator replicaComp;
     private final ReplicaListTransformer baseReplicaListTransformer;
 
-    public TopLevelReplicaListTransformer(NodePreferenceRulesComparator replicaComp, ReplicaListTransformer baseReplicaListTransformer) {
+    public TopLevelReplicaListTransformer(
+        NodePreferenceRulesComparator replicaComp,
+        ReplicaListTransformer baseReplicaListTransformer) {
       this.replicaComp = replicaComp;
       this.baseReplicaListTransformer = baseReplicaListTransformer;
     }
@@ -125,7 +152,8 @@ public class RequestReplicaListTransformerGenerator {
     public <T> void transform(List<T> choices) {
       if (choices.size() > 1) {
         if (log.isDebugEnabled()) {
-          log.debug("Applying the following sorting preferences to replicas: {}",
+          log.debug(
+              "Applying the following sorting preferences to replicas: {}",
               Arrays.toString(replicaComp.getPreferenceRules().toArray()));
         }
 
@@ -133,10 +161,7 @@ public class RequestReplicaListTransformerGenerator {
         try {
           choices.sort(replicaComp);
         } catch (IllegalArgumentException iae) {
-          throw new SolrException(
-              ErrorCode.BAD_REQUEST,
-              iae.getMessage()
-          );
+          throw new SolrException(ErrorCode.BAD_REQUEST, iae.getMessage());
         }
 
         // Next determine all boundaries between replicas ranked as "equivalent" by the comparator
@@ -156,7 +181,8 @@ public class RequestReplicaListTransformerGenerator {
         } while (iter.hasNext());
         boundaries[boundaryCount++] = idx;
 
-        // Finally inspect boundaries to apply base transformation, where necessary (separate phase to avoid ConcurrentModificationException)
+        // Finally inspect boundaries to apply base transformation, where necessary (separate phase
+        // to avoid ConcurrentModificationException)
         int startIdx = 0;
         int endIdx;
         for (int i = 0; i < boundaryCount; i++) {
@@ -168,10 +194,11 @@ public class RequestReplicaListTransformerGenerator {
         }
 
         if (log.isDebugEnabled()) {
-          log.debug("Applied sorting preferences to replica list: {}", Arrays.toString(choices.toArray()));
+          log.debug(
+              "Applied sorting preferences to replica list: {}",
+              Arrays.toString(choices.toArray()));
         }
       }
     }
   }
-  
 }

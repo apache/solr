@@ -15,53 +15,52 @@
  * limitations under the License.
  */
 package org.apache.solr.rest.schema;
+
+import java.util.SortedMap;
+import java.util.TreeMap;
 import org.apache.solr.util.RestTestBase;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.SortedMap;
-import java.util.TreeMap;
-
-
 public class TestSerializedLuceneMatchVersion extends RestTestBase {
 
   @BeforeClass
   public static void init() throws Exception {
-    final SortedMap<ServletHolder,String> extraServlets = new TreeMap<>();
+    final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
 
-    createJettyAndHarness(TEST_HOME(), "solrconfig-minimal.xml", "schema-rest-lucene-match-version.xml",
-                          "/solr", true, extraServlets);
+    createJettyAndHarness(
+        TEST_HOME(),
+        "solrconfig-minimal.xml",
+        "schema-rest-lucene-match-version.xml",
+        "/solr",
+        true,
+        extraServlets);
   }
 
   @Test
-  public void testExplicitLuceneMatchVersions() throws Exception {
-    assertQ("/schema/fieldtypes/explicitLuceneMatchVersions?indent=on&wt=xml&showDefaults=true",
-            "count(/response/lst[@name='fieldType']) = 1",
-        
-            "//lst[str[@name='class'][.='org.apache.solr.analysis.MockCharFilterFactory']]"
-           +"     [str[@name='luceneMatchVersion'][.='4.0.0']]",
-        
-            "//lst[str[@name='class'][.='org.apache.solr.analysis.MockTokenizerFactory']]"
-           +"     [str[@name='luceneMatchVersion'][.='4.0.0']]",
-        
-            "//lst[str[@name='class'][.='org.apache.solr.analysis.MockTokenFilterFactory']]"
-           +"     [str[@name='luceneMatchVersion'][.='4.0.0']]");
+  public void testExplicitLuceneMatchVersions() {
+    assertQ(
+        "/schema/fieldtypes/explicitLuceneMatchVersions?indent=on&wt=xml&showDefaults=true",
+        "count(/response/lst[@name='fieldType']) = 1",
+        "//lst[str[@name='class'][.='org.apache.solr.analysis.MockCharFilterFactory']]"
+            + "     [str[@name='luceneMatchVersion'][.='4.0.0']]",
+        "//lst[str[@name='class'][.='org.apache.solr.analysis.MockTokenizerFactory']]"
+            + "     [str[@name='luceneMatchVersion'][.='4.0.0']]",
+        "//lst[str[@name='class'][.='org.apache.solr.analysis.MockTokenFilterFactory']]"
+            + "     [str[@name='luceneMatchVersion'][.='4.0.0']]");
   }
 
   @Test
-  public void testNoLuceneMatchVersions() throws Exception {
-    assertQ("/schema/fieldtypes/noLuceneMatchVersions?indent=on&wt=xml&showDefaults=true",
-            "count(/response/lst[@name='fieldType']) = 1",
-
-            "//lst[str[@name='class'][.='org.apache.solr.analysis.MockCharFilterFactory']]"
-           +"     [not(./str[@name='luceneMatchVersion'])]",
-
-            "//lst[str[@name='class'][.='org.apache.solr.analysis.MockTokenizerFactory']]"
-           +"     [not(./str[@name='luceneMatchVersion'])]",
-        
-            "//lst[str[@name='class'][.='org.apache.solr.analysis.MockTokenFilterFactory']]"
-           +"     [not(./str[@name='luceneMatchVersion'])]");
+  public void testNoLuceneMatchVersions() {
+    assertQ(
+        "/schema/fieldtypes/noLuceneMatchVersions?indent=on&wt=xml&showDefaults=true",
+        "count(/response/lst[@name='fieldType']) = 1",
+        "//lst[str[@name='class'][.='org.apache.solr.analysis.MockCharFilterFactory']]"
+            + "     [not(./str[@name='luceneMatchVersion'])]",
+        "//lst[str[@name='class'][.='org.apache.solr.analysis.MockTokenizerFactory']]"
+            + "     [not(./str[@name='luceneMatchVersion'])]",
+        "//lst[str[@name='class'][.='org.apache.solr.analysis.MockTokenFilterFactory']]"
+            + "     [not(./str[@name='luceneMatchVersion'])]");
   }
-  
 }

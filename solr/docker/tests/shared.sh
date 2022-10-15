@@ -51,6 +51,25 @@ function wait_for_container_and_solr {
   sleep 4
 }
 
+function wait_for_container_and_solr_exporter {
+  local container_name
+  container_name=$1
+  wait_for_server_started "$container_name" 0 'org.apache.solr.prometheus.exporter.SolrExporter; Solr Prometheus Exporter is running'
+
+  printf '\nWaiting for Solr Prometheus Exporter...\n'
+  local status
+  status=$(docker exec --env SOLR_PORT=8989 "$container_name" wait-for-solr.sh --max-attempts 15 --wait-seconds 1)
+#  echo "Got status from Solr Prometheus Exporter: $status"
+  if ! grep -E -i -q 'Solr is running' <<<"$status"; then
+    echo "Solr Prometheus Exporter did not start"
+    container_cleanup "$container_name"
+    exit 1
+  else
+    echo "Solr Prometheus Exporter is running"
+  fi
+  sleep 4
+}
+
 function wait_for_server_started {
   local container_name
   container_name=$1
@@ -58,6 +77,11 @@ function wait_for_server_started {
   sleep_time=5
   if [ -n "${2:-}" ]; then
     sleep_time=$2
+  fi
+  local log_grep
+  log_grep='(o\.e\.j\.s\.Server Started|Started SocketConnector)'
+  if [ -n "${3:-}" ]; then
+    log_grep=$3
   fi
   echo "Waiting for container start: $container_name"
   local TIMEOUT_SECONDS
@@ -68,7 +92,7 @@ function wait_for_server_started {
   log="${BUILD_DIR}/${container_name}.log"
   while true; do
     docker logs "$container_name" > "${log}" 2>&1
-    if grep -E -q '(o\.e\.j\.s\.Server Started|Started SocketConnector)' "${log}" ; then
+    if grep -E -q "${log_grep}" "${log}" ; then
       docker logs "$container_name"
       break
     fi
@@ -76,7 +100,7 @@ function wait_for_server_started {
     local container_status
     container_status=$(docker inspect --format='{{.State.Status}}' "$container_name")
     if [[ $container_status == 'exited' ]]; then
-      echo "container exited"
+      docker logs "$container_name"
       exit 1
     fi
 
@@ -113,8 +137,8 @@ function prepare_dir_to_mount {
   # If you can't use setfacl (eg on macOS), you'll have to chown the directory to 8983, or apply world
   # write permissions.
   if ! command -v setfacl &> /dev/null; then
-    echo "Test case requires the 'setfacl' command but it can not be found"
-    exit 1
+    echo "Test case requires the 'setfacl' command but it can not be found. Will set the directory to have read/write all permissions"
+    chmod a+rwx "$folder"
   fi
   if ! setfacl -m "u:$userid:rwx" "$folder"; then
     echo "Unable to add permissions for $userid to '$folder'"

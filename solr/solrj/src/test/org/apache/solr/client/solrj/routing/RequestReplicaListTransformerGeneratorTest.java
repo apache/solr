@@ -20,14 +20,15 @@ package org.apache.solr.client.solrj.routing;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.util.Utils;
 import org.junit.Test;
 
+@SolrTestCaseJ4.SuppressSSL
 public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
 
   @Test
@@ -36,7 +37,8 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
     ModifiableSolrParams params = new ModifiableSolrParams();
     List<Replica> replicas = getBasicReplicaList();
 
-    String rulesParam = ShardParams.SHARDS_PREFERENCE_REPLICA_BASE + ":stable:dividend:routingPreference";
+    String rulesParam =
+        ShardParams.SHARDS_PREFERENCE_REPLICA_BASE + ":stable:dividend:routingPreference";
 
     params.add("routingPreference", "0");
     params.add(ShardParams.SHARDS_PREFERENCE, rulesParam);
@@ -68,10 +70,12 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
     assertEquals("node2", getHost(replicas.get(1).getNodeName()));
     assertEquals("node3", getHost(replicas.get(2).getNodeName()));
   }
-  
+
   private String getHost(final String nodeName) {
     final int colonAt = nodeName.indexOf(':');
-    return colonAt != -1 ? nodeName.substring(0,colonAt) : nodeName.substring(0, nodeName.indexOf('_'));
+    return colonAt != -1
+        ? nodeName.substring(0, colonAt)
+        : nodeName.substring(0, nodeName.indexOf('_'));
   }
 
   @Test
@@ -86,11 +90,12 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
             "node4",
             Map.of(
                 ZkStateReader.NODE_NAME_PROP, "node4:8983_solr",
+                ZkStateReader.BASE_URL_PROP,
+                    Utils.getBaseUrlForNodeName("node4:8983_solr", "https"),
                 ZkStateReader.CORE_NAME_PROP, "collection1",
-                ZkStateReader.REPLICA_TYPE, "TLOG"
-            ), "c1","s1"
-        )
-    );
+                ZkStateReader.REPLICA_TYPE, "TLOG"),
+            "c1",
+            "s1"));
 
     // Add a PULL replica so that there's a tie for "last place"
     replicas.add(
@@ -98,17 +103,23 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
             "node5",
             Map.of(
                 ZkStateReader.NODE_NAME_PROP, "node5:8983_solr",
+                ZkStateReader.BASE_URL_PROP,
+                    Utils.getBaseUrlForNodeName("node5:8983_solr", "https"),
                 ZkStateReader.CORE_NAME_PROP, "collection1",
-                ZkStateReader.REPLICA_TYPE, "PULL"
-            ), "c1","s1"
-        )
-    );
+                ZkStateReader.REPLICA_TYPE, "PULL"),
+            "c1",
+            "s1"));
 
     // replica leader status, replicaType and replicaBase combined rule param
-    String rulesParam = ShardParams.SHARDS_PREFERENCE_REPLICA_LEADER + ":true," +
-        ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":NRT," +
-        ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":TLOG," +
-        ShardParams.SHARDS_PREFERENCE_REPLICA_BASE + ":stable:dividend:routingPreference";
+    String rulesParam =
+        ShardParams.SHARDS_PREFERENCE_REPLICA_LEADER
+            + ":true,"
+            + ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE
+            + ":NRT,"
+            + ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE
+            + ":TLOG,"
+            + ShardParams.SHARDS_PREFERENCE_REPLICA_BASE
+            + ":stable:dividend:routingPreference";
 
     params.add("routingPreference", "0");
     params.add(ShardParams.SHARDS_PREFERENCE, rulesParam);
@@ -131,37 +142,37 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
   }
 
   private static List<Replica> getBasicReplicaList() {
-    List<Replica> replicas = new ArrayList<Replica>();
+    List<Replica> replicas = new ArrayList<>();
     replicas.add(
         new Replica(
             "node1",
             Map.of(
                 ZkStateReader.NODE_NAME_PROP, "node1:8983_solr",
+                ZkStateReader.BASE_URL_PROP, Utils.getBaseUrlForNodeName("node1:8983_solr", "http"),
                 ZkStateReader.CORE_NAME_PROP, "collection1",
-                ZkStateReader.REPLICA_TYPE, "NRT"
-            ),"c1","s1"
-        )
-    );
+                ZkStateReader.REPLICA_TYPE, "NRT"),
+            "c1",
+            "s1"));
     replicas.add(
         new Replica(
             "node2",
             Map.of(
                 ZkStateReader.NODE_NAME_PROP, "node2:8983_solr",
+                ZkStateReader.BASE_URL_PROP, Utils.getBaseUrlForNodeName("node2:8983_solr", "http"),
                 ZkStateReader.CORE_NAME_PROP, "collection1",
-                ZkStateReader.REPLICA_TYPE, "TLOG"
-            ),"c1","s1"
-        )
-    );
+                ZkStateReader.REPLICA_TYPE, "TLOG"),
+            "c1",
+            "s1"));
     replicas.add(
         new Replica(
             "node3",
             Map.of(
                 ZkStateReader.NODE_NAME_PROP, "node3:8983_solr",
+                ZkStateReader.BASE_URL_PROP, Utils.getBaseUrlForNodeName("node3:8983_solr", "http"),
                 ZkStateReader.CORE_NAME_PROP, "collection1",
-                ZkStateReader.REPLICA_TYPE, "PULL"
-            ),"c1","s1"
-        )
-    );
+                ZkStateReader.REPLICA_TYPE, "PULL"),
+            "c1",
+            "s1"));
     return replicas;
   }
 }

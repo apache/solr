@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.TimeoutException;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
@@ -45,8 +44,11 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Stream implementation that helps supporting 'expr' streaming in export writer.
- * <p>Note: this class is made public only to allow access from {@link org.apache.solr.handler.ExportHandler},
- * it should be treated as an internal detail of implementation.</p>
+ *
+ * <p>Note: this class is made public only to allow access from {@link
+ * org.apache.solr.handler.ExportHandler}, it should be treated as an internal detail of
+ * implementation.
+ *
  * @lucene.experimental
  */
 public class ExportWriterStream extends TupleStream implements Expressible {
@@ -66,11 +68,11 @@ public class ExportWriterStream extends TupleStream implements Expressible {
     public EntryWriter put(CharSequence k, Object v) throws IOException {
       if (v instanceof IteratorWriter) {
         List<Object> lst = new ArrayList<>();
-        ((IteratorWriter)v).toList(lst);
+        ((IteratorWriter) v).toList(lst);
         v = lst;
       } else if (v instanceof MapWriter) {
         Map<String, Object> map = new HashMap<>();
-        ((MapWriter)v).toMap(map);
+        ((MapWriter) v).toMap(map);
         v = map;
       }
       tuple.put(k.toString(), v);
@@ -83,8 +85,8 @@ public class ExportWriterStream extends TupleStream implements Expressible {
   }
 
   /**
-   * NOTE: this context must contain an instance of {@link ExportBuffers} under the
-   * {@link ExportBuffers#EXPORT_BUFFERS_KEY} key.
+   * NOTE: this context must contain an instance of {@link ExportBuffers} under the {@link
+   * ExportBuffers#EXPORT_BUFFERS_KEY} key.
    */
   @Override
   public void setStreamContext(StreamContext context) {
@@ -103,7 +105,8 @@ public class ExportWriterStream extends TupleStream implements Expressible {
     for (int i = 0; i < sorts.length; i++) {
       String s = sorts[i];
 
-      String[] spec = s.trim().split("\\s+"); //This should take into account spaces in the sort spec.
+      String[] spec =
+          s.trim().split("\\s+"); // This should take into account spaces in the sort spec.
 
       if (spec.length != 2) {
         throw new IOException("Invalid sort spec:" + s);
@@ -112,7 +115,12 @@ public class ExportWriterStream extends TupleStream implements Expressible {
       String fieldName = spec[0].trim();
       String order = spec[1].trim();
 
-      comps[i] = new FieldComparator(fieldName, order.equalsIgnoreCase("asc") ? ComparatorOrder.ASCENDING : ComparatorOrder.DESCENDING);
+      comps[i] =
+          new FieldComparator(
+              fieldName,
+              order.equalsIgnoreCase("asc")
+                  ? ComparatorOrder.ASCENDING
+                  : ComparatorOrder.DESCENDING);
     }
 
     if (comps.length > 1) {
@@ -141,15 +149,17 @@ public class ExportWriterStream extends TupleStream implements Expressible {
 
       try {
         buffer.outDocsIndex = ExportBuffers.Buffer.EMPTY;
-        //log.debug("--- ews exchange empty buffer {}", buffer);
+        // log.debug("--- ews exchange empty buffer {}", buffer);
         boolean exchanged = false;
         while (!exchanged) {
           try {
             long startExchangeBuffers = System.nanoTime();
             exportBuffers.exchangeBuffers();
             long endExchangeBuffers = System.nanoTime();
-            if(log.isDebugEnabled()) {
-              log.debug("Waited for reader thread:{}",  Long.toString(((endExchangeBuffers - startExchangeBuffers) / 1000000)));
+            if (log.isDebugEnabled()) {
+              log.debug(
+                  "Waited for reader thread:{}",
+                  Long.toString(((endExchangeBuffers - startExchangeBuffers) / 1000000)));
             }
             exchanged = true;
           } catch (TimeoutException e) {
@@ -193,7 +203,7 @@ public class ExportWriterStream extends TupleStream implements Expressible {
         res = Tuple.EOF();
       } else {
         pos = buffer.outDocsIndex;
-        index = -1;  //restart index.
+        index = -1; // restart index.
         log.debug("--- ews new pos={}", pos);
       }
     }
@@ -209,7 +219,8 @@ public class ExportWriterStream extends TupleStream implements Expressible {
 
     SortDoc sortDoc = buffer.outDocs[++index];
     tupleEntryWriter.tuple = new Tuple();
-    exportBuffers.exportWriter.writeDoc(sortDoc, exportBuffers.leaves, tupleEntryWriter, exportBuffers.exportWriter.fieldWriters);
+    exportBuffers.exportWriter.writeDoc(
+        sortDoc, exportBuffers.leaves, tupleEntryWriter, exportBuffers.exportWriter.fieldWriters);
     pos--;
     return tupleEntryWriter.tuple;
   }

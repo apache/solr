@@ -20,18 +20,23 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class RightShiftEvaluator extends RecursiveObjectEvaluator implements TwoValueWorker {
   protected static final long serialVersionUID = 1L;
 
-  public RightShiftEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public RightShiftEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
 
-    if(2 != containedEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting exactly 2 value but found %d",expression,containedEvaluators.size()));
+    if (2 != containedEvaluators.size()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting exactly 2 value but found %d",
+              expression,
+              containedEvaluators.size()));
     }
   }
 
@@ -42,13 +47,13 @@ public class RightShiftEvaluator extends RecursiveObjectEvaluator implements Two
       int val = ((Number) value2).intValue();
 
       List<Object> shifted = new ArrayList<>();
-      for (int i = 0; i < actual.size()-val; i++) {
+      for (int i = 0; i < actual.size() - val; i++) {
         shifted.add(actual.get(i));
       }
       return shifted;
     } else {
-      throw new IOException("The rtrim function takes two parameters: an array and number to trim it by");
+      throw new IOException(
+          "The rtrim function takes two parameters: an array and number to trim it by");
     }
   }
-
 }

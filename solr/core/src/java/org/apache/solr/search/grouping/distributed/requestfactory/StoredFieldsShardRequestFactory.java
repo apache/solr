@@ -16,6 +16,12 @@
  */
 package org.apache.solr.search.grouping.distributed.requestfactory;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.TopGroups;
@@ -32,11 +38,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.grouping.distributed.ShardRequestFactory;
 import org.apache.solr.search.grouping.distributed.command.QueryCommandResult;
 
-import java.util.*;
-
-/**
- *
- */
+/** */
 public class StoredFieldsShardRequestFactory implements ShardRequestFactory {
 
   @Override
@@ -60,13 +62,13 @@ public class StoredFieldsShardRequestFactory implements ShardRequestFactory {
       sreq.purpose = ShardRequest.PURPOSE_GET_FIELDS;
       sreq.shards = new String[] {shardDocs.iterator().next().shard};
       sreq.params = new ModifiableSolrParams();
-      sreq.params.add( rb.req.getParams());
+      sreq.params.add(rb.req.getParams());
       sreq.params.remove(GroupParams.GROUP);
       sreq.params.remove(CommonParams.SORT);
       sreq.params.remove(ResponseBuilder.FIELD_SORT_VALUES);
-      
+
       // we need to ensure the uniqueField is included for collating docs with their return fields
-      if (! rb.rsp.getReturnFields().wantsField(uniqueField.getName())) {
+      if (!rb.rsp.getReturnFields().wantsField(uniqueField.getName())) {
         // the user didn't ask for it, so we have to...
         sreq.params.add(CommonParams.FL, uniqueField.getName());
       }
@@ -92,5 +94,4 @@ public class StoredFieldsShardRequestFactory implements ShardRequestFactory {
       shardDocs.add(solrDoc);
     }
   }
-
 }

@@ -17,27 +17,23 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
-
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
 import org.apache.solr.common.cloud.SolrZkClient;
 
-/**
- * Implementation of {@link DistributedQueueFactory} that uses ZooKeeper.
- */
+/** Implementation of {@link DistributedQueueFactory} that uses ZooKeeper. */
 public class ZkDistributedQueueFactory implements DistributedQueueFactory {
   private final SolrZkClient zkClient;
 
   public ZkDistributedQueueFactory(SolrZkClient zkClient) {
     this.zkClient = zkClient;
   }
+
   @Override
   public DistributedQueue makeQueue(String path) throws IOException {
     return new ZkDistributedQueue(zkClient, path);
   }
 
   @Override
-  public void removeQueue(String path) throws IOException {
-
-  }
+  public void removeQueue(String path) throws IOException {}
 }

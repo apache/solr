@@ -16,9 +16,10 @@
  */
 package org.apache.solr.response.transform;
 
+import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
-
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocValuesFieldExistsQuery;
@@ -38,23 +39,20 @@ import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.SyntaxError;
 
-import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
-
 /**
  * Attaches all descendants (child documents) to each parent document.
  *
- * Optionally you can provide a "parentFilter" param to designate which documents are the root
- * documents (parent-most documents).  Solr can figure this out on its own but you might want to
+ * <p>Optionally you can provide a "parentFilter" param to designate which documents are the root
+ * documents (parent-most documents). Solr can figure this out on its own but you might want to
  * specify it.
  *
- * Optionally you can provide a "childFilter" param to filter out which child documents should be returned and a
- * "limit" param which provides an option to specify the number of child documents
- * to be returned per parent document. By default it's set to 10.
+ * <p>Optionally you can provide a "childFilter" param to filter out which child documents should be
+ * returned and a "limit" param which provides an option to specify the number of child documents to
+ * be returned per parent document.
  *
- * Examples -
- * [child parentFilter="fieldName:fieldValue"]
- * [child parentFilter="fieldName:fieldValue" childFilter="fieldName:fieldValue"]
- * [child parentFilter="fieldName:fieldValue" childFilter="fieldName:fieldValue" limit=20]
+ * <p>Examples - [child parentFilter="fieldName:fieldValue"] [child
+ * parentFilter="fieldName:fieldValue" childFilter="fieldName:fieldValue"] [child
+ * parentFilter="fieldName:fieldValue" childFilter="fieldName:fieldValue" limit=20]
  *
  * @since solr 4.9
  */
@@ -62,16 +60,23 @@ public class ChildDocTransformerFactory extends TransformerFactory {
 
   static final char PATH_SEP_CHAR = '/';
   static final char NUM_SEP_CHAR = '#';
-  private static final ThreadLocal<Boolean> recursionCheckThreadLocal = ThreadLocal.withInitial(() -> Boolean.FALSE);
-  private static final BooleanQuery rootFilter = new BooleanQuery.Builder()
-      .add(new BooleanClause(new MatchAllDocsQuery(), BooleanClause.Occur.MUST))
-      .add(new BooleanClause(new DocValuesFieldExistsQuery(NEST_PATH_FIELD_NAME), BooleanClause.Occur.MUST_NOT)).build();
-  public static final String CACHE_NAME="perSegFilter";
+  private static final ThreadLocal<Boolean> recursionCheckThreadLocal =
+      ThreadLocal.withInitial(() -> Boolean.FALSE);
+  private static final BooleanQuery rootFilter =
+      new BooleanQuery.Builder()
+          .add(new BooleanClause(new MatchAllDocsQuery(), BooleanClause.Occur.MUST))
+          .add(
+              new BooleanClause(
+                  new DocValuesFieldExistsQuery(NEST_PATH_FIELD_NAME),
+                  BooleanClause.Occur.MUST_NOT))
+          .build();
+  public static final String CACHE_NAME = "perSegFilter";
 
   @Override
   public DocTransformer create(String field, SolrParams params, SolrQueryRequest req) {
-    if(recursionCheckThreadLocal.get()) {
-      // this is a recursive call by SolrReturnFields, see ChildDocTransformerFactory#createChildDocTransformer
+    if (recursionCheckThreadLocal.get()) {
+      // this is a recursive call by SolrReturnFields, see
+      // ChildDocTransformerFactory#createChildDocTransformer
       return new DocTransformer.NoopFieldTransformer();
     } else {
       try {
@@ -84,36 +89,36 @@ public class ChildDocTransformerFactory extends TransformerFactory {
     }
   }
 
-  private DocTransformer createChildDocTransformer(String field, SolrParams params, SolrQueryRequest req) {
+  private DocTransformer createChildDocTransformer(
+      String field, SolrParams params, SolrQueryRequest req) {
     SchemaField uniqueKeyField = req.getSchema().getUniqueKeyField();
     if (uniqueKeyField == null) {
-      throw new SolrException( ErrorCode.BAD_REQUEST,
-          " ChildDocTransformer requires the schema to have a uniqueKeyField." );
+      throw new SolrException(
+          ErrorCode.BAD_REQUEST,
+          " ChildDocTransformer requires the schema to have a uniqueKeyField.");
     }
     // Do we build a hierarchy or flat list of child docs (attached anonymously)?
     boolean buildHierarchy = req.getSchema().hasExplicitField(NEST_PATH_FIELD_NAME);
 
-    String parentFilterStr = params.get( "parentFilter" );
+    String parentFilterStr = params.get("parentFilter");
     BitSetProducer parentsFilter;
-    // TODO reuse org.apache.solr.search.join.BlockJoinParentQParser.getCachedFilter (uses a cache)
-    // TODO shouldn't we try to use the Solr filter cache, and then ideally implement
-    //  BitSetProducer over that?
-    // DocSet parentDocSet = req.getSearcher().getDocSet(parentFilterQuery);
-    // then return BitSetProducer with custom BitSet impl accessing the docSet
     if (parentFilterStr == null) {
       parentsFilter = !buildHierarchy ? null : getCachedBitSetProducer(req, rootFilter);
     } else {
-      if(buildHierarchy) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "Parent filter should not be sent when the schema is nested");
+      if (buildHierarchy) {
+        throw new SolrException(
+            ErrorCode.BAD_REQUEST, "Parent filter should not be sent when the schema is nested");
       }
       Query query = parseQuery(parentFilterStr, req, "parentFilter");
       if (query == null) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid Parent filter '" + parentFilterStr + "', resolves to null");
+        throw new SolrException(
+            ErrorCode.BAD_REQUEST,
+            "Invalid Parent filter '" + parentFilterStr + "', resolves to null");
       }
       parentsFilter = getCachedBitSetProducer(req, query);
     }
 
-    String childFilterStr = params.get( "childFilter" );
+    String childFilterStr = params.get("childFilter");
     DocSet childDocSet;
     if (childFilterStr == null) {
       childDocSet = null;
@@ -137,10 +142,19 @@ public class ChildDocTransformerFactory extends TransformerFactory {
       childSolrReturnFields = new SolrReturnFields(req);
     }
 
-    int limit = params.getInt( "limit", 10 );
+    int limit = params.getInt("limit", -1);
+    if (limit == -1) {
+      limit = Integer.MAX_VALUE;
+    }
 
-    return new ChildDocTransformer(field, parentsFilter, childDocSet, childSolrReturnFields,
-        buildHierarchy, limit, req.getSchema().getUniqueKeyField().getName());
+    return new ChildDocTransformer(
+        field,
+        parentsFilter,
+        childDocSet,
+        childSolrReturnFields,
+        buildHierarchy,
+        limit,
+        req.getSchema().getUniqueKeyField().getName());
   }
 
   private static Query parseQuery(String qstr, SolrQueryRequest req, String param) {
@@ -148,14 +162,15 @@ public class ChildDocTransformerFactory extends TransformerFactory {
       return QParser.getParser(qstr, req).getQuery();
     } catch (SyntaxError syntaxError) {
       throw new SolrException(
-              ErrorCode.BAD_REQUEST,
-              "Failed to parse '" + param + "' param: " + syntaxError.getMessage(),
-              syntaxError);
+          ErrorCode.BAD_REQUEST,
+          "Failed to parse '" + param + "' param: " + syntaxError.getMessage(),
+          syntaxError);
     }
   }
 
   protected static String processPathHierarchyQueryString(String queryString) {
-    // if the filter includes a path string, build a lucene query string to match those specific child documents.
+    // if the filter includes a path string, build a lucene query string to match those specific
+    // child documents.
     // e.g. /toppings/ingredients/name_s:cocoa -> +_nest_path_:/toppings/ingredients +(name_s:cocoa)
     // ingredients/name_s:cocoa -> +_nest_path_:*/ingredients +(name_s:cocoa)
     int indexOfFirstColon = queryString.indexOf(':');
@@ -168,14 +183,24 @@ public class ChildDocTransformerFactory extends TransformerFactory {
     }
     final boolean isAbsolutePath = queryString.charAt(0) == PATH_SEP_CHAR;
     String path = ClientUtils.escapeQueryChars(queryString.substring(0, indexOfLastPathSepChar));
-    String remaining = queryString.substring(indexOfLastPathSepChar + 1); // last part of path hierarchy
+    String remaining =
+        queryString.substring(indexOfLastPathSepChar + 1); // last part of path hierarchy
 
-    return
-        "+" + NEST_PATH_FIELD_NAME + (isAbsolutePath? ":": ":*\\/") + path
-        + " +(" + remaining + ")";
+    return "+"
+        + NEST_PATH_FIELD_NAME
+        + (isAbsolutePath ? ":" : ":*\\/")
+        + path
+        + " +("
+        + remaining
+        + ")";
   }
 
-  public static BitSetProducer getCachedBitSetProducer(final SolrQueryRequest request, Query query) {
+  private static BitSetProducer getCachedBitSetProducer(
+      final SolrQueryRequest request, Query query) {
+    // TODO shouldn't we try to use the Solr filter cache, and then ideally implement
+    //  BitSetProducer over that?
+    // DocSet parentDocSet = req.getSearcher().getDocSet(parentFilterQuery);
+    // then return BitSetProducer with custom BitSet impl accessing the docSet
     @SuppressWarnings("unchecked")
     SolrCache<Query, BitSetProducer> parentCache = request.getSearcher().getCache(CACHE_NAME);
     // lazily retrieve from solr cache
@@ -190,4 +215,3 @@ public class ChildDocTransformerFactory extends TransformerFactory {
     }
   }
 }
-
