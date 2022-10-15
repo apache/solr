@@ -23,9 +23,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -125,11 +125,11 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
     // doc should be on leader and 1 replica
     sendDoc(5);
 
-    try (HttpSolrClient server = getHttpSolrClient(leader, testCollectionName)) {
+    try (SolrClient server = getHttpSolrClient(leader, testCollectionName)) {
       assertDocExists(server, "5");
     }
 
-    try (HttpSolrClient server = getHttpSolrClient(notLeaders.get(1), testCollectionName)) {
+    try (SolrClient server = getHttpSolrClient(notLeaders.get(1), testCollectionName)) {
       assertDocExists(server, "5");
     }
 

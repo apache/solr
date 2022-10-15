@@ -137,7 +137,7 @@ public class HashJoinStream extends TupleStream implements Expressible {
         throw new IOException(
             String.format(
                 Locale.ROOT,
-                "Invalid expression %s - invalid 'on' parameter - expecting 1 or more instances if 'field' or 'field=hashedField' but found '%s'",
+                "Invalid expression - invalid 'on' parameter - expecting 1 or more instances if 'field' or 'field=hashedField' but found '%s'",
                 hasher));
       }
     }

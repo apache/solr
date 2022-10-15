@@ -20,11 +20,11 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
@@ -64,6 +64,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.util.SolrResponseUtil;
 
 public class RankQueryTestPlugin extends QParserPlugin {
 
@@ -158,7 +159,6 @@ public class RankQueryTestPlugin extends QParserPlugin {
 
     public void handleMergeFields(ResponseBuilder rb, SolrIndexSearcher searcher) {}
 
-    @SuppressWarnings({"unchecked"})
     public void merge(ResponseBuilder rb, ShardRequest sreq) {
 
       // id to shard mapping, to eliminate any accidental dups
@@ -197,7 +197,11 @@ public class RankQueryTestPlugin extends QParserPlugin {
               nl.add("shardAddress", srsp.getShardAddress());
             }
           } else {
-            docs = (SolrDocumentList) srsp.getSolrResponse().getResponse().get("response");
+            docs =
+                Objects.requireNonNull(
+                    (SolrDocumentList)
+                        SolrResponseUtil.getSubsectionFromShardResponse(
+                            null, srsp, "response", false));
             nl.add("numFound", docs.getNumFound());
             nl.add("maxScore", docs.getMaxScore());
             nl.add("shardAddress", srsp.getShardAddress());
@@ -215,11 +219,17 @@ public class RankQueryTestPlugin extends QParserPlugin {
         }
 
         if (docs == null) { // could have been initialized in the 'shardInfo' block above
-          docs = (SolrDocumentList) srsp.getSolrResponse().getResponse().get("response");
+          docs =
+              Objects.requireNonNull(
+                  (SolrDocumentList)
+                      SolrResponseUtil.getSubsectionFromShardResponse(
+                          null, srsp, "response", false));
         }
 
         NamedList<?> responseHeader =
-            (NamedList<?>) srsp.getSolrResponse().getResponse().get("responseHeader");
+            (NamedList<?>)
+                SolrResponseUtil.getSubsectionFromShardResponse(
+                    null, srsp, "responseHeader", false);
         if (responseHeader != null
             && Boolean.TRUE.equals(
                 responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
@@ -268,8 +278,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
         } // end for-each-doc-in-response
       } // end for-each-response
 
-      Collections.sort(
-          shardDocs,
+      shardDocs.sort(
           (o1, o2) -> {
             if (o1.score < o2.score) {
               return 1;
@@ -499,7 +508,11 @@ public class RankQueryTestPlugin extends QParserPlugin {
               nl.add("shardAddress", srsp.getShardAddress());
             }
           } else {
-            docs = (SolrDocumentList) srsp.getSolrResponse().getResponse().get("response");
+            docs =
+                Objects.requireNonNull(
+                    (SolrDocumentList)
+                        SolrResponseUtil.getSubsectionFromShardResponse(
+                            null, srsp, "response", false));
             nl.add("numFound", docs.getNumFound());
             nl.add("maxScore", docs.getMaxScore());
             nl.add("shardAddress", srsp.getShardAddress());
@@ -517,11 +530,17 @@ public class RankQueryTestPlugin extends QParserPlugin {
         }
 
         if (docs == null) { // could have been initialized in the 'shardInfo' block above
-          docs = (SolrDocumentList) srsp.getSolrResponse().getResponse().get("response");
+          docs =
+              Objects.requireNonNull(
+                  (SolrDocumentList)
+                      SolrResponseUtil.getSubsectionFromShardResponse(
+                          null, srsp, "response", false));
         }
 
         NamedList<?> responseHeader =
-            (NamedList<?>) srsp.getSolrResponse().getResponse().get("responseHeader");
+            (NamedList<?>)
+                SolrResponseUtil.getSubsectionFromShardResponse(
+                    null, srsp, "responseHeader", false);
         if (responseHeader != null
             && Boolean.TRUE.equals(
                 responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
@@ -538,7 +557,11 @@ public class RankQueryTestPlugin extends QParserPlugin {
 
         @SuppressWarnings({"rawtypes"})
         NamedList sortFieldValues =
-            (NamedList) (srsp.getSolrResponse().getResponse().get("merge_values"));
+            (NamedList)
+                SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "merge_values", false);
+        if (sortFieldValues == null) {
+          continue;
+        }
         @SuppressWarnings({"rawtypes"})
         NamedList unmarshalledSortFieldValues = unmarshalSortValues(ss, sortFieldValues);
         @SuppressWarnings({"rawtypes"})
@@ -576,8 +599,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
         } // end for-each-doc-in-response
       } // end for-each-response
 
-      Collections.sort(
-          shardDocs,
+      shardDocs.sort(
           (o1, o2) -> {
             if (o1.score < o2.score) {
               return 1;
@@ -698,8 +720,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
     }
 
     public TopDocs topDocs() {
-      Collections.sort(
-          list,
+      list.sort(
           new Comparator<>() {
             public int compare(ScoreDoc s1, ScoreDoc s2) {
               if (s1.score == s2.score) {
@@ -760,8 +781,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
     }
 
     public TopDocs topDocs() {
-      Collections.sort(
-          list,
+      list.sort(
           new Comparator<>() {
             public int compare(ScoreDoc s1, ScoreDoc s2) {
               if (s1.score == s2.score) {

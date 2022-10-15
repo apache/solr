@@ -285,7 +285,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       }
       Predicate<CharSequence> propertyFilter = MetricUtils.ALL_PROPERTIES;
       if (propertyName != null) {
-        propertyFilter = (name) -> name.equals(propertyName);
+        propertyFilter = propertyName::contentEquals;
         // use escaped versions
         key = parts[0] + ":" + parts[1];
       }
@@ -384,7 +384,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     if (filter.isEmpty()) {
       return MetricUtils.ALL_PROPERTIES;
     } else {
-      return (name) -> filter.contains(name);
+      return (name) -> filter.contains(name.toString());
     }
   }
 

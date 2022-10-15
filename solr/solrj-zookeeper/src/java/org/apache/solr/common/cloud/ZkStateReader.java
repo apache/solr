@@ -1854,7 +1854,6 @@ public class ZkStateReader implements SolrCloseable {
     }
 
     DocCollection state = clusterState.getCollectionOrNull(collection);
-    state = updatePerReplicaState(state);
     if (stateWatcher.onStateChanged(state) == true) {
       removeDocCollectionWatcher(collection, stateWatcher);
     }
@@ -1966,9 +1965,9 @@ public class ZkStateReader implements SolrCloseable {
 
           return matches;
         };
-    registerDocCollectionWatcher(collection, watcher);
 
     try {
+      registerDocCollectionWatcher(collection, watcher);
       // wait for the watcher predicate to return true, or time out
       if (!latch.await(wait, unit))
         throw new TimeoutException(

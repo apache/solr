@@ -29,9 +29,9 @@ import java.util.concurrent.TimeUnit;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.cloud.ClusterState;
@@ -109,7 +109,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     assertEquals(1, replicas.size());
     String baseUrl = replicas.iterator().next().getBaseUrl();
     if (!baseUrl.endsWith("/")) baseUrl += "/";
-    try (HttpSolrClient client = getHttpSolrClient(baseUrl + "a1x2", 2000, 5000)) {
+    try (SolrClient client = getHttpSolrClient(baseUrl + "a1x2", 2000, 5000)) {
 
       long expectedTotalRequests = 0;
       Set<String> uniqueCoreNames = new LinkedHashSet<>();
@@ -220,7 +220,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     if (!baseUrl.endsWith("/")) baseUrl += "/";
     String path = baseUrl + "football";
     log.info("Firing queries against path={}", path);
-    try (HttpSolrClient client = getHttpSolrClient(path, 2000, 5000)) {
+    try (SolrClient client = getHttpSolrClient(path, 2000, 5000)) {
 
       SolrCore leaderCore = null;
       for (JettySolrRunner jetty : jettys) {

@@ -17,6 +17,7 @@
 
 package org.apache.solr.security;
 
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -50,7 +51,7 @@ public class BasicAuthOnSingleNodeTest extends SolrCloudAuthTestCase {
 
   @Test
   public void basicTest() throws Exception {
-    try (Http2SolrClient client =
+    try (SolrClient client =
         new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
             .build()) {
 
@@ -67,7 +68,7 @@ public class BasicAuthOnSingleNodeTest extends SolrCloudAuthTestCase {
 
   @Test
   public void testDeleteSecurityJsonZnode() throws Exception {
-    try (Http2SolrClient client =
+    try (SolrClient client =
         new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
             .build()) {
       try {

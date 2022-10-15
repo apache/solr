@@ -223,7 +223,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
           CollectionAdminRequest.restoreCollection(backupCollectionName, backupName)
               .setLocation(backupLocation)
               .setRepositoryName(BACKUP_REPO_NAME)
-              .processAndWait(cluster.getSolrClient(), 20);
+              .processAndWait(cluster.getSolrClient(), 30);
       assertEquals(RequestStatusState.COMPLETED, result);
     }
     assertEquals(firstBatchNumDocs, getNumDocsInCollection(backupCollectionName));

@@ -42,7 +42,8 @@ public class LTRInterleavingQuery extends LTRQuery {
 
   @Override
   public int hashCode() {
-    return 31 * classHash() + (mainQuery.hashCode() + rerankingQueries.hashCode() + reRankDocs);
+    return 31 * classHash()
+        + (mainQuery.hashCode() + Arrays.hashCode(rerankingQueries) + reRankDocs);
   }
 
   @Override
@@ -52,7 +53,7 @@ public class LTRInterleavingQuery extends LTRQuery {
 
   private boolean equalsTo(LTRInterleavingQuery other) {
     return (mainQuery.equals(other.mainQuery)
-        && rerankingQueries.equals(other.rerankingQueries)
+        && Arrays.equals(rerankingQueries, other.rerankingQueries)
         && (reRankDocs == other.reRankDocs));
   }
 

@@ -49,8 +49,6 @@ dependencies {
   // ZooKeeper & Curator
   implementation('org.apache.zookeeper:zookeeper', {
     exclude group: "org.apache.yetus", module: "audience-annotations"
-    exclude group: "log4j", module: "log4j"
-    exclude group: "org.slf4j", module: "slf4j-log4j12"
   })
   implementation ('org.apache.zookeeper:zookeeper-jute') {
     exclude group: 'org.apache.yetus', module: 'audience-annotations'
@@ -101,7 +99,9 @@ dependencies {
   })
 
   // Zookeeper dependency - some tests like HdfsCloudBackupRestore need this
-  testImplementation 'org.apache.zookeeper:zookeeper'
+  testImplementation('org.apache.zookeeper:zookeeper', {
+    exclude group: "org.apache.yetus", module: "audience-annotations"
+  })
   // required for instantiating a Zookeeper server in tests or embedded
   runtimeOnly ('org.xerial.snappy:snappy-java')
 }

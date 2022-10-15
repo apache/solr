@@ -801,7 +801,9 @@ public class AtomicUpdateDocumentMerger {
                   val.equals(rawValue)
                       || val.equals(nativeValue)
                       || (val instanceof String
-                          && DateMathParser.parseMath(null, (String) val).equals(nativeValue)))
+                          && DateMathParser.parseMath(null, (String) val)
+                              .toInstant()
+                              .equals(((Date) nativeValue).toInstant())))
           .findFirst();
     } else if (original.contains(nativeValue)) {
       return Optional.of(nativeValue);

@@ -21,6 +21,7 @@ import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.value.AnalyticsValueStream.ExpressionType;
 import org.apache.solr.analytics.value.FillableTestValue.TestDateValue;
@@ -38,7 +39,7 @@ public class CastingDateValueTest extends SolrTestCaseJ4 {
     DateValue casted = (DateValue) val;
 
     val.setValue("1800-01-01T10:30:15Z").setExists(true);
-    assertEquals(date, casted.getDate());
+    assertEquals(date.toInstant(), casted.getDate().toInstant());
     assertTrue(casted.exists());
   }
 
@@ -63,7 +64,7 @@ public class CastingDateValueTest extends SolrTestCaseJ4 {
     AnalyticsValue casted = (AnalyticsValue) val;
 
     val.setValue("1800-01-01T10:30:15Z").setExists(true);
-    assertEquals(date, casted.getObject());
+    assertEquals(date.toInstant(), ((Date) casted.getObject()).toInstant());
     assertTrue(casted.exists());
   }
 
@@ -79,7 +80,7 @@ public class CastingDateValueTest extends SolrTestCaseJ4 {
     val.setExists(false);
     casted.streamDates(
         value -> {
-          assertTrue("There should be no values to stream", false);
+          fail("There should be no values to stream");
         });
 
     // Multiple Values
@@ -88,7 +89,7 @@ public class CastingDateValueTest extends SolrTestCaseJ4 {
     casted.streamDates(
         value -> {
           assertTrue(values.hasNext());
-          assertEquals(values.next(), value);
+          assertEquals(values.next().toInstant(), value.toInstant());
         });
     assertFalse(values.hasNext());
   }
@@ -104,7 +105,7 @@ public class CastingDateValueTest extends SolrTestCaseJ4 {
     val.setExists(false);
     casted.streamStrings(
         value -> {
-          assertTrue("There should be no values to stream", false);
+          fail("There should be no values to stream");
         });
 
     // Multiple Values
@@ -130,12 +131,12 @@ public class CastingDateValueTest extends SolrTestCaseJ4 {
     val.setExists(false);
     casted.streamObjects(
         value -> {
-          assertTrue("There should be no values to stream", false);
+          fail("There should be no values to stream");
         });
 
     // Multiple Values
     val.setValue("1800-01-01T10:30:15Z").setExists(true);
-    Iterator<Object> values = Arrays.<Object>asList(date).iterator();
+    Iterator<Object> values = List.<Object>of(date).iterator();
     casted.streamObjects(
         value -> {
           assertTrue(values.hasNext());
@@ -152,7 +153,7 @@ public class CastingDateValueTest extends SolrTestCaseJ4 {
     val.setValue("1800-01-01T10:30:15Z").setExists(true);
     AnalyticsValueStream conv = val.convertToConstant();
     assertTrue(conv instanceof ConstantDateValue);
-    assertEquals(date, ((ConstantDateValue) conv).getDate());
+    assertEquals(date.toInstant(), ((ConstantDateValue) conv).getDate().toInstant());
 
     val = new TestDateValue(ExpressionType.FIELD);
     val.setValue("1800-01-01T10:30:15Z").setExists(true);
