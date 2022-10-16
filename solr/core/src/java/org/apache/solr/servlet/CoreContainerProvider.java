@@ -300,18 +300,18 @@ public class CoreContainerProvider implements ServletContextListener {
             errorFileArg
                 .substring(errorFileArg.indexOf('=') + 1)
                 .replace("%p", String.valueOf(mx.getPid()));
-        log.info(
+        String logMessage =
             "Solr started with \"-XX:+CrashOnOutOfMemoryError\" that will crash on any OutOfMemoryError exception. "
-                + "The cause of the OOME will be logged in the crash file at the following path:");
-        log.info(errorFilePath);
+                + "The cause of the OOME will be logged in the crash file at the following path: {}";
+        log.info(logMessage, errorFilePath);
       }
     } catch (Exception e) {
       String logMessage =
           String.format(
               Locale.ROOT,
               "Solr typically starts with \"-XX:+CrashOnOutOfMemoryError\" that will crash on any OutOfMemoryError exception. "
-                  + "The cause of the OOME will be logged in a crash file in the logs directory %s. "
-                  + "Unable to get the specific file due to an exception.",
+                  + "Unable to get the specific file due to an exception."
+                  + "The cause of the OOME will be logged in a crash file in the logs directory: %s",
               System.getProperty("solr.log.dir"));
       log.info(logMessage, e);
     }
