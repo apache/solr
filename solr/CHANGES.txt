@@ -68,6 +68,8 @@ Build
 
 * SOLR-16432: Upgrade the gradle wrapper to 7.5.1 (Shawn Heisey, Kevin Risden)
 
+* SOLR-16464: Upgrade commons-text to 1.10.0 (Kevin Risden)
+
 Other Changes
 ---------------------
 (No changes)
