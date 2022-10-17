@@ -57,7 +57,8 @@ public class SSLConfigurationsTest extends SolrTestCaseJ4 {
           CREDENTIAL_PROVIDER_PATH);
 
   @Before
-  public void setUp() {
+  public void setUp() throws Exception {
+    super.setUp();
     envs = new HashMap<>();
   }
 
