@@ -29,6 +29,7 @@ public class ModuleUtilsTest extends SolrTestCase {
 
   @Override
   public void setUp() throws Exception {
+    super.setUp();
     mockRootDir = setupMockInstallDir(expectedMods);
   }
 

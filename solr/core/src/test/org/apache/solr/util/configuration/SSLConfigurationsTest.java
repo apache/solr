@@ -56,7 +56,8 @@ public class SSLConfigurationsTest extends SolrTestCase {
           SSLConfigurations.SysProps.SSL_CLIENT_TRUST_STORE_PASSWORD);
 
   @Before
-  public void setUp() {
+  public void setUp() throws Exception {
+    super.setUp();
     envs = new HashMap<>();
   }
 
