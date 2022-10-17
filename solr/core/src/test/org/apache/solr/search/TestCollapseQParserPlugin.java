@@ -34,6 +34,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.search.CollapsingQParserPlugin.GroupHeadSelector;
 import org.apache.solr.search.CollapsingQParserPlugin.GroupHeadSelectorType;
+import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -970,7 +971,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
                           "id")));
             });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
-    assertThat(ex.getMessage(), containsString("Can not use collapse with Grouping enabled"));
+    MatcherAssert.assertThat(
+        ex.getMessage(), containsString("Can not use collapse with Grouping enabled"));
 
     // delete the elevated docs, confirm collapsing still works
     assertU(delI("1"));

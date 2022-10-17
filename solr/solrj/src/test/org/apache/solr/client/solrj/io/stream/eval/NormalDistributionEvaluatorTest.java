@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.stream.eval;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import junit.framework.Assert;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -45,9 +44,10 @@ public class NormalDistributionEvaluatorTest extends SolrTestCase {
     values.put("l2", 7);
 
     NormalDistribution dist = new NormalDistribution(3, 7);
-    Assert.assertEquals(
+    assertEquals(
         dist.getNumericalMean(),
         ((NormalDistribution) factory.constructEvaluator("norm(l1,l2)").evaluate(new Tuple(values)))
-            .getNumericalMean());
+            .getNumericalMean(),
+        0.01);
   }
 }
