@@ -86,5 +86,5 @@ RUN set -ex; \
   rm -r "$GNUPGHOME"; \
   tar -C /opt --extract --preserve-permissions --file "/opt/solr-$SOLR_VERSION.tgz"; \
   rm "/opt/solr-$SOLR_VERSION.tgz"*; \
-  apt-get -y remove wget gpg dirmngr;
+  apt -y remove wget gpg dirmngr && apt -y autoremove;
 
