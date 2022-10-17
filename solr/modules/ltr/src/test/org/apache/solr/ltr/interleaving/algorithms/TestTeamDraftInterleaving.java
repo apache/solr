@@ -29,7 +29,7 @@ import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class TeamDraftInterleavingTest extends SolrTestCase {
+public class TestTeamDraftInterleaving extends SolrTestCase {
   private TeamDraftInterleaving toTest;
   private ScoreDoc[] rerankedA, rerankedB;
   private ScoreDoc a1, a2, a3, a4, a5;
