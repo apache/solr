@@ -184,7 +184,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     SolrException thrown =
         assertThrows(SolrException.class, () -> SolrXmlConfig.fromString(solrHome, solrXml));
     assertEquals(
-        "Error parsing 'transientCacheSize', value '" + bad + "' cannot be parsed as int",
+        "Error parsing 'transientCacheSize', value '" + bad + "' cannot be parsed",
         thrown.getMessage());
   }
 
