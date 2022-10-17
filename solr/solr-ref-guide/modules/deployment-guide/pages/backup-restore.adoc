@@ -394,7 +394,7 @@ An example configuration using this property can be found below.
 [source,xml]
 ----
 <backup>
-  <repository name="local_repo" class="org.apache.solr.core.backup.repository.LocalFileSytemRepository">
+  <repository name="local_repo" class="org.apache.solr.core.backup.repository.LocalFileSystemRepository">
     <str name="location">/solr/backup_data</str>
   </repository>
 </backup>

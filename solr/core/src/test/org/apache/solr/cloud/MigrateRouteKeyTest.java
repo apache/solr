@@ -20,12 +20,11 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
@@ -41,7 +40,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@LuceneTestCase.Slow
 public class MigrateRouteKeyTest extends SolrCloudTestCase {
 
   @BeforeClass
@@ -111,7 +109,7 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
 
     final String splitKey = "a";
     final int BIT_SEP = 1;
-    final int[] splitKeyCount = new int[1];
+    int splitKeyCount = 0;
     for (int id = 0; id < 26 * 3; id++) {
       String shardKey =
           "" + (char) ('a' + (id % 26)); // See comment in ShardRoutingTest for hash distribution
@@ -123,9 +121,9 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
       doc.addField("id", key + "!" + id);
       doc.addField("n_ti", id);
       cluster.getSolrClient().add("sourceCollection", doc);
-      if (splitKey.equals(shardKey)) splitKeyCount[0]++;
+      if (splitKey.equals(shardKey)) splitKeyCount++;
     }
-    assertTrue(splitKeyCount[0] > 0);
+    assertTrue(splitKeyCount > 0);
 
     String targetCollection = "migrate_multipleshardtest_targetCollection";
     CollectionAdminRequest.createCollection(targetCollection, "conf", 1, 1)
@@ -136,7 +134,7 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
 
     DocCollection state = getCollectionState(targetCollection);
     Replica replica = state.getReplicas().get(0);
-    try (HttpSolrClient collectionClient = getHttpSolrClient(replica.getCoreUrl())) {
+    try (SolrClient collectionClient = getHttpSolrClient(replica.getCoreUrl())) {
 
       SolrQuery solrQuery = new SolrQuery("*:*");
       assertEquals(
@@ -152,11 +150,11 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
       long finishTime = System.nanoTime();
 
       indexer.join();
-      splitKeyCount[0] += indexer.getSplitKeyCount();
+      splitKeyCount += indexer.getSplitKeyCount();
 
       try {
         cluster.getSolrClient().deleteById("a/" + BIT_SEP + "!104");
-        splitKeyCount[0]--;
+        splitKeyCount--;
       } catch (Exception e) {
         log.warn("Error deleting document a/{}!104", BIT_SEP, e);
       }
@@ -168,7 +166,7 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
       log.info("Response from target collection: {}", response);
       assertEquals(
           "DocCount on target collection does not match",
-          splitKeyCount[0],
+          splitKeyCount,
           response.getResults().getNumFound());
 
       waitForState(

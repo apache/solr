@@ -51,7 +51,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
         System.setProperty("solr.tests.id.docValues", "true");
         break;
       default:
-        fail("Bad random number generatged not between 0-2 iunclusive");
+        fail("Bad random number generated not between 0-2 inclusive");
         break;
     }
     initCore("solrconfig.xml", "schema.xml");
@@ -406,16 +406,16 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
         };
     StringBuilder expected = new StringBuilder("/termVectors/0/test_posofftv/anoth=={");
     boolean first = true;
-    for (int i = 0; i < options.length; i++) {
+    for (String[] option : options) {
       final boolean use = random().nextBoolean();
       if (use) {
         if (!first) {
           expected.append(", ");
         }
         first = false;
-        expected.append(options[i][1]);
+        expected.append(option[1]);
       }
-      list.add(options[i][0]);
+      list.add(option[0]);
       list.add(use ? "true" : "false");
     }
 

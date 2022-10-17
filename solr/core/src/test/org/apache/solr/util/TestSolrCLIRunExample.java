@@ -38,11 +38,11 @@ import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteResultHandler;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.SolrInputDocument;
@@ -54,14 +54,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Tests the SolrCLI.RunExampleTool implementation that supports bin/solr -e [example] */
-@LuceneTestCase.Slow
 @SolrTestCaseJ4.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
-  public static void beforeClass() throws IOException {
+  public static void beforeClass() {
     assumeFalse(
         "FIXME: This test does not work with whitespace in CWD (https://issues.apache.org/jira/browse/SOLR-8877)",
         Paths.get(".").toAbsolutePath().toString().contains(" "));
@@ -273,7 +272,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
       if (solrCloudCluster != null) {
         try {
           solrCloudCluster.shutdown();
@@ -312,11 +311,13 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   }
 
   @Test
+  @LuceneTestCase.Nightly
   public void testTechproductsExample() throws Exception {
     testExample("techproducts");
   }
 
   @Test
+  @LuceneTestCase.Nightly
   public void testSchemalessExample() throws Exception {
     testExample("schemaless");
   }
@@ -397,7 +398,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           exampleSolrHomeDir.isDirectory());
 
       if ("techproducts".equals(exampleName)) {
-        HttpSolrClient solrClient =
+        SolrClient solrClient =
             getHttpSolrClient("http://localhost:" + bindPort + "/solr/" + exampleName);
         try {
           SolrQuery query = new SolrQuery("*:*");
@@ -462,7 +463,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     String collectionName = "testCloudExamplePrompt";
 
-    // sthis test only support launching one SolrCloud node due to how MiniSolrCloudCluster works
+    // this test only support launching one SolrCloud node due to how MiniSolrCloudCluster works
     // and the need for setting the host and port system properties ...
     String userInput = "1\n" + bindPort + "\n" + collectionName + "\n2\n2\n_default\n";
 

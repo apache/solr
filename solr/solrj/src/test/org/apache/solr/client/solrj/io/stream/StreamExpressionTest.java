@@ -17,12 +17,15 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -31,7 +34,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.zip.GZIPOutputStream;
 import org.apache.lucene.tests.util.LuceneTestCase;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -43,7 +45,14 @@ import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.apache.solr.client.solrj.io.stream.metrics.*;
+import org.apache.solr.client.solrj.io.stream.metrics.CountDistinctMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.PercentileMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.StdMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -55,7 +64,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@Slow
 @SolrTestCaseJ4.SuppressSSL
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40", "Lucene41", "Lucene42", "Lucene45"})
 @ThreadLeakLingering(linger = 0)
@@ -685,8 +693,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
       assertTrue(different);
 
-      Collections.sort(tuples1, new FieldComparator("id", ComparatorOrder.ASCENDING));
-      Collections.sort(tuples2, new FieldComparator("id", ComparatorOrder.ASCENDING));
+      tuples1.sort(new FieldComparator("id", ComparatorOrder.ASCENDING));
+      tuples2.sort(new FieldComparator("id", ComparatorOrder.ASCENDING));
 
       for (int i = 0; i < tuples1.size(); i++) {
         Tuple tuple1 = tuples1.get(i);
@@ -734,8 +742,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
       assertTrue(different);
 
-      Collections.sort(tuples10, new FieldComparator("id", ComparatorOrder.ASCENDING));
-      Collections.sort(tuples11, new FieldComparator("id", ComparatorOrder.ASCENDING));
+      tuples10.sort(new FieldComparator("id", ComparatorOrder.ASCENDING));
+      tuples11.sort(new FieldComparator("id", ComparatorOrder.ASCENDING));
 
       for (int i = 0; i < tuples10.size(); i++) {
         Tuple tuple1 = tuples10.get(i);

@@ -23,7 +23,6 @@ import io.opentracing.util.GlobalTracer;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -69,8 +68,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
   }
 
   @Test
-  public void test()
-      throws IOException, SolrServerException, TimeoutException, InterruptedException {
+  public void test() throws IOException, SolrServerException {
     // TODO it would be clearer if we could compare the complete Span tree between reality
     //   and what we assert it looks like in a structured visual way.
 

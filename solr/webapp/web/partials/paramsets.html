@@ -1,0 +1,93 @@
+<!--
+/*
+* Licensed to the Apache Software Foundation (ASF) under one or more
+* contributor license agreements.  See the NOTICE file distributed with
+* this work for additional information regarding copyright ownership.
+* The ASF licenses this file to You under the Apache License, Version 2.0
+* (the "License"); you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+-->
+
+<div id="paramsets" class="clearfix">
+    <div id="form">
+        <form>
+
+          <fieldset>
+              <legend>Select Paramset</legend>
+            <div id="paramset-name-container">
+
+              <label for="paramsetName">
+                  <a rel="help">Paramsets</a>
+              </label>
+              <select id="paramsetName"
+                      ng-model="name"
+                      chosen
+                      data-placeholder="Please select..."
+                      ng-change="selectParamset()"
+                      ng-options="item for item in paramsetList"><option value=""></option></select>
+
+            </div>
+
+            <div id="delete-paramset" ng-show="name">
+              <button id="delete-paramset" class="warn" ng-click="deleteParamset()">Delete Paramset</button>
+            <div>
+          </fieldset>
+
+            <div>
+                <form>
+                    <label>
+                        <input type="checkbox"
+                               ng-model="switch.showSample">
+                        Sample Paramset
+                    </label>
+                </form>
+                <div ng-switch="switch.showSample">
+                    <div id="sample-paramset" ng-switch-when="true">
+                      <pre class="syntax language-json"><code ng-bind-html="placeholder | highlight:'json' | unsafe"></code></pre>
+                    </div>
+                </div>
+
+                <fieldset>
+                    <legend>Update Paramset(s)</legend>
+                    <div class="fieldset" id="paramsetContent-container">
+                        <label for="paramset">
+                            Paramset(s) JSON
+                        </label>
+                        <textarea ng-model="paramsetContent"
+                                  name="paramsetContent"
+                                  id="paramsetContent"
+                                  title="Request Parameters API Payload"
+                                  rows="10"
+                                  cols="65"></textarea>
+                        <p>
+                          <a href="https://solr.apache.org/guide/solr/latest/configuration-guide/request-parameters-api.html" target="_out">syntax help</a>
+                        </p>
+                    </div>
+                </fieldset>
+
+            </div>
+            <button type="submit" ng-click="submit()" id="submit">Submit Updates</button>
+        </form>
+    </div>
+    <div id="result">
+        <div id="response" ng-show="response">
+            <div>
+                <span class="description">Status: </span>{{ responseStatus }}
+            </div>
+            <div>
+                <span class="description">Response:</span>
+                <pre class="syntax language-json"><code ng-bind-html="response | highlight:'json' | unsafe"></code></pre>
+            </div>
+        </div>
+
+    </div>
+</div>

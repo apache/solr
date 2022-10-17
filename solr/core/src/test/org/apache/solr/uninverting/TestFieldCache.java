@@ -263,7 +263,7 @@ public class TestFieldCache extends SolrTestCase {
     SortedSetDocValues termOrds =
         cache.getDocTermOrds(reader, "theRandomUnicodeMultiValuedField", null);
     int numEntries = cache.getCacheEntries().length;
-    // ask for it again, and check that we didnt create any additional entries:
+    // ask for it again, and check that we didn't create any additional entries:
     termOrds = cache.getDocTermOrds(reader, "theRandomUnicodeMultiValuedField", null);
     assertEquals(numEntries, cache.getCacheEntries().length);
 
@@ -577,7 +577,7 @@ public class TestFieldCache extends SolrTestCase {
     dir.close();
   }
 
-  public void testNonexistantFields() throws Exception {
+  public void testNonexistentFields() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     Document doc = new Document();

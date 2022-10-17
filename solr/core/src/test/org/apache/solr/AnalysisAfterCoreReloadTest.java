@@ -37,21 +37,17 @@ import org.junit.BeforeClass;
 
 public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
 
-  private static String tmpSolrHome;
-  int port = 0;
-  static final String context = "/solr";
-
   static final String collection = "collection1";
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    tmpSolrHome = createTempDir().toFile().getAbsolutePath();
+    String tmpSolrHome = createTempDir().toFile().getAbsolutePath();
     FileUtils.copyDirectory(new File(TEST_HOME()), new File(tmpSolrHome).getAbsoluteFile());
     initCore("solrconfig.xml", "schema.xml", new File(tmpSolrHome).getAbsolutePath());
   }
 
   @AfterClass
-  public static void AfterClass() throws Exception {}
+  public static void AfterClass() {}
 
   public void testStopwordsAfterCoreReload() throws Exception {
     SolrInputDocument doc = new SolrInputDocument();

@@ -82,7 +82,10 @@ distributions {
         include "licenses/**"
         exclude "licenses/README.committers.txt"
         include "CHANGES.txt"
-        include "README.md"
+      })
+
+      from(projectDir, {
+        include "README.txt"
       })
 
       from ('static/lib', {

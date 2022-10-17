@@ -27,7 +27,7 @@ public class BooleanFieldTest extends SolrTestCaseJ4 {
     initCore("solrconfig-basic.xml", "schema15.xml");
   }
 
-  // Note, docValues-based boolean tests are tested elsewhere refering to more appropriate schemas
+  // Note, docValues-based boolean tests are tested elsewhere referring to more appropriate schemas
   @Test
   public void testBoolField() {
 

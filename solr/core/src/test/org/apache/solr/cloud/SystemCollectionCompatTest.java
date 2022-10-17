@@ -119,7 +119,7 @@ public class SystemCollectionCompatTest extends SolrCloudTestCase {
     CollectionAdminResponse response = reloadRequest.process(solrClient);
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
-    // wait for the reload of all replicas to complete
+    // wait for the reload operation of all replicas to complete
     RetryUtil.retryUntil(
         "Timed out waiting for core to reload",
         30,
@@ -182,8 +182,7 @@ public class SystemCollectionCompatTest extends SolrCloudTestCase {
     log.info("Overseer Status indicates that the overseer is: {}", leader);
     JettySolrRunner overseerNode = null;
     List<JettySolrRunner> jettySolrRunners = cluster.getJettySolrRunners();
-    for (int i = 0; i < jettySolrRunners.size(); i++) {
-      JettySolrRunner runner = jettySolrRunners.get(i);
+    for (JettySolrRunner runner : jettySolrRunners) {
       if (runner.getNodeName().equals(leader)) {
         overseerNode = runner;
         break;

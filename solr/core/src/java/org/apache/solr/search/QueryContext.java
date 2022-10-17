@@ -77,7 +77,7 @@ public class QueryContext extends IdentityHashMap implements Closeable {
 
   public void addCloseHook(Closeable closeable) {
     if (closeHooks == null) {
-      closeHooks = new IdentityHashMap<Closeable, String>();
+      closeHooks = new IdentityHashMap<>();
       // for now, defer closing until the end of the request
       SolrRequestInfo.getRequestInfo().addCloseHook(this);
     }

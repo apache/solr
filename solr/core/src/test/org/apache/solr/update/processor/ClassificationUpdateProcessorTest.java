@@ -48,7 +48,6 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
   private static final String AUTHOR = "author";
   private static final String TRAINING_CLASS = "cat";
   private static final String PREDICTED_CLASS = "predicted";
-  public static final String KNN = "knn";
 
   protected Directory directory;
   protected IndexReader reader;

@@ -125,7 +125,7 @@ public class AtomicUpdateJavabinTest extends SolrCloudTestCase {
     committedRequest.commit(cluster.getSolrClient(), COLLECTION);
 
     // Upload a copy of id:1 that's uncommitted to test how atomic-updates modify values in the tlog
-    // See SOLR-14971 for an example of why this case needs tested separately
+    // See SOLR-14971 for an example of why this case needs testing separately
     final SolrInputDocument uncommittedDoc =
         sdoc(
             "id",

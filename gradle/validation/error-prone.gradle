@@ -15,12 +15,21 @@
  * limitations under the License.
  */
 
-def skipErrorProne = rootProject.usesAltJvm && rootProject.runtimeJavaVersion > JavaVersion.VERSION_15;
-if (skipErrorProne) {
+def skipReason
+
+if (rootProject.usesAltJvm && rootProject.runtimeJavaVersion > JavaVersion.VERSION_15) {
+  skipReason = "won't work with JDK ${rootProject.runtimeJavaVersion} if used as alternative java toolchain"
+}
+
+if (!propertyOrDefault("validation.errorprone", isCIBuild).asBoolean()) {
+  skipReason = "skipped on builds not running inside CI environments, pass -Pvalidation.errorprone=true to enable"
+}
+
+if (skipReason) {
   configure(rootProject) {
     task errorProneSkipped() {
       doFirst {
-        logger.warn("WARNING: errorprone disabled (won't work with JDK ${rootProject.runtimeJavaVersion} if used as alternative java toolchain)")
+        logger.warn("WARNING: errorprone disabled (${skipReason})")
       }
     }
   }
@@ -33,7 +42,7 @@ allprojects { prj ->
     // additional module system opens in place.
     // This is a hack to keep the dependency (so that palantir's version check doesn't complain)
     // but don't include the plugin (which fails on JDK16+).
-    if (skipErrorProne) {
+    if (skipReason) {
       tasks.withType(JavaCompile) { task -> task.dependsOn ":errorProneSkipped" }
       configurations {
         errorprone
@@ -49,6 +58,8 @@ allprojects { prj ->
       }
 
       tasks.withType(JavaCompile) { task ->
+        task.dependsOn ":checkJdkInternalsExportedToGradle"
+
         options.errorprone.disableWarningsInGeneratedCode = true
         options.errorprone.errorproneArgs = [
             '-Xep:InlineMeSuggester:OFF', // We don't use this annotation
@@ -67,31 +78,26 @@ allprojects { prj ->
             '-Xep:AlreadyChecked:OFF',
             '-Xep:AmbiguousMethodReference:OFF',
             '-Xep:ArgumentSelectionDefectChecker:OFF',
-            '-Xep:ArrayEquals:OFF',
-            '-Xep:ArrayHashCode:OFF',
-            '-Xep:ArrayToString:OFF',
             '-Xep:BadImport:OFF', // style preference that we don't want to enforce
             '-Xep:BadInstanceof:OFF',
             '-Xep:BadShiftAmount:OFF',
+            '-Xep:CanIgnoreReturnValueSuggester:OFF',
             '-Xep:ClassCanBeStatic:OFF',
-            '-Xep:CollectionUndefinedEquality:OFF',
             '-Xep:ComplexBooleanConstant:OFF',
             '-Xep:DoubleBraceInitialization:OFF',
             '-Xep:DoubleCheckedLocking:OFF',
             '-Xep:EmptyCatch:OFF',
             '-Xep:EqualsGetClass:OFF',
-            '-Xep:EqualsIncompatibleType:OFF',
             '-Xep:EqualsUnsafeCast:OFF',
             '-Xep:EscapedEntity:OFF',
             '-Xep:Finally:OFF',
-            '-Xep:FormatString:OFF',
             '-Xep:FutureReturnValueIgnored:OFF',
             '-Xep:HidingField:OFF',
             '-Xep:IdentityBinaryExpression:OFF',
             '-Xep:IdentityHashMapUsage:OFF',
             '-Xep:ImmutableEnumChecker:OFF',
             '-Xep:InconsistentCapitalization:OFF',
-            '-Xep:InlineFormatString:OFF',
+            '-Xep:InlineFormatString:OFF', // this introduces redundancy in format strings
             '-Xep:InputStreamSlowMultibyteRead:OFF',
             '-Xep:IntLongMath:OFF',
             '-Xep:InvalidBlockTag:OFF',
@@ -127,7 +133,6 @@ allprojects { prj ->
             '-Xep:ThreadPriorityCheck:OFF',
             '-Xep:TypeParameterShadowing:OFF',
             '-Xep:TypeParameterUnusedInFormals:OFF',
-            '-Xep:UndefinedEquals:OFF',
             '-Xep:UnescapedEntity:OFF',
             '-Xep:UnicodeEscape:OFF',
             '-Xep:UnnecessaryParentheses:OFF',

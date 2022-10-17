@@ -73,7 +73,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   private AtomicInteger id = new AtomicInteger();
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeClass() {
     // we can't use the Randomized merge policy because the test depends on
     // being able to call optimize to have all deletes expunged.
     systemSetPropertySolrTestsMergePolicyFactory(LogDocMergePolicyFactory.class.getName());
@@ -506,13 +506,13 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     try (SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(streamingClients, 0)) {
       streamingClients.setExp(Exp.CONNECT_EXCEPTION);
       ArrayList<Node> nodes = new ArrayList<>();
-      final HttpSolrClient solrclient1 = (HttpSolrClient) clients.get(0);
+      final HttpSolrClient solrClient1 = (HttpSolrClient) clients.get(0);
 
       final AtomicInteger retries = new AtomicInteger();
       ZkNodeProps nodeProps =
           new ZkNodeProps(
               ZkStateReader.BASE_URL_PROP,
-              solrclient1.getBaseURL(),
+              solrClient1.getBaseURL(),
               ZkStateReader.CORE_NAME_PROP,
               "");
       Node retryNode;

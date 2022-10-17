@@ -52,7 +52,7 @@ public class TestInitQParser extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testQueryParserInit() throws Exception {
+  public void testQueryParserInit() {
     // should query using registered fail (defType=fail) QParser and match only one doc
     assertQ(req("q", "id:1", "indent", "true", "defType", "fail"), "//*[@numFound='1']");
   }

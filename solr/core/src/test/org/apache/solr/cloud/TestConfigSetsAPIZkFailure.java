@@ -63,7 +63,7 @@ import org.junit.Test;
 
 /**
  * Test the ConfigSets API under ZK failure. In particular, if create fails, ensure proper cleanup
- * occurs so we aren't left with a partially created ConfigSet.
+ * occurs, so we aren't left with a partially created ConfigSet.
  */
 public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
   private MiniSolrCloudCluster solrCluster;

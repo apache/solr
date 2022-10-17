@@ -50,7 +50,6 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.SolrThreadUnsafe;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
@@ -218,10 +217,10 @@ public class DistribPackageStore implements PackageStore {
 
     boolean fetchFromAnyNode() {
       ArrayList<String> l = coreContainer.getPackageStoreAPI().shuffledNodes();
-      ZkStateReader stateReader = coreContainer.getZkController().getZkStateReader();
       for (String liveNode : l) {
         try {
-          String baseurl = stateReader.getBaseUrlForNodeName(liveNode);
+          String baseurl =
+              coreContainer.getZkController().getZkStateReader().getBaseUrlForNodeName(liveNode);
           String url = baseurl.replace("/solr", "/api");
           String reqUrl = url + "/node/files" + path + "?meta=true&wt=javabin&omitHeader=true";
           boolean nodeHasBlob = false;

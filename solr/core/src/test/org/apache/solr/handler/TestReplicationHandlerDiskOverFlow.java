@@ -61,8 +61,6 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
   SolrClient leaderClient, followerClient;
   ReplicationTestHelper.SolrInstance leader = null, follower = null;
 
-  static String context = "/solr";
-
   @Before
   public void setUp() throws Exception {
     originalDiskSpaceprovider = IndexFetcher.usableDiskSpaceProvider;
@@ -235,7 +233,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
                 .add("qt", "/replication")
                 .add("command", ReplicationHandler.CMD_DETAILS));
     if (log.isInfoEnabled()) {
-      log.info("DETAILS {}", Utils.writeJson(response, new StringWriter(), true).toString());
+      log.info("DETAILS {}", Utils.writeJson(response, new StringWriter(), true));
     }
     assertEquals(
         "follower's clearedLocalIndexFirst (from rep details)",

@@ -22,7 +22,6 @@ import java.util.Locale;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.api.collections.CategoryRoutedAlias;
 import org.apache.solr.cloud.api.collections.RoutedAlias;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
@@ -111,7 +110,7 @@ public class V2CollectionsAPIMappingTest extends V2ApiMappingTest<CollectionsHan
     assertEquals("bar2", v1Params.get("property.foo2"));
     assertEquals("requestTrackingId", v1Params.get(CommonAdminParams.ASYNC));
     assertEquals(false, v1Params.getPrimitiveBool(CommonAdminParams.WAIT_FOR_FINAL_STATE));
-    assertEquals(false, v1Params.getPrimitiveBool(DocCollection.PER_REPLICA_STATE));
+    assertEquals(false, v1Params.getPrimitiveBool(CollectionAdminParams.PER_REPLICA_STATE));
     assertEquals(1, v1Params.getPrimitiveInt(CollectionAdminParams.NUM_SHARDS));
   }
 
@@ -275,7 +274,8 @@ public class V2CollectionsAPIMappingTest extends V2ApiMappingTest<CollectionsHan
     assertEquals(123, v1Params.getPrimitiveInt(CoreAdminParams.BACKUP_ID));
     assertEquals("requestTrackingId", v1Params.get(CommonAdminParams.ASYNC));
     // NOTE: Unlike other v2 APIs that have a nested object for collection-creation params,
-    // restore's v1 equivalent for these properties doesn't have a "create-collection." prefix.
+    // the restore API's v1 equivalent for these properties doesn't have a "create-collection."
+    // prefix.
     assertEquals(1, v1Params.getPrimitiveInt(CollectionAdminParams.NUM_SHARDS));
     assertEquals("bar", v1Params.get("property.foo"));
     assertEquals("bar2", v1Params.get("property.foo2"));

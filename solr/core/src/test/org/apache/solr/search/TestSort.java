@@ -19,7 +19,6 @@ package org.apache.solr.search;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -175,7 +174,7 @@ public class TestSort extends SolrTestCaseJ4 {
               "sorts["
                   + j
                   + "] resulted in a '"
-                  + type.toString()
+                  + type
                   + "', either sort parsing code is broken, or func/query "
                   + "semantics have gotten broader and munging in this test "
                   + "needs improved: "
@@ -187,7 +186,7 @@ public class TestSort extends SolrTestCaseJ4 {
               names[j],
               sorts[j].getField());
           assertEquals(
-              "fields[" + j + "] (" + type.toString() + ") had unexpected name in: " + input,
+              "fields[" + j + "] (" + type + ") had unexpected name in: " + input,
               names[j],
               fields.get(j).getName());
         }
@@ -321,7 +320,6 @@ public class TestSort extends SolrTestCaseJ4 {
                 ? ""
                 : "zzz";
 
-        boolean scoreInOrder = r.nextBoolean();
         final TopFieldCollector topCollector =
             TopFieldCollector.create(sort, top, Integer.MAX_VALUE);
 
@@ -345,8 +343,7 @@ public class TestSort extends SolrTestCaseJ4 {
 
         searcher.search(query, myCollector);
 
-        Collections.sort(
-            collectedDocs,
+        collectedDocs.sort(
             (o1, o2) -> {
               String v1 = o1.val == null ? nullRep : o1.val;
               String v2 = o2.val == null ? nullRep : o2.val;

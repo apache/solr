@@ -138,7 +138,7 @@ public class SearchHandler extends RequestHandlerBase
   }
 
   @Override
-  protected HandlerMetrics getMetricsForThisRequest(SolrQueryRequest req) {
+  public HandlerMetrics getMetricsForThisRequest(SolrQueryRequest req) {
     return req.getParams().getBool(ShardParams.IS_SHARD, false) ? this.metricsShard : this.metrics;
   }
 
@@ -574,8 +574,8 @@ public class SearchHandler extends RequestHandlerBase
     if (!rb.isDistrib
         && req.getParams().getBool(ShardParams.SHARDS_INFO, false)
         && rb.shortCircuitedURL != null) {
-      NamedList<Object> shardInfo = new SimpleOrderedMap<Object>();
-      SimpleOrderedMap<Object> nl = new SimpleOrderedMap<Object>();
+      NamedList<Object> shardInfo = new SimpleOrderedMap<>();
+      SimpleOrderedMap<Object> nl = new SimpleOrderedMap<>();
       if (rsp.getException() != null) {
         Throwable cause = rsp.getException();
         if (cause instanceof SolrServerException) {

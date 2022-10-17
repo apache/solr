@@ -100,7 +100,7 @@ templates:
 
     Please refer to the Upgrade Notes in the Solr Ref Guide for information on upgrading from previous Solr versions:
 
-      <https://solr.apache.org/guide/{{ release_version_refguide }}/solr-upgrade-notes.html>
+      <https://solr.apache.org/guide/solr/{{ release_version_refguide }}/upgrade-notes/solr-upgrade-notes.html>
 
     Please read CHANGES.txt for a full list of {% if is_feature_release %}new features, changes and {% endif %}bugfixes:
 
@@ -460,13 +460,13 @@ groups:
         cmd: git checkout main
         tee: true
       - !Command
-        cmd: "{{ gradle_cmd }} setOfficialAntoraYaml -Prefguide.isBranchReleased=false"
-        tee: true
-      - !Command
         cmd: python3 -u dev-tools/scripts/addVersion.py {{ next_version }}
         tee: true
       - !Command
-        comment: Make sure the edits done by `addVersion.py` are ok, then push
+        cmd: "{{ gradle_cmd }} setOfficialAntoraYaml -Prefguide.isBranchReleased=false"
+        tee: true
+      - !Command
+        comment: Make sure the new antora.yaml and edits done by `addVersion.py` are ok, then push
         cmd: git add -u .  && git commit -m "Add next major version {{ next_version }}"  && git push
         logfile: commit-stable.log
     post_description: |
@@ -488,13 +488,13 @@ groups:
         cmd: git checkout {{ stable_branch }}
         tee: true
       - !Command
-        cmd: "{{ gradle_cmd }} setOfficialAntoraYaml -Prefguide.isBranchReleased=false"
-        tee: true
-      - !Command
         cmd: python3 -u dev-tools/scripts/addVersion.py {{ next_version }}
         tee: true
       - !Command
-        comment: Make sure the edits done by `addVersion.py` are ok, then push
+        cmd: "{{ gradle_cmd }} setOfficialAntoraYaml -Prefguide.isBranchReleased=false"
+        tee: true
+      - !Command
+        comment: Make sure the new antora.yaml and edits done by `addVersion.py` are ok, then push
         cmd: git add -u .  && git commit -m "Add next minor version {{ next_version }}"  && git push
         logfile: commit-stable.log
       - !Command

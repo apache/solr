@@ -32,7 +32,39 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.BoolDocValues;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.queries.function.docvalues.LongDocValues;
-import org.apache.lucene.queries.function.valuesource.*;
+import org.apache.lucene.queries.function.valuesource.ConstNumberSource;
+import org.apache.lucene.queries.function.valuesource.ConstValueSource;
+import org.apache.lucene.queries.function.valuesource.DefFunction;
+import org.apache.lucene.queries.function.valuesource.DivFloatFunction;
+import org.apache.lucene.queries.function.valuesource.DocFreqValueSource;
+import org.apache.lucene.queries.function.valuesource.DoubleConstValueSource;
+import org.apache.lucene.queries.function.valuesource.DualFloatFunction;
+import org.apache.lucene.queries.function.valuesource.IDFValueSource;
+import org.apache.lucene.queries.function.valuesource.IfFunction;
+import org.apache.lucene.queries.function.valuesource.JoinDocFreqValueSource;
+import org.apache.lucene.queries.function.valuesource.LinearFloatFunction;
+import org.apache.lucene.queries.function.valuesource.LiteralValueSource;
+import org.apache.lucene.queries.function.valuesource.MaxDocValueSource;
+import org.apache.lucene.queries.function.valuesource.MaxFloatFunction;
+import org.apache.lucene.queries.function.valuesource.MinFloatFunction;
+import org.apache.lucene.queries.function.valuesource.MultiBoolFunction;
+import org.apache.lucene.queries.function.valuesource.MultiValueSource;
+import org.apache.lucene.queries.function.valuesource.NormValueSource;
+import org.apache.lucene.queries.function.valuesource.NumDocsValueSource;
+import org.apache.lucene.queries.function.valuesource.ProductFloatFunction;
+import org.apache.lucene.queries.function.valuesource.QueryValueSource;
+import org.apache.lucene.queries.function.valuesource.RangeMapFloatFunction;
+import org.apache.lucene.queries.function.valuesource.ReciprocalFloatFunction;
+import org.apache.lucene.queries.function.valuesource.ScaleFloatFunction;
+import org.apache.lucene.queries.function.valuesource.SimpleBoolFunction;
+import org.apache.lucene.queries.function.valuesource.SimpleFloatFunction;
+import org.apache.lucene.queries.function.valuesource.SingleFunction;
+import org.apache.lucene.queries.function.valuesource.SumFloatFunction;
+import org.apache.lucene.queries.function.valuesource.SumTotalTermFreqValueSource;
+import org.apache.lucene.queries.function.valuesource.TFValueSource;
+import org.apache.lucene.queries.function.valuesource.TermFreqValueSource;
+import org.apache.lucene.queries.function.valuesource.TotalTermFreqValueSource;
+import org.apache.lucene.queries.function.valuesource.VectorValueSource;
 import org.apache.lucene.queries.payloads.PayloadDecoder;
 import org.apache.lucene.queries.payloads.PayloadFunction;
 import org.apache.lucene.search.IndexSearcher;
@@ -70,6 +102,7 @@ import org.apache.solr.search.facet.UniqueBlockQueryAgg;
 import org.apache.solr.search.facet.VarianceAgg;
 import org.apache.solr.search.function.CollapseScoreFunction;
 import org.apache.solr.search.function.ConcatStringFunction;
+import org.apache.solr.search.function.DualDoubleFunction;
 import org.apache.solr.search.function.EqualFunction;
 import org.apache.solr.search.function.OrdFieldSource;
 import org.apache.solr.search.function.ReverseOrdFieldSource;
@@ -242,16 +275,16 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           public ValueSource parse(FunctionQParser fp) throws SyntaxError {
             ValueSource a = fp.parseValueSource();
             ValueSource b = fp.parseValueSource();
-            return new DualFloatFunction(a, b) {
+            return new DualDoubleFunction(a, b) {
               @Override
               protected String name() {
                 return "mod";
               }
 
               @Override
-              protected float func(int doc, FunctionValues aVals, FunctionValues bVals)
+              protected double func(int doc, FunctionValues aVals, FunctionValues bVals)
                   throws IOException {
-                return aVals.floatVal(doc) % bVals.floatVal(doc);
+                return aVals.doubleVal(doc) % bVals.doubleVal(doc);
               }
             };
           }

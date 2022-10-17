@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.IOException;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4Test;
@@ -41,7 +40,7 @@ public class NodeMutatorTest extends SolrTestCaseJ4Test {
   private static final String NODE1_URL = "http://baseUrl1:8983";
 
   @Test
-  public void downNodeReportsAllImpactedCollectionsAndNothingElse() throws IOException {
+  public void downNodeReportsAllImpactedCollectionsAndNothingElse() {
     NodeMutator nm = new NodeMutator(null);
 
     // Collection1: 2 shards X 1 replica = replica1 on node1 and replica2 on node2

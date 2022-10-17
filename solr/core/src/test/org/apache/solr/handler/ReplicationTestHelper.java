@@ -19,7 +19,15 @@ package org.apache.solr.handler;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -31,7 +39,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
@@ -61,11 +68,10 @@ public final class ReplicationTestHelper {
     return jetty;
   }
 
-  public static HttpSolrClient createNewSolrClient(String baseUrl) {
+  public static SolrClient createNewSolrClient(String baseUrl) {
     try {
-      // setup the client...
-      HttpSolrClient client = SolrTestCaseJ4.getHttpSolrClient(baseUrl, 15000, 90000);
-      return client;
+      // set up the client...
+      return SolrTestCaseJ4.getHttpSolrClient(baseUrl, 15000, 90000);
     } catch (Exception ex) {
       throw new RuntimeException(ex);
     }
@@ -101,9 +107,6 @@ public final class ReplicationTestHelper {
   }
 
   public static void assertVersions(SolrClient client1, SolrClient client2) throws Exception {
-    NamedList<Object> details = getDetails(client1);
-    @SuppressWarnings({"unchecked"})
-    ArrayList<NamedList<Object>> commits = (ArrayList<NamedList<Object>>) details.get("commits");
     Long maxVersionClient1 = getVersion(client1);
     Long maxVersionClient2 = getVersion(client2);
 
@@ -204,44 +207,10 @@ public final class ReplicationTestHelper {
     return details;
   }
 
-  public static NamedList<Object> getIndexVersion(SolrClient s) throws Exception {
-
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("command", "indexversion");
-    params.set("_trace", "getIndexVersion");
-    params.set("qt", ReplicationHandler.PATH);
-    QueryRequest req = new QueryRequest(params);
-
-    NamedList<Object> res = s.request(req);
-    assertReplicationResponseSucceeded(res);
-
-    return res;
-  }
-
   public static void assertReplicationResponseSucceeded(NamedList<?> response) {
     assertNotNull("null response from server", response);
     assertNotNull("Expected replication response to have 'status' field", response.get("status"));
     assertEquals("OK", response.get("status"));
-  }
-
-  public static NamedList<Object> reloadCore(SolrClient s, String core) throws Exception {
-
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("action", "reload");
-    params.set("core", core);
-    params.set("qt", "/admin/cores");
-    QueryRequest req = new QueryRequest(params);
-
-    try (HttpSolrClient adminClient = adminClient(s)) {
-      NamedList<Object> res = adminClient.request(req);
-      assertNotNull("null response from server", res);
-      return res;
-    }
-  }
-
-  public static HttpSolrClient adminClient(SolrClient client) {
-    String adminUrl = ((HttpSolrClient) client).getBaseURL().replace("/collection1", "");
-    return SolrTestCaseJ4.getHttpSolrClient(adminUrl);
   }
 
   public static void pullFromTo(String srcUrl, String destUrl) throws IOException {

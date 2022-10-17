@@ -58,7 +58,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
 
     // we need a consistent segmentation because reopen test validation
-    // dependso n merges not happening when it doesn't expect
+    // depends on merges not happening when it doesn't expect
     systemSetPropertySolrTestsMergePolicyFactory(LogDocMergePolicyFactory.class.getName());
 
     initCore("solrconfig.xml", "schema.xml");
@@ -148,8 +148,8 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
         "nothing changed, searcher should be the same", sr3.getSearcher(), sr4.getSearcher());
     assertEquals(
         "nothing changed, searcher should not have been re-registered",
-        sr3SearcherRegAt,
-        g.getValue());
+        sr3SearcherRegAt.toInstant(),
+        g.getValue().toInstant());
     IndexReader r4 = sr4.getSearcher().getRawReader();
 
     // force an index change so the registered searcher won't be the one we are testing (and
@@ -347,7 +347,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
           break;
         }
         if (i == 1000) {
-          fail("Query didn't succeed after 10 secoonds");
+          fail("Query didn't succeed after 10 seconds");
         }
         Thread.sleep(10);
       }
@@ -408,7 +408,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
           break;
         }
         if (i == 1000) {
-          fail("Query didn't succeed after 10 secoonds");
+          fail("Query didn't succeed after 10 seconds");
         }
         Thread.sleep(10);
       }
@@ -437,10 +437,10 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     static boolean registerSlowSearcherListener = false;
 
     @Override
-    public void prepare(ResponseBuilder rb) throws IOException {}
+    public void prepare(ResponseBuilder rb) {}
 
     @Override
-    public void process(ResponseBuilder rb) throws IOException {}
+    public void process(ResponseBuilder rb) {}
 
     @Override
     public String getDescription() {

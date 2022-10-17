@@ -89,11 +89,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
   }
 
   private void init(String schema) throws Exception {
-    init("solrconfig-elevate.xml", schema);
-  }
-
-  private void init(String config, String schema) throws Exception {
-    initCore(config, schema);
+    initCore("solrconfig-elevate.xml", schema);
     clearIndex();
     assertU(commit());
   }

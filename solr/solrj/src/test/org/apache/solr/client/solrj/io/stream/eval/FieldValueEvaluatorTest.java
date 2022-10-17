@@ -34,7 +34,7 @@ public class FieldValueEvaluatorTest extends SolrTestCase {
   public FieldValueEvaluatorTest() {
     super();
 
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @SuppressWarnings("serial")

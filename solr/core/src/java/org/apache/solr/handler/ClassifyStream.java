@@ -22,7 +22,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -45,15 +46,15 @@ import org.apache.solr.core.SolrCore;
  * @since 6.3.0
  */
 public class ClassifyStream extends TupleStream implements Expressible {
-  private TupleStream docStream;
-  private TupleStream modelStream;
+  private final TupleStream docStream;
+  private final TupleStream modelStream;
 
-  private String field;
+  private final String field;
   private String analyzerField;
   private Tuple modelTuple;
 
   Analyzer analyzer;
-  private Map<CharSequence, Integer> termToIndex;
+  private Map<String, Integer> termToIndex;
   private List<Double> idfs;
   private List<Double> modelWeights;
 
@@ -78,7 +79,7 @@ public class ClassifyStream extends TupleStream implements Expressible {
       throw new IOException(
           String.format(
               Locale.ROOT,
-              "Invalid expression %s - field parameter must be specified",
+              "Invalid expression %s - field parameter must be specified - %s",
               expression,
               streamExpressions.size()));
     }
@@ -94,7 +95,7 @@ public class ClassifyStream extends TupleStream implements Expressible {
   @Override
   public void setStreamContext(StreamContext context) {
     Object solrCoreObj = context.get("solr-core");
-    if (solrCoreObj == null || !(solrCoreObj instanceof SolrCore)) {
+    if (!(solrCoreObj instanceof SolrCore)) {
       throw new SolrException(
           SolrException.ErrorCode.INVALID_STATE,
           "StreamContext must have SolrCore in solr-core key");
@@ -152,7 +153,7 @@ public class ClassifyStream extends TupleStream implements Expressible {
 
     String text = docTuple.getString(field);
 
-    double tfs[] = new double[termToIndex.size()];
+    double[] tfs = new double[termToIndex.size()];
 
     TokenStream tokenStream = analyzer.tokenStream(analyzerField, text);
     CharTermAttribute termAtt = tokenStream.getAttribute(CharTermAttribute.class);

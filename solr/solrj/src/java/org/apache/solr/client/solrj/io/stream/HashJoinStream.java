@@ -105,7 +105,7 @@ public class HashJoinStream extends TupleStream implements Expressible {
 
     String hashOnValue = ((StreamExpressionValue) onExpression.getParameter()).getValue();
     String[] parts = hashOnValue.split(",");
-    List<String> hashOn = new ArrayList<String>(parts.length);
+    List<String> hashOn = new ArrayList<>(parts.length);
     for (String part : parts) {
       hashOn.add(part.trim());
     }
@@ -137,7 +137,7 @@ public class HashJoinStream extends TupleStream implements Expressible {
         throw new IOException(
             String.format(
                 Locale.ROOT,
-                "Invalid expression %s - invalid 'on' parameter - expecting 1 or more instances if 'field' or 'field=hashedField' but found '%s'",
+                "Invalid expression - invalid 'on' parameter - expecting 1 or more instances if 'field' or 'field=hashedField' but found '%s'",
                 hasher));
       }
     }
@@ -213,7 +213,7 @@ public class HashJoinStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l = new ArrayList<TupleStream>();
+    List<TupleStream> l = new ArrayList<>();
     l.add(hashStream);
     l.add(fullStream);
     return l;
@@ -230,7 +230,7 @@ public class HashJoinStream extends TupleStream implements Expressible {
         if (hashedTuples.containsKey(hash)) {
           hashedTuples.get(hash).add(tuple);
         } else {
-          ArrayList<Tuple> set = new ArrayList<Tuple>();
+          ArrayList<Tuple> set = new ArrayList<>();
           set.add(tuple);
           hashedTuples.put(hash, set);
         }

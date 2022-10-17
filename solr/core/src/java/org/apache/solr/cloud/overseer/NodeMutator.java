@@ -28,6 +28,7 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.PerReplicaStates;
+import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -57,6 +58,7 @@ public class NodeMutator {
     for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
       String collectionName = entry.getKey();
       DocCollection docCollection = entry.getValue();
+      if (docCollection.isPerReplicaState()) continue;
 
       Optional<ZkWriteCommand> zkWriteCommand =
           computeCollectionUpdate(nodeName, collectionName, docCollection, zkClient);
@@ -121,7 +123,7 @@ public class NodeMutator {
         PerReplicaStates prs =
             client == null
                 ? docCollection.getPerReplicaStates()
-                : PerReplicaStates.fetch(
+                : PerReplicaStatesFetcher.fetch(
                     docCollection.getZNode(), client, docCollection.getPerReplicaStates());
 
         return Optional.of(

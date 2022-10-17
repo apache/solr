@@ -80,7 +80,7 @@ public class SolrRequestParsers {
   public static final String SIMPLE = "simple";
   public static final String STANDARD = "standard";
 
-  private static final Charset CHARSET_US_ASCII = Charset.forName("US-ASCII");
+  private static final Charset CHARSET_US_ASCII = StandardCharsets.US_ASCII;
 
   public static final String INPUT_ENCODING_KEY = "ie";
   private static final byte[] INPUT_ENCODING_BYTES = INPUT_ENCODING_KEY.getBytes(CHARSET_US_ASCII);
@@ -220,7 +220,7 @@ public class SolrRequestParsers {
       if (!enableRemoteStreams) {
         throw new SolrException(
             ErrorCode.BAD_REQUEST,
-            "Remote Streaming is disabled. See https://solr.apache.org/guide/requestdispatcher-in-solrconfig.html for help");
+            "Remote Streaming is disabled. See https://solr.apache.org/guide/solr/latest/configuration-guide/requestdispatcher.html for help");
       }
       for (final String file : strs) {
         ContentStreamBase stream = new ContentStreamBase.FileStream(new File(file));
@@ -237,7 +237,7 @@ public class SolrRequestParsers {
       if (!enableStreamBody) {
         throw new SolrException(
             ErrorCode.BAD_REQUEST,
-            "Stream Body is disabled. See https://solr.apache.org/guide/requestdispatcher-in-solrconfig.html for help");
+            "Stream Body is disabled. See https://solr.apache.org/guide/solr/latest/configuration-guide/requestdispatcher.html for help");
       }
       for (final String body : strs) {
         ContentStreamBase stream = new ContentStreamBase.StringStream(body);
@@ -613,7 +613,7 @@ public class SolrRequestParsers {
           new MultipartConfigElement(
               null, // temp dir (null=default)
               -1, // maxFileSize  (-1=none)
-              uploadLimitKB * 1024, // maxRequestSize
+              uploadLimitKB * 1024L, // maxRequestSize
               100 * 1024); // fileSizeThreshold after which will go to disk
     }
 

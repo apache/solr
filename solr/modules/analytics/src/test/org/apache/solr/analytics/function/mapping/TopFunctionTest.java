@@ -159,7 +159,8 @@ public class TopFunctionTest extends SolrTestCaseJ4 {
 
     // One exists
     val.setValues("1950-05-03T10:30:50Z");
-    assertEquals(Date.from(Instant.parse("1950-05-03T10:30:50Z")), func.getDate());
+    assertEquals(
+        Date.from(Instant.parse("1950-05-03T10:30:50Z")).toInstant(), func.getDate().toInstant());
     assertTrue(func.exists());
 
     // Both exist
@@ -168,7 +169,8 @@ public class TopFunctionTest extends SolrTestCaseJ4 {
         "2200-01-01T10:00:50Z",
         "1800-12-31T11:30:50Z",
         "1930-05-020T10:45:50Z");
-    assertEquals(Date.from(Instant.parse("2200-01-01T10:00:50Z")), func.getDate());
+    assertEquals(
+        Date.from(Instant.parse("2200-01-01T10:00:50Z")).toInstant(), func.getDate().toInstant());
     assertTrue(func.exists());
   }
 
@@ -370,7 +372,8 @@ public class TopFunctionTest extends SolrTestCaseJ4 {
     val2.setValue("1950-05-03T10:30:50Z").setExists(true);
     val3.setValue("0000-05-03T10:30:50Z").setExists(false);
     val4.setValue("1850-05-03T10:30:50Z").setExists(true);
-    assertEquals(Date.from(Instant.parse("1950-05-03T10:30:50Z")), func.getDate());
+    assertEquals(
+        Date.from(Instant.parse("1950-05-03T10:30:50Z")).toInstant(), func.getDate().toInstant());
     assertTrue(func.exists());
 
     // All exist values, one value
@@ -378,7 +381,8 @@ public class TopFunctionTest extends SolrTestCaseJ4 {
     val2.setValue("1950-05-03T10:30:50Z").setExists(true);
     val3.setValue("1700-05-03T10:30:50Z").setExists(true);
     val4.setValue("1850-05-03T10:30:50Z").setExists(true);
-    assertEquals(Date.from(Instant.parse("2200-05-03T10:30:50Z")), func.getDate());
+    assertEquals(
+        Date.from(Instant.parse("2200-05-03T10:30:50Z")).toInstant(), func.getDate().toInstant());
     assertTrue(func.exists());
   }
 

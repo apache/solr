@@ -430,8 +430,8 @@ public class TestNumericRangeQuery64 extends SolrTestCase {
     // 10 random tests
     int num = TestUtil.nextInt(random(), 10, 20);
     for (int i = 0; i < num; i++) {
-      long lower = (long) (random().nextDouble() * noDocs - noDocs / 2);
-      long upper = (long) (random().nextDouble() * noDocs - noDocs / 2);
+      long lower = (long) (random().nextDouble() * noDocs - noDocs / 2.0);
+      long upper = (long) (random().nextDouble() * noDocs - noDocs / 2.0);
       if (lower > upper) {
         long a = lower;
         lower = upper;
@@ -540,7 +540,7 @@ public class TestNumericRangeQuery64 extends SolrTestCase {
   }
 
   @Test
-  public void testEqualsAndHash() throws Exception {
+  public void testEqualsAndHash() {
     QueryUtils.checkHashEquals(
         LegacyNumericRangeQuery.newLongRange("test1", 4, 10L, 20L, true, true));
     QueryUtils.checkHashEquals(

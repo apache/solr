@@ -18,7 +18,6 @@ package org.apache.solr;
 
 import java.util.Collections;
 import java.util.List;
-import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.handler.component.TrackingShardHandlerFactory;
 import org.apache.solr.handler.component.TrackingShardHandlerFactory.RequestTrackingQueue;
 import org.apache.solr.handler.component.TrackingShardHandlerFactory.ShardRequestAndParams;
@@ -42,7 +41,7 @@ public class TestSimpleTrackingShardHandler extends BaseDistributedSearchTestCas
     TrackingShardHandlerFactory.setTrackingQueue(
         Collections.singletonList(controlJetty), trackingQueue);
 
-    QueryResponse ignored = query("q", "*:*", "fl", "id", "sort", "id asc");
+    query("q", "*:*", "fl", "id", "sort", "id asc");
 
     int numShardRequests = 0;
     for (List<ShardRequestAndParams> shard : trackingQueue.getAllRequests().values()) {

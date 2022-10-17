@@ -21,7 +21,6 @@ import static org.apache.solr.common.params.CommonParams.SORT;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -292,7 +291,7 @@ public class MoreLikeThisComponent extends SearchComponent {
           }
         };
 
-    Collections.sort(l, c);
+    l.sort(c);
 
     // Truncate list to maxSize
     if (l.size() > maxSize) {

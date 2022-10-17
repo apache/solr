@@ -42,7 +42,7 @@ public class SortSpecParsingTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSort() throws Exception {
+  public void testSort() {
     Sort sort;
     SortSpec spec;
     SolrQueryRequest req = req();
@@ -130,7 +130,7 @@ public class SortSpecParsingTest extends SolrTestCaseJ4 {
     flds = sort.getSort();
     assertEquals(flds[0].getType(), SortField.Type.REWRITEABLE);
     // Not thrilled about the fragility of string matching here, but...
-    // the value sources get wrapped, so the out field is different than the input
+    // the value sources get wrapped, so the out field is different from the input
     assertEquals(flds[0].getField(), "pow(float(weight),const(2))");
 
     // test functions (more deep)
@@ -149,7 +149,7 @@ public class SortSpecParsingTest extends SolrTestCaseJ4 {
     flds = sort.getSort();
     assertEquals(flds[0].getType(), SortField.Type.REWRITEABLE);
     // Not thrilled about the fragility of string matching here, but...
-    // the value sources get wrapped, so the out field is different than the input
+    // the value sources get wrapped, so the out field is different from the input
     assertEquals(flds[0].getField(), "pow(float(weight),const(2.0))");
 
     spec =
@@ -161,7 +161,7 @@ public class SortSpecParsingTest extends SolrTestCaseJ4 {
 
     assertEquals(flds[0].getType(), SortField.Type.REWRITEABLE);
     // Not thrilled about the fragility of string matching here, but...
-    // the value sources get wrapped, so the out field is different than the input
+    // the value sources get wrapped, so the out field is different from the input
     assertEquals(flds[0].getField(), "pow(float(weight),const(2.0))");
     assertNull(schemaFlds.get(0));
 
@@ -185,7 +185,7 @@ public class SortSpecParsingTest extends SolrTestCaseJ4 {
     sort = SortSpecParsing.parseSortSpec("strdist(foo_s1, \"junk\", jw) desc", req).getSort();
     flds = sort.getSort();
     assertEquals(flds[0].getType(), SortField.Type.REWRITEABLE);
-    // the value sources get wrapped, so the out field is different than the input
+    // the value sources get wrapped, so the out field is different from the input
     assertEquals(
         flds[0].getField(),
         "strdist(str(foo_s1),literal(junk), dist=org.apache.lucene.search.spell.JaroWinklerDistance)");
@@ -230,7 +230,7 @@ public class SortSpecParsingTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testBad() throws Exception {
+  public void testBad() {
     Sort sort;
     SolrQueryRequest req = req();
 

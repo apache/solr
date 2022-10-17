@@ -40,8 +40,8 @@ public class UpdateParamsTest extends SolrTestCaseJ4 {
     UpdateRequestHandler handler = new UpdateRequestHandler();
     handler.init(null);
 
-    MapSolrParams params = new MapSolrParams(new HashMap<String, String>());
-    params.getMap().put("update.processor", "nonexistant");
+    MapSolrParams params = new MapSolrParams(new HashMap<>());
+    params.getMap().put("update.processor", "nonexistent");
 
     // Add a single document
     SolrQueryResponse rsp = new SolrQueryResponse();
@@ -54,12 +54,12 @@ public class UpdateParamsTest extends SolrTestCaseJ4 {
     } catch (Exception e) {
       assertFalse(
           "Got wrong exception while testing update.chain",
-          e.getMessage().equals("unknown UpdateRequestProcessorChain: nonexistant"));
+          e.getMessage().equals("unknown UpdateRequestProcessorChain: nonexistent"));
     }
 
     // Then check that the new param behaves correctly
     params.getMap().remove("update.processor");
-    params.getMap().put(UpdateParams.UPDATE_CHAIN, "nonexistant");
+    params.getMap().put(UpdateParams.UPDATE_CHAIN, "nonexistent");
     req.setParams(params);
     try {
       handler.handleRequestBody(req, rsp);
@@ -69,7 +69,7 @@ public class UpdateParamsTest extends SolrTestCaseJ4 {
       assertEquals(
           "Got wrong exception while testing update.chain",
           e.getMessage(),
-          "unknown UpdateRequestProcessorChain: nonexistant");
+          "unknown UpdateRequestProcessorChain: nonexistent");
     }
   }
 }
