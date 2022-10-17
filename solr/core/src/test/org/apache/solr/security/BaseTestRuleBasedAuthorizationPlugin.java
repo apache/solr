@@ -54,6 +54,7 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.security.AuthorizationContext.CollectionRequest;
 import org.apache.solr.security.AuthorizationContext.RequestType;
 import org.apache.solr.util.LogLevel;
+import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsInstanceOf;
 import org.junit.Before;
 import org.junit.Test;
@@ -542,7 +543,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
   @Test
   public void testAllPermissionAllowsActionsWhenUserHasCorrectRole() {
     SolrRequestHandler handler = new UpdateRequestHandler();
-    assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
+    MatcherAssert.assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
     setUserRole("dev", "dev");
     setUserRole("admin", "admin");
     addPermission("all", "dev", "admin");
@@ -563,7 +564,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
         STATUS_OK);
 
     handler = new PropertiesRequestHandler();
-    assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
+    MatcherAssert.assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
     checkRules(
         Map.of(
             "resource",
@@ -589,7 +590,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
   @Test
   public void testAllPermissionAllowsActionsWhenAssociatedRoleIsWildcard() {
     SolrRequestHandler handler = new UpdateRequestHandler();
-    assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
+    MatcherAssert.assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
     setUserRole("dev", "dev");
     setUserRole("admin", "admin");
     addPermission("all", "*");
@@ -610,7 +611,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
         STATUS_OK);
 
     handler = new PropertiesRequestHandler();
-    assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
+    MatcherAssert.assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
     checkRules(
         Map.of(
             "resource",
@@ -636,7 +637,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
   @Test
   public void testAllPermissionDeniesActionsWhenUserIsNotCorrectRole() {
     SolrRequestHandler handler = new UpdateRequestHandler();
-    assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
+    MatcherAssert.assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
     setUserRole("dev", "dev");
     setUserRole("admin", "admin");
     addPermission("all", "admin");
@@ -657,7 +658,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
         FORBIDDEN);
 
     handler = new PropertiesRequestHandler();
-    assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
+    MatcherAssert.assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
     checkRules(
         Map.of(
             "resource",

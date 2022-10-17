@@ -19,7 +19,7 @@ package org.apache.solr.cloud;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.core.ConfigSetProperties.DEFAULT_FILENAME;
-import static org.junit.matchers.JUnitMatchers.containsString;
+import static org.hamcrest.CoreMatchers.containsString;
 
 import com.google.common.collect.ImmutableMap;
 import java.io.ByteArrayInputStream;
@@ -105,6 +105,7 @@ import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
+import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assume;
@@ -1274,7 +1275,8 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
             });
     unIgnoreException("uploaded without any authentication in place");
 
-    assertThat(thrown.getMessage(), containsString("Underlying core creation failed"));
+    MatcherAssert.assertThat(
+        thrown.getMessage(), containsString("Underlying core creation failed"));
 
     // Authorization on
     final String trustedSuffix = "-trusted";
@@ -1309,7 +1311,8 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
             });
     unIgnoreException("without any authentication in place");
 
-    assertThat(thrown.getMessage(), containsString("Underlying core creation failed"));
+    MatcherAssert.assertThat(
+        thrown.getMessage(), containsString("Underlying core creation failed"));
 
     // Authorization on
     final String trustedSuffix = "-trusted";

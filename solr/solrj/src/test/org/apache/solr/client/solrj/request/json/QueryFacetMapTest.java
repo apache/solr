@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.request.json;
 import static org.hamcrest.core.StringContains.containsString;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
 public class QueryFacetMapTest extends SolrTestCaseJ4 {
@@ -37,7 +38,7 @@ public class QueryFacetMapTest extends SolrTestCaseJ4 {
             () -> {
               final QueryFacetMap queryFacet = new QueryFacetMap(null);
             });
-    assertThat(thrown.getMessage(), containsString("must be non-null"));
+    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test

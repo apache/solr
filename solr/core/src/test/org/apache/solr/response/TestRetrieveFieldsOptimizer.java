@@ -17,11 +17,11 @@
 
 package org.apache.solr.response;
 
-import static junit.framework.Assert.fail;
 import static org.apache.lucene.tests.util.LuceneTestCase.random;
 import static org.apache.solr.search.SolrReturnFields.FIELD_SOURCES.ALL_FROM_DV;
 import static org.apache.solr.search.SolrReturnFields.FIELD_SOURCES.ALL_FROM_STORED;
 import static org.apache.solr.search.SolrReturnFields.FIELD_SOURCES.MIXED_SOURCES;
+import static org.junit.Assert.fail;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.ByteArrayInputStream;

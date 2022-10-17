@@ -64,6 +64,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.ErrorLogMuter;
+import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -210,17 +211,13 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
-    try (ErrorLogMuter errors = ErrorLogMuter.substring("/my-random-prefix/their/plugin")) {
-      RemoteExecutionException e =
-          assertThrows(
-              RemoteExecutionException.class,
-              () -> getPlugin("/my-random-prefix/their/plugin").call());
-      assertEquals(404, e.code());
-      assertThat(
-          e.getMetaData().findRecursive("error", "msg").toString(),
-          containsString("Could not load plugin at"));
-      assertEquals(1, errors.getCount());
-    }
+    RemoteExecutionException e =
+        assertThrows(
+            RemoteExecutionException.class,
+            () -> getPlugin("/my-random-prefix/their/plugin").call());
+    assertEquals(404, e.code());
+    final String msg = e.getMetaData().findRecursive("error", "msg").toString();
+    MatcherAssert.assertThat(msg, containsString("Could not load plugin"));
 
     // test ClusterSingleton plugin
     plugin.name = "clusterSingleton";
