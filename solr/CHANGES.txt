@@ -29,6 +29,9 @@ Improvements
   cause.  This capability is now also present on Windows.  Before, with bin/solr but not
   bin/solr.cmd, Solr would execute a script that killed the Solr pid, leaving a very small time
   window where Solr would continue to execute in an unpredictable state. (Shawn Heisey, Kevin Risden)
+  
+* SOLR-15748: A v2 equivalent of CLUSTERSTATUS command is now available at `GET /api/cluster`. Collection listing,
+  previously at this path, can still be accessed at `GET /api/collections`. (Joshua Ouma via Jason Gerlowski)
 
 Optimizations
 ---------------------
