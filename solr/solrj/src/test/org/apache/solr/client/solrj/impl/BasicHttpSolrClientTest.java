@@ -267,7 +267,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       // keepalive
       assertEquals("keep-alive", DebugServlet.headers.get("Connection"));
       // content-type
-      assertEquals(null, DebugServlet.headers.get("Content-Type"));
+      assertNull(DebugServlet.headers.get("Content-Type"));
       // param encoding
       assertEquals(1, DebugServlet.parameters.get("a").length);
       assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);

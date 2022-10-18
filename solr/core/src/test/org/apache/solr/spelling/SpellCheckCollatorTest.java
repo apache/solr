@@ -304,7 +304,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     List<String> collations = collationHolder.getAll("collation");
     assertTrue(collations.size() > 0);
     for (String collation : collations) {
-      assertFalse(collation.equals("lowerfilt:(+faith +hope +loaves)"));
+      assertNotEquals("lowerfilt:(+faith +hope +loaves)", collation);
     }
   }
 

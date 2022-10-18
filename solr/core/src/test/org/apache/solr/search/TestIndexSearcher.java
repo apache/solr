@@ -174,12 +174,8 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     IndexReaderContext rCtx6 = sr6.getSearcher().getTopReaderContext();
     assertEquals(
         1, rCtx6.leaves().get(0).reader().numDocs()); // only a single doc left in the first segment
-    assertFalse(
-        rCtx5
-            .leaves()
-            .get(0)
-            .reader()
-            .equals(rCtx6.leaves().get(0).reader())); // readers now different
+    assertNotEquals(
+        rCtx5.leaves().get(0).reader(), rCtx6.leaves().get(0).reader()); // readers now different
 
     sr5.close();
     sr6.close();

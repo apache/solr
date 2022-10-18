@@ -26,7 +26,6 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -79,7 +78,7 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
           explicitNumSuggestExpected,
           Integer.toString(sug.size()));
     } else if (sug.size() == 0) {
-      Assert.fail("Control data did not return any suggestions.");
+      fail("Control data did not return any suggestions.");
     }
   }
 

@@ -158,7 +158,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     assertEquals(core.getRequestHandlers().get(path), handler1);
     core.close();
     cores.shutdown();
-    assertEquals("Handler not closed", true, handler1.closed);
+    assertTrue("Handler not closed", handler1.closed);
   }
 
   @Test
@@ -181,15 +181,15 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     SolrCore c2 = cores.getCore(SolrTestCaseJ4.DEFAULT_TEST_CORENAME);
     c1.close();
     assertTrue("Refcount < 1", core.getOpenCount() >= 1);
-    assertEquals("Handler is closed", false, handler1.closed);
+    assertFalse("Handler is closed", handler1.closed);
 
     c1 = cores.getCore(SolrTestCaseJ4.DEFAULT_TEST_CORENAME);
     assertTrue("Refcount < 2", core.getOpenCount() >= 2);
-    assertEquals("Handler is closed", false, handler1.closed);
+    assertFalse("Handler is closed", handler1.closed);
 
     c2.close();
     assertTrue("Refcount < 1", core.getOpenCount() >= 1);
-    assertEquals("Handler is closed", false, handler1.closed);
+    assertFalse("Handler is closed", handler1.closed);
 
     c1.close();
     cores.shutdown();
@@ -239,7 +239,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
                   yieldInt(l);
                   assertTrue("Refcount > 17", core.getOpenCount() <= 17);
                   yieldInt(l);
-                  assertEquals("Handler is closed", false, handler1.closed);
+                  assertFalse("Handler is closed", handler1.closed);
                   yieldInt(l);
                   core.close();
                   core = null;

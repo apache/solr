@@ -72,7 +72,7 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
     spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());
     SolrCore core = h.getCore();
     String dictName = checker.init(spellchecker, core);
-    assertEquals(dictName + " is not equal to " + "external", true, dictName.equals("external"));
+    assertEquals(dictName + " is not equal to " + "external", "external", dictName);
     checker.build(core, null);
 
     h.getCore()
@@ -84,8 +84,7 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
               assertNotNull("result shouldn't be null", result);
               Map<String, Integer> suggestions = result.get(spellOpts.tokens.iterator().next());
               Map.Entry<String, Integer> entry = suggestions.entrySet().iterator().next();
-              assertEquals(
-                  entry.getKey() + " is not equal to " + "foo", true, entry.getKey().equals("foo"));
+              assertEquals(entry.getKey() + " is not equal to " + "foo", "foo", entry.getKey());
               assertEquals(
                   entry.getValue() + " does not equal: " + SpellingResult.NO_FREQUENCY_INFO,
                   SpellingResult.NO_FREQUENCY_INFO,
@@ -124,7 +123,7 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
     spellchecker.add(SolrSpellChecker.FIELD_TYPE, "teststop");
     SolrCore core = h.getCore();
     String dictName = checker.init(spellchecker, core);
-    assertEquals(dictName + " is not equal to " + "external", true, dictName.equals("external"));
+    assertEquals(dictName + " is not equal to " + "external", "external", dictName);
     checker.build(core, null);
 
     Collection<Token> tokens = queryConverter.convert("Solar");
@@ -141,10 +140,7 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
                   1,
                   suggestions.size());
               Map.Entry<String, Integer> entry = suggestions.entrySet().iterator().next();
-              assertEquals(
-                  entry.getKey() + " is not equal to " + "solr",
-                  true,
-                  entry.getKey().equals("solr"));
+              assertEquals(entry.getKey() + " is not equal to " + "solr", "solr", entry.getKey());
               assertEquals(
                   entry.getValue() + " does not equal: " + SpellingResult.NO_FREQUENCY_INFO,
                   SpellingResult.NO_FREQUENCY_INFO,
@@ -177,7 +173,7 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
 
     SolrCore core = h.getCore();
     String dictName = checker.init(spellchecker, core);
-    assertEquals(dictName + " is not equal to " + "external", true, dictName.equals("external"));
+    assertEquals(dictName + " is not equal to " + "external", "external", dictName);
     checker.build(core, null);
 
     h.getCore()
@@ -194,10 +190,7 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
                   1,
                   suggestions.size());
               Map.Entry<String, Integer> entry = suggestions.entrySet().iterator().next();
-              assertEquals(
-                  entry.getKey() + " is not equal to " + "solr",
-                  true,
-                  entry.getKey().equals("solr"));
+              assertEquals(entry.getKey() + " is not equal to " + "solr", "solr", entry.getKey());
               assertEquals(
                   entry.getValue() + " does not equal: " + SpellingResult.NO_FREQUENCY_INFO,
                   SpellingResult.NO_FREQUENCY_INFO,

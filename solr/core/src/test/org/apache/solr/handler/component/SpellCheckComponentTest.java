@@ -628,7 +628,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     NamedList<?> spellCheck = (NamedList<?>) values.get("spellcheck");
     NamedList<?> suggestions = (NamedList<?>) spellCheck.get("suggestions");
     assertNull(suggestions.get("suggestion"));
-    assertEquals(false, (boolean) (Boolean) spellCheck.get("correctlySpelled"));
+    assertFalse((boolean) (Boolean) spellCheck.get("correctlySpelled"));
 
     params.remove(SpellingParams.SPELLCHECK_DICT);
     params.add(SpellingParams.SPELLCHECK_DICT, "threshold_direct");
@@ -641,6 +641,6 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     spellCheck = (NamedList<?>) values.get("spellcheck");
     suggestions = (NamedList<?>) spellCheck.get("suggestions");
     assertNull(suggestions.get("suggestion"));
-    assertEquals(false, (boolean) (Boolean) spellCheck.get("correctlySpelled"));
+    assertFalse((boolean) (Boolean) spellCheck.get("correctlySpelled"));
   }
 }

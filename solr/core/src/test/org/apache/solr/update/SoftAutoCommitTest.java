@@ -18,7 +18,6 @@ package org.apache.solr.update;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static org.junit.Assert.assertEquals;
 
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.BlockingQueue;
@@ -637,6 +636,6 @@ class MockEventListener implements SolrEventListener {
   }
 
   public void assertSaneOffers() {
-    assertEquals("Failure of MockEventListener" + fail.toString(), 0, fail.length());
+    SolrTestCaseJ4.assertEquals("Failure of MockEventListener" + fail.toString(), 0, fail.length());
   }
 }

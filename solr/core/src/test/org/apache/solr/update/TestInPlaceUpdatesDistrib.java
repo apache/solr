@@ -846,9 +846,10 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
     // assert that the internal docid for id=100 document remains same, in each replica, as before
     LEADER.commit(); // can't get (real) [docid] from the tlogs, need to force a commit
-    assertTrue(
+    assertEquals(
         "Earlier: " + docids + ", now: " + getInternalDocIds("100"),
-        docids.equals(getInternalDocIds("100")));
+        docids,
+        getInternalDocIds("100"));
 
     log.info("ensureRtgWorksWithPartialUpdatesTest: This test passed fine...");
   }

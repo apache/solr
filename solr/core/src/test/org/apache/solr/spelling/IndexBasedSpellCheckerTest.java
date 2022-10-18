@@ -117,8 +117,8 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     String dictName = checker.init(spellchecker, core);
     assertEquals(
         dictName + " is not equal to " + SolrSpellChecker.DEFAULT_DICTIONARY_NAME,
-        true,
-        dictName.equals(SolrSpellChecker.DEFAULT_DICTIONARY_NAME));
+        SolrSpellChecker.DEFAULT_DICTIONARY_NAME,
+        dictName);
     h.getCore()
         .withSearcher(
             searcher -> {
@@ -136,9 +136,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
                   "documemt Size: " + suggestions.size() + " is not: " + 1, 1, suggestions.size());
               Map.Entry<String, Integer> entry = suggestions.entrySet().iterator().next();
               assertEquals(
-                  entry.getKey() + " is not equal to " + "document",
-                  true,
-                  entry.getKey().equals("document"));
+                  entry.getKey() + " is not equal to " + "document", "document", entry.getKey());
               assertEquals(
                   entry.getValue() + " does not equal: " + SpellingResult.NO_FREQUENCY_INFO,
                   SpellingResult.NO_FREQUENCY_INFO,
@@ -178,20 +176,20 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
                   suggestions.size());
 
               entry = suggestions.entrySet().iterator().next();
-              assertEquals(
+              assertNotEquals(
                   entry.getKey() + " is equal to " + "bug and it shouldn't be",
-                  false,
-                  entry.getKey().equals("bug"));
+                  "bug",
+                  entry.getKey());
               assertEquals(
                   entry.getValue() + " does not equal: " + SpellingResult.NO_FREQUENCY_INFO,
                   SpellingResult.NO_FREQUENCY_INFO,
                   (int) entry.getValue());
 
               entry = suggestions.entrySet().iterator().next();
-              assertEquals(
+              assertNotEquals(
                   entry.getKey() + " is equal to " + "bug and it shouldn't be",
-                  false,
-                  entry.getKey().equals("bug"));
+                  "bug",
+                  entry.getKey());
               assertEquals(
                   entry.getValue() + " does not equal: " + SpellingResult.NO_FREQUENCY_INFO,
                   SpellingResult.NO_FREQUENCY_INFO,
@@ -223,8 +221,8 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     String dictName = checker.init(spellchecker, core);
     assertEquals(
         dictName + " is not equal to " + SolrSpellChecker.DEFAULT_DICTIONARY_NAME,
-        true,
-        dictName.equals(SolrSpellChecker.DEFAULT_DICTIONARY_NAME));
+        SolrSpellChecker.DEFAULT_DICTIONARY_NAME,
+        dictName);
     h.getCore()
         .withSearcher(
             searcher -> {
@@ -244,9 +242,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
                   "documemt Size: " + suggestions.size() + " is not: " + 1, 1, suggestions.size());
               Map.Entry<String, Integer> entry = suggestions.entrySet().iterator().next();
               assertEquals(
-                  entry.getKey() + " is not equal to " + "document",
-                  true,
-                  entry.getKey().equals("document"));
+                  entry.getKey() + " is not equal to " + "document", "document", entry.getKey());
               assertEquals(entry.getValue() + " does not equal: " + 2, 2, (int) entry.getValue());
 
               // test something not in the spell checker
@@ -288,8 +284,8 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     String dictName = checker.init(spellchecker, core);
     assertEquals(
         dictName + " is not equal to " + SolrSpellChecker.DEFAULT_DICTIONARY_NAME,
-        true,
-        dictName.equals(SolrSpellChecker.DEFAULT_DICTIONARY_NAME));
+        SolrSpellChecker.DEFAULT_DICTIONARY_NAME,
+        dictName);
     h.getCore()
         .withSearcher(
             searcher -> {
@@ -345,8 +341,8 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     String dictName = checker.init(spellchecker, core);
     assertEquals(
         dictName + " is not equal to " + SolrSpellChecker.DEFAULT_DICTIONARY_NAME,
-        true,
-        dictName.equals(SolrSpellChecker.DEFAULT_DICTIONARY_NAME));
+        SolrSpellChecker.DEFAULT_DICTIONARY_NAME,
+        dictName);
     h.getCore()
         .withSearcher(
             searcher -> {
@@ -365,10 +361,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
               assertEquals(
                   "flesh Size: " + suggestions.size() + " is not: " + 1, 1, suggestions.size());
               Map.Entry<String, Integer> entry = suggestions.entrySet().iterator().next();
-              assertEquals(
-                  entry.getKey() + " is not equal to " + "flash",
-                  true,
-                  entry.getKey().equals("flash"));
+              assertEquals(entry.getKey() + " is not equal to " + "flash", "flash", entry.getKey());
               assertEquals(entry.getValue() + " does not equal: " + 1, 1, (int) entry.getValue());
 
               // test something not in the spell checker

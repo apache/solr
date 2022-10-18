@@ -30,15 +30,15 @@ public class TestToleratedUpdateError extends SolrTestCase {
 
   public void testBasics() {
 
-    assertFalse(
-        (new ToleratedUpdateError(CmdType.ADD, "doc1", "some error"))
-            .equals(new ToleratedUpdateError(CmdType.ADD, "doc2", "some error")));
-    assertFalse(
-        (new ToleratedUpdateError(CmdType.ADD, "doc1", "some error"))
-            .equals(new ToleratedUpdateError(CmdType.ADD, "doc1", "some errorxx")));
-    assertFalse(
-        (new ToleratedUpdateError(CmdType.ADD, "doc1", "some error"))
-            .equals(new ToleratedUpdateError(CmdType.DELID, "doc1", "some error")));
+    assertNotEquals(
+        (new ToleratedUpdateError(CmdType.ADD, "doc1", "some error")),
+        new ToleratedUpdateError(CmdType.ADD, "doc2", "some error"));
+    assertNotEquals(
+        (new ToleratedUpdateError(CmdType.ADD, "doc1", "some error")),
+        new ToleratedUpdateError(CmdType.ADD, "doc1", "some errorxx"));
+    assertNotEquals(
+        (new ToleratedUpdateError(CmdType.ADD, "doc1", "some error")),
+        new ToleratedUpdateError(CmdType.DELID, "doc1", "some error"));
   }
 
   public void testParseMetadataErrorHandling() {

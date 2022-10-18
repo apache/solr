@@ -16,13 +16,11 @@
  */
 package org.apache.solr.util.hll;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-
+import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
 /** Tests {@link NumberUtil} */
-public class NumberUtilTest {
+public class NumberUtilTest extends SolrTestCase {
 
   static final byte[] ALL_PRINTABLE_ASCII_CHARS =
       new byte[] {

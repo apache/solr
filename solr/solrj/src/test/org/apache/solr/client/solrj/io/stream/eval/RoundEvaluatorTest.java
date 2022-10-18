@@ -24,7 +24,6 @@ import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.RoundEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class RoundEvaluatorTest extends SolrTestCase {
@@ -47,10 +46,10 @@ public class RoundEvaluatorTest extends SolrTestCase {
     Object result = evaluator.evaluate(new Tuple(values));
 
     if (null == value) {
-      Assert.assertNull(result);
+      assertNull(result);
     } else {
-      Assert.assertTrue(result instanceof Long);
-      Assert.assertEquals(Math.round(value), result);
+      assertTrue(result instanceof Long);
+      assertEquals(Math.round(value), result);
     }
   }
 

@@ -869,7 +869,7 @@ public class SchemaTest extends RestTestBase {
         int currentMaxChars = (Integer) currentCopyField.get("maxChars");
         MatcherAssert.assertThat(
             currentDestFieldName, anyOf(is(equalTo(destFieldName1)), is(equalTo(destFieldName2))));
-        assertTrue(maxChars == currentMaxChars);
+        assertEquals((int) maxChars, currentMaxChars);
       }
     }
   }

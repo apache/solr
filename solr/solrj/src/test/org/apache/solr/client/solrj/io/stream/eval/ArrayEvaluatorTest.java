@@ -26,7 +26,6 @@ import org.apache.solr.client.solrj.io.eval.ArrayEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class ArrayEvaluatorTest extends SolrTestCase {
@@ -54,12 +53,12 @@ public class ArrayEvaluatorTest extends SolrTestCase {
 
     result = evaluator.evaluate(new Tuple(values));
 
-    Assert.assertTrue(result instanceof List<?>);
+    assertTrue(result instanceof List<?>);
 
-    Assert.assertEquals(3, ((List<?>) result).size());
-    Assert.assertEquals(1D, ((List<?>) result).get(0));
-    Assert.assertEquals(2D, ((List<?>) result).get(1));
-    Assert.assertEquals(3D, ((List<?>) result).get(2));
+    assertEquals(3, ((List<?>) result).size());
+    assertEquals(1D, ((List<?>) result).get(0));
+    assertEquals(2D, ((List<?>) result).get(1));
+    assertEquals(3D, ((List<?>) result).get(2));
   }
 
   @Test
@@ -75,12 +74,12 @@ public class ArrayEvaluatorTest extends SolrTestCase {
 
     result = evaluator.evaluate(new Tuple(values));
 
-    Assert.assertTrue(result instanceof List<?>);
+    assertTrue(result instanceof List<?>);
 
-    Assert.assertEquals(3, ((List<?>) result).size());
-    Assert.assertEquals(3D, ((List<?>) result).get(0));
-    Assert.assertEquals(2D, ((List<?>) result).get(1));
-    Assert.assertEquals(1D, ((List<?>) result).get(2));
+    assertEquals(3, ((List<?>) result).size());
+    assertEquals(3D, ((List<?>) result).get(0));
+    assertEquals(2D, ((List<?>) result).get(1));
+    assertEquals(1D, ((List<?>) result).get(2));
   }
 
   @Test
@@ -96,12 +95,12 @@ public class ArrayEvaluatorTest extends SolrTestCase {
 
     result = evaluator.evaluate(new Tuple(values));
 
-    Assert.assertTrue(result instanceof List<?>);
+    assertTrue(result instanceof List<?>);
 
-    Assert.assertEquals(3, ((List<?>) result).size());
-    Assert.assertEquals("a", ((List<?>) result).get(0));
-    Assert.assertEquals("b", ((List<?>) result).get(1));
-    Assert.assertEquals("c", ((List<?>) result).get(2));
+    assertEquals(3, ((List<?>) result).size());
+    assertEquals("a", ((List<?>) result).get(0));
+    assertEquals("b", ((List<?>) result).get(1));
+    assertEquals("c", ((List<?>) result).get(2));
   }
 
   @Test
@@ -117,12 +116,12 @@ public class ArrayEvaluatorTest extends SolrTestCase {
 
     result = evaluator.evaluate(new Tuple(values));
 
-    Assert.assertTrue(result instanceof List<?>);
+    assertTrue(result instanceof List<?>);
 
-    Assert.assertEquals(3, ((List<?>) result).size());
-    Assert.assertEquals("c", ((List<?>) result).get(0));
-    Assert.assertEquals("b", ((List<?>) result).get(1));
-    Assert.assertEquals("a", ((List<?>) result).get(2));
+    assertEquals(3, ((List<?>) result).size());
+    assertEquals("c", ((List<?>) result).get(0));
+    assertEquals("b", ((List<?>) result).get(1));
+    assertEquals("a", ((List<?>) result).get(2));
   }
 
   @Test
@@ -138,11 +137,11 @@ public class ArrayEvaluatorTest extends SolrTestCase {
 
     result = evaluator.evaluate(new Tuple(values));
 
-    Assert.assertTrue(result instanceof List<?>);
+    assertTrue(result instanceof List<?>);
 
-    Assert.assertEquals(3, ((List<?>) result).size());
-    Assert.assertEquals("a", ((List<?>) result).get(0));
-    Assert.assertEquals("c", ((List<?>) result).get(1));
-    Assert.assertEquals("b", ((List<?>) result).get(2));
+    assertEquals(3, ((List<?>) result).size());
+    assertEquals("a", ((List<?>) result).get(0));
+    assertEquals("c", ((List<?>) result).get(1));
+    assertEquals("b", ((List<?>) result).get(2));
   }
 }

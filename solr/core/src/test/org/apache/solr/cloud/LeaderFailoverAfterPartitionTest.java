@@ -160,12 +160,13 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
             + printClusterStateInfo(testCollectionName),
         newLeader);
 
-    assertFalse(
+    assertNotEquals(
         "Expected node "
             + shouldNotBeNewLeaderNode
             + " to NOT be the new leader b/c it was out-of-sync with the old leader! ClusterState: "
             + printClusterStateInfo(testCollectionName),
-        shouldNotBeNewLeaderNode.equals(newLeader.getNodeName()));
+        shouldNotBeNewLeaderNode,
+        newLeader.getNodeName());
 
     proxy0.reopen();
 
