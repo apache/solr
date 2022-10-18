@@ -54,7 +54,8 @@ Build
 
 Other Changes
 ---------------------
-(No changes)
+* SOLR-16150: Embedded ZK Server used for zkRun should advertise itself on specific bound interfaces instead of
+  generically on localhost. (Mike Drob)
 
 ==================  9.1.0 ==================
 
