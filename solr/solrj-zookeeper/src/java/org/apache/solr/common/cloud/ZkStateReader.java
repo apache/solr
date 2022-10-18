@@ -1859,22 +1859,6 @@ public class ZkStateReader implements SolrCloseable {
     }
   }
 
-  private DocCollection updatePerReplicaState(DocCollection c) {
-    if (c == null || !c.isPerReplicaState()) return c;
-    PerReplicaStates current = c.getPerReplicaStates();
-    PerReplicaStates newPrs = PerReplicaStatesFetcher.fetch(c.getZNode(), zkClient, current);
-    if (newPrs != current) {
-      if (log.isDebugEnabled()) {
-        log.debug("update for a fresh per-replica-state {}", c.getName());
-      }
-      DocCollection modifiedColl = c.copyWith(newPrs);
-      collectionWatches.updateDocCollection(c.getName(), modifiedColl);
-      return modifiedColl;
-    } else {
-      return c;
-    }
-  }
-
   /**
    * Block until a CollectionStatePredicate returns true, or the wait times out
    *
