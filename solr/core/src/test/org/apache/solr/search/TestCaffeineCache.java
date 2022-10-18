@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -287,5 +288,71 @@ public class TestCaffeineCache extends SolrTestCase {
     assertTrue("total ram bytes should be greater than 0", total > 0);
     assertTrue("total ram bytes exceeded limit", total < 1024 * 1024);
     cache.close();
+  }
+
+  @Test
+  public void testRamBytesSync() throws IOException {
+    CaffeineCache<Integer, String> cache = new CaffeineCache<>();
+    Map<String, String> params =
+        Map.of(
+            SolrCache.SIZE_PARAM, "100",
+            SolrCache.INITIAL_SIZE_PARAM, "10",
+            SolrCache.ASYNC_PARAM, Boolean.FALSE.toString());
+    cache.init(params, null, new NoOpRegenerator());
+
+    long emptySize = cache.ramBytesUsed();
+
+    // noop rm
+    cache.remove(0);
+    assertEquals(emptySize, cache.ramBytesUsed());
+
+    cache.put(0, "test");
+    long nonEmptySize = cache.ramBytesUsed();
+    cache.put(0, "test");
+    assertEquals(nonEmptySize, cache.ramBytesUsed());
+
+    cache.remove(0);
+    assertEquals(emptySize, cache.ramBytesUsed());
+
+    cache.put(1, "test2");
+    cache.clear();
+    assertEquals(emptySize, cache.ramBytesUsed());
+
+    cache.put(1, "test3");
+    cache.close();
+    assertEquals(emptySize, cache.ramBytesUsed());
+  }
+
+  @Test
+  public void testRamBytesAsync() throws IOException {
+    CaffeineCache<Integer, String> cache = new CaffeineCache<>();
+    Map<String, String> params =
+        Map.of(
+            SolrCache.SIZE_PARAM, "100",
+            SolrCache.INITIAL_SIZE_PARAM, "10",
+            SolrCache.ASYNC_PARAM, Boolean.TRUE.toString());
+    cache.init(params, null, new NoOpRegenerator());
+
+    long emptySize = cache.ramBytesUsed();
+
+    // noop rm
+    cache.remove(0);
+    assertEquals(emptySize, cache.ramBytesUsed());
+
+    cache.put(0, "test");
+    long nonEmptySize = cache.ramBytesUsed();
+    cache.put(0, "test");
+    assertEquals(nonEmptySize, cache.ramBytesUsed());
+
+    cache.remove(0);
+    assertEquals(emptySize, cache.ramBytesUsed());
+
+    cache.put(1, "test2");
+    cache.clear();
+    assertEquals(emptySize, cache.ramBytesUsed());
+
+    cache.put(1, "test3");
+    cache.close();
+    assertEquals(emptySize, cache.ramBytesUsed());
   }
 }

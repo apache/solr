@@ -49,7 +49,6 @@ import org.apache.solr.core.ZkContainer;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,12 +56,6 @@ import org.slf4j.LoggerFactory;
 public class DeleteReplicaTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  @BeforeClass
-  public static void setupCluster() {
-    System.setProperty("solr.zkclienttimeout", "45000");
-    System.setProperty("distribUpdateSoTimeout", "15000");
-  }
 
   @Before
   @Override
@@ -320,7 +313,6 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Slow
   public void raceConditionOnDeleteAndRegisterReplica() throws Exception {
     final String collectionName = "raceDeleteReplicaCollection";
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2)

@@ -106,7 +106,6 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     shutdownCluster();
   }
 
-  @Slow
   @Test
   @LogLevel("org.apache.solr.update.processor.TimeRoutedAlias=DEBUG;org.apache.solr.cloud=DEBUG")
   public void test() throws Exception {
@@ -257,7 +256,6 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
    *
    * @throws Exception when it blows up unexpectedly :)
    */
-  @Slow
   @Test
   @LogLevel("org.apache.solr.update.processor.TrackingUpdateProcessorFactory=DEBUG")
   public void testSliceRouting() throws Exception {
@@ -317,7 +315,6 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
   }
 
   @Test
-  @Slow
   public void testPreemptiveCreation() throws Exception {
     String configName = getSaferTestName();
     createConfigSet(configName);

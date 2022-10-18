@@ -40,6 +40,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -203,7 +204,7 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase {
 
   private void assertScore(boolean isScoresTest, SolrDocument doc) {
     if (isScoresTest) {
-      assertThat(
+      MatcherAssert.assertThat(
           "score join doesn't return 1.0", doc.getFirstValue("score").toString(), not("1.0"));
     } else {
       assertEquals("Solr join has constant score", "1.0", doc.getFirstValue("score").toString());

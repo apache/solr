@@ -27,9 +27,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
@@ -115,10 +115,10 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     log.info("excluded_node : {}  ", emptyNode);
     createReplaceNodeRequest(nodeToBeDecommissioned, emptyNode, null)
         .processAndWait("000", cloudClient, 15);
-    try (HttpSolrClient coreclient =
-        getHttpSolrClient(
-            ZkStateReader.from(cloudClient).getBaseUrlForNodeName(nodeToBeDecommissioned))) {
-      CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreclient);
+    ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
+    try (SolrClient coreClient =
+        getHttpSolrClient(zkStateReader.getBaseUrlForNodeName(nodeToBeDecommissioned))) {
+      CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreClient);
       assertEquals(0, status.getCoreStatus().size());
     }
 
@@ -138,9 +138,9 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     replaceNodeRequest.setWaitForFinalState(true);
     replaceNodeRequest.processAndWait("001", cloudClient, 10);
 
-    try (HttpSolrClient coreclient =
-        getHttpSolrClient(ZkStateReader.from(cloudClient).getBaseUrlForNodeName(emptyNode))) {
-      CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreclient);
+    try (SolrClient coreClient =
+        getHttpSolrClient(zkStateReader.getBaseUrlForNodeName(emptyNode))) {
+      CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreClient);
       assertEquals(
           "Expecting no cores but found some: " + status.getCoreStatus(),
           0,

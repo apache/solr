@@ -184,14 +184,14 @@ public class RankStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l = new ArrayList<TupleStream>();
+    List<TupleStream> l = new ArrayList<>();
     l.add(stream);
     return l;
   }
 
   public void open() throws IOException {
-    this.top = new PriorityQueue<Tuple>(size, new ReverseComp(comp));
-    this.topList = new LinkedList<Tuple>();
+    this.top = new PriorityQueue<>(size, new ReverseComp(comp));
+    this.topList = new LinkedList<>();
     stream.open();
   }
 

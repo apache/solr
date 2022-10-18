@@ -18,12 +18,12 @@ package org.apache.solr.client.solrj.io.stream.eval;
 
 import java.util.HashMap;
 import java.util.Map;
-import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.NotEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class NotEvaluatorTest extends SolrTestCase {
@@ -35,7 +35,7 @@ public class NotEvaluatorTest extends SolrTestCase {
     super();
 
     factory = new StreamFactory().withFunctionName("not", NotEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @Test

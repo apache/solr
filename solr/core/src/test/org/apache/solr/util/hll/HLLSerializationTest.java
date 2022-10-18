@@ -42,12 +42,11 @@ public class HLLSerializationTest extends SolrTestCase {
    * parameters.
    */
   @Test
-  @Slow
   @Nightly
   public void serializationSmokeTest() throws Exception {
     final Random random = new Random(randomLong());
     final int randomCount = 250;
-    final List<Long> randoms = new ArrayList<Long>(randomCount);
+    final List<Long> randoms = new ArrayList<>(randomCount);
     for (int i = 0; i < randomCount; i++) {
       randoms.add(random.nextLong());
     }
@@ -68,12 +67,11 @@ public class HLLSerializationTest extends SolrTestCase {
    * @see #manyValuesHLLSerializationTest
    */
   @Test
-  @Slow
   @Monster("needs roughly -Dtests.heapsize=8g because of the (multiple) massive data structs")
   public void monsterHLLSerializationTest() throws Exception {
     final Random random = new Random(randomLong());
     final int randomCount = 250;
-    final List<Long> randoms = new ArrayList<Long>(randomCount);
+    final List<Long> randoms = new ArrayList<>(randomCount);
     for (int i = 0; i < randomCount; i++) {
       randoms.add(random.nextLong());
     }
@@ -95,7 +93,6 @@ public class HLLSerializationTest extends SolrTestCase {
    * @see #monsterHLLSerializationTest
    */
   @Test
-  @Slow
   @Monster("may require as much as -Dtests.heapsize=4g depending on random values picked")
   public void manyValuesHLLSerializationTest() {
 
@@ -140,7 +137,6 @@ public class HLLSerializationTest extends SolrTestCase {
    * @see #monsterHLLSerializationTest
    */
   @Test
-  @Slow
   @Monster("can require as much as -Dtests.heapsize=4g because of the massive data structs")
   public void manyValuesMonsterHLLSerializationTest() {
 

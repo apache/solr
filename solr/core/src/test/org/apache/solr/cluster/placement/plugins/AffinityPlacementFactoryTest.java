@@ -1067,7 +1067,6 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Slow
   public void testScalability() throws Exception {
     // for non-nightly we scale a bit, but retain test speed - for nightly test speed can be 2+
     // minutes
@@ -1089,8 +1088,10 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     runTestScalability(numNodes, 100, nrtReplicas, tlogReplicas, pullReplicas);
     runTestScalability(numNodes, 200, nrtReplicas, tlogReplicas, pullReplicas);
     runTestScalability(numNodes, 500, nrtReplicas, tlogReplicas, pullReplicas);
-    runTestScalability(numNodes, 1000, nrtReplicas, tlogReplicas, pullReplicas);
-    runTestScalability(numNodes, 2000, nrtReplicas, tlogReplicas, pullReplicas);
+    if (TEST_NIGHTLY) {
+      runTestScalability(numNodes, 1000, nrtReplicas, tlogReplicas, pullReplicas);
+      runTestScalability(numNodes, 2000, nrtReplicas, tlogReplicas, pullReplicas);
+    }
 
     log.info("==== numReplicas ====");
     runTestScalability(numNodes, numShards, TEST_NIGHTLY ? 100 : 10, 0, 0);

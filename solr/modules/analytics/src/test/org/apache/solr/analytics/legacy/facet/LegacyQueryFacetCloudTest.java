@@ -50,17 +50,17 @@ public class LegacyQueryFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
   public void beforeTest() throws Exception {
 
     // INT
-    int1TestStart.add(new ArrayList<Integer>());
-    int2TestStart.add(new ArrayList<Integer>());
+    int1TestStart.add(new ArrayList<>());
+    int2TestStart.add(new ArrayList<>());
 
     // LONG
-    longTestStart.add(new ArrayList<Long>());
-    longTestStart.add(new ArrayList<Long>());
+    longTestStart.add(new ArrayList<>());
+    longTestStart.add(new ArrayList<>());
 
     // FLOAT
-    floatTestStart.add(new ArrayList<Float>());
-    floatTestStart.add(new ArrayList<Float>());
-    floatTestStart.add(new ArrayList<Float>());
+    floatTestStart.add(new ArrayList<>());
+    floatTestStart.add(new ArrayList<>());
+    floatTestStart.add(new ArrayList<>());
 
     UpdateRequest req = new UpdateRequest();
 

@@ -99,7 +99,6 @@ public interface CollectionCommandContext {
    * updates are distributed.
    */
   default void submitIntraProcessMessage(Overseer.Message message) {
-    throw new IllegalStateException(
-        "Bug! submitIntraProcessMessage() should not be called when distributed state updates are enabled");
+    // this is ignored
   }
 }

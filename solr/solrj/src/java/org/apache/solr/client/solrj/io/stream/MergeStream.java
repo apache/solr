@@ -163,7 +163,7 @@ public class MergeStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l = new ArrayList<TupleStream>();
+    List<TupleStream> l = new ArrayList<>();
     for (PushBackStream stream : streams) {
       l.add(stream);
     }

@@ -40,7 +40,7 @@ public class UpdateParamsTest extends SolrTestCaseJ4 {
     UpdateRequestHandler handler = new UpdateRequestHandler();
     handler.init(null);
 
-    MapSolrParams params = new MapSolrParams(new HashMap<String, String>());
+    MapSolrParams params = new MapSolrParams(new HashMap<>());
     params.getMap().put("update.processor", "nonexistent");
 
     // Add a single document

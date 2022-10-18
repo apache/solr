@@ -65,7 +65,6 @@ public class ForceLeaderTest extends HttpPartitionTest {
    * leader's term are live
    */
   @Test
-  @Slow
   public void testReplicasInLowerTerms() throws Exception {
     handle.put("maxScore", SKIPVAL);
     handle.put("timestamp", SKIPVAL);

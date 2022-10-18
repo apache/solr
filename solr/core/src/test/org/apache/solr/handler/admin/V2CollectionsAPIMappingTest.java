@@ -22,7 +22,6 @@ import java.util.Locale;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.api.collections.CategoryRoutedAlias;
 import org.apache.solr.cloud.api.collections.RoutedAlias;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
@@ -110,7 +109,7 @@ public class V2CollectionsAPIMappingTest extends V2ApiMappingTest<CollectionsHan
     assertEquals("bar2", v1Params.get("property.foo2"));
     assertEquals("requestTrackingId", v1Params.get(CommonAdminParams.ASYNC));
     assertFalse(v1Params.getPrimitiveBool(CommonAdminParams.WAIT_FOR_FINAL_STATE));
-    assertFalse(v1Params.getPrimitiveBool(DocCollection.PER_REPLICA_STATE));
+    assertFalse(v1Params.getPrimitiveBool(CollectionAdminParams.PER_REPLICA_STATE));
     assertEquals(1, v1Params.getPrimitiveInt(CollectionAdminParams.NUM_SHARDS));
   }
 

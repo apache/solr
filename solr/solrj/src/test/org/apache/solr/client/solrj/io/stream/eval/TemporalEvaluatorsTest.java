@@ -17,8 +17,8 @@
 
 package org.apache.solr.client.solrj.io.stream.eval;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -200,7 +200,7 @@ public class TemporalEvaluatorsTest {
   @Test
   public void testFunctionsOnDate() throws Exception {
     Calendar calendar = new GregorianCalendar(TimeZone.getTimeZone("UTC"), Locale.ROOT);
-    calendar.set(2017, 12, 5, 23, 59);
+    calendar.set(2017, Calendar.DECEMBER, 5, 23, 59);
     Date aDate = calendar.getTime();
     testFunction("year(a)", aDate, calendar.get(Calendar.YEAR));
     testFunction("month(a)", aDate, calendar.get(Calendar.MONTH) + 1);
@@ -213,7 +213,7 @@ public class TemporalEvaluatorsTest {
   @Test
   public void testFunctionsOnInstant() throws Exception {
     Calendar calendar = new GregorianCalendar(TimeZone.getTimeZone("UTC"), Locale.ROOT);
-    calendar.set(2017, 12, 5, 23, 59);
+    calendar.set(2017, Calendar.DECEMBER, 5, 23, 59);
     Date aDate = calendar.getTime();
     Instant instant = aDate.toInstant();
     testFunction("year(a)", instant, calendar.get(Calendar.YEAR));

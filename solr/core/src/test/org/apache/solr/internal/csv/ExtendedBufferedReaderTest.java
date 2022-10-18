@@ -16,13 +16,11 @@
  */
 package org.apache.solr.internal.csv;
 
-import static org.junit.Assert.assertArrayEquals;
-
 import java.io.StringReader;
-import junit.framework.TestCase;
+import org.apache.solr.SolrTestCase;
 
 /** ExtendedBufferedReaderTest */
-public class ExtendedBufferedReaderTest extends TestCase {
+public class ExtendedBufferedReaderTest extends SolrTestCase {
 
   // ======================================================
   //   the test cases

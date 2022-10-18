@@ -21,12 +21,12 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import junit.framework.Assert;
 import org.apache.commons.math3.stat.StatUtils;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.NormalizeEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class NormalizeEvaluatorTest extends SolrTestCase {
@@ -37,7 +37,7 @@ public class NormalizeEvaluatorTest extends SolrTestCase {
   public NormalizeEvaluatorTest() {
     super();
     factory = new StreamFactory().withFunctionName("norm", NormalizeEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @Test

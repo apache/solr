@@ -40,7 +40,7 @@ public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.Stopp
   private SolrClient cloudClient;
   private int numDeletes;
   private int numAdds;
-  private List<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
+  private List<SolrInputDocument> docs = new ArrayList<>();
   private int batchSize;
   private boolean pauseBetweenUpdates;
 

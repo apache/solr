@@ -38,11 +38,11 @@ import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteResultHandler;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.SolrInputDocument;
@@ -54,7 +54,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Tests the SolrCLI.RunExampleTool implementation that supports bin/solr -e [example] */
-@LuceneTestCase.Slow
 @SolrTestCaseJ4.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
@@ -312,11 +311,13 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   }
 
   @Test
+  @LuceneTestCase.Nightly
   public void testTechproductsExample() throws Exception {
     testExample("techproducts");
   }
 
   @Test
+  @LuceneTestCase.Nightly
   public void testSchemalessExample() throws Exception {
     testExample("schemaless");
   }
@@ -397,7 +398,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           exampleSolrHomeDir.isDirectory());
 
       if ("techproducts".equals(exampleName)) {
-        HttpSolrClient solrClient =
+        SolrClient solrClient =
             getHttpSolrClient("http://localhost:" + bindPort + "/solr/" + exampleName);
         try {
           SolrQuery query = new SolrQuery("*:*");

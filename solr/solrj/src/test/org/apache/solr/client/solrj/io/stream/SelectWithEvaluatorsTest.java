@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.lucene.tests.util.LuceneTestCase;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.AddEvaluator;
@@ -41,7 +40,6 @@ import org.junit.Test;
  * All base tests will be done with CloudSolrStream. Under the covers CloudSolrStream uses
  * SolrStream so SolrStream will get fully exercised through these tests.
  */
-@Slow
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40", "Lucene41", "Lucene42", "Lucene45"})
 public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
 
@@ -140,7 +138,7 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
 
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
     tupleStream.open();
-    List<Tuple> tuples = new ArrayList<Tuple>();
+    List<Tuple> tuples = new ArrayList<>();
     for (Tuple t = tupleStream.read(); !t.EOF; t = tupleStream.read()) {
       tuples.add(t);
     }

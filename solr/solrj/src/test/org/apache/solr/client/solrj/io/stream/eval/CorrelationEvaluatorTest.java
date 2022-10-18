@@ -19,12 +19,12 @@ package org.apache.solr.client.solrj.io.stream.eval;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import junit.framework.Assert;
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.CorrelationEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class CorrelationEvaluatorTest extends SolrTestCase {
@@ -35,7 +35,7 @@ public class CorrelationEvaluatorTest extends SolrTestCase {
   public CorrelationEvaluatorTest() {
     super();
     factory = new StreamFactory().withFunctionName("corr", CorrelationEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @Test

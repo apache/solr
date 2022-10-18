@@ -43,7 +43,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -112,7 +111,6 @@ import org.slf4j.LoggerFactory;
  * TODO: we should still test this works as a custom update chain as well as what we test now - the
  * default update chain
  */
-@Slow
 public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -303,8 +301,13 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   public AbstractFullDistribZkTestBase() {
-    sliceCount = 2;
-    fixShardCount(4);
+    if (TEST_NIGHTLY) {
+      sliceCount = 2;
+      fixShardCount(4);
+    } else {
+      sliceCount = 1;
+      fixShardCount(2);
+    }
 
     // TODO: for now, turn off stress because it uses regular clients, and we
     // need the cloud client because we kill servers
@@ -1120,7 +1123,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
     controlClient.add(doc);
 
-    HttpSolrClient client = (HttpSolrClient) clients.get(serverNumber);
+    SolrClient client = clients.get(serverNumber);
 
     UpdateRequest ureq = new UpdateRequest();
     ureq.add(doc);
@@ -1534,7 +1537,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     long num = -1;
     long lastNum = -1;
     String failMessage = null;
-    if (verbose) System.err.println("check const of " + shard);
+    log.debug("check const of {}", shard);
     int cnt = 0;
     ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
     assertEquals(
@@ -1550,8 +1553,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     CloudJettyRunner lastJetty = null;
     for (CloudJettyRunner cjetty : solrJetties) {
       ZkNodeProps props = cjetty.info;
-      if (verbose) System.err.println("client" + cnt++);
-      if (verbose) System.err.println("PROPS:" + props);
+      log.debug("client{}", cnt);
+      log.debug("PROPS:{}", props);
+      cnt++;
 
       try {
         SolrParams query =
@@ -1567,7 +1571,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         // echoed in logs
         num = cjetty.client.solrClient.query(query).getResults().getNumFound();
       } catch (SolrException | SolrServerException e) {
-        if (verbose) System.err.println("error contacting client: " + e.getMessage() + "\n");
+        log.debug("error contacting client: {}", e);
         continue;
       }
 
@@ -1576,8 +1580,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       if (zkStateReader.getClusterState().liveNodesContain(nodeName)) {
         live = true;
       }
-      if (verbose) System.err.println(" live:" + live);
-      if (verbose) System.err.println(" num:" + num + "\n");
+      log.debug(" live:{}", live);
+      log.debug(" num:{}", num);
 
       boolean active =
           Replica.State.getState(props.getStr(ZkStateReader.STATE_PROP)) == Replica.State.ACTIVE;
@@ -1625,7 +1629,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
       for (CloudJettyRunner cjetty : solrJetties) {
         ZkNodeProps props = cjetty.info;
-        System.err.println("PROPS:" + props);
+        log.debug("PROPS:{}", props);
 
         try {
           SolrParams query =
@@ -1642,7 +1646,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           // anything except be
           // echoed in logs
           long num = cjetty.client.solrClient.query(query).getResults().getNumFound();
-          System.err.println("DOCS:" + num);
+          log.debug("DOCS:{}", num);
         } catch (SolrServerException | SolrException | IOException e) {
           System.err.println("error contacting client: " + e.getMessage() + "\n");
           continue;
@@ -2188,7 +2192,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       // setup the server...
       String baseUrl = buildUrl(port);
       String url = baseUrl + (baseUrl.endsWith("/") ? "" : "/") + coreName;
-      HttpSolrClient client = getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT, 60000);
+      SolrClient client = getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT, 60000);
       return client;
     } catch (Exception ex) {
       throw new RuntimeException(ex);
@@ -2201,7 +2205,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       // setup the server...
       String baseUrl = buildUrl(port);
       String url = baseUrl + (baseUrl.endsWith("/") ? "" : "/") + coreName;
-      HttpSolrClient client = getHttpSolrClient(url, connectionTimeoutMillis, socketTimeoutMillis);
+      SolrClient client = getHttpSolrClient(url, connectionTimeoutMillis, socketTimeoutMillis);
       return client;
     } catch (Exception ex) {
       throw new RuntimeException(ex);
@@ -2211,7 +2215,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected SolrClient createNewSolrClient(String collection, String baseUrl) {
     try {
       // setup the server...
-      HttpSolrClient client =
+      SolrClient client =
           getHttpSolrClient(baseUrl + "/" + collection, DEFAULT_CONNECTION_TIMEOUT, 60000);
       return client;
     } catch (Exception ex) {
@@ -2559,7 +2563,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     ZkCoreNodeProps coreProps = new ZkCoreNodeProps(replica);
     String coreName = coreProps.getCoreName();
     boolean reloadedOk = false;
-    try (HttpSolrClient client = getHttpSolrClient(coreProps.getBaseUrl())) {
+    try (SolrClient client = getHttpSolrClient(coreProps.getBaseUrl())) {
       CoreAdminResponse statusResp = CoreAdminRequest.getStatus(coreName, client);
       long leaderCoreStartTime = statusResp.getStartTime(coreName).getTime();
 
@@ -2743,7 +2747,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   protected long getIndexVersion(Replica replica) throws IOException {
-    try (HttpSolrClient client = new HttpSolrClient.Builder(replica.getCoreUrl()).build()) {
+    try (SolrClient client = new HttpSolrClient.Builder(replica.getCoreUrl()).build()) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("qt", "/replication");
       params.set(ReplicationHandler.COMMAND, ReplicationHandler.CMD_SHOW_COMMITS);
@@ -2790,7 +2794,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   protected void logReplicationDetails(Replica replica, StringBuilder builder) throws IOException {
-    try (HttpSolrClient client = new HttpSolrClient.Builder(replica.getCoreUrl()).build()) {
+    try (SolrClient client = new HttpSolrClient.Builder(replica.getCoreUrl()).build()) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("qt", "/replication");
       params.set(ReplicationHandler.COMMAND, ReplicationHandler.CMD_DETAILS);

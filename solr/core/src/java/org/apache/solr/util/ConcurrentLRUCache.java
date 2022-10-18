@@ -157,7 +157,7 @@ public class ConcurrentLRUCache<K, V> implements Cache<K, V>, Accountable {
     this(
         size,
         lowerWatermark,
-        (int) Math.floor((lowerWatermark + size) / 2),
+        (int) Math.floor((lowerWatermark + size) / 2.0),
         (int) Math.ceil(0.75 * size),
         false,
         false,
@@ -846,7 +846,7 @@ public class ConcurrentLRUCache<K, V> implements Cache<K, V>, Accountable {
             6
                 * (RamUsageEstimator.NUM_BYTES_ARRAY_HEADER
                     + RamUsageEstimator.primitiveSizes.get(long.class)
-                    + 2
+                    + 2L
                         * (RamUsageEstimator.NUM_BYTES_OBJECT_REF
                             + RamUsageEstimator.primitiveSizes.get(long.class)))
             +

@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.stream.eval;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.AbsoluteValueEvaluator;
@@ -27,6 +26,7 @@ import org.apache.solr.client.solrj.io.eval.AddEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class AbsoluteValueEvaluatorTest extends SolrTestCase {
@@ -41,7 +41,7 @@ public class AbsoluteValueEvaluatorTest extends SolrTestCase {
         new StreamFactory()
             .withFunctionName("abs", AbsoluteValueEvaluator.class)
             .withFunctionName("add", AddEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @Test

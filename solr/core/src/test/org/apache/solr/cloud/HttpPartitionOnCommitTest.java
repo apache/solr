@@ -20,9 +20,9 @@ import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import org.apache.http.NoHttpResponseException;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -192,7 +192,7 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
     String replicaCoreUrl = replica.getCoreUrl();
     log.info("Sending commit request to: {}", replicaCoreUrl);
     final RTimer timer = new RTimer();
-    try (HttpSolrClient client = getHttpSolrClient(replicaCoreUrl)) {
+    try (SolrClient client = getHttpSolrClient(replicaCoreUrl)) {
       try {
         client.commit();
 

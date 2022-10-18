@@ -16,6 +16,7 @@
 // under the License.
 
 * xref:solr-upgrade-notes.adoc[]
+** xref:major-changes-in-solr-10.adoc[]
 ** xref:major-changes-in-solr-9.adoc[]
 ** xref:major-changes-in-solr-8.adoc[]
 ** xref:major-changes-in-solr-7.adoc[]

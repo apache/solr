@@ -16,9 +16,8 @@
  */
 package org.apache.solr.update.processor;
 
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.List;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -157,7 +156,7 @@ public class CloneFieldUpdateProcessorFactoryTest extends UpdateProcessorTestBas
 
     // regardless of chain, all of these checks should be equivalent
     for (String chain :
-        Arrays.asList(
+        List.of(
             "clone-single", "clone-single-regex",
             "clone-multi", "clone-multi-regex",
             "clone-array", "clone-array-regex",
@@ -173,8 +172,9 @@ public class CloneFieldUpdateProcessorFactoryTest extends UpdateProcessorTestBas
                   f("source1_s", "123456789", "", 42, "abcd")));
       assertNotNull(chain, d);
       assertEquals(
-          chain, Arrays.asList("123456789", "", 42, "abcd"), d.getFieldValues("source1_s"));
-      assertEquals(chain, Arrays.asList("123456789", "", 42, "abcd"), d.getFieldValues("dest_s"));
+          chain, List.of("123456789", "", 42, "abcd"), List.copyOf(d.getFieldValues("source1_s")));
+      assertEquals(
+          chain, List.of("123456789", "", 42, "abcd"), List.copyOf(d.getFieldValues("dest_s")));
 
       // append to existing values, preserve boost
       d =
@@ -187,16 +187,16 @@ public class CloneFieldUpdateProcessorFactoryTest extends UpdateProcessorTestBas
                   f("source1_s", "123456789", "", 42, "abcd")));
       assertNotNull(chain, d);
       assertEquals(
-          chain, Arrays.asList("123456789", "", 42, "abcd"), d.getFieldValues("source1_s"));
+          chain, List.of("123456789", "", 42, "abcd"), List.copyOf(d.getFieldValues("source1_s")));
       assertEquals(
           chain,
-          Arrays.asList("orig1", "orig2", "123456789", "", 42, "abcd"),
-          d.getFieldValues("dest_s"));
+          List.of("orig1", "orig2", "123456789", "", 42, "abcd"),
+          List.copyOf(d.getFieldValues("dest_s")));
     }
 
     // should be equivalent for any chain matching source1_s and source2_s (but not source0_s)
     for (String chain :
-        Arrays.asList(
+        List.of(
             "clone-multi", "clone-multi-regex",
             "clone-array", "clone-array-regex",
             "clone-selector", "clone-selector-regex")) {
@@ -212,12 +212,12 @@ public class CloneFieldUpdateProcessorFactoryTest extends UpdateProcessorTestBas
                   f("source2_s", "xxx", 999)));
       assertNotNull(chain, d);
       assertEquals(
-          chain, Arrays.asList("123456789", "", 42, "abcd"), d.getFieldValues("source1_s"));
-      assertEquals(chain, Arrays.asList("xxx", 999), d.getFieldValues("source2_s"));
+          chain, List.of("123456789", "", 42, "abcd"), List.copyOf(d.getFieldValues("source1_s")));
+      assertEquals(chain, List.of("xxx", 999), List.copyOf(d.getFieldValues("source2_s")));
       assertEquals(
           chain,
-          Arrays.asList("123456789", "", 42, "abcd", "xxx", 999),
-          d.getFieldValues("dest_s"));
+          List.of("123456789", "", 42, "abcd", "xxx", 999),
+          List.copyOf(d.getFieldValues("dest_s")));
 
       // append to existing values
       d =
@@ -231,17 +231,17 @@ public class CloneFieldUpdateProcessorFactoryTest extends UpdateProcessorTestBas
                   f("source2_s", "xxx", 999)));
       assertNotNull(chain, d);
       assertEquals(
-          chain, Arrays.asList("123456789", "", 42, "abcd"), d.getFieldValues("source1_s"));
-      assertEquals(chain, Arrays.asList("xxx", 999), d.getFieldValues("source2_s"));
+          chain, List.of("123456789", "", 42, "abcd"), List.copyOf(d.getFieldValues("source1_s")));
+      assertEquals(chain, List.of("xxx", 999), List.copyOf(d.getFieldValues("source2_s")));
       assertEquals(
           chain,
-          Arrays.asList("orig1", "orig2", "123456789", "", 42, "abcd", "xxx", 999),
-          d.getFieldValues("dest_s"));
+          List.of("orig1", "orig2", "123456789", "", 42, "abcd", "xxx", 999),
+          List.copyOf(d.getFieldValues("dest_s")));
     }
 
     // any chain that copies source1_s to dest_s should be equivalent for these assertions
     for (String chain :
-        Arrays.asList(
+        List.of(
             "clone-simple-regex-syntax",
             "clone-single",
             "clone-single-regex",
@@ -256,8 +256,9 @@ public class CloneFieldUpdateProcessorFactoryTest extends UpdateProcessorTestBas
       d = processAdd(chain, doc(f("id", "1111"), f("source1_s", "123456789", "", 42, "abcd")));
       assertNotNull(chain, d);
       assertEquals(
-          chain, Arrays.asList("123456789", "", 42, "abcd"), d.getFieldValues("source1_s"));
-      assertEquals(chain, Arrays.asList("123456789", "", 42, "abcd"), d.getFieldValues("dest_s"));
+          chain, List.of("123456789", "", 42, "abcd"), List.copyOf(d.getFieldValues("source1_s")));
+      assertEquals(
+          chain, List.of("123456789", "", 42, "abcd"), List.copyOf(d.getFieldValues("dest_s")));
 
       // append to existing values, preserve boost
       d =
@@ -269,11 +270,11 @@ public class CloneFieldUpdateProcessorFactoryTest extends UpdateProcessorTestBas
                   f("source1_s", "123456789", "", 42, "abcd")));
       assertNotNull(chain, d);
       assertEquals(
-          chain, Arrays.asList("123456789", "", 42, "abcd"), d.getFieldValues("source1_s"));
+          chain, List.of("123456789", "", 42, "abcd"), List.copyOf(d.getFieldValues("source1_s")));
       assertEquals(
           chain,
-          Arrays.asList("orig1", "orig2", "123456789", "", 42, "abcd"),
-          d.getFieldValues("dest_s"));
+          List.of("orig1", "orig2", "123456789", "", 42, "abcd"),
+          List.copyOf(d.getFieldValues("dest_s")));
     }
   }
 
@@ -287,7 +288,7 @@ public class CloneFieldUpdateProcessorFactoryTest extends UpdateProcessorTestBas
                 f("foo_x3_x7_s", "xyz")));
 
     assertNotNull(d);
-    assertEquals(Arrays.asList("123456789", "", 42, "abcd"), d.getFieldValues("foo_y2_s"));
+    assertEquals(List.of("123456789", "", 42, "abcd"), List.copyOf(d.getFieldValues("foo_y2_s")));
     assertEquals("xyz", d.getFieldValue("foo_y3_y7_s"));
   }
 
@@ -314,17 +315,17 @@ public class CloneFieldUpdateProcessorFactoryTest extends UpdateProcessorTestBas
     assertNotNull(d);
     assertEquals("misc", d.getFieldValue("category"));
     assertEquals("misc", d.getFieldValue("category_s"));
-    assertEquals(Arrays.asList("Isaac Asimov", "John Brunner"), d.getFieldValues("authors"));
-    assertEquals(Collections.singletonList("John W. Campbell"), d.getFieldValues("editors"));
+    assertEquals(List.of("Isaac Asimov", "John Brunner"), List.copyOf(d.getFieldValues("authors")));
+    assertEquals(List.of("John W. Campbell"), List.copyOf(d.getFieldValues("editors")));
     assertEquals(
-        Arrays.asList("Isaac Asimov", "John Brunner", "John W. Campbell"),
-        d.getFieldValues("contributors"));
+        List.of("Isaac Asimov", "John Brunner", "John W. Campbell"),
+        List.copyOf(d.getFieldValues("contributors")));
     assertEquals(87, d.getFieldValue("store1_price"));
     assertEquals(78, d.getFieldValue("store2_price"));
     assertEquals(1000, d.getFieldValue("list_price"));
-    assertEquals(Arrays.asList(87, 78), d.getFieldValues("all_prices"));
+    assertEquals(List.of(87, 78), List.copyOf(d.getFieldValues("all_prices")));
 
-    assertEquals(Arrays.asList("Pages!", "Binding!"), d.getFieldValues("key_feature"));
+    assertEquals(List.of("Pages!", "Binding!"), List.copyOf(d.getFieldValues("key_feature")));
     assertEquals("Pullups", d.getFieldValue("key_feat_of_strength"));
   }
 

@@ -80,12 +80,16 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** SolrCloud logic for splitting a shard. It's complicated! See {@code split()} below. */
 public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final int MIN_NUM_SUB_SHARDS = 2;
   // This is an arbitrary number that seems reasonable at this time.
   private static final int MAX_NUM_SUB_SHARDS = 8;
   private static final int DEFAULT_NUM_SUB_SHARDS = 2;
+
+  public static final String SHARDSPLIT_CHECKDISKSPACE_ENABLED =
+      "solr.shardSplit.checkDiskSpace.enabled";
 
   private final CollectionCommandContext ccc;
 
@@ -99,6 +103,31 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
     split(state, message, results);
   }
 
+  /**
+   * Shard splits start here and make additional requests to the host of the parent shard. The
+   * sequence of requests is as follows:
+   *
+   * <ul>
+   *   <li>1. Verify that there is enough disk space to create sub-shards.
+   *   <li>2. If splitByPrefix is true, make request to get prefix ranges.
+   *   <li>3. If this split was attempted previously and there are lingering sub-shards, delete
+   *       them.
+   *   <li>4. Create sub-shards in CONSTRUCTION state.
+   *   <li>5. Add an initial replica to each sub-shard.
+   *   <li>6. Request that parent shard wait for children to become ACTIVE.
+   *   <li>7. Execute split: either LINK or REWRITE.
+   *   <li>8. Apply buffered updates to the sub-shards so they are up-to-date with parent.
+   *   <li>9. Determine node placement for additional replicas (but do not create yet).
+   *   <li>10. If replicationFactor is more than 1, set shard state for sub-shards to RECOVERY; else
+   *       mark ACTIVE.
+   *   <li>11. Create additional replicas of sub-shards.
+   * </ul>
+   *
+   * <br>
+   *
+   * <p>There is a shard split doc (dev-docs/shard-split/shard-split.adoc) on how shard split works;
+   * illustrated with diagrams.
+   */
   public boolean split(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
       throws Exception {
     final String asyncId = message.getStr(ASYNC);
@@ -137,6 +166,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
     String splitKey = message.getStr("split.key");
     DocCollection collection = clusterState.getCollection(collectionName);
 
+    // verify that parent shard is active; if not, throw exception
     Slice parentSlice = getParentSlice(clusterState, collectionName, slice, splitKey);
     if (parentSlice.getState() != Slice.State.ACTIVE) {
       throw new SolrException(
@@ -149,7 +179,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
               + parentSlice.getState());
     }
 
-    // find the leader for the shard
+    // find the leader for the parent shard
     Replica parentShardLeader;
     try {
       parentShardLeader = zkStateReader.getLeaderRetry(collectionName, slice.get(), 10000);
@@ -160,10 +190,17 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
 
     RTimerTree t;
     if (ccc.getCoreContainer().getNodeConfig().getMetricsConfig().isEnabled()) {
-      t = timings.sub("checkDiskSpace");
-      checkDiskSpace(
-          collectionName, slice.get(), parentShardLeader, splitMethod, ccc.getSolrCloudManager());
-      t.stop();
+      // check disk space for shard split
+      if (Boolean.parseBoolean(System.getProperty(SHARDSPLIT_CHECKDISKSPACE_ENABLED, "true"))) {
+        // 1. verify that there is enough space on disk to create sub-shards
+        log.debug(
+            "SplitShardCmd: verify that there is enough space on disk to create sub-shards for slice: {}",
+            parentShardLeader);
+        t = timings.sub("checkDiskSpace");
+        checkDiskSpace(
+            collectionName, slice.get(), parentShardLeader, splitMethod, ccc.getSolrCloudManager());
+        t.stop();
+      }
     }
 
     // let's record the ephemeralOwner of the parent leader node
@@ -242,6 +279,8 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
 
       ShardHandler shardHandler = ccc.newShardHandler();
 
+      // 2. if split request has splitByPrefix set to true, make request to SplitOp to get prefix
+      // ranges of sub-shards
       if (message.getBool(CommonAdminParams.SPLIT_BY_PREFIX, false)) {
         t = timings.sub("getRanges");
 
@@ -250,7 +289,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         params.set(CoreAdminParams.GET_RANGES, "true");
         params.set(CommonAdminParams.SPLIT_METHOD, splitMethod.toLower());
         params.set(CoreAdminParams.CORE, parentShardLeader.getStr("core"));
-        // Only 2 is currently supported
+        // only 2 sub-shards are currently supported
         // int numSubShards = message.getInt(NUM_SUB_SHARDS, DEFAULT_NUM_SUB_SHARDS);
         // params.set(NUM_SUB_SHARDS, Integer.toString(numSubShards));
 
@@ -299,6 +338,8 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
               firstNrtReplica);
       t.stop();
 
+      // 3. if this shard has attempted a split before and failed, there will be lingering INACTIVE
+      // sub-shards.  Clean these up before proceeding
       boolean oldShardsDeleted = false;
       for (String subSlice : subSlices) {
         Slice oSlice = collection.getSlice(subSlice);
@@ -337,6 +378,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         collection = clusterState.getCollection(collectionName);
       }
 
+      // 4. create the child sub-shards in CONSTRUCTION state
       String nodeName = parentShardLeader.getNodeName();
 
       t = timings.sub("createSubSlicesAndLeadersInState");
@@ -374,6 +416,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
             CollectionHandlingUtils.waitForNewShard(
                 collectionName, subSlice, ccc.getZkStateReader());
 
+        // 5. and add the initial replica for each sub-shard
         log.debug(
             "Adding first replica {} as part of slice {} of collection {} on {}",
             subShardName,
@@ -411,6 +454,8 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         handleFailureOnAsyncRequest(results, msgOnError);
       }
       t.stop();
+
+      // 6. request that parent shard wait for children to become active
       t = timings.sub("waitForSubSliceLeadersAlive");
       {
         final ShardRequestTracker shardRequestTracker =
@@ -455,6 +500,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
             parentShardLeader);
       }
 
+      // 7. execute actual split
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.SPLIT.toString());
       params.set(CommonAdminParams.SPLIT_METHOD, splitMethod.toLower());
@@ -481,8 +527,8 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         log.debug("Index on shard: {} split into {} successfully", nodeName, subShardNames.size());
       }
 
+      // 8. apply buffered updates on sub-shards
       t = timings.sub("applyBufferedUpdates");
-      // apply buffered updates on sub-shards
       {
         final ShardRequestTracker shardRequestTracker =
             CollectionHandlingUtils.asyncRequestTracker(asyncId, ccc);
@@ -510,8 +556,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
 
       log.debug("Successfully applied buffered updates on : {}", subShardNames);
 
-      // Replica creation for the new Slices
-
+      // 9. determine node placement for additional replicas
       Set<String> nodes = clusterState.getLiveNodes();
       List<String> nodeList = new ArrayList<>(nodes.size());
       nodeList.addAll(nodes);
@@ -691,6 +736,8 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       // this ensures that the logic inside ReplicaMutator to update sub-shard state to 'active'
       // always gets a chance to execute. See SOLR-7673
 
+      // 10. if replicationFactor > 1, set shard state for sub-shards to RECOVERY; otherwise mark
+      // ACTIVE
       if (repFactor == 1) {
         // A commit is needed so that documents are visible when the sub-shard replicas come up
         // (Note: This commit used to be after the state switch, but was brought here before the
@@ -720,7 +767,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
           ccc.offerStateUpdate(Utils.toJSON(m));
         }
       } else {
-        log.info("Requesting shard state be set to 'recovery'");
+        log.debug("Requesting shard state be set to 'recovery' for sub-shards: {}", subSlices);
         Map<String, Object> propMap = new HashMap<>();
         propMap.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower());
         for (String subSlice : subSlices) {
@@ -741,7 +788,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       }
 
       t = timings.sub("createCoresForReplicas");
-      // now actually create replica cores on sub shard nodes
+      // 11. now actually create replica cores on sub shard nodes
       for (Map<String, Object> replica : replicas) {
         new AddReplicaCmd(ccc).addReplica(clusterState, new ZkNodeProps(replica), results, null);
       }
@@ -771,8 +818,8 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         results.add(CommonParams.TIMING, timings.asNamedList());
       }
       success = true;
-      // don't unlock the shard yet - only do this if the final switch-over in
-      // ReplicaMutator succeeds (or fails)
+      // don't unlock the shard yet - only do this if the final switch-over in ReplicaMutator
+      // succeeds (or fails)
       return true;
     } catch (SolrException e) {
       throw e;
@@ -821,9 +868,8 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         nodeStateProvider.getReplicaInfo(
             parentShardLeader.getNodeName(), Collections.singletonList(CORE_IDX.metricsAttribute));
     if (infos.get(collection) == null || infos.get(collection).get(shard) == null) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "missing replica information for parent shard leader");
+      log.warn("cannot verify information for parent shard leader");
+      return;
     }
     // find the leader
     List<Replica> lst = infos.get(collection).get(shard);
@@ -832,24 +878,21 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       if (info.getCoreName().equals(parentShardLeader.getCoreName())) {
         Number size = (Number) info.get(CORE_IDX.metricsAttribute);
         if (size == null) {
-          throw new SolrException(
-              SolrException.ErrorCode.SERVER_ERROR,
-              "missing index size information for parent shard leader");
+          log.warn("cannot verify information for parent shard leader");
+          return;
         }
         indexSize = (Double) CORE_IDX.convertVal(size);
         break;
       }
     }
     if (indexSize == null) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "missing replica information for parent shard leader");
+      log.warn("missing replica information for parent shard leader");
+      return;
     }
     Number freeSize = (Number) nodeValues.get(ImplicitSnitch.DISK);
     if (freeSize == null) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "missing node disk space information for parent shard leader");
+      log.warn("missing node disk space information for parent shard leader");
+      return;
     }
     // 100% more for REWRITE, 5% more for LINK
     double neededSpace =

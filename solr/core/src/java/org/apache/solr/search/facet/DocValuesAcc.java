@@ -328,7 +328,8 @@ public abstract class DocValuesAcc extends SlotAcc {
     double initialValue;
 
     public DoubleSortedSetDVAcc(
-        FacetContext fcontext, SchemaField sf, int numSlots, long initialValue) throws IOException {
+        FacetContext fcontext, SchemaField sf, int numSlots, double initialValue)
+        throws IOException {
       super(fcontext, sf, numSlots);
       result = new double[numSlots];
       this.initialValue = initialValue;
