@@ -21,7 +21,6 @@ import static org.apache.solr.client.solrj.io.stream.StreamAssert.assertMaps;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -3022,14 +3021,14 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream.setStreamContext(context);
       tuples = getTuples(stream);
 
-      Collections.sort(tuples, comp);
+      tuples.sort(comp);
       // The tuples from the first topic (high priority) should be returned.
 
       assertEquals(tuples.size(), 4);
       assertOrder(tuples, 5, 6, 7, 8);
 
       tuples = getTuples(stream);
-      Collections.sort(tuples, comp);
+      tuples.sort(comp);
 
       // The Tuples from the second topic (Low priority) should be returned.
       assertEquals(tuples.size(), 6);
@@ -3088,14 +3087,14 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream.setStreamContext(context);
       tuples = getTuples(stream);
 
-      Collections.sort(tuples, comp);
+      tuples.sort(comp);
       // The tuples from the first topic (high priority) should be returned.
 
       assertEquals(tuples.size(), 4);
       assertOrder(tuples, 5, 6, 7, 8);
 
       tuples = getTuples(stream);
-      Collections.sort(tuples, comp);
+      tuples.sort(comp);
 
       // The Tuples from the second topic (Low priority) should be returned.
       assertEquals(tuples.size(), 6);

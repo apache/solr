@@ -37,9 +37,9 @@ import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.message.AbstractHttpMessage;
 import org.apache.http.message.BasicHeader;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.admin.SecurityConfHandler;
@@ -88,14 +88,14 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
     String authcPrefix = "/admin/authentication";
     String authzPrefix = "/admin/authorization";
 
-    HttpClient cl = null;
-    HttpSolrClient httpSolrClient = null;
+    HttpClient httpClient = null;
+    SolrClient solrClient = null;
     try {
-      cl = HttpClientUtil.createClient(null);
+      httpClient = HttpClientUtil.createClient(null);
       String baseUrl = buildUrl(jetty.getLocalPort(), "/solr");
-      httpSolrClient = getHttpSolrClient(baseUrl);
+      solrClient = getHttpSolrClient(baseUrl);
 
-      verifySecurityStatus(cl, baseUrl + authcPrefix, "/errorMessages", null, 20);
+      verifySecurityStatus(httpClient, baseUrl + authcPrefix, "/errorMessages", null, 20);
 
       // Write security.json locally. Should cause security to be initialized
       securityConfHandler.persistConf(
@@ -103,18 +103,22 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
               .setData(Utils.fromJSONString(STD_CONF.replaceAll("'", "\""))));
       securityConfHandler.securityConfEdited();
       verifySecurityStatus(
-          cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
+          httpClient, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
 
       String command = "{\n" + "'set-user': {'harry':'HarryIsCool'}\n" + "}";
 
-      doHttpPost(cl, baseUrl + authcPrefix, command, null, null, 401);
-      verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication.enabled", "true", 20);
+      doHttpPost(httpClient, baseUrl + authcPrefix, command, null, null, 401);
+      verifySecurityStatus(httpClient, baseUrl + authcPrefix, "authentication.enabled", "true", 20);
 
       command = "{\n" + "'set-user': {'harry':'HarryIsUberCool'}\n" + "}";
 
-      doHttpPost(cl, baseUrl + authcPrefix, command, "solr", "SolrRocks");
+      doHttpPost(httpClient, baseUrl + authcPrefix, command, "solr", "SolrRocks");
       verifySecurityStatus(
-          cl, baseUrl + authcPrefix, "authentication/credentials/harry", NOT_NULL_PREDICATE, 20);
+          httpClient,
+          baseUrl + authcPrefix,
+          "authentication/credentials/harry",
+          NOT_NULL_PREDICATE,
+          20);
 
       // Read file from SOLR_HOME and verify that it contains our new user
       assertTrue(
@@ -123,28 +127,27 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
 
       // Edit authorization
       verifySecurityStatus(
-          cl, baseUrl + authzPrefix, "authorization/permissions[1]/role", null, 20);
+          httpClient, baseUrl + authzPrefix, "authorization/permissions[1]/role", null, 20);
       doHttpPost(
-          cl,
+          httpClient,
           baseUrl + authzPrefix,
           "{'set-permission': {'name': 'update', 'role':'updaterole'}}",
           "solr",
           "SolrRocks");
       command = "{\n" + "'set-permission': {'name': 'read', 'role':'solr'}\n" + "}";
-      doHttpPost(cl, baseUrl + authzPrefix, command, "solr", "SolrRocks");
+      doHttpPost(httpClient, baseUrl + authzPrefix, command, "solr", "SolrRocks");
       try {
-        httpSolrClient.query(
-            "collection1", new MapSolrParams(Collections.singletonMap("q", "foo")));
+        solrClient.query("collection1", new MapSolrParams(Collections.singletonMap("q", "foo")));
         fail("Should return a 401 response");
       } catch (Exception e) {
         // Test that the second doPost request to /security/authorization went through
         verifySecurityStatus(
-            cl, baseUrl + authzPrefix, "authorization/permissions[2]/role", "solr", 20);
+            httpClient, baseUrl + authzPrefix, "authorization/permissions[2]/role", "solr", 20);
       }
     } finally {
-      if (cl != null) {
-        HttpClientUtil.close(cl);
-        httpSolrClient.close();
+      if (httpClient != null) {
+        HttpClientUtil.close(httpClient);
+        solrClient.close();
       }
     }
   }

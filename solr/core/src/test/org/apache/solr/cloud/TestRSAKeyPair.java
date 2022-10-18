@@ -23,6 +23,7 @@ import java.net.URL;
 import java.nio.ByteBuffer;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.util.CryptoKeys;
+import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
 public class TestRSAKeyPair extends SolrTestCase {
@@ -44,7 +45,7 @@ public class TestRSAKeyPair extends SolrTestCase {
     random().nextBytes(plaintext);
 
     byte[] encrypted = kp.encrypt(ByteBuffer.wrap(plaintext));
-    assertThat(plaintext, not(equalTo(encrypted)));
+    MatcherAssert.assertThat(plaintext, not(equalTo(encrypted)));
 
     byte[] decrypted = CryptoKeys.decryptRSA(encrypted, kp.getPublicKey());
 

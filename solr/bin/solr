@@ -2225,6 +2225,7 @@ function start_solr() {
     fi
 
     if [ -n "${SOLR_DATA_HOME:-}" ]; then
+      SOLR_OPTS+=("-Dsolr.data.home=$SOLR_DATA_HOME")
       echo -e "    SOLR_DATA_HOME  = $SOLR_DATA_HOME"
     fi
     echo
@@ -2244,8 +2245,10 @@ function start_solr() {
     # '-OmitStackTraceInFastThrow' ensures stack traces in errors,
     # users who don't care about useful error msgs can override in SOLR_OPTS with +OmitStackTraceInFastThrow
     "${SOLR_HOST_ARG[@]}" "-Duser.timezone=$SOLR_TIMEZONE" "-XX:-OmitStackTraceInFastThrow" \
-    "-XX:OnOutOfMemoryError=$SOLR_TIP/bin/oom_solr.sh $SOLR_PORT $SOLR_LOGS_DIR" \
-    "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.data.home=${SOLR_DATA_HOME:-}" "-Dsolr.install.dir=$SOLR_TIP" \
+    # '+CrashOnOutOfMemoryError' ensures that Solr crashes whenever
+    # OOME is thrown. Program operation after OOME is unpredictable.
+    "-XX:+CrashOnOutOfMemoryError" "-XX:ErrorFile=${SOLR_LOGS_DIR}/jvm_crash_%p.log" \
+    "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.install.dir=$SOLR_TIP" \
     "-Dsolr.default.confdir=$DEFAULT_CONFDIR" "${LOG4J_CONFIG[@]}" "${SOLR_OPTS[@]}" "${SECURITY_MANAGER_OPTS[@]}" "${SOLR_ADMIN_UI}")
 
   mk_writable_dir "$SOLR_LOGS_DIR" "Logs"

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.update;
 
+import static org.hamcrest.core.StringContains.containsString;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -67,13 +69,12 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
+import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -96,8 +97,6 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
 
   private RefCounted<SolrIndexSearcher> searcherRef;
   private SolrIndexSearcher _searcher;
-
-  @Rule public ExpectedException thrown = ExpectedException.none();
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -323,10 +322,11 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     SolrInputDocument exceptionChildDoc = (SolrInputDocument) document1.get("child1_s").getValue();
     addChildren("child", exceptionChildDoc, 0, false);
 
-    thrown.expect(SolrException.class);
-    final String expectedMessage = "Anonymous child docs can only hang from others or the root";
-    thrown.expectMessage(expectedMessage);
-    indexSolrInputDocumentsDirectly(document1);
+    SolrException thrown =
+        assertThrows(SolrException.class, () -> indexSolrInputDocumentsDirectly(document1));
+    MatcherAssert.assertThat(
+        thrown.getMessage(),
+        containsString("Anonymous child docs can only hang from others or the root"));
   }
 
   @Test

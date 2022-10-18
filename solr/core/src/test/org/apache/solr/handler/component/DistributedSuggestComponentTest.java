@@ -19,12 +19,12 @@ package org.apache.solr.handler.component;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import junit.framework.Assert;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.spelling.suggest.SuggesterParams;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.Arrays;
-import junit.framework.TestCase;
+import org.apache.solr.SolrTestCase;
 
 /**
  * CSVParserTest
@@ -30,7 +30,7 @@ import junit.framework.TestCase;
  * approach for fixing a potential bug (it's likely that the parser itself fails if the lexer has
  * problems...).
  */
-public class CSVParserTest extends TestCase {
+public class CSVParserTest extends SolrTestCase {
 
   /** TestCSVParser. */
   static class TestCSVParser extends CSVParser {
