@@ -16,11 +16,7 @@
  */
 package org.apache.solr.handler.admin;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import com.google.common.collect.Maps;
-import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -30,6 +26,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.util.Map;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class CoreAdminOperationTest extends SolrTestCaseJ4 {
 
@@ -357,25 +358,6 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
         expectThrows(
             Exception.class, () -> CoreAdminOperation.REJOINLEADERELECTION_OP.execute(callInfo));
     assertSolrExceptionWithCode(ex, ErrorCode.SERVER_ERROR.code);
-  }
-
-  @Test
-  public void testInvokeUnexpectedFailuresResultIn500Exception() {
-    final Throwable cause = new NullPointerException();
-    whenUnexpectedErrorOccursDuringCoreAdminOp(cause);
-
-    Exception ex =
-        expectThrows(Exception.class, () -> CoreAdminOperation.INVOKE_OP.execute(callInfo));
-    assertSolrExceptionWithCodeAndCause(ex, ErrorCode.SERVER_ERROR.code, cause);
-  }
-
-  @Test
-  public void testInvokeMissingClassParamResultsIn400SolrException() {
-    whenCoreAdminOpHasParams(Maps.newHashMap());
-
-    Exception ex =
-        expectThrows(Exception.class, () -> CoreAdminOperation.INVOKE_OP.execute(callInfo));
-    assertSolrExceptionWithCode(ex, ErrorCode.BAD_REQUEST.code);
   }
 
   @Test

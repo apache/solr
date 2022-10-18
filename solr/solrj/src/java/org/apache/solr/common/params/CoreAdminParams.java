@@ -16,8 +16,9 @@
  */
 package org.apache.solr.common.params;
 
-import java.util.Locale;
 import org.apache.solr.common.SolrException;
+
+import java.util.Locale;
 
 /**
  * @since solr 1.3
@@ -173,7 +174,6 @@ public abstract class CoreAdminParams {
     REJOINLEADERELECTION,
     // internal API used by force shard leader election
     FORCEPREPAREFORLEADERSHIP,
-    INVOKE,
     // Internal APIs to backup and restore a core
     BACKUPCORE,
     RESTORECORE,

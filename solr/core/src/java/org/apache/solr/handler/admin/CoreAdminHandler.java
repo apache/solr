@@ -16,25 +16,8 @@
  */
 package org.apache.solr.handler.admin;
 
-import static org.apache.solr.common.params.CoreAdminParams.ACTION;
-import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.STATUS;
-import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
-import static org.apache.solr.security.PermissionNameProvider.Name.CORE_READ_PERM;
-
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import java.io.File;
-import java.lang.invoke.MethodHandles;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.ExecutorService;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
@@ -55,7 +38,6 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.AllCoresStatusAPI;
 import org.apache.solr.handler.admin.api.CreateCoreAPI;
-import org.apache.solr.handler.admin.api.InvokeClassAPI;
 import org.apache.solr.handler.admin.api.MergeIndexesAPI;
 import org.apache.solr.handler.admin.api.OverseerOperationAPI;
 import org.apache.solr.handler.admin.api.PrepareCoreRecoveryAPI;
@@ -83,6 +65,24 @@ import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+
+import java.io.File;
+import java.lang.invoke.MethodHandles;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.concurrent.ExecutorService;
+
+import static org.apache.solr.common.params.CoreAdminParams.ACTION;
+import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.STATUS;
+import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
+import static org.apache.solr.security.PermissionNameProvider.Name.CORE_READ_PERM;
 
 /**
  * @since solr 1.3
@@ -459,7 +459,6 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     apis.addAll(AnnotatedApi.getApis(new AllCoresStatusAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new SingleCoreStatusAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new CreateCoreAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new InvokeClassAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new RejoinLeaderElectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new OverseerOperationAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new ReloadCoreAPI(this)));
@@ -482,10 +481,6 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   static {
     for (CoreAdminOperation op : CoreAdminOperation.values())
       opMap.put(op.action.toString().toLowerCase(Locale.ROOT), op);
-  }
-  /** used by the INVOKE action of core admin handler */
-  public interface Invocable {
-    Map<String, Object> invoke(SolrQueryRequest req);
   }
 
   public interface CoreAdminOp {
