@@ -28,6 +28,7 @@ public class SolrInputDocumentReaderTest extends SolrTestCase {
 
   @Before
   public void setUp() throws Exception {
+    super.setUp();
     doc = new SolrInputDocument();
     doc.addField("f1", "a b c");
     doc.addField("f2", "multi");
