@@ -16,9 +16,8 @@
  */
 package org.apache.solr.common.params;
 
-import org.apache.solr.common.SolrException;
-
 import java.util.Locale;
+import org.apache.solr.common.SolrException;
 
 /**
  * @since solr 1.3
