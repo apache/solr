@@ -67,6 +67,8 @@ Bug Fixes
 
 * SOLR-15854: Upgrade semver library to fix versioning constraint bugs in the PackageManager. (Houston Putman, Kevin Risden)
 
+* SOLR-16160: UpdateXmlMessages duplicate data when data is removed and then added in the same message (Alex Deparvu via Kevin Risden)
+
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
