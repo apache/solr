@@ -17,8 +17,7 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
-import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
+import static org.apache.solr.common.params.CollectionAdminParams.*;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.ACTION;
 import static org.apache.solr.common.params.CommonParams.NAME;
@@ -62,6 +61,7 @@ public class V2CollectionAPIMappingTest extends V2ApiMappingTest<CollectionsHand
     apiBag.registerObject(new ReloadCollectionAPI(collectionsHandler));
     apiBag.registerObject(new SetCollectionPropertyAPI(collectionsHandler));
     apiBag.registerObject(new CollectionStatusAPI(collectionsHandler));
+    apiBag.registerObject(new RenameCollectionAPI(collectionsHandler));
   }
 
   @Override
@@ -84,6 +84,18 @@ public class V2CollectionAPIMappingTest extends V2ApiMappingTest<CollectionsHand
     assertEquals("collName", v1Params.get(COLLECTION));
     assertEquals("shard2", v1Params.get(SHARD));
   }
+
+
+  @Test
+  public void testRenameCollectionAllParams() throws Exception {
+    final SolrParams v1Params = captureConvertedV1Params(
+            "/collections/collName", "POST", "{\"rename\": {\"to\": \"targetColl\"}}");
+
+    assertEquals("rename", v1Params.get(ACTION));
+    assertEquals("collName", v1Params.get(COLLECTION));
+    assertEquals("targetColl", v1Params.get(TARGET));
+  }
+
 
   @Test
   public void testModifyCollectionAllProperties() throws Exception {
