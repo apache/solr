@@ -281,14 +281,13 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
           .setPerReplicaState(Boolean.TRUE)
           .process(cluster.getSolrClient());
       stat = cluster.getZkClient().exists(DocCollection.getCollectionPath(PRS_COLL), null, true);
-      // 0 from CreateCollectionCmd.create() and
-      // +1 each for each replica added CreateCollectionCmd.setData()
-      assertEquals(10, stat.getVersion());
+      // +1 after all replica are added with on state.json write to CreateCollectionCmd.setData()
+      assertEquals(1, stat.getVersion());
       // For each replica:
       // +1 for ZkController#preRegister, in ZkController#publish, direct write PRS to down
       // +2 for runLeaderProcess, flip the replica to leader
       // +2 for ZkController#register, in ZkController#publish, direct write PRS to active
-      // Hence 5 * 10 = 70. Take note that +1 for ADD, and +2 for all the UPDATE (remove the old PRS
+      // Hence 5 * 10 = 50. Take note that +1 for ADD, and +2 for all the UPDATE (remove the old PRS
       // and add new PRS entry)
       assertEquals(50, stat.getCversion());
       for (JettySolrRunner j : cluster.getJettySolrRunners()) {
@@ -296,7 +295,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
         j.start(true);
         stat = cluster.getZkClient().exists(DocCollection.getCollectionPath(PRS_COLL), null, true);
         // ensure restart does not update the state.json
-        assertEquals(10, stat.getVersion());
+        assertEquals(1, stat.getVersion());
       }
     } finally {
       cluster.shutdown();

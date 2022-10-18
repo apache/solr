@@ -338,8 +338,6 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
           // update strategies
           ZkWriteCommand command =
               new SliceMutator(ccc.getSolrCloudManager()).addReplica(clusterState, props);
-          byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, command.collection));
-          zkStateReader.getZkClient().setData(collectionPath, data, true);
           clusterState = clusterState.copyWith(collectionName, command.collection);
           newColl = command.collection;
         } else {
@@ -380,10 +378,11 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         coresToCreate.put(coreName, sreq);
       }
 
-      // PRS collections updated ZK state.json in the loop above. When Overseer is managing cluster
-      // state updates, need to tell it to refresh itself to know about the replicas and be able to
-      // execute nodes shard requests regarding the replicas.
+      // When Overseer is managing cluster state updates, need to tell it to refresh itself to know about the replicas
+      // and be able to execute nodes shard requests regarding the replicas.
       if (isPRS && !ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+        byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, clusterState.getCollection(collectionName)));
+        zkStateReader.getZkClient().setData(collectionPath, data, true);
         ccc.submitIntraProcessMessage(new RefreshCollectionMessage(collectionName));
       }
 
