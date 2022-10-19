@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io.stream;
+package org.apache.solr.io.stream;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.BufferedWriter;
@@ -37,22 +37,22 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.io.ClassificationEvaluation;
-import org.apache.solr.client.solrj.io.SolrClientCache;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
-import org.apache.solr.client.solrj.io.comp.FieldComparator;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
-import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.apache.solr.client.solrj.io.stream.metrics.CountDistinctMetric;
-import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
-import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
-import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
-import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
-import org.apache.solr.client.solrj.io.stream.metrics.PercentileMetric;
-import org.apache.solr.client.solrj.io.stream.metrics.StdMetric;
-import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
+import org.apache.solr.io.ClassificationEvaluation;
+import org.apache.solr.io.SolrClientCache;
+import org.apache.solr.io.Tuple;
+import org.apache.solr.io.comp.ComparatorOrder;
+import org.apache.solr.io.comp.FieldComparator;
+import org.apache.solr.io.stream.expr.StreamExpression;
+import org.apache.solr.io.stream.expr.StreamExpressionParser;
+import org.apache.solr.io.stream.expr.StreamFactory;
+import org.apache.solr.io.stream.metrics.CountDistinctMetric;
+import org.apache.solr.io.stream.metrics.CountMetric;
+import org.apache.solr.io.stream.metrics.MaxMetric;
+import org.apache.solr.io.stream.metrics.MeanMetric;
+import org.apache.solr.io.stream.metrics.MinMetric;
+import org.apache.solr.io.stream.metrics.PercentileMetric;
+import org.apache.solr.io.stream.metrics.StdMetric;
+import org.apache.solr.io.stream.metrics.SumMetric;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
