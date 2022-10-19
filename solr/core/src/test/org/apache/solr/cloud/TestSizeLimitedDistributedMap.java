@@ -120,8 +120,7 @@ public class TestSizeLimitedDistributedMap extends TestDistributedMap {
         // least NOT throw exception
         assertTrue(!deletedItems.isEmpty());
       } finally {
-        executorService.shutdown();
-        executorService.awaitTermination(10, TimeUnit.SECONDS);
+        ExecutorUtil.shutdownAndAwaitTermination(executorService);
       }
     }
   }
