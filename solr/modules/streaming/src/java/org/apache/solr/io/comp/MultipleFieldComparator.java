@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io.comp;
+package org.apache.solr.io.comp;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -22,13 +22,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
-import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.io.Tuple;
+import org.apache.solr.io.stream.expr.Explanation;
+import org.apache.solr.io.stream.expr.Explanation.ExpressionType;
+import org.apache.solr.io.stream.expr.Expressible;
+import org.apache.solr.io.stream.expr.StreamExpressionParameter;
+import org.apache.solr.io.stream.expr.StreamExpressionValue;
+import org.apache.solr.io.stream.expr.StreamFactory;
 
 /** Wraps multiple Comparators to provide sub-sorting. */
 public class MultipleFieldComparator implements StreamComparator {

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io.stream.expr;
+package org.apache.solr.io.stream.expr;
 
 /** Base interface of a stream parameter */
 public interface StreamExpressionParameter {}

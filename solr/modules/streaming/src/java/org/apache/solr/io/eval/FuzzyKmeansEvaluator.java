@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.io.eval;
+package org.apache.solr.io.eval;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -26,10 +26,10 @@ import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.ml.clustering.CentroidCluster;
 import org.apache.commons.math3.ml.clustering.FuzzyKMeansClusterer;
 import org.apache.commons.math3.ml.distance.EuclideanDistance;
-import org.apache.solr.client.solrj.io.stream.ZplotStream;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
-import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.io.stream.ZplotStream;
+import org.apache.solr.io.stream.expr.StreamExpression;
+import org.apache.solr.io.stream.expr.StreamExpressionNamedParameter;
+import org.apache.solr.io.stream.expr.StreamFactory;
 
 public class FuzzyKmeansEvaluator extends RecursiveObjectEvaluator implements TwoValueWorker {
   protected static final long serialVersionUID = 1L;

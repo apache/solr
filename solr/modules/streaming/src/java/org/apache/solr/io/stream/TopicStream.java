@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.io.stream;
+package org.apache.solr.io.stream;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.ID;
@@ -41,17 +41,17 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
-import org.apache.solr.client.solrj.io.comp.FieldComparator;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
-import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.io.Tuple;
+import org.apache.solr.io.comp.ComparatorOrder;
+import org.apache.solr.io.comp.FieldComparator;
+import org.apache.solr.io.stream.expr.Explanation;
+import org.apache.solr.io.stream.expr.Explanation.ExpressionType;
+import org.apache.solr.io.stream.expr.Expressible;
+import org.apache.solr.io.stream.expr.StreamExplanation;
+import org.apache.solr.io.stream.expr.StreamExpression;
+import org.apache.solr.io.stream.expr.StreamExpressionNamedParameter;
+import org.apache.solr.io.stream.expr.StreamExpressionValue;
+import org.apache.solr.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;

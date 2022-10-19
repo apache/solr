@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.io.stream.expr;
+package org.apache.solr.io.stream.expr;
 
 class InjectedExpressionException extends IllegalStateException {
   InjectedExpressionException(String s) {

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.io.graph;
+package org.apache.solr.io.graph;
 
 import static org.apache.solr.common.params.CommonParams.SORT;
 
@@ -40,23 +40,23 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.comp.StreamComparator;
-import org.apache.solr.client.solrj.io.eq.FieldEqualitor;
-import org.apache.solr.client.solrj.io.eq.MultipleFieldEqualitor;
-import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
-import org.apache.solr.client.solrj.io.stream.StreamContext;
-import org.apache.solr.client.solrj.io.stream.TupleStream;
-import org.apache.solr.client.solrj.io.stream.UniqueStream;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
-import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.apache.solr.client.solrj.io.stream.metrics.Metric;
+import org.apache.solr.io.Tuple;
+import org.apache.solr.io.comp.StreamComparator;
+import org.apache.solr.io.eq.FieldEqualitor;
+import org.apache.solr.io.eq.MultipleFieldEqualitor;
+import org.apache.solr.io.stream.CloudSolrStream;
+import org.apache.solr.io.stream.StreamContext;
+import org.apache.solr.io.stream.TupleStream;
+import org.apache.solr.io.stream.UniqueStream;
+import org.apache.solr.io.stream.expr.Explanation;
+import org.apache.solr.io.stream.expr.Explanation.ExpressionType;
+import org.apache.solr.io.stream.expr.Expressible;
+import org.apache.solr.io.stream.expr.StreamExplanation;
+import org.apache.solr.io.stream.expr.StreamExpression;
+import org.apache.solr.io.stream.expr.StreamExpressionNamedParameter;
+import org.apache.solr.io.stream.expr.StreamExpressionValue;
+import org.apache.solr.io.stream.expr.StreamFactory;
+import org.apache.solr.io.stream.metrics.Metric;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;

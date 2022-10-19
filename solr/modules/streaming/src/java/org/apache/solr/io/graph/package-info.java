@@ -16,4 +16,4 @@
  */
 
 /** Streaming Graph Traversals */
-package org.apache.solr.client.solrj.io.graph;
+package org.apache.solr.io.graph;

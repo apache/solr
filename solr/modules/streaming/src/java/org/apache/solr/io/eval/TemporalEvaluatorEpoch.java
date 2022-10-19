@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.io.eval;
+package org.apache.solr.io.eval;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.TemporalAccessor;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.io.stream.expr.StreamExpression;
+import org.apache.solr.io.stream.expr.StreamFactory;
 
 /** Provides a day stream evaluator */
 public class TemporalEvaluatorEpoch extends RecursiveTemporalEvaluator {

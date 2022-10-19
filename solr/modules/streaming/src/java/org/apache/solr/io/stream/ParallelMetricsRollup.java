@@ -15,19 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.io.stream;
+package org.apache.solr.io.stream;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
-import org.apache.solr.client.solrj.io.stream.metrics.CountDistinctMetric;
-import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
-import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
-import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
-import org.apache.solr.client.solrj.io.stream.metrics.Metric;
-import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
-import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
-import org.apache.solr.client.solrj.io.stream.metrics.WeightedSumMetric;
+import org.apache.solr.io.stream.metrics.CountDistinctMetric;
+import org.apache.solr.io.stream.metrics.CountMetric;
+import org.apache.solr.io.stream.metrics.MaxMetric;
+import org.apache.solr.io.stream.metrics.MeanMetric;
+import org.apache.solr.io.stream.metrics.Metric;
+import org.apache.solr.io.stream.metrics.MinMetric;
+import org.apache.solr.io.stream.metrics.SumMetric;
+import org.apache.solr.io.stream.metrics.WeightedSumMetric;
 
 /**
  * Indicates the underlying stream source supports parallelizing metrics computation across

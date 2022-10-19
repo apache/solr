@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.io.eval;
+package org.apache.solr.io.eval;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -25,8 +25,8 @@ import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.transform.DftNormalization;
 import org.apache.commons.math3.transform.FastFourierTransformer;
 import org.apache.commons.math3.transform.TransformType;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.io.stream.expr.StreamExpression;
+import org.apache.solr.io.stream.expr.StreamFactory;
 
 public class IFFTEvaluator extends RecursiveObjectEvaluator implements OneValueWorker {
   protected static final long serialVersionUID = 1L;

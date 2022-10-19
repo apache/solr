@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.io.eval;
+package org.apache.solr.io.eval;
 
 import java.io.IOException;
 import java.util.List;
 import org.apache.commons.math3.exception.DimensionMismatchException;
 import org.apache.commons.math3.ml.distance.DistanceMeasure;
 import org.apache.commons.math3.util.Precision;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.io.Tuple;
+import org.apache.solr.io.stream.expr.StreamExpression;
+import org.apache.solr.io.stream.expr.StreamFactory;
 
 public class CosineDistanceEvaluator extends RecursiveEvaluator {
   protected static final long serialVersionUID = 1L;

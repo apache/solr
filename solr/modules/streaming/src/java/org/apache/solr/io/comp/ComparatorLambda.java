@@ -14,10 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io.comp;
+package org.apache.solr.io.comp;
 
 import java.io.Serializable;
-import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.io.Tuple;
 
 /** Interface for use with a comparator lambda */
 public interface ComparatorLambda extends Serializable {

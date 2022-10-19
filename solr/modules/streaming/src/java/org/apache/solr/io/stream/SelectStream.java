@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io.stream;
+package org.apache.solr.io.stream;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -24,20 +24,20 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.comp.StreamComparator;
-import org.apache.solr.client.solrj.io.eval.EvaluatorException;
-import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
-import org.apache.solr.client.solrj.io.ops.StreamOperation;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
-import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.io.Tuple;
+import org.apache.solr.io.comp.StreamComparator;
+import org.apache.solr.io.eval.EvaluatorException;
+import org.apache.solr.io.eval.StreamEvaluator;
+import org.apache.solr.io.ops.StreamOperation;
+import org.apache.solr.io.stream.expr.Explanation;
+import org.apache.solr.io.stream.expr.Explanation.ExpressionType;
+import org.apache.solr.io.stream.expr.Expressible;
+import org.apache.solr.io.stream.expr.StreamExplanation;
+import org.apache.solr.io.stream.expr.StreamExpression;
+import org.apache.solr.io.stream.expr.StreamExpressionParameter;
+import org.apache.solr.io.stream.expr.StreamExpressionParser;
+import org.apache.solr.io.stream.expr.StreamExpressionValue;
+import org.apache.solr.io.stream.expr.StreamFactory;
 
 /**
  * Selects fields from the incoming stream and applies optional field renaming. Does not reorder the

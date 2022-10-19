@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.io.eval;
+package org.apache.solr.io.eval;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -24,14 +24,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.StreamContext;
-import org.apache.solr.client.solrj.io.stream.TupleStream;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
-import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.io.Tuple;
+import org.apache.solr.io.stream.StreamContext;
+import org.apache.solr.io.stream.TupleStream;
+import org.apache.solr.io.stream.expr.Expressible;
+import org.apache.solr.io.stream.expr.StreamExpression;
+import org.apache.solr.io.stream.expr.StreamExpressionNamedParameter;
+import org.apache.solr.io.stream.expr.StreamExpressionValue;
+import org.apache.solr.io.stream.expr.StreamFactory;
 
 /**
  * The MemsetEvaluator reads a TupleStream and copies the values from specific fields into arrays

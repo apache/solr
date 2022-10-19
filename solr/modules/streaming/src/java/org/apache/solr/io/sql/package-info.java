@@ -48,4 +48,4 @@
  * <p>The aggregationMode parameter is optional. It can be used to switch between Map/Reduce
  * (map_reduce) or the JSON Facet API (facet) for group by aggregations. The default is "facet".
  */
-package org.apache.solr.client.solrj.io.sql;
+package org.apache.solr.io.sql;

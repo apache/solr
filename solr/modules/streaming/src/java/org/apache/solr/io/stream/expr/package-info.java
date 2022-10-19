@@ -16,4 +16,4 @@
  */
 
 /** Expression language for the Streaming Aggregation API */
-package org.apache.solr.client.solrj.io.stream.expr;
+package org.apache.solr.io.stream.expr;

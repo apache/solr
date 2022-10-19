@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io.stream;
+package org.apache.solr.io.stream;
 
 import java.io.IOException;
 import java.io.InputStream;

@@ -16,4 +16,4 @@
  */
 
 /** Metrics package */
-package org.apache.solr.client.solrj.io.stream.metrics;
+package org.apache.solr.io.stream.metrics;

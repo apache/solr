@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io.stream.expr;
+package org.apache.solr.io.stream.expr;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -29,15 +29,15 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
-import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
-import org.apache.solr.client.solrj.io.comp.StreamComparator;
-import org.apache.solr.client.solrj.io.eq.MultipleFieldEqualitor;
-import org.apache.solr.client.solrj.io.eq.StreamEqualitor;
-import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
-import org.apache.solr.client.solrj.io.ops.StreamOperation;
-import org.apache.solr.client.solrj.io.stream.TupleStream;
-import org.apache.solr.client.solrj.io.stream.metrics.Metric;
+import org.apache.solr.io.comp.ComparatorOrder;
+import org.apache.solr.io.comp.MultipleFieldComparator;
+import org.apache.solr.io.comp.StreamComparator;
+import org.apache.solr.io.eq.MultipleFieldEqualitor;
+import org.apache.solr.io.eq.StreamEqualitor;
+import org.apache.solr.io.eval.StreamEvaluator;
+import org.apache.solr.io.ops.StreamOperation;
+import org.apache.solr.io.stream.TupleStream;
+import org.apache.solr.io.stream.metrics.Metric;
 
 /** Used to convert strings into stream expressions */
 public class StreamFactory implements Serializable {

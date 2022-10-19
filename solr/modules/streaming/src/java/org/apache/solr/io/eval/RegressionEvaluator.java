@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io.eval;
+package org.apache.solr.io.eval;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -22,9 +22,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.io.Tuple;
+import org.apache.solr.io.stream.expr.StreamExpression;
+import org.apache.solr.io.stream.expr.StreamFactory;
 
 public class RegressionEvaluator extends RecursiveNumericEvaluator implements TwoValueWorker {
   protected static final long serialVersionUID = 1L;

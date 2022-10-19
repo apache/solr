@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io.sql;
+package org.apache.solr.io.sql;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -27,8 +27,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
-import org.apache.solr.client.solrj.io.stream.SolrStream;
+import org.apache.solr.io.stream.CloudSolrStream;
+import org.apache.solr.io.stream.SolrStream;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;

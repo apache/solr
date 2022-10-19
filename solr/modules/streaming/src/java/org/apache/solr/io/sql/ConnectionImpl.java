@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io.sql;
+package org.apache.solr.io.sql;
 
 import java.sql.Array;
 import java.sql.Blob;
@@ -37,7 +37,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.io.SolrClientCache;
+import org.apache.solr.io.SolrClientCache;
 
 class ConnectionImpl implements Connection {
 

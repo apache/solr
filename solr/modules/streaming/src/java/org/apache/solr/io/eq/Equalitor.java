@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io.eq;
+package org.apache.solr.io.eq;
 
 /**
  * Interface defining a way to determine if two items are equal

@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.io.graph;
+package org.apache.solr.io.graph;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.graph.Traversal.Scatter;
+import org.apache.solr.io.Tuple;
+import org.apache.solr.io.graph.Traversal.Scatter;
 
 class TraversalIterator implements Iterator<Tuple> {
 

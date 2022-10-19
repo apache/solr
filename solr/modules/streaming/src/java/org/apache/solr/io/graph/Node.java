@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.io.graph;
+package org.apache.solr.io.graph;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.metrics.Metric;
+import org.apache.solr.io.Tuple;
+import org.apache.solr.io.stream.metrics.Metric;
 
 public class Node {
 

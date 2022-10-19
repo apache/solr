@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io.sql;
+package org.apache.solr.io.sql;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,10 +39,10 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Map;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.PushBackStream;
-import org.apache.solr.client.solrj.io.stream.SolrStream;
-import org.apache.solr.client.solrj.io.stream.StreamContext;
+import org.apache.solr.io.Tuple;
+import org.apache.solr.io.stream.PushBackStream;
+import org.apache.solr.io.stream.SolrStream;
+import org.apache.solr.io.stream.StreamContext;
 import org.apache.solr.common.util.SuppressForbidden;
 
 class ResultSetImpl implements ResultSet {

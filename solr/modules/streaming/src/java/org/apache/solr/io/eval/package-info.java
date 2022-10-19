@@ -16,4 +16,4 @@
  */
 
 /** Evaluators for the Streaming Aggregation API */
-package org.apache.solr.client.solrj.io.eval;
+package org.apache.solr.io.eval;

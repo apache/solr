@@ -14,9 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io.stream.expr;
+package org.apache.solr.io.stream.expr;
 
-import org.apache.solr.client.solrj.io.Lang;
+import org.apache.solr.io.Lang;
 
 /**
  * A default collection of mappings, used to convert strings into stream expressions.

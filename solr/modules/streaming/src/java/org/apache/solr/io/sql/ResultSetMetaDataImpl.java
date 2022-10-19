@@ -14,14 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io.sql;
+package org.apache.solr.io.sql;
 
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.io.Tuple;
 
 class ResultSetMetaDataImpl implements ResultSetMetaData {
   private final ResultSetImpl resultSet;

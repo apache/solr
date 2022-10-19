@@ -14,12 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io.eq;
+package org.apache.solr.io.eq;
 
 import java.io.Serializable;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.comp.StreamComparator;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.io.Tuple;
+import org.apache.solr.io.comp.StreamComparator;
+import org.apache.solr.io.stream.expr.Expressible;
 
 /** Defines a comparator we can use with TupleStreams */
 public interface StreamEqualitor extends Equalitor<Tuple>, Expressible, Serializable {

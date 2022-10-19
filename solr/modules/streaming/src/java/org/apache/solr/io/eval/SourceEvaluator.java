@@ -14,10 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io.eval;
+package org.apache.solr.io.eval;
 
 import java.util.UUID;
-import org.apache.solr.client.solrj.io.stream.StreamContext;
+import org.apache.solr.io.stream.StreamContext;
 
 public abstract class SourceEvaluator implements StreamEvaluator {
   private static final long serialVersionUID = 1L;

@@ -16,4 +16,4 @@
  */
 
 /** Streaming Aggregation API */
-package org.apache.solr.client.solrj.io;
+package org.apache.solr.io;

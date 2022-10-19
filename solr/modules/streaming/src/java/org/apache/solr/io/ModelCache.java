@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io;
+package org.apache.solr.io;
 
 import static org.apache.solr.common.params.CommonParams.SORT;
 import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
@@ -23,8 +23,8 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
-import org.apache.solr.client.solrj.io.stream.StreamContext;
+import org.apache.solr.io.stream.CloudSolrStream;
+import org.apache.solr.io.stream.StreamContext;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
 /** The Model cache keeps a local in-memory copy of models */

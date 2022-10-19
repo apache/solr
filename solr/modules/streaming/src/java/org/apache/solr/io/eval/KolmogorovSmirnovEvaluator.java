@@ -14,16 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io.eval;
+package org.apache.solr.io.eval;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.stat.inference.KolmogorovSmirnovTest;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.io.Tuple;
+import org.apache.solr.io.stream.expr.StreamExpression;
+import org.apache.solr.io.stream.expr.StreamFactory;
 import org.apache.solr.common.params.StreamParams;
 
 public class KolmogorovSmirnovEvaluator extends RecursiveObjectEvaluator implements TwoValueWorker {

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.io;
+package org.apache.solr.io;
 
 import java.util.HashMap;
 import java.util.Map;

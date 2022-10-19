@@ -14,13 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io.comp;
+package org.apache.solr.io.comp;
 
 import java.io.Serializable;
 import java.util.Comparator;
 import java.util.Map;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.io.Tuple;
+import org.apache.solr.io.stream.expr.Expressible;
 
 /** Defines a comparator we can use with TupleStreams */
 public interface StreamComparator extends Comparator<Tuple>, Expressible, Serializable {
