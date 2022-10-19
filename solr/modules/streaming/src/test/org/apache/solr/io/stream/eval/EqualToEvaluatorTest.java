@@ -14,17 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io.stream.eval;
+package org.apache.solr.io.stream.eval;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.eval.EqualToEvaluator;
-import org.apache.solr.client.solrj.io.eval.RawValueEvaluator;
-import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
-import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.io.Tuple;
+import org.apache.solr.io.eval.EqualToEvaluator;
+import org.apache.solr.io.eval.RawValueEvaluator;
+import org.apache.solr.io.eval.StreamEvaluator;
+import org.apache.solr.io.stream.expr.StreamFactory;
 import org.junit.Assert;
 import org.junit.Test;
 

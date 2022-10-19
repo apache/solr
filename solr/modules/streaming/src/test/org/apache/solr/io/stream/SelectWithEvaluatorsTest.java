@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io.stream;
+package org.apache.solr.io.stream;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -22,12 +22,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.lucene.tests.util.LuceneTestCase;
-import org.apache.solr.client.solrj.io.SolrClientCache;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.eval.AddEvaluator;
-import org.apache.solr.client.solrj.io.eval.GreaterThanEvaluator;
-import org.apache.solr.client.solrj.io.eval.IfThenElseEvaluator;
-import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.io.SolrClientCache;
+import org.apache.solr.io.Tuple;
+import org.apache.solr.io.eval.AddEvaluator;
+import org.apache.solr.io.eval.GreaterThanEvaluator;
+import org.apache.solr.io.eval.IfThenElseEvaluator;
+import org.apache.solr.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;

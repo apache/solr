@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.io.stream.eval;
+package org.apache.solr.io.stream.eval;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -23,12 +23,12 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.eval.ConversionEvaluator;
-import org.apache.solr.client.solrj.io.eval.RawValueEvaluator;
-import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
-import org.apache.solr.client.solrj.io.stream.StreamContext;
-import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.io.Tuple;
+import org.apache.solr.io.eval.ConversionEvaluator;
+import org.apache.solr.io.eval.RawValueEvaluator;
+import org.apache.solr.io.eval.StreamEvaluator;
+import org.apache.solr.io.stream.StreamContext;
+import org.apache.solr.io.stream.expr.StreamFactory;
 import org.junit.Test;
 
 /** Test ConversionEvaluators */

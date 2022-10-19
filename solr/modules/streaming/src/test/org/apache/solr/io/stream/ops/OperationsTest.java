@@ -14,16 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io.stream.ops;
+package org.apache.solr.io.stream.ops;
 
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.ops.ReplaceOperation;
-import org.apache.solr.client.solrj.io.ops.StreamOperation;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
-import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.io.Tuple;
+import org.apache.solr.io.ops.ReplaceOperation;
+import org.apache.solr.io.ops.StreamOperation;
+import org.apache.solr.io.stream.expr.StreamExpressionParser;
+import org.apache.solr.io.stream.expr.StreamFactory;
 import org.junit.Assert;
 import org.junit.Test;
 

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io.stream.eval;
+package org.apache.solr.io.stream.eval;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,8 +22,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.PriorityQueue;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.eval.FieldValueEvaluator;
+import org.apache.solr.io.Tuple;
+import org.apache.solr.io.eval.FieldValueEvaluator;
 import org.junit.Assert;
 import org.junit.Test;
 
