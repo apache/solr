@@ -568,7 +568,7 @@ public class Assign {
       // Otherwise use the default
       String defaultPluginId = System.getProperty(DEFAULT_PLACEMENT_PLUGIN_SYSPROP);
       if (defaultPluginId != null) {
-        switch (defaultPluginId) {
+        switch (defaultPluginId.toLowerCase(Locale.ROOT)) {
           case "simple":
             placementPlugin = (new SimplePlacementFactory()).createPluginInstance();
             break;
@@ -588,7 +588,10 @@ public class Assign {
                     + DEFAULT_PLACEMENT_PLUGIN_SYSPROP
                     + "'. Supported values are 'simple', 'random', 'affinity' and 'minimizecores'");
         }
-        log.info("Default replica placement plugin set in {} to {}", DEFAULT_PLACEMENT_PLUGIN_SYSPROP, defaultPluginId);
+        log.info(
+            "Default replica placement plugin set in {} to {}",
+            DEFAULT_PLACEMENT_PLUGIN_SYSPROP,
+            defaultPluginId);
       } else {
         // TODO: Replace this with a better options, such as the AffinityPlacementFactory
         placementPlugin = (new SimplePlacementFactory()).createPluginInstance();
