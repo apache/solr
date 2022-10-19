@@ -378,13 +378,16 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         coresToCreate.put(coreName, sreq);
       }
 
-      // When Overseer is managing cluster state updates, need to tell it to refresh itself to know about the replicas
-      // and be able to execute nodes shard requests regarding the replicas.
-      if (isPRS && !ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+      if (isPRS) {
         byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, clusterState.getCollection(collectionName)));
         zkStateReader.getZkClient().setData(collectionPath, data, true);
-        ccc.submitIntraProcessMessage(new RefreshCollectionMessage(collectionName));
+        // When Overseer is managing cluster state updates, need to tell it to refresh itself to know about the replicas
+        // and be able to execute nodes shard requests regarding the replicas.
+        if (!ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+          ccc.submitIntraProcessMessage(new RefreshCollectionMessage(collectionName));
+        }
       }
+
 
       // Distributed updates don't need to do anything for PRS collections that wrote state.json
       // directly. For non PRS collections, distributed updates have to be executed if that's how
