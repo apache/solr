@@ -2960,13 +2960,12 @@ public class ZkController implements Closeable {
 
         // We always send a down node event to overseer to be safe, but overseer will not need to do
         // anything for PRS collections
-        ZkNodeProps m =
-            new ZkNodeProps(
-                Overseer.QUEUE_OPERATION,
-                OverseerAction.DOWNNODE.toLower(),
-                ZkStateReader.NODE_NAME_PROP,
-                nodeName);
-        overseer.getStateUpdateQueue().offer(m);
+        overseer
+            .getStateUpdateQueue()
+            .offer(
+                m ->
+                    m.put(Overseer.QUEUE_OPERATION, OverseerAction.DOWNNODE.toLower())
+                        .put(ZkStateReader.NODE_NAME_PROP, nodeName));
       } catch (AlreadyClosedException e) {
         log.info(
             "Not publishing node as DOWN because a resource required to do so is already closed.");
