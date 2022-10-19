@@ -30,11 +30,11 @@ import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
 import org.junit.Test;
 
 /** */
-public class StreamExpressionToExpessionTest extends SolrTestCase {
+public class StreamExpressionToExpressionTest extends SolrTestCase {
 
   private StreamFactory factory;
 
-  public StreamExpressionToExpessionTest() {
+  public StreamExpressionToExpressionTest() {
     super();
 
     factory =
