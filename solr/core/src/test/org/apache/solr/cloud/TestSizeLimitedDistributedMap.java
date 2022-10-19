@@ -17,10 +17,20 @@
 
 package org.apache.solr.cloud;
 
-import java.util.*;
-import java.util.concurrent.*;
 
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 public class TestSizeLimitedDistributedMap extends TestDistributedMap {
 
@@ -90,7 +100,9 @@ public class TestSizeLimitedDistributedMap extends TestDistributedMap {
           return null;
         });
       }
-      ExecutorService executorService = Executors.newFixedThreadPool(THREAD_COUNT);
+
+      ExecutorService executorService = ExecutorUtil.newMDCAwareFixedThreadPool(
+              THREAD_COUNT, new SolrNamedThreadFactory("test-concurrent-cleanup"));
       List<Future<Object>> futures = new ArrayList<>();
       for (Callable<Object> callable : callables) {
         futures.add(executorService.submit(callable));
