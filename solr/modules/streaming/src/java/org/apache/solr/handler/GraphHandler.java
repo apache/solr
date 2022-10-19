@@ -23,17 +23,17 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import org.apache.solr.client.solrj.io.SolrClientCache;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.comp.StreamComparator;
-import org.apache.solr.client.solrj.io.graph.Traversal;
-import org.apache.solr.client.solrj.io.stream.ExceptionStream;
-import org.apache.solr.client.solrj.io.stream.StreamContext;
-import org.apache.solr.client.solrj.io.stream.TupleStream;
-import org.apache.solr.client.solrj.io.stream.expr.DefaultStreamFactory;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
-import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.io.SolrClientCache;
+import org.apache.solr.io.Tuple;
+import org.apache.solr.io.comp.StreamComparator;
+import org.apache.solr.io.graph.Traversal;
+import org.apache.solr.io.stream.ExceptionStream;
+import org.apache.solr.io.stream.StreamContext;
+import org.apache.solr.io.stream.TupleStream;
+import org.apache.solr.io.stream.expr.DefaultStreamFactory;
+import org.apache.solr.io.stream.expr.Explanation;
+import org.apache.solr.io.stream.expr.Expressible;
+import org.apache.solr.io.stream.expr.StreamFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -57,16 +57,16 @@ import org.slf4j.LoggerFactory;
  * markup.
  *
  * <p>It loads the default set of streaming expression functions via {@link
- * org.apache.solr.client.solrj.io.stream.expr.DefaultStreamFactory}.
+ * org.apache.solr.io.stream.expr.DefaultStreamFactory}.
  *
  * <p>To add additional functions, just define them as plugins in solrconfig.xml via {@code
- * &lt;expressible name="count" class="org.apache.solr.client.solrj.io.stream.RecordCountStream"
+ * &lt;expressible name="count" class="org.apache.solr.io.stream.RecordCountStream"
  * /&gt; }
  *
  * <p>The @deprecated configuration method as of Solr 8.5 is {@code &lt;lst
  * name="streamFunctions"&gt; &lt;str
- * name="group"&gt;org.apache.solr.client.solrj.io.stream.ReducerStream&lt;/str&gt; &lt;str
- * name="count"&gt;org.apache.solr.client.solrj.io.stream.RecordCountStream&lt;/str&gt; &lt;/lst&gt;
+ * name="group"&gt;org.apache.solr.io.stream.ReducerStream&lt;/str&gt; &lt;str
+ * name="count"&gt;org.apache.solr.io.stream.RecordCountStream&lt;/str&gt; &lt;/lst&gt;
  * }
  *
  * @since 6.1.0

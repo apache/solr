@@ -16,9 +16,9 @@
  */
 package org.apache.solr.handler;
 
-import org.apache.solr.client.solrj.io.Lang;
-import org.apache.solr.client.solrj.io.stream.expr.DefaultStreamFactory;
-import org.apache.solr.client.solrj.io.stream.metrics.WeightedSumMetric;
+import org.apache.solr.io.Lang;
+import org.apache.solr.io.stream.expr.DefaultStreamFactory;
+import org.apache.solr.io.stream.metrics.WeightedSumMetric;
 import org.apache.solr.core.SolrResourceLoader;
 
 /**
