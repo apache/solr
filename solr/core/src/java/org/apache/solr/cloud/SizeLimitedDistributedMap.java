@@ -92,11 +92,11 @@ public class SizeLimitedDistributedMap extends DistributedMap {
         Long id = childToModificationZxid.get(child);
         if (id != null && id <= topElementMzxId) {
           try {
-          zookeeper.delete(dir + "/" + child, -1, true);
-          if (onOverflowObserver != null)
-            onOverflowObserver.onChildDelete(child.substring(PREFIX.length()));
+            zookeeper.delete(dir + "/" + child, -1, true);
+            if (onOverflowObserver != null)
+              onOverflowObserver.onChildDelete(child.substring(PREFIX.length()));
           } catch (KeeperException.NoNodeException e) {
-            //this could happen if multiple threads try to clean the same map
+            // this could happen if multiple threads try to clean the same map
           }
         }
       }
