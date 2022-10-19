@@ -100,20 +100,20 @@ public class SolrClientCache implements Serializable {
   }
 
   @Deprecated(since = "9.0")
-  public synchronized HttpSolrClient getHttpSolrClient(String host) {
-    HttpSolrClient client;
-    if (solrClients.containsKey(host)) {
-      client = (HttpSolrClient) solrClients.get(host);
+  public synchronized SolrClient getHttpSolrClient(String baseUrl) {
+    SolrClient client;
+    if (solrClients.containsKey(baseUrl)) {
+      client = solrClients.get(baseUrl);
     } else {
       HttpSolrClient.Builder builder =
-          new HttpSolrClient.Builder(host)
+          new HttpSolrClient.Builder(baseUrl)
               .withSocketTimeout(socketTimeout)
               .withConnectionTimeout(conTimeout);
       if (httpClient != null) {
         builder = builder.withHttpClient(httpClient);
       }
       client = builder.build();
-      solrClients.put(host, client);
+      solrClients.put(baseUrl, client);
     }
     return client;
   }

@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.response;
 
 import java.util.List;
-import junit.framework.Assert;
 import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -26,6 +25,7 @@ import org.apache.solr.client.solrj.response.SpellCheckResponse.Correction;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SpellingParams;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

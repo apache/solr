@@ -196,8 +196,7 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
       }
 
       // Compute expected results:
-      Collections.sort(
-          f.matchValues,
+      f.matchValues.sort(
           new Comparator<BytesRef>() {
             @Override
             public int compare(BytesRef a, BytesRef b) {

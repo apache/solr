@@ -237,6 +237,13 @@
       <int name="minQueryLength">3</int>
     </lst>
     <lst name="spellchecker">
+      <str name="name">directMQF2</str>
+      <str name="classname">DirectSolrSpellChecker</str>
+      <str name="field">lowerfilt</str>
+      <int name="minQueryLength">3</int>
+      <int name="maxQueryFrequency">2</int>
+    </lst>
+    <lst name="spellchecker">
       <str name="name">wordbreak</str>
       <str name="classname">solr.WordBreakSolrSpellChecker</str>
       <str name="field">lowerfilt</str>

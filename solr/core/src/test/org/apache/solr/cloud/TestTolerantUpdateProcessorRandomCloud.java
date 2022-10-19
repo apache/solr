@@ -40,7 +40,6 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -73,8 +72,8 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
 
   /** A basic client for operations at the cloud level, default collection will be set */
   private static CloudSolrClient CLOUD_CLIENT;
-  /** one HttpSolrClient for each server */
-  private static List<HttpSolrClient> NODE_CLIENTS;
+  /** one SolrClient for each server */
+  private static List<SolrClient> NODE_CLIENTS;
 
   @BeforeClass
   public static void createMiniSolrCloudCluster() throws Exception {
@@ -109,11 +108,11 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
     cluster.waitForActiveCollection(COLLECTION_NAME, numShards, numShards * repFactor);
 
     if (NODE_CLIENTS != null) {
-      for (HttpSolrClient client : NODE_CLIENTS) {
+      for (SolrClient client : NODE_CLIENTS) {
         client.close();
       }
     }
-    NODE_CLIENTS = new ArrayList<HttpSolrClient>(numServers);
+    NODE_CLIENTS = new ArrayList<SolrClient>(numServers);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       URL jettyURL = jetty.getBaseUrl();
@@ -132,7 +131,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
   @AfterClass
   public static void afterClass() throws IOException {
     if (NODE_CLIENTS != null) {
-      for (HttpSolrClient client : NODE_CLIENTS) {
+      for (SolrClient client : NODE_CLIENTS) {
         client.close();
       }
     }

@@ -35,7 +35,6 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest.Field;
@@ -78,7 +77,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
   /** A basic client for operations at the cloud level, default collection will be set */
   private static CloudSolrClient CLOUD_CLIENT;
   /** One client per node */
-  private static final ArrayList<HttpSolrClient> CLIENTS = new ArrayList<>(5);
+  private static final ArrayList<SolrClient> CLIENTS = new ArrayList<>(5);
 
   /**
    * Service to execute all parallel work
@@ -168,7 +167,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
       IOUtils.closeQuietly(CLOUD_CLIENT);
       CLOUD_CLIENT = null;
     }
-    for (HttpSolrClient client : CLIENTS) {
+    for (SolrClient client : CLIENTS) {
       if (null == client) {
         log.error("CLIENTS contains a null SolrClient???");
       }

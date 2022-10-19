@@ -54,6 +54,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFI
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_VALUE;
 import static org.apache.solr.common.params.CollectionAdminParams.SKIP_NODE_ASSIGNMENT;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICAPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ALIASPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.BACKUP;
@@ -143,8 +144,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestSyncShard;
@@ -319,37 +320,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           "Invoked Collection Action: {} with params {}", action.toLower(), req.getParamString());
     }
 
-    switch (action) {
-      case ADDREPLICAPROP:
-        // Convert query-params to v2 acceptable format
-        final RequiredSolrParams requiredParams = req.getParams().required();
-        final AddReplicaPropertyAPI.AddReplicaPropertyRequestBody requestBody =
-            new AddReplicaPropertyAPI.AddReplicaPropertyRequestBody();
-        requestBody.value = requiredParams.get(PROPERTY_VALUE_PROP);
-        requestBody.shardUnique = req.getParams().getBool(SHARD_UNIQUE);
-        final String propName = requiredParams.get(PROPERTY_PROP);
-        final String trimmedPropName =
-            propName.startsWith(PROPERTY_PREFIX)
-                ? propName.substring(PROPERTY_PREFIX.length())
-                : propName;
-
-        final AddReplicaPropertyAPI addReplicaPropertyAPI =
-            new AddReplicaPropertyAPI(coreContainer, req, rsp);
-        final SolrJerseyResponse addReplicaPropResponse =
-            addReplicaPropertyAPI.addReplicaProperty(
-                requiredParams.get(COLLECTION_PROP),
-                requiredParams.get(SHARD_ID_PROP),
-                requiredParams.get(REPLICA_PROP),
-                trimmedPropName,
-                requestBody);
-        V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, addReplicaPropResponse);
-        break;
-      default:
-        CollectionOperation operation = CollectionOperation.get(action);
-        invokeAction(req, rsp, cores, action, operation);
-        rsp.setHttpCaching(false);
-        break;
-    }
+    CollectionOperation operation = CollectionOperation.get(action);
+    invokeAction(req, rsp, cores, action, operation);
+    rsp.setHttpCaching(false);
   }
 
   protected CoreContainer checkErrors() {
@@ -748,7 +721,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           ZkNodeProps leaderProps = docCollection.getLeader(shard);
           ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(leaderProps);
 
-          try (HttpSolrClient client =
+          try (SolrClient client =
               new Builder(nodeProps.getBaseUrl())
                   .withConnectionTimeout(15000)
                   .withSocketTimeout(60000)
@@ -1297,6 +1270,32 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           new ClusterStatus(
                   h.coreContainer.getZkController().getZkStateReader(), new ZkNodeProps(all))
               .getClusterStatus(rsp.getValues());
+          return null;
+        }),
+    ADDREPLICAPROP_OP(
+        ADDREPLICAPROP,
+        (req, rsp, h) -> {
+          final RequiredSolrParams requiredParams = req.getParams().required();
+          final AddReplicaPropertyAPI.AddReplicaPropertyRequestBody requestBody =
+              new AddReplicaPropertyAPI.AddReplicaPropertyRequestBody();
+          requestBody.value = requiredParams.get(PROPERTY_VALUE_PROP);
+          requestBody.shardUnique = req.getParams().getBool(SHARD_UNIQUE);
+          final String propName = requiredParams.get(PROPERTY_PROP);
+          final String trimmedPropName =
+              propName.startsWith(PROPERTY_PREFIX)
+                  ? propName.substring(PROPERTY_PREFIX.length())
+                  : propName;
+
+          final AddReplicaPropertyAPI addReplicaPropertyAPI =
+              new AddReplicaPropertyAPI(h.coreContainer, req, rsp);
+          final SolrJerseyResponse addReplicaPropResponse =
+              addReplicaPropertyAPI.addReplicaProperty(
+                  requiredParams.get(COLLECTION_PROP),
+                  requiredParams.get(SHARD_ID_PROP),
+                  requiredParams.get(REPLICA_PROP),
+                  trimmedPropName,
+                  requestBody);
+          V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, addReplicaPropResponse);
           return null;
         }),
     // XXX should this command support followAliases?
