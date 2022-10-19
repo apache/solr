@@ -134,7 +134,6 @@ public class QueryResultKeyTest extends SolrTestCaseJ4 {
         assertKeyNotEquals(aa, bb);
       }
     }
-    assert minIters <= iter;
   }
 
   public void testMinExactCount() {

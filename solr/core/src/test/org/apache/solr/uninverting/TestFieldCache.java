@@ -281,7 +281,7 @@ public class TestFieldCache extends SolrTestCase {
           assertEquals(i, termOrds.nextDoc());
         }
         long ord = termOrds.nextOrd();
-        assert ord != SortedSetDocValues.NO_MORE_ORDS;
+        assertNotEquals(ord, SortedSetDocValues.NO_MORE_ORDS);
         BytesRef scratch = termOrds.lookupOrd(ord);
         assertEquals(v, scratch);
       }

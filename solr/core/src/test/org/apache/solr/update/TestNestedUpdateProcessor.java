@@ -403,7 +403,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
           // doc_id -> descendentId must have at least one ancestor (since it's not a root level
           // document)
           final String descendentId = doc_id;
-          assert allDocs.get(descendentId).containsKey("ancestor_ids_ss");
+          assertTrue(allDocs.get(descendentId).containsKey("ancestor_ids_ss"));
           final List<Object> allAncestorIds =
               new ArrayList<>(allDocs.get(descendentId).getFieldValues("ancestor_ids_ss"));
 
@@ -670,8 +670,8 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
     }
 
     private void assertValidPathSyntax(String path) {
-      assert path.startsWith("/");
-      assert (1 == path.length()) ^ !path.endsWith("/");
+      assertTrue(path.startsWith("/"));
+      assertTrue((1 == path.length()) ^ !path.endsWith("/"));
     }
   }
 }

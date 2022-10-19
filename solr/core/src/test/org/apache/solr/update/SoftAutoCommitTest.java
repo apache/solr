@@ -93,7 +93,7 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
     final int hardCommitMaxDocs = 7;
 
     // remainder of test designed with these assumptions
-    assert softCommitMaxDocs < hardCommitMaxDocs;
+    assertTrue(softCommitMaxDocs < hardCommitMaxDocs);
 
     CommitTracker hardTracker = updater.commitTracker;
     CommitTracker softTracker = updater.softCommitTracker;
@@ -523,7 +523,7 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
       final BlockingQueue<Long> queue)
       throws InterruptedException {
 
-    assert 0 < maxNumCommits;
+    assertTrue(0 < maxNumCommits);
 
     // these will be modified in each iteration of our assertion loop
     long prevTimestampNanos = startTimestampNanos;

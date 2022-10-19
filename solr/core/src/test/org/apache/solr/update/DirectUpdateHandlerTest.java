@@ -443,7 +443,7 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
   @Test
   public void testPostSoftCommitEvents() {
     SolrCore core = h.getCore();
-    assert core != null;
+    assertNotNull(core);
     DirectUpdateHandler2 updater = (DirectUpdateHandler2) core.getUpdateHandler();
     MySolrEventListener listener = new MySolrEventListener();
     core.registerNewSearcherListener(listener);

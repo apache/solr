@@ -342,8 +342,8 @@ public class JdbcTest extends SolrCloudTestCase {
 
       Properties p = ((ConnectionImpl) con).getProperties();
 
-      assert (p.getProperty("aggregationMode").equals("map_reduce"));
-      assert (p.getProperty("numWorkers").equals("2"));
+      assertEquals("map_reduce", p.getProperty("aggregationMode"));
+      assertEquals("2", p.getProperty("numWorkers"));
 
       try (Statement stmt = con.createStatement()) {
         try (ResultSet rs =
@@ -447,10 +447,10 @@ public class JdbcTest extends SolrCloudTestCase {
     try (Connection con =
         DriverManager.getConnection("jdbc:solr://" + zkHost, providedProperties)) {
       Properties p = ((ConnectionImpl) con).getProperties();
-      assert (p.getProperty("username").equals(""));
-      assert (p.getProperty("password").equals(""));
-      assert (p.getProperty("testKey1").equals("testValue"));
-      assert (p.getProperty("testKey2").equals(""));
+      assertEquals("", p.getProperty("username"));
+      assertEquals("", p.getProperty("password"));
+      assertEquals("testValue", p.getProperty("testKey1"));
+      assertEquals("", p.getProperty("testKey2"));
 
       try (Statement stmt = con.createStatement()) {
         try (ResultSet rs =

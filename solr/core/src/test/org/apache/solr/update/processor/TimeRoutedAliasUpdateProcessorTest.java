@@ -857,7 +857,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
 
     final List<String> cols =
         new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias);
-    assert !cols.isEmpty();
+    assertFalse(cols.isEmpty());
 
     assertArrayEquals(
         "expected reverse sorted",

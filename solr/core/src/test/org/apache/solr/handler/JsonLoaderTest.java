@@ -815,7 +815,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
   @Test
   public void testChildDocWithoutId() throws Exception {
     final String json = DUP_KEYS_ANON_CHILD_DOCS_JSON.replace("\"id\": \"3\",\n", "");
-    assert !json.equals(DUP_KEYS_ANON_CHILD_DOCS_JSON);
+    assertFalse(json.equals(DUP_KEYS_ANON_CHILD_DOCS_JSON));
     checkTwoAnonymousChildDocs(json, false);
   }
 

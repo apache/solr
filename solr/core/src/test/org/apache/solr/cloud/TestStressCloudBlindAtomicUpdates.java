@@ -359,7 +359,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     // check all the final index contents match our expectations
     int incorrectDocs = 0;
     for (int id = 0; id < numDocsInIndex; id += DOC_ID_INCR) {
-      assert 0 == id % DOC_ID_INCR : "WTF? " + id;
+      assertEquals("WTF? " + id, 0, id % DOC_ID_INCR);
 
       final long expect = expected[id / DOC_ID_INCR].longValue();
 
@@ -421,7 +421,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     }
 
     private void doRandomAtomicUpdate(int docId) throws Exception {
-      assert 0 == docId % DOC_ID_INCR : "WTF? " + docId;
+      assertEquals("WTF? " + docId, 0, docId % DOC_ID_INCR);
 
       final int delta = TestUtil.nextInt(rand, -1000, 1000);
       log.info("worker={}, docId={}, delta={}", workerId, docId, delta);
@@ -521,7 +521,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
   }
 
   public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
-    assert null != client.getDefaultCollection();
+    assertNotNull(client.getDefaultCollection());
     ZkStateReader.from(client).forceUpdateCollection(client.getDefaultCollection());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(
         client.getDefaultCollection(), ZkStateReader.from(client), true, true, 330);

@@ -1295,7 +1295,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
     assertU(commit());
     long D1Version2 = getVer(req("q", "id:D1"));
 
-    assert (D1Version2 > D1Version1);
+    assertTrue(D1Version2 > D1Version1);
 
     assertJQ(
         req("qt", "/get", "getVersions", "2"),

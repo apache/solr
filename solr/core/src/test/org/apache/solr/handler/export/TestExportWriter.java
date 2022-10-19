@@ -1354,7 +1354,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     Map rsp = (Map) Utils.fromJSONString(response);
     List doclist = (List) (((Map) rsp.get("response")).get("docs"));
 
-    assert docs.size() == numDocs;
+    assertEquals(docs.size(), numDocs);
 
     for (int i = 0; i < docs.size() - 1; i++) { // docs..
       assertEquals(

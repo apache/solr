@@ -491,8 +491,8 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     @Override
     public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {
       try {
-        assert currentSearcher == null
-            : "SlowSearcherListener should only be used as FirstSearcherListener";
+        assertNull(
+            "SlowSearcherListener should only be used as FirstSearcherListener", currentSearcher);
         // simulate a slow searcher listener
         latch.await(10, TimeUnit.SECONDS);
       } catch (InterruptedException e) {

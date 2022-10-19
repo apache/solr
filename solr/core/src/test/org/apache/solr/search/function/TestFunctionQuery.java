@@ -117,7 +117,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
     for (int i = 0; i < results.length; i += 2) {
       final int id = (int) results[i];
-      assert ((float) id) == results[i];
+      assertEquals(((float) id), results[i], 0.0);
 
       String xpath =
           "//doc[./str[@name='id']='"

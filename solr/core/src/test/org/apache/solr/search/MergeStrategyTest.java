@@ -167,9 +167,9 @@ public class MergeStrategyTest extends BaseDistributedSearchTestCase {
 
     MergeStrategy[] merges = {m1, m2, m3};
     Arrays.sort(merges, MergeStrategy.MERGE_COMP);
-    assert (merges[0].getCost() == 1);
-    assert (merges[1].getCost() == 50);
-    assert (merges[2].getCost() == 100);
+    assertEquals(1, merges[0].getCost());
+    assertEquals(50, merges[1].getCost());
+    assertEquals(100, merges[2].getCost());
   }
 
   private void assertOrder(QueryResponse rsp, String... docs) throws Exception {

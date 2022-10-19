@@ -789,7 +789,7 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
   }
 
   private void updateWithChain(String chain, String... fields) throws Exception {
-    assert fields.length % 2 == 0;
+    assertEquals(0, fields.length % 2);
     SolrInputDocument doc = new SolrInputDocument(fields);
     updateJ(jsonAdd(doc), params("update.chain", chain));
   }
