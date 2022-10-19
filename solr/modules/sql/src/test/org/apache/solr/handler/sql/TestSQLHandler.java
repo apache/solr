@@ -308,43 +308,43 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assertEquals(8, tuples.size());
 
     tuple = tuples.get(0);
-    assertEquals(8, (long) tuple.getLong("id"));
-    assertEquals(60, (long) tuple.getLong("field_i"));
+    assertEquals(8, tuple.getLong("id").longValue());
+    assertEquals(60, tuple.getLong("field_i").longValue());
     assertEquals("c", tuple.get("str_s"));
 
     tuple = tuples.get(1);
-    assertEquals(7, (long) tuple.getLong("id"));
-    assertEquals(50, (long) tuple.getLong("field_i"));
+    assertEquals(7, tuple.getLong("id").longValue());
+    assertEquals(50, tuple.getLong("field_i").longValue());
     assertEquals("c", tuple.get("str_s"));
 
     tuple = tuples.get(2);
-    assertEquals(6, (long) tuple.getLong("id"));
-    assertEquals(40, (long) tuple.getLong("field_i"));
+    assertEquals(6, tuple.getLong("id").longValue());
+    assertEquals(40, tuple.getLong("field_i").longValue());
     assertEquals("c", tuple.get("str_s"));
 
     tuple = tuples.get(3);
-    assertEquals(5, (long) tuple.getLong("id"));
-    assertEquals(30, (long) tuple.getLong("field_i"));
+    assertEquals(5, tuple.getLong("id").longValue());
+    assertEquals(30, tuple.getLong("field_i").longValue());
     assertEquals("c", tuple.get("str_s"));
 
     tuple = tuples.get(4);
-    assertEquals(4, (long) tuple.getLong("id"));
-    assertEquals(11, (long) tuple.getLong("field_i"));
+    assertEquals(4, tuple.getLong("id").longValue());
+    assertEquals(11, tuple.getLong("field_i").longValue());
     assertEquals("b", tuple.get("str_s"));
 
     tuple = tuples.get(5);
-    assertEquals(3, (long) tuple.getLong("id"));
-    assertEquals(20, (long) tuple.getLong("field_i"));
+    assertEquals(3, tuple.getLong("id").longValue());
+    assertEquals(20, tuple.getLong("field_i").longValue());
     assertEquals("a", tuple.get("str_s"));
 
     tuple = tuples.get(6);
-    assertEquals(2, (long) tuple.getLong("id"));
-    assertEquals(8, (long) tuple.getLong("field_i"));
+    assertEquals(2, tuple.getLong("id").longValue());
+    assertEquals(8, tuple.getLong("field_i").longValue());
     assertEquals("b", tuple.get("str_s"));
 
     tuple = tuples.get(7);
-    assertEquals(1, (long) tuple.getLong("id"));
-    assertEquals(7, (long) tuple.getLong("field_i"));
+    assertEquals(1, tuple.getLong("id").longValue());
+    assertEquals(7, tuple.getLong("field_i").longValue());
     assertEquals("a", tuple.get("str_s"));
 
     sParams =
@@ -359,8 +359,8 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assertEquals(1, tuples.size());
 
     tuple = tuples.get(0);
-    assertEquals(8, (long) tuple.getLong("id"));
-    assertEquals(60, (long) tuple.getLong("field_i"));
+    assertEquals(8, tuple.getLong("id").longValue());
+    assertEquals(60, tuple.getLong("field_i").longValue());
     assertEquals("c", tuple.get("str_s"));
 
     sParams =
@@ -375,18 +375,18 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assertEquals(3, tuples.size());
 
     tuple = tuples.get(0);
-    assertEquals(3, (long) tuple.getLong("id"));
-    assertEquals(20, (long) tuple.getLong("field_i"));
+    assertEquals(3, tuple.getLong("id").longValue());
+    assertEquals(20, tuple.getLong("field_i").longValue());
     assertEquals("a", tuple.get("str_s"));
 
     tuple = tuples.get(1);
-    assertEquals(2, (long) tuple.getLong("id"));
-    assertEquals(8, (long) tuple.getLong("field_i"));
+    assertEquals(2, tuple.getLong("id").longValue());
+    assertEquals(8, tuple.getLong("field_i").longValue());
     assertEquals("b", tuple.get("str_s"));
 
     tuple = tuples.get(2);
-    assertEquals(1, (long) tuple.getLong("id"));
-    assertEquals(7, (long) tuple.getLong("field_i"));
+    assertEquals(1, tuple.getLong("id").longValue());
+    assertEquals(7, tuple.getLong("field_i").longValue());
     assertEquals("a", tuple.get("str_s"));
 
     sParams =
@@ -401,18 +401,18 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assertEquals(3, tuples.size());
 
     tuple = tuples.get(0);
-    assertEquals(3, (long) tuple.getLong("myId"));
-    assertEquals(20, (long) tuple.getLong("myInt"));
+    assertEquals(3, tuple.getLong("myId").longValue());
+    assertEquals(20, tuple.getLong("myInt").longValue());
     assertEquals("a", tuple.get("myString"));
 
     tuple = tuples.get(1);
-    assertEquals(2, (long) tuple.getLong("myId"));
-    assertEquals(8, (long) tuple.getLong("myInt"));
+    assertEquals(2, tuple.getLong("myId").longValue());
+    assertEquals(8, tuple.getLong("myInt").longValue());
     assertEquals("b", tuple.get("myString"));
 
     tuple = tuples.get(2);
-    assertEquals(1, (long) tuple.getLong("myId"));
-    assertEquals(7, (long) tuple.getLong("myInt"));
+    assertEquals(1, tuple.getLong("myId").longValue());
+    assertEquals(7, tuple.getLong("myInt").longValue());
     assertEquals("a", tuple.get("myString"));
 
     sParams =
@@ -427,18 +427,18 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assertEquals(3, tuples.size());
 
     tuple = tuples.get(0);
-    assertEquals(3, (long) tuple.getLong("myId"));
-    assertEquals(20, (long) tuple.getLong("myInt"));
+    assertEquals(3, tuple.getLong("myId").longValue());
+    assertEquals(20, tuple.getLong("myInt").longValue());
     assertEquals("a", tuple.get("myString"));
 
     tuple = tuples.get(1);
-    assertEquals(2, (long) tuple.getLong("myId"));
-    assertEquals(8, (long) tuple.getLong("myInt"));
+    assertEquals(2, tuple.getLong("myId").longValue());
+    assertEquals(8, tuple.getLong("myInt").longValue());
     assertEquals("b", tuple.get("myString"));
 
     tuple = tuples.get(2);
-    assertEquals(1, (long) tuple.getLong("myId"));
-    assertEquals(7, (long) tuple.getLong("myInt"));
+    assertEquals(1, tuple.getLong("myId").longValue());
+    assertEquals(7, tuple.getLong("myInt").longValue());
     assertEquals("a", tuple.get("myString"));
 
     // SOLR-8845 - Test to make sure that 1 = 0 works for things like Spark SQL
@@ -684,43 +684,43 @@ public class TestSQLHandler extends SolrCloudTestCase {
     Tuple tuple;
 
     tuple = tuples.get(0);
-    assertEquals(8, (long) tuple.getLong("id"));
-    assertEquals(60, (long) tuple.getLong("Field_i"));
+    assertEquals(8, tuple.getLong("id").longValue());
+    assertEquals(60, tuple.getLong("Field_i").longValue());
     assertEquals("c", tuple.get("Str_s"));
 
     tuple = tuples.get(1);
-    assertEquals(7, (long) tuple.getLong("id"));
-    assertEquals(50, (long) tuple.getLong("Field_i"));
+    assertEquals(7, tuple.getLong("id").longValue());
+    assertEquals(50, tuple.getLong("Field_i").longValue());
     assertEquals("c", tuple.get("Str_s"));
 
     tuple = tuples.get(2);
-    assertEquals(6, (long) tuple.getLong("id"));
-    assertEquals(40, (long) tuple.getLong("Field_i"));
+    assertEquals(6, tuple.getLong("id").longValue());
+    assertEquals(40, tuple.getLong("Field_i").longValue());
     assertEquals("c", tuple.get("Str_s"));
 
     tuple = tuples.get(3);
-    assertEquals(5, (long) tuple.getLong("id"));
-    assertEquals(30, (long) tuple.getLong("Field_i"));
+    assertEquals(5, tuple.getLong("id").longValue());
+    assertEquals(30, tuple.getLong("Field_i").longValue());
     assertEquals("c", tuple.get("Str_s"));
 
     tuple = tuples.get(4);
-    assertEquals(3, (long) tuple.getLong("id"));
-    assertEquals(20, (long) tuple.getLong("Field_i"));
+    assertEquals(3, tuple.getLong("id").longValue());
+    assertEquals(20, tuple.getLong("Field_i").longValue());
     assertEquals("a", tuple.get("Str_s"));
 
     tuple = tuples.get(5);
-    assertEquals(4, (long) tuple.getLong("id"));
-    assertEquals(11, (long) tuple.getLong("Field_i"));
+    assertEquals(4, tuple.getLong("id").longValue());
+    assertEquals(11, tuple.getLong("Field_i").longValue());
     assertEquals("b", tuple.get("Str_s"));
 
     tuple = tuples.get(6);
-    assertEquals(2, (long) tuple.getLong("id"));
-    assertEquals(8, (long) tuple.getLong("Field_i"));
+    assertEquals(2, tuple.getLong("id").longValue());
+    assertEquals(8, tuple.getLong("Field_i").longValue());
     assertEquals("b", tuple.get("Str_s"));
 
     tuple = tuples.get(7);
-    assertEquals(1, (long) tuple.getLong("id"));
-    assertEquals(7, (long) tuple.getLong("Field_i"));
+    assertEquals(1, tuple.getLong("id").longValue());
+    assertEquals(7, tuple.getLong("Field_i").longValue());
     assertEquals("a", tuple.get("Str_s"));
 
     // TODO get sum(Field_i) as named one
@@ -800,27 +800,27 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     tuple = tuples.get(0);
     assertEquals("a", tuple.get("str_s"));
-    assertEquals(1, (long) tuple.getLong("field_i"));
+    assertEquals(1, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(1);
     assertEquals("a", tuple.get("str_s"));
-    assertEquals(20, (long) tuple.getLong("field_i"));
+    assertEquals(20, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(2);
     assertEquals("b", tuple.get("str_s"));
-    assertEquals(2, (long) tuple.getLong("field_i"));
+    assertEquals(2, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(3);
     assertEquals("c", tuple.get("str_s"));
-    assertEquals(30, (long) tuple.getLong("field_i"));
+    assertEquals(30, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(4);
     assertEquals("c", tuple.get("str_s"));
-    assertEquals(50, (long) tuple.getLong("field_i"));
+    assertEquals(50, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(5);
     assertEquals("c", tuple.get("str_s"));
-    assertEquals(60, (long) tuple.getLong("field_i"));
+    assertEquals(60, tuple.getLong("field_i").longValue());
 
     // reverse the sort
     sParams =
@@ -838,27 +838,27 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     tuple = tuples.get(0);
     assertEquals("c", tuple.get("str_s"));
-    assertEquals(60, (long) tuple.getLong("field_i"));
+    assertEquals(60, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(1);
     assertEquals("c", tuple.get("str_s"));
-    assertEquals(50, (long) tuple.getLong("field_i"));
+    assertEquals(50, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(2);
     assertEquals("c", tuple.get("str_s"));
-    assertEquals(30, (long) tuple.getLong("field_i"));
+    assertEquals(30, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(3);
     assertEquals("b", tuple.get("str_s"));
-    assertEquals(2, (long) tuple.getLong("field_i"));
+    assertEquals(2, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(4);
     assertEquals("a", tuple.get("str_s"));
-    assertEquals(20, (long) tuple.getLong("field_i"));
+    assertEquals(20, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(5);
     assertEquals("a", tuple.get("str_s"));
-    assertEquals(1, (long) tuple.getLong("field_i"));
+    assertEquals(1, tuple.getLong("field_i").longValue());
 
     // reverse the sort
     sParams =
@@ -876,27 +876,27 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     tuple = tuples.get(0);
     assertEquals("c", tuple.get("myString"));
-    assertEquals(60, (long) tuple.getLong("myInt"));
+    assertEquals(60, tuple.getLong("myInt").longValue());
 
     tuple = tuples.get(1);
     assertEquals("c", tuple.get("myString"));
-    assertEquals(50, (long) tuple.getLong("myInt"));
+    assertEquals(50, tuple.getLong("myInt").longValue());
 
     tuple = tuples.get(2);
     assertEquals("c", tuple.get("myString"));
-    assertEquals(30, (long) tuple.getLong("myInt"));
+    assertEquals(30, tuple.getLong("myInt").longValue());
 
     tuple = tuples.get(3);
     assertEquals("b", tuple.get("myString"));
-    assertEquals(2, (long) tuple.getLong("myInt"));
+    assertEquals(2, tuple.getLong("myInt").longValue());
 
     tuple = tuples.get(4);
     assertEquals("a", tuple.get("myString"));
-    assertEquals(20, (long) tuple.getLong("myInt"));
+    assertEquals(20, tuple.getLong("myInt").longValue());
 
     tuple = tuples.get(5);
     assertEquals("a", tuple.get("myString"));
-    assertEquals(1, (long) tuple.getLong("myInt"));
+    assertEquals(1, tuple.getLong("myInt").longValue());
 
     // test with limit
     sParams =
@@ -914,11 +914,11 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     tuple = tuples.get(0);
     assertEquals("c", tuple.get("str_s"));
-    assertEquals(60, (long) tuple.getLong("field_i"));
+    assertEquals(60, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(1);
     assertEquals("c", tuple.get("str_s"));
-    assertEquals(50, (long) tuple.getLong("field_i"));
+    assertEquals(50, tuple.getLong("field_i").longValue());
 
     // Test without a sort. Sort should be asc by default.
     sParams =
@@ -936,32 +936,32 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     tuple = tuples.get(0);
     assertEquals("a", tuple.get("str_s"));
-    assertEquals(1, (long) tuple.getLong("field_i"));
+    assertEquals(1, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(1);
 
     assertEquals("a", tuple.get("str_s"));
-    assertEquals(20, (long) tuple.getLong("field_i"));
+    assertEquals(20, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(2);
 
     assertEquals("b", tuple.get("str_s"));
-    assertEquals(2, (long) tuple.getLong("field_i"));
+    assertEquals(2, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(3);
 
     assertEquals("c", tuple.get("str_s"));
-    assertEquals(30, (long) tuple.getLong("field_i"));
+    assertEquals(30, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(4);
 
     assertEquals("c", tuple.get("str_s"));
-    assertEquals(50, (long) tuple.getLong("field_i"));
+    assertEquals(50, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(5);
 
     assertEquals("c", tuple.get("str_s"));
-    assertEquals(60, (long) tuple.getLong("field_i"));
+    assertEquals(60, tuple.getLong("field_i").longValue());
 
     // Test with a predicate.
     sParams =
@@ -979,11 +979,11 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     tuple = tuples.get(0);
     assertEquals("a", tuple.get("str_s"));
-    assertEquals(1, (long) tuple.getLong("field_i"));
+    assertEquals(1, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(1);
     assertEquals("a", tuple.get("str_s"));
-    assertEquals(20, (long) tuple.getLong("field_i"));
+    assertEquals(20, tuple.getLong("field_i").longValue());
   }
 
   @Test
@@ -1017,27 +1017,27 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assertEquals(6, tuples.size());
     Tuple tuple = tuples.get(0);
     assertEquals("a", tuple.get("str_s"));
-    assertEquals(1, (long) tuple.getLong("field_i"));
+    assertEquals(1, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(1);
     assertEquals("a", tuple.get("str_s"));
-    assertEquals(20, (long) tuple.getLong("field_i"));
+    assertEquals(20, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(2);
     assertEquals("b", tuple.get("str_s"));
-    assertEquals(2, (long) tuple.getLong("field_i"));
+    assertEquals(2, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(3);
     assertEquals("c", tuple.get("str_s"));
-    assertEquals(30, (long) tuple.getLong("field_i"));
+    assertEquals(30, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(4);
     assertEquals("c", tuple.get("str_s"));
-    assertEquals(50, (long) tuple.getLong("field_i"));
+    assertEquals(50, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(5);
     assertEquals("c", tuple.get("str_s"));
-    assertEquals(60, (long) tuple.getLong("field_i"));
+    assertEquals(60, tuple.getLong("field_i").longValue());
 
     // reverse the sort
     sParams =
@@ -1055,27 +1055,27 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     tuple = tuples.get(0);
     assertEquals("c", tuple.get("str_s"));
-    assertEquals(60, (long) tuple.getLong("field_i"));
+    assertEquals(60, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(1);
     assertEquals("c", tuple.get("str_s"));
-    assertEquals(50, (long) tuple.getLong("field_i"));
+    assertEquals(50, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(2);
     assertEquals("c", tuple.get("str_s"));
-    assertEquals(30, (long) tuple.getLong("field_i"));
+    assertEquals(30, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(3);
     assertEquals("b", tuple.get("str_s"));
-    assertEquals(2, (long) tuple.getLong("field_i"));
+    assertEquals(2, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(4);
     assertEquals("a", tuple.get("str_s"));
-    assertEquals(20, (long) tuple.getLong("field_i"));
+    assertEquals(20, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(5);
     assertEquals("a", tuple.get("str_s"));
-    assertEquals(1, (long) tuple.getLong("field_i"));
+    assertEquals(1, tuple.getLong("field_i").longValue());
 
     sParams =
         params(
@@ -1092,27 +1092,27 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     tuple = tuples.get(0);
     assertEquals("c", tuple.get("myString"));
-    assertEquals(60, (long) tuple.getLong("field_i"));
+    assertEquals(60, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(1);
     assertEquals("c", tuple.get("myString"));
-    assertEquals(50, (long) tuple.getLong("field_i"));
+    assertEquals(50, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(2);
     assertEquals("c", tuple.get("myString"));
-    assertEquals(30, (long) tuple.getLong("field_i"));
+    assertEquals(30, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(3);
     assertEquals("b", tuple.get("myString"));
-    assertEquals(2, (long) tuple.getLong("field_i"));
+    assertEquals(2, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(4);
     assertEquals("a", tuple.get("myString"));
-    assertEquals(20, (long) tuple.getLong("field_i"));
+    assertEquals(20, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(5);
     assertEquals("a", tuple.get("myString"));
-    assertEquals(1, (long) tuple.getLong("field_i"));
+    assertEquals(1, tuple.getLong("field_i").longValue());
 
     // test with limit
     sParams =
@@ -1130,11 +1130,11 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     tuple = tuples.get(0);
     assertEquals("c", tuple.get("str_s"));
-    assertEquals(60, (long) tuple.getLong("field_i"));
+    assertEquals(60, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(1);
     assertEquals("c", tuple.get("str_s"));
-    assertEquals(50, (long) tuple.getLong("field_i"));
+    assertEquals(50, tuple.getLong("field_i").longValue());
 
     // Test without a sort. Sort should be asc by default.
     sParams =
@@ -1152,27 +1152,27 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     tuple = tuples.get(0);
     assertEquals("a", tuple.get("str_s"));
-    assertEquals(1, (long) tuple.getLong("field_i"));
+    assertEquals(1, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(1);
     assertEquals("a", tuple.get("str_s"));
-    assertEquals(20, (long) tuple.getLong("field_i"));
+    assertEquals(20, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(2);
     assertEquals("b", tuple.get("str_s"));
-    assertEquals(2, (long) tuple.getLong("field_i"));
+    assertEquals(2, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(3);
     assertEquals("c", tuple.get("str_s"));
-    assertEquals(30, (long) tuple.getLong("field_i"));
+    assertEquals(30, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(4);
     assertEquals("c", tuple.get("str_s"));
-    assertEquals(50, (long) tuple.getLong("field_i"));
+    assertEquals(50, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(5);
     assertEquals("c", tuple.get("str_s"));
-    assertEquals(60, (long) tuple.getLong("field_i"));
+    assertEquals(60, tuple.getLong("field_i").longValue());
 
     // Test with a predicate.
     sParams =
@@ -1189,11 +1189,11 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     tuple = tuples.get(0);
     assertEquals("a", tuple.get("str_s"));
-    assertEquals(1, (long) tuple.getLong("field_i"));
+    assertEquals(1, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(1);
     assertEquals("a", tuple.get("str_s"));
-    assertEquals(20, (long) tuple.getLong("field_i"));
+    assertEquals(20, tuple.getLong("field_i").longValue());
   }
 
   @Test
@@ -1231,27 +1231,27 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     tuple = tuples.get(0);
     assertEquals("a", tuple.get("str_s"));
-    assertEquals(1, (long) tuple.getLong("field_i"));
+    assertEquals(1, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(1);
     assertEquals("a", tuple.get("str_s"));
-    assertEquals(20, (long) tuple.getLong("field_i"));
+    assertEquals(20, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(2);
     assertEquals("b", tuple.get("str_s"));
-    assertEquals(2, (long) tuple.getLong("field_i"));
+    assertEquals(2, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(3);
     assertEquals("c", tuple.get("str_s"));
-    assertEquals(30, (long) tuple.getLong("field_i"));
+    assertEquals(30, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(4);
     assertEquals("c", tuple.get("str_s"));
-    assertEquals(50, (long) tuple.getLong("field_i"));
+    assertEquals(50, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(5);
     assertEquals("c", tuple.get("str_s"));
-    assertEquals(60, (long) tuple.getLong("field_i"));
+    assertEquals(60, tuple.getLong("field_i").longValue());
 
     // reverse the sort
     sParams =
@@ -1271,27 +1271,27 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     tuple = tuples.get(0);
     assertEquals("c", tuple.get("str_s"));
-    assertEquals(60, (long) tuple.getLong("field_i"));
+    assertEquals(60, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(1);
     assertEquals("c", tuple.get("str_s"));
-    assertEquals(50, (long) tuple.getLong("field_i"));
+    assertEquals(50, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(2);
     assertEquals("c", tuple.get("str_s"));
-    assertEquals(30, (long) tuple.getLong("field_i"));
+    assertEquals(30, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(3);
     assertEquals("b", tuple.get("str_s"));
-    assertEquals(2, (long) tuple.getLong("field_i"));
+    assertEquals(2, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(4);
     assertEquals("a", tuple.get("str_s"));
-    assertEquals(20, (long) tuple.getLong("field_i"));
+    assertEquals(20, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(5);
     assertEquals("a", tuple.get("str_s"));
-    assertEquals(1, (long) tuple.getLong("field_i"));
+    assertEquals(1, tuple.getLong("field_i").longValue());
 
     // reverse the sort
     sParams =
@@ -1311,27 +1311,27 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     tuple = tuples.get(0);
     assertEquals("c", tuple.get("myString"));
-    assertEquals(60, (long) tuple.getLong("field_i"));
+    assertEquals(60, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(1);
     assertEquals("c", tuple.get("myString"));
-    assertEquals(50, (long) tuple.getLong("field_i"));
+    assertEquals(50, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(2);
     assertEquals("c", tuple.get("myString"));
-    assertEquals(30, (long) tuple.getLong("field_i"));
+    assertEquals(30, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(3);
     assertEquals("b", tuple.get("myString"));
-    assertEquals(2, (long) tuple.getLong("field_i"));
+    assertEquals(2, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(4);
     assertEquals("a", tuple.get("myString"));
-    assertEquals(20, (long) tuple.getLong("field_i"));
+    assertEquals(20, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(5);
     assertEquals("a", tuple.get("myString"));
-    assertEquals(1, (long) tuple.getLong("field_i"));
+    assertEquals(1, tuple.getLong("field_i").longValue());
 
     // test with limit
     sParams =
@@ -1351,11 +1351,11 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     tuple = tuples.get(0);
     assertEquals("c", tuple.get("str_s"));
-    assertEquals(60, (long) tuple.getLong("field_i"));
+    assertEquals(60, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(1);
     assertEquals("c", tuple.get("str_s"));
-    assertEquals(50, (long) tuple.getLong("field_i"));
+    assertEquals(50, tuple.getLong("field_i").longValue());
 
     // Test without a sort. Sort should be asc by default.
     sParams =
@@ -1375,27 +1375,27 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     tuple = tuples.get(0);
     assertEquals("a", tuple.get("str_s"));
-    assertEquals(1, (long) tuple.getLong("field_i"));
+    assertEquals(1, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(1);
     assertEquals("a", tuple.get("str_s"));
-    assertEquals(20, (long) tuple.getLong("field_i"));
+    assertEquals(20, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(2);
     assertEquals("b", tuple.get("str_s"));
-    assertEquals(2, (long) tuple.getLong("field_i"));
+    assertEquals(2, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(3);
     assertEquals("c", tuple.get("str_s"));
-    assertEquals(30, (long) tuple.getLong("field_i"));
+    assertEquals(30, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(4);
     assertEquals("c", tuple.get("str_s"));
-    assertEquals(50, (long) tuple.getLong("field_i"));
+    assertEquals(50, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(5);
     assertEquals("c", tuple.get("str_s"));
-    assertEquals(60, (long) tuple.getLong("field_i"));
+    assertEquals(60, tuple.getLong("field_i").longValue());
 
     // Test with a predicate.
     sParams =
@@ -1415,11 +1415,11 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     tuple = tuples.get(0);
     assertEquals("a", tuple.get("str_s"));
-    assertEquals(1, (long) tuple.getLong("field_i"));
+    assertEquals(1, tuple.getLong("field_i").longValue());
 
     tuple = tuples.get(1);
     assertEquals("a", tuple.get("str_s"));
-    assertEquals(20, (long) tuple.getLong("field_i"));
+    assertEquals(20, tuple.getLong("field_i").longValue());
   }
 
   @Test
@@ -1919,11 +1919,11 @@ public class TestSQLHandler extends SolrCloudTestCase {
     Tuple tuple;
 
     tuple = tuples.get(0);
-    assertEquals(2015, (long) tuple.getLong("year_i"));
+    assertEquals(2015, tuple.getLong("year_i").longValue());
     assertEquals(66, tuple.getDouble("EXPR$1"), 0.0); // sum(item_i)
 
     tuple = tuples.get(1);
-    assertEquals(2014, (long) tuple.getLong("year_i"));
+    assertEquals(2014, tuple.getLong("year_i").longValue());
     assertEquals(7, tuple.getDouble("EXPR$1"), 0.0); // sum(item_i)
 
     sParams =
@@ -1939,18 +1939,18 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assertEquals(3, tuples.size());
 
     tuple = tuples.get(0);
-    assertEquals(2015, (long) tuple.getLong("year_i"));
-    assertEquals(11, (long) tuple.getLong("month_i"));
+    assertEquals(2015, tuple.getLong("year_i").longValue());
+    assertEquals(11, tuple.getLong("month_i").longValue());
     assertEquals(57, tuple.getDouble("EXPR$2"), 0.0); // sum(item_i)
 
     tuple = tuples.get(1);
-    assertEquals(2015, (long) tuple.getLong("year_i"));
-    assertEquals(10, (long) tuple.getLong("month_i"));
+    assertEquals(2015, tuple.getLong("year_i").longValue());
+    assertEquals(10, tuple.getLong("month_i").longValue());
     assertEquals(9, tuple.getDouble("EXPR$2"), 0.0); // sum(item_i)
 
     tuple = tuples.get(2);
-    assertEquals(2014, (long) tuple.getLong("year_i"));
-    assertEquals(4, (long) tuple.getLong("month_i"));
+    assertEquals(2014, tuple.getLong("year_i").longValue());
+    assertEquals(4, tuple.getLong("month_i").longValue());
     assertEquals(7, tuple.getDouble("EXPR$2"), 0.0); // sum(item_i)
 
     sParams =
@@ -1966,39 +1966,39 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assertEquals(6, tuples.size());
 
     tuple = tuples.get(0);
-    assertEquals(2015, (long) tuple.getLong("year_i"));
-    assertEquals(11, (long) tuple.getLong("month_i"));
-    assertEquals(8, (long) tuple.getLong("day_i"));
+    assertEquals(2015, tuple.getLong("year_i").longValue());
+    assertEquals(11, tuple.getLong("month_i").longValue());
+    assertEquals(8, tuple.getLong("day_i").longValue());
     assertEquals(42, tuple.getDouble("EXPR$3"), 0.0); // sum(item_i)
 
     tuple = tuples.get(1);
-    assertEquals(2015, (long) tuple.getLong("year_i"));
-    assertEquals(11, (long) tuple.getLong("month_i"));
-    assertEquals(7, (long) tuple.getLong("day_i"));
+    assertEquals(2015, tuple.getLong("year_i").longValue());
+    assertEquals(11, tuple.getLong("month_i").longValue());
+    assertEquals(7, tuple.getLong("day_i").longValue());
     assertEquals(15, tuple.getDouble("EXPR$3"), 0.0); // sum(item_i)
 
     tuple = tuples.get(2);
-    assertEquals(2015, (long) tuple.getLong("year_i"));
-    assertEquals(10, (long) tuple.getLong("month_i"));
-    assertEquals(3, (long) tuple.getLong("day_i"));
+    assertEquals(2015, tuple.getLong("year_i").longValue());
+    assertEquals(10, tuple.getLong("month_i").longValue());
+    assertEquals(3, tuple.getLong("day_i").longValue());
     assertEquals(5, tuple.getDouble("EXPR$3"), 0.0); // sum(item_i)
 
     tuple = tuples.get(3);
-    assertEquals(2015, (long) tuple.getLong("year_i"));
-    assertEquals(10, (long) tuple.getLong("month_i"));
-    assertEquals(1, (long) tuple.getLong("day_i"));
+    assertEquals(2015, tuple.getLong("year_i").longValue());
+    assertEquals(10, tuple.getLong("month_i").longValue());
+    assertEquals(1, tuple.getLong("day_i").longValue());
     assertEquals(4, tuple.getDouble("EXPR$3"), 0.0); // sum(item_i)
 
     tuple = tuples.get(4);
-    assertEquals(2014, (long) tuple.getLong("year_i"));
-    assertEquals(4, (long) tuple.getLong("month_i"));
-    assertEquals(4, (long) tuple.getLong("day_i"));
+    assertEquals(2014, tuple.getLong("year_i").longValue());
+    assertEquals(4, tuple.getLong("month_i").longValue());
+    assertEquals(4, tuple.getLong("day_i").longValue());
     assertEquals(6, tuple.getDouble("EXPR$3"), 0.0); // sum(item_i)
 
     tuple = tuples.get(5);
-    assertEquals(2014, (long) tuple.getLong("year_i"));
-    assertEquals(4, (long) tuple.getLong("month_i"));
-    assertEquals(2, (long) tuple.getLong("day_i"));
+    assertEquals(2014, tuple.getLong("year_i").longValue());
+    assertEquals(4, tuple.getLong("month_i").longValue());
+    assertEquals(2, tuple.getLong("day_i").longValue());
     assertEquals(1, tuple.getDouble("EXPR$3"), 0.0); // sum(item_i)
   }
 
@@ -2128,11 +2128,11 @@ public class TestSQLHandler extends SolrCloudTestCase {
     Tuple tuple;
 
     tuple = tuples.get(0);
-    assertEquals(2015, (long) tuple.getLong("year_i"));
+    assertEquals(2015, tuple.getLong("year_i").longValue());
     assertEquals(66, tuple.getDouble("EXPR$1"), 0.0); // sum(item_i)
 
     tuple = tuples.get(1);
-    assertEquals(2014, (long) tuple.getLong("year_i"));
+    assertEquals(2014, tuple.getLong("year_i").longValue());
     assertEquals(7, tuple.getDouble("EXPR$1"), 0.0); // sum(item_i)
 
     sParams =
@@ -2150,18 +2150,18 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assertEquals(3, tuples.size());
 
     tuple = tuples.get(0);
-    assertEquals(2015, (long) tuple.getLong("year_i"));
-    assertEquals(11, (long) tuple.getLong("month_i"));
+    assertEquals(2015, tuple.getLong("year_i").longValue());
+    assertEquals(11, tuple.getLong("month_i").longValue());
     assertEquals(57, tuple.getDouble("EXPR$2"), 0.0); // sum(item_i)
 
     tuple = tuples.get(1);
-    assertEquals(2015, (long) tuple.getLong("year_i"));
-    assertEquals(10, (long) tuple.getLong("month_i"));
+    assertEquals(2015, tuple.getLong("year_i").longValue());
+    assertEquals(10, tuple.getLong("month_i").longValue());
     assertEquals(9, tuple.getDouble("EXPR$2"), 0.0); // sum(item_i)
 
     tuple = tuples.get(2);
-    assertEquals(2014, (long) tuple.getLong("year_i"));
-    assertEquals(4, (long) tuple.getLong("month_i"));
+    assertEquals(2014, tuple.getLong("year_i").longValue());
+    assertEquals(4, tuple.getLong("month_i").longValue());
     assertEquals(7, tuple.getDouble("EXPR$2"), 0.0); // sum(item_i)
 
     sParams =
@@ -2179,39 +2179,39 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assertEquals(6, tuples.size());
 
     tuple = tuples.get(0);
-    assertEquals(2015, (long) tuple.getLong("year_i"));
-    assertEquals(11, (long) tuple.getLong("month_i"));
-    assertEquals(8, (long) tuple.getLong("day_i"));
+    assertEquals(2015, tuple.getLong("year_i").longValue());
+    assertEquals(11, tuple.getLong("month_i").longValue());
+    assertEquals(8, tuple.getLong("day_i").longValue());
     assertEquals(42, tuple.getDouble("EXPR$3"), 0.0); // sum(item_i)
 
     tuple = tuples.get(1);
-    assertEquals(2015, (long) tuple.getLong("year_i"));
-    assertEquals(11, (long) tuple.getLong("month_i"));
-    assertEquals(7, (long) tuple.getLong("day_i"));
+    assertEquals(2015, tuple.getLong("year_i").longValue());
+    assertEquals(11, tuple.getLong("month_i").longValue());
+    assertEquals(7, tuple.getLong("day_i").longValue());
     assertEquals(15, tuple.getDouble("EXPR$3"), 0.0); // sum(item_i)
 
     tuple = tuples.get(2);
-    assertEquals(2015, (long) tuple.getLong("year_i"));
-    assertEquals(10, (long) tuple.getLong("month_i"));
-    assertEquals(3, (long) tuple.getLong("day_i"));
+    assertEquals(2015, tuple.getLong("year_i").longValue());
+    assertEquals(10, tuple.getLong("month_i").longValue());
+    assertEquals(3, tuple.getLong("day_i").longValue());
     assertEquals(5, tuple.getDouble("EXPR$3"), 0.0); // sum(item_i)
 
     tuple = tuples.get(3);
-    assertEquals(2015, (long) tuple.getLong("year_i"));
-    assertEquals(10, (long) tuple.getLong("month_i"));
-    assertEquals(1, (long) tuple.getLong("day_i"));
+    assertEquals(2015, tuple.getLong("year_i").longValue());
+    assertEquals(10, tuple.getLong("month_i").longValue());
+    assertEquals(1, tuple.getLong("day_i").longValue());
     assertEquals(4, tuple.getDouble("EXPR$3"), 0.0); // sum(item_i)
 
     tuple = tuples.get(4);
-    assertEquals(2014, (long) tuple.getLong("year_i"));
-    assertEquals(4, (long) tuple.getLong("month_i"));
-    assertEquals(4, (long) tuple.getLong("day_i"));
+    assertEquals(2014, tuple.getLong("year_i").longValue());
+    assertEquals(4, tuple.getLong("month_i").longValue());
+    assertEquals(4, tuple.getLong("day_i").longValue());
     assertEquals(6, tuple.getDouble("EXPR$3"), 0.0); // sum(item_i)
 
     tuple = tuples.get(5);
-    assertEquals(2014, (long) tuple.getLong("year_i"));
-    assertEquals(4, (long) tuple.getLong("month_i"));
-    assertEquals(2, (long) tuple.getLong("day_i"));
+    assertEquals(2014, tuple.getLong("year_i").longValue());
+    assertEquals(4, tuple.getLong("month_i").longValue());
+    assertEquals(2, tuple.getLong("day_i").longValue());
     assertEquals(1, tuple.getDouble("EXPR$3"), 0.0); // sum(item_i)
   }
 
@@ -2250,7 +2250,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     Tuple tuple;
 
     tuple = tuples.get(0);
-    assertEquals(2015, (long) tuple.getLong("year_i"));
+    assertEquals(2015, tuple.getLong("year_i").longValue());
     assertTrue(
         tuple.get("year_i")
             instanceof Long); // SOLR-8601, This tests that the bucket is actually a Long and not
@@ -2258,7 +2258,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assertEquals(66, tuple.getDouble("EXPR$1"), 0.0); // sum(item_i)
 
     tuple = tuples.get(1);
-    assertEquals(2014, (long) tuple.getLong("year_i"));
+    assertEquals(2014, tuple.getLong("year_i").longValue());
     assertEquals(7, tuple.getDouble("EXPR$1"), 0.0); // sum(item_i)
 
     sParams =
@@ -2278,20 +2278,20 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assertEquals(3, tuples.size());
 
     tuple = tuples.get(0);
-    assertEquals(2015, (long) tuple.getLong("year_i"));
-    assertEquals(11, (long) tuple.getLong("month_i"));
+    assertEquals(2015, tuple.getLong("year_i").longValue());
+    assertEquals(11, tuple.getLong("month_i").longValue());
     assertTrue(tuple.get("year_i") instanceof Long);
     assertTrue(tuple.get("month_i") instanceof Long);
     assertEquals(57, tuple.getDouble("EXPR$2"), 0.0); // sum(item_i)
 
     tuple = tuples.get(1);
-    assertEquals(2015, (long) tuple.getLong("year_i"));
-    assertEquals(10, (long) tuple.getLong("month_i"));
+    assertEquals(2015, tuple.getLong("year_i").longValue());
+    assertEquals(10, tuple.getLong("month_i").longValue());
     assertEquals(9, tuple.getDouble("EXPR$2"), 0.0); // sum(item_i)
 
     tuple = tuples.get(2);
-    assertEquals(2014, (long) tuple.getLong("year_i"));
-    assertEquals(4, (long) tuple.getLong("month_i"));
+    assertEquals(2014, tuple.getLong("year_i").longValue());
+    assertEquals(4, tuple.getLong("month_i").longValue());
     assertEquals(7, tuple.getDouble("EXPR$2"), 0.0); // sum(item_i)
 
     sParams =
@@ -2311,39 +2311,39 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assertEquals(6, tuples.size());
 
     tuple = tuples.get(0);
-    assertEquals(2015, (long) tuple.getLong("year_i"));
-    assertEquals(11, (long) tuple.getLong("month_i"));
-    assertEquals(8, (long) tuple.getLong("day_i"));
+    assertEquals(2015, tuple.getLong("year_i").longValue());
+    assertEquals(11, tuple.getLong("month_i").longValue());
+    assertEquals(8, tuple.getLong("day_i").longValue());
     assertEquals(42, tuple.getDouble("EXPR$3"), 0.0); // sum(item_i)
 
     tuple = tuples.get(1);
-    assertEquals(2015, (long) tuple.getLong("year_i"));
-    assertEquals(11, (long) tuple.getLong("month_i"));
-    assertEquals(7, (long) tuple.getLong("day_i"));
+    assertEquals(2015, tuple.getLong("year_i").longValue());
+    assertEquals(11, tuple.getLong("month_i").longValue());
+    assertEquals(7, tuple.getLong("day_i").longValue());
     assertEquals(15, tuple.getDouble("EXPR$3"), 0.0); // sum(item_i)
 
     tuple = tuples.get(2);
-    assertEquals(2015, (long) tuple.getLong("year_i"));
-    assertEquals(10, (long) tuple.getLong("month_i"));
-    assertEquals(3, (long) tuple.getLong("day_i"));
+    assertEquals(2015, tuple.getLong("year_i").longValue());
+    assertEquals(10, tuple.getLong("month_i").longValue());
+    assertEquals(3, tuple.getLong("day_i").longValue());
     assertEquals(5, tuple.getDouble("EXPR$3"), 0.0); // sum(item_i)
 
     tuple = tuples.get(3);
-    assertEquals(2015, (long) tuple.getLong("year_i"));
-    assertEquals(10, (long) tuple.getLong("month_i"));
-    assertEquals(1, (long) tuple.getLong("day_i"));
+    assertEquals(2015, tuple.getLong("year_i").longValue());
+    assertEquals(10, tuple.getLong("month_i").longValue());
+    assertEquals(1, tuple.getLong("day_i").longValue());
     assertEquals(4, tuple.getDouble("EXPR$3"), 0.0); // sum(item_i)
 
     tuple = tuples.get(4);
-    assertEquals(2014, (long) tuple.getLong("year_i"));
-    assertEquals(4, (long) tuple.getLong("month_i"));
-    assertEquals(4, (long) tuple.getLong("day_i"));
+    assertEquals(2014, tuple.getLong("year_i").longValue());
+    assertEquals(4, tuple.getLong("month_i").longValue());
+    assertEquals(4, tuple.getLong("day_i").longValue());
     assertEquals(6, tuple.getDouble("EXPR$3"), 0.0); // sum(item_i)
 
     tuple = tuples.get(5);
-    assertEquals(2014, (long) tuple.getLong("year_i"));
-    assertEquals(4, (long) tuple.getLong("month_i"));
-    assertEquals(2, (long) tuple.getLong("day_i"));
+    assertEquals(2014, tuple.getLong("year_i").longValue());
+    assertEquals(4, tuple.getLong("month_i").longValue());
+    assertEquals(2, tuple.getLong("day_i").longValue());
     assertEquals(1, tuple.getDouble("EXPR$3"), 0.0); // sum(item_i)
   }
 
@@ -2633,7 +2633,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
         expectResults(
             "SELECT COUNT(1) as `the_count` FROM $ALIAS as `alias` WHERE (`alias`.`b_s`='foo' AND `alias`.`a_s` LIKE 'hell%' AND `alias`.`c_s` IS NOT NULL) HAVING (COUNT(1) > 0)",
             1);
-    assertEquals(4L, (long) tuples.get(0).getLong("the_count"));
+    assertEquals(4L, tuples.get(0).getLong("the_count").longValue());
   }
 
   @Test
@@ -2797,16 +2797,16 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assertEquals("C", stats.getString("max_stringx"));
     assertEquals("aaa", stats.getString("min_textx"));
     assertEquals("ccc", stats.getString("max_textx"));
-    assertEquals(1L, (long) stats.getLong("min_tintx"));
-    assertEquals(3L, (long) stats.getLong("max_tintx"));
-    assertEquals(2L, (long) stats.getLong("min_pintx"));
-    assertEquals(6L, (long) stats.getLong("max_pintx"));
-    assertEquals(1L, (long) stats.getLong("min_pintxs"));
-    assertEquals(7L, (long) stats.getLong("max_pintxs"));
-    assertEquals(1623875868000L, (long) stats.getLong("min_tlongx"));
-    assertEquals(1823875868000L, (long) stats.getLong("max_tlongx"));
-    assertEquals(1623875868000L, (long) stats.getLong("min_plongx"));
-    assertEquals(1823875868000L, (long) stats.getLong("max_plongx"));
+    assertEquals(1L, stats.getLong("min_tintx").longValue());
+    assertEquals(3L, stats.getLong("max_tintx").longValue());
+    assertEquals(2L, stats.getLong("min_pintx").longValue());
+    assertEquals(6L, stats.getLong("max_pintx").longValue());
+    assertEquals(1L, stats.getLong("min_pintxs").longValue());
+    assertEquals(7L, stats.getLong("max_pintxs").longValue());
+    assertEquals(1623875868000L, stats.getLong("min_tlongx").longValue());
+    assertEquals(1823875868000L, stats.getLong("max_tlongx").longValue());
+    assertEquals(1623875868000L, stats.getLong("min_plongx").longValue());
+    assertEquals(1823875868000L, stats.getLong("max_plongx").longValue());
     final double delta = 0.00001d;
     assertEquals(3.33d, stats.getDouble("min_tfloatx"), delta);
     assertEquals(5.55d, stats.getDouble("max_tfloatx"), delta);
@@ -2923,8 +2923,8 @@ public class TestSQLHandler extends SolrCloudTestCase {
             "SELECT COUNT(1) AS total_rows, COUNT(distinct str_s) AS distinct_str, MIN(str_s) AS min_str, MAX(str_s) AS max_str FROM $ALIAS",
             1);
     Tuple firstRow = tuples.get(0);
-    assertEquals(maxDocs, (long) firstRow.getLong("total_rows"));
-    assertEquals(cardinality, (long) firstRow.getLong("distinct_str"));
+    assertEquals(maxDocs, firstRow.getLong("total_rows").longValue());
+    assertEquals(cardinality, firstRow.getLong("distinct_str").longValue());
 
     String expectedMin = String.format(Locale.ROOT, padFmt, 0);
     String expectedMax = String.format(Locale.ROOT, padFmt, cardinality - 1); // max is card-1
@@ -2940,13 +2940,13 @@ public class TestSQLHandler extends SolrCloudTestCase {
         expectResults(
             "SELECT APPROX_COUNT_DISTINCT(distinct str_s) AS approx_distinct FROM $ALIAS", 1);
     firstRow = tuples.get(0);
-    assertEquals(cardinality, (long) firstRow.getLong("approx_distinct"));
+    assertEquals(cardinality, firstRow.getLong("approx_distinct").longValue());
 
     tuples =
         expectResults(
             "SELECT country_s, COUNT(*) AS count_per_bucket FROM $ALIAS GROUP BY country_s", 2);
-    assertEquals(maxDocs / 2L, (long) tuples.get(0).getLong("count_per_bucket"));
-    assertEquals(maxDocs / 2L, (long) tuples.get(1).getLong("count_per_bucket"));
+    assertEquals(maxDocs / 2L, tuples.get(0).getLong("count_per_bucket").longValue());
+    assertEquals(maxDocs / 2L, tuples.get(1).getLong("count_per_bucket").longValue());
   }
 
   private UpdateRequest addDocForDistinctTests(

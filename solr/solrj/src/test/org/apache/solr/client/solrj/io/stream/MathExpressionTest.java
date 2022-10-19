@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -484,7 +485,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(solrStream);
     assertEquals(1, tuples.size());
     @SuppressWarnings({"unchecked"})
-    Map<String, List<Number>> mem = (Map) tuples.get(0).get("return-value");
+    Map<String, List<Number>> mem = (Map<String, List<Number>>) tuples.get(0).get("return-value");
     List<Number> array = mem.get("a");
     assertEquals(array.get(0).intValue(), 100);
     assertEquals(array.get(1).intValue(), 50);
@@ -1719,10 +1720,10 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(features.get(0).get(0), "col3");
     assertEquals(features.get(1).get(0), "col1");
 
-    assertEquals(2, (long) tuples.get(0).getLong("f"));
-    assertEquals(3, (long) tuples.get(0).getLong("g"));
-    assertEquals(1, (long) tuples.get(0).getLong("h"));
-    assertEquals(2, (long) tuples.get(0).getLong("i"));
+    assertEquals(2, tuples.get(0).getLong("f").longValue());
+    assertEquals(3, tuples.get(0).getLong("g").longValue());
+    assertEquals(1, tuples.get(0).getLong("h").longValue());
+    assertEquals(2, tuples.get(0).getLong("i").longValue());
   }
 
   @Test
@@ -1745,23 +1746,23 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(4, tuples.size());
     Tuple out = tuples.get(0);
 
-    assertEquals(out.getDouble("x").doubleValue(), 1.0, 0.0);
-    assertEquals(out.getDouble("y").doubleValue(), 10.0, 0.0);
+    assertEquals(out.getDouble("x"), 1.0, 0.0);
+    assertEquals(out.getDouble("y"), 10.0, 0.0);
 
     out = tuples.get(1);
 
-    assertEquals(out.getDouble("x").doubleValue(), 2.0, 0.0);
-    assertEquals(out.getDouble("y").doubleValue(), 11.0, 0.0);
+    assertEquals(out.getDouble("x"), 2.0, 0.0);
+    assertEquals(out.getDouble("y"), 11.0, 0.0);
 
     out = tuples.get(2);
 
-    assertEquals(out.getDouble("x").doubleValue(), 3.0, 0.0);
-    assertEquals(out.getDouble("y").doubleValue(), 12.0, 0.0);
+    assertEquals(out.getDouble("x"), 3.0, 0.0);
+    assertEquals(out.getDouble("y"), 12.0, 0.0);
 
     out = tuples.get(3);
 
-    assertEquals(out.getDouble("x").doubleValue(), 4.0, 0.0);
-    assertEquals(out.getDouble("y").doubleValue(), 13.0, 0.0);
+    assertEquals(out.getDouble("x"), 4.0, 0.0);
+    assertEquals(out.getDouble("y"), 13.0, 0.0);
 
     cexpr = "let(b=array(10,11,12,13)," + "        zplot(y=b))";
 
@@ -1775,23 +1776,23 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(4, tuples.size());
     out = tuples.get(0);
 
-    assertEquals(out.getDouble("x").doubleValue(), 0.0, 0.0);
-    assertEquals(out.getDouble("y").doubleValue(), 10.0, 0.0);
+    assertEquals(out.getDouble("x"), 0.0, 0.0);
+    assertEquals(out.getDouble("y"), 10.0, 0.0);
 
     out = tuples.get(1);
 
-    assertEquals(out.getDouble("x").doubleValue(), 1.0, 0.0);
-    assertEquals(out.getDouble("y").doubleValue(), 11.0, 0.0);
+    assertEquals(out.getDouble("x"), 1.0, 0.0);
+    assertEquals(out.getDouble("y"), 11.0, 0.0);
 
     out = tuples.get(2);
 
-    assertEquals(out.getDouble("x").doubleValue(), 2.0, 0.0);
-    assertEquals(out.getDouble("y").doubleValue(), 12.0, 0.0);
+    assertEquals(out.getDouble("x"), 2.0, 0.0);
+    assertEquals(out.getDouble("y"), 12.0, 0.0);
 
     out = tuples.get(3);
 
-    assertEquals(out.getDouble("x").doubleValue(), 3.0, 0.0);
-    assertEquals(out.getDouble("y").doubleValue(), 13.0, 0.0);
+    assertEquals(out.getDouble("x"), 3.0, 0.0);
+    assertEquals(out.getDouble("y"), 13.0, 0.0);
 
     cexpr = "zplot(dist=binomialDistribution(10, .50))";
 
@@ -2614,8 +2615,8 @@ public class MathExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(solrStream);
     assertEquals(tuples.size(), 1);
     Tuple tuple = tuples.get(0);
-    assertEquals(tuple.getDouble("a").doubleValue(), 1.88888, 0.0);
-    assertEquals(tuple.getDouble("b").doubleValue(), 8888888888.98, 0.0);
+    assertEquals(tuple.getDouble("a"), 1.88888, 0.0);
+    assertEquals(tuple.getDouble("b"), 8888888888.98, 0.0);
   }
 
   @Test
@@ -3834,8 +3835,8 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(reals.get(15).doubleValue(), 0, 0.0);
 
     List<Number> imaginary = fft.get(1);
-    for (int i = 0; i < imaginary.size(); i++) {
-      assertEquals(imaginary.get(i).doubleValue(), 0.0, 0.0);
+    for (Number number : imaginary) {
+      assertEquals(number.doubleValue(), 0.0, 0.0);
     }
 
     @SuppressWarnings({"unchecked"})
@@ -4722,9 +4723,8 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(row2.get(4).doubleValue(), 1.0, 0.0);
     assertEquals(row2.get(5).doubleValue(), 1.0, 0.0);
 
-    @SuppressWarnings({"rawtypes"})
-    Map atts = (Map) tuples.get(0).get("e");
-    List<Number> dists = (List<Number>) atts.get("distances");
+    Map<String, List<Number>> atts = (Map<String, List<Number>>) tuples.get(0).get("e");
+    List<Number> dists = atts.get("distances");
     assertEquals(dists.size(), 2);
     assertEquals(dists.get(0).doubleValue(), 0.0, 0.0);
     assertEquals(dists.get(1).doubleValue(), 1.4142135623730951, 0.0);
@@ -4734,8 +4734,8 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(rowLabels.get(0), "row3");
     assertEquals(rowLabels.get(1), "row2");
 
-    atts = (Map) tuples.get(0).get("g");
-    dists = (List<Number>) atts.get("distances");
+    atts = (Map<String, List<Number>>) tuples.get(0).get("g");
+    dists = atts.get("distances");
     assertEquals(dists.size(), 2);
     assertEquals(dists.get(0).doubleValue(), 0.0, 0.0);
     assertEquals(dists.get(1).doubleValue(), 2.0, 0.0);
@@ -4971,7 +4971,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(out.size(), 2);
     @SuppressWarnings({"rawtypes"})
     Map high = out.get(0);
-    assertEquals(((String) high.get("id")), "1");
+    assertEquals(high.get("id"), "1");
 
     assertEquals(
         ((Number) high.get("cumulativeProbablity_d")).doubleValue(), 0.9772498680518208, 0.0);
@@ -4979,7 +4979,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
 
     @SuppressWarnings({"rawtypes"})
     Map low = out.get(1);
-    assertEquals(((String) low.get("id")), "2");
+    assertEquals(low.get("id"), "2");
     assertEquals(
         ((Number) low.get("cumulativeProbablity_d")).doubleValue(), 0.022750131948179167, 0.0);
     assertEquals(((Number) low.get("lowOutlierValue_d")).doubleValue(), 90, 0.0);
@@ -4989,14 +4989,14 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(out1.size(), 2);
     @SuppressWarnings({"rawtypes"})
     Map high1 = out1.get(0);
-    assert (high1.get("id") == null);
+    assertNull(high1.get("id"));
     assertEquals(
         ((Number) high1.get("cumulativeProbablity_d")).doubleValue(), 0.9772498680518208, 0.0);
     assertEquals(((Number) high1.get("highOutlierValue_d")).doubleValue(), 110.0, 0.0);
 
     @SuppressWarnings({"rawtypes"})
     Map low1 = out1.get(1);
-    assert (low1.get("id") == null);
+    assertNull(low1.get("id"));
     assertEquals(
         ((Number) low1.get("cumulativeProbablity_d")).doubleValue(), 0.022750131948179167, 0.0);
     assertEquals(((Number) low1.get("lowOutlierValue_d")).doubleValue(), 90, 0.0);
@@ -6334,7 +6334,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(1, tuples.size());
     Tuple tuple = tuples.get(0);
     long delay = tuple.getLong("delay");
-    assert (delay == 3);
+    assertEquals(3, delay);
 
     expr1 =
         "search("
@@ -6363,7 +6363,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(1, tuples.size());
     tuple = tuples.get(0);
     delay = tuple.getLong("delay");
-    assert (delay == 0);
+    assertEquals(0, delay);
 
     // Test negative correlation.
     expr1 =
@@ -6393,7 +6393,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(1, tuples.size());
     tuple = tuples.get(0);
     delay = tuple.getLong("delay");
-    assert (delay == 2);
+    assertEquals(2, delay);
   }
 
   @Test
@@ -6594,15 +6594,13 @@ public class MathExpressionTest extends SolrCloudTestCase {
   }
 
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
-    List<Tuple> tuples = new ArrayList<Tuple>();
+    List<Tuple> tuples = new ArrayList<>();
 
-    try {
+    try (tupleStream) {
       tupleStream.open();
       for (Tuple t = tupleStream.read(); !t.EOF; t = tupleStream.read()) {
         tuples.add(t);
       }
-    } finally {
-      tupleStream.close();
     }
     return tuples;
   }
@@ -6619,9 +6617,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
   public boolean assertString(Tuple tuple, String fieldName, String expected) throws Exception {
     String actual = (String) tuple.get(fieldName);
 
-    if ((null == expected && null != actual)
-        || (null != expected && null == actual)
-        || (null != expected && !expected.equals(actual))) {
+    if (!Objects.equals(expected, actual)) {
       throw new Exception("Longs not equal:" + expected + " : " + actual);
     }
 

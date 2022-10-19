@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
@@ -163,7 +164,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
-      assert (tuples.size() == 4);
+      assertEquals(4, tuples.size());
       assertOrder(tuples, 0, 1, 3, 4);
 
       // Basic test desc
@@ -176,7 +177,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
-      assert (tuples.size() == 4);
+      assertEquals(4, tuples.size());
       assertOrder(tuples, 4, 3, 1, 2);
 
       // Basic w/multi comp
@@ -189,7 +190,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
-      assert (tuples.size() == 5);
+      assertEquals(5, tuples.size());
       assertOrder(tuples, 0, 2, 1, 3, 4);
 
       // full factory w/multi comp
@@ -201,7 +202,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
-      assert (tuples.size() == 5);
+      assertEquals(5, tuples.size());
       assertOrder(tuples, 0, 2, 1, 3, 4);
     } finally {
       solrClientCache.close();
@@ -241,7 +242,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
                   + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\"), by=\"a_i asc\")");
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
-      assert (tuples.size() == 6);
+      assertEquals(6, tuples.size());
       assertOrder(tuples, 0, 1, 5, 2, 3, 4);
 
       // Basic test desc
@@ -252,7 +253,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
                   + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\"), by=\"a_i desc\")");
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
-      assert (tuples.size() == 6);
+      assertEquals(6, tuples.size());
       assertOrder(tuples, 4, 3, 2, 1, 5, 0);
 
       // Basic w/multi comp
@@ -263,7 +264,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
                   + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\"), by=\"a_i asc, a_f desc\")");
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
-      assert (tuples.size() == 6);
+      assertEquals(6, tuples.size());
       assertOrder(tuples, 0, 5, 1, 2, 3, 4);
     } finally {
       solrClientCache.close();
@@ -304,7 +305,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
       assertEquals(1, tuples.size());
-      assertEquals(6, (long) tuples.get(0).getLong("nullCount"));
+      assertEquals(6, tuples.get(0).getLong("nullCount").longValue());
     } finally {
       solrClientCache.close();
     }
@@ -402,7 +403,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
-      assert (tuples.size() == 4);
+      assertEquals(4, tuples.size());
       assertOrder(tuples, 0, 1, 3, 4);
 
       // Basic test desc
@@ -420,7 +421,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
-      assert (tuples.size() == 4);
+      assertEquals(4, tuples.size());
       assertOrder(tuples, 4, 3, 1, 0);
 
       // Basic w/multi comp
@@ -438,7 +439,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
-      assert (tuples.size() == 5);
+      assertEquals(5, tuples.size());
       assertOrder(tuples, 0, 2, 1, 3, 4);
 
       // full factory w/multi comp
@@ -455,7 +456,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
-      assert (tuples.size() == 5);
+      assertEquals(5, tuples.size());
       assertOrder(tuples, 0, 2, 1, 3, 4);
 
       // full factory w/multi streams
@@ -475,7 +476,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
-      assert (tuples.size() == 4);
+      assertEquals(4, tuples.size());
       assertOrder(tuples, 0, 2, 1, 4);
     } finally {
       solrClientCache.close();
@@ -520,7 +521,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
-      assert (tuples.size() == 3);
+      assertEquals(3, tuples.size());
       assertOrder(tuples, 0, 2, 1);
 
       // Basic test desc
@@ -538,7 +539,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
-      assert (tuples.size() == 2);
+      assertEquals(2, tuples.size());
       assertOrder(tuples, 4, 3);
 
       // full factory
@@ -555,7 +556,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
-      assert (tuples.size() == 4);
+      assertEquals(4, tuples.size());
       assertOrder(tuples, 0, 1, 3, 4);
 
       // full factory, switch order
@@ -572,7 +573,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
-      assert (tuples.size() == 4);
+      assertEquals(4, tuples.size());
       assertOrder(tuples, 2, 1, 3, 4);
     } finally {
       solrClientCache.close();
@@ -626,7 +627,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
-      assert (tuples.size() == 3);
+      assertEquals(3, tuples.size());
 
       t0 = tuples.get(0);
       maps0 = t0.getMaps("group");
@@ -653,11 +654,11 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
-      assert (tuples.size() == 3);
+      assertEquals(3, tuples.size());
 
       t0 = tuples.get(0);
       maps0 = t0.getMaps("group");
-      assert (maps0.size() == 2);
+      assertEquals(2, maps0.size());
 
       assertMaps(maps0, 0, 1);
 
@@ -720,7 +721,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
     tuples = getTuples(stream);
 
-    assert (tuples.size() == 1);
+    assertEquals(1, tuples.size());
     Tuple t = tuples.get(0);
     assertEquals("9", t.getString("id"));
 
@@ -734,7 +735,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
     tuples = getTuples(stream);
 
-    assert (tuples.size() == 1);
+    assertEquals(1, tuples.size());
     t = tuples.get(0);
     assertEquals("9", t.getString("id"));
 
@@ -748,7 +749,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
     tuples = getTuples(stream);
 
-    assert (tuples.size() == 2);
+    assertEquals(2, tuples.size());
     t = tuples.get(0);
     assertEquals("8", t.getString("id"));
 
@@ -765,7 +766,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
     tuples = getTuples(stream);
 
-    assert (tuples.size() == 0);
+    assertEquals(0, tuples.size());
 
     stream =
         factory.constructStream(
@@ -777,7 +778,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
     tuples = getTuples(stream);
 
-    assert (tuples.size() == 2);
+    assertEquals(2, tuples.size());
 
     t = tuples.get(0);
     assertEquals("8", t.getString("id"));
@@ -795,7 +796,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
     tuples = getTuples(stream);
 
-    assert (tuples.size() == 1);
+    assertEquals(1, tuples.size());
     t = tuples.get(0);
     assertEquals(10.0D, t.getDouble("a_f"), 0.0);
 
@@ -853,7 +854,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
     tuples = getTuples(stream);
 
-    assert (tuples.size() == 1);
+    assertEquals(1, tuples.size());
     Tuple t = tuples.get(0);
     assertEquals("9", t.getString("id"));
 
@@ -869,7 +870,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
     tuples = getTuples(stream);
 
-    assert (tuples.size() == 1);
+    assertEquals(1, tuples.size());
     t = tuples.get(0);
     assertEquals("9", t.getString("id"));
 
@@ -885,7 +886,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
     tuples = getTuples(stream);
 
-    assert (tuples.size() == 2);
+    assertEquals(2, tuples.size());
     t = tuples.get(0);
     assertEquals("8", t.getString("id"));
 
@@ -904,7 +905,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
     tuples = getTuples(stream);
 
-    assert (tuples.size() == 0);
+    assertEquals(0, tuples.size());
 
     stream =
         factory.constructStream(
@@ -918,7 +919,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
     tuples = getTuples(stream);
 
-    assert (tuples.size() == 2);
+    assertEquals(2, tuples.size());
 
     t = tuples.get(0);
     assertEquals("8", t.getString("id"));
@@ -938,7 +939,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
     tuples = getTuples(stream);
 
-    assert (tuples.size() == 1);
+    assertEquals(1, tuples.size());
 
     t = tuples.get(0);
     assertEquals(10.0D, t.getDouble("a_f"), 0.0);
@@ -986,7 +987,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
     tuples = getTuples(stream);
 
-    assert (tuples.size() == 10);
+    assertEquals(10, tuples.size());
     Tuple t = tuples.get(0);
     assertEquals("blah blah blah 0", t.getString("subject"));
     t = tuples.get(1);
@@ -1021,7 +1022,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
     tuples = getTuples(stream);
 
-    assert (tuples.size() == 10);
+    assertEquals(10, tuples.size());
     t = tuples.get(0);
     assertEquals("blah blah blah 0", t.getString("subject"));
     t = tuples.get(1);
@@ -1113,7 +1114,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
-      assert (tuples.size() == 10);
+      assertEquals(10, tuples.size());
       Tuple t = tuples.get(0);
       assertEquals("blah blah blah 0", t.getString("subject"));
       t = tuples.get(1);
@@ -1147,7 +1148,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
-      assert (tuples.size() == 10);
+      assertEquals(10, tuples.size());
       t = tuples.get(0);
       assertEquals("blah blah blah 0", t.getString("subject"));
       t = tuples.get(1);
@@ -1230,7 +1231,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
         // System.out.println("#################################### Bucket 1:"+bucket);
         assertEquals("hello0", bucket);
-        assertEquals(17.0D, sumi.doubleValue(), 0.0);
+        assertEquals(17.0D, sumi, 0.0);
 
         tuple = daemonStream.read();
         bucket = tuple.getString("a_s");
@@ -1238,7 +1239,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
         // System.out.println("#################################### Bucket 2:"+bucket);
         assertEquals("hello3", bucket);
-        assertEquals(38.0D, sumi.doubleValue(), 0.0);
+        assertEquals(38.0D, sumi, 0.0);
 
         tuple = daemonStream.read();
         bucket = tuple.getString("a_s");
@@ -1278,14 +1279,14 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         Double sumi = tuple.getDouble("sum(a_i)");
 
         assertEquals("hello0", bucket);
-        assertEquals(18.0D, sumi.doubleValue(), 0.0);
+        assertEquals(18.0D, sumi, 0.0);
 
         tuple = daemonStream.read();
         bucket = tuple.getString("a_s");
         sumi = tuple.getDouble("sum(a_i)");
 
         assertEquals("hello3", bucket);
-        assertEquals(38.0D, sumi.doubleValue(), 0.0);
+        assertEquals(38.0D, sumi, 0.0);
 
         tuple = daemonStream.read();
         bucket = tuple.getString("a_s");
@@ -1399,7 +1400,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
-      assert (tuples.size() == 3);
+      assertEquals(3, tuples.size());
 
       // Test Long and Double Sums
 
@@ -1416,15 +1417,15 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       Double count = tuple.getDouble("count(*)");
 
       assertEquals("hello0", bucket);
-      assertEquals(17.0D, sumi.doubleValue(), 0.0);
-      assertEquals(18.0D, sumf.doubleValue(), 0.0);
-      assertEquals(0.0D, mini.doubleValue(), 0.0);
-      assertEquals(1.0D, minf.doubleValue(), 0.0);
-      assertEquals(14.0D, maxi.doubleValue(), 0.0);
-      assertEquals(10.0D, maxf.doubleValue(), 0.0);
-      assertEquals(4.25D, avgi.doubleValue(), 0.0);
-      assertEquals(4.5D, avgf.doubleValue(), 0.0);
-      assertEquals(4, count.doubleValue(), 0.0);
+      assertEquals(17.0D, sumi, 0.0);
+      assertEquals(18.0D, sumf, 0.0);
+      assertEquals(0.0D, mini, 0.0);
+      assertEquals(1.0D, minf, 0.0);
+      assertEquals(14.0D, maxi, 0.0);
+      assertEquals(10.0D, maxf, 0.0);
+      assertEquals(4.25D, avgi, 0.0);
+      assertEquals(4.5D, avgf, 0.0);
+      assertEquals(4, count, 0.0);
 
       tuple = tuples.get(1);
       bucket = tuple.getString("a_s");
@@ -1439,15 +1440,15 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       count = tuple.getDouble("count(*)");
 
       assertEquals("hello3", bucket);
-      assertEquals(38.0D, sumi.doubleValue(), 0.0);
-      assertEquals(26.0D, sumf.doubleValue(), 0.0);
-      assertEquals(3.0D, mini.doubleValue(), 0.0);
-      assertEquals(3.0D, minf.doubleValue(), 0.0);
-      assertEquals(13.0D, maxi.doubleValue(), 0.0);
-      assertEquals(9.0D, maxf.doubleValue(), 0.0);
-      assertEquals(9.5D, avgi.doubleValue(), 0.0);
-      assertEquals(6.5D, avgf.doubleValue(), 0.0);
-      assertEquals(4, count.doubleValue(), 0.0);
+      assertEquals(38.0D, sumi, 0.0);
+      assertEquals(26.0D, sumf, 0.0);
+      assertEquals(3.0D, mini, 0.0);
+      assertEquals(3.0D, minf, 0.0);
+      assertEquals(13.0D, maxi, 0.0);
+      assertEquals(9.0D, maxf, 0.0);
+      assertEquals(9.5D, avgi, 0.0);
+      assertEquals(6.5D, avgf, 0.0);
+      assertEquals(4, count, 0.0);
 
       tuple = tuples.get(2);
       bucket = tuple.getString("a_s");
@@ -1463,14 +1464,14 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
       assertEquals("hello4", bucket);
       assertEquals(15, sumi.longValue());
-      assertEquals(11.0D, sumf.doubleValue(), 0.0);
-      assertEquals(4.0D, mini.doubleValue(), 0.0);
-      assertEquals(4.0D, minf.doubleValue(), 0.0);
-      assertEquals(11.0D, maxi.doubleValue(), 0.0);
-      assertEquals(7.0D, maxf.doubleValue(), 0.0);
-      assertEquals(7.5D, avgi.doubleValue(), 0.0);
-      assertEquals(5.5D, avgf.doubleValue(), 0.0);
-      assertEquals(2, count.doubleValue(), 0.0);
+      assertEquals(11.0D, sumf, 0.0);
+      assertEquals(4.0D, mini, 0.0);
+      assertEquals(4.0D, minf, 0.0);
+      assertEquals(11.0D, maxi, 0.0);
+      assertEquals(7.0D, maxf, 0.0);
+      assertEquals(7.5D, avgi, 0.0);
+      assertEquals(5.5D, avgf, 0.0);
+      assertEquals(2, count, 0.0);
 
     } finally {
       solrClientCache.close();
@@ -1533,7 +1534,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
-      assert (tuples.size() == 3);
+      assertEquals(3, tuples.size());
 
       // Test Long and Double Sums
 
@@ -1550,15 +1551,15 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       Double count = tuple.getDouble("count(*)");
 
       assertEquals("hello0", bucket);
-      assertEquals(17.0D, sumi.doubleValue(), 0.0);
-      assertEquals(18.0D, sumf.doubleValue(), 0.0);
-      assertEquals(0.0D, mini.doubleValue(), 0.0);
-      assertEquals(1.0D, minf.doubleValue(), 0.0);
-      assertEquals(14.0D, maxi.doubleValue(), 0.0);
-      assertEquals(10.0D, maxf.doubleValue(), 0.0);
-      assertEquals(4.25D, avgi.doubleValue(), 0.0);
-      assertEquals(4.5D, avgf.doubleValue(), 0.0);
-      assertEquals(4, count.doubleValue(), 0.0);
+      assertEquals(17.0D, sumi, 0.0);
+      assertEquals(18.0D, sumf, 0.0);
+      assertEquals(0.0D, mini, 0.0);
+      assertEquals(1.0D, minf, 0.0);
+      assertEquals(14.0D, maxi, 0.0);
+      assertEquals(10.0D, maxf, 0.0);
+      assertEquals(4.25D, avgi, 0.0);
+      assertEquals(4.5D, avgf, 0.0);
+      assertEquals(4, count, 0.0);
 
       tuple = tuples.get(1);
       bucket = tuple.getString("a_s");
@@ -1576,14 +1577,14 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
       assertEquals("hello4", bucket);
       assertEquals(15, sumi.longValue());
-      assertEquals(11.0D, sumf.doubleValue(), 0.0);
-      assertEquals(4.0D, mini.doubleValue(), 0.0);
-      assertEquals(4.0D, minf.doubleValue(), 0.0);
-      assertEquals(11.0D, maxi.doubleValue(), 0.0);
-      assertEquals(7.0D, maxf.doubleValue(), 0.0);
-      assertEquals(7.5D, avgi.doubleValue(), 0.0);
-      assertEquals(5.5D, avgf.doubleValue(), 0.0);
-      assertEquals(2, count.doubleValue(), 0.0);
+      assertEquals(11.0D, sumf, 0.0);
+      assertEquals(4.0D, mini, 0.0);
+      assertEquals(4.0D, minf, 0.0);
+      assertEquals(11.0D, maxi, 0.0);
+      assertEquals(7.0D, maxf, 0.0);
+      assertEquals(7.5D, avgi, 0.0);
+      assertEquals(5.5D, avgf, 0.0);
+      assertEquals(2, count, 0.0);
 
       tuple = tuples.get(2);
       bucket = tuple.getString("a_s");
@@ -1598,15 +1599,15 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       count = tuple.getDouble("count(*)");
 
       assertEquals("hello3", bucket);
-      assertEquals(38.0D, sumi.doubleValue(), 0.0);
-      assertEquals(26.0D, sumf.doubleValue(), 0.0);
-      assertEquals(3.0D, mini.doubleValue(), 0.0);
-      assertEquals(3.0D, minf.doubleValue(), 0.0);
-      assertEquals(13.0D, maxi.doubleValue(), 0.0);
-      assertEquals(9.0D, maxf.doubleValue(), 0.0);
-      assertEquals(9.5D, avgi.doubleValue(), 0.0);
-      assertEquals(6.5D, avgf.doubleValue(), 0.0);
-      assertEquals(4, count.doubleValue(), 0.0);
+      assertEquals(38.0D, sumi, 0.0);
+      assertEquals(26.0D, sumf, 0.0);
+      assertEquals(3.0D, mini, 0.0);
+      assertEquals(3.0D, minf, 0.0);
+      assertEquals(13.0D, maxi, 0.0);
+      assertEquals(9.0D, maxf, 0.0);
+      assertEquals(9.5D, avgi, 0.0);
+      assertEquals(6.5D, avgf, 0.0);
+      assertEquals(4, count, 0.0);
 
     } finally {
       solrClientCache.close();
@@ -1653,13 +1654,13 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
                       + "\", sort=\"a_f asc\")");
       pstream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(pstream);
-      assert (tuples.size() == 5);
+      assertEquals(5, tuples.size());
       assertOrder(tuples, 0, 1, 3, 4, 6);
 
       // Test the eofTuples
 
       Map<String, Tuple> eofTuples = pstream.getEofTuples();
-      assert (eofTuples.size() == 2); // There should be an EOF tuple for each worker.
+      assertEquals(2, eofTuples.size()); // There should be an EOF tuple for each worker.
     } finally {
       solrClientCache.close();
     }
@@ -1752,14 +1753,14 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       pstream.setStreamFactory(streamFactory);
       pstream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(pstream);
-      assert (tuples.size() == 6);
+      assertEquals(6, tuples.size());
       assertOrder(tuples, 0, 1, 3, 4, 6, 56);
 
       // Test the eofTuples
 
       Map<String, Tuple> eofTuples = pstream.getEofTuples();
-      assert (eofTuples.size() == 2); // There should be an EOF tuple for each worker.
-      assert (pstream.toExpression(streamFactory).toString().contains("shuffle"));
+      assertEquals(2, eofTuples.size()); // There should be an EOF tuple for each worker.
+      assertTrue(pstream.toExpression(streamFactory).toString().contains("shuffle"));
     } finally {
       solrClientCache.close();
     }
@@ -1815,7 +1816,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
       List<Tuple> tuples = getTuples(pstream);
 
-      assert (tuples.size() == 3);
+      assertEquals(3, tuples.size());
 
       Tuple t0 = tuples.get(0);
       List<Map<?, ?>> maps0 = t0.getMaps("group");
@@ -1848,7 +1849,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       pstream.setStreamContext(streamContext);
       tuples = getTuples(pstream);
 
-      assert (tuples.size() == 3);
+      assertEquals(3, tuples.size());
 
       t0 = tuples.get(0);
       maps0 = t0.getMaps("group");
@@ -1913,7 +1914,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       pstream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(pstream);
 
-      assert (tuples.size() == 10);
+      assertEquals(10, tuples.size());
       assertOrder(tuples, 10, 9, 8, 7, 6, 5, 4, 3, 2, 0);
     } finally {
       solrClientCache.close();
@@ -1967,7 +1968,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       pstream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(pstream);
 
-      assert (tuples.size() == 9);
+      assertEquals(9, tuples.size());
       assertOrder(tuples, 0, 1, 2, 3, 4, 7, 6, 8, 9);
 
       // Test descending
@@ -1987,7 +1988,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       pstream.setStreamContext(streamContext);
       tuples = getTuples(pstream);
 
-      assert (tuples.size() == 8);
+      assertEquals(8, tuples.size());
       assertOrder(tuples, 9, 8, 6, 4, 3, 2, 1, 0);
     } finally {
       solrClientCache.close();
@@ -2059,7 +2060,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
-      assert (tuples.size() == 3);
+      assertEquals(3, tuples.size());
 
       // Test Long and Double Sums
 
@@ -2076,15 +2077,15 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       Double count = tuple.getDouble("count(*)");
 
       assertEquals("hello0", bucket);
-      assertEquals(17.0D, sumi.doubleValue(), 0.0);
-      assertEquals(18.0D, sumf.doubleValue(), 0.0);
-      assertEquals(0.0D, mini.doubleValue(), 0.0);
-      assertEquals(1.0D, minf.doubleValue(), 0.0);
-      assertEquals(14.0D, maxi.doubleValue(), 0.0);
-      assertEquals(10.0D, maxf.doubleValue(), 0.0);
-      assertEquals(4.25D, avgi.doubleValue(), 0.0);
-      assertEquals(4.5D, avgf.doubleValue(), 0.0);
-      assertEquals(4, count.doubleValue(), 0.0);
+      assertEquals(17.0D, sumi, 0.0);
+      assertEquals(18.0D, sumf, 0.0);
+      assertEquals(0.0D, mini, 0.0);
+      assertEquals(1.0D, minf, 0.0);
+      assertEquals(14.0D, maxi, 0.0);
+      assertEquals(10.0D, maxf, 0.0);
+      assertEquals(4.25D, avgi, 0.0);
+      assertEquals(4.5D, avgf, 0.0);
+      assertEquals(4, count, 0.0);
 
       tuple = tuples.get(1);
       bucket = tuple.getString("a_s");
@@ -2099,15 +2100,15 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       count = tuple.getDouble("count(*)");
 
       assertEquals("hello3", bucket);
-      assertEquals(38.0D, sumi.doubleValue(), 0.0);
-      assertEquals(26.0D, sumf.doubleValue(), 0.0);
-      assertEquals(3.0D, mini.doubleValue(), 0.0);
-      assertEquals(3.0D, minf.doubleValue(), 0.0);
-      assertEquals(13.0D, maxi.doubleValue(), 0.0);
-      assertEquals(9.0D, maxf.doubleValue(), 0.0);
-      assertEquals(9.5D, avgi.doubleValue(), 0.0);
-      assertEquals(6.5D, avgf.doubleValue(), 0.0);
-      assertEquals(4, count.doubleValue(), 0.0);
+      assertEquals(38.0D, sumi, 0.0);
+      assertEquals(26.0D, sumf, 0.0);
+      assertEquals(3.0D, mini, 0.0);
+      assertEquals(3.0D, minf, 0.0);
+      assertEquals(13.0D, maxi, 0.0);
+      assertEquals(9.0D, maxf, 0.0);
+      assertEquals(9.5D, avgi, 0.0);
+      assertEquals(6.5D, avgf, 0.0);
+      assertEquals(4, count, 0.0);
 
       tuple = tuples.get(2);
       bucket = tuple.getString("a_s");
@@ -2123,14 +2124,14 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
       assertEquals("hello4", bucket);
       assertEquals(15, sumi.longValue());
-      assertEquals(11.0D, sumf.doubleValue(), 0.0);
-      assertEquals(4.0D, mini.doubleValue(), 0.0);
-      assertEquals(4.0D, minf.doubleValue(), 0.0);
-      assertEquals(11.0D, maxi.doubleValue(), 0.0);
-      assertEquals(7.0D, maxf.doubleValue(), 0.0);
-      assertEquals(7.5D, avgi.doubleValue(), 0.0);
-      assertEquals(5.5D, avgf.doubleValue(), 0.0);
-      assertEquals(2, count.doubleValue(), 0.0);
+      assertEquals(11.0D, sumf, 0.0);
+      assertEquals(4.0D, mini, 0.0);
+      assertEquals(4.0D, minf, 0.0);
+      assertEquals(11.0D, maxi, 0.0);
+      assertEquals(7.0D, maxf, 0.0);
+      assertEquals(7.5D, avgi, 0.0);
+      assertEquals(5.5D, avgf, 0.0);
+      assertEquals(2, count, 0.0);
     } finally {
       solrClientCache.close();
     }
@@ -2202,7 +2203,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
-      assert (tuples.size() == 3);
+      assertEquals(3, tuples.size());
 
       // Test Long and Double Sums
 
@@ -2219,15 +2220,15 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       Double count = tuple.getDouble("count(*)");
 
       assertEquals("hello0", bucket);
-      assertEquals(17.0D, sumi.doubleValue(), 0.0);
-      assertEquals(18.0D, sumf.doubleValue(), 0.0);
-      assertEquals(0.0D, mini.doubleValue(), 0.0);
-      assertEquals(1.0D, minf.doubleValue(), 0.0);
-      assertEquals(14.0D, maxi.doubleValue(), 0.0);
-      assertEquals(10.0D, maxf.doubleValue(), 0.0);
-      assertEquals(4.25D, avgi.doubleValue(), 0.0);
-      assertEquals(4.5D, avgf.doubleValue(), 0.0);
-      assertEquals(4, count.doubleValue(), 0.0);
+      assertEquals(17.0D, sumi, 0.0);
+      assertEquals(18.0D, sumf, 0.0);
+      assertEquals(0.0D, mini, 0.0);
+      assertEquals(1.0D, minf, 0.0);
+      assertEquals(14.0D, maxi, 0.0);
+      assertEquals(10.0D, maxf, 0.0);
+      assertEquals(4.25D, avgi, 0.0);
+      assertEquals(4.5D, avgf, 0.0);
+      assertEquals(4, count, 0.0);
 
       tuple = tuples.get(1);
       bucket = tuple.getString("a_s");
@@ -2243,14 +2244,14 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
       assertEquals("hello4", bucket);
       assertEquals(15, sumi.longValue());
-      assertEquals(11.0D, sumf.doubleValue(), 0.0);
-      assertEquals(4.0D, mini.doubleValue(), 0.0);
-      assertEquals(4.0D, minf.doubleValue(), 0.0);
-      assertEquals(11.0D, maxi.doubleValue(), 0.0);
-      assertEquals(7.0D, maxf.doubleValue(), 0.0);
-      assertEquals(7.5D, avgi.doubleValue(), 0.0);
-      assertEquals(5.5D, avgf.doubleValue(), 0.0);
-      assertEquals(2, count.doubleValue(), 0.0);
+      assertEquals(11.0D, sumf, 0.0);
+      assertEquals(4.0D, mini, 0.0);
+      assertEquals(4.0D, minf, 0.0);
+      assertEquals(11.0D, maxi, 0.0);
+      assertEquals(7.0D, maxf, 0.0);
+      assertEquals(7.5D, avgi, 0.0);
+      assertEquals(5.5D, avgf, 0.0);
+      assertEquals(2, count, 0.0);
 
       tuple = tuples.get(2);
       bucket = tuple.getString("a_s");
@@ -2265,15 +2266,15 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       count = tuple.getDouble("count(*)");
 
       assertEquals("hello3", bucket);
-      assertEquals(38.0D, sumi.doubleValue(), 0.0);
-      assertEquals(26.0D, sumf.doubleValue(), 0.0);
-      assertEquals(3.0D, mini.doubleValue(), 0.0);
-      assertEquals(3.0D, minf.doubleValue(), 0.0);
-      assertEquals(13.0D, maxi.doubleValue(), 0.0);
-      assertEquals(9.0D, maxf.doubleValue(), 0.0);
-      assertEquals(9.5D, avgi.doubleValue(), 0.0);
-      assertEquals(6.5D, avgf.doubleValue(), 0.0);
-      assertEquals(4, count.doubleValue(), 0.0);
+      assertEquals(38.0D, sumi, 0.0);
+      assertEquals(26.0D, sumf, 0.0);
+      assertEquals(3.0D, mini, 0.0);
+      assertEquals(3.0D, minf, 0.0);
+      assertEquals(13.0D, maxi, 0.0);
+      assertEquals(9.0D, maxf, 0.0);
+      assertEquals(9.5D, avgi, 0.0);
+      assertEquals(6.5D, avgf, 0.0);
+      assertEquals(4, count, 0.0);
     } finally {
       solrClientCache.close();
     }
@@ -2343,7 +2344,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream = new InnerJoinStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
-      assert (tuples.size() == 8);
+      assertEquals(8, tuples.size());
       assertOrder(tuples, 1, 1, 15, 15, 3, 4, 5, 7);
 
       // Basic desc
@@ -2360,7 +2361,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream = new InnerJoinStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
-      assert (tuples.size() == 8);
+      assertEquals(8, tuples.size());
       assertOrder(tuples, 7, 3, 4, 5, 1, 1, 15, 15);
 
       // Results in both searches, no join matches
@@ -2377,7 +2378,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream = new InnerJoinStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
-      assert (tuples.size() == 0);
+      assertEquals(0, tuples.size());
 
       // Differing field names
       expression =
@@ -2394,7 +2395,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
-      assert (tuples.size() == 8);
+      assertEquals(8, tuples.size());
       assertOrder(tuples, 1, 1, 15, 15, 3, 4, 5, 7);
     } finally {
       solrClientCache.close();
@@ -2465,7 +2466,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream = new LeftOuterJoinStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
-      assert (tuples.size() == 10);
+      assertEquals(10, tuples.size());
       assertOrder(tuples, 1, 1, 15, 15, 2, 3, 4, 5, 6, 7);
 
       // Basic desc
@@ -2482,7 +2483,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream = new LeftOuterJoinStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
-      assert (tuples.size() == 10);
+      assertEquals(10, tuples.size());
       assertOrder(tuples, 7, 6, 3, 4, 5, 1, 1, 15, 15, 2);
 
       // Results in both searches, no join matches
@@ -2499,7 +2500,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream = new LeftOuterJoinStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
-      assert (tuples.size() == 8);
+      assertEquals(8, tuples.size());
       assertOrder(tuples, 1, 15, 2, 3, 4, 5, 6, 7);
 
       // Differing field names
@@ -2516,7 +2517,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream = new LeftOuterJoinStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
-      assert (tuples.size() == 10);
+      assertEquals(10, tuples.size());
       assertOrder(tuples, 1, 1, 15, 15, 2, 3, 4, 5, 6, 7);
     } finally {
       solrClientCache.close();
@@ -2582,7 +2583,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream = new HashJoinStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
-      assert (tuples.size() == 8);
+      assertEquals(8, tuples.size());
       assertOrder(tuples, 1, 1, 15, 15, 3, 4, 5, 7);
 
       // Basic desc
@@ -2595,7 +2596,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream = new HashJoinStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
-      assert (tuples.size() == 8);
+      assertEquals(8, tuples.size());
       assertOrder(tuples, 7, 3, 4, 5, 1, 1, 15, 15);
 
       // Results in both searches, no join matches
@@ -2608,7 +2609,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream = new HashJoinStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
-      assert (tuples.size() == 0);
+      assertEquals(0, tuples.size());
 
       // Basic test with "on" mapping
       expression =
@@ -2769,7 +2770,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream = new OuterHashJoinStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
-      assert (tuples.size() == 10);
+      assertEquals(10, tuples.size());
       assertOrder(tuples, 1, 1, 15, 15, 2, 3, 4, 5, 6, 7);
 
       // Basic desc
@@ -2782,7 +2783,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream = new OuterHashJoinStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
-      assert (tuples.size() == 10);
+      assertEquals(10, tuples.size());
       assertOrder(tuples, 7, 6, 3, 4, 5, 1, 1, 15, 15, 2);
 
       // Results in both searches, no join matches
@@ -2795,7 +2796,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream = new OuterHashJoinStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
-      assert (tuples.size() == 8);
+      assertEquals(8, tuples.size());
       assertOrder(tuples, 1, 15, 2, 3, 4, 5, 6, 7);
 
       // Basic test
@@ -2808,7 +2809,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream = new OuterHashJoinStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
-      assert (tuples.size() == 10);
+      assertEquals(10, tuples.size());
       assertOrder(tuples, 1, 1, 15, 15, 2, 3, 4, 5, 6, 7);
     } finally {
       solrClientCache.close();
@@ -3162,9 +3163,9 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       cluster.getSolrClient().commit("destinationCollection");
 
       // Ensure that all UpdateStream tuples indicate the correct number of copied/indexed docs
-      assert (tuples.size() == 1);
+      assertEquals(1, tuples.size());
       t = tuples.get(0);
-      assert (t.EOF == false);
+      assertFalse(t.EOF);
       assertEquals(5, t.get("batchIndexed"));
 
       // Ensure that destinationCollection actually has the new docs.
@@ -3177,42 +3178,42 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assertEquals(5, tuples.size());
 
       Tuple tuple = tuples.get(0);
-      assert (tuple.getLong("id") == 0);
-      assert (tuple.get("a_s").equals("hello0"));
-      assert (tuple.getLong("a_i") == 0);
-      assert (tuple.getDouble("a_f") == 0.0);
+      assertEquals(0, (long) tuple.getLong("id"));
+      assertEquals("hello0", tuple.get("a_s"));
+      assertEquals(0, (long) tuple.getLong("a_i"));
+      assertEquals(0.0, tuple.getDouble("a_f"), 0.0);
       assertList(tuple.getStrings("s_multi"), "aaaa", "bbbb");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("4"), Long.parseLong("7"));
 
       tuple = tuples.get(1);
-      assert (tuple.getLong("id") == 1);
-      assert (tuple.get("a_s").equals("hello1"));
-      assert (tuple.getLong("a_i") == 1);
-      assert (tuple.getDouble("a_f") == 1.0);
+      assertEquals(1, (long) tuple.getLong("id"));
+      assertEquals("hello1", tuple.get("a_s"));
+      assertEquals(1, (long) tuple.getLong("a_i"));
+      assertEquals(1.0, tuple.getDouble("a_f"), 0.0);
       assertList(tuple.getStrings("s_multi"), "aaaa4", "bbbb4");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("44444"), Long.parseLong("77777"));
 
       tuple = tuples.get(2);
-      assert (tuple.getLong("id") == 2);
-      assert (tuple.get("a_s").equals("hello2"));
-      assert (tuple.getLong("a_i") == 2);
-      assert (tuple.getDouble("a_f") == 0.0);
+      assertEquals(2, (long) tuple.getLong("id"));
+      assertEquals("hello2", tuple.get("a_s"));
+      assertEquals(2, (long) tuple.getLong("a_i"));
+      assertEquals(0.0, tuple.getDouble("a_f"), 0.0);
       assertList(tuple.getStrings("s_multi"), "aaaa1", "bbbb1");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("44"), Long.parseLong("77"));
 
       tuple = tuples.get(3);
-      assert (tuple.getLong("id") == 3);
-      assert (tuple.get("a_s").equals("hello3"));
-      assert (tuple.getLong("a_i") == 3);
-      assert (tuple.getDouble("a_f") == 3.0);
+      assertEquals(3, (long) tuple.getLong("id"));
+      assertEquals("hello3", tuple.get("a_s"));
+      assertEquals(3, (long) tuple.getLong("a_i"));
+      assertEquals(3.0, tuple.getDouble("a_f"), 0.0);
       assertList(tuple.getStrings("s_multi"), "aaaa2", "bbbb2");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("444"), Long.parseLong("777"));
 
       tuple = tuples.get(4);
-      assert (tuple.getLong("id") == 4);
-      assert (tuple.get("a_s").equals("hello4"));
-      assert (tuple.getLong("a_i") == 4);
-      assert (tuple.getDouble("a_f") == 4.0);
+      assertEquals(4, (long) tuple.getLong("id"));
+      assertEquals("hello4", tuple.get("a_s"));
+      assertEquals(4, (long) tuple.getLong("a_i"));
+      assertEquals(4.0, tuple.getDouble("a_f"), 0.0);
       assertList(tuple.getStrings("s_multi"), "aaaa3", "bbbb3");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("4444"), Long.parseLong("7777"));
     } finally {
@@ -3287,7 +3288,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         count += tuple.getLong("batchIndexed");
       }
 
-      assert (count == 5);
+      assertEquals(5, count);
 
       // Ensure that destinationCollection actually has the new docs.
       expression =
@@ -3299,42 +3300,42 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assertEquals(5, tuples.size());
 
       Tuple tuple = tuples.get(0);
-      assert (tuple.getLong("id") == 0);
-      assert (tuple.get("a_s").equals("hello0"));
-      assert (tuple.getLong("a_i") == 0);
-      assert (tuple.getDouble("a_f") == 0.0);
+      assertEquals(0, (long) tuple.getLong("id"));
+      assertEquals("hello0", tuple.get("a_s"));
+      assertEquals(0, (long) tuple.getLong("a_i"));
+      assertEquals(0.0, tuple.getDouble("a_f"), 0.0);
       assertList(tuple.getStrings("s_multi"), "aaaa", "bbbb");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("4"), Long.parseLong("7"));
 
       tuple = tuples.get(1);
-      assert (tuple.getLong("id") == 1);
-      assert (tuple.get("a_s").equals("hello1"));
-      assert (tuple.getLong("a_i") == 1);
-      assert (tuple.getDouble("a_f") == 1.0);
+      assertEquals(1, (long) tuple.getLong("id"));
+      assertEquals("hello1", tuple.get("a_s"));
+      assertEquals(1, (long) tuple.getLong("a_i"));
+      assertEquals(1.0, tuple.getDouble("a_f"), 0.0);
       assertList(tuple.getStrings("s_multi"), "aaaa4", "bbbb4");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("44444"), Long.parseLong("77777"));
 
       tuple = tuples.get(2);
-      assert (tuple.getLong("id") == 2);
-      assert (tuple.get("a_s").equals("hello2"));
-      assert (tuple.getLong("a_i") == 2);
-      assert (tuple.getDouble("a_f") == 0.0);
+      assertEquals(2, (long) tuple.getLong("id"));
+      assertEquals("hello2", tuple.get("a_s"));
+      assertEquals(2, (long) tuple.getLong("a_i"));
+      assertEquals(0.0, tuple.getDouble("a_f"), 0.0);
       assertList(tuple.getStrings("s_multi"), "aaaa1", "bbbb1");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("44"), Long.parseLong("77"));
 
       tuple = tuples.get(3);
-      assert (tuple.getLong("id") == 3);
-      assert (tuple.get("a_s").equals("hello3"));
-      assert (tuple.getLong("a_i") == 3);
-      assert (tuple.getDouble("a_f") == 3.0);
+      assertEquals(3, (long) tuple.getLong("id"));
+      assertEquals("hello3", tuple.get("a_s"));
+      assertEquals(3, (long) tuple.getLong("a_i"));
+      assertEquals(3.0, tuple.getDouble("a_f"), 0.0);
       assertList(tuple.getStrings("s_multi"), "aaaa2", "bbbb2");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("444"), Long.parseLong("777"));
 
       tuple = tuples.get(4);
-      assert (tuple.getLong("id") == 4);
-      assert (tuple.get("a_s").equals("hello4"));
-      assert (tuple.getLong("a_i") == 4);
-      assert (tuple.getDouble("a_f") == 4.0);
+      assertEquals(4, (long) tuple.getLong("id"));
+      assertEquals("hello4", tuple.get("a_s"));
+      assertEquals(4, (long) tuple.getLong("a_i"));
+      assertEquals(4.0, tuple.getDouble("a_f"), 0.0);
       assertList(tuple.getStrings("s_multi"), "aaaa3", "bbbb3");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("4444"), Long.parseLong("7777"));
     } finally {
@@ -3401,7 +3402,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
                   + "\", sort=\"batchNumber asc\")");
       parallelUpdateStream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(parallelUpdateStream);
-      assert (tuples.size() == 2);
+      assertEquals(2, tuples.size());
 
       // Lets sleep long enough for daemon updates to run.
       // Lets stop the daemons
@@ -3498,42 +3499,42 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assertEquals(5, tuples.size());
 
       Tuple tuple = tuples.get(0);
-      assert (tuple.getLong("id") == 0);
-      assert (tuple.get("a_s").equals("hello0"));
-      assert (tuple.getLong("a_i") == 0);
-      assert (tuple.getDouble("a_f") == 0.0);
+      assertEquals(0, (long) tuple.getLong("id"));
+      assertEquals("hello0", tuple.get("a_s"));
+      assertEquals(0, (long) tuple.getLong("a_i"));
+      assertEquals(0.0, tuple.getDouble("a_f"), 0.0);
       assertList(tuple.getStrings("s_multi"), "aaaa", "bbbb");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("4"), Long.parseLong("7"));
 
       tuple = tuples.get(1);
-      assert (tuple.getLong("id") == 1);
-      assert (tuple.get("a_s").equals("hello1"));
-      assert (tuple.getLong("a_i") == 1);
-      assert (tuple.getDouble("a_f") == 1.0);
+      assertEquals(1, (long) tuple.getLong("id"));
+      assertEquals("hello1", tuple.get("a_s"));
+      assertEquals(1, (long) tuple.getLong("a_i"));
+      assertEquals(1.0, tuple.getDouble("a_f"), 0.0);
       assertList(tuple.getStrings("s_multi"), "aaaa4", "bbbb4");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("44444"), Long.parseLong("77777"));
 
       tuple = tuples.get(2);
-      assert (tuple.getLong("id") == 2);
-      assert (tuple.get("a_s").equals("hello2"));
-      assert (tuple.getLong("a_i") == 2);
-      assert (tuple.getDouble("a_f") == 0.0);
+      assertEquals(2, (long) tuple.getLong("id"));
+      assertEquals("hello2", tuple.get("a_s"));
+      assertEquals(2, (long) tuple.getLong("a_i"));
+      assertEquals(0.0, tuple.getDouble("a_f"), 0.0);
       assertList(tuple.getStrings("s_multi"), "aaaa1", "bbbb1");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("44"), Long.parseLong("77"));
 
       tuple = tuples.get(3);
-      assert (tuple.getLong("id") == 3);
-      assert (tuple.get("a_s").equals("hello3"));
-      assert (tuple.getLong("a_i") == 3);
-      assert (tuple.getDouble("a_f") == 3.0);
+      assertEquals(3, (long) tuple.getLong("id"));
+      assertEquals("hello3", tuple.get("a_s"));
+      assertEquals(3, (long) tuple.getLong("a_i"));
+      assertEquals(3.0, tuple.getDouble("a_f"), 0.0);
       assertList(tuple.getStrings("s_multi"), "aaaa2", "bbbb2");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("444"), Long.parseLong("777"));
 
       tuple = tuples.get(4);
-      assert (tuple.getLong("id") == 4);
-      assert (tuple.get("a_s").equals("hello4"));
-      assert (tuple.getLong("a_i") == 4);
-      assert (tuple.getDouble("a_f") == 4.0);
+      assertEquals(4, (long) tuple.getLong("id"));
+      assertEquals("hello4", tuple.get("a_s"));
+      assertEquals(4, (long) tuple.getLong("a_i"));
+      assertEquals(4.0, tuple.getDouble("a_f"), 0.0);
       assertList(tuple.getStrings("s_multi"), "aaaa3", "bbbb3");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("4444"), Long.parseLong("7777"));
     } finally {
@@ -3601,7 +3602,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
                   + "\", sort=\"batchNumber asc\")");
       parallelUpdateStream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(parallelUpdateStream);
-      assert (tuples.size() == 2);
+      assertEquals(2, tuples.size());
 
       ModifiableSolrParams sParams =
           new ModifiableSolrParams(params(CommonParams.QT, "/stream", "action", "list"));
@@ -3643,42 +3644,42 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assertEquals(5, tuples.size());
 
       Tuple tuple = tuples.get(0);
-      assert (tuple.getLong("id") == 0);
-      assert (tuple.get("a_s").equals("hello"));
-      assert (tuple.getLong("a_i") == 0);
-      assert (tuple.getDouble("a_f") == 0.0);
+      assertEquals(0, (long) tuple.getLong("id"));
+      assertEquals("hello", tuple.get("a_s"));
+      assertEquals(0, (long) tuple.getLong("a_i"));
+      assertEquals(0.0, tuple.getDouble("a_f"), 0.0);
       assertList(tuple.getStrings("s_multi"), "aaaa", "bbbb");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("4"), Long.parseLong("7"));
 
       tuple = tuples.get(1);
-      assert (tuple.getLong("id") == 1);
-      assert (tuple.get("a_s").equals("hello"));
-      assert (tuple.getLong("a_i") == 1);
-      assert (tuple.getDouble("a_f") == 1.0);
+      assertEquals(1, (long) tuple.getLong("id"));
+      assertEquals("hello", tuple.get("a_s"));
+      assertEquals(1, (long) tuple.getLong("a_i"));
+      assertEquals(1.0, tuple.getDouble("a_f"), 0.0);
       assertList(tuple.getStrings("s_multi"), "aaaa4", "bbbb4");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("44444"), Long.parseLong("77777"));
 
       tuple = tuples.get(2);
-      assert (tuple.getLong("id") == 2);
-      assert (tuple.get("a_s").equals("hello"));
-      assert (tuple.getLong("a_i") == 2);
-      assert (tuple.getDouble("a_f") == 0.0);
+      assertEquals(2, (long) tuple.getLong("id"));
+      assertEquals("hello", tuple.get("a_s"));
+      assertEquals(2, (long) tuple.getLong("a_i"));
+      assertEquals(0.0, tuple.getDouble("a_f"), 0.0);
       assertList(tuple.getStrings("s_multi"), "aaaa1", "bbbb1");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("44"), Long.parseLong("77"));
 
       tuple = tuples.get(3);
-      assert (tuple.getLong("id") == 3);
-      assert (tuple.get("a_s").equals("hello"));
-      assert (tuple.getLong("a_i") == 3);
-      assert (tuple.getDouble("a_f") == 3.0);
+      assertEquals(3, (long) tuple.getLong("id"));
+      assertEquals("hello", tuple.get("a_s"));
+      assertEquals(3, (long) tuple.getLong("a_i"));
+      assertEquals(3.0, tuple.getDouble("a_f"), 0.0);
       assertList(tuple.getStrings("s_multi"), "aaaa2", "bbbb2");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("444"), Long.parseLong("777"));
 
       tuple = tuples.get(4);
-      assert (tuple.getLong("id") == 4);
-      assert (tuple.get("a_s").equals("hello"));
-      assert (tuple.getLong("a_i") == 4);
-      assert (tuple.getDouble("a_f") == 4.0);
+      assertEquals(4, (long) tuple.getLong("id"));
+      assertEquals("hello", tuple.get("a_s"));
+      assertEquals(4, (long) tuple.getLong("a_i"));
+      assertEquals(4.0, tuple.getDouble("a_f"), 0.0);
       assertList(tuple.getStrings("s_multi"), "aaaa3", "bbbb3");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("4444"), Long.parseLong("7777"));
     } finally {
@@ -3805,9 +3806,9 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       List<Tuple> tuples = getTuples(stream);
 
       // Ensure that all CommitStream tuples indicate the correct number of copied/indexed docs
-      assert (tuples.size() == 1);
+      assertEquals(1, tuples.size());
       t = tuples.get(0);
-      assert (t.EOF == false);
+      assertFalse(t.EOF);
       assertEquals(5, t.get("batchIndexed"));
 
       // Ensure that destinationCollection actually has the new docs.
@@ -3820,42 +3821,42 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assertEquals(5, tuples.size());
 
       Tuple tuple = tuples.get(0);
-      assert (tuple.getLong("id") == 0);
-      assert (tuple.get("a_s").equals("hello0"));
-      assert (tuple.getLong("a_i") == 0);
-      assert (tuple.getDouble("a_f") == 0.0);
+      assertEquals(0, (long) tuple.getLong("id"));
+      assertEquals("hello0", tuple.get("a_s"));
+      assertEquals(0, (long) tuple.getLong("a_i"));
+      assertEquals(0.0, tuple.getDouble("a_f"), 0.0);
       assertList(tuple.getStrings("s_multi"), "aaaa", "bbbb");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("4"), Long.parseLong("7"));
 
       tuple = tuples.get(1);
-      assert (tuple.getLong("id") == 1);
-      assert (tuple.get("a_s").equals("hello1"));
-      assert (tuple.getLong("a_i") == 1);
-      assert (tuple.getDouble("a_f") == 1.0);
+      assertEquals(1, (long) tuple.getLong("id"));
+      assertEquals("hello1", tuple.get("a_s"));
+      assertEquals(1, (long) tuple.getLong("a_i"));
+      assertEquals(1.0, tuple.getDouble("a_f"), 0.0);
       assertList(tuple.getStrings("s_multi"), "aaaa4", "bbbb4");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("44444"), Long.parseLong("77777"));
 
       tuple = tuples.get(2);
-      assert (tuple.getLong("id") == 2);
-      assert (tuple.get("a_s").equals("hello2"));
-      assert (tuple.getLong("a_i") == 2);
-      assert (tuple.getDouble("a_f") == 0.0);
+      assertEquals(2, (long) tuple.getLong("id"));
+      assertEquals("hello2", tuple.get("a_s"));
+      assertEquals(2, (long) tuple.getLong("a_i"));
+      assertEquals(0.0, tuple.getDouble("a_f"), 0.0);
       assertList(tuple.getStrings("s_multi"), "aaaa1", "bbbb1");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("44"), Long.parseLong("77"));
 
       tuple = tuples.get(3);
-      assert (tuple.getLong("id") == 3);
-      assert (tuple.get("a_s").equals("hello3"));
-      assert (tuple.getLong("a_i") == 3);
-      assert (tuple.getDouble("a_f") == 3.0);
+      assertEquals(3, (long) tuple.getLong("id"));
+      assertEquals("hello3", tuple.get("a_s"));
+      assertEquals(3, (long) tuple.getLong("a_i"));
+      assertEquals(3.0, tuple.getDouble("a_f"), 0.0);
       assertList(tuple.getStrings("s_multi"), "aaaa2", "bbbb2");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("444"), Long.parseLong("777"));
 
       tuple = tuples.get(4);
-      assert (tuple.getLong("id") == 4);
-      assert (tuple.get("a_s").equals("hello4"));
-      assert (tuple.getLong("a_i") == 4);
-      assert (tuple.getDouble("a_f") == 4.0);
+      assertEquals(4, (long) tuple.getLong("id"));
+      assertEquals("hello4", tuple.get("a_s"));
+      assertEquals(4, (long) tuple.getLong("a_i"));
+      assertEquals(4.0, tuple.getDouble("a_f"), 0.0);
       assertList(tuple.getStrings("s_multi"), "aaaa3", "bbbb3");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("4444"), Long.parseLong("7777"));
     } finally {
@@ -3932,7 +3933,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         count += tuple.getLong("batchIndexed");
       }
 
-      assert (count == 5);
+      assertEquals(5, count);
 
       // Ensure that destinationCollection actually has the new docs.
       expression =
@@ -3944,42 +3945,42 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assertEquals(5, tuples.size());
 
       Tuple tuple = tuples.get(0);
-      assert (tuple.getLong("id") == 0);
-      assert (tuple.get("a_s").equals("hello0"));
-      assert (tuple.getLong("a_i") == 0);
-      assert (tuple.getDouble("a_f") == 0.0);
+      assertEquals(0, (long) tuple.getLong("id"));
+      assertEquals("hello0", tuple.get("a_s"));
+      assertEquals(0, (long) tuple.getLong("a_i"));
+      assertEquals(0.0, tuple.getDouble("a_f"), 0.0);
       assertList(tuple.getStrings("s_multi"), "aaaa", "bbbb");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("4"), Long.parseLong("7"));
 
       tuple = tuples.get(1);
-      assert (tuple.getLong("id") == 1);
-      assert (tuple.get("a_s").equals("hello1"));
-      assert (tuple.getLong("a_i") == 1);
-      assert (tuple.getDouble("a_f") == 1.0);
+      assertEquals(1, (long) tuple.getLong("id"));
+      assertEquals("hello1", tuple.get("a_s"));
+      assertEquals(1, (long) tuple.getLong("a_i"));
+      assertEquals(1.0, tuple.getDouble("a_f"), 0.0);
       assertList(tuple.getStrings("s_multi"), "aaaa4", "bbbb4");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("44444"), Long.parseLong("77777"));
 
       tuple = tuples.get(2);
-      assert (tuple.getLong("id") == 2);
-      assert (tuple.get("a_s").equals("hello2"));
-      assert (tuple.getLong("a_i") == 2);
-      assert (tuple.getDouble("a_f") == 0.0);
+      assertEquals(2, (long) tuple.getLong("id"));
+      assertEquals("hello2", tuple.get("a_s"));
+      assertEquals(2, (long) tuple.getLong("a_i"));
+      assertEquals(0.0, tuple.getDouble("a_f"), 0.0);
       assertList(tuple.getStrings("s_multi"), "aaaa1", "bbbb1");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("44"), Long.parseLong("77"));
 
       tuple = tuples.get(3);
-      assert (tuple.getLong("id") == 3);
-      assert (tuple.get("a_s").equals("hello3"));
-      assert (tuple.getLong("a_i") == 3);
-      assert (tuple.getDouble("a_f") == 3.0);
+      assertEquals(3, (long) tuple.getLong("id"));
+      assertEquals("hello3", tuple.get("a_s"));
+      assertEquals(3, (long) tuple.getLong("a_i"));
+      assertEquals(3.0, tuple.getDouble("a_f"), 0.0);
       assertList(tuple.getStrings("s_multi"), "aaaa2", "bbbb2");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("444"), Long.parseLong("777"));
 
       tuple = tuples.get(4);
-      assert (tuple.getLong("id") == 4);
-      assert (tuple.get("a_s").equals("hello4"));
-      assert (tuple.getLong("a_i") == 4);
-      assert (tuple.getDouble("a_f") == 4.0);
+      assertEquals(4, (long) tuple.getLong("id"));
+      assertEquals("hello4", tuple.get("a_s"));
+      assertEquals(4, (long) tuple.getLong("a_i"));
+      assertEquals(4.0, tuple.getDouble("a_f"), 0.0);
       assertList(tuple.getStrings("s_multi"), "aaaa3", "bbbb3");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("4444"), Long.parseLong("7777"));
     } finally {
@@ -4049,7 +4050,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
                   + "\", sort=\"batchNumber asc\")");
       parallelUpdateStream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(parallelUpdateStream);
-      assert (tuples.size() == 2);
+      assertEquals(2, tuples.size());
 
       // Lets sleep long enough for daemon updates to run.
       // Lets stop the daemons
@@ -4143,42 +4144,42 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assertEquals(5, tuples.size());
 
       Tuple tuple = tuples.get(0);
-      assert (tuple.getLong("id") == 0);
-      assert (tuple.get("a_s").equals("hello0"));
-      assert (tuple.getLong("a_i") == 0);
-      assert (tuple.getDouble("a_f") == 0.0);
+      assertEquals(0, (long) tuple.getLong("id"));
+      assertEquals("hello0", tuple.get("a_s"));
+      assertEquals(0, (long) tuple.getLong("a_i"));
+      assertEquals(0.0, tuple.getDouble("a_f"), 0.0);
       assertList(tuple.getStrings("s_multi"), "aaaa", "bbbb");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("4"), Long.parseLong("7"));
 
       tuple = tuples.get(1);
-      assert (tuple.getLong("id") == 1);
-      assert (tuple.get("a_s").equals("hello1"));
-      assert (tuple.getLong("a_i") == 1);
-      assert (tuple.getDouble("a_f") == 1.0);
+      assertEquals(1, (long) tuple.getLong("id"));
+      assertEquals("hello1", tuple.get("a_s"));
+      assertEquals(1, (long) tuple.getLong("a_i"));
+      assertEquals(1.0, tuple.getDouble("a_f"), 0.0);
       assertList(tuple.getStrings("s_multi"), "aaaa4", "bbbb4");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("44444"), Long.parseLong("77777"));
 
       tuple = tuples.get(2);
-      assert (tuple.getLong("id") == 2);
-      assert (tuple.get("a_s").equals("hello2"));
-      assert (tuple.getLong("a_i") == 2);
-      assert (tuple.getDouble("a_f") == 0.0);
+      assertEquals(2, (long) tuple.getLong("id"));
+      assertEquals("hello2", tuple.get("a_s"));
+      assertEquals(2, (long) tuple.getLong("a_i"));
+      assertEquals(0.0, tuple.getDouble("a_f"), 0.0);
       assertList(tuple.getStrings("s_multi"), "aaaa1", "bbbb1");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("44"), Long.parseLong("77"));
 
       tuple = tuples.get(3);
-      assert (tuple.getLong("id") == 3);
-      assert (tuple.get("a_s").equals("hello3"));
-      assert (tuple.getLong("a_i") == 3);
-      assert (tuple.getDouble("a_f") == 3.0);
+      assertEquals(3, (long) tuple.getLong("id"));
+      assertEquals("hello3", tuple.get("a_s"));
+      assertEquals(3, (long) tuple.getLong("a_i"));
+      assertEquals(3.0, tuple.getDouble("a_f"), 0.0);
       assertList(tuple.getStrings("s_multi"), "aaaa2", "bbbb2");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("444"), Long.parseLong("777"));
 
       tuple = tuples.get(4);
-      assert (tuple.getLong("id") == 4);
-      assert (tuple.get("a_s").equals("hello4"));
-      assert (tuple.getLong("a_i") == 4);
-      assert (tuple.getDouble("a_f") == 4.0);
+      assertEquals(4, (long) tuple.getLong("id"));
+      assertEquals("hello4", tuple.get("a_s"));
+      assertEquals(4, (long) tuple.getLong("a_i"));
+      assertEquals(4.0, tuple.getDouble("a_f"), 0.0);
       assertList(tuple.getStrings("s_multi"), "aaaa3", "bbbb3");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("4444"), Long.parseLong("7777"));
     } finally {
@@ -4227,7 +4228,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
-      assert (tuples.size() == 5);
+      assertEquals(5, tuples.size());
       assertOrder(tuples, 0, 7, 3, 4, 8);
     } finally {
       solrClientCache.close();
@@ -4429,9 +4430,9 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     assertEquals("hello", results.get(1).get("id"));
     assertEquals("l b c d c e", results.get(1).get("test_t"));
 
-    assertEquals(2L, (long) tuple1.getLong("test"));
-    assertEquals(4L, (long) tuple1.getLong("test1"));
-    assertEquals(9L, (long) tuple1.getLong("test2"));
+    assertEquals(2L, tuple1.getLong("test").longValue());
+    assertEquals(4L, tuple1.getLong("test1").longValue());
+    assertEquals(9L, tuple1.getLong("test2").longValue());
   }
 
   @Test
@@ -4708,7 +4709,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
       final List<Tuple> tuples = getTuples(stream);
 
-      assert (tuples.size() == 5);
+      assertEquals(5, tuples.size());
       assertOrder(tuples, 0, 7, 3, 4, 8);
     } finally {
       solrClientCache.close();
@@ -4755,7 +4756,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
-      assert (tuples.size() == 1);
+      assertEquals(1, tuples.size());
       assertOrder(tuples, 2);
     } finally {
       solrClientCache.close();
@@ -4959,7 +4960,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
       stream.setStreamContext(streamContext);
       final List<Tuple> tuples = getTuples(stream);
-      assert (tuples.size() == 1);
+      assertEquals(1, tuples.size());
       assertOrder(tuples, 2);
     } finally {
       solrClientCache.close();
@@ -5054,8 +5055,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       // to ensure that even if one "batch" fails it continues with other batches.
       // See TODO in UpdateStream
 
-      final long v13_ok = versions.get("doc_13").longValue();
-      final long v10_bad = versions.get("doc_10").longValue() - 42L;
+      final long v13_ok = versions.get("doc_13");
+      final long v10_bad = versions.get("doc_10") - 42L;
       final String expr =
           "commit("
               + COLLECTIONORALIAS
@@ -5095,7 +5096,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       // constraints,
       // and delete docs even if the stream we are wrapping returns _version_ values that are no
       // longer valid...
-      final long v10_bad = versions.get("doc_10").longValue() - 42L;
+      final long v10_bad = versions.get("doc_10") - 42L;
       final String expr =
           "commit("
               + COLLECTIONORALIAS
@@ -5157,15 +5158,13 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
-    List<Tuple> tuples = new ArrayList<Tuple>();
+    List<Tuple> tuples = new ArrayList<>();
 
-    try {
+    try (tupleStream) {
       tupleStream.open();
       for (Tuple t = tupleStream.read(); !t.EOF; t = tupleStream.read()) {
         tuples.add(t);
       }
-    } finally {
-      tupleStream.close();
     }
     return tuples;
   }
@@ -5236,9 +5235,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   public boolean assertString(Tuple tuple, String fieldName, String expected) throws Exception {
     String actual = (String) tuple.get(fieldName);
 
-    if ((null == expected && null != actual)
-        || (null != expected && null == actual)
-        || (null != expected && !expected.equals(actual))) {
+    if (!Objects.equals(expected, actual)) {
       throw new Exception("Longs not equal:" + expected + " : " + actual);
     }
 
