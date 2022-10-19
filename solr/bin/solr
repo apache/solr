@@ -2248,6 +2248,8 @@ function start_solr() {
     # '+CrashOnOutOfMemoryError' ensures that Solr crashes whenever
     # OOME is thrown. Program operation after OOME is unpredictable.
     "-XX:+CrashOnOutOfMemoryError" "-XX:ErrorFile=${SOLR_LOGS_DIR}/jvm_crash_%p.log" \
+    # Workaround for JIT crash, see https://issues.apache.org/jira/browse/SOLR-16463
+    "-XX:CompileCommand=exclude,com.github.benmanes.caffeine.cache.BoundedLocalCache::put" \
     "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.install.dir=$SOLR_TIP" \
     "-Dsolr.default.confdir=$DEFAULT_CONFDIR" "${LOG4J_CONFIG[@]}" "${SOLR_OPTS[@]}" "${SECURITY_MANAGER_OPTS[@]}" "${SOLR_ADMIN_UI}")
 

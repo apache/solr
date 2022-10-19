@@ -1326,6 +1326,8 @@ set START_OPTS=%START_OPTS% -XX:+CrashOnOutOfMemoryError
 set START_OPTS=%START_OPTS% -XX:ErrorFile=%SOLR_LOGS_DIR%\jvm_crash_%%p.log
 set START_OPTS=%START_OPTS% !GC_TUNE! %GC_LOG_OPTS%
 set START_OPTS=%START_OPTS% -DdisableAdminUI=%DISABLE_ADMIN_UI%
+REM Workaround for JIT crash, see https://issues.apache.org/jira/browse/SOLR-16463
+set START_OPTS=%START_OPTS% -XX:CompileCommand=exclude,com.github.benmanes.caffeine.cache.BoundedLocalCache::put
 IF NOT "!CLOUD_MODE_OPTS!"=="" set "START_OPTS=%START_OPTS% !CLOUD_MODE_OPTS!"
 IF NOT "!IP_ACL_OPTS!"=="" set "START_OPTS=%START_OPTS% !IP_ACL_OPTS!"
 IF NOT "%REMOTE_JMX_OPTS%"=="" set "START_OPTS=%START_OPTS% %REMOTE_JMX_OPTS%"

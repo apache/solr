@@ -246,6 +246,8 @@ Bug Fixes
 
 * SOLR-16453: Overseer doesn't handle PRS and non-PRS messages properly (Justin Sweeney, Hitesh Khamesra)
 
+* SOLR-16463: Workaround for serious crash on JDK17+ due to JIT on caffeinecache (janhoy, Uwe Schindler)
+
 Other Changes
 ---------------------
 * SOLR-16351: Upgrade Carrot2 to 4.4.3, upgrade randomizedtesting to 2.8.0. (Dawid Weiss)
