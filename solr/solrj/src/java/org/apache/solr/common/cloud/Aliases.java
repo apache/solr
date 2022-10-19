@@ -66,7 +66,7 @@ public class Aliases {
    * Construct aliases directly with this information -- caller should not retain. Any deeply nested
    * collections are assumed to already be unmodifiable.
    */
-  private Aliases(
+  Aliases(
       Map<String, List<String>> collectionAliases,
       Map<String, Map<String, String>> collectionAliasProperties,
       int zNodeVersion) {
@@ -364,7 +364,7 @@ public class Aliases {
    */
   public Aliases cloneWithRename(String before, String after) throws SolrException {
     if (before == null) {
-      throw new NullPointerException("'before' and 'after' cannot be null");
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'before' cannot be null");
     }
     if (after == null) {
       return cloneWithCollectionAlias(before, after);
@@ -411,7 +411,7 @@ public class Aliases {
       }
     }
     if (level1 == null) { // create an alias that points to the collection
-      newColAliases.put(before, Collections.singletonList(after));
+      newColAliases.put(after, Collections.singletonList(before));
     }
     return new Aliases(newColAliases, newColProperties, zNodeVersion);
   }
