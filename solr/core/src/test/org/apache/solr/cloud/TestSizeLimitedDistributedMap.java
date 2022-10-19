@@ -17,11 +17,6 @@
 
 package org.apache.solr.cloud;
 
-
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -31,6 +26,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 
 public class TestSizeLimitedDistributedMap extends TestDistributedMap {
 
@@ -79,12 +77,14 @@ public class TestSizeLimitedDistributedMap extends TestDistributedMap {
   public void testConcurrentCleanup() throws Exception {
     final Set<String> expectedKeys = new HashSet<>();
     final List<String> deletedItems = new LinkedList<>();
-    int numResponsesToStore=TEST_NIGHTLY?Overseer.NUM_RESPONSES_TO_STORE:100;
+    int numResponsesToStore = TEST_NIGHTLY ? Overseer.NUM_RESPONSES_TO_STORE : 100;
 
     try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), 10000)) {
       String path = getAndMakeInitialPath(zkClient);
-      DistributedMap map = new SizeLimitedDistributedMap(zkClient, path, numResponsesToStore, (element)->deletedItems.add(element));
-      //fill the map to limit first
+      DistributedMap map =
+          new SizeLimitedDistributedMap(
+              zkClient, path, numResponsesToStore, (element) -> deletedItems.add(element));
+      // fill the map to limit first
       for (int i = 0; i < numResponsesToStore; i++) {
         map.put("xyz_" + i, new byte[0]);
       }
@@ -92,16 +92,18 @@ public class TestSizeLimitedDistributedMap extends TestDistributedMap {
       // add more elements concurrently to trigger cleanup
       final int THREAD_COUNT = Math.min(100, numResponsesToStore);
       List<Callable<Object>> callables = new ArrayList<>();
-      for (int i = 0 ; i < THREAD_COUNT ; i ++) {
+      for (int i = 0; i < THREAD_COUNT; i++) {
         final String key = "xyz_" + (numResponsesToStore + 1);
         expectedKeys.add(key);
-        callables.add(() -> {
-          map.put(key, new byte[0]);
-          return null;
-        });
+        callables.add(
+            () -> {
+              map.put(key, new byte[0]);
+              return null;
+            });
       }
 
-      ExecutorService executorService = ExecutorUtil.newMDCAwareFixedThreadPool(
+      ExecutorService executorService =
+          ExecutorUtil.newMDCAwareFixedThreadPool(
               THREAD_COUNT, new SolrNamedThreadFactory("test-concurrent-cleanup"));
       List<Future<Object>> futures = new ArrayList<>();
       for (Callable<Object> callable : callables) {
@@ -109,12 +111,13 @@ public class TestSizeLimitedDistributedMap extends TestDistributedMap {
       }
       try {
         for (Future<Object> future : futures) {
-          future.get(); //none of them should throw exception
+          future.get(); // none of them should throw exception
         }
         for (String expectedKey : expectedKeys) {
           assertTrue(map.contains(expectedKey));
         }
-        //there's no guarantees on exactly how many elements will be removed, but it should at least NOT throw exception
+        // there's no guarantees on exactly how many elements will be removed, but it should at
+        // least NOT throw exception
         assertTrue(!deletedItems.isEmpty());
       } finally {
         executorService.shutdown();
