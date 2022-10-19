@@ -43,11 +43,7 @@ gradlew --write-locks
 ### `solr/licenses` update
 
 ```
-git rm lucene-*-9.3.0.jar.sha1
-
-# ???manually get new .sha1 files???
-
-git add lucene-*-9.4.0.jar.sha1
+gradlew updateLicenses
 ```
 
 ## Code
