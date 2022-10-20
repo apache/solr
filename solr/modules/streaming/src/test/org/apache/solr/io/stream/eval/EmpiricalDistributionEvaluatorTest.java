@@ -14,16 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io.stream.eval;
+package org.apache.solr.io.stream.eval;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.math3.random.EmpiricalDistribution;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.eval.EmpiricalDistributionEvaluator;
-import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.io.Tuple;
+import org.apache.solr.io.eval.EmpiricalDistributionEvaluator;
+import org.apache.solr.io.stream.expr.StreamFactory;
 import org.junit.Test;
 
 public class EmpiricalDistributionEvaluatorTest extends SolrTestCase {

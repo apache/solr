@@ -14,9 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io.stream;
+package org.apache.solr.io.stream;
 
-import static org.apache.solr.client.solrj.io.stream.StreamAssert.assertMaps;
+import static org.apache.solr.io.stream.StreamAssert.assertMaps;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -33,22 +33,22 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.io.SolrClientCache;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
-import org.apache.solr.client.solrj.io.comp.FieldComparator;
-import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
-import org.apache.solr.client.solrj.io.eq.FieldEqualitor;
-import org.apache.solr.client.solrj.io.ops.GroupOperation;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
-import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.apache.solr.client.solrj.io.stream.metrics.Bucket;
-import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
-import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
-import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
-import org.apache.solr.client.solrj.io.stream.metrics.Metric;
-import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
-import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
+import org.apache.solr.io.SolrClientCache;
+import org.apache.solr.io.Tuple;
+import org.apache.solr.io.comp.ComparatorOrder;
+import org.apache.solr.io.comp.FieldComparator;
+import org.apache.solr.io.comp.MultipleFieldComparator;
+import org.apache.solr.io.eq.FieldEqualitor;
+import org.apache.solr.io.ops.GroupOperation;
+import org.apache.solr.io.stream.expr.StreamExpressionParser;
+import org.apache.solr.io.stream.expr.StreamFactory;
+import org.apache.solr.io.stream.metrics.Bucket;
+import org.apache.solr.io.stream.metrics.CountMetric;
+import org.apache.solr.io.stream.metrics.MaxMetric;
+import org.apache.solr.io.stream.metrics.MeanMetric;
+import org.apache.solr.io.stream.metrics.Metric;
+import org.apache.solr.io.stream.metrics.MinMetric;
+import org.apache.solr.io.stream.metrics.SumMetric;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.routing.RequestReplicaListTransformerGenerator;
