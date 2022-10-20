@@ -419,7 +419,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         if (coreContainer.getZkController().claimAsyncId(asyncId)) {
           boolean success = false;
           try {
-            coreContainer.getZkController().getOverseerCollectionQueue().offer(Utils.toJSON(m));
+            coreContainer.getZkController().getOverseerCollectionQueue().offer(m);
             success = true;
           } finally {
             if (!success) {

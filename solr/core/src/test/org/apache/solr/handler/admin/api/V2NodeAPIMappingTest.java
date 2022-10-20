@@ -17,21 +17,18 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
 import static org.apache.solr.common.params.CommonParams.ACTION;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.Maps;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -55,7 +52,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 /** Unit tests for the v2 to v1 mapping for /node/ APIs. */
-public class V2NodeAPIMappingTest {
+public class V2NodeAPIMappingTest extends SolrTestCaseJ4 {
   private ApiBag apiBag;
   private ArgumentCaptor<SolrQueryRequest> queryRequestCaptor;
   private CoreAdminHandler mockCoresHandler;
@@ -132,24 +129,6 @@ public class V2NodeAPIMappingTest {
     assertEquals("someCore", v1Params.get("core"));
     assertEquals("someElectionNode", v1Params.get("election_node"));
     assertEquals("true", v1Params.get("rejoinAtHead"));
-  }
-
-  @Test
-  public void testInvokeClassApiAllProperties() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedCoreV1Params(
-            "/node",
-            "POST",
-            "{"
-                + "\"invoke\": {"
-                + "\"classes\": [\"someClassName\", \"someOtherClassName\"]"
-                + "}}");
-
-    assertEquals("invoke", v1Params.get(ACTION));
-    assertEquals(2, v1Params.getParams("class").length);
-    final List<String> classes = Arrays.asList(v1Params.getParams("class"));
-    assertTrue(classes.contains("someClassName"));
-    assertTrue(classes.contains("someOtherClassName"));
   }
 
   @Test
@@ -288,7 +267,6 @@ public class V2NodeAPIMappingTest {
       ApiBag apiBag, CoreAdminHandler coreHandler, InfoHandler infoHandler) {
     apiBag.registerObject(new OverseerOperationAPI(coreHandler));
     apiBag.registerObject(new RejoinLeaderElectionAPI(coreHandler));
-    apiBag.registerObject(new InvokeClassAPI(coreHandler));
     apiBag.registerObject(new NodePropertiesAPI(infoHandler.getPropertiesHandler()));
     apiBag.registerObject(new NodeThreadsAPI(infoHandler.getThreadDumpHandler()));
     apiBag.registerObject(new NodeLoggingAPI(infoHandler.getLoggingHandler()));

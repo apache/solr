@@ -145,24 +145,24 @@ public class TestLTRScoringQuery extends SolrTestCase {
     assertEquals(m1.hashCode(), m2.hashCode());
 
     // Models with same algorithm, but different efi content should not match
-    assertFalse(m1.equals(m0));
-    assertFalse(m1.hashCode() == m0.hashCode());
+    assertNotEquals(m1, m0);
+    assertNotEquals(m1.hashCode(), m0.hashCode());
 
     final LTRScoringModel algorithm2 =
         TestLinearModel.createLinearModel(
             "testModelName2", features, norms, "testStoreName", allFeatures, modelParams);
     final LTRScoringQuery m3 = new LTRScoringQuery(algorithm2);
 
-    assertFalse(m1.equals(m3));
-    assertFalse(m1.hashCode() == m3.hashCode());
+    assertNotEquals(m1, m3);
+    assertNotEquals(m1.hashCode(), m3.hashCode());
 
     final LTRScoringModel algorithm3 =
         TestLinearModel.createLinearModel(
             "testModelName", features, norms, "testStoreName3", allFeatures, modelParams);
     final LTRScoringQuery m4 = new LTRScoringQuery(algorithm3);
 
-    assertFalse(m1.equals(m4));
-    assertFalse(m1.hashCode() == m4.hashCode());
+    assertNotEquals(m1, m4);
+    assertNotEquals(m1.hashCode(), m4.hashCode());
   }
 
   @Test

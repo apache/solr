@@ -285,7 +285,7 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
                 ccc.getZkStateReader());
       } else {
         try {
-          ccc.offerStateUpdate(Utils.toJSON(props));
+          ccc.offerStateUpdate(props);
         } catch (Exception e) {
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR, "Exception updating Overseer state queue", e);

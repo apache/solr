@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import junit.framework.Assert;
 import org.apache.commons.math3.stat.StatUtils;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -74,6 +73,6 @@ public class NormalizeEvaluatorTest extends SolrTestCase {
 
     double[] actualD =
         ((List<?>) actual).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
-    Assert.assertTrue(Arrays.equals(expected, actualD));
+    assertArrayEquals(expected, actualD, 0.0);
   }
 }

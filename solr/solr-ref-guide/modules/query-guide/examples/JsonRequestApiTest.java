@@ -764,9 +764,9 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
 
   private void assertHasFacetWithBucketValues(
       NestableJsonFacet response, String expectedFacetName, FacetBucket... expectedBuckets) {
-    assertTrue(
+    assertNotNull(
         "Expected response to have facet with name " + expectedFacetName,
-        response.getBucketBasedFacets(expectedFacetName) != null);
+        response.getBucketBasedFacets(expectedFacetName));
     final List<BucketJsonFacet> buckets =
         response.getBucketBasedFacets(expectedFacetName).getBuckets();
     assertEquals(expectedBuckets.length, buckets.size());

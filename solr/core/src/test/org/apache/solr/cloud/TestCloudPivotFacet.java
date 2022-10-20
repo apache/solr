@@ -369,8 +369,6 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
 
       } else {
         // regular stats, compare everything...
-
-        assert actualStats != null;
         try {
           String msg = " of " + statsKey;
 
@@ -672,7 +670,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
    * @see #useFieldRandomizedFactor
    */
   private static boolean useField() {
-    assert 0 < useFieldRandomizedFactor;
+    assertTrue(0 < useFieldRandomizedFactor);
     return 0 != TestUtil.nextInt(random(), 0, useFieldRandomizedFactor);
   }
 

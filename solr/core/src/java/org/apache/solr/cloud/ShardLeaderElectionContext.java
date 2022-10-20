@@ -31,7 +31,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -144,7 +143,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
               zkController.getSolrCloudManager(),
               zkStateReader);
         } else {
-          zkController.getOverseer().getStateUpdateQueue().offer(Utils.toJSON(m));
+          zkController.getOverseer().getStateUpdateQueue().offer(m);
         }
       }
 

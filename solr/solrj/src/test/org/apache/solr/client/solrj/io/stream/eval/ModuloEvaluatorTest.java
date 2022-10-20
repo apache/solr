@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.stream.eval;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.ModuloEvaluator;
@@ -48,19 +47,19 @@ public class ModuloEvaluatorTest extends SolrTestCase {
     values.put("a", 1);
     values.put("b", 2);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertEquals(1 % 2, ((Number) result).doubleValue(), 0.0);
+    assertEquals(1 % 2, ((Number) result).doubleValue(), 0.0);
 
     values.clear();
     values.put("a", 1.1);
     values.put("b", 2);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertEquals(1.1 % 2, result);
+    assertEquals(1.1 % 2, result);
 
     values.clear();
     values.put("a", 1.1);
     values.put("b", 2.1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertEquals(1.1 % 2.1, result);
+    assertEquals(1.1 % 2.1, result);
   }
 
   @Test(expected = IOException.class)
@@ -127,7 +126,7 @@ public class ModuloEvaluatorTest extends SolrTestCase {
     values.put("b", 2);
     values.put("c", 9);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertEquals(1 % (2 % 9), ((Number) result).doubleValue(), 0.0);
+    assertEquals(1 % (2 % 9), ((Number) result).doubleValue(), 0.0);
   }
 
   @Test(expected = IOException.class)
@@ -149,6 +148,6 @@ public class ModuloEvaluatorTest extends SolrTestCase {
     values.put("a", 0);
     values.put("b", 2);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertEquals(0D, result);
+    assertEquals(0D, result);
   }
 }

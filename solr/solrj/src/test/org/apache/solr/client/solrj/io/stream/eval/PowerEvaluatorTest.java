@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
-import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.PowerEvaluator;
@@ -49,8 +48,8 @@ public class PowerEvaluatorTest extends SolrTestCase {
     values.put("a", 2);
     values.put("b", 5);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Number);
-    Assert.assertEquals(
+    assertTrue(result instanceof Number);
+    assertEquals(
         BigDecimal.valueOf(Math.pow(2, 5)),
         BigDecimal.valueOf(result instanceof Long ? (long) result : (double) result));
 
@@ -58,34 +57,34 @@ public class PowerEvaluatorTest extends SolrTestCase {
     values.put("a", 1.1);
     values.put("b", 2);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Number);
-    Assert.assertEquals(Math.pow(1.1, 2), result);
+    assertTrue(result instanceof Number);
+    assertEquals(Math.pow(1.1, 2), result);
 
     values.clear();
     values.put("a", 1.1);
     values.put("b", 2.1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Number);
-    Assert.assertEquals(Math.pow(1.1, 2.1), result);
+    assertTrue(result instanceof Number);
+    assertEquals(Math.pow(1.1, 2.1), result);
 
     values.clear();
     values.put("a", -1.1);
     values.put("b", 2.1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(Double.isNaN((double) result));
+    assertTrue(Double.isNaN((double) result));
 
     values.clear();
     values.put("a", 1.1);
     values.put("b", -2.1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Number);
-    Assert.assertEquals(Math.pow(1.1, -2.1), result);
+    assertTrue(result instanceof Number);
+    assertEquals(Math.pow(1.1, -2.1), result);
 
     values.clear();
     values.put("a", -1.1);
     values.put("b", -2.1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(Double.isNaN((double) result));
+    assertTrue(Double.isNaN((double) result));
   }
 
   @Test(expected = IOException.class)
@@ -98,7 +97,7 @@ public class PowerEvaluatorTest extends SolrTestCase {
     StreamEvaluator evaluator = factory.constructEvaluator("pow(a,b)");
 
     values.clear();
-    Assert.assertNull(evaluator.evaluate(new Tuple(values)));
+    assertNull(evaluator.evaluate(new Tuple(values)));
   }
 
   @Test
@@ -111,8 +110,8 @@ public class PowerEvaluatorTest extends SolrTestCase {
     values.put("b", 2);
     values.put("c", 3);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Number);
-    Assert.assertEquals(
+    assertTrue(result instanceof Number);
+    assertEquals(
         BigDecimal.valueOf(Math.pow(8, Math.pow(2, 3))),
         BigDecimal.valueOf(result instanceof Long ? (long) result : (double) result));
   }

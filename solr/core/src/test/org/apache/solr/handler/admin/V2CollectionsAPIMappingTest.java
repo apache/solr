@@ -104,13 +104,12 @@ public class V2CollectionsAPIMappingTest extends V2ApiMappingTest<CollectionsHan
     assertEquals(
         "localhost:8983_solr,localhost:7574_solr",
         v1Params.get(CollectionAdminParams.CREATE_NODE_SET_PARAM));
-    assertEquals(
-        true, v1Params.getPrimitiveBool(CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM));
+    assertTrue(v1Params.getPrimitiveBool(CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM));
     assertEquals("bar", v1Params.get("property.foo"));
     assertEquals("bar2", v1Params.get("property.foo2"));
     assertEquals("requestTrackingId", v1Params.get(CommonAdminParams.ASYNC));
-    assertEquals(false, v1Params.getPrimitiveBool(CommonAdminParams.WAIT_FOR_FINAL_STATE));
-    assertEquals(false, v1Params.getPrimitiveBool(CollectionAdminParams.PER_REPLICA_STATE));
+    assertFalse(v1Params.getPrimitiveBool(CommonAdminParams.WAIT_FOR_FINAL_STATE));
+    assertFalse(v1Params.getPrimitiveBool(CollectionAdminParams.PER_REPLICA_STATE));
     assertEquals(1, v1Params.getPrimitiveInt(CollectionAdminParams.NUM_SHARDS));
   }
 
@@ -239,10 +238,10 @@ public class V2CollectionsAPIMappingTest extends V2ApiMappingTest<CollectionsHan
     assertEquals("collectionName", v1Params.get(BackupManager.COLLECTION_NAME_PROP));
     assertEquals("/some/location/uri", v1Params.get(CoreAdminParams.BACKUP_LOCATION));
     assertEquals("someRepository", v1Params.get(CoreAdminParams.BACKUP_REPOSITORY));
-    assertEquals(true, v1Params.getPrimitiveBool(CollectionAdminParams.FOLLOW_ALIASES));
+    assertTrue(v1Params.getPrimitiveBool(CollectionAdminParams.FOLLOW_ALIASES));
     assertEquals("copy-files", v1Params.get(CollectionAdminParams.INDEX_BACKUP_STRATEGY));
     assertEquals("someSnapshotName", v1Params.get(CoreAdminParams.COMMIT_NAME));
-    assertEquals(true, v1Params.getPrimitiveBool(CoreAdminParams.BACKUP_INCREMENTAL));
+    assertTrue(v1Params.getPrimitiveBool(CoreAdminParams.BACKUP_INCREMENTAL));
     assertEquals("requestTrackingId", v1Params.get(CommonAdminParams.ASYNC));
   }
 

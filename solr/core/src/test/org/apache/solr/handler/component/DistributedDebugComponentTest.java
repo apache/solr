@@ -464,7 +464,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     for (String element : elements) {
       String value = namedList.get(element);
       assertNotNull("Expected element '" + element + "' but was not found", value);
-      assertTrue("Expected element '" + element + "' but was empty", !value.isEmpty());
+      assertFalse("Expected element '" + element + "' but was empty", value.isEmpty());
     }
   }
 }

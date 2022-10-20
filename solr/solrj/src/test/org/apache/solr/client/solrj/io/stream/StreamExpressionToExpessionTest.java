@@ -382,7 +382,7 @@ public class StreamExpressionToExpessionTest extends SolrTestCase {
       assertTrue(expressionString.contains("q=\"*:*\""));
       assertTrue(expressionString.contains("buckets=a_s"));
       assertTrue(expressionString.contains("bucketSorts=\"sum(a_i) asc\""));
-      assertTrue(!expressionString.contains("bucketSizeLimit"));
+      assertFalse(expressionString.contains("bucketSizeLimit"));
       assertTrue(expressionString.contains("rows=10"));
       assertTrue(expressionString.contains("offset=0"));
       assertTrue(expressionString.contains("overfetch=250"));
@@ -423,7 +423,7 @@ public class StreamExpressionToExpessionTest extends SolrTestCase {
       assertTrue(expressionString.contains("q=\"*:*\""));
       assertTrue(expressionString.contains("buckets=a_s"));
       assertTrue(expressionString.contains("bucketSorts=\"sum(a_i) asc\""));
-      assertTrue(!expressionString.contains("bucketSizeLimit"));
+      assertFalse(expressionString.contains("bucketSizeLimit"));
       assertTrue(expressionString.contains("rows=10"));
       assertTrue(expressionString.contains("offset=100"));
       assertTrue(expressionString.contains("overfetch=30"));
@@ -464,7 +464,7 @@ public class StreamExpressionToExpessionTest extends SolrTestCase {
       assertTrue(expressionString.contains("q=\"*:*\""));
       assertTrue(expressionString.contains("buckets=a_s"));
       assertTrue(expressionString.contains("bucketSorts=\"sum(a_i) asc\""));
-      assertTrue(!expressionString.contains("bucketSizeLimit"));
+      assertFalse(expressionString.contains("bucketSizeLimit"));
       assertTrue(expressionString.contains("rows=-1"));
       assertTrue(expressionString.contains("offset=100"));
       assertTrue(expressionString.contains("overfetch=-1"));

@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.stream.eval;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
@@ -48,20 +47,20 @@ public class SubtractEvaluatorTest extends SolrTestCase {
     values.put("a", 1);
     values.put("b", 2);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertEquals(-1D, result);
+    assertEquals(-1D, result);
 
     values.clear();
     values.put("a", 1.1);
     values.put("b", 2);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Double);
-    Assert.assertEquals(-.9D, result);
+    assertTrue(result instanceof Double);
+    assertEquals(-.9D, result);
 
     values.clear();
     values.put("a", 1.1);
     values.put("b", 2.1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertEquals(-1D, result);
+    assertEquals(-1D, result);
   }
 
   @Test(expected = IOException.class)
@@ -76,7 +75,7 @@ public class SubtractEvaluatorTest extends SolrTestCase {
 
     values.clear();
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertNull(result);
+    assertNull(result);
   }
 
   @Test // (expected = NumberFormatException.class)
@@ -88,19 +87,19 @@ public class SubtractEvaluatorTest extends SolrTestCase {
     values.put("a", 1);
     values.put("b", null);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertNull(result);
+    assertNull(result);
 
     values.clear();
     values.put("a", 1.1);
     values.put("b", null);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertNull(result);
+    assertNull(result);
 
     values.clear();
     values.put("a", 1.1);
     values.put("b", null);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertNull(result);
+    assertNull(result);
   }
 
   @Test // (expected = NumberFormatException.class)
@@ -111,17 +110,17 @@ public class SubtractEvaluatorTest extends SolrTestCase {
     values.clear();
     values.put("a", 1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertNull(result);
+    assertNull(result);
 
     values.clear();
     values.put("a", 1.1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertNull(result);
+    assertNull(result);
 
     values.clear();
     values.put("a", 1.1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertNull(result);
+    assertNull(result);
   }
 
   @Test
@@ -135,7 +134,7 @@ public class SubtractEvaluatorTest extends SolrTestCase {
     values.put("c", 3);
     values.put("d", 4);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertEquals(-8D, result);
+    assertEquals(-8D, result);
 
     values.clear();
     values.put("a", 1.1);
@@ -143,8 +142,8 @@ public class SubtractEvaluatorTest extends SolrTestCase {
     values.put("c", 3);
     values.put("d", 4);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Double);
-    Assert.assertEquals(-7.9D, result);
+    assertTrue(result instanceof Double);
+    assertEquals(-7.9D, result);
 
     values.clear();
     values.put("a", 10.1);
@@ -152,8 +151,8 @@ public class SubtractEvaluatorTest extends SolrTestCase {
     values.put("c", 3.1);
     values.put("d", 4.1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Double);
-    Assert.assertEquals(.8D, result);
+    assertTrue(result instanceof Double);
+    assertEquals(.8D, result);
   }
 
   @Test
@@ -167,7 +166,7 @@ public class SubtractEvaluatorTest extends SolrTestCase {
     values.put("c", 3);
     values.put("d", 4);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertEquals(0D, result);
+    assertEquals(0D, result);
 
     values.clear();
     values.put("a", 123456789123456789L);
@@ -175,6 +174,6 @@ public class SubtractEvaluatorTest extends SolrTestCase {
     values.put("c", 123456789123456789L);
     values.put("d", 123456789123456789L);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertEquals(0D, result);
+    assertEquals(0D, result);
   }
 }

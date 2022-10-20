@@ -20,6 +20,7 @@ import static org.hamcrest.core.StringContains.containsString;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
+import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -99,23 +100,24 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     String qryResult = JQ("/query" + query.toQueryString());
     qryResult = qryResult.replaceAll("\n", " ");
 
-    assertThat(qryResult, containsString("\"debug\":{"));
+    MatcherAssert.assertThat(qryResult, containsString("\"debug\":{"));
     qryResult = qryResult.substring(qryResult.indexOf("debug"));
 
-    assertThat(qryResult, containsString("\"explain\":{"));
+    MatcherAssert.assertThat(qryResult, containsString("\"explain\":{"));
     qryResult = qryResult.substring(qryResult.indexOf("explain"));
 
-    assertThat(qryResult, containsString("multipleadditivetreesmodel"));
-    assertThat(qryResult, containsString(MultipleAdditiveTreesModel.class.getSimpleName()));
+    MatcherAssert.assertThat(qryResult, containsString("multipleadditivetreesmodel"));
+    MatcherAssert.assertThat(
+        qryResult, containsString(MultipleAdditiveTreesModel.class.getSimpleName()));
 
-    assertThat(qryResult, containsString("-100.0 = tree 0"));
-    assertThat(qryResult, containsString("50.0 = tree 0"));
-    assertThat(qryResult, containsString("-20.0 = tree 1"));
-    assertThat(qryResult, containsString("'matchedTitle':1.0 > 0.5"));
-    assertThat(qryResult, containsString("'matchedTitle':0.0 <= 0.5"));
+    MatcherAssert.assertThat(qryResult, containsString("-100.0 = tree 0"));
+    MatcherAssert.assertThat(qryResult, containsString("50.0 = tree 0"));
+    MatcherAssert.assertThat(qryResult, containsString("-20.0 = tree 1"));
+    MatcherAssert.assertThat(qryResult, containsString("'matchedTitle':1.0 > 0.5"));
+    MatcherAssert.assertThat(qryResult, containsString("'matchedTitle':0.0 <= 0.5"));
 
-    assertThat(qryResult, containsString(" Go Right "));
-    assertThat(qryResult, containsString(" Go Left "));
+    MatcherAssert.assertThat(qryResult, containsString(" Go Right "));
+    MatcherAssert.assertThat(qryResult, containsString(" Go Left "));
   }
 
   @Test

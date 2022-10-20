@@ -78,9 +78,10 @@ public class TestQuerySenderListener extends SolrTestCaseJ4 {
               {
                 String evt = mock.req.getParams().get(EventParams.EVENT);
                 assertNotNull("Event is null", evt);
-                assertTrue(
+                assertEquals(
                     evt + " is not equal to " + EventParams.FIRST_SEARCHER,
-                    evt.equals(EventParams.FIRST_SEARCHER) == true);
+                    EventParams.FIRST_SEARCHER,
+                    evt);
 
                 assertU(adoc("id", "1"));
                 assertU(commit());
@@ -91,9 +92,10 @@ public class TestQuerySenderListener extends SolrTestCaseJ4 {
                       newSearcher -> {
                         String evt = mock.req.getParams().get(EventParams.EVENT);
                         assertNotNull("Event is null", evt);
-                        assertTrue(
+                        assertEquals(
                             evt + " is not equal to " + EventParams.NEW_SEARCHER,
-                            evt.equals(EventParams.NEW_SEARCHER) == true);
+                            EventParams.NEW_SEARCHER,
+                            evt);
                         return null;
                       });
 

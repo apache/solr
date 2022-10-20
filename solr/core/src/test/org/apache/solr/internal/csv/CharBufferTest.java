@@ -16,10 +16,9 @@
  */
 package org.apache.solr.internal.csv;
 
-import junit.framework.TestCase;
 import org.apache.solr.SolrTestCaseJ4;
 
-public class CharBufferTest extends TestCase {
+public class CharBufferTest extends SolrTestCaseJ4 {
   public void testCreate() {
     CharBuffer cb = new CharBuffer();
     assertEquals(0, cb.length());
