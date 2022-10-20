@@ -59,9 +59,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
@@ -1779,7 +1779,7 @@ public class ZkController implements Closeable {
               getSolrCloudManager(),
               zkStateReader);
         } else {
-          overseerJobQueue.offer(Utils.toJSON(m));
+          overseerJobQueue.offer(m);
         }
       }
       // extra handling for PRS, we need to write the PRS entries from this node directly,
@@ -1897,7 +1897,7 @@ public class ZkController implements Closeable {
             getSolrCloudManager(),
             zkStateReader);
       } else {
-        overseerJobQueue.offer(Utils.toJSON(m));
+        overseerJobQueue.offer(m);
       }
     }
   }
@@ -2168,7 +2168,7 @@ public class ZkController implements Closeable {
 
         // short timeouts, we may be in a storm and this is best effort and maybe we should be the
         // leader now
-        try (HttpSolrClient client =
+        try (SolrClient client =
             new Builder(leaderBaseUrl)
                 .withConnectionTimeout(8000)
                 .withSocketTimeout(30000)
@@ -2524,7 +2524,7 @@ public class ZkController implements Closeable {
     log.warn(
         "Going to add role {}. It is deprecated to use ADDROLE and consider using Node Roles instead.",
         props);
-    getOverseerCollectionQueue().offer(Utils.toJSON(props));
+    getOverseerCollectionQueue().offer(props);
   }
 
   public CoreContainer getCoreContainer() {
@@ -2975,13 +2975,12 @@ public class ZkController implements Closeable {
 
         // We always send a down node event to overseer to be safe, but overseer will not need to do
         // anything for PRS collections
-        ZkNodeProps m =
-            new ZkNodeProps(
-                Overseer.QUEUE_OPERATION,
-                OverseerAction.DOWNNODE.toLower(),
-                ZkStateReader.NODE_NAME_PROP,
-                nodeName);
-        overseer.getStateUpdateQueue().offer(Utils.toJSON(m));
+        overseer
+            .getStateUpdateQueue()
+            .offer(
+                m ->
+                    m.put(Overseer.QUEUE_OPERATION, OverseerAction.DOWNNODE.toLower())
+                        .put(ZkStateReader.NODE_NAME_PROP, nodeName));
       } catch (AlreadyClosedException e) {
         log.info(
             "Not publishing node as DOWN because a resource required to do so is already closed.");

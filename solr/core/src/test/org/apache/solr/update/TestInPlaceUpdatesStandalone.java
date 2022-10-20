@@ -334,8 +334,8 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
                   null);
             });
     assertEquals(exception.toString(), SolrException.ErrorCode.CONFLICT.code, exception.code());
-    assertThat(exception.getMessage(), containsString("expected=-1"));
-    assertThat(exception.getMessage(), containsString("actual=" + v20));
+    MatcherAssert.assertThat(exception.getMessage(), containsString("expected=-1"));
+    MatcherAssert.assertThat(exception.getMessage(), containsString("actual=" + v20));
 
     long oldV20 = v20;
     v20 =
@@ -350,8 +350,8 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
                   null);
             });
     assertEquals(exception.toString(), SolrException.ErrorCode.CONFLICT.code, exception.code());
-    assertThat(exception.getMessage(), containsString("expected=" + oldV20));
-    assertThat(exception.getMessage(), containsString("actual=" + v20));
+    MatcherAssert.assertThat(exception.getMessage(), containsString("expected=" + oldV20));
+    MatcherAssert.assertThat(exception.getMessage(), containsString("actual=" + v20));
 
     v20 =
         addAndAssertVersion(

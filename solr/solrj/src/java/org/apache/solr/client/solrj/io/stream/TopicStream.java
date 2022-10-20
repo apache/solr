@@ -39,8 +39,8 @@ import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
@@ -509,10 +509,10 @@ public class TopicStream extends CloudSolrStream implements Expressible {
       for (Replica replica : replicas) {
         if (replica.getState() == Replica.State.ACTIVE
             && liveNodes.contains(replica.getNodeName())) {
-          HttpSolrClient httpClient =
+          SolrClient solrClient =
               streamContext.getSolrClientCache().getHttpSolrClient(replica.getCoreUrl());
           try {
-            SolrDocument doc = httpClient.getById(id);
+            SolrDocument doc = solrClient.getById(id);
             if (doc != null) {
               @SuppressWarnings({"unchecked"})
               List<String> checkpoints = (List<String>) doc.getFieldValue("checkpoint_ss");

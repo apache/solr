@@ -1319,7 +1319,11 @@ IF "%verbose%"=="1" (
 set START_OPTS=-Duser.timezone=%SOLR_TIMEZONE%
 REM '-OmitStackTraceInFastThrow' ensures stack traces in errors,
 REM users who don't care about useful error msgs can override in SOLR_OPTS with +OmitStackTraceInFastThrow
-set "START_OPTS=%START_OPTS% -XX:-OmitStackTraceInFastThrow"
+set START_OPTS=%START_OPTS% -XX:-OmitStackTraceInFastThrow
+REM '+CrashOnOutOfMemoryError' ensures that Solr crashes whenever
+REM OOME is thrown. Program operation after OOME is unpredictable.
+set START_OPTS=%START_OPTS% -XX:+CrashOnOutOfMemoryError
+set START_OPTS=%START_OPTS% -XX:ErrorFile=%SOLR_LOGS_DIR%\jvm_crash_%%p.log
 set START_OPTS=%START_OPTS% !GC_TUNE! %GC_LOG_OPTS%
 set START_OPTS=%START_OPTS% -DdisableAdminUI=%DISABLE_ADMIN_UI%
 IF NOT "!CLOUD_MODE_OPTS!"=="" set "START_OPTS=%START_OPTS% !CLOUD_MODE_OPTS!"

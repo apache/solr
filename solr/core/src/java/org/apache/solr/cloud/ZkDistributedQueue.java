@@ -34,12 +34,14 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
@@ -305,6 +307,10 @@ public class ZkDistributedQueue implements DistributedQueue {
       updateLock.unlock();
       timer.stop();
     }
+  }
+
+  public void offer(MapWriter mw) throws KeeperException, InterruptedException {
+    offer(Utils.toJSON(mw));
   }
 
   /**
