@@ -84,7 +84,6 @@ allprojects { prj ->
             '-Xep:CanIgnoreReturnValueSuggester:OFF',
             '-Xep:ClassCanBeStatic:OFF',
             '-Xep:ComplexBooleanConstant:OFF',
-            '-Xep:DoubleBraceInitialization:OFF',
             '-Xep:DoubleCheckedLocking:OFF',
             '-Xep:EmptyCatch:OFF',
             '-Xep:EqualsGetClass:OFF',
