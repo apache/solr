@@ -189,7 +189,6 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
 
     Arrays.sort(actualIds);
     Arrays.sort(expectedIds);
-    System.out.println("DEBUG ACTUAL IDS 1: " + Arrays.toString(actualIds));
     assertArrayEquals(expectedIds, actualIds);
 
     queryResponse =
@@ -209,9 +208,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
 
     Arrays.sort(actualIds);
     Arrays.sort(expectedIds);
-    System.out.println("DEBUG ACTUAL IDS 2: " + Arrays.toString(actualIds));
-    assertArrayEquals(
-        Arrays.toString(expectedIds) + " " + Arrays.toString(actualIds), expectedIds, actualIds);
+    assertArrayEquals(expectedIds, actualIds);
   }
 
   @Test
@@ -234,8 +231,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
 
     Arrays.sort(actualIds);
     Arrays.sort(expectedIds);
-    assertArrayEquals(
-        Arrays.toString(expectedIds) + " " + Arrays.toString(actualIds), expectedIds, actualIds);
+    assertArrayEquals(expectedIds, actualIds);
 
     String[] expectedQueryStrings =
         new String[] {
@@ -275,8 +271,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
 
     Arrays.sort(actualIds);
     Arrays.sort(expectedIds);
-    assertArrayEquals(
-        Arrays.toString(expectedIds) + " " + Arrays.toString(actualIds), expectedIds, actualIds);
+    assertArrayEquals(expectedIds, actualIds);
   }
 
   @Test
@@ -329,25 +324,19 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
     int[] actualIds = new int[solrDocuments.size()];
     int[] expectedIds = new int[] {13, 14, 15, 16, 22, 24, 32, 18, 19, 21};
     int i = 0;
-    StringBuilder sb = new StringBuilder();
     for (SolrDocument solrDocument : solrDocuments) {
       actualIds[i++] = Integer.parseInt(String.valueOf(solrDocument.getFieldValue("id")));
-      sb.append(actualIds[i - 1]).append(", ");
     }
-
     Arrays.sort(actualIds);
     Arrays.sort(expectedIds);
     assertArrayEquals(expectedIds, actualIds);
   }
 
   public void testInvalidSourceDocument() {
-    SolrException e =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              cluster
-                  .getSolrClient()
-                  .query(COLLECTION, new SolrQuery("{!mlt qf=lowerfilt_u}999999"));
-            });
+    expectThrows(
+        SolrException.class,
+        () -> cluster
+            .getSolrClient()
+            .query(COLLECTION, new SolrQuery("{!mlt qf=lowerfilt_u}999999")));
   }
 }
