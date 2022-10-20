@@ -430,56 +430,17 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
 
     List<SolrInputDocument> docs = new ArrayList<>();
 
-    SolrInputDocument document1 =
-        new SolrInputDocument() {
-          {
-            final String id = id();
-            addField("id", id);
-            addField("parent_s", "X");
+    SolrInputDocument document1 = new SolrInputDocument("id", id(), "parent_s", "X");
+    List<SolrInputDocument> ch1 =
+        Arrays.asList(
+            new SolrInputDocument("id", id(), "child_s", "y"),
+            new SolrInputDocument("id", id(), "child_s", "z"));
+    Collections.shuffle(ch1, random());
+    document1.addChildDocuments(ch1);
 
-            ArrayList<SolrInputDocument> ch1 =
-                new ArrayList<>(
-                    Arrays.asList(
-                        new SolrInputDocument() {
-                          {
-                            addField("id", id());
-                            addField("child_s", "y");
-                          }
-                        },
-                        new SolrInputDocument() {
-                          {
-                            addField("id", id());
-                            addField("child_s", "z");
-                          }
-                        }));
-
-            Collections.shuffle(ch1, random());
-            addChildDocuments(ch1);
-          }
-        };
-
-    SolrInputDocument document2 =
-        new SolrInputDocument() {
-          {
-            final String id = id();
-            addField("id", id);
-            addField("parent_s", "A");
-            addChildDocument(
-                new SolrInputDocument() {
-                  {
-                    addField("id", id());
-                    addField("child_s", "b");
-                  }
-                });
-            addChildDocument(
-                new SolrInputDocument() {
-                  {
-                    addField("id", id());
-                    addField("child_s", "c");
-                  }
-                });
-          }
-        };
+    SolrInputDocument document2 = new SolrInputDocument("id", id(), "parent_s", "A");
+    document2.addChildDocument(new SolrInputDocument("id", id(), "child_s", "b"));
+    document2.addChildDocument(new SolrInputDocument("id", id(), "child_s", "c"));
 
     docs.add(document1);
     docs.add(document2);
