@@ -100,7 +100,6 @@ allprojects { prj ->
             '-Xep:InputStreamSlowMultibyteRead:OFF',
             '-Xep:IntLongMath:OFF',
             '-Xep:InvalidBlockTag:OFF', // this is needed for tags like lucene.internal
-            '-Xep:InvalidInlineTag:OFF',
             '-Xep:InvalidParam:OFF',
             '-Xep:JavaLangClash:OFF',
             '-Xep:JavaUtilDate:OFF',
