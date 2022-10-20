@@ -26,7 +26,6 @@ import org.apache.solr.client.solrj.io.eval.LengthEvaluator;
 import org.apache.solr.client.solrj.io.eval.SequenceEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class LengthEvaluatorTest extends SolrTestCase {
@@ -60,8 +59,8 @@ public class LengthEvaluatorTest extends SolrTestCase {
           }
         });
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(3L, result);
+    assertTrue(result instanceof Long);
+    assertEquals(3L, result);
 
     values.clear();
     values.put(
@@ -73,8 +72,8 @@ public class LengthEvaluatorTest extends SolrTestCase {
           }
         });
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(2L, result);
+    assertTrue(result instanceof Long);
+    assertEquals(2L, result);
 
     values.clear();
     values.put(
@@ -84,8 +83,8 @@ public class LengthEvaluatorTest extends SolrTestCase {
           }
         });
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(0L, result);
+    assertTrue(result instanceof Long);
+    assertEquals(0L, result);
   }
 
   @Test
@@ -95,8 +94,8 @@ public class LengthEvaluatorTest extends SolrTestCase {
 
     values.clear();
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(3L, result);
+    assertTrue(result instanceof Long);
+    assertEquals(3L, result);
   }
 
   @Test(expected = IOException.class)

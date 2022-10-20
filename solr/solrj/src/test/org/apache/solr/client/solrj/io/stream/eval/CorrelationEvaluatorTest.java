@@ -24,7 +24,6 @@ import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.CorrelationEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class CorrelationEvaluatorTest extends SolrTestCase {
@@ -47,7 +46,7 @@ public class CorrelationEvaluatorTest extends SolrTestCase {
     values.put("l1", l1);
     values.put("l2", l2);
 
-    Assert.assertEquals(
+    assertEquals(
         new PearsonsCorrelation().correlation(l1, l2),
         factory.constructEvaluator("corr(l1,l2)").evaluate(new Tuple(values)));
   }

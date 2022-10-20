@@ -176,7 +176,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
 
     Replica newLeader = cluster.getZkStateReader().getLeaderRetry(collectionName, "shard1");
 
-    assertFalse(leader.equals(newLeader));
+    assertNotEquals(leader, newLeader);
 
     // Confirm that the instance and data directory were deleted by default
     assertFalse(
@@ -326,7 +326,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     JettySolrRunner leaderJetty = getJettyForReplica(leader);
     Replica replica1 =
         shard1.getReplicas(replica -> !replica.getName().equals(leader.getName())).get(0);
-    assertFalse(replica1.getName().equals(leader.getName()));
+    assertNotEquals(replica1.getName(), leader.getName());
 
     JettySolrRunner replica1Jetty = getJettyForReplica(replica1);
 

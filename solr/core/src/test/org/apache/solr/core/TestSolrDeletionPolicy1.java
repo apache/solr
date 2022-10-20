@@ -109,6 +109,6 @@ public class TestSolrDeletionPolicy1 extends SolrTestCaseJ4 {
     assertQ("return all docs", req("id:[0 TO 6]"), "*[count(//doc)=6]");
 
     commits = delPolicy.getCommits();
-    assertTrue(!commits.containsKey(ic.getGeneration()));
+    assertFalse(commits.containsKey(ic.getGeneration()));
   }
 }

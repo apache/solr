@@ -214,7 +214,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
           0,
           docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).size());
       for (Slice s : docCollection.getSlices()) {
-        assertTrue(s.getLeader().getType() == Replica.Type.TLOG);
+        assertSame(s.getLeader().getType(), Replica.Type.TLOG);
         List<String> shardElectionNodes =
             cluster
                 .getZkClient()

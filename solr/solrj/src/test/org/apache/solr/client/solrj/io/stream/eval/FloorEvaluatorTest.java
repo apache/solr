@@ -24,7 +24,6 @@ import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.FloorEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class FloorEvaluatorTest extends SolrTestCase {
@@ -47,17 +46,17 @@ public class FloorEvaluatorTest extends SolrTestCase {
     values.clear();
     values.put("a", 1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertEquals(1D, result);
+    assertEquals(1D, result);
 
     values.clear();
     values.put("a", 1.1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertEquals(1D, result);
+    assertEquals(1D, result);
 
     values.clear();
     values.put("a", -1.1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertEquals(-2D, result);
+    assertEquals(-2D, result);
   }
 
   @Test(expected = IOException.class)

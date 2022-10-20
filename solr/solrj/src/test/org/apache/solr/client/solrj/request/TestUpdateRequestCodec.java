@@ -37,7 +37,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.Utils;
-import org.junit.Assert;
 import org.junit.Test;
 
 /**
@@ -90,7 +89,7 @@ public class TestUpdateRequestCodec extends SolrTestCase {
     final List<SolrInputDocument> docs = new ArrayList<>();
     JavaBinUpdateRequestCodec.StreamingUpdateHandler handler =
         (document, req, commitWithin, overwrite) -> {
-          Assert.assertNotNull(req.getParams());
+          assertNotNull(req.getParams());
           docs.add(document);
         };
 
@@ -105,10 +104,8 @@ public class TestUpdateRequestCodec extends SolrTestCase {
       SolrInputDocument outDoc = updateUnmarshalled.getDocuments().get(i);
       compareDocs("doc#" + i, inDoc, outDoc);
     }
-    Assert.assertEquals(
-        updateUnmarshalled.getDeleteById().get(0), updateRequest.getDeleteById().get(0));
-    Assert.assertEquals(
-        updateUnmarshalled.getDeleteQuery().get(0), updateRequest.getDeleteQuery().get(0));
+    assertEquals(updateUnmarshalled.getDeleteById().get(0), updateRequest.getDeleteById().get(0));
+    assertEquals(updateUnmarshalled.getDeleteQuery().get(0), updateRequest.getDeleteQuery().get(0));
 
     assertEquals("b", updateUnmarshalled.getParams().get("a"));
   }
@@ -137,7 +134,7 @@ public class TestUpdateRequestCodec extends SolrTestCase {
     final List<SolrInputDocument> docs = new ArrayList<>();
     JavaBinUpdateRequestCodec.StreamingUpdateHandler handler =
         (document, req, commitWithin, overwrite) -> {
-          Assert.assertNotNull(req.getParams());
+          assertNotNull(req.getParams());
           docs.add(document);
         };
 
@@ -150,10 +147,10 @@ public class TestUpdateRequestCodec extends SolrTestCase {
 
     SolrInputDocument outDoc = updateUnmarshalled.getDocuments().get(0);
     SolrInputField iter = outDoc.getField("iter");
-    Assert.assertNotNull("iter field is null", iter);
+    assertNotNull("iter field is null", iter);
     Object iterVal = iter.getValue();
-    Assert.assertTrue("iterVal is not a Collection", iterVal instanceof Collection);
-    Assert.assertEquals("iterVal contents", values, iterVal);
+    assertTrue("iterVal is not a Collection", iterVal instanceof Collection);
+    assertEquals("iterVal contents", values, iterVal);
   }
 
   // this format accepts a 1:1 mapping of the json format and javabin format
@@ -272,10 +269,8 @@ public class TestUpdateRequestCodec extends SolrTestCase {
       SolrInputDocument outDoc = updateUnmarshalled.getDocuments().get(i);
       compareDocs("doc#" + i, inDoc, outDoc);
     }
-    Assert.assertEquals(
-        updateUnmarshalled.getDeleteById().get(0), updateRequest.getDeleteById().get(0));
-    Assert.assertEquals(
-        updateUnmarshalled.getDeleteQuery().get(0), updateRequest.getDeleteQuery().get(0));
+    assertEquals(updateUnmarshalled.getDeleteById().get(0), updateRequest.getDeleteById().get(0));
+    assertEquals(updateUnmarshalled.getDeleteQuery().get(0), updateRequest.getDeleteQuery().get(0));
 
     assertEquals("b", updateUnmarshalled.getParams().get("a"));
     is.close();
@@ -297,7 +292,7 @@ public class TestUpdateRequestCodec extends SolrTestCase {
         m += " (Set comparison)";
       }
 
-      Assert.assertEquals(m + " diff values for field: " + s, expectedVal, actualVal);
+      assertEquals(m + " diff values for field: " + s, expectedVal, actualVal);
     }
   }
 }

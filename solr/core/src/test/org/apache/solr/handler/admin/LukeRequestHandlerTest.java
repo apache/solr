@@ -257,7 +257,7 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
             field("title") + "/arr[@name='copyDests']/str[.='title_stemmed']",
             dynfield("bar_copydest_*") + "/arr[@name='copySources']/str[.='foo_copysource_*']",
             dynfield("foo_copysource_*") + "/arr[@name='copyDests']/str[.='bar_copydest_*']");
-    assertEquals(xml, null, r);
+    assertNull(xml, r);
   }
 
   public void testCatchAllCopyField() throws Exception {

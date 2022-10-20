@@ -17,19 +17,19 @@
 package org.apache.solr.client.solrj.request;
 
 import java.util.Arrays;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrInputDocument;
-import org.junit.Assert;
 import org.junit.Test;
 
-public class TestUpdateRequest {
+public class TestUpdateRequest extends SolrTestCase {
 
   @Test
   public void testCannotAddNullSolrInputDocument() {
     UpdateRequest req = new UpdateRequest();
 
     NullPointerException thrown =
-        Assert.assertThrows(NullPointerException.class, () -> req.add((SolrInputDocument) null));
-    Assert.assertEquals("Cannot add a null SolrInputDocument", thrown.getMessage());
+        assertThrows(NullPointerException.class, () -> req.add((SolrInputDocument) null));
+    assertEquals("Cannot add a null SolrInputDocument", thrown.getMessage());
   }
 
   @Test
@@ -37,17 +37,16 @@ public class TestUpdateRequest {
     UpdateRequest req = new UpdateRequest();
 
     NullPointerException thrown =
-        Assert.assertThrows(NullPointerException.class, () -> req.add(null, true));
-    Assert.assertEquals("Cannot add a null SolrInputDocument", thrown.getMessage());
+        assertThrows(NullPointerException.class, () -> req.add(null, true));
+    assertEquals("Cannot add a null SolrInputDocument", thrown.getMessage());
   }
 
   @Test
   public void testCannotAddNullDocumentWithCommitWithin() {
     UpdateRequest req = new UpdateRequest();
 
-    NullPointerException thrown =
-        Assert.assertThrows(NullPointerException.class, () -> req.add(null, 1));
-    Assert.assertEquals("Cannot add a null SolrInputDocument", thrown.getMessage());
+    NullPointerException thrown = assertThrows(NullPointerException.class, () -> req.add(null, 1));
+    assertEquals("Cannot add a null SolrInputDocument", thrown.getMessage());
   }
 
   @Test
@@ -55,8 +54,8 @@ public class TestUpdateRequest {
     UpdateRequest req = new UpdateRequest();
 
     NullPointerException thrown =
-        Assert.assertThrows(NullPointerException.class, () -> req.add(null, 1, true));
-    Assert.assertEquals("Cannot add a null SolrInputDocument", thrown.getMessage());
+        assertThrows(NullPointerException.class, () -> req.add(null, 1, true));
+    assertEquals("Cannot add a null SolrInputDocument", thrown.getMessage());
   }
 
   @Test
@@ -64,9 +63,9 @@ public class TestUpdateRequest {
     UpdateRequest req = new UpdateRequest();
 
     NullPointerException thrown =
-        Assert.assertThrows(
+        assertThrows(
             NullPointerException.class,
             () -> req.add(Arrays.asList(new SolrInputDocument(), new SolrInputDocument(), null)));
-    Assert.assertEquals("Cannot add a null SolrInputDocument", thrown.getMessage());
+    assertEquals("Cannot add a null SolrInputDocument", thrown.getMessage());
   }
 }

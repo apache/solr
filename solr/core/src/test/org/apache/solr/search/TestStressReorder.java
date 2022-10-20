@@ -347,7 +347,7 @@ public class TestStressReorder extends TestRTGBase {
                         || (foundVer == info.version
                             && foundVal != info.val)) { // if the version matches, the val must
                       log.error("ERROR, id={} found={} model {}", id, response, info);
-                      assertTrue(false);
+                      fail();
                     }
                   }
                 }

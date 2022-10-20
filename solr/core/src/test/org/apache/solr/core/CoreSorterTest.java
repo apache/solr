@@ -154,11 +154,11 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
     for (Map.Entry<CountsForEachShard, List<CoreDescriptor>> entry : myCountsToDescs.entrySet()) {
       for (CoreDescriptor descriptor : entry.getValue()) {
         CountsForEachShard prev = myDescsToCounts.put(descriptor, entry.getKey());
-        assert prev == null; // sanity check
+        assertNull(prev); // sanity check
       }
     }
 
-    assert myCountsToDescs.size() == perShardCounts.size(); // just a sanity check
+    assertEquals(myCountsToDescs.size(), perShardCounts.size()); // just a sanity check
 
     CoreContainer mockCC = mock(CoreContainer.class);
     {

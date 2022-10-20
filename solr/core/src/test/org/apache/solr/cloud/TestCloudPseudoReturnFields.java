@@ -176,10 +176,8 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
             Boolean.TRUE,
             frsp.getField().get("multiValued"));
       } catch (SolrServerException e) {
-        assertEquals(
-            "Couldn't fetch field for '" + name + "' ... schema changed out from under us?",
-            null,
-            e);
+        assertNull(
+            "Couldn't fetch field for '" + name + "' ... schema changed out from under us?", e);
       }
     }
 
@@ -982,7 +980,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
   }
 
   public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
-    assert null != client.getDefaultCollection();
+    assertNotNull(client.getDefaultCollection());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(
         client.getDefaultCollection(), ZkStateReader.from(client), true, true, 330);
   }

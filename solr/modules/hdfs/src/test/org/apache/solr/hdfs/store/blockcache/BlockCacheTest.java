@@ -19,7 +19,6 @@ package org.apache.solr.hdfs.store.blockcache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.RemovalListener;
-import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -71,7 +70,7 @@ public class BlockCacheTest extends SolrTestCase {
       long t3 = System.nanoTime();
       if (blockCache.fetch(blockCacheKey, buffer)) {
         fetchTime += (System.nanoTime() - t3);
-        assertTrue("buffer content differs", Arrays.equals(testData, buffer));
+        assertArrayEquals("buffer content differs", testData, buffer);
       }
     }
     System.out.println("Cache Hits    = " + hitsInCache.get());

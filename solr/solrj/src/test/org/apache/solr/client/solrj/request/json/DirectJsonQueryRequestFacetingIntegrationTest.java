@@ -624,9 +624,9 @@ public class DirectJsonQueryRequestFacetingIntegrationTest extends SolrCloudTest
 
   private void assertHasFacetWithBucketValues(
       NestableJsonFacet response, String expectedFacetName, FacetBucket... expectedBuckets) {
-    assertTrue(
+    assertNotNull(
         "Expected response to have facet with name " + expectedFacetName,
-        response.getBucketBasedFacets(expectedFacetName) != null);
+        response.getBucketBasedFacets(expectedFacetName));
     final List<BucketJsonFacet> buckets =
         response.getBucketBasedFacets(expectedFacetName).getBuckets();
     assertEquals(expectedBuckets.length, buckets.size());
@@ -640,9 +640,9 @@ public class DirectJsonQueryRequestFacetingIntegrationTest extends SolrCloudTest
 
   private void assertHasStatFacetWithValue(
       NestableJsonFacet response, String expectedFacetName, Double expectedStatValue) {
-    assertTrue(
+    assertNotNull(
         "Expected response to have stat facet named '" + expectedFacetName + "'",
-        response.getStatValue(expectedFacetName) != null);
+        response.getStatValue(expectedFacetName));
     assertEquals(expectedStatValue, response.getStatValue(expectedFacetName));
   }
 
