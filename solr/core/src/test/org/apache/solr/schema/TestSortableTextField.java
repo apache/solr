@@ -430,16 +430,14 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
     for (String n : Arrays.asList("keyword_stxt", "whitespace_max0_stxt", "whitespace_max6_stxt")) {
       {
         FieldType ft = h.getCore().getLatestSchema().getFieldTypeByName(n);
-        assertEquals(
+        assertFalse(
             "type " + ft.getTypeName() + " should not default to useDocValuesAsStored",
-            false,
             ft.useDocValuesAsStored());
       }
       {
         SchemaField sf = h.getCore().getLatestSchema().getField(n);
-        assertEquals(
+        assertFalse(
             "field " + sf.getName() + " should not default to useDocValuesAsStored",
-            false,
             sf.useDocValuesAsStored());
       }
     }
@@ -451,9 +449,8 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
       if (entry.getKey().endsWith("_has_usedvs")) {
         num_types_found++;
         FieldType ft = entry.getValue();
-        assertEquals(
+        assertTrue(
             "type " + ft.getTypeName() + " has unexpected useDocValuesAsStored value",
-            true,
             ft.useDocValuesAsStored());
       }
     }

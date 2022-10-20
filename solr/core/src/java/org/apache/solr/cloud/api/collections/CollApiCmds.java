@@ -296,7 +296,7 @@ public class CollApiCmds {
                 ccc.getSolrCloudManager(),
                 ccc.getZkStateReader());
       } else {
-        ccc.offerStateUpdate(Utils.toJSON(m));
+        ccc.offerStateUpdate(m);
       }
     }
   }
@@ -324,7 +324,7 @@ public class CollApiCmds {
                 ccc.getSolrCloudManager(),
                 ccc.getZkStateReader());
       } else {
-        ccc.offerStateUpdate(Utils.toJSON(m));
+        ccc.offerStateUpdate(m);
       }
     }
   }
@@ -403,7 +403,7 @@ public class CollApiCmds {
                 ccc.getSolrCloudManager(),
                 ccc.getZkStateReader());
       } else {
-        ccc.offerStateUpdate(Utils.toJSON(message));
+        ccc.offerStateUpdate(message);
       }
 
       try {

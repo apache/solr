@@ -74,7 +74,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
    * @see SolrRequest#setBasicAuthCredentials
    */
   private static <T extends SolrRequest<?>> T setBasicAuthCredentials(T req, String user) {
-    assert null != user;
+    assertNotNull(user);
     req.setBasicAuthCredentials(user, user);
     return req;
   }

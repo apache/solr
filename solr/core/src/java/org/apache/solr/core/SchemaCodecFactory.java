@@ -23,9 +23,9 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.KnnVectorsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene92.Lucene92Codec;
-import org.apache.lucene.codecs.lucene92.Lucene92Codec.Mode;
-import org.apache.lucene.codecs.lucene92.Lucene92HnswVectorsFormat;
+import org.apache.lucene.codecs.lucene94.Lucene94Codec;
+import org.apache.lucene.codecs.lucene94.Lucene94Codec.Mode;
+import org.apache.lucene.codecs.lucene94.Lucene94HnswVectorsFormat;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
@@ -92,7 +92,7 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
       log.debug("Using default compressionMode: {}", compressionMode);
     }
     codec =
-        new Lucene92Codec(compressionMode) {
+        new Lucene94Codec(compressionMode) {
           @Override
           public PostingsFormat getPostingsFormatForField(String field) {
             final SchemaField schemaField = core.getLatestSchema().getFieldOrNull(field);
@@ -128,7 +128,7 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
                 if (knnAlgorithm.equals(DenseVectorField.HNSW_ALGORITHM)) {
                   int maxConn = vectorType.getHnswMaxConn();
                   int beamWidth = vectorType.getHnswBeamWidth();
-                  return new Lucene92HnswVectorsFormat(maxConn, beamWidth);
+                  return new Lucene94HnswVectorsFormat(maxConn, beamWidth);
                 }
               } else {
                 throw new SolrException(

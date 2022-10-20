@@ -151,9 +151,9 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
 
     assertEquals("Should have exactly " + NUM_DOCS, (long) (body.get("numFound")), NUM_DOCS);
     header = (Map<?, ?>) (res.get("responseHeader"));
-    assertTrue(
+    assertNull(
         "Should NOT have partial results",
-        header.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY) == null);
+        header.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
   }
 
   // When looking at a problem raised on the user's list I ran across this anomaly with timeAllowed

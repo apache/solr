@@ -1313,7 +1313,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
 
   /** Given a set of id, picks some, semi-randomly, to use for elevation */
   public static int[] pickElevations(final int numToElevate, final SentinelIntSet ids) {
-    assert numToElevate < ids.size();
+    assertTrue(numToElevate < ids.size());
     final int[] results = new int[numToElevate];
     int slot = 0;
     for (int key : ids.keys) {

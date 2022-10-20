@@ -161,7 +161,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
    * @see #randFieldValue
    */
   private static String field(final String[] suffixes, final int fieldNum) {
-    assert fieldNum < MAX_FIELD_NUM;
+    assertTrue(fieldNum < MAX_FIELD_NUM);
 
     final String suffix = suffixes[fieldNum % suffixes.length];
     return "field_" + fieldNum + suffix;
@@ -735,7 +735,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
 
     public TermFacet(
         String field, JoinDomain domain, Integer limit, Integer overrequest, Boolean refine) {
-      assert null != field;
+      assertNotNull(field);
       this.field = field;
       this.domain = domain;
       this.limit = limit;
@@ -799,8 +799,8 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
      * value to use for testing them against in a solr request.
      */
     public static CharSequence toJSONFacetParamValue(Map<String, TermFacet> facets) {
-      assert null != facets;
-      assert 0 < facets.size();
+      assertNotNull(facets);
+      assertTrue(0 < facets.size());
       StringBuilder sb = new StringBuilder("{");
       for (String key : facets.keySet()) {
         sb.append(key).append(" : ").append(facets.get(key).toJSONFacetParamValue());
@@ -931,7 +931,6 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
       Map<String, TermFacet> results = new LinkedHashMap<>();
       for (int i = 0; i < numFacets; i++) {
         final JoinDomain domain = JoinDomain.buildRandomDomain();
-        assert null != domain;
         final Integer limit = randomLimitParam(random());
         final Integer overrequest = randomOverrequestParam(random());
         final TermFacet facet =
@@ -967,7 +966,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
      * @param filter filter to apply to domain, null if domain involves no filtering
      */
     public JoinDomain(String from, String to, String filter) {
-      assert !((null == from) ^ (null == to)) : "if from is null, to must be null";
+      assertEquals("if from is null, to must be null", (null == from), (null == to));
       this.from = from;
       this.to = to;
       this.filter = filter;
@@ -983,7 +982,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
       }
       StringBuilder sb = new StringBuilder("domain:{");
       if (null != from) {
-        assert null != to;
+        assertNotNull(to);
         sb.append("join:{from:").append(from).append(",to:").append(to).append("}");
         if (null != filter) {
           sb.append(",");
@@ -1002,8 +1001,8 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
      * facet
      */
     public SolrParams applyDomainToQuery(String safeKey, SolrParams in) {
-      assert null
-          == in.get(safeKey); // shouldn't be possible if every facet uses a unique key string
+      // shouldn't be possible if every facet uses a unique key string
+      assertNull(in.get(safeKey));
 
       String q = in.get("q");
       final ModifiableSolrParams out = new ModifiableSolrParams(in);
@@ -1065,7 +1064,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   }
 
   public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
-    assert null != client.getDefaultCollection();
+    assertNotNull(client.getDefaultCollection());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(
         client.getDefaultCollection(), ZkStateReader.from(client), true, true, 330);
   }

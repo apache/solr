@@ -364,14 +364,15 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
 
     List<Replica> notLeaders =
         ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 3, maxWaitSecsToSeeAllActive);
-    assertTrue(
+    assertEquals(
         "Expected 2 replicas for collection "
             + testCollectionName
             + " but found "
             + notLeaders.size()
             + "; clusterState: "
             + printClusterStateInfo(testCollectionName),
-        notLeaders.size() == 2);
+        2,
+        notLeaders.size());
     JettySolrRunner leaderJetty =
         getJettyOnPort(getReplicaPort(getShardLeader(testCollectionName, "shard1", 1000)));
 
@@ -425,14 +426,15 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
 
     List<Replica> notLeaders =
         ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 2, maxWaitSecsToSeeAllActive);
-    assertTrue(
+    assertEquals(
         "Expected 1 replicas for collection "
             + testCollectionName
             + " but found "
             + notLeaders.size()
             + "; clusterState: "
             + printClusterStateInfo(testCollectionName),
-        notLeaders.size() == 1);
+        1,
+        notLeaders.size());
 
     Replica leader = ZkStateReader.from(cloudClient).getLeaderRetry(testCollectionName, "shard1");
     assertNotNull(
@@ -599,8 +601,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   protected void assertDocExists(SolrClient solr, String docId) throws Exception {
     NamedList<?> rsp = realTimeGetDocId(solr, docId);
     String match = JSONTestUtil.matchObj("/id", rsp.get("doc"), docId);
-    assertTrue(
-        "Doc with id=" + docId + " not found due to: " + match + "; rsp=" + rsp, match == null);
+    assertNull("Doc with id=" + docId + " not found due to: " + match + "; rsp=" + rsp, match);
   }
 
   private NamedList<Object> realTimeGetDocId(SolrClient solr, String docId)

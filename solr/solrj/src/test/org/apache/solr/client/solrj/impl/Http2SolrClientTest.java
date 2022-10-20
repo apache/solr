@@ -297,7 +297,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
       // agent
       assertEquals(EXPECTED_USER_AGENT, DebugServlet.headers.get("user-agent"));
       // content-type
-      assertEquals(null, DebugServlet.headers.get("content-type"));
+      assertNull(DebugServlet.headers.get("content-type"));
       // param encoding
       assertEquals(1, DebugServlet.parameters.get("a").length);
       assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);

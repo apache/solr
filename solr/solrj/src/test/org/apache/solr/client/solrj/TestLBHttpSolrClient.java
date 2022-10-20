@@ -40,7 +40,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -172,10 +171,10 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
       solr[0].jetty = null;
       resp = client.query(solrQuery);
       String name = resp.getResults().get(0).getFieldValue("name").toString();
-      Assert.assertEquals("solr/collection11", name);
+      assertEquals("solr/collection11", name);
       resp = client.query(solrQuery);
       name = resp.getResults().get(0).getFieldValue("name").toString();
-      Assert.assertEquals("solr/collection11", name);
+      assertEquals("solr/collection11", name);
       solr[1].jetty.stop();
       solr[1].jetty = null;
       solr[0].startJetty();
@@ -188,7 +187,7 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
         resp = client.query(solrQuery);
       }
       name = resp.getResults().get(0).getFieldValue("name").toString();
-      Assert.assertEquals("solr/collection10", name);
+      assertEquals("solr/collection10", name);
     }
   }
 

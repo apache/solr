@@ -451,7 +451,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
 
     public MockPostFilter(int maxDocsToCollect, int cost, ScoreMode scoreMode) {
       super(new Term("foo", "bar")); // The term won't really be used. just the collector
-      assert cost > 100;
+      assertTrue(cost > 100);
       this.cost = cost;
       this.maxDocsToCollect = maxDocsToCollect;
       this.scoreMode = scoreMode;

@@ -24,7 +24,6 @@ import org.apache.solr.client.solrj.io.ops.ReplaceOperation;
 import org.apache.solr.client.solrj.io.ops.StreamOperation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.junit.Assert;
 import org.junit.Test;
 
 /** */
@@ -56,8 +55,8 @@ public class OperationsTest extends SolrTestCase {
     tuple = new Tuple(values);
     operation.operate(tuple);
 
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals("foo", tuple.get("fieldA"));
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals("foo", tuple.get("fieldA"));
 
     // don't replace
     values.clear();
@@ -67,8 +66,8 @@ public class OperationsTest extends SolrTestCase {
     tuple = new Tuple(values);
     operation.operate(tuple);
 
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals("exists", tuple.get("fieldA"));
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals("exists", tuple.get("fieldA"));
   }
 
   @Test
@@ -87,8 +86,8 @@ public class OperationsTest extends SolrTestCase {
     tuple = new Tuple(values);
     operation.operate(tuple);
 
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals((long) 123, tuple.get("fieldA"));
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals((long) 123, tuple.get("fieldA"));
 
     // don't replace
     values.clear();
@@ -98,8 +97,8 @@ public class OperationsTest extends SolrTestCase {
     tuple = new Tuple(values);
     operation.operate(tuple);
 
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals("exists", tuple.get("fieldA"));
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals("exists", tuple.get("fieldA"));
   }
 
   @Test
@@ -118,8 +117,8 @@ public class OperationsTest extends SolrTestCase {
     tuple = new Tuple(values);
     operation.operate(tuple);
 
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals(123.45678, tuple.get("fieldA"));
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals(123.45678, tuple.get("fieldA"));
 
     // don't replace
     values.clear();
@@ -129,8 +128,8 @@ public class OperationsTest extends SolrTestCase {
     tuple = new Tuple(values);
     operation.operate(tuple);
 
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals("exists", tuple.get("fieldA"));
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals("exists", tuple.get("fieldA"));
   }
 
   @Test
@@ -151,8 +150,8 @@ public class OperationsTest extends SolrTestCase {
     tuple = new Tuple(values);
     operation.operate(tuple);
 
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals(123.45678912345, tuple.get("fieldA"));
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals(123.45678912345, tuple.get("fieldA"));
 
     // don't replace
     values.clear();
@@ -162,8 +161,8 @@ public class OperationsTest extends SolrTestCase {
     tuple = new Tuple(values);
     operation.operate(tuple);
 
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals("exists", tuple.get("fieldA"));
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals("exists", tuple.get("fieldA"));
   }
 
   @Test
@@ -182,8 +181,8 @@ public class OperationsTest extends SolrTestCase {
     tuple = new Tuple(values);
     operation.operate(tuple);
 
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals("bar", tuple.get("fieldA"));
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals("bar", tuple.get("fieldA"));
 
     // don't replace
     values.clear();
@@ -193,8 +192,8 @@ public class OperationsTest extends SolrTestCase {
     tuple = new Tuple(values);
     operation.operate(tuple);
 
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals("exists", tuple.get("fieldA"));
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals("exists", tuple.get("fieldA"));
   }
 
   @Test
@@ -213,8 +212,8 @@ public class OperationsTest extends SolrTestCase {
     tuple = new Tuple(values);
     operation.operate(tuple);
 
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals(123, tuple.get("fieldA"));
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals(123, tuple.get("fieldA"));
 
     // don't replace
     values.clear();
@@ -224,8 +223,8 @@ public class OperationsTest extends SolrTestCase {
     tuple = new Tuple(values);
     operation.operate(tuple);
 
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals("exists", tuple.get("fieldA"));
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals("exists", tuple.get("fieldA"));
   }
 
   @Test
@@ -244,7 +243,7 @@ public class OperationsTest extends SolrTestCase {
     tuple = new Tuple(values);
     operation.operate(tuple);
 
-    Assert.assertNull(tuple.get("fieldA"));
+    assertNull(tuple.get("fieldA"));
 
     // don't replace
     values.clear();
@@ -254,7 +253,7 @@ public class OperationsTest extends SolrTestCase {
     tuple = new Tuple(values);
     operation.operate(tuple);
 
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals("exists", tuple.get("fieldA"));
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals("exists", tuple.get("fieldA"));
   }
 }

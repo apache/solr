@@ -47,6 +47,7 @@ import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.PriorityQueue;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -664,8 +665,10 @@ public class RankQueryTestPlugin extends QParserPlugin {
 
         final String sortFieldName = sortField.getField();
         final String valueFieldName = sortFieldValues.getName(marshalledFieldNum);
-        assert sortFieldName.equals(valueFieldName)
-            : "sortFieldValues name key does not match expected SortField.getField";
+        SolrTestCase.assertEquals(
+            "sortFieldValues name key does not match expected SortField.getField",
+            sortFieldName,
+            valueFieldName);
 
         List sortVals = (List) sortFieldValues.getVal(marshalledFieldNum);
 

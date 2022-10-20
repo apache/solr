@@ -50,6 +50,7 @@ import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.cloud.overseer.ZkStateWriter;
 import org.apache.solr.cloud.overseer.ZkWriteCommand;
 import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -1171,6 +1172,10 @@ public class Overseer implements SolrCloseable {
     return reader;
   }
 
+  public void offerStateUpdate(MapWriter mw) throws KeeperException, InterruptedException {
+    offerStateUpdate(Utils.toJSON(mw));
+  }
+
   public void offerStateUpdate(byte[] data) throws KeeperException, InterruptedException {
     // When cluster state update is distributed, the Overseer cluster state update queue should only
     // ever receive QUIT messages. These go to sendQuitToOverseer for execution path clarity.
@@ -1215,8 +1220,7 @@ public class Overseer implements SolrCloseable {
   public void sendQuitToOverseer(String overseerId) throws KeeperException, InterruptedException {
     getOverseerQuitNotificationQueue()
         .offer(
-            Utils.toJSON(
-                new ZkNodeProps(
-                    Overseer.QUEUE_OPERATION, OverseerAction.QUIT.toLower(), ID, overseerId)));
+            new ZkNodeProps(
+                Overseer.QUEUE_OPERATION, OverseerAction.QUIT.toLower(), ID, overseerId));
   }
 }

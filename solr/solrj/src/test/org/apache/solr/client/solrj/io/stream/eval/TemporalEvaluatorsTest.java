@@ -17,9 +17,6 @@
 
 package org.apache.solr.client.solrj.io.stream.eval;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -33,6 +30,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorDay;
@@ -54,7 +52,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
 
 /** Tests numeric Date/Time stream evaluators */
-public class TemporalEvaluatorsTest {
+public class TemporalEvaluatorsTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;
@@ -91,7 +89,7 @@ public class TemporalEvaluatorsTest {
       evaluator = factory.constructEvaluator("week()");
       StreamContext streamContext = new StreamContext();
       evaluator.setStreamContext(streamContext);
-      assertTrue(false);
+      fail();
     } catch (IOException e) {
       assertTrue(e.getCause().getCause().getMessage().contains("Invalid expression week()"));
     }
@@ -100,7 +98,7 @@ public class TemporalEvaluatorsTest {
       evaluator = factory.constructEvaluator("week(a, b)");
       StreamContext streamContext = new StreamContext();
       evaluator.setStreamContext(streamContext);
-      assertTrue(false);
+      fail();
     } catch (IOException e) {
       assertTrue(e.getCause().getCause().getMessage().contains("expecting one value but found 2"));
     }
@@ -109,7 +107,7 @@ public class TemporalEvaluatorsTest {
       evaluator = factory.constructEvaluator("Week()");
       StreamContext streamContext = new StreamContext();
       evaluator.setStreamContext(streamContext);
-      assertTrue(false);
+      fail();
     } catch (IOException e) {
       assertTrue(
           e.getMessage()
@@ -127,7 +125,7 @@ public class TemporalEvaluatorsTest {
       StreamContext streamContext = new StreamContext();
       evaluator.setStreamContext(streamContext);
       Object result = evaluator.evaluate(new Tuple(values));
-      assertTrue(false);
+      fail();
     } catch (IOException e) {
       assertEquals(
           "Invalid parameter 12 - The parameter must be a string formatted ISO_INSTANT or of type Long,Instant,Date,LocalDateTime or TemporalAccessor.",
@@ -140,7 +138,7 @@ public class TemporalEvaluatorsTest {
       StreamContext streamContext = new StreamContext();
       evaluator.setStreamContext(streamContext);
       Object result = evaluator.evaluate(new Tuple(values));
-      assertTrue(false);
+      fail();
     } catch (IOException e) {
       assertEquals(
           "Invalid parameter 1995-12-31 - The String must be formatted in the ISO_INSTANT date format.",
@@ -153,7 +151,7 @@ public class TemporalEvaluatorsTest {
       StreamContext streamContext = new StreamContext();
       evaluator.setStreamContext(streamContext);
       Object result = evaluator.evaluate(new Tuple(values));
-      assertTrue(false);
+      fail();
     } catch (IOException e) {
       assertEquals(
           "Invalid parameter  - The parameter must be a string formatted ISO_INSTANT or of type Long,Instant,Date,LocalDateTime or TemporalAccessor.",
@@ -260,7 +258,7 @@ public class TemporalEvaluatorsTest {
 
     try {
       testFunction("year(a)", monthDay, 2017);
-      assertTrue(false);
+      fail();
     } catch (IOException e) {
       assertEquals(
           "It is not possible to call 'year' function on java.time.MonthDay", e.getMessage());
@@ -272,7 +270,7 @@ public class TemporalEvaluatorsTest {
 
     try {
       testFunction("day(a)", yearMonth, 5);
-      assertTrue(false);
+      fail();
     } catch (IOException e) {
       assertEquals(
           "It is not possible to call 'day' function on java.time.YearMonth", e.getMessage());

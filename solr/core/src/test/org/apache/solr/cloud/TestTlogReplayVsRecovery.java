@@ -281,7 +281,7 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
     assertEquals(0, rsp.getStatus());
 
     String match = JSONTestUtil.matchObj("/id", rsp.getResponse().get("doc"), docId);
-    assertTrue(
+    assertNull(
         "Doc with id="
             + docId
             + " not found in "
@@ -290,6 +290,6 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
             + match
             + "; rsp="
             + rsp,
-        match == null);
+        match);
   }
 }

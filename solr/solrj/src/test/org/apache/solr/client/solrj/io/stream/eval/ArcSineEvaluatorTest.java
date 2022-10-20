@@ -24,7 +24,6 @@ import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.ArcSineEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class ArcSineEvaluatorTest extends SolrTestCase {
@@ -47,10 +46,10 @@ public class ArcSineEvaluatorTest extends SolrTestCase {
     Object result = evaluator.evaluate(new Tuple(values));
 
     if (null == value) {
-      Assert.assertNull(result);
+      assertNull(result);
     } else {
-      Assert.assertTrue(result instanceof Double);
-      Assert.assertEquals(Math.asin(value), result);
+      assertTrue(result instanceof Double);
+      assertEquals(Math.asin(value), result);
     }
   }
 

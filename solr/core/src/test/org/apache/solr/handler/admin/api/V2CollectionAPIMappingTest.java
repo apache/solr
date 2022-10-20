@@ -106,7 +106,7 @@ public class V2CollectionAPIMappingTest extends V2ApiMappingTest<CollectionsHand
         CollectionParams.CollectionAction.MODIFYCOLLECTION.lowerName, v1Params.get(ACTION));
     assertEquals("collName", v1Params.get(COLLECTION));
     assertEquals(123, v1Params.getPrimitiveInt(ZkStateReader.REPLICATION_FACTOR));
-    assertEquals(true, v1Params.getPrimitiveBool(ZkStateReader.READ_ONLY));
+    assertTrue(v1Params.getPrimitiveBool(ZkStateReader.READ_ONLY));
     assertEquals("techproducts_config", v1Params.get(COLL_CONF));
     assertEquals("requestTrackingId", v1Params.get(ASYNC));
     assertEquals("bar", v1Params.get("property.foo"));
@@ -147,10 +147,10 @@ public class V2CollectionAPIMappingTest extends V2ApiMappingTest<CollectionsHand
     assertEquals("someTargetNode", v1Params.get("targetNode"));
     assertEquals("someReplica", v1Params.get("replica"));
     assertEquals("someShard", v1Params.get("shard"));
-    assertEquals(true, v1Params.getPrimitiveBool("waitForFinalState"));
+    assertTrue(v1Params.getPrimitiveBool("waitForFinalState"));
     assertEquals(123, v1Params.getPrimitiveInt("timeout"));
-    assertEquals(true, v1Params.getPrimitiveBool("inPlaceMove"));
-    assertEquals(true, v1Params.getPrimitiveBool("followAliases"));
+    assertTrue(v1Params.getPrimitiveBool("inPlaceMove"));
+    assertTrue(v1Params.getPrimitiveBool("followAliases"));
   }
 
   @Test
@@ -172,7 +172,7 @@ public class V2CollectionAPIMappingTest extends V2ApiMappingTest<CollectionsHand
     assertEquals("someTargetCollection", v1Params.get("target.collection"));
     assertEquals("someSplitKey", v1Params.get("split.key"));
     assertEquals(123, v1Params.getPrimitiveInt("forward.timeout"));
-    assertEquals(true, v1Params.getPrimitiveBool("followAliases"));
+    assertTrue(v1Params.getPrimitiveBool("followAliases"));
     assertEquals("requestTrackingId", v1Params.get(ASYNC));
   }
 
@@ -192,8 +192,8 @@ public class V2CollectionAPIMappingTest extends V2ApiMappingTest<CollectionsHand
         CollectionParams.CollectionAction.BALANCESHARDUNIQUE.lowerName, v1Params.get(ACTION));
     assertEquals("collName", v1Params.get(COLLECTION));
     assertEquals("somePropertyToBalance", v1Params.get("property"));
-    assertEquals(false, v1Params.getPrimitiveBool("onlyactivenodes"));
-    assertEquals(true, v1Params.getPrimitiveBool("shardUnique"));
+    assertFalse(v1Params.getPrimitiveBool("onlyactivenodes"));
+    assertTrue(v1Params.getPrimitiveBool("shardUnique"));
   }
 
   @Test
