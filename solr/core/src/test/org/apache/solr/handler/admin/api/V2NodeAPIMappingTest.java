@@ -24,7 +24,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.Maps;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -130,24 +129,6 @@ public class V2NodeAPIMappingTest extends SolrTestCaseJ4 {
     assertEquals("someCore", v1Params.get("core"));
     assertEquals("someElectionNode", v1Params.get("election_node"));
     assertEquals("true", v1Params.get("rejoinAtHead"));
-  }
-
-  @Test
-  public void testInvokeClassApiAllProperties() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedCoreV1Params(
-            "/node",
-            "POST",
-            "{"
-                + "\"invoke\": {"
-                + "\"classes\": [\"someClassName\", \"someOtherClassName\"]"
-                + "}}");
-
-    assertEquals("invoke", v1Params.get(ACTION));
-    assertEquals(2, v1Params.getParams("class").length);
-    final List<String> classes = Arrays.asList(v1Params.getParams("class"));
-    assertTrue(classes.contains("someClassName"));
-    assertTrue(classes.contains("someOtherClassName"));
   }
 
   @Test
@@ -286,7 +267,6 @@ public class V2NodeAPIMappingTest extends SolrTestCaseJ4 {
       ApiBag apiBag, CoreAdminHandler coreHandler, InfoHandler infoHandler) {
     apiBag.registerObject(new OverseerOperationAPI(coreHandler));
     apiBag.registerObject(new RejoinLeaderElectionAPI(coreHandler));
-    apiBag.registerObject(new InvokeClassAPI(coreHandler));
     apiBag.registerObject(new NodePropertiesAPI(infoHandler.getPropertiesHandler()));
     apiBag.registerObject(new NodeThreadsAPI(infoHandler.getThreadDumpHandler()));
     apiBag.registerObject(new NodeLoggingAPI(infoHandler.getLoggingHandler()));
