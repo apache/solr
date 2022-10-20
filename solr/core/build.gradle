@@ -93,7 +93,9 @@ dependencies {
 
   implementation 'javax.servlet:javax.servlet-api'
 
-  implementation 'org.glassfish.jersey.containers:jersey-container-jetty-http'
+  implementation('org.glassfish.jersey.containers:jersey-container-jetty-http', {
+    exclude group: "org.eclipse.jetty", module: "jetty-continuation"
+  })
   permitUnusedDeclared 'org.glassfish.jersey.containers:jersey-container-jetty-http'
   implementation 'org.glassfish.jersey.inject:jersey-hk2'
   permitUnusedDeclared 'org.glassfish.jersey.inject:jersey-hk2'
