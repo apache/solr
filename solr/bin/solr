@@ -2181,6 +2181,11 @@ function start_solr() {
     SOLR_OPTS+=($AUTHC_OPTS)
   fi
 
+  # If there are internal options set by Solr (users should not use this variable), add them to SOLR_OPTS
+  if [ -n "$SOLR_OPTS_INTERNAL" ]; then
+    SOLR_OPTS+=($SOLR_OPTS_INTERNAL)
+  fi
+
   # If a heap dump directory is specified, enable it in SOLR_OPTS
   if [[ -z "${SOLR_HEAP_DUMP_DIR:-}" ]] && [[ "${SOLR_HEAP_DUMP:-}" == "true" ]]; then
     SOLR_HEAP_DUMP_DIR="${SOLR_LOGS_DIR}/dumps"
@@ -2237,6 +2242,12 @@ function start_solr() {
   if [ ! -e "$SOLR_SERVER_DIR/start.jar" ]; then
     echo -e "\nERROR: start.jar file not found in $SOLR_SERVER_DIR!\nPlease check your -d parameter to set the correct Solr server directory.\n"
     exit 1
+  fi
+
+  # Workaround for JIT crash, see https://issues.apache.org/jira/browse/SOLR-16463
+  if [[ "$JAVA_VER_NUM" -ge "17" ]] ; then
+    SOLR_OPTS+=("-XX:CompileCommand=exclude,com.github.benmanes.caffeine.cache.BoundedLocalCache::put")
+    echo "Java $JAVA_VER_NUM detected. Enabled workaround for SOLR-16463"
   fi
 
   SOLR_START_OPTS=('-server' "${JAVA_MEM_OPTS[@]}" "${GC_TUNE[@]}" "${GC_LOG_OPTS[@]}" "${IP_ACL_OPTS[@]}" \
