@@ -17,50 +17,33 @@
 
 package org.apache.solr.handler.admin;
 
-import org.apache.lucene.index.IndexCommit;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.IndexDeletionPolicyWrapper;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
-import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
+import org.apache.solr.handler.admin.api.SnapshotAPI;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 
 class CreateSnapshotOp implements CoreAdminHandler.CoreAdminOp {
   @Override
   public void execute(CoreAdminHandler.CallInfo it) throws Exception {
+    final SolrQueryRequest solrQueryRequest = it.req;
+    final SolrQueryResponse solrQueryResponse = it.rsp;
+    final CoreContainer coreContainer = it.handler.getCoreContainer();
+
+    final SnapshotAPI snapshotAPI = new SnapshotAPI(coreContainer, solrQueryRequest, solrQueryResponse);
+
     final SolrParams params = it.req.getParams();
-    String commitName = params.required().get(CoreAdminParams.COMMIT_NAME);
-    String cname = params.required().get(CoreAdminParams.CORE);
+    final String commitName = params.required().get(CoreAdminParams.COMMIT_NAME);
+    final String coreName = params.required().get(CoreAdminParams.CORE);
 
-    CoreContainer cc = it.handler.getCoreContainer();
+    final SnapshotAPI.CreateSnapshotResponse response = snapshotAPI.createSnapshot(coreName, commitName);
 
-    try (SolrCore core = cc.getCore(cname)) {
-      if (core == null) {
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST, "Unable to locate core " + cname);
-      }
-
-      final String indexDirPath = core.getIndexDir();
-      final IndexDeletionPolicyWrapper delPol = core.getDeletionPolicy();
-      final IndexCommit ic = delPol.getAndSaveLatestCommit();
-      try {
-        if (null == ic) {
-          throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST, "No index commits to snapshot in core " + cname);
-        }
-        final SolrSnapshotMetaDataManager mgr = core.getSnapshotMetaDataManager();
-        mgr.snapshot(commitName, indexDirPath, ic.getGeneration());
-
-        it.rsp.add(CoreAdminParams.CORE, core.getName());
-        it.rsp.add(CoreAdminParams.COMMIT_NAME, commitName);
-        it.rsp.add(SolrSnapshotManager.INDEX_DIR_PATH, indexDirPath);
-        it.rsp.add(SolrSnapshotManager.GENERATION_NUM, ic.getGeneration());
-        it.rsp.add(SolrSnapshotManager.FILE_LIST, ic.getFileNames());
-      } finally {
-        delPol.releaseCommitPoint(ic);
-      }
-    }
+    it.rsp.add(CoreAdminParams.CORE, response.core);
+    it.rsp.add(CoreAdminParams.COMMIT_NAME, response.commitName);
+    it.rsp.add(SolrSnapshotManager.INDEX_DIR_PATH, response.indexDirPath);
+    it.rsp.add(SolrSnapshotManager.GENERATION_NUM, response.generation);
+    it.rsp.add(SolrSnapshotManager.FILE_LIST, response.files);
   }
 }

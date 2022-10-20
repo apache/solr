@@ -38,6 +38,7 @@ import java.util.concurrent.ExecutorService;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
+import org.apache.solr.api.JerseyResource;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -67,6 +68,7 @@ import org.apache.solr.handler.admin.api.RequestCoreCommandStatusAPI;
 import org.apache.solr.handler.admin.api.RequestCoreRecoveryAPI;
 import org.apache.solr.handler.admin.api.RequestSyncShardAPI;
 import org.apache.solr.handler.admin.api.SingleCoreStatusAPI;
+import org.apache.solr.handler.admin.api.SnapshotAPI;
 import org.apache.solr.handler.admin.api.SplitCoreAPI;
 import org.apache.solr.handler.admin.api.SwapCoresAPI;
 import org.apache.solr.handler.admin.api.UnloadCoreAPI;
@@ -475,6 +477,11 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     apis.addAll(AnnotatedApi.getApis(new RequestBufferUpdatesAPI(this)));
 
     return apis;
+  }
+
+  @Override
+  public Collection<Class<? extends JerseyResource>> getJerseyResources() {
+    return List.of(SnapshotAPI.class);
   }
 
   static {
