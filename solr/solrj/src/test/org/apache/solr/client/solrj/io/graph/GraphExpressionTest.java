@@ -26,11 +26,10 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -66,7 +65,6 @@ import org.junit.Test;
  * All base tests will be done with CloudSolrStream. Under the covers CloudSolrStream uses
  * SolrStream so SolrStream will get fully exercised through these tests.
  */
-@Slow
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40", "Lucene41", "Lucene42", "Lucene45"})
 public class GraphExpressionTest extends SolrCloudTestCase {
 
@@ -442,7 +440,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
     tuples = getTuples(stream);
 
-    Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
+    tuples.sort(new FieldComparator("node", ComparatorOrder.ASCENDING));
     assertTrue(tuples.size() == 4);
 
     assertTrue(tuples.get(0).getString("node").equals("basket1"));
@@ -461,7 +459,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
 
     tuples = getTuples(stream);
-    Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
+    tuples.sort(new FieldComparator("node", ComparatorOrder.ASCENDING));
     assertTrue(tuples.size() == 1);
     assertTrue(tuples.get(0).getString("node").equals("basket2"));
 
@@ -481,7 +479,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
     tuples = getTuples(stream);
 
-    Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
+    tuples.sort(new FieldComparator("node", ComparatorOrder.ASCENDING));
 
     assertTrue(tuples.size() == 5);
 
@@ -514,7 +512,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     context.setSolrClientCache(cache);
     stream.setStreamContext(context);
     tuples = getTuples(stream);
-    Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
+    tuples.sort(new FieldComparator("node", ComparatorOrder.ASCENDING));
     assertTrue(tuples.size() == 3);
     assertTrue(tuples.get(0).getString("node").equals("basket2"));
     assertTrue(tuples.get(1).getString("node").equals("basket3"));
@@ -534,7 +532,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
     tuples = getTuples(stream);
 
-    Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
+    tuples.sort(new FieldComparator("node", ComparatorOrder.ASCENDING));
     assertTrue(tuples.size() == 2);
     assertTrue(tuples.get(0).getString("node").equals("basket2"));
     assertTrue(tuples.get(1).getString("node").equals("basket3"));
@@ -551,7 +549,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
     tuples = getTuples(stream);
 
-    Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
+    tuples.sort(new FieldComparator("node", ComparatorOrder.ASCENDING));
     assertTrue(tuples.size() == 4);
     assertTrue(tuples.get(0).getString("node").equals("1"));
     assertTrue(tuples.get(1).getString("node").equals("2"));
@@ -568,7 +566,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
     tuples = getTuples(stream);
 
-    Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
+    tuples.sort(new FieldComparator("node", ComparatorOrder.ASCENDING));
     assertTrue(tuples.size() == 3);
     assertTrue(tuples.get(0).getString("node").equals("4"));
     assertTrue(tuples.get(1).getString("node").equals("5"));
@@ -584,7 +582,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
     tuples = getTuples(stream);
 
-    Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
+    tuples.sort(new FieldComparator("node", ComparatorOrder.ASCENDING));
     assertTrue(tuples.size() == 3);
     assertTrue(tuples.get(0).getString("node").equals("3"));
     assertTrue(tuples.get(1).getString("node").equals("4"));
@@ -602,7 +600,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
     tuples = getTuples(stream);
 
-    Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
+    tuples.sort(new FieldComparator("node", ComparatorOrder.ASCENDING));
 
     assertTrue(tuples.size() == 2);
     assertTrue(tuples.get(0).getString("node").equals("3"));
@@ -620,7 +618,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
     tuples = getTuples(stream);
 
-    Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
+    tuples.sort(new FieldComparator("node", ComparatorOrder.ASCENDING));
     assertTrue(tuples.size() == 4);
     assertTrue(tuples.get(0).getString("node").equals("1"));
     assertTrue(tuples.get(1).getString("node").equals("2"));
@@ -639,7 +637,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
     tuples = getTuples(stream);
 
-    Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
+    tuples.sort(new FieldComparator("node", ComparatorOrder.ASCENDING));
     assertTrue(tuples.size() == 2);
     assertTrue(tuples.get(0).getString("node").equals("3"));
     assertTrue(tuples.get(1).getString("node").equals("4"));
@@ -656,7 +654,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
     tuples = getTuples(stream);
 
-    Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
+    tuples.sort(new FieldComparator("node", ComparatorOrder.ASCENDING));
 
     assertTrue(tuples.size() == 2);
     assertTrue(tuples.get(0).getString("node").equals("3"));
@@ -674,7 +672,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
     tuples = getTuples(stream);
 
-    Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
+    tuples.sort(new FieldComparator("node", ComparatorOrder.ASCENDING));
 
     assertTrue(tuples.size() == 2);
     assertTrue(tuples.get(0).getString("node").equals("6"));
@@ -692,7 +690,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
     tuples = getTuples(stream);
 
-    Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
+    tuples.sort(new FieldComparator("node", ComparatorOrder.ASCENDING));
 
     assertTrue(tuples.size() == 2);
     assertTrue(tuples.get(0).getString("node").equals("3"));
@@ -710,7 +708,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
     tuples = getTuples(stream);
 
-    Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
+    tuples.sort(new FieldComparator("node", ComparatorOrder.ASCENDING));
 
     assertTrue(tuples.size() == 2);
     assertTrue(tuples.get(0).getString("node").equals("2"));
@@ -996,7 +994,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
     tuples = getTuples(stream);
 
-    Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
+    tuples.sort(new FieldComparator("node", ComparatorOrder.ASCENDING));
     assertTrue(tuples.size() == 3);
     assertTrue(tuples.get(0).getString("node").equals("jim"));
     assertTrue(tuples.get(1).getString("node").equals("max"));
@@ -1017,7 +1015,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
     tuples = getTuples(stream);
 
-    Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
+    tuples.sort(new FieldComparator("node", ComparatorOrder.ASCENDING));
     assertTrue(tuples.size() == 4);
     assertTrue(tuples.get(0).getString("node").equals("bill"));
     assertTrue(tuples.get(0).getLong("level").equals(0L));
@@ -1055,7 +1053,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
     tuples = getTuples(stream);
 
-    Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
+    tuples.sort(new FieldComparator("node", ComparatorOrder.ASCENDING));
     assertTrue(tuples.size() == 3);
     assertTrue(tuples.get(0).getString("node").equals("jim"));
     assertTrue(tuples.get(1).getString("node").equals("max"));
@@ -1076,7 +1074,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
     tuples = getTuples(stream);
 
-    Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
+    tuples.sort(new FieldComparator("node", ComparatorOrder.ASCENDING));
     assertTrue(tuples.size() == 4);
     assertTrue(tuples.get(0).getString("node").equals("bill"));
     assertTrue(tuples.get(0).getLong("level").equals(0L));
@@ -1102,7 +1100,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
 
     tuples = getTuples(stream);
-    Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
+    tuples.sort(new FieldComparator("node", ComparatorOrder.ASCENDING));
 
     assertTrue(tuples.size() == 3);
     assertTrue(tuples.get(0).getString("node").equals("ann"));
@@ -1118,7 +1116,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     hstream.setStreamContext(context);
 
     tuples = getTuples(hstream);
-    Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
+    tuples.sort(new FieldComparator("node", ComparatorOrder.ASCENDING));
 
     assertTrue(tuples.size() == 3);
     assertTrue(tuples.get(0).getString("node").equals("ann"));
@@ -1146,7 +1144,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
 
     tuples = getTuples(stream);
-    Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
+    tuples.sort(new FieldComparator("node", ComparatorOrder.ASCENDING));
 
     assertTrue(tuples.size() == 7);
     assertTrue(tuples.get(0).getString("node").equals("ann"));
@@ -1189,7 +1187,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
 
     tuples = getTuples(stream);
-    Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
+    tuples.sort(new FieldComparator("node", ComparatorOrder.ASCENDING));
 
     assertTrue(tuples.size() == 7);
     assertTrue(tuples.get(0).getString("node").equals("ann"));
@@ -1236,7 +1234,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     JettySolrRunner runner = runners.get(0);
     String url = runner.getBaseUrl().toString();
 
-    HttpSolrClient client = getHttpSolrClient(url);
+    SolrClient client = getHttpSolrClient(url);
     ModifiableSolrParams params = new ModifiableSolrParams();
 
     String expr =

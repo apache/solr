@@ -32,7 +32,7 @@ import org.junit.Test;
 public class SpellingQueryConverterTest extends SolrTestCase {
 
   @Test
-  public void test() throws Exception {
+  public void test() {
     SpellingQueryConverter converter = new SpellingQueryConverter();
     converter.init(new NamedList<>());
     converter.setAnalyzer(new WhitespaceAnalyzer());
@@ -42,7 +42,7 @@ public class SpellingQueryConverterTest extends SolrTestCase {
   }
 
   @Test
-  public void testNumeric() throws Exception {
+  public void testNumeric() {
     SpellingQueryConverter converter = new SpellingQueryConverter();
     converter.init(new NamedList<>());
     converter.setAnalyzer(new WhitespaceAnalyzer());
@@ -91,7 +91,7 @@ public class SpellingQueryConverterTest extends SolrTestCase {
     // mix 'em up and add some to the value
     //    original = "field_with-123s:value_,.|with-hyphens";
     //    tokens = converter.convert(original);
-    //    assertTrue("tokens is null and it shouldn't be", tokens != null);
+    //    assertTrue("tokens is null, and it shouldn't be", tokens != null);
     //    assertEquals("tokens Size: " + tokens.size() + " is not 1", 1, tokens.size());
     //    assertTrue("Token offsets do not match", isOffsetCorrect(original, tokens));
 

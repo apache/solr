@@ -49,7 +49,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     h.getCoreContainer().waitForLoadingCoresToFinish(30000);
 
     // manually register & seed some metrics in solr.jvm and solr.jetty for testing via handler
-    // (use "solrtest_" prefix just in case the jvm or jetty ads a "foo" metric at some point)
+    // (use "solrtest_" prefix just in case the jvm or jetty adds a "foo" metric at some point)
     Counter c = h.getCoreContainer().getMetricManager().counter(null, "solr.jvm", "solrtest_foo");
     c.inc();
     c = h.getCoreContainer().getMetricManager().counter(null, "solr.jetty", "solrtest_foo");
@@ -60,7 +60,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void cleanupMetrics() throws Exception {
+  public static void cleanupMetrics() {
     if (null != h) {
       h.getCoreContainer().getMetricManager().registry("solr.jvm").remove("solrtest_foo");
       h.getCoreContainer().getMetricManager().registry("solr.jetty").remove("solrtest_foo");
@@ -90,7 +90,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     Object o = nl.get("SEARCHER.new.errors");
     assertNotNull(o); // counter type
     assertTrue(o instanceof MapWriter);
-    // response wasn't serialized so we get here whatever MetricUtils produced instead of NamedList
+    // response wasn't serialized, so we get here whatever MetricUtils produced instead of NamedList
     assertNotNull(((MapWriter) o)._get("count", null));
     assertEquals(0L, ((MapWriter) nl.get("SEARCHER.new.errors"))._get("count", null));
     nl = (NamedList<?>) values.get("solr.node");
@@ -809,7 +809,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
       this.rh.close();
     }
 
-    void reset(DumpRequestHandler rh) throws Exception {
+    void reset(DumpRequestHandler rh) {
       this.rh = rh;
       if (metricsInfo != null) this.rh.initializeMetrics(metricsInfo, "/dumphandler");
     }
@@ -826,7 +826,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     Map<String, Object> gaugevals;
 
     @Override
-    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) {
       rsp.add("key", key);
     }
 

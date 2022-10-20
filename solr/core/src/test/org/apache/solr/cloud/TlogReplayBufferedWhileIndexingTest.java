@@ -16,12 +16,10 @@
  */
 package org.apache.solr.cloud;
 
-import org.apache.lucene.util.LuceneTestCase.Nightly;
-import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.junit.Test;
 
-@Slow
 @Nightly
 @SuppressSSL
 /*

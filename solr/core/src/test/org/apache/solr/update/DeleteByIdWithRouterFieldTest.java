@@ -23,8 +23,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -33,7 +33,10 @@ import org.apache.solr.cloud.CloudInspectUtil;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.junit.After;
@@ -58,7 +61,7 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
   public static void setupClusterAndCollection() throws Exception {
     RVAL_PRE = TestUtil.randomRealisticUnicodeString(random());
 
-    // sometimes use 2 replicas of every shard so we hit more interesting update code paths
+    // sometimes use 2 replicas of every shard, so we hit more interesting update code paths
     final int numReplicas = usually() ? 1 : 2;
 
     configureCluster(
@@ -285,11 +288,11 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
    * Test that {@link UpdateRequest#getRoutesToCollection} correctly populates routes for all
    * deletes
    */
-  public void testGlassBoxUpdateRequestRoutesToShards() throws Exception {
+  public void testGlassBoxUpdateRequestRoutesToShards() {
 
     final DocCollection docCol = cluster.getSolrClient().getClusterState().getCollection(COLL);
     // we don't need "real" urls for all replicas, just something we can use as lookup keys for
-    // verification so we'll use the shard names as "leader urls"
+    // verification, so we'll use the shard names as "leader urls"
     final Map<String, List<String>> urlMap =
         docCol.getActiveSlices().stream()
             .collect(

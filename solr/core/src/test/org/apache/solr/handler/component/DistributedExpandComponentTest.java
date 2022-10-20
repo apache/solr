@@ -88,7 +88,7 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
         2, "id", "10", "term_s", "YYYY", group, ccc, "test_i", "1500", "test_l", "1001", "test_f",
         "3200");
 
-    // NOTE: nullPolicy=collapse will only be viable because all null docs are in collocated in
+    // NOTE: nullPolicy=collapse will only be viable because all null docs are in colocated in
     // shard #2
     index_specific(2, "id", "88", "test_i", "1001", "test_l", "1001", "test_f", "3200");
     index_specific(2, "id", "99", "test_i", "11", "test_l", "100", "test_f", "200");
@@ -498,10 +498,10 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
 
   private void assertExpandGroups(Map<String, SolrDocumentList> expandedResults, String... groups)
       throws Exception {
-    for (int i = 0; i < groups.length; i++) {
-      if (!expandedResults.containsKey(groups[i])) {
+    for (String group : groups) {
+      if (!expandedResults.containsKey(group)) {
         throw new Exception(
-            "Expanded Group Not Found:" + groups[i] + ", Found:" + exportGroups(expandedResults));
+            "Expanded Group Not Found:" + group + ", Found:" + exportGroups(expandedResults));
       }
     }
   }
@@ -533,7 +533,7 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
   }
 
   private void assertCountAndOrder(
-      final int count, final SolrDocumentList results, final String... docs) throws Exception {
+      final int count, final SolrDocumentList results, final String... docs) {
     assertEquals(results.toString(), count, results.size());
 
     for (int i = 0; i < docs.length; i++) {

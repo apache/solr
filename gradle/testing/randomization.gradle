@@ -30,7 +30,7 @@ buildscript {
   }
 
   dependencies {
-    classpath 'com.carrotsearch.randomizedtesting:randomizedtesting-runner:2.7.2'
+    classpath 'com.carrotsearch.randomizedtesting:randomizedtesting-runner:2.7.9'
   }
 }
 
@@ -85,7 +85,6 @@ allprojects {
           [propName: 'tests.timezone', value: "random", description: "Sets the default time zone tests should run with."],
           // filtering
           [propName: 'tests.filter', value: null, description: "Applies a test filter (see :helpTests)."],
-          [propName: 'tests.slow', value: true, description: "Enables or disables @Slow tests."],
           [propName: 'tests.nightly', value: false, description: "Enables or disables @Nightly tests."],
           [propName: 'tests.weekly', value: false, description: "Enables or disables @Weekly tests."],
           [propName: 'tests.monster', value: false, description: "Enables or disables @Monster tests."],
@@ -191,7 +190,7 @@ allprojects {
         // to each project's build/ configuration but it seems compact enough to keep it here for now.
         if (Boolean.parseBoolean(testOptionsResolved["tests.useSecurityManager"])) {
           systemProperty 'common-solr.dir', commonSolrDir
-          systemProperty 'java.security.manager', "org.apache.lucene.util.TestSecurityManager"
+          systemProperty 'java.security.manager', "org.apache.lucene.tests.util.TestSecurityManager"
           systemProperty 'java.security.policy', file("${resources}/policies/solr-tests.policy")
 
           def gradleUserHome = project.gradle.getGradleUserHomeDir()

@@ -21,7 +21,7 @@ import java.util.EnumSet;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.luke.FieldFlag;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.CustomAnalyzerStrField; // jdoc
+import org.apache.solr.schema.CustomAnalyzerStrField;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.TestHarness;
 import org.junit.Before;
@@ -107,7 +107,7 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
   @Test
   public void testLuke() {
 
-    // test that Luke can handle all of the field types
+    // test that Luke can handle all the field types
     assertQ(req("qt", "/admin/luke", "id", "SOLR1000"));
 
     final int numFlags = EnumSet.allOf(FieldFlag.class).size();
@@ -194,7 +194,7 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
     }
   }
 
-  public void testNumTerms() throws Exception {
+  public void testNumTerms() {
     final String f = "name";
     for (String n : new String[] {"2", "3", "100", "99999"}) {
       assertQ(
@@ -206,7 +206,7 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
 
     assertQ(
         req("qt", "/admin/luke", "fl", f, "numTerms", "1"),
-        // no garuntee which one we find
+        // no guarantee which one we find
         "count(" + field(f) + "lst[@name='topTerms']/int)=1");
 
     assertQ(

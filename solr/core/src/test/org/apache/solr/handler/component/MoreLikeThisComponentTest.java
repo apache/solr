@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.component;
 
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -32,7 +31,6 @@ import org.junit.Test;
  *
  * @see MoreLikeThisComponent
  */
-@Slow
 public class MoreLikeThisComponentTest extends SolrTestCaseJ4 {
 
   @BeforeClass

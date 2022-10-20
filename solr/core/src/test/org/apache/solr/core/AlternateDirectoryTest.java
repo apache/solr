@@ -32,13 +32,13 @@ public class AlternateDirectoryTest extends SolrTestCaseJ4 {
     initCore("solrconfig-altdirectory.xml", "schema.xml");
   }
 
-  public void testAltDirectoryUsed() throws Exception {
+  public void testAltDirectoryUsed() {
     assertQ(req("q", "*:*", "qt", "/select"));
     assertTrue(TestFSDirectoryFactory.openCalled);
     assertTrue(TestIndexReaderFactory.newReaderCalled);
   }
 
-  public void testAltReaderUsed() throws Exception {
+  public void testAltReaderUsed() {
     IndexReaderFactory readerFactory = h.getCore().getIndexReaderFactory();
     assertNotNull("Factory is null", readerFactory);
     assertEquals(
@@ -49,14 +49,12 @@ public class AlternateDirectoryTest extends SolrTestCaseJ4 {
 
   public static class TestFSDirectoryFactory extends StandardDirectoryFactory {
     public static volatile boolean openCalled = false;
-    public static volatile Directory dir;
 
     @Override
-    public Directory create(String path, LockFactory lockFactory, DirContext dirContext)
-        throws IOException {
+    public Directory create(String path, LockFactory lockFactory, DirContext dirContext) {
       openCalled = true;
 
-      return dir = newFSDirectory(Path.of(path), lockFactory);
+      return newFSDirectory(Path.of(path), lockFactory);
     }
   }
 

@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import org.apache.commons.io.IOUtils;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;

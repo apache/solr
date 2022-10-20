@@ -47,6 +47,7 @@ import org.apache.solr.util.LogListener;
 import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestBase;
 import org.apache.solr.util.RestTestHarness;
+import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -56,11 +57,9 @@ import org.slf4j.LoggerFactory;
 public class TestBulkSchemaAPI extends RestTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static File tmpSolrHome;
-
   @Before
   public void before() throws Exception {
-    tmpSolrHome = createTempDir().toFile();
+    File tmpSolrHome = createTempDir().toFile();
     FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
 
     System.setProperty("managed.schema.mutable", "true");
@@ -1292,8 +1291,10 @@ public class TestBulkSchemaAPI extends RestTestBase {
           "/responseHeader/status==0");
 
       assertEquals(2, listener.getCount());
-      assertThat(listener.pollMessage(), containsString("hardcoded behavior is omitNorms=true"));
-      assertThat(listener.pollMessage(), containsString("hardcoded behavior is termOffsets=false"));
+      MatcherAssert.assertThat(
+          listener.pollMessage(), containsString("hardcoded behavior is omitNorms=true"));
+      MatcherAssert.assertThat(
+          listener.pollMessage(), containsString("hardcoded behavior is termOffsets=false"));
 
       // Add a date range field with violated invariants
       assertJPost(
@@ -1469,7 +1470,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
       Similarity mainSim = core.getLatestSchema().getSimilarity();
       assertNotNull(mainSim);
 
-      // sanity check simfac vs sim in use - also verify infom called on simfac, otherwise exception
+      // check simfac vs sim in use - also verify inform called on simfac, otherwise exception
       assertEquals(mainSim, simfac.getSimilarity());
 
       assertTrue(

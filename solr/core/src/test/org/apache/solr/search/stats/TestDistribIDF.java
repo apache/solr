@@ -18,7 +18,7 @@ package org.apache.solr.search.stats;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -214,7 +214,7 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     }
 
     if (response.getStatus() != 0 || response.getErrorMessages() != null) {
-      fail("Could not create collection. Response" + response.toString());
+      fail("Could not create collection. Response" + response);
     }
   }
 

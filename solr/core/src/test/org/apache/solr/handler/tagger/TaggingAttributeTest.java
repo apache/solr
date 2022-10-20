@@ -26,7 +26,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Test the {@link TaggerRequestHandler} with a Analyzer chain that does use the {@link
+ * Test the {@link TaggerRequestHandler} with an Analyzer chain that does use the {@link
  * TaggingAttribute}. See the test configuration under 'taggingattribute'.
  */
 public class TaggingAttributeTest extends TaggerTestCase {
@@ -44,7 +44,7 @@ public class TaggingAttributeTest extends TaggerTestCase {
   public void testTaggingAttribute() throws Exception {
     baseParams.set(
         "field", "name_tagAttribute"); // has WordLengthTaggingFilter using the TaggingAttribute
-    // this test is based on the longest dominant right test, so we use the
+    // this test is based on the longest dominant right test, so we use
     // the same TagClusterReducer setting
     baseParams.set("overlaps", "LONGEST_DOMINANT_RIGHT");
 
@@ -62,8 +62,8 @@ public class TaggingAttributeTest extends TaggerTestCase {
 
     assertTags(
         "He lived in San Francisco.",
-        // "in", "San Francisco"); //whis would be expected without taggable
-        "Francisco"); // this are the expected results with taggable
+        // "in", "San Francisco"); //this would be expected without taggable
+        "Francisco"); // this is the expected result with taggable
 
     assertTags(
         "He enrolled in San Francisco State College of California",

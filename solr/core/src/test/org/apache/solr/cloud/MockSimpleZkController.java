@@ -31,9 +31,9 @@ public class MockSimpleZkController extends ZkController {
       String zkServerAddress,
       int zkClientConnectTimeout,
       CloudConfig cloudConfig,
-      Supplier<List<CoreDescriptor>> registerOnReconnect)
+      Supplier<List<CoreDescriptor>> descriptorsSupplier)
       throws InterruptedException, TimeoutException, IOException {
-    super(cc, zkServerAddress, zkClientConnectTimeout, cloudConfig, registerOnReconnect);
+    super(cc, zkServerAddress, zkClientConnectTimeout, cloudConfig, descriptorsSupplier);
   }
 
   @Override

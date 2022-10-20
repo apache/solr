@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -30,7 +29,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@Slow
 public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
   private static final int NUM_REPLICAS_OF_SHARD1 = 5;
 
@@ -145,13 +143,12 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
   private String getLeader(String collection) throws InterruptedException {
 
     ZkNodeProps props = cluster.getZkStateReader().getLeaderRetry(collection, "shard1", 30000);
-    String leader = props.getStr(ZkStateReader.NODE_NAME_PROP);
 
-    return leader;
+    return props.getStr(ZkStateReader.NODE_NAME_PROP);
   }
 
   @AfterClass
-  public static void afterClass() throws InterruptedException {
+  public static void afterClass() {
     System.clearProperty("solrcloud.skip.autorecovery");
   }
 }

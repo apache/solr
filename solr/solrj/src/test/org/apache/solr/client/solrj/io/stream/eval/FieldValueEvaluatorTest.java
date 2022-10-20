@@ -21,10 +21,10 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.PriorityQueue;
-import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.FieldValueEvaluator;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class FieldValueEvaluatorTest extends SolrTestCase {
@@ -34,7 +34,7 @@ public class FieldValueEvaluatorTest extends SolrTestCase {
   public FieldValueEvaluatorTest() {
     super();
 
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @SuppressWarnings("serial")

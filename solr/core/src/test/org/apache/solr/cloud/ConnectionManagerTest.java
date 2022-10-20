@@ -21,7 +21,6 @@ import java.nio.file.Path;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeoutException;
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ConnectionManager;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -35,7 +34,6 @@ import org.apache.zookeeper.ZooKeeper;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Slow
 public class ConnectionManagerTest extends SolrTestCaseJ4 {
 
   static final int TIMEOUT = 3000;
@@ -124,8 +122,8 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
     try {
       server.run();
 
-      MockZkClientConnectionStrategy strat = new MockZkClientConnectionStrategy();
-      SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT, strat, null);
+      MockZkClientConnectionStrategy strategy = new MockZkClientConnectionStrategy();
+      SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT, strategy, null);
       ConnectionManager cm = zkClient.getConnectionManager();
 
       try {
@@ -136,7 +134,7 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
         cm.process(new WatchedEvent(EventType.None, KeeperState.Expired, ""));
         assertFalse(cm.isLikelyExpired());
         assertTrue(cm.isConnectedAndNotClosed());
-        assertTrue(strat.isExceptionThrow());
+        assertTrue(strategy.isExceptionThrow());
       } finally {
         cm.close();
         zkClient.close();

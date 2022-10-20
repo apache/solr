@@ -18,7 +18,7 @@ package org.apache.solr;
 
 import java.io.IOException;
 import org.apache.lucene.search.TimeLimitingCollector;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
@@ -82,7 +82,7 @@ public class TestHighlightDedupGrouping extends BaseDistributedSearchTestCase {
                 "hl.fl",
                 id_s1));
 
-    // The number of highlit documents should be the same as the de-duplicated docs
+    // The number of highlighted documents should be the same as the de-duplicated docs
     assertEquals(1, rsp.getHighlighting().values().size());
   }
 
@@ -144,7 +144,8 @@ public class TestHighlightDedupGrouping extends BaseDistributedSearchTestCase {
                   "*",
                   "hl.requireFieldMatch",
                   "true"));
-      // The number of highlit documents should be the same as the de-duplicated docs for this group
+      // The number of highlighted documents should be the same as the de-duplicated docs for this
+      // group
       assertEquals(docsInGroup[group], rsp.getHighlighting().values().size());
     }
   }

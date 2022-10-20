@@ -43,7 +43,6 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.junit.Test;
 
 public class SolrCoreTest extends SolrTestCaseJ4 {
-  private static final String COLLECTION1 = "collection1";
 
   @Override
   public void setUp() throws Exception {
@@ -136,7 +135,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
       ++ihCount;
       assertEquals(pathToClassMap.get("/debug/dump"), "solr.DumpRequestHandler");
       ++ihCount;
-      assertEquals(pathToClassMap.get("update"), "solr.UpdateRequestHandlerApi");
+      assertEquals(pathToClassMap.get("update"), "solr.V2UpdateRequestHandler");
       ++ihCount;
       assertEquals(pathToClassMap.get("/tasks/cancel"), "solr.QueryCancellationHandler");
       ++ihCount;
@@ -146,7 +145,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testClose() throws Exception {
+  public void testClose() {
     final CoreContainer cores = h.getCoreContainer();
     SolrCore core = cores.getCore(SolrTestCaseJ4.DEFAULT_TEST_CORENAME);
 
@@ -163,7 +162,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRefCount() throws Exception {
+  public void testRefCount() {
     SolrCore core = h.getCore();
     assertTrue("Refcount != 1", core.getOpenCount() == 1);
 
@@ -269,7 +268,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testInfoRegistry() throws Exception {
+  public void testInfoRegistry() {
     // TEst that SolrInfoMBeans are registered, including SearchComponents
     SolrCore core = h.getCore();
 
@@ -289,7 +288,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testConfiguration() throws Exception {
+  public void testConfiguration() {
     assertEquals(
         "wrong config for slowQueryThresholdMillis", 2000, solrConfig.slowQueryThresholdMillis);
     assertEquals("wrong config for maxBooleanClauses", 1024, solrConfig.booleanQueryMaxClauseCount);
@@ -376,7 +375,7 @@ class ClosingRequestHandler extends EmptyRequestHandler implements SolrCoreAware
 /** An empty handler for testing */
 class EmptyRequestHandler extends RequestHandlerBase {
   @Override
-  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) {
     // nothing!
   }
 

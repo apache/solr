@@ -26,7 +26,7 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import org.apache.commons.io.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
@@ -45,18 +45,17 @@ import org.junit.Test;
 /** See SOLR-2854. */
 @SuppressSSL // does not yet work with ssl yet - uses raw java.net.URL API rather than HttpClient
 public class TestRemoteStreaming extends SolrJettyTestBase {
-  private static File solrHomeDirectory;
 
   @BeforeClass
   public static void beforeTest() throws Exception {
     // this one has handleSelect=true which a test here needs
-    solrHomeDirectory = createTempDir(LuceneTestCase.getTestClass().getSimpleName()).toFile();
+    File solrHomeDirectory = createTempDir(LuceneTestCase.getTestClass().getSimpleName()).toFile();
     setupJettyTestHome(solrHomeDirectory, "collection1");
     createAndStartJetty(solrHomeDirectory.getAbsolutePath());
   }
 
   @AfterClass
-  public static void afterTest() throws Exception {}
+  public static void afterTest() {}
 
   @Before
   public void doBefore() throws IOException, SolrServerException {
@@ -114,7 +113,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
     assertSame(ErrorCode.BAD_REQUEST, ErrorCode.getErrorCode(se.code()));
   }
 
-  /** Compose a url that if you get it, it will delete all the data. */
+  /** Compose an url that if you get it, it will delete all the data. */
   private String makeDeleteAllUrl() throws UnsupportedEncodingException {
     HttpSolrClient client = (HttpSolrClient) getSolrClient();
     String deleteQuery = "<delete><query>*:*</query></delete>";

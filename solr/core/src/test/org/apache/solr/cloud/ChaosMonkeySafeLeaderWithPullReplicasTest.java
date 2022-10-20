@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -40,14 +40,12 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Slow
+@LuceneTestCase.Nightly
 public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final Integer RUN_LENGTH =
       Integer.parseInt(System.getProperty("solr.tests.cloud.cm.runlength", "-1"));
-
-  private final boolean useTlogReplicas = random().nextBoolean();
 
   private final int numPullReplicas;
   private final int numRealtimeOrTlogReplicas;

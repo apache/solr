@@ -188,7 +188,7 @@ public final class LegacyNumericRangeQuery<T extends Number> extends MultiTermQu
       T max,
       final boolean minInclusive,
       final boolean maxInclusive) {
-    super(field);
+    super(field, MultiTermQuery.CONSTANT_SCORE_REWRITE);
     if (precisionStep < 1) throw new IllegalArgumentException("precisionStep must be >=1");
     this.precisionStep = precisionStep;
     this.dataType = Objects.requireNonNull(dataType, "LegacyNumericType must not be null");

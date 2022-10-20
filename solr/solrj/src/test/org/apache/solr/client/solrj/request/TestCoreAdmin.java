@@ -28,7 +28,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -46,6 +46,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -90,10 +91,10 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     req.setConfigSet("configset-2");
 
     CoreAdminResponse response = req.process(client);
-    assertThat((String) response.getResponse().get("core"), is("corewithconfigset"));
+    MatcherAssert.assertThat((String) response.getResponse().get("core"), is("corewithconfigset"));
 
     try (SolrCore core = cores.getCore("corewithconfigset")) {
-      assertThat(core, is(notNullValue()));
+      MatcherAssert.assertThat(core, is(notNullValue()));
     }
   }
 

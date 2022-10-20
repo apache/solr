@@ -36,7 +36,7 @@ import org.apache.lucene.search.spell.SuggestMode;
 import org.apache.lucene.search.spell.SuggestWord;
 import org.apache.lucene.search.spell.SuggestWordFrequencyComparator;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase.SuppressTempFileChecks;
+import org.apache.lucene.tests.util.LuceneTestCase.SuppressTempFileChecks;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -81,7 +81,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testComparator() throws Exception {
+  public void testComparator() {
     SpellCheckComponent component =
         (SpellCheckComponent) h.getCore().getSearchComponent("spellcheck");
     assertNotNull(component);
@@ -319,9 +319,9 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     File altIndexDir = new File(tmpDir, "alternateIdx" + new Date().getTime());
     Directory dir = newFSDirectory(altIndexDir.toPath());
     IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(new WhitespaceAnalyzer()));
-    for (int i = 0; i < ALT_DOCS.length; i++) {
+    for (String alt_doc : ALT_DOCS) {
       Document doc = new Document();
-      doc.add(new TextField("title", ALT_DOCS[i], Field.Store.YES));
+      doc.add(new TextField("title", alt_doc, Field.Store.YES));
       iw.addDocument(doc);
     }
     iw.forceMerge(1);

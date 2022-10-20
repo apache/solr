@@ -19,8 +19,8 @@ package org.apache.solr.spelling;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.util.LuceneTestCase.SuppressTempFileChecks;
+import org.apache.lucene.tests.analysis.MockAnalyzer;
+import org.apache.lucene.tests.util.LuceneTestCase.SuppressTempFileChecks;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -158,7 +158,7 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testInConjunction() throws Exception {
+  public void testInConjunction() {
     assertQ(
         req(
             "q",
@@ -230,7 +230,7 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testCollate() throws Exception {
+  public void testCollate() {
     assertQ(
         req(
             "q",

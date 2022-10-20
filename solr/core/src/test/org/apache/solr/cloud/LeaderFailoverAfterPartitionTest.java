@@ -22,11 +22,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -38,7 +37,6 @@ import org.slf4j.LoggerFactory;
  * Tests leader-initiated recovery scenarios after a leader node fails and one of the replicas is
  * out-of-sync.
  */
-@Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
 
@@ -127,12 +125,12 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
     // doc should be on leader and 1 replica
     sendDoc(5);
 
-    try (HttpSolrClient server = getHttpSolrClient(leader, testCollectionName)) {
-      assertDocExists(server, testCollectionName, "5");
+    try (SolrClient server = getHttpSolrClient(leader, testCollectionName)) {
+      assertDocExists(server, "5");
     }
 
-    try (HttpSolrClient server = getHttpSolrClient(notLeaders.get(1), testCollectionName)) {
-      assertDocExists(server, testCollectionName, "5");
+    try (SolrClient server = getHttpSolrClient(notLeaders.get(1), testCollectionName)) {
+      assertDocExists(server, "5");
     }
 
     Thread.sleep(sleepMsBeforeHealPartition);

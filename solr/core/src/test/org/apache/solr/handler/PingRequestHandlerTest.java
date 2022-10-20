@@ -158,7 +158,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
     assertEquals("disabled", rsp.getValues().get("status"));
   }
 
-  public void testBadActionRaisesException() throws Exception {
+  public void testBadActionRaisesException() {
     SolrException se =
         expectThrows(SolrException.class, () -> makeRequest(handler, req("action", "badaction")));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, se.code());

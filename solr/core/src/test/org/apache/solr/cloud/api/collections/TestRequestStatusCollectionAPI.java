@@ -19,6 +19,7 @@ package org.apache.solr.cloud.api.collections;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -39,7 +40,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
   }
 
   @Test
-  public void test() throws Exception {
+  public void test() {
     ModifiableSolrParams params = new ModifiableSolrParams();
 
     params.set(CollectionParams.ACTION, CollectionParams.CollectionAction.CREATE.toString());
@@ -119,7 +120,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     }
 
     assertEquals("found [1001] in completed tasks", message);
-    // create * 2 + preprecovery *2 + split + req_apply_upd * 2 =7
+    // create * 2 + preprecovery * 2 + split + req_apply_upd * 2 = 7
     assertEquals(
         "expecting " + (2 + 2 + 1 + 2) + " shard responses at " + splitResponse,
         (2 + 2 + 1 + 2),
@@ -220,7 +221,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
         ((HttpSolrClient) shardToJetty.get(SHARD1).get(0).client.getSolrClient()).getBaseURL();
     baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
 
-    try (HttpSolrClient baseServer = getHttpSolrClient(baseUrl, 15000)) {
+    try (SolrClient baseServer = getHttpSolrClient(baseUrl, 15000)) {
       return baseServer.request(request);
     }
   }

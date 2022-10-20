@@ -610,14 +610,9 @@ http://localhost:8983/solr/admin/collections?action=ADDREPLICAPROP&collection=te
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts -H 'Content-Type: application/json' -d '
+curl -X PUT http://localhost:8983/api/collections/techproducts/shards/shard1/replicas/core_node2/properties/preferredLeader -H 'Content-Type: application/json' -d '
   {
-    "add-replica-property":{
-      "shard":"shard1",
-      "replica":"core_node2",
-      "name":"preferredLeader",
-      "value": "true"
-    }
+    "value": "true"
   }
 '
 ----

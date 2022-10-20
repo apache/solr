@@ -19,12 +19,12 @@ package org.apache.solr.client.solrj.io.stream.eval;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.RoundEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class RoundEvaluatorTest extends SolrTestCase {
@@ -36,7 +36,7 @@ public class RoundEvaluatorTest extends SolrTestCase {
     super();
 
     factory = new StreamFactory().withFunctionName("round", RoundEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   private void test(Double value) throws IOException {

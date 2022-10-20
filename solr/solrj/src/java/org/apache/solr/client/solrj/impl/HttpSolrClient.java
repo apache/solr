@@ -44,6 +44,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpMessage;
@@ -630,11 +631,13 @@ public class HttpSolrClient extends BaseHttpSolrClient {
         return rsp;
       }
 
-      String procCt = processor.getContentType();
-      if (procCt != null) {
-        String procMimeType =
-            ContentType.parse(procCt).getMimeType().trim().toLowerCase(Locale.ROOT);
-        if (!procMimeType.equals(mimeType)) {
+      final Collection<String> processorSupportedContentTypes = processor.getContentTypes();
+      if (processorSupportedContentTypes != null && !processorSupportedContentTypes.isEmpty()) {
+        final Collection<String> processorMimeTypes =
+            processorSupportedContentTypes.stream()
+                .map(ct -> ContentType.parse(ct).getMimeType().trim().toLowerCase(Locale.ROOT))
+                .collect(Collectors.toSet());
+        if (!processorMimeTypes.contains(mimeType)) {
           if (isUnmatchedErrorCode(mimeType, httpStatus)) {
             throw new RemoteSolrException(
                 baseUrl,
@@ -647,7 +650,9 @@ public class HttpSolrClient extends BaseHttpSolrClient {
           }
 
           // unexpected mime type
-          String prefix = "Expected mime type " + procMimeType + " but got " + mimeType + ". ";
+          final String combinedMimeTypes = String.join(", ", processorMimeTypes);
+          String prefix =
+              "Expected mime type in [" + combinedMimeTypes + "] but got " + mimeType + ". ";
           Charset exceptionCharset = charset != null ? charset : FALLBACK_CHARSET;
           try {
             ByteArrayOutputStream body = new ByteArrayOutputStream();

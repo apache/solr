@@ -324,7 +324,7 @@ public class TaggerRequestHandler extends RequestHandlerBase {
     final SolrIndexSearcher searcher = req.getSearcher();
     final Bits docBits;
     if (corpusFilterQueries != null && corpusFilterQueries.length > 0) {
-      List<Query> filterQueries = new ArrayList<Query>(corpusFilterQueries.length);
+      List<Query> filterQueries = new ArrayList<>(corpusFilterQueries.length);
       for (String corpusFilterQuery : corpusFilterQueries) {
         QParser qParser = QParser.getParser(corpusFilterQuery, null, req);
         try {

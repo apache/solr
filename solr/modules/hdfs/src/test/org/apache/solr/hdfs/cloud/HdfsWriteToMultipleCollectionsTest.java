@@ -29,10 +29,9 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NRTCachingDirectory;
+import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
+import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase.Nightly;
-import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -53,7 +52,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@Slow
 @Nightly
 @ThreadLeakFilters(
     defaultFilters = true,

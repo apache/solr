@@ -125,8 +125,8 @@ public class ICUCollationField extends FieldType {
 
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
-    failHardOnUdvas = schema.luceneVersion.onOrAfter(UDVAS_FORBIDDEN_AS_OF);
-    if (on(trueProperties, USE_DOCVALUES_AS_STORED)) {
+    failHardOnUdvas = schema.getDefaultLuceneMatchVersion().onOrAfter(UDVAS_FORBIDDEN_AS_OF);
+    if ((trueProperties & USE_DOCVALUES_AS_STORED) != 0) {
       // fail fast at fieldType init
       warnOrFailUdvas(failHardOnUdvas);
     }

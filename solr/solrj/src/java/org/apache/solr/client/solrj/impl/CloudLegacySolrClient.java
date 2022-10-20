@@ -66,7 +66,8 @@ public class CloudLegacySolrClient extends CloudSolrClient {
             "Both zkHost(s) & solrUrl(s) have been specified. Only specify one.");
       }
       if (builder.zkHosts != null) {
-        this.stateProvider = new ZkClientClusterStateProvider(builder.zkHosts, builder.zkChroot);
+        this.stateProvider =
+            ClusterStateProvider.newZkClusterStateProvider(builder.zkHosts, builder.zkChroot);
       } else if (builder.solrUrls != null && !builder.solrUrls.isEmpty()) {
         try {
           this.stateProvider = new HttpClusterStateProvider(builder.solrUrls, builder.httpClient);
@@ -324,7 +325,7 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     public CloudLegacySolrClient build() {
       if (stateProvider == null) {
         if (!zkHosts.isEmpty()) {
-          stateProvider = new ZkClientClusterStateProvider(zkHosts, zkChroot);
+          this.stateProvider = ClusterStateProvider.newZkClusterStateProvider(zkHosts, zkChroot);
         } else if (!this.solrUrls.isEmpty()) {
           try {
             stateProvider = new HttpClusterStateProvider(solrUrls, httpClient);

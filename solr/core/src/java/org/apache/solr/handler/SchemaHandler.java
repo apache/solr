@@ -35,6 +35,7 @@ import java.util.Set;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
+import org.apache.solr.api.JerseyResource;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
@@ -46,6 +47,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.admin.api.SchemaBulkModifyAPI;
 import org.apache.solr.handler.admin.api.SchemaGetDynamicFieldAPI;
 import org.apache.solr.handler.admin.api.SchemaGetFieldAPI;
 import org.apache.solr.handler.admin.api.SchemaGetFieldTypeAPI;
@@ -59,6 +61,7 @@ import org.apache.solr.handler.admin.api.SchemaSimilarityAPI;
 import org.apache.solr.handler.admin.api.SchemaUniqueKeyAPI;
 import org.apache.solr.handler.admin.api.SchemaVersionAPI;
 import org.apache.solr.handler.admin.api.SchemaZkVersionAPI;
+import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.pkg.PackageListeningClassLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -152,12 +155,8 @@ public class SchemaHandler extends RequestHandlerBase
           break;
         case "/schema/name":
           {
-            final String schemaName = req.getSchema().getSchemaName();
-            if (null == schemaName) {
-              String message = "Schema has no name";
-              throw new SolrException(SolrException.ErrorCode.NOT_FOUND, message);
-            }
-            rsp.add(IndexSchema.NAME, schemaName);
+            V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+                rsp, new SchemaNameAPI(req.getCore()).getSchemaName());
             break;
           }
         case "/schema/zkversion":
@@ -312,24 +311,28 @@ public class SchemaHandler extends RequestHandlerBase
 
   @Override
   public Collection<Api> getApis() {
-    final List<Api> immList = ApiBag.wrapRequestHandlers(this, "core.SchemaEdit");
-    final List<Api> mutList = new ArrayList<>();
-    mutList.addAll(immList);
-    mutList.addAll(AnnotatedApi.getApis(new SchemaNameAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaInfoAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaUniqueKeyAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaVersionAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaSimilarityAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaZkVersionAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaListAllFieldsAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaGetFieldAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaListAllCopyFieldsAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaListAllDynamicFieldsAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaGetDynamicFieldAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaListAllFieldTypesAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaGetFieldTypeAPI(this)));
 
-    return mutList;
+    final List<Api> apis = new ArrayList<>();
+    apis.addAll(AnnotatedApi.getApis(new SchemaInfoAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new SchemaUniqueKeyAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new SchemaVersionAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new SchemaSimilarityAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new SchemaZkVersionAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new SchemaListAllFieldsAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new SchemaGetFieldAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new SchemaListAllCopyFieldsAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new SchemaListAllDynamicFieldsAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new SchemaGetDynamicFieldAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new SchemaListAllFieldTypesAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new SchemaGetFieldTypeAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new SchemaBulkModifyAPI(this)));
+
+    return apis;
+  }
+
+  @Override
+  public Collection<Class<? extends JerseyResource>> getJerseyResources() {
+    return List.of(SchemaNameAPI.class);
   }
 
   @Override

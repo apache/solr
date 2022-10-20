@@ -130,7 +130,7 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
   }
 
   @AfterClass
-  public static void cleanUpAfterClass() throws Exception {
+  public static void cleanUpAfterClass() {
     client = null;
   }
 
@@ -177,11 +177,11 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
                 fl)
             : new SolrQuery( // same bjq as a subordinate clause
                 "q",
-                "+type_s:parent " + parentFilter + " +{!v=$parentcaluse}",
-                "parentcaluse",
+                "+type_s:parent " + parentFilter + " +{!v=$parentclause}",
+                "parentclause",
                 "{!parent which=type_s:parent v='" + (childFilter).replace("+", "") + "'}",
                 "sort",
-                sortClause.replace("val_s1", "childfield(val_s1,$parentcaluse)"),
+                sortClause.replace("val_s1", "childfield(val_s1,$parentclause)"),
                 "rows",
                 "" + maxDocs,
                 "fl",

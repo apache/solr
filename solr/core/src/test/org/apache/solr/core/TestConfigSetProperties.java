@@ -42,7 +42,7 @@ public class TestConfigSetProperties extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testEmptyConfigSetProperties() throws Exception {
+  public void testEmptyConfigSetProperties() {
     SolrException thrown =
         expectThrows(
             SolrException.class,
@@ -53,7 +53,7 @@ public class TestConfigSetProperties extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testConfigSetPropertiesNotMap() throws Exception {
+  public void testConfigSetPropertiesNotMap() {
     SolrException thrown =
         expectThrows(
             SolrException.class,

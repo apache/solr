@@ -24,7 +24,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.util.QuickPatchThreadsFilter;
+import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.hdfs.cloud.HdfsTestUtil;

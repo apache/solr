@@ -208,7 +208,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
           CollectionAdminRequest.backupCollection(backupCollectionName, backupName)
               .setLocation(backupLocation)
               .setRepositoryName(BACKUP_REPO_NAME)
-              .processAndWait(cluster.getSolrClient(), 10 * 1000);
+              .processAndWait(cluster.getSolrClient(), 20);
       assertEquals(RequestStatusState.COMPLETED, result);
     }
     final int secondBatchNumDocs = indexDocs(backupCollectionName, true);
@@ -223,15 +223,14 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
           CollectionAdminRequest.restoreCollection(backupCollectionName, backupName)
               .setLocation(backupLocation)
               .setRepositoryName(BACKUP_REPO_NAME)
-              .processAndWait(cluster.getSolrClient(), 20 * 1000);
+              .processAndWait(cluster.getSolrClient(), 30);
       assertEquals(RequestStatusState.COMPLETED, result);
     }
     assertEquals(firstBatchNumDocs, getNumDocsInCollection(backupCollectionName));
   }
 
   @Test
-  @Slow
-  @SuppressWarnings("rawtypes")
+  @Nightly
   public void testBackupIncremental() throws Exception {
     setTestSuffix("testbackupinc");
     CloudSolrClient solrClient = cluster.getSolrClient();
@@ -272,7 +271,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
               .setBackupLocation(backupLocation)
               .setBackupRepository(BACKUP_REPO_NAME)
               .process(cluster.getSolrClient());
-      ArrayList backups = (ArrayList) resp.getResponse().get("backups");
+      List<?> backups = (List<?>) resp.getResponse().get("backups");
       assertEquals(3, backups.size());
 
       // test delete backups
@@ -281,14 +280,14 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
               .setRepositoryName(BACKUP_REPO_NAME)
               .setLocation(backupLocation)
               .process(cluster.getSolrClient());
-      assertEquals(null, resp.getResponse().get("deleted"));
+      assertNull(resp.getResponse().get("deleted"));
 
       resp =
           CollectionAdminRequest.deleteBackupByRecency(backupName, 3)
               .setRepositoryName(BACKUP_REPO_NAME)
               .setLocation(backupLocation)
               .process(cluster.getSolrClient());
-      assertEquals(null, resp.getResponse().get("deleted"));
+      assertNull(resp.getResponse().get("deleted"));
 
       resp =
           CollectionAdminRequest.deleteBackupByRecency(backupName, 2)

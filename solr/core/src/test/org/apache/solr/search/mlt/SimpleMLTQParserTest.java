@@ -31,7 +31,7 @@ public class SimpleMLTQParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void doTest() throws Exception {
+  public void doTest() {
     String id = "id";
     String FIELD1 = "lowerfilt";
     String FIELD2 = "lowerfilt1";

@@ -21,6 +21,7 @@ import static org.apache.solr.common.params.CommonParams.SORT;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -37,7 +38,10 @@ import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.eq.FieldEqualitor;
 import org.apache.solr.client.solrj.io.eq.MultipleFieldEqualitor;
-import org.apache.solr.client.solrj.io.stream.*;
+import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
+import org.apache.solr.client.solrj.io.stream.StreamContext;
+import org.apache.solr.client.solrj.io.stream.TupleStream;
+import org.apache.solr.client.solrj.io.stream.UniqueStream;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
@@ -311,7 +315,8 @@ public class ShortestPathStream extends TupleStream implements Expressible {
     ModifiableSolrParams mParams = new ModifiableSolrParams(queryParams);
     child.setExpression(
         mParams.getMap().entrySet().stream()
-            .map(e -> String.format(Locale.ROOT, "%s=%s", e.getKey(), e.getValue()))
+            .map(
+                e -> String.format(Locale.ROOT, "%s=%s", e.getKey(), Arrays.toString(e.getValue())))
             .collect(Collectors.joining(",")));
     explanation.addChild(child);
 

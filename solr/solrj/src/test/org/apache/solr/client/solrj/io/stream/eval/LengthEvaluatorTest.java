@@ -20,13 +20,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.LengthEvaluator;
 import org.apache.solr.client.solrj.io.eval.SequenceEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class LengthEvaluatorTest extends SolrTestCase {
@@ -41,7 +41,7 @@ public class LengthEvaluatorTest extends SolrTestCase {
         new StreamFactory()
             .withFunctionName("length", LengthEvaluator.class)
             .withFunctionName("sequence", SequenceEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @Test

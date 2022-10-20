@@ -17,14 +17,13 @@
 package org.apache.solr.schema;
 
 import static java.util.Optional.ofNullable;
-import static org.apache.lucene.codecs.lucene90.Lucene90HnswVectorsFormat.DEFAULT_BEAM_WIDTH;
-import static org.apache.lucene.codecs.lucene90.Lucene90HnswVectorsFormat.DEFAULT_MAX_CONN;
+import static org.apache.lucene.codecs.lucene94.Lucene94HnswVectorsFormat.DEFAULT_BEAM_WIDTH;
+import static org.apache.lucene.codecs.lucene94.Lucene94HnswVectorsFormat.DEFAULT_MAX_CONN;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import org.apache.lucene.codecs.lucene90.Lucene90HnswVectorsFormat;
 import org.apache.lucene.document.KnnVectorField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.VectorSimilarityFunction;
@@ -41,19 +40,17 @@ import org.apache.solr.uninverting.UninvertingReader;
  * Provides a field type to support Lucene's {@link org.apache.lucene.document.KnnVectorField}. See
  * {@link org.apache.lucene.search.KnnVectorQuery} for more details. It supports a fixed cardinality
  * dimension for the vector and a fixed similarity function. The default similarity is
- * EUCLIDEAN_HNSW (L2). The default index codec format is specified in the Lucene Codec constructor.
- * For Lucene 9.0 e.g. See {@link org.apache.lucene.codecs.lucene90.Lucene90Codec} Currently only
- * {@link org.apache.lucene.codecs.lucene90.Lucene90HnswVectorsFormat} is supported for advanced
- * hyper-parameter customisation. See {@link org.apache.lucene.util.hnsw.HnswGraph} for more details
- * about the implementation. <br>
+ * EUCLIDEAN_HNSW (L2). The default algorithm is HNSW. For Lucene 9.1 e.g. See {@link
+ * org.apache.lucene.util.hnsw.HnswGraph} for more details about the implementation. <br>
  * Only {@code Indexed} and {@code Stored} attributes are supported.
  */
 public class DenseVectorField extends FloatPointField {
+  public static final String HNSW_ALGORITHM = "hnsw";
 
   static final String KNN_VECTOR_DIMENSION = "vectorDimension";
   static final String KNN_SIMILARITY_FUNCTION = "similarityFunction";
 
-  static final String CODEC_FORMAT = "codecFormat";
+  static final String KNN_ALGORITHM = "knnAlgorithm";
   static final String HNSW_MAX_CONNECTIONS = "hnswMaxConnections";
   static final String HNSW_BEAM_WIDTH = "hnswBeamWidth";
 
@@ -61,18 +58,15 @@ public class DenseVectorField extends FloatPointField {
   private VectorSimilarityFunction similarityFunction;
   private VectorSimilarityFunction DEFAULT_SIMILARITY = VectorSimilarityFunction.EUCLIDEAN;
 
-  private String codecFormat;
+  private String knnAlgorithm;
   /**
-   * This parameter is coupled with the {@link Lucene90HnswVectorsFormat} format implementation.
-   * Controls how many of the nearest neighbor candidates are connected to the new node. Defaults to
-   * {@link Lucene90HnswVectorsFormat#DEFAULT_MAX_CONN}. See {@link HnswGraph} for more details.
+   * This parameter is coupled with the hnsw algorithm. Controls how many of the nearest neighbor
+   * candidates are connected to the new node. See {@link HnswGraph} for more details.
    */
   private int hnswMaxConn;
   /**
-   * This parameter is coupled with the {@link Lucene90HnswVectorsFormat} format implementation. The
-   * number of candidate neighbors to track while searching the graph for each newly inserted node.
-   * Defaults to to {@link Lucene90HnswVectorsFormat#DEFAULT_BEAM_WIDTH}. See {@link HnswGraph} for
-   * details.
+   * This parameter is coupled with the hnsw algorithm. The number of candidate neighbors to track
+   * while searching the graph for each newly inserted node. See {@link HnswGraph} for details.
    */
   private int hnswBeamWidth;
 
@@ -110,8 +104,9 @@ public class DenseVectorField extends FloatPointField {
             .orElse(DEFAULT_SIMILARITY);
     args.remove(KNN_SIMILARITY_FUNCTION);
 
-    this.codecFormat = args.get(CODEC_FORMAT);
-    args.remove(CODEC_FORMAT);
+    this.knnAlgorithm = args.get(KNN_ALGORITHM);
+
+    args.remove(KNN_ALGORITHM);
 
     this.hnswMaxConn =
         ofNullable(args.get(HNSW_MAX_CONNECTIONS))
@@ -139,8 +134,8 @@ public class DenseVectorField extends FloatPointField {
     return similarityFunction;
   }
 
-  public String getCodecFormat() {
-    return codecFormat;
+  public String getKnnAlgorithm() {
+    return knnAlgorithm;
   }
 
   public Integer getHnswMaxConn() {
@@ -269,8 +264,9 @@ public class DenseVectorField extends FloatPointField {
         "Function queries are not supported for Dense Vector fields.");
   }
 
-  public Query getKnnVectorQuery(String fieldName, float[] vectorToSearch, int topK) {
-    return new KnnVectorQuery(fieldName, vectorToSearch, topK);
+  public Query getKnnVectorQuery(
+      String fieldName, float[] vectorToSearch, int topK, Query filterQuery) {
+    return new KnnVectorQuery(fieldName, vectorToSearch, topK, filterQuery);
   }
 
   /**

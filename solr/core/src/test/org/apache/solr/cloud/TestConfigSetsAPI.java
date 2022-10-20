@@ -19,9 +19,8 @@ package org.apache.solr.cloud;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.core.ConfigSetProperties.DEFAULT_FILENAME;
-import static org.junit.matchers.JUnitMatchers.containsString;
+import static org.hamcrest.CoreMatchers.containsString;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -33,7 +32,6 @@ import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.Principal;
@@ -43,6 +41,7 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
@@ -66,6 +65,7 @@ import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
@@ -76,8 +76,10 @@ import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Create;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Delete;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Upload;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
+import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -92,6 +94,7 @@ import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.ConfigSetProperties;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.TestSolrConfigHandler;
+import org.apache.solr.handler.admin.api.ModifyBasicAuthConfigAPI;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.AuthorizationResponse;
@@ -101,6 +104,7 @@ import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
+import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assume;
@@ -117,11 +121,14 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setUpClass() throws Exception {
+    System.setProperty("managed.schema.mutable", "true");
     configureCluster(1).withSecurityJson(getSecurityJson()).configure();
   }
 
   @AfterClass
-  public static void tearDownClass() throws Exception {}
+  public static void tearDownClass() {
+    System.clearProperty("managed.schema.mutable");
+  }
 
   private static ConfigSetService getConfigSetService() {
     return cluster.getOpenOverseer().getCoreContainer().getConfigSetService();
@@ -175,14 +182,14 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
         "baseConfigSet2",
         "configSet2",
         null,
-        ImmutableMap.<String, String>of("immutable", "true", "key1", "value1"),
+        Map.of("immutable", "true", "key1", "value1"),
         "solr");
 
     // old, no new
     verifyCreate(
         "baseConfigSet3",
         "configSet3",
-        ImmutableMap.<String, String>of("immutable", "false", "key2", "value2"),
+        Map.of("immutable", "false", "key2", "value2"),
         null,
         "solr");
 
@@ -190,8 +197,8 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     verifyCreate(
         "baseConfigSet4",
         "configSet4",
-        ImmutableMap.<String, String>of("immutable", "true", "onlyOld", "onlyOldValue"),
-        ImmutableMap.<String, String>of("immutable", "false", "onlyNew", "onlyNewValue"),
+        Map.of("immutable", "true", "onlyOld", "onlyOldValue"),
+        Map.of("immutable", "false", "onlyNew", "onlyNewValue"),
         "solr");
   }
 
@@ -427,7 +434,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
             false);
     assertNotNull(map);
     unIgnoreException("The configuration name should be provided");
-    long statusCode = (long) getObjectByPath(map, false, Arrays.asList("responseHeader", "status"));
+    long statusCode = (long) getObjectByPath(map, Arrays.asList("responseHeader", "status"));
     assertEquals(400l, statusCode);
 
     SolrZkClient zkClient =
@@ -459,7 +466,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
             false);
     assertNotNull(map);
     unIgnoreException("already exists`");
-    statusCode = (long) getObjectByPath(map, false, Arrays.asList("responseHeader", "status"));
+    statusCode = (long) getObjectByPath(map, Arrays.asList("responseHeader", "status"));
     assertEquals(400l, statusCode);
     assertTrue(
         "Expected file doesnt exist in zk. It's possibly overwritten",
@@ -536,7 +543,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
             + "                 },\n"
             + "    }";
 
-    ByteBuffer buff = Charset.forName("UTF-8").encode(payload);
+    ByteBuffer buff = UTF_8.encode(payload);
     Map<?, ?> map =
         postDataAndGetResponse(
             cluster.getSolrClient(),
@@ -675,7 +682,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       // Should not set trusted=true in configSet
       ignoreException(
           "Either empty zipped data, or non-zipped data was passed. In order to upload a configSet, you must zip a non-empty directory to upload.");
-      assertEquals(400, uploadBadConfigSet(configsetName, configsetSuffix, "solr", true, true, v2));
+      assertEquals(400, uploadBadConfigSet(configsetName, configsetSuffix, "solr", v2));
       assertEquals(
           "Expecting version bump",
           solrconfigZkVersion,
@@ -834,6 +841,59 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   }
 
   @Test
+  public void testNewSingleFileAfterSchemaAPIV1() throws Exception {
+    testNewSingleFileAfterSchemaAPI(false);
+  }
+
+  @Test
+  public void testNewSingleFileAfterSchemaAPIV2() throws Exception {
+    testNewSingleFileAfterSchemaAPI(true);
+  }
+
+  private void addStringField(String fieldName, String collection, CloudSolrClient cloudClient)
+      throws IOException, SolrServerException {
+    Map<String, Object> fieldAttributes = new LinkedHashMap<>();
+    fieldAttributes.put("name", fieldName);
+    fieldAttributes.put("type", "string");
+    SchemaRequest.AddField addFieldUpdateSchemaRequest =
+        new SchemaRequest.AddField(fieldAttributes);
+    SchemaResponse.UpdateResponse addFieldResponse =
+        addFieldUpdateSchemaRequest.process(cloudClient, collection);
+    assertEquals(0, addFieldResponse.getStatus());
+    assertNull(addFieldResponse.getResponse().get("errors"));
+
+    log.info("added new field={}", fieldName);
+  }
+
+  private void testNewSingleFileAfterSchemaAPI(boolean v2) throws Exception {
+    String collectionName = "newcollection";
+    String configsetName = "regular";
+    String configsetSuffix = "testSinglePathNew-1-" + v2;
+    createConfigSet(null, configsetName + configsetSuffix, null, cluster.getSolrClient(), "solr");
+    createCollection(
+        collectionName, configsetName + configsetSuffix, 1, 1, cluster.getSolrClient());
+    addStringField("newField", collectionName, cluster.getSolrClient());
+
+    assertEquals(
+        0,
+        uploadSingleConfigSetFile(
+            configsetName,
+            configsetSuffix,
+            "solr",
+            "solr/configsets/upload/regular/solrconfig.xml",
+            "/test/upload/path/solrconfig.xml",
+            false,
+            false,
+            v2));
+    SolrZkClient zkClient = cluster.getZkServer().getZkClient();
+    assertEquals(
+        "Expecting first version of new file",
+        0,
+        getConfigZNodeVersion(
+            zkClient, configsetName, configsetSuffix, "test/upload/path/solrconfig.xml"));
+  }
+
+  @Test
   public void testSingleWithCleanupV1() throws Exception {
     testSingleWithCleanup(false);
   }
@@ -971,10 +1031,12 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     String configsetName = "regular";
     String configsetSuffix = "testSinglePathUntrusted-1-" + v2;
     uploadConfigSetWithAssertions(configsetName, configsetSuffix, null);
+
     try (SolrZkClient zkClient =
         new SolrZkClient(
             cluster.getZkServer().getZkAddress(), AbstractZkTestCase.TIMEOUT, 45000, null)) {
       // New file with trusted request
+
       assertEquals(
           0,
           uploadSingleConfigSetFile(
@@ -1214,7 +1276,8 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
             });
     unIgnoreException("uploaded without any authentication in place");
 
-    assertThat(thrown.getMessage(), containsString("Underlying core creation failed"));
+    MatcherAssert.assertThat(
+        thrown.getMessage(), containsString("Underlying core creation failed"));
 
     // Authorization on
     final String trustedSuffix = "-trusted";
@@ -1249,7 +1312,8 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
             });
     unIgnoreException("without any authentication in place");
 
-    assertThat(thrown.getMessage(), containsString("Underlying core creation failed"));
+    MatcherAssert.assertThat(
+        thrown.getMessage(), containsString("Underlying core creation failed"));
 
     // Authorization on
     final String trustedSuffix = "-trusted";
@@ -1272,19 +1336,17 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
             .get("id"));
   }
 
-  private static String getSecurityJson() throws KeeperException, InterruptedException {
-    String securityJson =
-        "{\n"
-            + "  'authentication':{\n"
-            + "    'blockUnknown': false,\n"
-            + "    'class':'"
-            + MockAuthenticationPlugin.class.getName()
-            + "'},\n"
-            + "  'authorization':{\n"
-            + "    'class':'"
-            + MockAuthorizationPlugin.class.getName()
-            + "'}}";
-    return securityJson;
+  private static String getSecurityJson() {
+    return "{\n"
+        + "  'authentication':{\n"
+        + "    'blockUnknown': false,\n"
+        + "    'class':'"
+        + MockAuthenticationPlugin.class.getName()
+        + "'},\n"
+        + "  'authorization':{\n"
+        + "    'class':'"
+        + MockAuthorizationPlugin.class.getName()
+        + "'}}";
   }
 
   private void uploadConfigSetWithAssertions(String configSetName, String suffix, String username)
@@ -1353,13 +1415,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
         v2);
   }
 
-  private long uploadBadConfigSet(
-      String configSetName,
-      String suffix,
-      String username,
-      boolean overwrite,
-      boolean cleanup,
-      boolean v2)
+  private long uploadBadConfigSet(String configSetName, String suffix, String username, boolean v2)
       throws IOException {
 
     // Read single file from sample configs. This should fail the unzipping
@@ -1368,8 +1424,8 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
         configSetName,
         suffix,
         username,
-        overwrite,
-        cleanup,
+        true /* overwrite */,
+        true /* cleanup */,
         v2);
   }
 
@@ -1404,9 +1460,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
               username,
               usePut);
       assertNotNull(map);
-      long statusCode =
-          (long) getObjectByPath(map, false, Arrays.asList("responseHeader", "status"));
-      return statusCode;
+      return (Long) getObjectByPath(map, Arrays.asList("responseHeader", "status"));
     } // else "not" a V2 request...
 
     try {
@@ -1419,7 +1473,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
           .process(cluster.getSolrClient())
           .getStatus();
     } catch (SolrServerException e1) {
-      throw new AssertionError("Server error uploading configset: " + e1.toString(), e1);
+      throw new AssertionError("Server error uploading configset: " + e1, e1);
     } catch (SolrException e2) {
       return e2.code();
     }
@@ -1462,9 +1516,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
               username,
               usePut);
       assertNotNull(map);
-      long statusCode =
-          (long) getObjectByPath(map, false, Arrays.asList("responseHeader", "status"));
-      return statusCode;
+      return (long) getObjectByPath(map, Arrays.asList("responseHeader", "status"));
     } // else "not" a V2 request...
 
     try {
@@ -1479,7 +1531,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
           .process(cluster.getSolrClient())
           .getStatus();
     } catch (SolrServerException e1) {
-      throw new AssertionError("Server error uploading file to configset: " + e1.toString(), e1);
+      throw new AssertionError("Server error uploading file to configset: " + e1, e1);
     } catch (SolrException e2) {
       return e2.code();
     }
@@ -1617,8 +1669,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     return m;
   }
 
-  private static Object getObjectByPath(
-      Map<?, ?> root, boolean onlyPrimitive, java.util.List<String> hierarchy) {
+  private static Object getObjectByPath(Map<?, ?> root, List<String> hierarchy) {
     Map<?, ?> obj = root;
     for (int i = 0; i < hierarchy.size(); i++) {
       String s = hierarchy.get(i);
@@ -1628,9 +1679,6 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
         if (obj == null) return null;
       } else {
         Object val = obj.get(s);
-        if (onlyPrimitive && val instanceof Map) {
-          return null;
-        }
         return val;
       }
     }
@@ -1658,7 +1706,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     FileUtils.copyDirectory(configDir, tmpConfigDir);
     FileUtils.write(
         new File(tmpConfigDir, "configsetprops.json"),
-        getConfigSetProps(ImmutableMap.<String, String>of("immutable", "true")),
+        getConfigSetProps(Map.of("immutable", "true")),
         UTF_8);
     getConfigSetService().uploadConfig("configSet", tmpConfigDir.toPath());
 
@@ -1674,8 +1722,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   }
 
   private void verifyException(
-      SolrClient solrClient, ConfigSetAdminRequest<?, ?> request, String errorContains)
-      throws Exception {
+      SolrClient solrClient, ConfigSetAdminRequest<?, ?> request, String errorContains) {
     ignoreException(errorContains);
     Exception e = expectThrows(Exception.class, () -> solrClient.request(request));
     assertTrue(
@@ -1768,7 +1815,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
    * @see ConfigSetService#getDefaultConfigDirPath
    */
   @Test
-  public void testUserAndTestDefaultConfigsetsAreSame() throws IOException {
+  public void testUserAndTestDefaultConfigsetsAreSame() {
     final Path extPath = Path.of(ExternalPaths.DEFAULT_CONFIGSET);
     assertTrue(
         "_default dir doesn't exist: " + ExternalPaths.DEFAULT_CONFIGSET, Files.exists(extPath));
@@ -1822,7 +1869,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
         @Override
         public ValidatingJsonMap getSpec() {
-          return Utils.getSpec("cluster.security.BasicAuth.Commands").getSpec();
+          return AnnotatedApi.getApis(new ModifyBasicAuthConfigAPI()).get(0).getSpec();
         }
 
         @Override
@@ -1875,6 +1922,6 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     public void init(Map<String, Object> initInfo) {}
 
     @Override
-    public void close() throws IOException {}
+    public void close() {}
   }
 }

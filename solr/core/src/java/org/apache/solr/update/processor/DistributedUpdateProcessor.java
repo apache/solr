@@ -798,6 +798,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     SolrInputDocument mergedDoc;
     if (oldRootDocWithChildren == null) {
       if (versionOnUpdate > 0 || !rootDocIdString.equals(cmd.getSelfOrNestedDocIdStr())) {
+        if (cmd.getReq().getParams().getBool(CommonParams.FAIL_ON_VERSION_CONFLICTS, true)
+            == false) {
+          return false;
+        }
         // could just let the optimistic locking throw the error
         throw new SolrException(
             ErrorCode.CONFLICT, "Document not found for update.  id=" + rootDocIdString);
@@ -1276,7 +1280,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       this.errors = errors;
 
       // create a merged copy of the metadata from all wrapped exceptions
-      NamedList<String> metadata = new NamedList<String>();
+      NamedList<String> metadata = new NamedList<>();
       for (Error error : errors) {
         if (error.e instanceof SolrException) {
           SolrException e = (SolrException) error.e;

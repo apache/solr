@@ -17,7 +17,9 @@
 
 package org.apache.solr.handler.admin;
 
-import static org.apache.solr.common.params.CommonParams.*;
+import static org.apache.solr.common.params.CommonParams.FAILURE;
+import static org.apache.solr.common.params.CommonParams.OK;
+import static org.apache.solr.common.params.CommonParams.STATUS;
 import static org.apache.solr.handler.ReplicationHandler.GENERATION;
 
 import java.lang.invoke.MethodHandles;

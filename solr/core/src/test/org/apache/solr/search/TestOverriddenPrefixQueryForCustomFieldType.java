@@ -17,7 +17,7 @@
 package org.apache.solr.search;
 
 import java.util.Random;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.Query;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;
@@ -31,7 +31,6 @@ public class TestOverriddenPrefixQueryForCustomFieldType extends SolrTestCaseJ4 
 
   private static int[] counts = new int[2];
   private static int otherCounts;
-  String[] otherTerms = {"this", "that", "those", "randomness"};
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -85,7 +84,7 @@ public class TestOverriddenPrefixQueryForCustomFieldType extends SolrTestCaseJ4 
   }
 
   @Test
-  public void testPrefixQueries() throws Exception {
+  public void testPrefixQueries() {
     createIndex(100);
     assertQ(req("fl", "id", "q", "*:*"), "//*[@numFound='100']");
 
@@ -128,8 +127,8 @@ public class TestOverriddenPrefixQueryForCustomFieldType extends SolrTestCaseJ4 
   }
 
   /**
-   * @see org.apache.lucene.search.QueryUtils#check
-   * @see org.apache.lucene.search.QueryUtils#checkEqual
+   * @see org.apache.lucene.tests.search.QueryUtils#check
+   * @see org.apache.lucene.tests.search.QueryUtils#checkEqual
    */
   protected void assertQueryEquals(final SolrQueryRequest req, final String... inputs)
       throws Exception {
@@ -147,9 +146,9 @@ public class TestOverriddenPrefixQueryForCustomFieldType extends SolrTestCaseJ4 
     }
 
     for (int i = 0; i < queries.length; i++) {
-      org.apache.lucene.search.QueryUtils.check(queries[i]);
+      org.apache.lucene.tests.search.QueryUtils.check(queries[i]);
       for (int j = i; j < queries.length; j++) {
-        org.apache.lucene.search.QueryUtils.checkEqual(queries[i], queries[j]);
+        org.apache.lucene.tests.search.QueryUtils.checkEqual(queries[i], queries[j]);
       }
     }
   }

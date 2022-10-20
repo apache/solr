@@ -75,7 +75,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
     for (int i = 0; i < 10; i++) {
       List<CountsForEachShard> copy = new ArrayList<>(inputCounts);
       Collections.shuffle(copy, random());
-      Collections.sort(copy, CoreSorter.countsComparator);
+      copy.sort(CoreSorter.countsComparator);
       for (int j = 0; j < copy.size(); j++) {
         assertEquals(expectedCounts.get(j), copy.get(j));
       }
@@ -91,7 +91,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
 
     // compute nodes, some live, some down
     final int maxNodesOfAType =
-        perShardCounts.stream() // not too important how many we have, but lets have plenty
+        perShardCounts.stream() // not too important how many we have, but let's have plenty
             .mapToInt(c -> c.totalReplicasInLiveNodes + c.totalReplicasInDownNodes + c.myReplicas)
             .max()
             .getAsInt();

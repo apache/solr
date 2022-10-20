@@ -21,15 +21,6 @@ apply plugin: 'java-library'
 description = 'Solrj - Solr Java Client'
 
 dependencies {
-  // Spotbugs Annotations are only needed for old findbugs
-  // annotation usage like in Zookeeper during compilation time.
-  // It is not included in the release so exclude from checks.
-  compileOnly 'com.github.spotbugs:spotbugs-annotations'
-  permitUnusedDeclared 'com.github.spotbugs:spotbugs-annotations'
-  // Exclude these from jar validation and license checks.
-  configurations.jarValidation {
-    exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
-  }
 
   implementation 'org.slf4j:slf4j-api'
   runtimeOnly 'org.slf4j:jcl-over-slf4j'
@@ -51,21 +42,19 @@ dependencies {
   implementation 'org.apache.httpcomponents:httpclient'
   implementation 'org.apache.httpcomponents:httpcore'
 
-  implementation('org.apache.zookeeper:zookeeper', {
-    exclude group: "org.apache.yetus", module: "audience-annotations"
-    exclude group: "log4j", module: "log4j"
-    exclude group: "org.slf4j", module: "slf4j-log4j12"
-  })
-  implementation ('org.apache.zookeeper:zookeeper-jute') {
-    exclude group: 'org.apache.yetus', module: 'audience-annotations'
-  }
-
   testImplementation project(':solr:test-framework')
   testImplementation project(':solr:core')
   testImplementation project(':solr:solrj')
   testRuntimeOnly project(':solr:modules:sql')
 
-  testImplementation 'org.apache.lucene:lucene-analysis-common'
+  // ideally ZK centric tests move to solrj-zookeeper but sometimes we depend on ZK here anyway
+  testImplementation project(':solr:solrj-zookeeper')
+  testImplementation('org.apache.zookeeper:zookeeper', {
+    exclude group: "org.apache.yetus", module: "audience-annotations"
+  })
+  permitTestUnusedDeclared 'org.apache.zookeeper:zookeeper'
+  testImplementation 'org.apache.zookeeper:zookeeper-jute'
+
   testImplementation 'org.apache.lucene:lucene-core'
   testImplementation 'org.apache.lucene:lucene-test-framework'
 

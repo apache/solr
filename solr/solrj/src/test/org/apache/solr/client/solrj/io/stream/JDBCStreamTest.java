@@ -27,7 +27,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4.SuppressPointFields;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -301,7 +301,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
       TupleStream selectStream =
           new SelectStream(
               jdbcStream,
-              new HashMap<String, String>() {
+              new HashMap<>() {
                 {
                   put("CODE", "code_s");
                   put("COUNTRY_NAME", "name_s");
@@ -768,7 +768,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
 
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
     tupleStream.open();
-    List<Tuple> tuples = new ArrayList<Tuple>();
+    List<Tuple> tuples = new ArrayList<>();
     for (Tuple t = tupleStream.read(); !t.EOF; t = tupleStream.read()) {
       tuples.add(t);
     }

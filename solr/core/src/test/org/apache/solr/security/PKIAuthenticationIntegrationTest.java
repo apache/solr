@@ -113,7 +113,7 @@ public class PKIAuthenticationIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   @After
-  public void distribTearDown() throws Exception {
+  public void distribTearDown() {
     MockAuthenticationPlugin.predicate = null;
     MockAuthorizationPlugin.predicate = null;
   }

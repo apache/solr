@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.List;
@@ -24,12 +23,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.cloud.api.collections.ShardSplitTest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -48,7 +45,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Test split phase that occurs when a Collection API split call is made. */
-@Slow
 @Ignore("SOLR-4944")
 public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
 
@@ -165,7 +161,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
     checkDocCountsAndShardStates(docCounts, numReplicas, documentIds);
 
     // todo - can't call waitForThingsToLevelOut because it looks for
-    // jettys of all shards
+    // all the jetty instances of all shards
     // and the new sub-shards don't have any.
     waitForRecoveriesToFinish(true);
     // waitForThingsToLevelOut(15);
@@ -217,28 +213,21 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
   }
 
   private void waitTillRecovered() throws Exception {
-    for (int i = 0; i < 30; i++) {
-      Thread.sleep(3000);
-      ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
-      zkStateReader.forceUpdateCollection("collection1");
-      ClusterState clusterState = zkStateReader.getClusterState();
-      DocCollection collection1 = clusterState.getCollection("collection1");
-      Slice slice = collection1.getSlice("shard1");
-      Collection<Replica> replicas = slice.getReplicas();
-      boolean allActive = true;
-      for (Replica replica : replicas) {
-        if (!clusterState.liveNodesContain(replica.getNodeName())
-            || replica.getState() != Replica.State.ACTIVE) {
-          allActive = false;
-          break;
-        }
-      }
-      if (allActive) {
-        return;
-      }
-    }
-    printLayout();
-    fail("timeout waiting to see recovered node");
+    ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
+    zkStateReader.waitForState(
+        "collection1",
+        90,
+        TimeUnit.SECONDS,
+        (n, c) -> {
+          Collection<Replica> replicas = c.getSlice("shard1").getReplicas();
+          for (Replica replica : replicas) {
+            if (n.contains(replica.getNodeName()) == false
+                || replica.getState() != Replica.State.ACTIVE) {
+              return false;
+            }
+          }
+          return true;
+        });
   }
 
   // skip the randoms - they can deadlock...
@@ -256,7 +245,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
    * @return SolrZkClient
    */
   private SolrZkClient electNewOverseer(String address)
-      throws KeeperException, InterruptedException, IOException {
+      throws KeeperException, InterruptedException {
     SolrZkClient zkClient = new SolrZkClient(address, TIMEOUT);
     ZkStateReader reader = new ZkStateReader(zkClient);
     LeaderElector overseerElector = new LeaderElector(zkClient);

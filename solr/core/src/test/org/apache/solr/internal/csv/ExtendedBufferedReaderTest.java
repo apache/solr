@@ -18,10 +18,10 @@ package org.apache.solr.internal.csv;
 
 import java.io.StringReader;
 import java.util.Arrays;
-import junit.framework.TestCase;
+import org.apache.solr.SolrTestCase;
 
 /** ExtendedBufferedReaderTest */
-public class ExtendedBufferedReaderTest extends TestCase {
+public class ExtendedBufferedReaderTest extends SolrTestCase {
 
   // ======================================================
   //   the test cases

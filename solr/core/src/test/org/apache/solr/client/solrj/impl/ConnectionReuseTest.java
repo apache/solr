@@ -76,7 +76,7 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
   private SolrClient buildClient(CloseableHttpClient httpClient, URL url) {
     switch (random().nextInt(3)) {
       case 0:
-        // currently only testing with 1 thread
+        // currently, only testing with 1 thread
         return getConcurrentUpdateSolrClient(url.toString() + "/" + COLLECTION, httpClient, 6, 1);
       case 1:
         return getHttpSolrClient(url.toString() + "/" + COLLECTION, httpClient);
@@ -158,7 +158,7 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
               + client.getClass().getSimpleName(),
           metrics);
 
-      // we try and make sure the connection we get has handled all of the requests in this test
+      // we try and make sure the connection we get has handled all the requests in this test
       if (client instanceof ConcurrentUpdateSolrClient) {
         // we can't fully control queue polling breaking up requests - allow a bit of leeway
         int exp = cnt1 + queueBreaks + 2;
@@ -185,9 +185,8 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
 
   public HttpClientConnection getConn(ConnectionRequest mConn)
       throws InterruptedException, ConnectionPoolTimeoutException, ExecutionException {
-    HttpClientConnection conn = mConn.get(30, TimeUnit.SECONDS);
 
-    return conn;
+    return mConn.get(30, TimeUnit.SECONDS);
   }
 
   public void headerRequest(
@@ -212,7 +211,6 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
 
   public ConnectionRequest getClientConnectionRequest(
       HttpClient httpClient, HttpRoute route, PoolingHttpClientConnectionManager cm) {
-    ConnectionRequest mConn = cm.requestConnection(route, HttpSolrClient.cacheKey);
-    return mConn;
+    return cm.requestConnection(route, HttpSolrClient.cacheKey);
   }
 }

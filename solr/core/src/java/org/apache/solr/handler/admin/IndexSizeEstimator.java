@@ -371,7 +371,8 @@ public class IndexSizeEstimator {
             (SummaryStatistics)
                 perField.computeIfAbsent("lengths", s -> new MapWriterSummaryStatistics());
         lengthSummary.addValue(
-            values.size() * values.getBytesPerDimension() * values.getNumIndexDimensions());
+            (double)
+                (values.size() * values.getBytesPerDimension() * values.getNumIndexDimensions()));
       }
     }
     result.put(POINTS, stats);
@@ -548,12 +549,12 @@ public class IndexSizeEstimator {
         for (int i = 0; i < samplingStep; i++) {
           lengthSummary.addValue(term.length);
           docFreqSummary.addValue(termsEnum.docFreq());
-          totalFreqSummary.addValue(termsEnum.totalTermFreq());
+          totalFreqSummary.addValue((double) termsEnum.totalTermFreq());
         }
       } else {
         lengthSummary.addValue(term.length);
         docFreqSummary.addValue(termsEnum.docFreq());
-        totalFreqSummary.addValue(termsEnum.totalTermFreq());
+        totalFreqSummary.addValue((double) termsEnum.totalTermFreq());
       }
       if (terms.hasPayloads()) {
         postings = termsEnum.postings(postings, PostingsEnum.ALL);

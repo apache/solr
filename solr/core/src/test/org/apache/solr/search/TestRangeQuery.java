@@ -29,7 +29,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -107,7 +107,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRangeQueries() throws Exception {
+  public void testRangeQueries() {
     // ensure that we aren't losing precision on any fields in addition to testing other non-numeric
     // fields that aren't tested in testRandomRangeQueries()
 
@@ -269,7 +269,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
       // wrap in a BQ
       String field = randomKey(norm_fields);
       String value = norm_fields.get(field)[1];
-      // wraping shouldn't affect expected
+      // wrapping shouldn't affect expected
       dbq = "(" + field + ":\"" + value + "\" OR " + dbq + ")";
     }
 
@@ -288,7 +288,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     // NOTE: foo_s supports ranges, but for the arrays below we are only
     // interested in fields that support *equivalent* ranges -- strings
     // are not ordered the same as ints/longs, so we can't test the ranges
-    // for equivilence across diff fields.
+    // for equivalence across diff fields.
     //
     // fields that a normal range query will work correctly on
     String[] norm_fields = {

@@ -16,7 +16,8 @@
  */
 package org.apache.solr.cloud.overseer;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 import java.util.Map;
@@ -37,7 +38,7 @@ public class TestClusterStateMutator extends SolrTestCaseJ4 {
     assumeWorkingMockito();
   }
 
-  public void testCreateCollection() throws Exception {
+  public void testCreateCollection() {
     ClusterState clusterState =
         new ClusterState(
             Collections.<String>emptySet(), Collections.<String, DocCollection>emptyMap());

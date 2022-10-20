@@ -52,7 +52,6 @@ import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.slf4j.Logger;
@@ -186,7 +185,7 @@ public class DistributedCollectionConfigSetCommandRunner {
    */
   public void runConfigSetCommand(
       SolrQueryResponse rsp,
-      ConfigSetsHandler.ConfigSetOperation operation,
+      ConfigSetParams.ConfigSetAction action,
       Map<String, Object> result,
       long timeoutMs)
       throws Exception {
@@ -197,8 +196,6 @@ public class DistributedCollectionConfigSetCommandRunner {
           SolrException.ErrorCode.CONFLICT,
           "Solr is shutting down, no more Config Set API tasks may be executed");
     }
-
-    ConfigSetParams.ConfigSetAction action = operation.getAction();
 
     // never null
     String configSetName = (String) result.get(NAME);

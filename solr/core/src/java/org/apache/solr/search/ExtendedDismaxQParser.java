@@ -21,7 +21,6 @@ import com.google.common.collect.Multimaps;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -64,8 +63,9 @@ import org.apache.solr.search.ExtendedDismaxQParser.ExtendedSolrQueryParser.Alia
 import org.apache.solr.util.SolrPluginUtils;
 
 /**
- * Query parser that generates DisjunctionMaxQueries based on user configuration. See Wiki page
- * https://solr.apache.org/guide/edismax-query-parser.html
+ * Query parser that generates DisjunctionMaxQueries based on user configuration. See the <a
+ * href="https://solr.apache.org/guide/solr/latest/query-guide/edismax-query-parser.html">Reference
+ * Guide page</a>
  */
 public class ExtendedDismaxQParser extends QParser {
 
@@ -948,10 +948,8 @@ public class ExtendedDismaxQParser extends QParser {
     RANGE
   }
 
-  static final RuntimeException unknownField = new RuntimeException("UnknownField");
-
-  static {
-    unknownField.fillInStackTrace();
+  static RuntimeException unknownField() {
+    return new RuntimeException("UnknownField");
   }
 
   /**
@@ -1191,7 +1189,7 @@ public class ExtendedDismaxQParser extends QParser {
         if (exceptions) {
           FieldType ft = schema.getFieldTypeNoEx(field);
           if (ft == null && null == MagicFieldName.get(field)) {
-            throw unknownField;
+            throw unknownField();
           }
         }
 
@@ -1266,7 +1264,7 @@ public class ExtendedDismaxQParser extends QParser {
         if (exceptions) {
           FieldType ft = schema.getFieldTypeNoEx(field);
           if (ft == null && null == MagicFieldName.get(field)) {
-            throw unknownField;
+            throw unknownField();
           }
         }
         return getQuery();
@@ -1565,11 +1563,14 @@ public class ExtendedDismaxQParser extends QParser {
       if (!userFieldsMap.containsKey(MagicFieldName.QUERY.field)) {
         userFieldsMap.put("-" + MagicFieldName.QUERY.field, null);
       }
-      Collections.sort(dynUserFields);
       dynamicUserFields = dynUserFields.toArray(new DynamicField[dynUserFields.size()]);
-      Collections.sort(negDynUserFields);
+      Arrays.sort(dynamicUserFields);
+      // Avoid creating the array twice by converting to an array first and using Arrays.sort(),
+      // rather than Collections.sort() then converting to an array, since Collections.sort()
+      // copies to an array first, then sets each collection member from the array.
       negativeDynamicUserFields =
           negDynUserFields.toArray(new DynamicField[negDynUserFields.size()]);
+      Arrays.sort(negativeDynamicUserFields);
     }
 
     /**

@@ -65,7 +65,7 @@ public class AnalyticsMergeStrategyTest extends BaseDistributedSearchTestCase {
 
     /*
      *  The count qparser plugin is pointing to AnalyticsTestQParserPlugin. This class defines a simple AnalyticsQuery and
-     *  has two merge strategies. If the iterate local param is true then an InterativeMergeStrategy is used.
+     *  has two merge strategies. If the "iterate" local param is true then an InteractiveMergeStrategy is used.
      */
 
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -97,8 +97,8 @@ public class AnalyticsMergeStrategyTest extends BaseDistributedSearchTestCase {
     @SuppressWarnings({"rawtypes"})
     NamedList analytics = (NamedList) response.get("analytics");
     Integer c = (Integer) analytics.get("mycount");
-    if (c.intValue() != count) {
-      throw new Exception("Count is not correct:" + count + ":" + c.intValue());
+    if (c != count) {
+      throw new Exception("Count is not correct:" + count + ":" + c);
     }
   }
 
@@ -108,13 +108,13 @@ public class AnalyticsMergeStrategyTest extends BaseDistributedSearchTestCase {
     @SuppressWarnings({"rawtypes"})
     NamedList analytics = (NamedList) response.get("analytics");
     Integer c = (Integer) analytics.get("mycount");
-    if (c.intValue() != count) {
-      throw new Exception("Count is not correct:" + count + ":" + c.intValue());
+    if (c != count) {
+      throw new Exception("Count is not correct:" + count + ":" + c);
     }
 
     long numFound = rsp.getResults().getNumFound();
-    if (c.intValue() != numFound) {
-      throw new Exception("Count does not equal numFound:" + c.intValue() + ":" + numFound);
+    if (c != numFound) {
+      throw new Exception("Count does not equal numFound:" + c + ":" + numFound);
     }
   }
 }

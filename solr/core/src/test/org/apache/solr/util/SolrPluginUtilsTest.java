@@ -96,7 +96,7 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testParseFieldBoosts() throws Exception {
+  public void testParseFieldBoosts() {
 
     Map<String, Float> e1 = new HashMap<>();
     e1.put("fieldOne", 2.3f);
@@ -160,7 +160,7 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
     assertTrue(t + " sanity test isn't TermQuery: " + out.getClass(), out instanceof TermQuery);
     assertEquals(t + " sanity test is wrong field", "subject", ((TermQuery) out).getTerm().field());
 
-    /* field has untokenzied type, so this should be a term anyway */
+    /* field has untokenized type, so this should be a term anyway */
     t = "sind:\"simple phrase\"";
     out = qp.parse(t);
     assertNotNull(t + " sanity test gave back null", out);
@@ -215,7 +215,7 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
           countItems(((DisjunctionMaxQuery) sub).iterator()));
     }
 
-    /* a phrase, and a term that is a stop word for some fields */
+    /* a phrase and a term that is a stop word for some fields */
     t = "hoss:\"XXXXXX YYYYY\" hoss:the";
     out = qp.parse(t);
     assertNotNull(t + " was null", out);
@@ -438,7 +438,7 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
     final Map<String, Object> initArgs = new HashMap<>();
     initArgs.put("aFloat", theFloatObject);
     SolrPluginUtils.invokeSetters(bean, initArgs.entrySet());
-    assertEquals(bean.getAFloat(), theFloat.floatValue(), 0.0);
+    assertEquals(bean.getAFloat(), theFloat, 0.0);
   }
 
   /** macro */

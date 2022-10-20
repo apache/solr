@@ -54,7 +54,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
   }
 
   @Before
-  private void addUncommittedDoc99() throws Exception {
+  public void addUncommittedDoc99() {
     // uncommitted doc in transaction log at start of every test
     // Even if an RTG causes ulog to re-open realtime searcher, next test method
     // will get another copy of doc 99 in the ulog
@@ -64,7 +64,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
   public void testMultiValued() throws Exception {
     // the response writers used to consult isMultiValued on the field
     // but this doesn't work when you alias a single valued field to
-    // a multi valued field (the field value is copied first, then
+    // a multivalued field (the field value is copied first, then
     // if the type lookup is done again later, we get the wrong thing). SOLR-4036
 
     // score as pseudo field - precondition checks
@@ -110,7 +110,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
         "/doc=={'val2_ss':10,'val_ss':1,'subject':'uncommitted'}");
   }
 
-  public void testAllRealFields() throws Exception {
+  public void testAllRealFields() {
 
     for (String fl : ALL_REAL_FIELDS) {
       assertQ(
@@ -125,7 +125,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     }
   }
 
-  public void testAllRealFieldsRTG() throws Exception {
+  public void testAllRealFieldsRTG() {
     // shouldn't matter if we use RTG (committed or otherwise)
     for (String fl : ALL_REAL_FIELDS) {
       for (String id : Arrays.asList("42", "99")) {
@@ -142,7 +142,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     }
   }
 
-  public void testFilterAndOneRealFieldRTG() throws Exception {
+  public void testFilterAndOneRealFieldRTG() {
     // shouldn't matter if we use RTG (committed or otherwise)
     // only one of these docs should match...
     assertQ(
@@ -166,7 +166,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
         "//result/doc[count(*)=2]");
   }
 
-  public void testScoreAndAllRealFields() throws Exception {
+  public void testScoreAndAllRealFields() {
 
     for (String fl : SCORE_AND_REAL_FIELDS) {
       assertQ(
@@ -182,7 +182,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     }
   }
 
-  public void testScoreAndAllRealFieldsRTG() throws Exception {
+  public void testScoreAndAllRealFieldsRTG() {
 
     // if we use RTG (committed or otherwise) score should be ignored
     for (String fl : SCORE_AND_REAL_FIELDS) {
@@ -200,7 +200,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     }
   }
 
-  public void testScoreAndExplicitRealFields() throws Exception {
+  public void testScoreAndExplicitRealFields() {
 
     assertQ(
         "fl=score,val_i",
@@ -225,7 +225,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
         "//result/doc[count(*)=1]");
   }
 
-  public void testScoreAndExplicitRealFieldsRTG() throws Exception {
+  public void testScoreAndExplicitRealFieldsRTG() {
     // if we use RTG (committed or otherwise) score should be ignored
     for (String id : Arrays.asList("42", "99")) {
       assertQ(
@@ -237,7 +237,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     }
   }
 
-  public void testFunctions() throws Exception {
+  public void testFunctions() {
     assertQ(
         "fl=log(val_i)",
         req("q", "*:*", "rows", "1", "fl", "log(val_i)"),
@@ -261,7 +261,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
         "//result/doc[count(*)=2]");
   }
 
-  public void testFunctionsRTG() throws Exception {
+  public void testFunctionsRTG() {
     // if we use RTG (committed or otherwise) functions should behave the same
     for (String id : Arrays.asList("42", "99")) {
       for (SolrParams p :
@@ -281,7 +281,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     }
   }
 
-  public void testFunctionsAndExplicit() throws Exception {
+  public void testFunctionsAndExplicit() {
     assertQ(
         "fl=log(val_i),val_i",
         req("q", "*:*", "rows", "1", "fl", "log(val_i),val_i"),
@@ -299,7 +299,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
         "//result/doc[count(*)=2]");
   }
 
-  public void testFunctionsAndExplicitRTG() throws Exception {
+  public void testFunctionsAndExplicitRTG() {
     // shouldn't matter if we use RTG (committed or otherwise)
     for (String id : Arrays.asList("42", "99")) {
       for (SolrParams p :
@@ -317,7 +317,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     }
   }
 
-  public void testFunctionsAndScore() throws Exception {
+  public void testFunctionsAndScore() {
 
     assertQ(
         "fl=log(val_i),score",
@@ -352,7 +352,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
         "//result/doc[count(*)=3]");
   }
 
-  public void testFunctionsAndScoreRTG() throws Exception {
+  public void testFunctionsAndScoreRTG() {
     // if we use RTG (committed or otherwise) score should be ignored
     for (String id : Arrays.asList("42", "99")) {
       for (SolrParams p :
@@ -372,7 +372,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     }
   }
 
-  public void testGlobs() throws Exception {
+  public void testGlobs() {
     assertQ(
         "fl=val_*",
         req("q", "*:*", "rows", "1", "fl", "val_*"),
@@ -396,7 +396,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     }
   }
 
-  public void testGlobsRTG() throws Exception {
+  public void testGlobsRTG() {
     // behavior shouldn't matter if we are committed or uncommitted
     for (String id : Arrays.asList("42", "99")) {
       assertQ(
@@ -420,7 +420,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     }
   }
 
-  public void testGlobsAndExplicit() throws Exception {
+  public void testGlobsAndExplicit() {
     assertQ(
         "fl=val_*,id",
         req("q", "*:*", "rows", "1", "fl", "val_*,id"),
@@ -445,7 +445,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     }
   }
 
-  public void testGlobsAndExplicitRTG() throws Exception {
+  public void testGlobsAndExplicitRTG() {
     // behavior shouldn't matter if we are committed or uncommitted
     for (String id : Arrays.asList("42", "99")) {
       assertQ(
@@ -473,7 +473,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     }
   }
 
-  public void testGlobsAndScore() throws Exception {
+  public void testGlobsAndScore() {
     assertQ(
         "fl=val_*,score",
         req("q", "*:*", "rows", "1", "fl", "val_*,score", "indent", "true"),
@@ -497,7 +497,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     }
   }
 
-  public void testGlobsAndScoreRTG() throws Exception {
+  public void testGlobsAndScoreRTG() {
     // behavior shouldn't matter if we are committed or uncommitted, score should be ignored
     for (String id : Arrays.asList("42", "99")) {
       assertQ(
@@ -522,7 +522,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     }
   }
 
-  public void testAugmenters() throws Exception {
+  public void testAugmenters() {
     assertQ(
         "fl=[docid]",
         req("q", "*:*", "rows", "1", "fl", "[docid]"),
@@ -554,7 +554,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     }
   }
 
-  public void testDocIdAugmenterRTG() throws Exception {
+  public void testDocIdAugmenterRTG() {
     // for an uncommitted doc, we should get -1
     for (String id : Arrays.asList("42", "99")) {
       assertQ(
@@ -566,7 +566,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     }
   }
 
-  public void testAugmentersRTG() throws Exception {
+  public void testAugmentersRTG() {
     // behavior shouldn't matter if we are committed or uncommitted
     for (String id : Arrays.asList("42", "99")) {
       for (SolrParams p :
@@ -606,7 +606,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     }
   }
 
-  public void testAugmentersAndExplicit() throws Exception {
+  public void testAugmentersAndExplicit() {
     for (SolrParams p :
         Arrays.asList(
             params("fl", "id,[docid],[explain],x_alias:[value v=10 t=int]"),
@@ -632,7 +632,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     }
   }
 
-  public void testAugmentersAndExplicitRTG() throws Exception {
+  public void testAugmentersAndExplicitRTG() {
     // behavior shouldn't matter if we are committed or uncommitted
     for (String id : Arrays.asList("42", "99")) {
       for (SolrParams p :
@@ -664,7 +664,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     }
   }
 
-  public void testAugmentersAndScore() throws Exception {
+  public void testAugmentersAndScore() {
     assertQ(
         req("q", "*:*", "rows", "1", "fl", "[docid],x_alias:[value v=10 t=int],score"),
         "//result[@numFound='5']",
@@ -698,7 +698,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     }
   }
 
-  public void testAugmentersAndScoreRTG() throws Exception {
+  public void testAugmentersAndScoreRTG() {
     // if we use RTG (committed or otherwise) score should be ignored
     for (String id : Arrays.asList("42", "99")) {
       assertQ(
@@ -745,7 +745,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     }
   }
 
-  public void testAugmentersGlobsExplicitAndScoreOhMy() throws Exception {
+  public void testAugmentersGlobsExplicitAndScoreOhMy() {
     Random random = random();
 
     // NOTE: 'ssto' is the missing one
@@ -777,7 +777,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     }
   }
 
-  public void testAugmentersGlobsExplicitAndScoreOhMyRTG() throws Exception {
+  public void testAugmentersGlobsExplicitAndScoreOhMyRTG() {
     Random random = random();
 
     // NOTE: 'ssto' is the missing one

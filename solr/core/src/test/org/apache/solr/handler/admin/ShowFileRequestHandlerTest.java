@@ -50,7 +50,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
     createAndStartJetty(legacyExampleCollection1SolrHome());
   }
 
-  public void test404ViaHttp() throws Exception {
+  public void test404ViaHttp() {
     SolrClient client = getSolrClient();
     QueryRequest request = new QueryRequest(params("file", "does-not-exist-404.txt"));
     request.setPath("/admin/file");
@@ -58,7 +58,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
     assertEquals(404, e.code());
   }
 
-  public void test404Locally() throws Exception {
+  public void test404Locally() {
     // we need to test that executing the handler directly does not
     // throw an exception, just sets the exception on the response.
 
@@ -89,14 +89,14 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
     SolrClient client = getSolrClient();
     // assertQ(req("qt", "/admin/file"));
     // TODO file bug that SolrJettyTestBase extends SolrTestCaseJ4
-    QueryRequest request = new QueryRequest(params("file", "managed-schema"));
+    QueryRequest request = new QueryRequest(params("file", "managed-schema.xml"));
     request.setPath("/admin/file");
     final AtomicBoolean readFile = new AtomicBoolean();
     request.setResponseParser(
         new ResponseParser() {
           @Override
           public String getWriterType() {
-            // unfortunately this gets put onto params wt=mock but it apparently has no effect
+            // unfortunately this gets put onto params wt=mock, but it apparently has no effect
             return "mock";
           }
 
@@ -121,7 +121,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
     assertTrue(readFile.get());
   }
 
-  public void testContentTypeHtmlBecomesTextPlain() throws Exception {
+  public void testContentTypeHtmlBecomesTextPlain() {
     SolrRequestHandler handler = h.getCore().getRequestHandler("/admin/file");
     SolrQueryRequest req =
         new LocalSolrQueryRequest(
@@ -133,7 +133,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
     assertEquals("text/plain", content.getContentType());
   }
 
-  public void testContentTypeHtmlDefault() throws Exception {
+  public void testContentTypeHtmlDefault() {
     SolrRequestHandler handler = h.getCore().getRequestHandler("/admin/file");
     SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), params("file", "example.html"));
     SolrQueryResponse rsp = new SolrQueryResponse();

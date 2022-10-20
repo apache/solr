@@ -20,7 +20,11 @@ import static java.util.Arrays.asList;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
 import com.google.common.collect.ImmutableList;
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -62,9 +66,6 @@ public class TestSolrConfigHandler extends RestTestBase {
   private static final int TIMEOUT_S = 10;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  private static File tmpSolrHome;
-  private static File tmpConfDir;
 
   private static final String collection = "collection1";
   private static final String confDir = collection + "/conf";
@@ -117,8 +118,7 @@ public class TestSolrConfigHandler extends RestTestBase {
 
   @Before
   public void before() throws Exception {
-    tmpSolrHome = createTempDir().toFile();
-    tmpConfDir = new File(tmpSolrHome, confDir);
+    File tmpSolrHome = createTempDir().toFile();
     FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
 
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
@@ -170,7 +170,6 @@ public class TestSolrConfigHandler extends RestTestBase {
     runConfigCommand(harness, "/config", payload);
 
     MapWriter m = getRespMap("/config/overlay", harness);
-    MapWriter props = null;
     assertEquals("100", m._getStr("overlay/props/updateHandler/autoCommit/maxDocs", null));
     assertEquals("10", m._getStr("overlay/props/updateHandler/autoCommit/maxTime", null));
 
@@ -371,6 +370,51 @@ public class TestSolrConfigHandler extends RestTestBase {
         "/config",
         cloudSolrClient,
         asList("config", "queryConverter", "qc"),
+        null,
+        TIMEOUT_S);
+
+    payload =
+        "{\n"
+            + "'add-listener' : { 'event' : 'firstSearcher', 'class': 'solr.QuerySenderListener', "
+            + "'name':'f7fb2d87bea44464af2401cf33f42b69', "
+            + "'queries':[{'q':'static firstSearcher warming in solrconfig.xml'}]"
+            + "}\n"
+            + "}";
+    runConfigCommand(writeHarness, "/config", payload);
+    testForResponseElement(
+        writeHarness,
+        testServerBaseUrl,
+        "/config",
+        cloudSolrClient,
+        asList("config", "listener[0]", "class"),
+        "solr.QuerySenderListener",
+        TIMEOUT_S);
+
+    payload =
+        "{\n"
+            + "'update-listener' : { 'event' : 'firstSearcher', 'class': 'org.apache.solr.core.QuerySenderListener', "
+            + "'name':'f7fb2d87bea44464af2401cf33f42b69', "
+            + "'queries':[{'q':'static firstSearcher warming in solrconfig.xml'}]"
+            + "}\n"
+            + "}";
+    runConfigCommand(writeHarness, "/config", payload);
+    testForResponseElement(
+        writeHarness,
+        testServerBaseUrl,
+        "/config",
+        cloudSolrClient,
+        asList("config", "listener[0]", "class"),
+        "org.apache.solr.core.QuerySenderListener",
+        TIMEOUT_S);
+
+    payload = "{\n" + "'delete-listener' : 'f7fb2d87bea44464af2401cf33f42b69'" + "}";
+    runConfigCommand(writeHarness, "/config", payload);
+    testForResponseElement(
+        writeHarness,
+        testServerBaseUrl,
+        "/config",
+        cloudSolrClient,
+        asList("config", "listener"),
         null,
         TIMEOUT_S);
 

@@ -50,7 +50,7 @@ public class CollectionsRepairEventListenerTest extends SolrCloudTestCase {
 
     CountDownLatch completed = new CountDownLatch(1);
 
-    CollectionsRepairWrapperListener(CoreContainer cc, int waitFor) throws Exception {
+    CollectionsRepairWrapperListener(CoreContainer cc, int waitFor) {
       delegate = new CollectionsRepairEventListener(cc);
       delegate.setWaitForSecond(waitFor);
     }
@@ -151,7 +151,6 @@ public class CollectionsRepairEventListenerTest extends SolrCloudTestCase {
       nonOverseerJetty = jetty;
       break;
     }
-    String nodeName = nonOverseerJetty.getNodeName();
     cluster.stopJettySolrRunner(nonOverseerJetty);
     cluster.waitForJettyToStop(nonOverseerJetty);
     eventsListener.waitForExpectedEvent(10);

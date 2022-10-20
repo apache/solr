@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.xml.parsers.ParserConfigurationException;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -61,7 +60,6 @@ import org.apache.solr.util.TestInjection;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.xml.sax.SAXException;
 
 // See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows
 // machines occasionally
@@ -75,7 +73,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   private AtomicInteger id = new AtomicInteger();
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeClass() {
     // we can't use the Randomized merge policy because the test depends on
     // being able to call optimize to have all deletes expunged.
     systemSetPropertySolrTestsMergePolicyFactory(LogDocMergePolicyFactory.class.getName());
@@ -90,7 +88,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
 
   private UpdateShardHandler updateShardHandler;
 
-  public SolrCmdDistributorTest() throws ParserConfigurationException, IOException, SAXException {
+  public SolrCmdDistributorTest() {
     updateShardHandler = new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
 
     stress = 0;
@@ -508,13 +506,13 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     try (SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(streamingClients, 0)) {
       streamingClients.setExp(Exp.CONNECT_EXCEPTION);
       ArrayList<Node> nodes = new ArrayList<>();
-      final HttpSolrClient solrclient1 = (HttpSolrClient) clients.get(0);
+      final HttpSolrClient solrClient1 = (HttpSolrClient) clients.get(0);
 
       final AtomicInteger retries = new AtomicInteger();
       ZkNodeProps nodeProps =
           new ZkNodeProps(
               ZkStateReader.BASE_URL_PROP,
-              solrclient1.getBaseURL(),
+              solrClient1.getBaseURL(),
               ZkStateReader.CORE_NAME_PROP,
               "");
       Node retryNode;
@@ -916,7 +914,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     }
   }
 
-  private void testStuckUpdates() throws Exception {
+  private void testStuckUpdates() {
     TestInjection.directUpdateLatch = new CountDownLatch(1);
     List<Node> nodes = new ArrayList<>();
     ModifiableSolrParams params;

@@ -48,7 +48,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -84,13 +83,13 @@ import javax.xml.xpath.XPathExpressionException;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.logging.log4j.Level;
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.tests.analysis.MockAnalyzer;
+import org.apache.lucene.tests.analysis.MockTokenizer;
+import org.apache.lucene.tests.util.LuceneTestCase.SuppressFileSystems;
+import org.apache.lucene.tests.util.LuceneTestCase.SuppressSysoutChecks;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
-import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -149,7 +148,6 @@ import org.apache.solr.update.processor.DistributedZkUpdateProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.util.BaseTestHarness;
 import org.apache.solr.util.ErrorLogMuter;
-import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.RandomizeSSL;
 import org.apache.solr.util.RandomizeSSL.SSLRandomizer;
@@ -159,6 +157,7 @@ import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.TestHarness;
 import org.apache.solr.util.TestInjection;
 import org.apache.zookeeper.KeeperException;
+import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -221,7 +220,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     try (Writer writer =
         new OutputStreamWriter(
             Files.newOutputStream(coreDirectory.resolve(CORE_PROPERTIES_FILENAME)),
-            Charset.forName("UTF-8"))) {
+            StandardCharsets.UTF_8)) {
       properties.store(writer, testname);
     }
   }
@@ -234,7 +233,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
     if (expectedStrings != null) {
       for (String expectedString : expectedStrings) {
-        assertThat(thrown.getMessage(), containsString(expectedString));
+        MatcherAssert.assertThat(thrown.getMessage(), containsString(expectedString));
       }
     }
   }
@@ -284,10 +283,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
             new SolrNamedThreadFactory("testExecutor"),
             true);
 
-    // set solr.install.dir needed by some test configs outside of the test sandbox (!)
-    if (ExternalPaths.SOURCE_HOME != null) {
-      System.setProperty("solr.install.dir", ExternalPaths.SOURCE_HOME);
-    }
     // not strictly needed by this class at this point in the control lifecycle, but for
     // backcompat create it now in case any third party tests expect initCoreDataDir to be
     // non-null after calling setupTestCases()

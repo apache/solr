@@ -21,7 +21,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
-import org.apache.calcite.plan.*;
+import org.apache.calcite.plan.Convention;
+import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
@@ -49,7 +51,7 @@ class SolrRules {
 
   static List<String> solrFieldNames(final RelDataType rowType) {
     return SqlValidatorUtil.uniquify(
-        new AbstractList<String>() {
+        new AbstractList<>() {
           @Override
           public String get(int index) {
             return rowType.getFieldList().get(index).getName();

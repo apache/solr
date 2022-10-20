@@ -39,13 +39,16 @@ public class CloudHttp2SolrClientBuilderTest extends SolrTestCase {
 
   @Test
   public void testSingleZkHostSpecified() throws IOException {
-    try (CloudHttp2SolrClient createdClient =
+    try (CloudSolrClient createdClient =
         new CloudHttp2SolrClient.Builder(
                 Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
             .build()) {
-      final String clientZkHost = ZkClientClusterStateProvider.from(createdClient).getZkHost();
+      try (ZkClientClusterStateProvider zkClientClusterStateProvider =
+          ZkClientClusterStateProvider.from(createdClient)) {
+        final String clientZkHost = zkClientClusterStateProvider.getZkHost();
 
-      assertTrue(clientZkHost.contains(ANY_ZK_HOST));
+        assertTrue(clientZkHost.contains(ANY_ZK_HOST));
+      }
     }
   }
 
@@ -54,32 +57,38 @@ public class CloudHttp2SolrClientBuilderTest extends SolrTestCase {
     final List<String> zkHostList = new ArrayList<>();
     zkHostList.add(ANY_ZK_HOST);
     zkHostList.add(ANY_OTHER_ZK_HOST);
-    try (CloudHttp2SolrClient createdClient =
+    try (CloudSolrClient createdClient =
         new CloudHttp2SolrClient.Builder(zkHostList, Optional.of(ANY_CHROOT)).build()) {
-      final String clientZkHost = ZkClientClusterStateProvider.from(createdClient).getZkHost();
+      try (ZkClientClusterStateProvider zkClientClusterStateProvider =
+          ZkClientClusterStateProvider.from(createdClient)) {
+        final String clientZkHost = zkClientClusterStateProvider.getZkHost();
 
-      assertTrue(clientZkHost.contains(ANY_ZK_HOST));
-      assertTrue(clientZkHost.contains(ANY_OTHER_ZK_HOST));
+        assertTrue(clientZkHost.contains(ANY_ZK_HOST));
+        assertTrue(clientZkHost.contains(ANY_OTHER_ZK_HOST));
+      }
     }
   }
 
   @Test
   public void testSeveralZkHostsSpecifiedTogether() throws IOException {
-    final ArrayList<String> zkHosts = new ArrayList<String>();
+    final ArrayList<String> zkHosts = new ArrayList<>();
     zkHosts.add(ANY_ZK_HOST);
     zkHosts.add(ANY_OTHER_ZK_HOST);
-    try (CloudHttp2SolrClient createdClient =
+    try (CloudSolrClient createdClient =
         new CloudHttp2SolrClient.Builder(zkHosts, Optional.of(ANY_CHROOT)).build()) {
-      final String clientZkHost = ZkClientClusterStateProvider.from(createdClient).getZkHost();
+      try (ZkClientClusterStateProvider zkClientClusterStateProvider =
+          ZkClientClusterStateProvider.from(createdClient)) {
+        final String clientZkHost = zkClientClusterStateProvider.getZkHost();
 
-      assertTrue(clientZkHost.contains(ANY_ZK_HOST));
-      assertTrue(clientZkHost.contains(ANY_OTHER_ZK_HOST));
+        assertTrue(clientZkHost.contains(ANY_ZK_HOST));
+        assertTrue(clientZkHost.contains(ANY_OTHER_ZK_HOST));
+      }
     }
   }
 
   @Test
   public void testByDefaultConfiguresClientToSendUpdatesOnlyToShardLeaders() throws IOException {
-    try (CloudHttp2SolrClient createdClient =
+    try (CloudSolrClient createdClient =
         new CloudHttp2SolrClient.Builder(
                 Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
             .build()) {
@@ -89,7 +98,7 @@ public class CloudHttp2SolrClientBuilderTest extends SolrTestCase {
 
   @Test
   public void testIsDirectUpdatesToLeadersOnlyDefault() throws IOException {
-    try (CloudHttp2SolrClient createdClient =
+    try (CloudSolrClient createdClient =
         new CloudHttp2SolrClient.Builder(
                 Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
             .build()) {
@@ -151,6 +160,5 @@ public class CloudHttp2SolrClientBuilderTest extends SolrTestCase {
     }
     // it's external, should be NOT closed when closing CloudSolrClient
     verify(http2Client, never()).close();
-    http2Client.close();
   }
 }

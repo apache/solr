@@ -95,7 +95,7 @@ public class TestComplexPhraseQParserPlugin extends SolrTestCaseJ4 {
 
   @Test
   public void test() {
-    HashMap<String, String> args = new HashMap<String, String>();
+    HashMap<String, String> args = new HashMap<>();
 
     args.put(QueryParsing.DEFTYPE, ComplexPhraseQParserPlugin.NAME);
     args.put(CommonParams.FL, "id");
@@ -175,7 +175,7 @@ public class TestComplexPhraseQParserPlugin extends SolrTestCaseJ4 {
 
   @Test
   public void testPhraseHighlighter() {
-    HashMap<String, String> args = new HashMap<String, String>();
+    HashMap<String, String> args = new HashMap<>();
 
     args.put(QueryParsing.DEFTYPE, ComplexPhraseQParserPlugin.NAME);
     args.put(CommonParams.FL, "id");
@@ -289,7 +289,7 @@ public class TestComplexPhraseQParserPlugin extends SolrTestCaseJ4 {
     assertU(commit());
     assertU(optimize());
 
-    /** ordered phrase query return only fist document */
+    // ordered phrase query return only fist document
     assertQ(
         req("q", "{!complexphrase} \"protein digest\""),
         "//result[@numFound='1']",
@@ -310,7 +310,7 @@ public class TestComplexPhraseQParserPlugin extends SolrTestCaseJ4 {
         "//result[@numFound='1']",
         "//doc[./str[@name='id']='3']");
 
-    /** unordered phrase query returns two documents. */
+    // unordered phrase query returns two documents.
     assertQ(
         req("q", "{!complexphrase inOrder=false} \"digest protein\""),
         "//result[@numFound='2']",
@@ -335,7 +335,7 @@ public class TestComplexPhraseQParserPlugin extends SolrTestCaseJ4 {
         "//doc[./str[@name='id']='3']",
         "//doc[./str[@name='id']='4']");
 
-    /** inOrder parameter can be defined with local params syntax. */
+    // inOrder parameter can be defined with local params syntax.
     assertQ(
         req("q", "{!complexphrase inOrder=false} \"di* pro*\""),
         "//result[@numFound='2']",
@@ -344,7 +344,7 @@ public class TestComplexPhraseQParserPlugin extends SolrTestCaseJ4 {
 
     assertQ(req("q", "{!complexphrase inOrder=true} \"di* pro*\""), "//result[@numFound='1']");
 
-    /** inOrder and df parameters can be defined with local params syntax. */
+    // inOrder and df parameters can be defined with local params syntax.
     assertQ(
         req("q", "{!complexphrase inOrder=false df=name} \"di* pro*\""),
         "//result[@numFound='2']",

@@ -16,24 +16,24 @@
  */
 package org.apache.solr.legacy;
 
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.tests.analysis.MockAnalyzer;
+import org.apache.lucene.tests.index.RandomIndexWriter;
+import org.apache.lucene.tests.search.QueryUtils;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -407,8 +407,8 @@ public class TestNumericRangeQuery32 extends SolrTestCase {
     // 10 random tests
     int num = TestUtil.nextInt(random(), 10, 20);
     for (int i = 0; i < num; i++) {
-      int lower = (int) (random().nextDouble() * noDocs - noDocs / 2);
-      int upper = (int) (random().nextDouble() * noDocs - noDocs / 2);
+      int lower = (int) (random().nextDouble() * noDocs - noDocs / 2.0);
+      int upper = (int) (random().nextDouble() * noDocs - noDocs / 2.0);
       if (lower > upper) {
         int a = lower;
         lower = upper;
@@ -507,7 +507,7 @@ public class TestNumericRangeQuery32 extends SolrTestCase {
   }
 
   @Test
-  public void testEqualsAndHash() throws Exception {
+  public void testEqualsAndHash() {
     QueryUtils.checkHashEquals(LegacyNumericRangeQuery.newIntRange("test1", 4, 10, 20, true, true));
     QueryUtils.checkHashEquals(
         LegacyNumericRangeQuery.newIntRange("test2", 4, 10, 20, false, true));

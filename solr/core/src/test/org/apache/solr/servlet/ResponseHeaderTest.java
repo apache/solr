@@ -26,7 +26,6 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
@@ -57,7 +56,7 @@ public class ResponseHeaderTest extends SolrJettyTestBase {
   }
 
   @Test
-  public void testHttpResponse() throws SolrServerException, IOException {
+  public void testHttpResponse() throws IOException {
     HttpSolrClient client = (HttpSolrClient) getSolrClient();
     HttpClient httpClient = client.getHttpClient();
     URI uri = URI.create(client.getBaseURL() + "/withHeaders?q=*:*");
@@ -78,12 +77,12 @@ public class ResponseHeaderTest extends SolrJettyTestBase {
   public static class ComponentThatAddsHeader extends SearchComponent {
 
     @Override
-    public void prepare(ResponseBuilder rb) throws IOException {
+    public void prepare(ResponseBuilder rb) {
       rb.rsp.addHttpHeader("Warning", "This is a test warning");
     }
 
     @Override
-    public void process(ResponseBuilder rb) throws IOException {}
+    public void process(ResponseBuilder rb) {}
 
     @Override
     public String getDescription() {

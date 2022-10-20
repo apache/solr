@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
@@ -72,6 +73,8 @@ public class NodeConfig {
   private final String configSetServiceClass;
 
   private final String coreAdminHandlerClass;
+
+  private final Map<String, String> coreAdminHandlerActions;
 
   private final String collectionsAdminHandlerClass;
 
@@ -121,6 +124,7 @@ public class NodeConfig {
       PluginInfo shardHandlerFactoryConfig,
       UpdateShardHandlerConfig updateShardHandlerConfig,
       String coreAdminHandlerClass,
+      Map<String, String> coreAdminHandlerActions,
       String collectionsAdminHandlerClass,
       String healthCheckHandlerClass,
       String infoHandlerClass,
@@ -155,6 +159,7 @@ public class NodeConfig {
     this.shardHandlerFactoryConfig = shardHandlerFactoryConfig;
     this.updateShardHandlerConfig = updateShardHandlerConfig;
     this.coreAdminHandlerClass = coreAdminHandlerClass;
+    this.coreAdminHandlerActions = coreAdminHandlerActions;
     this.collectionsAdminHandlerClass = collectionsAdminHandlerClass;
     this.healthCheckHandlerClass = healthCheckHandlerClass;
     this.infoHandlerClass = infoHandlerClass;
@@ -304,6 +309,10 @@ public class NodeConfig {
     return coreAdminHandlerClass;
   }
 
+  public Map<String, String> getCoreAdminHandlerActions() {
+    return coreAdminHandlerActions;
+  }
+
   public String getCollectionsHandlerClass() {
     return collectionsAdminHandlerClass;
   }
@@ -427,6 +436,9 @@ public class NodeConfig {
     Set<String> libDirs = new LinkedHashSet<>();
     libDirs.add("lib");
 
+    // Always add $SOLR_TIP/lib to the shared resource loader
+    libDirs.add(getSolrInstallDir().resolve("lib").toAbsolutePath().normalize().toString());
+
     if (!StringUtils.isBlank(getSharedLibDirectory())) {
       List<String> sharedLibs = Arrays.asList(getSharedLibDirectory().split("\\s*,\\s*"));
       libDirs.addAll(sharedLibs);
@@ -514,6 +526,7 @@ public class NodeConfig {
     private UpdateShardHandlerConfig updateShardHandlerConfig = UpdateShardHandlerConfig.DEFAULT;
     private String configSetServiceClass;
     private String coreAdminHandlerClass = DEFAULT_ADMINHANDLERCLASS;
+    private Map<String, String> coreAdminHandlerActions = Collections.emptyMap();
     private String collectionsAdminHandlerClass = DEFAULT_COLLECTIONSHANDLERCLASS;
     private String healthCheckHandlerClass = DEFAULT_HEALTHCHECKHANDLERCLASS;
     private String infoHandlerClass = DEFAULT_INFOHANDLERCLASS;
@@ -622,6 +635,12 @@ public class NodeConfig {
 
     public NodeConfigBuilder setCoreAdminHandlerClass(String coreAdminHandlerClass) {
       this.coreAdminHandlerClass = coreAdminHandlerClass;
+      return this;
+    }
+
+    public NodeConfigBuilder setCoreAdminHandlerActions(
+        Map<String, String> coreAdminHandlerActions) {
+      this.coreAdminHandlerActions = coreAdminHandlerActions;
       return this;
     }
 
@@ -759,6 +778,7 @@ public class NodeConfig {
           shardHandlerFactoryConfig,
           updateShardHandlerConfig,
           coreAdminHandlerClass,
+          coreAdminHandlerActions,
           collectionsAdminHandlerClass,
           healthCheckHandlerClass,
           infoHandlerClass,

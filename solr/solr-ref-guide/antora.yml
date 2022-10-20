@@ -1,3 +1,18 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 name: solr
 version: '10_0'
 display_version: '10.0-alpha'
@@ -20,7 +35,7 @@ asciidoc:
     # 'patch-version' is the 'z' part of x.y.z semantic version
     page-solr-javadocs: 'https://solr.apache.org/docs/10_0_0'
     solr-javadocs: 'https://solr.apache.org/docs/10_0_0'
-    lucene-javadocs: 'https://lucene.apache.org/core/9_0_0'
+    lucene-javadocs: 'https://lucene.apache.org/core/9_4_0'
     java-javadocs: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/
     # Some constructed  links may be 404 TODO to check
     solr-docs-version: '10.0'
@@ -33,4 +48,4 @@ asciidoc:
     dep-version-opennlp: '1.9.4'
     dep-version-tika: '1.28.1'
     dep-version-zookeeper: '3.7.0'
-    dep-version-lucene: '9.0.0'
+    dep-version-lucene: '9.1.0'

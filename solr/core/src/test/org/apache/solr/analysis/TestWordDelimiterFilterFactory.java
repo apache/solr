@@ -18,9 +18,9 @@ package org.apache.solr.analysis;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.WordDelimiterFilterFactory;
+import org.apache.lucene.tests.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.Version;
 import org.apache.solr.SolrTestCaseJ4;

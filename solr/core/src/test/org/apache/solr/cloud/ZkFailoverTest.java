@@ -52,7 +52,7 @@ public class ZkFailoverTest extends SolrCloudTestCase {
     cluster.getSolrClient().add(coll, new SolrInputDocument("id", "1"));
     zkTestServer = cluster.getZkServer();
 
-    // This attempt will fail since it will timeout after 1 second
+    // This attempt will fail since it will time out after 1 second
     System.setProperty("waitForZk", "1");
     restartSolrAndZk();
     waitForLiveNodes(0);

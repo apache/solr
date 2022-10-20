@@ -111,13 +111,13 @@ public class TestJavabinTupleStreamParser extends SolrTestCaseJ4 {
           }
 
           @Override
-          public void open() throws IOException {}
+          public void open() {}
 
           @Override
-          public void close() throws IOException {}
+          public void close() {}
 
           @Override
-          public Tuple read() throws IOException {
+          public Tuple read() {
             if (iterator.hasNext()) return new Tuple(iterator.next());
             else return null;
           }
@@ -128,7 +128,7 @@ public class TestJavabinTupleStreamParser extends SolrTestCaseJ4 {
           }
 
           @Override
-          public Explanation toExplanation(StreamFactory factory) throws IOException {
+          public Explanation toExplanation(StreamFactory factory) {
             return new StreamExplanation(getStreamNodeId().toString())
                 .withFunctionName("Dummy")
                 .withImplementingClass(this.getClass().getName())

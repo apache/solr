@@ -17,9 +17,12 @@
 
 package org.apache.solr.client.solrj.io.graph;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.metrics.*;
+import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 
 public class Node {
 

@@ -16,9 +16,13 @@
  */
 package org.apache.solr.search.neural;
 
+import java.util.List;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.DenseVectorField;
@@ -26,6 +30,8 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
+import org.apache.solr.search.QueryUtils;
+import org.apache.solr.search.SyntaxError;
 
 public class KnnQParser extends QParser {
 
@@ -38,7 +44,7 @@ public class KnnQParser extends QParser {
    *
    * @param qstr The part of the query string specific to this parser
    * @param localParams The set of parameters that are specific to this QParser. See
-   *     https://solr.apache.org/guide/local-parameters-in-queries.html
+   *     https://solr.apache.org/guide/solr/latest/query-guide/local-params.html
    * @param params The rest of the {@link SolrParams}
    * @param req The original {@link SolrQueryRequest}.
    */
@@ -72,7 +78,37 @@ public class KnnQParser extends QParser {
 
     DenseVectorField denseVectorType = (DenseVectorField) fieldType;
     float[] parsedVectorToSearch = parseVector(vectorToSearch, denseVectorType.getDimension());
-    return denseVectorType.getKnnVectorQuery(schemaField.getName(), parsedVectorToSearch, topK);
+
+    return denseVectorType.getKnnVectorQuery(
+        schemaField.getName(), parsedVectorToSearch, topK, getFilterQuery());
+  }
+
+  private Query getFilterQuery() throws SolrException {
+    if (!isFilter()) {
+      String[] filterQueries = req.getParams().getParams(CommonParams.FQ);
+      if (filterQueries != null && filterQueries.length != 0) {
+        List<Query> filters;
+
+        try {
+          filters = QueryUtils.parseFilterQueries(req, true);
+        } catch (SyntaxError e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        }
+
+        if (filters.size() == 1) {
+          return filters.get(0);
+        }
+
+        BooleanQuery.Builder builder = new BooleanQuery.Builder();
+        for (Query query : filters) {
+          builder.add(query, BooleanClause.Occur.FILTER);
+        }
+
+        return builder.build();
+      }
+    }
+
+    return null;
   }
 
   /**

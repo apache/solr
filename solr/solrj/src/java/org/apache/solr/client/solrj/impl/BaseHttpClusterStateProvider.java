@@ -17,7 +17,7 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import static org.apache.solr.client.solrj.impl.BaseHttpSolrClient.*;
+import static org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -35,7 +35,6 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -339,7 +338,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
 
   @Override
   public Object getClusterProperty(String propertyName) {
-    if (propertyName.equals(ZkStateReader.URL_SCHEME)) {
+    if (propertyName.equals(ClusterState.URL_SCHEME)) {
       return this.urlScheme;
     }
     return getClusterProperties().get(propertyName);

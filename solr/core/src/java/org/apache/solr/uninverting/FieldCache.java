@@ -19,7 +19,7 @@ package org.apache.solr.uninverting;
 import java.io.IOException;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.IndexReader; // javadocs
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;

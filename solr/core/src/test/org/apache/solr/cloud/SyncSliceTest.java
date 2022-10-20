@@ -16,19 +16,8 @@
  */
 package org.apache.solr.cloud;
 
-import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.junit.Test;
-
 /**
  * Test sync phase that occurs when Leader goes down and a new Leader is elected. Implementation
  * moved to AbstractSyncSliceTestBase.java as it is also used by the HDFS contrib tests.
  */
-@Slow
-public class SyncSliceTest extends AbstractSyncSliceTestBase {
-
-  @Test
-  @Override
-  public void test() throws Exception {
-    super.test();
-  }
-}
+public class SyncSliceTest extends AbstractSyncSliceTestBase {}

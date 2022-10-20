@@ -18,8 +18,6 @@ package org.apache.solr.handler.component;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.spelling.suggest.SuggesterParams;
 import org.junit.BeforeClass;
@@ -28,8 +26,6 @@ import org.junit.Test;
 public class SuggestComponentTest extends SolrTestCaseJ4 {
 
   private static final String rh = "/suggest";
-
-  private static CoreContainer cc;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -69,7 +65,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testDocumentBased() throws Exception {
+  public void testDocumentBased() {
     assertQ(
         req(
             "qt",
@@ -108,7 +104,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testExpressionBased() throws Exception {
+  public void testExpressionBased() {
     assertQ(
         req(
             "qt",
@@ -129,7 +125,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testFileBased() throws Exception {
+  public void testFileBased() {
     assertQ(
         req(
             "qt",
@@ -150,7 +146,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testMultiSuggester() throws Exception {
+  public void testMultiSuggester() {
     assertQ(
         req(
             "qt",
@@ -178,7 +174,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testBuildAllSuggester() throws Exception {
+  public void testBuildAllSuggester() {
     assertQ(
         req(
             "qt",
@@ -197,7 +193,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testReloadAllSuggester() throws Exception {
+  public void testReloadAllSuggester() {
     assertQ(
         req(
             "qt",
@@ -216,7 +212,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testBadSuggesterName() throws Exception {
+  public void testBadSuggesterName() {
     String fakeSuggesterName = "does-not-exist";
     assertQEx(
         "No suggester named " + fakeSuggesterName + " was configured",
@@ -502,7 +498,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testLoadOnStartup() throws Exception {
 
-    final String suggester = "suggest_fuzzy_doc_manal_build";
+    final String suggester = "suggest_fuzzy_doc_manual_build";
 
     // validate that this suggester is storing the lookup
 
@@ -671,7 +667,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
             + suggesterFuzzy
             + "']/lst[@name='exampel']/int[@name='numFound'][.='2']");
 
-    // reload the core and wait for for the listeners to finish
+    // reload the core and wait for the listeners to finish
     reloadCore(createNewCores);
     if (System.getProperty(SYSPROP_NIGHTLY) != null) {
       // wait some time here in nightly to make sure there are no race conditions in suggester build
@@ -821,10 +817,8 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
 
   private void reloadCore(boolean createNewCore) throws Exception {
     if (createNewCore) {
-      CoreContainer cores = h.getCoreContainer();
       SolrCore core = h.getCore();
       String dataDir1 = core.getDataDir();
-      CoreDescriptor cd = core.getCoreDescriptor();
       h.close();
       createCore();
       SolrCore createdCore = h.getCore();

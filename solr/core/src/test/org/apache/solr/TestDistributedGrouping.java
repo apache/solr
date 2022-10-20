@@ -20,7 +20,6 @@ import static org.hamcrest.CoreMatchers.containsString;
 
 import java.io.IOException;
 import java.util.List;
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressPointFields;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -31,6 +30,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
 /**
@@ -39,7 +39,6 @@ import org.junit.Test;
  *
  * @since solr 4.0
  */
-@Slow
 @SuppressPointFields(bugUrl = "https://issues.apache.org/jira/browse/SOLR-10844")
 public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
 
@@ -889,7 +888,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
                     "group.offset",
                     "-1"));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
-    assertThat(
+    MatcherAssert.assertThat(
         exception.getMessage(), containsString("'group.offset' parameter cannot be negative"));
     resetExceptionIgnores();
 

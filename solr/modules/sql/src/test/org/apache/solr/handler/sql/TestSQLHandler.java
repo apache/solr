@@ -27,8 +27,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.ExceptionStream;
@@ -45,7 +44,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@Slow
 @SolrTestCaseJ4.SuppressSSL
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40", "Lucene41", "Lucene42", "Lucene45"})
 public class TestSQLHandler extends SolrCloudTestCase {
@@ -2434,18 +2432,95 @@ public class TestSQLHandler extends SolrCloudTestCase {
   @Test
   public void testLike() throws Exception {
     new UpdateRequest()
-        .add("id", "1", "a_s", "hello-1", "b_s", "foo")
-        .add("id", "2", "a_s", "world-2", "b_s", "foo")
-        .add("id", "3", "a_s", "hello-3", "b_s", "foo")
-        .add("id", "4", "a_s", "world-4", "b_s", "foo")
-        .add("id", "5", "a_s", "hello-5", "b_s", "foo")
-        .add("id", "6", "a_s", "world-6", "b_s", "bar")
+        .add(
+            "id",
+            "1",
+            "a_s",
+            "hello-1",
+            "b_s",
+            "foo",
+            "c_t",
+            "the quick brown fox jumped over the lazy dog")
+        .add(
+            "id",
+            "2",
+            "a_s",
+            "world-2",
+            "b_s",
+            "foo",
+            "c_t",
+            "the sly black dog jumped over the sleeping pig")
+        .add(
+            "id",
+            "3",
+            "a_s",
+            "hello-3",
+            "b_s",
+            "foo",
+            "c_t",
+            "the quick brown fox jumped over the lazy dog")
+        .add(
+            "id",
+            "4",
+            "a_s",
+            "world-4",
+            "b_s",
+            "foo",
+            "c_t",
+            "the sly black dog jumped over the sleepy pig")
+        .add(
+            "id",
+            "5",
+            "a_s",
+            "hello-5",
+            "b_s",
+            "foo",
+            "c_t",
+            "the quick brown fox jumped over the lazy dog")
+        .add(
+            "id",
+            "6",
+            "a_s",
+            "w_orld-6",
+            "b_s",
+            "bar",
+            "c_t",
+            "the sly black dog jumped over the sleepin piglet")
+        .add(
+            "id",
+            "7",
+            "a_s",
+            "world%_7",
+            "b_s",
+            "zaz",
+            "c_t",
+            "the lazy dog jumped over the quick brown fox")
+        .add(
+            "id",
+            "8",
+            "a_s",
+            "world'\\9",
+            "b_s",
+            "zaz",
+            "c_t",
+            "the lazy dog ducked over the quick brown fox")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE 'h_llo-%'", 3);
 
+    Throwable exception =
+        expectThrows(
+            IOException.class,
+            () ->
+                expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE 'world\\'%' ESCAPE '\\'", 1));
+    assertTrue(exception.getMessage().contains("parse failed: Lexical error"));
+    expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE 'world''%'", 1);
+    expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE 'world''\\\\%' ESCAPE '\\'", 1);
+    expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE 'w\\_o_ld%' ESCAPE '\\'", 1);
+    expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE 'world\\%\\__' ESCAPE '\\'", 1);
+
     // not technically valid SQL but we support it for legacy purposes, see: SOLR-15463
-    expectResults("SELECT a_s FROM $ALIAS WHERE a_s='world-*'", 3);
+    expectResults("SELECT a_s FROM $ALIAS WHERE a_s='world-*'", 2);
 
     // no results
     expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE '%MATCHNONE%'", 0);
@@ -2454,7 +2529,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     expectResults("SELECT b_s FROM $ALIAS WHERE b_s LIKE 'foo'", 5);
 
     // NOT LIKE
-    expectResults("SELECT b_s FROM $ALIAS WHERE b_s NOT LIKE 'f%'", 1);
+    expectResults("SELECT b_s FROM $ALIAS WHERE b_s NOT LIKE 'f%'", 3);
 
     // leading wildcard
     expectResults("SELECT b_s FROM $ALIAS WHERE b_s LIKE '%oo'", 5);
@@ -2463,6 +2538,23 @@ public class TestSQLHandler extends SolrCloudTestCase {
     expectResults("SELECT b_s FROM $ALIAS WHERE b_s LIKE '(fo%)'", 5);
 
     expectResults("SELECT b_s FROM $ALIAS WHERE b_s LIKE '(ba*)'", 1);
+
+    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'fox'", 5);
+    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'sleep% pig%'", 3);
+    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'sleep% pigle%'", 1);
+    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'sleep% piglet'", 1);
+    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'sleep% pigle%'", 1);
+    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'sleep% piglet'", 1);
+
+    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'jump%'", 7);
+    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE '%ump%'", 7);
+
+    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE '(\"dog pig\"~5)'", 2);
+    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'jumped over'", 8);
+    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'quick brow%'", 5);
+    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE 'quick brow%' AND b_s LIKE 'foo*'", 3);
+    expectResults("SELECT b_s FROM $ALIAS WHERE b_s LIKE 'foo*'", 5);
+    expectResults("SELECT b_s FROM $ALIAS WHERE c_t LIKE '*og'", 8);
   }
 
   @Test
@@ -3249,7 +3341,9 @@ public class TestSQLHandler extends SolrCloudTestCase {
             "stringxmv",
             "e",
             "stringxmv",
-            "f",
+            "\"f\"",
+            "stringxmv",
+            "g\"h",
             "stringxmv",
             "a",
             "pdoublexmv",
@@ -3280,6 +3374,19 @@ public class TestSQLHandler extends SolrCloudTestCase {
     expectResults(
         "select id, stringxmv from $ALIAS WHERE array_contains_any(pdoublexmv, (1.5, 2.5))", 3);
     expectResults("select id, stringxmv from $ALIAS WHERE array_contains_any(longs, (1, 3))", 3);
+    expectResults(
+        "select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('\"a\"', '\"e\"'))",
+        0);
+    expectResults(
+        "select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('\"a\"'))", 0);
+    expectResults(
+        "select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('\"f\"'))", 1);
+    expectResults(
+        "select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('g\"h'))", 1);
+    expectResults(
+        "select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a', 'e', '\"f\"'))",
+        3);
+
     expectResults("select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a'))", 2);
     expectResults(
         "select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a', 'b', 'c'))", 3);
@@ -3287,7 +3394,5 @@ public class TestSQLHandler extends SolrCloudTestCase {
         "select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a', 'c'))", 3);
     expectResults(
         "select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a', 'e'))", 3);
-    expectResults(
-        "select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a', 'e', 'f'))", 3);
   }
 }

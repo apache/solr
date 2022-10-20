@@ -21,7 +21,7 @@ import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import java.io.IOException;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.apache.lucene.util.QuickPatchThreadsFilter;
+import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;

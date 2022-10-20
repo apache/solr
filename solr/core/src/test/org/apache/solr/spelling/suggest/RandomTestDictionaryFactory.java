@@ -17,14 +17,13 @@
 
 package org.apache.solr.spelling.suggest;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.search.suggest.InputIterator;
+import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -84,7 +83,7 @@ public class RandomTestDictionaryFactory extends DictionaryFactory {
     }
 
     @Override
-    public InputIterator getEntryIterator() throws IOException {
+    public InputIterator getEntryIterator() {
       return new InputIterator.InputIteratorWrapper(new RandomByteRefIterator());
     }
 
@@ -92,7 +91,7 @@ public class RandomTestDictionaryFactory extends DictionaryFactory {
       private static final int MAX_LENGTH = 100;
 
       @Override
-      public BytesRef next() throws IOException {
+      public BytesRef next() {
         BytesRef next = null;
         if (System.getProperty(enabledSysProp) != null) {
           if (emittedItems < maxItems) {

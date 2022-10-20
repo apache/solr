@@ -32,7 +32,6 @@ Any `core.properties` file in any directory of your Solr installation (or in a d
 The `core.properties` file is a simple Java Properties file where each line is just a key=value pair, e.g., `name=core1`.
 Notice that no quotes are required.
 
-==
 A minimal `core.properties` file looks like the example below.
 However, it can also be empty, see information on placement of `core.properties` below.
 
