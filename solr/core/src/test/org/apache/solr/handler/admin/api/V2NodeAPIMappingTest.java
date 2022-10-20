@@ -17,7 +17,17 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.common.params.CommonParams.ACTION;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.google.common.collect.Maps;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
@@ -40,17 +50,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.apache.solr.common.params.CommonParams.ACTION;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /** Unit tests for the v2 to v1 mapping for /node/ APIs. */
 public class V2NodeAPIMappingTest extends SolrTestCaseJ4 {
