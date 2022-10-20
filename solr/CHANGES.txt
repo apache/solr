@@ -50,8 +50,6 @@ Build
 
 * SOLR-16432: Upgrade the gradle wrapper to 7.5.1 (Shawn Heisey, Kevin Risden)
 
-* SOLR-16464: Upgrade commons-text to 1.10.0 (Kevin Risden)
-
 Other Changes
 ---------------------
 * SOLR-16150: Embedded ZK Server used for zkRun should advertise itself on specific bound interfaces instead of
@@ -282,6 +280,8 @@ Other Changes
 * SOLR-16451: Don't fetch the PRS states while registering the collection watch (Hitesh Khamesra via Ishan Chattopadhyaya)
 
 * SOLR-16452: Do not update PRS states if local version is newer (Hitesh Khamesra via noble)
+
+* SOLR-16464: Upgrade commons-text to 1.10.0 (Kevin Risden)
 
 Build
 ---------------------
