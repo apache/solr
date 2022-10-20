@@ -50,15 +50,7 @@ dependencies {
   testImplementation 'junit:junit'
   testImplementation 'software.amazon.awssdk:profiles'
 
-  // overrides spring-boot pulled by com.adobe.testing:s3mock-junit4 to allow using a version
-  // compatible with recent Jetty
-  testImplementation 'org.springframework.boot:spring-boot'
-
-  testImplementation 'com.amazonaws:aws-java-sdk-core'
-  testImplementation 'org.apache.httpcomponents:httpclient'
   testImplementation 'org.hamcrest:hamcrest'
-  testImplementation 'software.amazon.awssdk:url-connection-client'
-  testImplementation 'software.amazon.awssdk:utils'
 
   testImplementation('com.adobe.testing:s3mock-junit4') {
     // Don't pull in separate versions of these libs, just use what Solr already has
