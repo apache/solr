@@ -24,12 +24,12 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
-import junit.framework.Assert;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrQuery.SortClause;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
+import org.junit.Assert;
 
 /**
  * @since solr 1.3
@@ -55,7 +55,7 @@ public class SolrQueryTest extends SolrTestCase {
     Assert.assertEquals(b, false);
     b = q.removeFacetField("state");
     Assert.assertEquals(b, true);
-    Assert.assertEquals(null, q.getFacetFields());
+    Assert.assertNull(q.getFacetFields());
 
     b = q.removeFacetQuery("instock:true");
     Assert.assertEquals(b, true);
@@ -63,7 +63,7 @@ public class SolrQueryTest extends SolrTestCase {
     b = q.removeFacetQuery("a:c");
     Assert.assertEquals(b, false);
     b = q.removeFacetQuery("a:b");
-    Assert.assertEquals(null, q.getFacetQuery());
+    Assert.assertNull(q.getFacetQuery());
 
     q.addSort("price", SolrQuery.ORDER.asc);
     q.addSort("date", SolrQuery.ORDER.desc);
@@ -84,7 +84,7 @@ public class SolrQueryTest extends SolrTestCase {
     q.removeHighlightField("hl3");
     Assert.assertEquals(1, q.getHighlightFields().length);
     q.removeHighlightField("hl2");
-    Assert.assertEquals(null, q.getHighlightFields());
+    Assert.assertNull(q.getHighlightFields());
 
     // check to see that the removes are properly clearing the cgi params
     Assert.assertEquals(q.toString(), "q=dog");

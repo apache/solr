@@ -17,7 +17,7 @@
 
 package org.apache.solr.util;
 
-import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
@@ -63,8 +63,8 @@ import org.apache.solr.common.util.SuppressForbidden;
  *   // ... some test code ...
  *
  *   // convinience method for only dealing with Message String of the LogEvent
- *   assertThat(secWarnLog.pollMessage(), containsString("hoss"));
- *   assertThat(secWarnLog.getQueue().isEmpty()); // no other WARNings matching PKI
+ *   MatcherAssert.assertThat(secWarnLog.pollMessage(), containsString("hoss"));
+ *   MatcherAssert.assertThat(secWarnLog.getQueue().isEmpty()); // no other WARNings matching PKI
  *
  *   // ... more test code ...
  *

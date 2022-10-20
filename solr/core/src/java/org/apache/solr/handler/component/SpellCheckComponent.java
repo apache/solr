@@ -365,6 +365,8 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     int purpose =
         rb.grouping() ? ShardRequest.PURPOSE_GET_TOP_GROUPS : ShardRequest.PURPOSE_GET_TOP_IDS;
     if ((sreq.purpose & purpose) != 0) {
+      getSpellChecker(params).modifyRequest(rb, sreq);
+
       // fetch at least 5 suggestions from each shard
       int count = sreq.params.getInt(SPELLCHECK_COUNT, 1);
       if (count < 5) count = 5;

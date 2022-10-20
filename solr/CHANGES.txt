@@ -46,21 +46,44 @@ Improvements
 * SOLR-16392: A number of v2 "replica" endpoints have been updated to be more REST-ful, and hopefully, intuitive.
   ADDREPLICAPROP is now `PUT /api/collections/$coll/shards/$shard/replicas/$rep/properties/$prop {"value": $val}`
 
+* SOLR-11657: Deprecate ContentStream in favour of RequestWriter.ContentWriter.   (Joshua Ouma via Eric Pugh)
+
+* SOLR-16302: WARN when restoring backup if ConfigSet with same name already exists (Albert Moser via Kevin Risden)
+
+* SOLR-8803: Java will now crash the Solr process on OOME and create a crash file that logs the
+  cause.  This capability is now also present on Windows.  Before, with bin/solr but not
+  bin/solr.cmd, Solr would execute a script that killed the Solr pid, leaving a very small time
+  window where Solr would continue to execute in an unpredictable state. (Shawn Heisey, Kevin Risden)
+  
+* SOLR-15478: A v2 equivalent of CLUSTERSTATUS command is now available at `GET /api/cluster`. Collection listing,
+  previously at this path, can still be accessed at `GET /api/collections`. (Joshua Ouma via Jason Gerlowski)
+
 Optimizations
 ---------------------
 (No changes)
 
 Bug Fixes
 ---------------------
-(No changes)
+
+* SOLR-16436: Fix "false positive" suggestions from DirectSolrSpellChecker when using maxQueryFrequency > 1 in
+  multi-shard collections (hossman)
+
+* SOLR-15854: Upgrade semver library to fix versioning constraint bugs in the PackageManager. (Houston Putman, Kevin Risden)
+
+* SOLR-16160: UpdateXmlMessages duplicate data when data is removed and then added in the same message (Alex Deparvu via Kevin Risden)
 
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
 
+* SOLR-16432: Upgrade the gradle wrapper to 7.5.1 (Shawn Heisey, Kevin Risden)
+
 Other Changes
 ---------------------
-(No changes)
+* SOLR-16150: Embedded ZK Server used for zkRun should advertise itself on specific bound interfaces instead of
+  generically on localhost. (Mike Drob)
+
+* SOLR-16481: Upgrade Bats to 1.8.0 (Kevin Risden)
 
 ==================  9.1.0 ==================
 
@@ -143,8 +166,12 @@ Optimizations
 
 * SOLR-16328: intern() strings in DocCollection to reduce memory footprint (noble)
 
+* SOLR-16445: Leader message should only be sent when there is more than one (NRT+Tlog) replica (Hitesh Khamesra, noble via Ishan Chattopadhyaya)
+
 Bug Fixes
 ---------------------
+* SOLR-13219: Fix NPE in FieldLengthFeature with non-stored/missing fields (Nick Veenhof, Tomasz Elendt)
+
 * SOLR-15918: Skip repetitive parent znode creation on config set upload (Mike Drob)
 
 * SOLR-15964: Transient cores: don't evict a core when it's still being used. (David Smiley)
@@ -205,7 +232,19 @@ Bug Fixes
 
 * SOLR-16232: Fix EnvVar usage in bin/solr (Houston Putman)
 
+* SOLR-16439: Cloud Node does not have Core, the admin UI cannot be displayed properly. (Shiming Li)
+
 * SOLR-16229: Http2SolrClient aborts requests on exception (Daniel Rabus, Tomás Fernández Löbbe)
+
+* SOLR-16457: solr.data.home should not be set to empty string in bin/solr (Kevin Risden)
+
+* SOLR-16433: Security Manager prevents Solr SQL from working (Kevin Risden)
+
+* SOLR-16460: ClusterState.copyWith is inconsistent (noble)
+
+* SOLR-16440: RefreshCollectionMessage in PRS should update Overseer's ZkStateWriter (noble, Ishan Chattopadhyaya)
+
+* SOLR-16453: Overseer doesn't handle PRS and non-PRS messages properly (Justin Sweeney, Hitesh Khamesra)
 
 Other Changes
 ---------------------
@@ -265,6 +304,14 @@ Other Changes
 * SOLR-16422: Upgrade Apache Zookeeper to 3.8.0 (Kevin Risden)
 
 * SOLR-16423: Upgrade Apache Hadoop to 3.3.4 (Kevin Risden)
+
+* SOLR-16450: Proper handling on watcher registration failure in ZkStateReader#waitForState() (Hitesh Khamesra via Ishan Chattopadhyaya)
+
+* SOLR-16451: Don't fetch the PRS states while registering the collection watch (Hitesh Khamesra via Ishan Chattopadhyaya)
+
+* SOLR-16452: Do not update PRS states if local version is newer (Hitesh Khamesra via noble)
+
+* SOLR-16464: Upgrade commons-text to 1.10.0 (Kevin Risden)
 
 Build
 ---------------------

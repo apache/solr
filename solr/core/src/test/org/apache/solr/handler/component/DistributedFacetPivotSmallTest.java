@@ -17,14 +17,12 @@
 package org.apache.solr.handler.component;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import junit.framework.AssertionFailedError;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.PivotField;
@@ -301,21 +299,16 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
                   "facet.limit", "4"),
               variableParams);
 
-      try {
-        List<PivotField> pivots = query(p).getFacetPivot().get("company_t");
-        assertEquals(4, pivots.size());
-        assertEquals("fujitsu", pivots.get(0).getValue());
-        assertEquals(4, pivots.get(0).getCount());
-        assertEquals("microsoft", pivots.get(1).getValue());
-        assertEquals(5, pivots.get(1).getCount());
-        assertEquals("null", pivots.get(2).getValue());
-        assertEquals(6, pivots.get(2).getCount());
-        assertEquals("polecat", pivots.get(3).getValue());
-        assertEquals(6, pivots.get(3).getCount());
-
-      } catch (AssertionFailedError ae) {
-        throw new AssertionError(ae.getMessage() + " <== " + p, ae);
-      }
+      List<PivotField> pivots = query(p).getFacetPivot().get("company_t");
+      assertEquals(4, pivots.size());
+      assertEquals("fujitsu", pivots.get(0).getValue());
+      assertEquals(4, pivots.get(0).getCount());
+      assertEquals("microsoft", pivots.get(1).getValue());
+      assertEquals(5, pivots.get(1).getCount());
+      assertEquals("null", pivots.get(2).getValue());
+      assertEquals(6, pivots.get(2).getCount());
+      assertEquals("polecat", pivots.get(3).getValue());
+      assertEquals(6, pivots.get(3).getCount());
     }
 
     // sort=index + mincount + limit + offset
@@ -340,19 +333,14 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
                   "facet.offset", "1",
                   "facet.limit", "4"),
               variableParams);
-      try {
-        List<PivotField> pivots = query(p).getFacetPivot().get("company_t");
-        assertEquals(3, pivots.size()); // asked for 4, but not enough meet the mincount
-        assertEquals("microsoft", pivots.get(0).getValue());
-        assertEquals(5, pivots.get(0).getCount());
-        assertEquals("null", pivots.get(1).getValue());
-        assertEquals(6, pivots.get(1).getCount());
-        assertEquals("polecat", pivots.get(2).getValue());
-        assertEquals(6, pivots.get(2).getCount());
-
-      } catch (AssertionFailedError ae) {
-        throw new AssertionError(ae.getMessage() + " <== " + p, ae);
-      }
+      List<PivotField> pivots = query(p).getFacetPivot().get("company_t");
+      assertEquals(3, pivots.size()); // asked for 4, but not enough meet the mincount
+      assertEquals("microsoft", pivots.get(0).getValue());
+      assertEquals(5, pivots.get(0).getCount());
+      assertEquals("null", pivots.get(1).getValue());
+      assertEquals(6, pivots.get(1).getCount());
+      assertEquals("polecat", pivots.get(2).getValue());
+      assertEquals(6, pivots.get(2).getCount());
     }
 
     // sort=index + mincount + limit + offset (more permutations)
@@ -382,15 +370,10 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
                   "facet.pivot", "company_t"),
               variableParams);
 
-      try {
-        List<PivotField> pivots = query(p).getFacetPivot().get("company_t");
-        assertEquals(1, pivots.size());
-        assertEquals(pivots.toString(), "null", pivots.get(0).getValue());
-        assertEquals(pivots.toString(), 6, pivots.get(0).getCount());
-
-      } catch (AssertionFailedError ae) {
-        throw new AssertionError(ae.getMessage() + " <== " + p, ae);
-      }
+      List<PivotField> pivots = query(p).getFacetPivot().get("company_t");
+      assertEquals(1, pivots.size());
+      assertEquals(pivots.toString(), "null", pivots.get(0).getValue());
+      assertEquals(pivots.toString(), 6, pivots.get(0).getCount());
     }
 
     doTestDeepPivotStats(false); // all price stats
@@ -1083,21 +1066,16 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
                   "4"),
               variableParams);
 
-      try {
-        List<PivotField> pivots = query(p).getFacetPivot().get("company_t");
-        assertEquals(4, pivots.size());
-        assertEquals("fujitsu", pivots.get(0).getValue());
-        assertEquals(4, pivots.get(0).getCount());
-        assertEquals("microsoft", pivots.get(1).getValue());
-        assertEquals(5, pivots.get(1).getCount());
-        assertEquals("null", pivots.get(2).getValue());
-        assertEquals(6, pivots.get(2).getCount());
-        assertEquals("polecat", pivots.get(3).getValue());
-        assertEquals(6, pivots.get(3).getCount());
-
-      } catch (AssertionFailedError ae) {
-        throw new AssertionError(ae.getMessage() + " <== " + p, ae);
-      }
+      List<PivotField> pivots = query(p).getFacetPivot().get("company_t");
+      assertEquals(4, pivots.size());
+      assertEquals("fujitsu", pivots.get(0).getValue());
+      assertEquals(4, pivots.get(0).getCount());
+      assertEquals("microsoft", pivots.get(1).getValue());
+      assertEquals(5, pivots.get(1).getCount());
+      assertEquals("null", pivots.get(2).getValue());
+      assertEquals(6, pivots.get(2).getCount());
+      assertEquals("polecat", pivots.get(3).getValue());
+      assertEquals(6, pivots.get(3).getCount());
     }
 
     // sort=index + mincount + limit + offset
@@ -1127,20 +1105,16 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
                   "facet.limit",
                   "4"),
               variableParams);
-      try {
-        List<PivotField> pivots = query(p).getFacetPivot().get("company_t");
-        assertEquals(3, pivots.size()); // asked for 4, but not enough meet the
-        // mincount
-        assertEquals("microsoft", pivots.get(0).getValue());
-        assertEquals(5, pivots.get(0).getCount());
-        assertEquals("null", pivots.get(1).getValue());
-        assertEquals(6, pivots.get(1).getCount());
-        assertEquals("polecat", pivots.get(2).getValue());
-        assertEquals(6, pivots.get(2).getCount());
 
-      } catch (AssertionFailedError ae) {
-        throw new AssertionError(ae.getMessage() + " <== " + p, ae);
-      }
+      List<PivotField> pivots = query(p).getFacetPivot().get("company_t");
+      assertEquals(3, pivots.size()); // asked for 4, but not enough meet the
+      // mincount
+      assertEquals("microsoft", pivots.get(0).getValue());
+      assertEquals(5, pivots.get(0).getCount());
+      assertEquals("null", pivots.get(1).getValue());
+      assertEquals(6, pivots.get(1).getCount());
+      assertEquals("polecat", pivots.get(2).getValue());
+      assertEquals(6, pivots.get(2).getCount());
     }
 
     // sort=index + mincount + limit + offset (more permutations)
@@ -1171,15 +1145,10 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
                   "company_t"),
               variableParams);
 
-      try {
-        List<PivotField> pivots = query(p).getFacetPivot().get("company_t");
-        assertEquals(1, pivots.size());
-        assertEquals(pivots.toString(), "null", pivots.get(0).getValue());
-        assertEquals(pivots.toString(), 6, pivots.get(0).getCount());
-
-      } catch (AssertionFailedError ae) {
-        throw new AssertionError(ae.getMessage() + " <== " + p, ae);
-      }
+      List<PivotField> pivots = query(p).getFacetPivot().get("company_t");
+      assertEquals(1, pivots.size());
+      assertEquals(pivots.toString(), "null", pivots.get(0).getValue());
+      assertEquals(pivots.toString(), 6, pivots.get(0).getCount());
     }
   }
 
@@ -2029,21 +1998,16 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
                   "4"),
               variableParams);
 
-      try {
-        List<PivotField> pivots = query(p).getFacetPivot().get("company_t");
-        assertEquals(4, pivots.size());
-        assertEquals("fujitsu", pivots.get(0).getValue());
-        assertEquals(4, pivots.get(0).getCount());
-        assertEquals("microsoft", pivots.get(1).getValue());
-        assertEquals(5, pivots.get(1).getCount());
-        assertEquals("null", pivots.get(2).getValue());
-        assertEquals(6, pivots.get(2).getCount());
-        assertEquals("polecat", pivots.get(3).getValue());
-        assertEquals(6, pivots.get(3).getCount());
-
-      } catch (AssertionFailedError ae) {
-        throw new AssertionError(ae.getMessage() + " <== " + p, ae);
-      }
+      List<PivotField> pivots = query(p).getFacetPivot().get("company_t");
+      assertEquals(4, pivots.size());
+      assertEquals("fujitsu", pivots.get(0).getValue());
+      assertEquals(4, pivots.get(0).getCount());
+      assertEquals("microsoft", pivots.get(1).getValue());
+      assertEquals(5, pivots.get(1).getCount());
+      assertEquals("null", pivots.get(2).getValue());
+      assertEquals(6, pivots.get(2).getCount());
+      assertEquals("polecat", pivots.get(3).getValue());
+      assertEquals(6, pivots.get(3).getCount());
     }
 
     // sort=index + mincount + limit + offset
@@ -2073,20 +2037,15 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
                   "facet.limit",
                   "4"),
               variableParams);
-      try {
-        List<PivotField> pivots = query(p).getFacetPivot().get("company_t");
-        assertEquals(3, pivots.size()); // asked for 4, but not enough meet the
-        // mincount
-        assertEquals("microsoft", pivots.get(0).getValue());
-        assertEquals(5, pivots.get(0).getCount());
-        assertEquals("null", pivots.get(1).getValue());
-        assertEquals(6, pivots.get(1).getCount());
-        assertEquals("polecat", pivots.get(2).getValue());
-        assertEquals(6, pivots.get(2).getCount());
-
-      } catch (AssertionFailedError ae) {
-        throw new AssertionError(ae.getMessage() + " <== " + p, ae);
-      }
+      List<PivotField> pivots = query(p).getFacetPivot().get("company_t");
+      assertEquals(3, pivots.size()); // asked for 4, but not enough meet the
+      // mincount
+      assertEquals("microsoft", pivots.get(0).getValue());
+      assertEquals(5, pivots.get(0).getCount());
+      assertEquals("null", pivots.get(1).getValue());
+      assertEquals(6, pivots.get(1).getCount());
+      assertEquals("polecat", pivots.get(2).getValue());
+      assertEquals(6, pivots.get(2).getCount());
     }
 
     // sort=index + mincount + limit + offset (more permutations)
@@ -2117,15 +2076,10 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
                   "company_t"),
               variableParams);
 
-      try {
-        List<PivotField> pivots = query(p).getFacetPivot().get("company_t");
-        assertEquals(1, pivots.size());
-        assertEquals(pivots.toString(), "null", pivots.get(0).getValue());
-        assertEquals(pivots.toString(), 6, pivots.get(0).getCount());
-
-      } catch (AssertionFailedError ae) {
-        throw new AssertionError(ae.getMessage() + " <== " + p, ae);
-      }
+      List<PivotField> pivots = query(p).getFacetPivot().get("company_t");
+      assertEquals(1, pivots.size());
+      assertEquals(pivots.toString(), "null", pivots.get(0).getValue());
+      assertEquals(pivots.toString(), 6, pivots.get(0).getCount());
     }
   }
 
@@ -2432,16 +2386,16 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
   // Useful to check for errors, orders lists and does toString() equality check
   private void testOrderedPivotsStringEquality(
       List<PivotField> expectedPlacePivots, List<PivotField> placePivots) {
-    Collections.sort(expectedPlacePivots, new PivotFieldComparator());
+    expectedPlacePivots.sort(new PivotFieldComparator());
     for (PivotField expectedPivot : expectedPlacePivots) {
       if (expectedPivot.getPivot() != null) {
-        Collections.sort(expectedPivot.getPivot(), new PivotFieldComparator());
+        expectedPivot.getPivot().sort(new PivotFieldComparator());
       }
     }
-    Collections.sort(placePivots, new PivotFieldComparator());
+    placePivots.sort(new PivotFieldComparator());
     for (PivotField pivot : placePivots) {
       if (pivot.getPivot() != null) {
-        Collections.sort(pivot.getPivot(), new PivotFieldComparator());
+        pivot.getPivot().sort(new PivotFieldComparator());
       }
     }
     assertEquals(expectedPlacePivots.toString(), placePivots.toString());

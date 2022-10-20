@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -61,7 +62,7 @@ public class SolrStream extends TupleStream {
   private boolean trace;
   private Map<String, String> fieldMappings;
   private transient TupleStreamParser tupleStreamParser;
-  private transient HttpSolrClient client;
+  private transient SolrClient client;
   private transient SolrClientCache cache;
   private String slice;
   private long checkpoint = -1;

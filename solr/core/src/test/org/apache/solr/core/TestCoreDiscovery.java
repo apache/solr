@@ -41,6 +41,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.RetryUtil;
+import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -451,7 +452,8 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       assertNull(cc.getCore("core0"));
 
       SolrCore core3 = cc.create("core3", ImmutableMap.of("configSet", "minimal"));
-      assertThat(core3.getCoreDescriptor().getInstanceDir().toString(), containsString("relative"));
+      MatcherAssert.assertThat(
+          core3.getCoreDescriptor().getInstanceDir().toString(), containsString("relative"));
 
     } finally {
       cc.shutdown();
@@ -604,7 +606,8 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
                 if (cc != null) cc.shutdown();
               }
             });
-    assertThat(thrown.getMessage(), containsString("Error reading core root directory"));
+    MatcherAssert.assertThat(
+        thrown.getMessage(), containsString("Error reading core root directory"));
     // So things can be cleaned up by the framework!
     homeDir.setReadable(true, false);
   }
@@ -629,14 +632,14 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     NodeConfig config =
         SolrXmlConfig.fromString(
             solrHomeDirectory, "<solr><str name=\"coreRootDirectory\">relative</str></solr>");
-    assertThat(
+    MatcherAssert.assertThat(
         config.getCoreRootDirectory().toString(),
         containsString(solrHomeDirectory.toAbsolutePath().toString()));
 
     NodeConfig absConfig =
         SolrXmlConfig.fromString(
             solrHomeDirectory, "<solr><str name=\"coreRootDirectory\">/absolute</str></solr>");
-    assertThat(
+    MatcherAssert.assertThat(
         absConfig.getCoreRootDirectory().toString(),
         not(containsString(solrHomeDirectory.toAbsolutePath().toString())));
   }

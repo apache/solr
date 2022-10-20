@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj.io.stream;
 
-import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.ops.GroupOperation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -29,6 +28,7 @@ import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
+import org.junit.Assert;
 import org.junit.Test;
 
 /** */

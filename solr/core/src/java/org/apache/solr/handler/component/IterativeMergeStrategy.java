@@ -25,9 +25,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -79,7 +79,7 @@ public abstract class IterativeMergeStrategy implements MergeStrategy {
   public void handleMergeFields(ResponseBuilder rb, SolrIndexSearcher searcher) {}
 
   public class CallBack implements Callable<CallBack> {
-    private HttpSolrClient solrClient;
+    private SolrClient solrClient;
     private QueryRequest req;
     private QueryResponse response;
     private ShardResponse originalShardResponse;

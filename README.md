@@ -23,7 +23,7 @@ enterprise, e-commerce, and analytics needs, built on [Apache Lucene](https://lu
 
 For a complete description of the Solr project, team composition, source
 code repositories, and other details, please see the Solr web site at
-https://solr.apache.org/solr
+https://solr.apache.org/
 
 ## Download
 
