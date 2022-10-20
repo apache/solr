@@ -184,7 +184,7 @@ public class CollectionHandlingUtils {
               ccc.getSolrCloudManager(),
               ccc.getZkStateReader());
     } else {
-      ccc.offerStateUpdate(Utils.toJSON(m));
+      ccc.offerStateUpdate(m);
     }
   }
 
