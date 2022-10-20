@@ -59,8 +59,8 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.pkg.PackagePluginHolder;
+import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
@@ -161,7 +161,7 @@ public class StreamHandler extends RequestHandlerBase
     }
 
     @Override
-    protected Object initNewInstance(PackageLoader.Package.Version newest, SolrCore core) {
+    protected Object initNewInstance(SolrPackageLoader.SolrPackage.Version newest, SolrCore core) {
       // This is called from super constructor, so be careful that pluginInfo.className is done
       // initializing.
       return clazz = newest.getLoader().findClass(pluginInfo.className, Expressible.class);
