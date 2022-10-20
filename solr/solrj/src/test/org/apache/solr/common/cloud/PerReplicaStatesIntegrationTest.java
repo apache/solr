@@ -28,6 +28,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -303,11 +304,11 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       // and add new PRS entry)
       assertEquals(50, stat.getCversion());
 
-      CollectionAdminRequest.addReplicaToShard(PRS_COLL, "shard1").process(cluster.getSolrClient());
+      CollectionAdminResponse response = CollectionAdminRequest.addReplicaToShard(PRS_COLL, "shard1").process(cluster.getSolrClient());
       cluster.waitForActiveCollection(PRS_COLL, 10, 11);
       stat = cluster.getZkClient().exists(DocCollection.getCollectionPath(PRS_COLL), null, true);
       // For the new replica:
-      // +2 for state.json overseer writes, event though there's no longer PRS updates from
+      // +2 for state.json overseer writes, even though there's no longer PRS updates from
       // overseer, current code would still do a "TOUCH" on the PRS entry
       // +1 for ZkController#preRegister, in ZkController#publish, direct write PRS to down
       // +2 for RecoveryStrategy#doRecovery, since this is no longer a new collection, new replica
@@ -315,12 +316,24 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       // +2 for ZkController#register, in ZkController#publish, direct write PRS to active
       assertEquals(57, stat.getCversion());
 
+      String addedCore = response.getCollectionCoresStatus().entrySet().iterator().next().getKey();
+      Replica addedReplica = cluster.getZkStateReader().getCollection(PRS_COLL).getSlice("shard1").getReplicas(replica -> addedCore.equals(replica.getCoreName())).get(0);
+      CollectionAdminRequest.deleteReplica(PRS_COLL, "shard1", addedReplica.getName()).process(cluster.getSolrClient());
+      cluster.waitForActiveCollection(PRS_COLL, 10, 10);
+      stat = cluster.getZkClient().exists(DocCollection.getCollectionPath(PRS_COLL), null, true);
+      // For replica deletion
+      // +1 for ZkController#unregister, which delete the PRS entry from data node
+      // +2 for state.json overseer writes, even though there's no longer PRS updates from
+      // overseer, current code would still do a "TOUCH" on the PRS entry
+      assertEquals(60, stat.getCversion());
+
+
       for (JettySolrRunner j : cluster.getJettySolrRunners()) {
         j.stop();
         j.start(true);
         stat = cluster.getZkClient().exists(DocCollection.getCollectionPath(PRS_COLL), null, true);
-        // ensure restart does not update the state.json
-        assertEquals(10, stat.getVersion());
+        // ensure restart does not update the state.json, after addReplica/deleteReplica its 10 + 2 on state.json version
+        assertEquals(12, stat.getVersion());
       }
     } finally {
       cluster.shutdown();
