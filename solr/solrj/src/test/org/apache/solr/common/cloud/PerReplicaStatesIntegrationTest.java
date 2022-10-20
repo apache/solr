@@ -304,7 +304,9 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       // and add new PRS entry)
       assertEquals(50, stat.getCversion());
 
-      CollectionAdminResponse response = CollectionAdminRequest.addReplicaToShard(PRS_COLL, "shard1").process(cluster.getSolrClient());
+      CollectionAdminResponse response =
+          CollectionAdminRequest.addReplicaToShard(PRS_COLL, "shard1")
+              .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(PRS_COLL, 10, 11);
       stat = cluster.getZkClient().exists(DocCollection.getCollectionPath(PRS_COLL), null, true);
       // For the new replica:
@@ -317,8 +319,15 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       assertEquals(57, stat.getCversion());
 
       String addedCore = response.getCollectionCoresStatus().entrySet().iterator().next().getKey();
-      Replica addedReplica = cluster.getZkStateReader().getCollection(PRS_COLL).getSlice("shard1").getReplicas(replica -> addedCore.equals(replica.getCoreName())).get(0);
-      CollectionAdminRequest.deleteReplica(PRS_COLL, "shard1", addedReplica.getName()).process(cluster.getSolrClient());
+      Replica addedReplica =
+          cluster
+              .getZkStateReader()
+              .getCollection(PRS_COLL)
+              .getSlice("shard1")
+              .getReplicas(replica -> addedCore.equals(replica.getCoreName()))
+              .get(0);
+      CollectionAdminRequest.deleteReplica(PRS_COLL, "shard1", addedReplica.getName())
+          .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(PRS_COLL, 10, 10);
       stat = cluster.getZkClient().exists(DocCollection.getCollectionPath(PRS_COLL), null, true);
       // For replica deletion
@@ -327,12 +336,12 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       // overseer, current code would still do a "TOUCH" on the PRS entry
       assertEquals(60, stat.getCversion());
 
-
       for (JettySolrRunner j : cluster.getJettySolrRunners()) {
         j.stop();
         j.start(true);
         stat = cluster.getZkClient().exists(DocCollection.getCollectionPath(PRS_COLL), null, true);
-        // ensure restart does not update the state.json, after addReplica/deleteReplica its 10 + 2 on state.json version
+        // ensure restart does not update the state.json, after addReplica/deleteReplica its 10 + 2
+        // on state.json version
         assertEquals(12, stat.getVersion());
       }
     } finally {
