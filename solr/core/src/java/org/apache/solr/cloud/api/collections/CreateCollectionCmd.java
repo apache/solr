@@ -370,9 +370,12 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         coresToCreate.put(coreName, sreq);
       }
 
-      //Update the state.json for PRS collection in a single operation
+      // Update the state.json for PRS collection in a single operation
       if (isPRS) {
-        byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, clusterState.getCollection(collectionName)));
+        byte[] data =
+            Utils.toJSON(
+                Collections.singletonMap(
+                    collectionName, clusterState.getCollection(collectionName)));
         zkStateReader.getZkClient().setData(collectionPath, data, true);
       }
 
