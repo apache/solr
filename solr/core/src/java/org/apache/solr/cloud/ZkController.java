@@ -1866,11 +1866,9 @@ public class ZkController implements Closeable {
       if (docCollection != null && docCollection.isPerReplicaState() && coreNodeName != null) {
         if (log.isDebugEnabled()) {
           log.debug(
-              "Unregistering core with coreNodeName "
-                  + coreNodeName
-                  + " of collection "
-                  + docCollection.getName()
-                  + " - deleting the PRS entries from ZK");
+              "Unregistering core with coreNodeName {} of collection {} - deleting the PRS entries from ZK",
+              coreNodeName,
+              docCollection.getName());
         }
         PerReplicaStates perReplicaStates =
             PerReplicaStatesFetcher.fetch(
