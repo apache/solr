@@ -57,7 +57,7 @@ dependencies {
   serverLib 'org.eclipse.jetty.http2:http2-common'
   serverLib 'org.eclipse.jetty.http2:http2-hpack'
 
-  serverLib 'javax.servlet:javax.servlet-api'
+  serverLib 'org.eclipse.jetty.toolchain:jetty-servlet-api'
 
   libExt 'com.lmax:disruptor'
   libExt 'org.slf4j:jcl-over-slf4j'
