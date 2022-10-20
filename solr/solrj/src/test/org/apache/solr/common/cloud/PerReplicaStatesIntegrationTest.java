@@ -87,11 +87,11 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       // Test delete replica
       Replica leader = c.getReplica((s, replica) -> replica.isLeader());
       CollectionAdminRequest.deleteReplica(testCollection, "shard1", leader.getName())
-          .process(cluster.getSolrClient());;
+          .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(testCollection, 2, 4);
       prs =
-              PerReplicaStatesFetcher.fetch(
-                      DocCollection.getCollectionPath(testCollection), cluster.getZkClient(), null);
+          PerReplicaStatesFetcher.fetch(
+              DocCollection.getCollectionPath(testCollection), cluster.getZkClient(), null);
       assertEquals(4, prs.states.size());
 
       testCollection = "perReplicaState_testv2";
@@ -303,14 +303,15 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       // and add new PRS entry)
       assertEquals(50, stat.getCversion());
 
-      CollectionAdminRequest.addReplicaToShard(PRS_COLL, "shard1")
-              .process(cluster.getSolrClient());
+      CollectionAdminRequest.addReplicaToShard(PRS_COLL, "shard1").process(cluster.getSolrClient());
       cluster.waitForActiveCollection(PRS_COLL, 10, 11);
       stat = cluster.getZkClient().exists(DocCollection.getCollectionPath(PRS_COLL), null, true);
       // For the new replica:
-      // +2 for state.json overseer writes, event though there's no longer PRS updates from overseer, current code would still do a "TOUCH" on the PRS entry
+      // +2 for state.json overseer writes, event though there's no longer PRS updates from
+      // overseer, current code would still do a "TOUCH" on the PRS entry
       // +1 for ZkController#preRegister, in ZkController#publish, direct write PRS to down
-      // +2 for RecoveryStrategy#doRecovery, since this is no longer a new collection, new replica will go through recovery, direct write PRS to RECOVERING
+      // +2 for RecoveryStrategy#doRecovery, since this is no longer a new collection, new replica
+      // will go through recovery, direct write PRS to RECOVERING
       // +2 for ZkController#register, in ZkController#publish, direct write PRS to active
       assertEquals(57, stat.getCversion());
 
