@@ -2461,7 +2461,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     ClusterState cs = zkr.getClusterState();
     Collection<Slice> slices = cs.getCollection(testCollectionName).getActiveSlices();
-    assertTrue(slices.size() == shards);
+    assertEquals(slices.size(), shards);
     boolean allReplicasUp = false;
     long waitMs = 0L;
     long maxWaitMs = maxWaitSecs * 1000L;
@@ -2478,9 +2478,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       assertNotNull("No Slice for " + shardId, shard);
       allReplicasUp = true; // assume true
       Collection<Replica> replicas = shard.getReplicas();
-      assertTrue(
+      assertEquals(
           "Did not find correct number of replicas. Expected:" + rf + " Found:" + replicas.size(),
-          replicas.size() == rf);
+          replicas.size(),
+          rf);
 
       leader = shard.getLeader();
       assertNotNull(leader);

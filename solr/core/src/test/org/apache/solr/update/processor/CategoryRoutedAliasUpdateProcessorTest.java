@@ -466,7 +466,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
             .get(getAlias());
     observedCols = new ArrayList<>(observedCols);
     observedCols.sort(String::compareTo); // don't really care about the order here.
-    assert !observedCols.isEmpty();
+    assertFalse(observedCols.isEmpty());
 
     int numFoundViaCollections = 0;
     for (String col : observedCols) {

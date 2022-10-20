@@ -877,7 +877,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // compare results
     String cmp =
         BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
-    assertEquals(null, cmp);
+    assertNull(cmp);
 
     // index fetch from the follower to the leader
 
@@ -896,7 +896,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     leaderQueryRsp = rQuery(nDocs + 3, "*:*", leaderClient);
     leaderQueryResult = (SolrDocumentList) leaderQueryRsp.get("response");
     cmp = BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
-    assertEquals(null, cmp);
+    assertNull(cmp);
 
     assertVersions(leaderClient, followerClient);
 
@@ -910,7 +910,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     leaderQueryRsp = rQuery(nDocs + 3, "*:*", leaderClient);
     leaderQueryResult = (SolrDocumentList) leaderQueryRsp.get("response");
     cmp = BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
-    assertEquals(null, cmp);
+    assertNull(cmp);
 
     assertVersions(leaderClient, followerClient);
 
@@ -932,7 +932,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     leaderQueryRsp = rQuery(nDocs + 3, "*:*", leaderClient);
     leaderQueryResult = (SolrDocumentList) leaderQueryRsp.get("response");
     cmp = BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
-    assertEquals(null, cmp);
+    assertNull(cmp);
 
     assertVersions(leaderClient, followerClient);
     pullFromTo(followerJetty, leaderJetty);
@@ -945,7 +945,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     leaderQueryRsp = rQuery(nDocs + 3, "*:*", leaderClient);
     leaderQueryResult = (SolrDocumentList) leaderQueryRsp.get("response");
     cmp = BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
-    assertEquals(null, cmp);
+    assertNull(cmp);
 
     assertVersions(leaderClient, followerClient);
 
@@ -1031,7 +1031,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         // compare results
         String cmp =
             BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
-        assertEquals(null, cmp);
+        assertNull(cmp);
 
         assertVersions(leaderClient, followerClient);
 
@@ -1080,7 +1080,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
               livePaths.toString() + ":" + livePaths.size(),
               3 == livePaths.size() || 4 == livePaths.size());
         } else {
-          assertTrue(livePaths.toString() + ":" + livePaths.size(), 3 == livePaths.size());
+          assertEquals(livePaths.toString() + ":" + livePaths.size(), 3, livePaths.size());
         }
 
         // :TODO: assert that one of the paths is a subpath of hte other
@@ -1093,7 +1093,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         if (afterReload) {
           assertTrue("found:" + cnt + Arrays.asList(new File(ddir).list()), 1 == cnt || 2 == cnt);
         } else {
-          assertTrue("found:" + cnt + Arrays.asList(new File(ddir).list()), 1 == cnt);
+          assertEquals("found:" + cnt + Arrays.asList(new File(ddir).list()), 1, cnt);
         }
       }
     }
@@ -1239,7 +1239,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // compare results
     String cmp =
         BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
-    assertEquals(null, cmp);
+    assertNull(cmp);
   }
 
   @Test
@@ -1298,7 +1298,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       // compare results
       String cmp =
           BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
-      assertEquals(null, cmp);
+      assertNull(cmp);
 
     } finally {
       resetFactory();
@@ -1348,7 +1348,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // compare results
     String cmp =
         BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
-    assertEquals(null, cmp);
+    assertNull(cmp);
 
     Object version = getIndexVersion(leaderClient).get("indexversion");
 
@@ -1394,7 +1394,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // compare results
     String cmp =
         BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
-    assertEquals(null, cmp);
+    assertNull(cmp);
 
     // start config files replication test
     // clear leader index

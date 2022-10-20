@@ -168,7 +168,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
             new FieldComparator("CODE", ComparatorOrder.ASCENDING));
     tuples = getTuples(stream);
 
-    assert (tuples.size() == 4);
+    assertEquals(4, tuples.size());
     assertOrderOf(tuples, "CODE", "NL", "NO", "NP", "US");
     assertOrderOf(tuples, "COUNTRY_NAME", "Netherlands", "Norway", "Nepal", "United States");
 

@@ -255,9 +255,9 @@ public class TestFeatureExtractionFromMultipleSegments extends TestRerankBase {
     int passCount = 0;
     for (final Map<String, Object> doc : docs) {
       String features = (String) doc.get("fv");
-      assert (features.length() > 0);
+      assertTrue(features.length() > 0);
       ++passCount;
     }
-    assert (passCount == numRows);
+    assertEquals(passCount, numRows);
   }
 }

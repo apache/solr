@@ -206,7 +206,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
       Query y =
           QParser.getParser("{!join from=dept_ss to=dept_ss score=none}text_t:develop", req)
               .getQuery();
-      assertFalse("diff from fields produce equal queries", x.equals(y));
+      assertNotEquals("diff from fields produce equal queries", x, y);
     }
   }
 

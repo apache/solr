@@ -131,13 +131,15 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
     long status = container.getStatus();
 
-    assertTrue("Load complete flag should be set", (status & LOAD_COMPLETE) == LOAD_COMPLETE);
-    assertTrue(
+    assertEquals("Load complete flag should be set", LOAD_COMPLETE, (status & LOAD_COMPLETE));
+    assertEquals(
         "Core discovery should be complete",
-        (status & CORE_DISCOVERY_COMPLETE) == CORE_DISCOVERY_COMPLETE);
-    assertTrue(
+        CORE_DISCOVERY_COMPLETE,
+        (status & CORE_DISCOVERY_COMPLETE));
+    assertEquals(
         "Initial core loading should be complete",
-        (status & INITIAL_CORE_LOAD_COMPLETE) == INITIAL_CORE_LOAD_COMPLETE);
+        INITIAL_CORE_LOAD_COMPLETE,
+        (status & INITIAL_CORE_LOAD_COMPLETE));
     return container;
   }
 

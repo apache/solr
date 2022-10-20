@@ -98,7 +98,7 @@ public class ConstantValueTest extends SolrTestCaseJ4 {
     ConstantBooleanValue val = new ConstantBooleanValue(true);
 
     assertTrue(val.exists());
-    assertEquals(true, val.getBoolean());
+    assertTrue(val.getBoolean());
     assertEquals("true", val.getString());
     assertEquals(Boolean.TRUE, val.getObject());
 
@@ -106,7 +106,7 @@ public class ConstantValueTest extends SolrTestCaseJ4 {
     counter.setValue(0);
     val.streamBooleans(
         value -> {
-          assertEquals(true, value);
+          assertTrue(value);
           assertEquals(0, counter.getInt());
           counter.setValue(1);
         });
@@ -128,14 +128,14 @@ public class ConstantValueTest extends SolrTestCaseJ4 {
     val = new ConstantBooleanValue(false);
 
     assertTrue(val.exists());
-    assertEquals(false, val.getBoolean());
+    assertFalse(val.getBoolean());
     assertEquals("false", val.getString());
     assertEquals(Boolean.FALSE, val.getObject());
 
     counter.setValue(0);
     val.streamBooleans(
         value -> {
-          assertEquals(false, value);
+          assertFalse(value);
           assertEquals(0, counter.getInt());
           counter.setValue(1);
         });

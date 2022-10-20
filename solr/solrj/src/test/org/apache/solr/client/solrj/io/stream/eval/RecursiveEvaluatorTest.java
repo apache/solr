@@ -29,7 +29,6 @@ import org.apache.solr.client.solrj.io.eval.MultiplyEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.eval.SubtractEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class RecursiveEvaluatorTest extends SolrTestCase {
@@ -66,7 +65,7 @@ public class RecursiveEvaluatorTest extends SolrTestCase {
     values.put("f", 2);
     values.put("g", 5);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertEquals(-16D, result);
+    assertEquals(-16D, result);
 
     values.clear();
     values.put("a", .1);
@@ -77,7 +76,7 @@ public class RecursiveEvaluatorTest extends SolrTestCase {
     values.put("f", 2);
     values.put("g", 5);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Double);
-    Assert.assertEquals(13.7, result);
+    assertTrue(result instanceof Double);
+    assertEquals(13.7, result);
   }
 }

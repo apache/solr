@@ -26,7 +26,6 @@ import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.NormalizeEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class NormalizeEvaluatorTest extends SolrTestCase {
@@ -74,6 +73,6 @@ public class NormalizeEvaluatorTest extends SolrTestCase {
 
     double[] actualD =
         ((List<?>) actual).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
-    Assert.assertTrue(Arrays.equals(expected, actualD));
+    assertArrayEquals(expected, actualD, 0.0);
   }
 }

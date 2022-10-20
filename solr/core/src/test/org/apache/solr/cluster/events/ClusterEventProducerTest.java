@@ -261,10 +261,9 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
         ClusterEvent.EventType.CLUSTER_PROPERTIES_CHANGED,
         event.getType());
     propertiesChanged = (ClusterPropertiesChangedEvent) event;
-    assertEquals(
+    assertNull(
         "new properties should not have 'ext.foo' property: "
             + propertiesChanged.getNewClusterProperties(),
-        null,
         propertiesChanged.getNewClusterProperties().get("ext.foo"));
   }
 

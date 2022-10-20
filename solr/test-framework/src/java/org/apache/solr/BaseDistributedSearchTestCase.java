@@ -67,7 +67,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TestRule;
@@ -1076,7 +1075,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     String cmp = compare(a.getResponse(), b.getResponse(), flags, handle);
     if (cmp != null) {
       log.error("Mismatched responses:\n{}\n{}", a, b);
-      Assert.fail(cmp);
+      fail(cmp);
     }
   }
 
@@ -1132,14 +1131,14 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
       public void evaluate() throws Throwable {
         distribSetUp();
         if (!distribSetUpCalled) {
-          Assert.fail("One of the overrides of distribSetUp does not propagate the call.");
+          fail("One of the overrides of distribSetUp does not propagate the call.");
         }
         try {
           callStatement();
         } finally {
           distribTearDown();
           if (!distribTearDownCalled) {
-            Assert.fail("One of the overrides of distribTearDown does not propagate the call.");
+            fail("One of the overrides of distribTearDown does not propagate the call.");
           }
         }
       }

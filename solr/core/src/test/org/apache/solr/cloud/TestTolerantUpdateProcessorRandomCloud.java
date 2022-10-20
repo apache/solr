@@ -241,15 +241,16 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
                       (hiBound < 0) ? maxDocId : hiBound - 1);
 
               if (lo != hi) {
-                assert lo < hi : "lo=" + lo + " hi=" + hi;
+                assertTrue("lo=" + lo + " hi=" + hi, lo < hi);
                 // NOTE: clear & set are exclusive of hi, so we use "}" in range query accordingly
                 q = "id_i:[" + lo + " TO " + hi + "}";
                 expectedDocIds.clear(lo, hi);
                 docsAffectedThisRequest.set(lo, hi);
               } else {
                 // edge case: special case DBQ of one doc
-                assert (lo == rangeAxis && hi == rangeAxis)
-                    : "lo=" + lo + " axis=" + rangeAxis + " hi=" + hi;
+                assertTrue(
+                    "lo=" + lo + " axis=" + rangeAxis + " hi=" + hi,
+                    lo == rangeAxis && hi == rangeAxis);
                 q = "id_i:[" + lo + " TO " + lo + "]"; // have to be inclusive of both ends
                 expectedDocIds.clear(lo);
                 docsAffectedThisRequest.set(lo);
@@ -319,9 +320,10 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
     final int max = atLeast(100);
     BitSet bits = new BitSet(max + 1);
     for (int i = 0; i <= max; i++) {
-      assertFalse(
+      assertNotEquals(
           "how is bitset already full? iter=" + i + " card=" + bits.cardinality() + "/max=" + max,
-          bits.cardinality() == max + 1);
+          bits.cardinality(),
+          max + 1);
       final int nextBit = randomUnsetBit(random(), bits, max);
       assertTrue("nextBit shouldn't be negative yet: " + nextBit, 0 <= nextBit);
       assertTrue("nextBit can't exceed max: " + nextBit, nextBit <= max);

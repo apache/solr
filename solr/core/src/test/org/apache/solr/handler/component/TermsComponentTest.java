@@ -725,7 +725,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
         i += count;
         // if (i < 10) System.out.println("COUNT=" + count + " OBJ="+v.toObject());
       }
-      assert (i == nvals);
+      assertEquals(i, nvals);
 
       totBuff = random().nextInt(50) + 1;
       minSegBuff = random().nextInt(10) + 1;
@@ -741,7 +741,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
         i += count;
         // if (i < 10) System.out.println("COUNT=" + count + " OBJ="+v.toObject());
       }
-      assert (i == nvals);
+      assertEquals(i, nvals);
 
       totBuff = random().nextInt(50) + 1;
       minSegBuff = random().nextInt(10) + 1;
@@ -757,7 +757,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
         i += count;
         // if (i < 10) System.out.println("COUNT=" + count + " OBJ="+v.toObject());
       }
-      assert (i == nvals);
+      assertEquals(i, nvals);
 
       totBuff = random().nextInt(50) + 1;
       minSegBuff = random().nextInt(10) + 1;
@@ -773,7 +773,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
         i += count;
         // if (i < 10) System.out.println("COUNT=" + count + " OBJ="+v.toObject());
       }
-      assert (i == nvals);
+      assertEquals(i, nvals);
 
       assertQ(
           req(

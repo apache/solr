@@ -51,7 +51,6 @@ import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ModuleUtils;
 import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -455,7 +454,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
         SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE, tmpRoot.toAbsolutePath().toString());
     final CoreContainer cc1 = init(tmpRoot, "<solr></solr>");
     try {
-      Assert.assertThrows(
+      assertThrows(
           SolrResourceNotFoundException.class,
           () -> cc1.loader.openResource("moduleLibFile").close());
     } finally {
@@ -471,7 +470,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     }
 
     SolrException ex =
-        Assert.assertThrows(
+        assertThrows(
             SolrException.class,
             () -> init(tmpRoot, "<solr><str name=\"modules\">nope</str></solr>"));
     assertEquals("No module with name nope", ex.getMessage());
