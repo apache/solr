@@ -247,10 +247,9 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
             () -> {
               docMerger.merge(updateDoc, existingDoc);
             });
-    assertTrue(
-        expected
-            .getMessage()
-            .equals("A nested atomic update can only update an existing nested document"));
+    assertEquals(
+        "A nested atomic update can only update an existing nested document",
+        expected.getMessage());
   }
 
   @Test

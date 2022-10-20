@@ -504,7 +504,6 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
         }
       }
     } else {
-      assert 1 == idsToRequest.size();
       params.add("id", idsToRequest.get(0));
     }
 
@@ -644,7 +643,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   }
 
   public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
-    assert null != client.getDefaultCollection();
+    assertNotNull(client.getDefaultCollection());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(
         client.getDefaultCollection(), ZkStateReader.from(client), true, true, 330);
   }
@@ -1360,7 +1359,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
         final SolrInputDocument expected,
         final SolrDocument actual,
         final String wt) {
-      assertEquals(fl, null, actual.getFirstValue(fieldName));
+      assertNull(fl, actual.getFirstValue(fieldName));
       return Collections.emptySet();
     }
   }

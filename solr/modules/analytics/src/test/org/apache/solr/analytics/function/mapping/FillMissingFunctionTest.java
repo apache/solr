@@ -120,32 +120,32 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     // Value exists
     val.setValue(true).setExists(true);
     filler.setValue(false).setExists(true);
-    assertEquals(true, func.getBoolean());
+    assertTrue(func.getBoolean());
     assertTrue(func.exists());
 
     val.setValue(false).setExists(true);
     filler.setValue(false).setExists(true);
-    assertEquals(false, func.getBoolean());
+    assertFalse(func.getBoolean());
     assertTrue(func.exists());
 
     val.setValue(true).setExists(true);
     filler.setExists(false);
-    assertEquals(true, func.getBoolean());
+    assertTrue(func.getBoolean());
     assertTrue(func.exists());
 
     val.setValue(false).setExists(true);
     filler.setExists(false);
-    assertEquals(false, func.getBoolean());
+    assertFalse(func.getBoolean());
     assertTrue(func.exists());
 
     val.setExists(false);
     filler.setValue(false).setExists(true);
-    assertEquals(false, func.getBoolean());
+    assertFalse(func.getBoolean());
     assertTrue(func.exists());
 
     val.setExists(false);
     filler.setValue(true).setExists(true);
-    assertEquals(true, func.getBoolean());
+    assertTrue(func.getBoolean());
     assertTrue(func.exists());
   }
 
@@ -399,7 +399,7 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     filler.setValues();
     func.streamBooleans(
         value -> {
-          assertTrue("There should be no values to stream", false);
+          fail("There should be no values to stream");
         });
 
     // Values exist
@@ -449,7 +449,7 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     filler.setValues();
     func.streamInts(
         value -> {
-          assertTrue("There should be no values to stream", false);
+          fail("There should be no values to stream");
         });
 
     // Values exist
@@ -499,7 +499,7 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     filler.setValues();
     func.streamLongs(
         value -> {
-          assertTrue("There should be no values to stream", false);
+          fail("There should be no values to stream");
         });
 
     // Values exist
@@ -549,7 +549,7 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     filler.setValues();
     func.streamFloats(
         value -> {
-          assertTrue("There should be no values to stream", false);
+          fail("There should be no values to stream");
         });
 
     // Values exist
@@ -599,7 +599,7 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     filler.setValues();
     func.streamDoubles(
         value -> {
-          assertTrue("There should be no values to stream", false);
+          fail("There should be no values to stream");
         });
 
     // Values exist
@@ -653,7 +653,7 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     filler.setValues();
     func.streamLongs(
         value -> {
-          assertTrue("There should be no values to stream", false);
+          fail("There should be no values to stream");
         });
 
     // Values exist
@@ -703,7 +703,7 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     filler.setValues();
     func.streamStrings(
         value -> {
-          assertTrue("There should be no values to stream", false);
+          fail("There should be no values to stream");
         });
 
     // Values exist
@@ -752,7 +752,7 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     filler.setValues();
     func.streamObjects(
         value -> {
-          assertTrue("There should be no values to stream", false);
+          fail("There should be no values to stream");
         });
 
     // Values exist

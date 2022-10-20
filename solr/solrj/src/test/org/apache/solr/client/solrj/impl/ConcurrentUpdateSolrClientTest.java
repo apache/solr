@@ -182,17 +182,20 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
     int expectedSuccesses = TestServlet.numReqsRcvd.get();
     assertTrue(expectedSuccesses > 0); // at least one request must have been sent
 
-    assertTrue(
+    assertEquals(
         "Expected no errors but got " + errorCounter.get() + ", due to: " + errors.toString(),
-        errorCounter.get() == 0);
-    assertTrue(
+        0,
+        errorCounter.get());
+    assertEquals(
         "Expected " + expectedSuccesses + " successes, but got " + successCounter.get(),
-        successCounter.get() == expectedSuccesses);
+        successCounter.get(),
+        expectedSuccesses);
 
     int expectedDocs = numDocs * numRunnables;
-    assertTrue(
+    assertEquals(
         "Expected CUSS to send " + expectedDocs + " but got " + TestServlet.numDocsRcvd.get(),
-        TestServlet.numDocsRcvd.get() == expectedDocs);
+        TestServlet.numDocsRcvd.get(),
+        expectedDocs);
   }
 
   @Test

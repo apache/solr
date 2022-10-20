@@ -940,7 +940,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
         tool.runTool(
             SolrCLI.processCommandLineArgs(
                 SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args));
-    assertFalse("Should fail when trying to remove /.", res == 0);
+    assertNotEquals("Should fail when trying to remove /.", 0, res);
   }
 
   // Check that all children of fileRoot are children of zkRoot and vice-versa

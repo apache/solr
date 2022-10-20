@@ -75,7 +75,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
   /** Modifies the request to inlcude authentication params if needed, returns the request */
   private <T extends SolrRequest<?>> T setAuthIfNeeded(T req) {
     if (null != USER) {
-      assert null != PASS;
+      assertNotNull(PASS);
       req.setBasicAuthCredentials(USER, PASS);
     }
     return req;
@@ -384,8 +384,8 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
         final String coreName,
         final long indexVersion,
         final long numDocs) {
-      assert null != shardName;
-      assert null != coreName;
+      assertNotNull(shardName);
+      assertNotNull(coreName);
 
       this.shardName = shardName;
       this.coreName = coreName;

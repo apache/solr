@@ -192,7 +192,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     @SuppressWarnings({"rawtypes"})
     NamedList<NamedList> result =
         handler.handleAnalysisRequest(request, h.getCore().getLatestSchema());
-    assertTrue("result is null and it shouldn't be", result != null);
+    assertNotNull("result is null and it shouldn't be", result);
 
     @SuppressWarnings({"rawtypes"})
     NamedList<NamedList> fieldTypes = result.get("field_types");
@@ -521,7 +521,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     @SuppressWarnings({"rawtypes"})
     NamedList<NamedList> result =
         handler.handleAnalysisRequest(request, h.getCore().getLatestSchema());
-    assertTrue("result is null and it shouldn't be", result != null);
+    assertNotNull("result is null and it shouldn't be", result);
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     NamedList<NamedList> fieldTypes = result.get("field_types");
@@ -561,7 +561,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     @SuppressWarnings({"rawtypes"})
     NamedList<NamedList> result =
         handler.handleAnalysisRequest(request, h.getCore().getLatestSchema());
-    assertTrue("result is null and it shouldn't be", result != null);
+    assertNotNull("result is null and it shouldn't be", result);
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     NamedList<NamedList> fieldTypes = result.get("field_types");
@@ -645,7 +645,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     @SuppressWarnings({"rawtypes"})
     NamedList<NamedList> result =
         handler.handleAnalysisRequest(request, h.getCore().getLatestSchema());
-    assertTrue("result is null and it shouldn't be", result != null);
+    assertNotNull("result is null and it shouldn't be", result);
 
     @SuppressWarnings({"rawtypes"})
     NamedList<NamedList> fieldTypes = result.get("field_types");

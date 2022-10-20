@@ -25,7 +25,6 @@ import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.CumulativeProbabilityEvaluator;
 import org.apache.solr.client.solrj.io.eval.NormalDistributionEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class CumulativeProbabilityEvaluatorTest extends SolrTestCase {
@@ -49,7 +48,7 @@ public class CumulativeProbabilityEvaluatorTest extends SolrTestCase {
     values.put("l2", 7);
 
     NormalDistribution actual = new NormalDistribution(3, 7);
-    Assert.assertEquals(
+    assertEquals(
         actual.cumulativeProbability(2),
         factory.constructEvaluator("prob(norm(l1,l2),2)").evaluate(new Tuple(values)));
   }

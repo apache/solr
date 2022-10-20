@@ -185,9 +185,9 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     Watcher wrapped1A = defaultClient.wrapWatcher(watcherA);
     Watcher wrapped2A = defaultClient.wrapWatcher(watcherA);
     Watcher wrappedB = defaultClient.wrapWatcher(watcherB);
-    assertTrue(wrapped1A.equals(wrapped2A));
-    assertTrue(wrapped2A.equals(wrapped1A));
-    assertFalse(wrapped1A.equals(wrappedB));
+    assertEquals(wrapped1A, wrapped2A);
+    assertEquals(wrapped2A, wrapped1A);
+    assertNotEquals(wrapped1A, wrappedB);
     assertEquals(wrapped1A.hashCode(), wrapped2A.hashCode());
 
     CollectionAdminRequest.createCollection(getSaferTestName(), "_default", 1, 1)

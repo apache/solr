@@ -41,7 +41,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -400,18 +399,16 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     }
 
     // check the value in properties are correct
-    Iterator<? extends Map.Entry<String, ?>> it = properties.iterator();
-    while (it.hasNext()) {
-      Map.Entry<String, ?> entry = it.next();
+    for (Map.Entry<String, ?> entry : properties) {
       String newValue = newProps != null ? newProps.get(entry.getKey()) : null;
       String oldValue = oldProps != null ? oldProps.get(entry.getKey()) : null;
       if (newValue != null) {
-        assertTrue(newValue.equals(entry.getValue()));
+        assertEquals(newValue, entry.getValue());
       } else if (oldValue != null) {
-        assertTrue(oldValue.equals(entry.getValue()));
+        assertEquals(oldValue, entry.getValue());
       } else {
         // not in either
-        assert (false);
+        fail();
       }
     }
   }
@@ -1367,24 +1364,22 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     assertTrue(
         "managed-schema.xml file should have been uploaded",
         zkClient.exists("/configs/" + configSetName + suffix + "/managed-schema.xml", true));
-    assertTrue(
+    assertArrayEquals(
         "managed-schema.xml file contents on zookeeper are not exactly same as that of the file uploaded in config",
-        Arrays.equals(
-            zkClient.getData(
-                "/configs/" + configSetName + suffix + "/managed-schema.xml", null, null, true),
-            readFile("solr/configsets/upload/" + configSetName + "/managed-schema.xml")));
+        zkClient.getData(
+            "/configs/" + configSetName + suffix + "/managed-schema.xml", null, null, true),
+        readFile("solr/configsets/upload/" + configSetName + "/managed-schema.xml"));
 
     assertTrue(
         "solrconfig.xml file should have been uploaded",
         zkClient.exists("/configs/" + configSetName + suffix + "/solrconfig.xml", true));
     byte data[] = zkClient.getData("/configs/" + configSetName + suffix, null, null, true);
     // assertEquals("{\"trusted\": false}", new String(data, StandardCharsets.UTF_8));
-    assertTrue(
+    assertArrayEquals(
         "solrconfig.xml file contents on zookeeper are not exactly same as that of the file uploaded in config",
-        Arrays.equals(
-            zkClient.getData(
-                "/configs/" + configSetName + suffix + "/solrconfig.xml", null, null, true),
-            readFile("solr/configsets/upload/" + configSetName + "/solrconfig.xml")));
+        zkClient.getData(
+            "/configs/" + configSetName + suffix + "/solrconfig.xml", null, null, true),
+        readFile("solr/configsets/upload/" + configSetName + "/solrconfig.xml"));
   }
 
   private long uploadConfigSet(

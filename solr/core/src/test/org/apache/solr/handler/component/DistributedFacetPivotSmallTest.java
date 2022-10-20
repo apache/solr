@@ -490,8 +490,8 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
       assertNull(krakowFujitsuStatsInfo.getSumOfSquares());
       assertNull(krakowFujitsuStatsInfo.getStddev());
     } else {
-      assertEquals(null, krakowFujitsuStatsInfo.getMin());
-      assertEquals(null, krakowFujitsuStatsInfo.getMax());
+      assertNull(krakowFujitsuStatsInfo.getMin());
+      assertNull(krakowFujitsuStatsInfo.getMax());
       assertEquals(0, (long) krakowFujitsuStatsInfo.getCount());
       assertEquals(1, (long) krakowFujitsuStatsInfo.getMissing());
       assertEquals(0.0, krakowFujitsuStatsInfo.getSum());

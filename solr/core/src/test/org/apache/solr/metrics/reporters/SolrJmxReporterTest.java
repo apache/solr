@@ -272,7 +272,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
         coreMetricManager.getTag());
 
     String root2 = PREFIX + TestUtil.randomSimpleString(random(), 5, 10);
-    assertFalse(root2.equals(root1));
+    assertNotEquals(root2, root1);
     PluginInfo pluginInfo2 = createReporterPluginInfo(root2, false);
     metricManager.loadReporter(
         coreMetricManager.getRegistryName(),

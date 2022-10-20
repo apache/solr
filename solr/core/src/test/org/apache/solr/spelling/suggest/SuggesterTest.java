@@ -140,6 +140,6 @@ public class SuggesterTest extends SolrTestCaseJ4 {
     params.add("field", "test_field");
     params.add("lookupImpl", "org.apache.solr.spelling.suggest.tst.TSTLookupFactory");
     suggester.init(params, h.getCore());
-    assertTrue(suggester.getQueryAnalyzer() != null);
+    assertNotNull(suggester.getQueryAnalyzer());
   }
 }

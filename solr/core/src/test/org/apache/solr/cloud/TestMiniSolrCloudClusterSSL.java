@@ -67,7 +67,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
   static {
     try {
       DEFAULT_SSL_CONTEXT = SSLContext.getDefault();
-      assert null != DEFAULT_SSL_CONTEXT;
+      assertNotNull(DEFAULT_SSL_CONTEXT);
     } catch (Exception e) {
       throw new RuntimeException(
           "Unable to initialize 'Default' SSLContext Algorithm, JVM is borked", e);
@@ -401,7 +401,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
 
     final SSLConnectionSocketFactory sslFactory =
         clientConfig.buildClientSSLConnectionSocketFactory();
-    assert null != sslFactory;
+    assertNotNull(sslFactory);
 
     final Registry<ConnectionSocketFactory> socketFactoryReg =
         RegistryBuilder.<ConnectionSocketFactory>create()

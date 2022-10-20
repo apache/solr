@@ -23,7 +23,6 @@ import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.NotEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class NotEvaluatorTest extends SolrTestCase {
@@ -46,14 +45,14 @@ public class NotEvaluatorTest extends SolrTestCase {
     values.clear();
     values.put("a", true);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(false, result);
+    assertTrue(result instanceof Boolean);
+    assertEquals(false, result);
 
     values.clear();
     values.put("a", false);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(true, result);
+    assertTrue(result instanceof Boolean);
+    assertEquals(true, result);
   }
 
   @Test
@@ -64,13 +63,13 @@ public class NotEvaluatorTest extends SolrTestCase {
     values.clear();
     values.put("a", true);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(true, result);
+    assertTrue(result instanceof Boolean);
+    assertEquals(true, result);
 
     values.clear();
     values.put("a", false);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(false, result);
+    assertTrue(result instanceof Boolean);
+    assertEquals(false, result);
   }
 }

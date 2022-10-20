@@ -23,7 +23,6 @@ import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.CoalesceEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class CoalesceEvaluatorTest extends SolrTestCase {
@@ -47,38 +46,38 @@ public class CoalesceEvaluatorTest extends SolrTestCase {
     values.put("a", null);
     values.put("b", 2);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertEquals(2L, result);
+    assertEquals(2L, result);
 
     values.clear();
     values.put("a", 1.1);
     values.put("b", null);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertEquals(1.1D, result);
+    assertEquals(1.1D, result);
 
     values.clear();
     values.put("a", "foo");
     values.put("b", 2.1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertEquals("foo", result);
+    assertEquals("foo", result);
 
     values.clear();
     values.put("a", true);
     values.put("b", 2.1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertEquals(true, result);
+    assertEquals(true, result);
 
 
     values.clear();
     values.put("a", null);
     values.put("b", false);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertEquals(false, result);
+    assertEquals(false, result);
 
     values.clear();
     values.put("a", null);
     values.put("b", null);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertNull(result);
+    assertNull(result);
   }
 
 
@@ -89,7 +88,7 @@ public class CoalesceEvaluatorTest extends SolrTestCase {
 
     values.clear();
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertNull(result);
+    assertNull(result);
   }
   */
 
@@ -104,6 +103,6 @@ public class CoalesceEvaluatorTest extends SolrTestCase {
     values.put("c", null);
     values.put("d", 4);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertEquals(1D, result);
+    assertEquals(1D, result);
   }
 }

@@ -157,7 +157,7 @@ public class TestDocSet extends SolrTestCase {
     DocIterator i1 = d1.iterator();
     DocIterator i2 = d2.iterator();
 
-    assert (i1.hasNext() == i2.hasNext());
+    assertEquals(i1.hasNext(), i2.hasNext());
 
     for (; ; ) {
       boolean b1 = i1.hasNext();

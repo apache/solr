@@ -23,7 +23,6 @@ import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.eval.UuidEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class UuidEvaluatorTest extends SolrTestCase {
@@ -41,7 +40,7 @@ public class UuidEvaluatorTest extends SolrTestCase {
   @Test
   public void testUuid() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("uuid()");
-    Assert.assertTrue(evaluator.evaluate(null) instanceof String);
+    assertTrue(evaluator.evaluate(null) instanceof String);
     String uuid = (String) evaluator.evaluate(null);
     assertEquals(uuid.split("-").length, 5);
     String uuid1 = (String) evaluator.evaluate(new Tuple(values));

@@ -239,7 +239,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
       final int inputPositionLength,
       final int maxIndexedPositionLength,
       final int maxQueryPositionLength) {
-    assert 0 < phrases.size() : "Don't use this method if phrases might be empty";
+    assertTrue("Don't use this method if phrases might be empty", 0 < phrases.size());
 
     assertEmptyStream(
         "no phrase should be longer then " + maxQueryPositionLength + " positions",
