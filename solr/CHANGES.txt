@@ -309,6 +309,8 @@ Other Changes
 
 * SOLR-16451: Don't fetch the PRS states while registering the collection watch (Hitesh Khamesra via Ishan Chattopadhyaya)
 
+* SOLR-16452: Do not update PRS states if local version is newer (Hitesh Khamesra via noble)
+
 Build
 ---------------------
 * SOLR-16204: Change Lucene dependency to Lucene 9.1.0 (Elia Porciani via Alessandro Benedetti)
