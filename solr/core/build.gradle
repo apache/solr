@@ -91,8 +91,6 @@ dependencies {
   jettyClientImplementation 'org.eclipse.jetty.http2:http2-common'
   implementation 'org.eclipse.jetty.http2:http2-server'
 
-  implementation 'javax.servlet:javax.servlet-api'
-
   implementation('org.glassfish.jersey.containers:jersey-container-jetty-http', {
     exclude group: "org.eclipse.jetty", module: "jetty-continuation"
   })
