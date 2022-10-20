@@ -25,10 +25,9 @@ import org.apache.hadoop.security.authentication.client.AuthenticationException;
 import org.apache.hadoop.security.authentication.server.AuthenticationHandler;
 import org.apache.hadoop.security.authentication.server.AuthenticationToken;
 
-/*
- * {@link AuthenticationHandler} that delegates to another {@link AuthenticationHandler}
- * and records the response of managementOperation (which indicates whether the request
- * should continue or not).
+/**
+ * {@link AuthenticationHandler} that delegates to another {@link AuthenticationHandler} and records
+ * the response of managementOperation (which indicates whether the request should continue or not).
  */
 public class RequestContinuesRecorderAuthenticationHandler implements AuthenticationHandler {
   // filled in by Plugin/Filter
