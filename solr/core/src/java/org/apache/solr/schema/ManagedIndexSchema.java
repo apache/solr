@@ -324,7 +324,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     }
   }
 
-  protected static List<String> getActiveReplicaCoreUrls(
+  private static List<String> getActiveReplicaCoreUrls(
       ZkController zkController, String collection, String localCoreNodeName) {
     List<String> activeReplicaCoreUrls = new ArrayList<>();
     ZkStateReader zkStateReader = zkController.getZkStateReader();
@@ -1309,7 +1309,7 @@ public final class ManagedIndexSchema extends IndexSchema {
   }
 
   /** Informs analyzers used by a fieldType. */
-  protected void informResourceLoaderAwareObjectsForFieldType(FieldType fieldType) {
+  private void informResourceLoaderAwareObjectsForFieldType(FieldType fieldType) {
     // must inform any sub-components used in the
     // tokenizer chain if they are ResourceLoaderAware
     if (!fieldType.supportsAnalyzers()) return;
@@ -1442,7 +1442,7 @@ public final class ManagedIndexSchema extends IndexSchema {
    * ResourceLoaderAware interface, which need to be informed after they are loaded (as they depend
    * on this callback to complete initialization work)
    */
-  protected void informResourceLoaderAwareObjectsInChain(TokenizerChain chain) {
+  private void informResourceLoaderAwareObjectsInChain(TokenizerChain chain) {
     CharFilterFactory[] charFilters = chain.getCharFilterFactories();
     for (CharFilterFactory next : charFilters) {
       if (next instanceof ResourceLoaderAware) {
