@@ -232,6 +232,8 @@ Other Changes
 
 * SOLR-16464: Upgrade commons-text to 1.10.0 (Kevin Risden)
 
+* SOLR-16482: Add an internal envVar for passing options to bin/solr that will not be overriden by the user. (Houston Putman)
+
 Build
 ---------------------
 * SOLR-16204: Change Lucene dependency to Lucene 9.1.0 (Elia Porciani via Alessandro Benedetti)
