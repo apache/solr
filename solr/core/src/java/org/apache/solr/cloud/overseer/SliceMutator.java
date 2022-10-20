@@ -109,19 +109,7 @@ public class SliceMutator {
             coll,
             slice);
 
-    if (collection.isPerReplicaState()) {
-      PerReplicaStates prs =
-          PerReplicaStatesFetcher.fetch(
-              collection.getZNode(), zkClient, collection.getPerReplicaStates());
-      return new ZkWriteCommand(
-          coll,
-          updateReplica(collection, sl, replica.getName(), replica),
-          PerReplicaStatesOps.addReplica(
-              replica.getName(), replica.getState(), replica.isLeader(), prs),
-          true);
-    } else {
-      return new ZkWriteCommand(coll, updateReplica(collection, sl, replica.getName(), replica));
-    }
+    return new ZkWriteCommand(coll, updateReplica(collection, sl, replica.getName(), replica));
   }
 
   public ZkWriteCommand removeReplica(ClusterState clusterState, ZkNodeProps message) {
