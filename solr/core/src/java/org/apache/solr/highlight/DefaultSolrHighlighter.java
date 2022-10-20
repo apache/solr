@@ -953,7 +953,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     private boolean done = false;
     private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 
-    protected TokenOrderingFilter(TokenStream input, int windowSize) {
+    private TokenOrderingFilter(TokenStream input, int windowSize) {
       super(input);
       this.windowSize = windowSize;
     }

@@ -386,7 +386,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       }
     }
 
-    protected void addAttributes(AttributeSource attributeSource) {
+    private void addAttributes(AttributeSource attributeSource) {
       // note: ideally we wouldn't call addAttributeImpl which is marked internal. But nonetheless
       // it's possible this method is used by some custom attributes, especially since Solr doesn't
       // provide a way to customize the AttributeFactory which is the recommended way to choose
