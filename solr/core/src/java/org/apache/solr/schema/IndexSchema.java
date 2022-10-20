@@ -1707,8 +1707,7 @@ public class IndexSchema {
     SortedMap<String, List<CopyField>> sortedCopyFields = new TreeMap<>(copyFieldsMap);
     for (List<CopyField> copyFields : sortedCopyFields.values()) {
       copyFields = new ArrayList<>(copyFields);
-      Collections.sort(
-          copyFields,
+      copyFields.sort(
           (cf1, cf2) -> {
             // sources are all the same, just sorting by destination here
             return cf1.getDestination().getName().compareTo(cf2.getDestination().getName());

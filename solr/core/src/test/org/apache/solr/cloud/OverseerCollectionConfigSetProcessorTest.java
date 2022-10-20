@@ -572,7 +572,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
                   try {
                     handleCreateCollMessage(invocation.getArgument(0));
                     verify(stateUpdateQueueMock, Mockito.atLeast(0))
-                        .offer(invocation.getArgument(0));
+                        .offer((byte[]) invocation.getArgument(0));
                   } catch (KeeperException e) {
                     throw new RuntimeException(e);
                   } catch (InterruptedException e) {
@@ -583,7 +583,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
                 }
               })
           .when(overseerMock)
-          .offerStateUpdate(any());
+          .offerStateUpdate((byte[]) any());
     }
 
     when(zkControllerMock.getZkClient()).thenReturn(solrZkClientMock);

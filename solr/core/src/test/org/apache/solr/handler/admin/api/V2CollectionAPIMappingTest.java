@@ -52,7 +52,6 @@ public class V2CollectionAPIMappingTest extends V2ApiMappingTest<CollectionsHand
   @Override
   public void populateApiBag() {
     final CollectionsHandler collectionsHandler = getRequestHandler();
-    apiBag.registerObject(new AddReplicaPropertyAPI(collectionsHandler));
     apiBag.registerObject(new BalanceShardUniqueAPI(collectionsHandler));
     apiBag.registerObject(new DeleteCollectionAPI(collectionsHandler));
     apiBag.registerObject(new DeleteReplicaPropertyAPI(collectionsHandler));
@@ -210,27 +209,6 @@ public class V2CollectionAPIMappingTest extends V2ApiMappingTest<CollectionsHand
     assertEquals("collName", v1Params.get(COLLECTION));
     assertEquals(123, v1Params.getPrimitiveInt("maxAtOnce"));
     assertEquals(456, v1Params.getPrimitiveInt("maxWaitSeconds"));
-  }
-
-  @Test
-  public void testAddReplicaPropertyAllProperties() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/collections/collName",
-            "POST",
-            "{ 'add-replica-property': {"
-                + "'shard': 'someShardName', "
-                + "'replica': 'someReplicaName', "
-                + "'name': 'somePropertyName', "
-                + "'value': 'somePropertyValue'"
-                + "}}");
-
-    assertEquals(CollectionParams.CollectionAction.ADDREPLICAPROP.lowerName, v1Params.get(ACTION));
-    assertEquals("collName", v1Params.get(COLLECTION));
-    assertEquals("someShardName", v1Params.get("shard"));
-    assertEquals("someReplicaName", v1Params.get("replica"));
-    assertEquals("somePropertyName", v1Params.get("property"));
-    assertEquals("somePropertyValue", v1Params.get("property.value"));
   }
 
   @Test

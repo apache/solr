@@ -39,6 +39,7 @@ import org.apache.solr.util.circuitbreaker.CPUCircuitBreaker;
 import org.apache.solr.util.circuitbreaker.CircuitBreaker;
 import org.apache.solr.util.circuitbreaker.CircuitBreakerManager;
 import org.apache.solr.util.circuitbreaker.MemoryCircuitBreaker;
+import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -164,7 +165,8 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
                   try {
                     h.query(req("name:\"john smith\""));
                   } catch (SolrException e) {
-                    assertThat(e.getMessage(), containsString("Circuit Breakers tripped"));
+                    MatcherAssert.assertThat(
+                        e.getMessage(), containsString("Circuit Breakers tripped"));
                     failureCount.incrementAndGet();
                   } catch (Exception e) {
                     throw new RuntimeException(e.getMessage());
@@ -224,7 +226,8 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
                   try {
                     h.query(req("name:\"john smith\""));
                   } catch (SolrException e) {
-                    assertThat(e.getMessage(), containsString("Circuit Breakers tripped"));
+                    MatcherAssert.assertThat(
+                        e.getMessage(), containsString("Circuit Breakers tripped"));
                     failureCount.incrementAndGet();
                   } catch (Exception e) {
                     throw new RuntimeException(e.getMessage());

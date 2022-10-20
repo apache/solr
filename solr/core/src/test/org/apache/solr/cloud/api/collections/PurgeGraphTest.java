@@ -36,6 +36,7 @@ import org.apache.solr.core.backup.ShardBackupId;
 import org.apache.solr.core.backup.ShardBackupMetadata;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
+import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -122,13 +123,13 @@ public class PurgeGraphTest extends SolrTestCaseJ4 {
     // All files associated with backup '0' should be flagged for deletion since the required file
     // 'uniqName3' is missing.
     assertEquals(1, purgeGraph.backupIdDeletes.size());
-    assertThat(purgeGraph.backupIdDeletes, containsInAnyOrder("backup_0.properties"));
+    MatcherAssert.assertThat(purgeGraph.backupIdDeletes, containsInAnyOrder("backup_0.properties"));
     assertEquals(2, purgeGraph.shardBackupMetadataDeletes.size());
-    assertThat(
+    MatcherAssert.assertThat(
         purgeGraph.shardBackupMetadataDeletes,
         containsInAnyOrder("md_shard1_0.json", "md_shard2_0.json"));
     assertEquals(3, purgeGraph.indexFileDeletes.size());
-    assertThat(
+    MatcherAssert.assertThat(
         purgeGraph.indexFileDeletes, containsInAnyOrder("uniqName1", "uniqName2", "uniqName4"));
 
     // If a subsequent backup relies on an index file (uniqName4) that was previously only used by
@@ -140,13 +141,15 @@ public class PurgeGraphTest extends SolrTestCaseJ4 {
     //        createUniquelyNamedIndexFile("uniqName5", "uniqName6");
     //
     //        assertEquals(1, purgeGraph.backupIdDeletes.size());
-    //        assertThat(purgeGraph.backupIdDeletes, containsInAnyOrder("backup_0.properties"));
+    //        MatcherAssert.assertThat(purgeGraph.backupIdDeletes,
+    // containsInAnyOrder("backup_0.properties"));
     //        assertEquals(2, purgeGraph.shardBackupMetadataDeletes.size());
-    //        assertThat(purgeGraph.shardBackupMetadataDeletes,
+    //        MatcherAssert.assertThat(purgeGraph.shardBackupMetadataDeletes,
     // containsInAnyOrder("md_shard1_0.json", "md_shard2_0.json"));
     //        // NOTE that 'uniqName4' is NOT marked for deletion
     //        assertEquals(2, purgeGraph.indexFileDeletes.size());
-    //        assertThat(purgeGraph.indexFileDeletes, containsInAnyOrder("uniqName1", "uniqName2"));
+    //        MatcherAssert.assertThat(purgeGraph.indexFileDeletes, containsInAnyOrder("uniqName1",
+    // "uniqName2"));
   }
 
   @Test
@@ -168,9 +171,11 @@ public class PurgeGraphTest extends SolrTestCaseJ4 {
 
     assertEquals(0, purgeGraph.backupIdDeletes.size());
     assertEquals(1, purgeGraph.shardBackupMetadataDeletes.size());
-    assertThat(purgeGraph.shardBackupMetadataDeletes, containsInAnyOrder("md_shard3_0.json"));
+    MatcherAssert.assertThat(
+        purgeGraph.shardBackupMetadataDeletes, containsInAnyOrder("md_shard3_0.json"));
     assertEquals(2, purgeGraph.indexFileDeletes.size());
-    assertThat(purgeGraph.indexFileDeletes, containsInAnyOrder("uniqName5", "uniqName6"));
+    MatcherAssert.assertThat(
+        purgeGraph.indexFileDeletes, containsInAnyOrder("uniqName5", "uniqName6"));
 
     // If a subsequent backup relies on an index file (uniqName5) that was previously only used by
     // the orphaned 'shard3' metadata file, that file should no longer be flagged for deletion
@@ -184,10 +189,11 @@ public class PurgeGraphTest extends SolrTestCaseJ4 {
     //
     //        assertEquals(0, purgeGraph.backupIdDeletes.size());
     //        assertEquals(1, purgeGraph.shardBackupMetadataDeletes.size());
-    //        assertThat(purgeGraph.shardBackupMetadataDeletes,
+    //        MatcherAssert.assertThat(purgeGraph.shardBackupMetadataDeletes,
     // containsInAnyOrder("md_shard3_0.json"));
     //        assertEquals(1, purgeGraph.indexFileDeletes.size());
-    //        assertThat(purgeGraph.indexFileDeletes, containsInAnyOrder("uniqName6"));
+    //        MatcherAssert.assertThat(purgeGraph.indexFileDeletes,
+    // containsInAnyOrder("uniqName6"));
   }
 
   private void createBackupIdFile(int backupId, String... shardNames) throws Exception {

@@ -1725,4 +1725,33 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
           "//doc/arr[@name='multiDefault']/str[.='muLti-Default']");
     }
   }
+
+  @Test
+  public void testAddDistinctToEmptyCollection() {
+    SolrInputDocument doc;
+
+    doc = new SolrInputDocument();
+    doc.setField("id", "5005");
+    doc.setField("intRemove", new Long[] {111L, 222L});
+    assertU(adoc(doc));
+
+    assertU(commit());
+    assertQ(
+        req("q", "intRemove:*", "indent", "true"),
+        "//result[@numFound = '1']",
+        "//result/doc[1]/arr[@name='intRemove']/int[1][.=111]",
+        "//result/doc[1]/arr[@name='intRemove']/int[2][.=222]");
+
+    doc = new SolrInputDocument();
+    doc.setField("id", "5005");
+    doc.setField("intRemove", ImmutableMap.of("remove", List.of(111L, 222L), "add-distinct", 333L));
+    assertU(adoc(doc));
+    assertU(commit());
+
+    assertQ(
+        req("q", "intRemove:*", "indent", "true"),
+        "//result[@numFound = '1']",
+        "*[count(//result/doc[1]/arr[@name='intRemove']/int)=1]",
+        "//result/doc[1]/arr[@name='intRemove']/int[1][.=333]");
+  }
 }

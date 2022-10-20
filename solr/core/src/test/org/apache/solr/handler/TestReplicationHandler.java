@@ -21,7 +21,7 @@ import static org.apache.solr.handler.ReplicationTestHelper.SolrInstance;
 import static org.apache.solr.handler.ReplicationTestHelper.assertVersions;
 import static org.apache.solr.handler.ReplicationTestHelper.createNewSolrClient;
 import static org.apache.solr.handler.ReplicationTestHelper.invokeReplicationCommand;
-import static org.junit.matchers.JUnitMatchers.containsString;
+import static org.hamcrest.CoreMatchers.containsString;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -79,6 +79,7 @@ import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
+import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -99,7 +100,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   private static final long TIMEOUT = 30000;
 
   JettySolrRunner leaderJetty, followerJetty, repeaterJetty;
-  HttpSolrClient leaderClient, followerClient, repeaterClient;
+  SolrClient leaderClient, followerClient, repeaterClient;
   SolrInstance leader = null, follower = null, repeater = null;
 
   static String context = "/solr";
@@ -267,14 +268,14 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     params.set("qt", "/admin/cores");
     QueryRequest req = new QueryRequest(params);
 
-    try (HttpSolrClient adminClient = adminClient(s)) {
+    try (SolrClient adminClient = adminClient(s)) {
       NamedList<Object> res = adminClient.request(req);
       assertNotNull("null response from server", res);
       return res;
     }
   }
 
-  private HttpSolrClient adminClient(SolrClient client) {
+  private SolrClient adminClient(SolrClient client) {
     String adminUrl = ((HttpSolrClient) client).getBaseURL().replace("/collection1", "");
     return getHttpSolrClient(adminUrl);
   }
@@ -1604,7 +1605,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
               followerClient.query(q);
             });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, thrown.code());
-    assertThat(thrown.getMessage(), containsString("Missing required parameter: command"));
+    MatcherAssert.assertThat(
+        thrown.getMessage(), containsString("Missing required parameter: command"));
   }
 
   @Test
@@ -1618,7 +1620,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
               followerClient.query(q);
             });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, thrown.code());
-    assertThat(thrown.getMessage(), containsString("Missing required parameter: name"));
+    MatcherAssert.assertThat(
+        thrown.getMessage(), containsString("Missing required parameter: name"));
   }
 
   @Test
@@ -1791,7 +1794,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     final long sleepInterval = 200;
     long timeSlept = 0;
 
-    try (HttpSolrClient adminClient = adminClient(client)) {
+    try (SolrClient adminClient = adminClient(client)) {
       SolrParams p = params("action", "status", "core", "collection1");
       while (timeSlept < TIMEOUT) {
         QueryRequest req = new QueryRequest(p);

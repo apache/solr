@@ -46,6 +46,7 @@ import org.apache.solr.handler.admin.LukeRequestHandler;
 import org.apache.solr.handler.component.FacetComponent;
 import org.apache.solr.response.JSONResponseWriter;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.hamcrest.MatcherAssert;
 import org.junit.After;
 
 public class ResourceLoaderTest extends SolrTestCaseJ4 {
@@ -59,7 +60,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
   public void testInstanceDir() throws Exception {
     final Path dir = createTempDir();
     try (SolrResourceLoader loader = new SolrResourceLoader(dir.toAbsolutePath())) {
-      assertThat(loader.getInstancePath(), is(dir.toAbsolutePath()));
+      MatcherAssert.assertThat(loader.getInstancePath(), is(dir.toAbsolutePath()));
     }
   }
 

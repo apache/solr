@@ -1372,7 +1372,7 @@ public class RealTimeGetComponent extends SearchComponent {
       versionAvailable = recentUpdates.getVersions(ulog.getNumRecordsToKeep());
     }
     // sort versions
-    Collections.sort(versionAvailable, PeerSync.absComparator);
+    versionAvailable.sort(PeerSync.absComparator);
 
     // This can be done with single pass over both ranges and versionsAvailable, that would require
     // merging ranges. We currently use Set to ensure there are no duplicates.
