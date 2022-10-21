@@ -109,15 +109,22 @@ public class QueryResultKeyTest extends SolrTestCaseJ4 {
   }
 
   public void testCreateKeyWithNullFilterList() {
-    // the hashcode should be the same even when the list
-    // of filters has a null filter
 
     Sort sort = new Sort(new SortField("test", SortField.Type.INT));
     BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(new TermQuery(new Term("test", "field")), Occur.MUST);
 
-    List<Query> filters = null;
-    QueryResultKey qrk1 = new QueryResultKey(query.build(), filters, sort, 1);
+    QueryResultKey qrk1 = new QueryResultKey(query.build(), null, sort, 1);
+    assertNotNull(qrk1);
+  }
+
+  public void testCreateKeyWithNullFilterListAndNullSort() {
+
+
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
+    query.add(new TermQuery(new Term("test", "field")), Occur.MUST);
+
+    QueryResultKey qrk1 = new QueryResultKey(query.build(), null, null, 1);
     assertNotNull(qrk1);
   }
 
