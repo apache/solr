@@ -24,7 +24,7 @@ dependencies {
 
   implementation 'org.slf4j:slf4j-api'
   runtimeOnly 'org.slf4j:jcl-over-slf4j'
-  
+
   api 'org.eclipse.jetty.http2:http2-client'
   implementation 'org.eclipse.jetty.http2:http2-http-client-transport'
   implementation 'org.eclipse.jetty:jetty-http'
