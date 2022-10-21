@@ -19,7 +19,7 @@ package org.apache.solr.handler.designer;
 
 import static org.apache.solr.common.params.CommonParams.JSON_MIME;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -33,7 +33,7 @@ public class SampleDocuments {
   public List<SolrInputDocument> parsed;
 
   public SampleDocuments(List<SolrInputDocument> parsed, String contentType, String fileSource) {
-    this.parsed = parsed != null ? parsed : new LinkedList<>(); // needs to be mutable
+    this.parsed = parsed != null ? parsed : new ArrayList<>(); // needs to be mutable
     this.contentType = contentType;
     this.fileSource = fileSource;
   }

@@ -324,7 +324,7 @@ public class FetchStream extends TupleStream implements Expressible {
   }
 
   private String appendFields() {
-    StringBuffer buf = new StringBuffer();
+    StringBuilder buf = new StringBuilder();
     if (appendKey) {
       buf.append(",");
       buf.append(rightKey);

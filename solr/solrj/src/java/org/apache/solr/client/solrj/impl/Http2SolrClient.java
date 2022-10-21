@@ -32,12 +32,12 @@ import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -132,7 +132,7 @@ public class Http2SolrClient extends SolrClient {
 
   private ResponseParser parser = new BinaryResponseParser();
   private volatile RequestWriter requestWriter = new BinaryRequestWriter();
-  private List<HttpListenerFactory> listenerFactory = new LinkedList<>();
+  private List<HttpListenerFactory> listenerFactory = new ArrayList<>();
   private AsyncTracker asyncTracker = new AsyncTracker();
   /** The URL of the Solr server. */
   private String serverBaseUrl;

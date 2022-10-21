@@ -33,9 +33,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Vector;
 import java.util.zip.GZIPInputStream;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.IOUtils;
@@ -540,7 +540,7 @@ public class JaspellTernarySearchTrie implements Accountable {
         matchAlmostDiff,
         key,
         ((numReturnValues < 0) ? -1 : numReturnValues),
-        new Vector<String>(),
+        new ArrayList<>(),
         false);
   }
 
@@ -636,13 +636,13 @@ public class JaspellTernarySearchTrie implements Accountable {
    * @return A <code>List</code> with the results
    */
   public List<String> matchPrefix(CharSequence prefix, int numReturnValues) {
-    Vector<String> sortKeysResult = new Vector<>();
+    List<String> sortKeysResult = new ArrayList<>();
     TSTNode startNode = getNode(prefix);
     if (startNode == null) {
       return sortKeysResult;
     }
     if (startNode.data != null) {
-      sortKeysResult.addElement(getKey(startNode));
+      sortKeysResult.add(getKey(startNode));
     }
     return sortKeysRecursion(
         startNode.relatives[TSTNode.EQKID],
@@ -783,7 +783,7 @@ public class JaspellTernarySearchTrie implements Accountable {
    */
   protected List<String> sortKeys(TSTNode startNode, int numReturnValues) {
     return sortKeysRecursion(
-        startNode, ((numReturnValues < 0) ? -1 : numReturnValues), new Vector<String>());
+        startNode, ((numReturnValues < 0) ? -1 : numReturnValues), new ArrayList<>());
   }
 
   /**
