@@ -59,14 +59,6 @@ public class TimeDifferencingEvaluator extends RecursiveObjectEvaluator implemen
       Number lagValue = 1;
 
       if (1 == values.length) {
-        if (!(timeseriesValues instanceof List<?>)) {
-          throw new IOException(
-              String.format(
-                  Locale.ROOT,
-                  "Invalid expression %s - found type %s for the first value, expecting a List",
-                  toExpression(constructingFactory),
-                  values[0].getClass().getSimpleName()));
-        }
         if (!(timeseriesValues.size() > 1)) {
           throw new IOException(
               String.format(
@@ -78,7 +70,7 @@ public class TimeDifferencingEvaluator extends RecursiveObjectEvaluator implemen
       }
       if (2 == values.length) {
         lagValue = (Number) values[1];
-        if (!(lagValue instanceof Number)) {
+        if (lagValue == null) {
           throw new IOException(
               String.format(
                   Locale.ROOT,
@@ -114,7 +106,7 @@ public class TimeDifferencingEvaluator extends RecursiveObjectEvaluator implemen
 
       if (2 == values.length) {
         lagValue = (Number) values[1];
-        if (!(lagValue instanceof Number)) {
+        if (lagValue == null) {
           throw new IOException(
               String.format(
                   Locale.ROOT,
