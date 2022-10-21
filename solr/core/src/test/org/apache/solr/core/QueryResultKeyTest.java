@@ -108,7 +108,20 @@ public class QueryResultKeyTest extends SolrTestCaseJ4 {
     assertKeyNotEquals(key1, key2);
   }
 
-  public void testNullFilter() {
+  public void testCreateKeyWithNullFilterList() {
+    // the hashcode should be the same even when the list
+    // of filters has a null filter
+
+    Sort sort = new Sort(new SortField("test", SortField.Type.INT));
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
+    query.add(new TermQuery(new Term("test", "field")), Occur.MUST);
+
+    List<Query> filters = null;
+    QueryResultKey qrk1 = new QueryResultKey(query.build(), filters, sort, 1);
+    assertNotNull(qrk1);
+  }
+
+  public void testNullFilterInFiltersList() {
     // the hashcode should be the same even when the list
     // of filters has a null filter
 
@@ -117,13 +130,15 @@ public class QueryResultKeyTest extends SolrTestCaseJ4 {
     query.add(new TermQuery(new Term("test", "field")), Occur.MUST);
 
     List<Query> filters =
-            Arrays.<Query>asList(
-                    new TermQuery(new Term("test", "field")), new TermQuery(new Term("test2", "field2")), null);
+        Arrays.<Query>asList(
+            new TermQuery(new Term("test", "field")),
+            new TermQuery(new Term("test2", "field2")),
+            null);
     QueryResultKey qrk1 = new QueryResultKey(query.build(), filters, sort, 1);
 
     List<Query> filters2 =
-            Arrays.<Query>asList(
-                    new TermQuery(new Term("test2", "field2")), new TermQuery(new Term("test", "field")));
+        Arrays.<Query>asList(
+            new TermQuery(new Term("test2", "field2")), new TermQuery(new Term("test", "field")));
     QueryResultKey qrk2 = new QueryResultKey(query.build(), filters2, sort, 1);
     assertKeyEquals(qrk1, qrk2);
   }

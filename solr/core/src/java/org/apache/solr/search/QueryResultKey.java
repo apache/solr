@@ -17,11 +17,9 @@
 package org.apache.solr.search;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -54,9 +52,10 @@ public final class QueryResultKey implements Accountable {
   public QueryResultKey(
       Query query, List<Query> filters, Sort sort, int nc_flags, int minExactCount) {
 
-    List<Query> filtersWithoutNulls = filters.stream()
-            .filter(Objects::nonNull)
-            .collect(Collectors.toList());
+    List<Query> filtersWithoutNulls = null;
+    if (filters != null) {
+      filtersWithoutNulls = filters.stream().filter(Objects::nonNull).collect(Collectors.toList());
+    }
     this.query = query;
     this.sort = sort;
     this.filters = filtersWithoutNulls;
@@ -70,7 +69,6 @@ public final class QueryResultKey implements Accountable {
         // NOTE: simple summation used here so keys with the same filters but in
         // different orders get the same hashCode
         h += filt.hashCode();
-
     }
 
     sfields = (this.sort != null) ? this.sort.getSort() : defaultSort;
