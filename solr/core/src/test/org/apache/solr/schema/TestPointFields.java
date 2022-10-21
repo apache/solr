@@ -667,7 +667,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
         .toArray(new String[list.size()]);
   }
 
-  private class PosVal<T extends Comparable<T>> {
+  private static class PosVal<T extends Comparable<T>> {
     int pos;
     T val;
 

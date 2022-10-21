@@ -604,7 +604,7 @@ public class DirectJsonQueryRequestFacetingIntegrationTest extends SolrCloudTest
         new FacetBucket("currency", 4));
   }
 
-  private class FacetBucket {
+  private static class FacetBucket {
     private final Object val;
     private final int count;
 

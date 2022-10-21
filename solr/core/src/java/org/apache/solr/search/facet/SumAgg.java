@@ -83,7 +83,7 @@ public class SumAgg extends SimpleAggValueSource {
     }
   }
 
-  class SumSortedNumericAcc extends DocValuesAcc.DoubleSortedNumericDVAcc {
+  static class SumSortedNumericAcc extends DocValuesAcc.DoubleSortedNumericDVAcc {
 
     public SumSortedNumericAcc(FacetContext fcontext, SchemaField sf, int numSlots)
         throws IOException {
@@ -98,7 +98,7 @@ public class SumAgg extends SimpleAggValueSource {
     }
   }
 
-  class SumSortedSetAcc extends DocValuesAcc.DoubleSortedSetDVAcc {
+  static class SumSortedSetAcc extends DocValuesAcc.DoubleSortedSetDVAcc {
 
     public SumSortedSetAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots, 0);
@@ -116,7 +116,7 @@ public class SumAgg extends SimpleAggValueSource {
     }
   }
 
-  class SumUnInvertedFieldAcc extends UnInvertedFieldAcc.DoubleUnInvertedFieldAcc {
+  static class SumUnInvertedFieldAcc extends UnInvertedFieldAcc.DoubleUnInvertedFieldAcc {
 
     public SumUnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots)
         throws IOException {

@@ -74,7 +74,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     zkClient.makePath("/collections/collection2", true);
   }
 
-  class TestLeaderElectionContext extends ShardLeaderElectionContextBase {
+  static class TestLeaderElectionContext extends ShardLeaderElectionContextBase {
     private long runLeaderDelay = 0;
 
     public TestLeaderElectionContext(

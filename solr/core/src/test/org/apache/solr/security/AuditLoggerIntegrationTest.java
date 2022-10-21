@@ -552,7 +552,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   // code. This all goes back to MiniSolrCloudCluster.close, which really _can_ throw an
   // InterruptedException
   @SuppressWarnings({"try"})
-  private class CallbackReceiver implements Runnable, AutoCloseable {
+  private static class CallbackReceiver implements Runnable, AutoCloseable {
     private final ServerSocket serverSocket;
     private BlockingQueue<AuditEvent> queue = new LinkedBlockingDeque<>();
 
@@ -617,7 +617,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   // code. This all goes back to MiniSolrCloudCluster.close, which really _can_ throw an
   // InterruptedException
   @SuppressWarnings({"try"})
-  private class AuditTestHarness implements AutoCloseable {
+  private static class AuditTestHarness implements AutoCloseable {
     CallbackReceiver receiver;
     int callbackPort;
     Thread receiverThread;

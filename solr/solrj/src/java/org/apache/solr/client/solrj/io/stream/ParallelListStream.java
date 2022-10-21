@@ -164,7 +164,7 @@ public class ParallelListStream extends TupleStream implements Expressible {
     }
   }
 
-  protected class StreamOpener implements Callable<StreamIndex> {
+  protected static class StreamOpener implements Callable<StreamIndex> {
 
     private StreamIndex streamIndex;
 
@@ -179,7 +179,7 @@ public class ParallelListStream extends TupleStream implements Expressible {
     }
   }
 
-  protected class StreamIndex {
+  protected static class StreamIndex {
     private TupleStream tupleStream;
     private int index;
 

@@ -48,7 +48,7 @@ public class ExportQParserPlugin extends QParserPlugin {
     return new ExportQParser(qstr, localParams, params, request);
   }
 
-  public class ExportQParser extends QParser {
+  public static class ExportQParser extends QParser {
 
     public ExportQParser(
         String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest request) {
@@ -65,7 +65,7 @@ public class ExportQParserPlugin extends QParserPlugin {
     }
   }
 
-  public class ExportQuery extends RankQuery {
+  public static class ExportQuery extends RankQuery {
     private Query mainQuery;
     private Object id;
 
