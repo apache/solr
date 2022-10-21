@@ -20,9 +20,10 @@ import static org.apache.solr.common.params.CommonParams.SORT;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.LinkedList;
+import java.util.Deque;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -116,7 +117,7 @@ public class GroupOperation implements ReduceOperation {
   }
 
   public Tuple reduce() {
-    LinkedList<Map<String, Object>> ll = new LinkedList<>();
+    Deque<Map<String, Object>> ll = new ArrayDeque<>();
     while (priorityQueue.size() > 0) {
       ll.addFirst(priorityQueue.poll().getFields());
       // This will clear priority queue and so it will be ready for the next group.

@@ -19,9 +19,9 @@ package org.apache.solr.handler;
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
@@ -204,7 +204,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
       // now have the "main" test thread try to take a series of backups/snapshots
       // while adding other "real" docs
 
-      final Queue<String> namedSnapshots = new LinkedList<>();
+      final Queue<String> namedSnapshots = new ArrayDeque<>();
 
       // NOTE #1: start at i=1 for 'id' & doc counting purposes...
       // NOTE #2: abort quickly if the other thread reports a heavyCommitFailure...

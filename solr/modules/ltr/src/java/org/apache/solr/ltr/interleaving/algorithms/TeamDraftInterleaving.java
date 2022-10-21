@@ -19,7 +19,7 @@ package org.apache.solr.ltr.interleaving.algorithms;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedList;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import org.apache.lucene.search.ScoreDoc;
@@ -79,7 +79,7 @@ public class TeamDraftInterleaving implements Interleaving {
    * @return the interleaved ranking list
    */
   public InterleavingResult interleave(ScoreDoc[] rerankedA, ScoreDoc[] rerankedB) {
-    LinkedList<ScoreDoc> interleavedResults = new LinkedList<>();
+    List<ScoreDoc> interleavedResults = new ArrayList<>();
     HashSet<Integer> alreadyAdded = new HashSet<>();
     ScoreDoc[] interleavedResultArray = new ScoreDoc[rerankedA.length];
     ArrayList<Set<Integer>> interleavingPicks = new ArrayList<>(2);
