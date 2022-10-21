@@ -80,7 +80,8 @@ public class ReplicateFromLeader {
       if (System.getProperty("jetty.testMode") != null) {
         pollIntervalStr = "00:00:01";
       }
-      if (uinfo.autoCommmitMaxTime != -1) {
+
+      if (uinfo.openSearcher && uinfo.autoCommmitMaxTime != -1) {
         pollIntervalStr = toPollIntervalStr(uinfo.autoCommmitMaxTime / 2);
       } else if (uinfo.autoSoftCommmitMaxTime != -1) {
         pollIntervalStr = toPollIntervalStr(uinfo.autoSoftCommmitMaxTime / 2);
