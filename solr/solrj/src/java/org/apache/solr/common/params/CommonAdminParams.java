@@ -36,6 +36,6 @@ public interface CommonAdminParams {
   String TIMEOUT = "timeout";
   /** Inexact shard splitting factor. */
   String SPLIT_FUZZ = "splitFuzz";
-  /** Skip free space checking before shard splitting. **/
+  /** Skip free space checking before shard splitting. * */
   String SKIP_FREE_SPACE_CHECK = "skipFreeSpaceCheck";
 }

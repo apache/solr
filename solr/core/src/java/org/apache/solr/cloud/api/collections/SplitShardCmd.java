@@ -202,10 +202,14 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         t = timings.sub("checkDiskSpace");
         boolean skipFreeSpaceCheck = message.getBool(SKIP_FREE_SPACE_CHECK, false);
         if (skipFreeSpaceCheck) {
-            log.debug("Skipping check for sufficient disk space", message);
+          log.debug("Skipping check for sufficient disk space", message);
         } else {
           checkDiskSpace(
-                  collectionName, slice.get(), parentShardLeader, splitMethod, ccc.getSolrCloudManager());
+              collectionName,
+              slice.get(),
+              parentShardLeader,
+              splitMethod,
+              ccc.getSolrCloudManager());
         }
         t.stop();
       }
