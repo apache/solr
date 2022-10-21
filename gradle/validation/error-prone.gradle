@@ -99,7 +99,6 @@ allprojects { prj ->
             '-Xep:IntLongMath:OFF',
             '-Xep:InvalidBlockTag:OFF', // this is needed for tags like lucene.internal
             '-Xep:JavaUtilDate:OFF',
-            '-Xep:JdkObsolete:OFF',
             '-Xep:LogicalAssignment:OFF',
             '-Xep:MissingOverride:OFF',
             '-Xep:MissingSummary:OFF',

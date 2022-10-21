@@ -31,12 +31,12 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -393,7 +393,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
                   || (streams != null && streams.size() > 1))
               && !hasNullStreamName;
 
-      LinkedList<NameValuePair> postOrPutParams = new LinkedList<>();
+      List<NameValuePair> postOrPutParams = new ArrayList<>();
 
       if (contentWriter != null) {
         String fullQueryUrl = url + wparams.toQueryString();
@@ -475,7 +475,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       Collection<ContentStream> streams,
       ModifiableSolrParams wparams,
       boolean isMultipart,
-      LinkedList<NameValuePair> postOrPutParams,
+      List<NameValuePair> postOrPutParams,
       String fullQueryUrl)
       throws IOException {
     HttpEntityEnclosingRequestBase postOrPut =
@@ -487,7 +487,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       postOrPut.addHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
     }
 
-    List<FormBodyPart> parts = new LinkedList<>();
+    List<FormBodyPart> parts = new ArrayList<>();
     Iterator<String> iter = wparams.getParameterNamesIterator();
     while (iter.hasNext()) {
       String p = iter.next();
