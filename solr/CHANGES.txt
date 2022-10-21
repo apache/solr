@@ -250,7 +250,8 @@ Bug Fixes
 
 * SOLR-16463: Workaround for serious crash on JDK17+ due to JIT on caffeinecache (janhoy, Uwe Schindler)
 
-Other Changes
+* SOLR-16478 :removing a replica should delete the PRS entry from the hostnode and not from overseer (Patson Luk via noble)
+
 ---------------------
 * SOLR-16351: Upgrade Carrot2 to 4.4.3, upgrade randomizedtesting to 2.8.0. (Dawid Weiss)
 
