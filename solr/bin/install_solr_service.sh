@@ -349,5 +349,5 @@ echo "Customize Solr startup configuration in /etc/default/$SOLR_SERVICE.in.sh"
 if [[ $SOLR_START == "true" ]] ; then
   systemctl start "$SOLR_SERVICE.service"
 else
-  echo "Not starting Solr service (option -n given). Start manually with 'systemctl start $SOLR_SERVICE.service'"
+  echo "Not starting Solr service (option -n given). Start manually with 'systemctl start $SOLR_SERVICE'"
 fi
