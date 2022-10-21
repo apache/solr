@@ -76,7 +76,7 @@ dependencies {
   libExt('io.dropwizard.metrics:metrics-graphite', {
     exclude group: "com.rabbitmq", module: "amqp-client"
   })
-  libExt 'io.dropwizard.metrics:metrics-jetty9'
+  libExt 'io.dropwizard.metrics:metrics-jetty10'
   libExt 'io.dropwizard.metrics:metrics-jvm'
   libExt 'io.dropwizard.metrics:metrics-jmx'
 

@@ -56,7 +56,7 @@ dependencies {
   implementation 'io.opentracing:opentracing-util'
   implementation 'com.google.guava:guava'
   implementation 'io.dropwizard.metrics:metrics-core'
-  implementation 'io.dropwizard.metrics:metrics-jetty9'
+  implementation 'io.dropwizard.metrics:metrics-jetty10'
   implementation 'commons-cli:commons-cli'
   permitUnusedDeclared 'commons-cli:commons-cli'
   implementation 'org.apache.httpcomponents:httpclient'
