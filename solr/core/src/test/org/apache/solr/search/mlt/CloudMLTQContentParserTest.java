@@ -155,7 +155,9 @@ public class CloudMLTQContentParserTest extends SolrCloudTestCase {
             .getSolrClient()
             .query(
                 COLLECTION,
-                new SolrQuery("q", "{!mlt_content qf=lowerfilt_u mindf=0 mintf=1}" + "bmw usa",
+                new SolrQuery(
+                        "q",
+                        "{!mlt_content qf=lowerfilt_u mindf=0 mintf=1}" + "bmw usa",
                         "fq",
                         "-id:3")
                     .setShowDebugInfo(true));
@@ -172,9 +174,7 @@ public class CloudMLTQContentParserTest extends SolrCloudTestCase {
     assertArrayEquals(expectedIds, actualIds);
 
     String[] expectedQueryStrings =
-        new String[] {
-          "lowerfilt_u:bmw lowerfilt_u:usa", "lowerfilt_u:usa lowerfilt_u:bmw"
-        };
+        new String[] {"lowerfilt_u:bmw lowerfilt_u:usa", "lowerfilt_u:usa lowerfilt_u:bmw"};
 
     String[] actualParsedQueries;
     if (queryResponse.getDebugMap().get("parsedquery") instanceof String) {
@@ -257,8 +257,10 @@ public class CloudMLTQContentParserTest extends SolrCloudTestCase {
             .query(
                 COLLECTION,
                 new SolrQuery(
-                    "q", "{!mlt_content qf=lowerfilt_u minwl=3 mintf=1 mindf=0}" + "bmw usa",
-                        "fq","-id:3"));
+                    "q",
+                    "{!mlt_content qf=lowerfilt_u minwl=3 mintf=1 mindf=0}" + "bmw usa",
+                    "fq",
+                    "-id:3"));
     SolrDocumentList solrDocuments = queryResponse.getResults();
     assertEquals(
         "Expected to match 4 documents with a minwl of 3 but found more", 4, solrDocuments.size());
@@ -274,9 +276,12 @@ public class CloudMLTQContentParserTest extends SolrCloudTestCase {
             .getSolrClient()
             .query(
                 COLLECTION,
-                new SolrQuery("q",
-                    "{!mlt_content qf=lowerfilt_u}" + "The quote red fox jumped over the lazy brown dogs.",
-                        "fq", "-id:20"));
+                new SolrQuery(
+                    "q",
+                    "{!mlt_content qf=lowerfilt_u}"
+                        + "The quote red fox jumped over the lazy brown dogs.",
+                    "fq",
+                    "-id:20"));
     SolrDocumentList solrDocuments = queryResponse.getResults();
     int[] actualIds = new int[solrDocuments.size()];
     int[] expectedIds = new int[] {13, 14, 15, 16, 22, 24, 32, 18, 19, 21};
