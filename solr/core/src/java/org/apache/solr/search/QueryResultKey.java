@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -71,7 +72,23 @@ public final class QueryResultKey implements Accountable {
         h += filt.hashCode();
     }
 
-    sfields = (this.sort != null) ? this.sort.getSort() : defaultSort;
+    if (this.sort == null){
+      this.sfields = defaultSort;
+    }
+    else {
+      //
+      // Arrays.stream(sort.getSort()).filter(Objects::nonNull).collect(Collectors.toList()).toArray(Query);
+      List<SortField> sortFieldsWithoutNulls = Arrays.stream(sort.getSort()).sequential().filter(Objects::nonNull).collect(Collectors.toList());
+      this.sfields = new SortField[sortFieldsWithoutNulls.size()];
+      int i = 0;
+      for (SortField sf : sortFieldsWithoutNulls){
+        sfields[i] = sf;
+        i = i + 1;
+      }
+      //this.sfields = (SortField[]) Arrays.stream(sort.getSort()).filter(Objects::nonNull).collect(Collectors.toList()).toArray();
+    }
+    //sfields = (this.sort != null) ? this.sort.getSort() : defaultSort;
+    //sfields = sfields.stream().filter(Objects::nonNull).collect(Collectors.toList());
     long ramSfields = RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
     for (SortField sf : sfields) {
       h = h * 29 + sf.hashCode();
