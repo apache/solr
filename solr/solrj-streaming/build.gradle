@@ -36,6 +36,10 @@ dependencies {
     testImplementation 'junit:junit'
     testImplementation 'commons-io:commons-io'
     testImplementation 'com.google.guava:guava'
+    testImplementation project(':solr:solrj-zookeeper')
+    testImplementation('org.apache.zookeeper:zookeeper', {
+        exclude group: "org.apache.yetus", module: "audience-annotations"
+    })
 
     permitTestUsedUndeclared project(':solr:solrj-zookeeper') // duh!
 }
