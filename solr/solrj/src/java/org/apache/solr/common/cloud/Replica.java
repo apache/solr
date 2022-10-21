@@ -126,6 +126,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
 
     /**
      * Only certain replica types can become leaders
+     *
      * @param type the type of a replica
      * @return true if that type is able to be leader, false otherwise
      */
