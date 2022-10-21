@@ -122,7 +122,7 @@ Segments:: Return info on last commit generation Lucene index segments.
 |`solr/<collection>/admin/segments` |{solr-javadocs}/core/org/apache/solr/handler/admin/SegmentsInfoRequestHandler.html[SegmentsInfoRequestHandler] |`_ADMIN_SEGMENTS`
 |===
 
-System Settings:: Return server statistics and settings.
+System Info:: Return server statistics and settings.
 +
 *Documentation*: <<system-info-handler.adoc#system-info-handler,System Info Handler>>
 +
