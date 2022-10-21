@@ -117,7 +117,7 @@ public class IntersectStream extends TupleStream implements Expressible {
 
     if (includeStreams) {
       // streams
-      if (streamA instanceof Expressible) {
+      if (streamA != null) {
         expression.addParameter(((Expressible) streamA).toExpression(factory));
       } else {
         throw new IOException(
