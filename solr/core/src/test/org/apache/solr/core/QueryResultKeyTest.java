@@ -150,6 +150,25 @@ public class QueryResultKeyTest extends SolrTestCaseJ4 {
     assertKeyEquals(qrk1, qrk2);
   }
 
+  public void testNullSortFieldInSort() {
+    // the hashcode should be the same even when the list
+    // of SortFields has a null value.
+
+    Sort sort1 = new Sort(new SortField("test", SortField.Type.INT), null);
+    Sort sort2 = new Sort(new SortField("test", SortField.Type.INT), null);
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
+    query.add(new TermQuery(new Term("test", "field")), Occur.MUST);
+
+    List<Query> filters =
+            Arrays.<Query>asList(
+                    new TermQuery(new Term("test", "field")),
+                    new TermQuery(new Term("test2", "field2")));
+    QueryResultKey qrk1 = new QueryResultKey(query.build(), filters, sort1, 1);
+
+    QueryResultKey qrk2 = new QueryResultKey(query.build(), filters, sort2, 1);
+    assertKeyEquals(qrk1, qrk2);
+  }
+
   public void testRandomQueryKeyEquality() {
 
     final int minIters = atLeast(100 * 1000);
