@@ -37,9 +37,16 @@ dependencies {
     testImplementation 'commons-io:commons-io'
     testImplementation 'com.google.guava:guava'
     testImplementation project(':solr:solrj-zookeeper')
+
+    permitTestUsedUndeclared project(':solr:solrj-zookeeper') // duh!
+
     testImplementation('org.apache.zookeeper:zookeeper', {
         exclude group: "org.apache.yetus", module: "audience-annotations"
     })
 
-    permitTestUsedUndeclared project(':solr:solrj-zookeeper') // duh!
+    testRuntimeOnly project(':solr:modules:sql')
+    testRuntimeOnly "org.hsqldb:hsqldb" // runtime because via JDBC reflection
+
+
+
 }
