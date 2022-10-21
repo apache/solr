@@ -35,6 +35,7 @@ public class ZkDistributedConfigSetLockFactory extends ZkDistributedLockFactory
     super(zkClient, rootPath);
   }
 
+  @Override
   public DistributedLock createLock(boolean isWriteLock, String configSetName) {
     Preconditions.checkArgument(configSetName != null, "configSetName can't be null");
 

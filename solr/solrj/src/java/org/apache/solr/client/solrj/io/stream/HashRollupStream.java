@@ -186,25 +186,30 @@ public class HashRollupStream extends TupleStream implements Expressible {
     return explanation;
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.tupleStream.setStreamContext(context);
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     l.add(tupleStream);
     return l;
   }
 
+  @Override
   public void open() throws IOException {
     tupleStream.open();
   }
 
+  @Override
   public void close() throws IOException {
     tupleStream.close();
     tupleIterator = null;
   }
 
+  @Override
   public Tuple read() throws IOException {
     // On the first call to read build the tupleIterator.
     if (tupleIterator == null) {
@@ -258,6 +263,7 @@ public class HashRollupStream extends TupleStream implements Expressible {
     return tupleIterator.next();
   }
 
+  @Override
   public int getCost() {
     return 0;
   }

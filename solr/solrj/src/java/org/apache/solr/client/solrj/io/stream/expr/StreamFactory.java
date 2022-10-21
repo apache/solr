@@ -73,6 +73,7 @@ public class StreamFactory implements Serializable {
     return this;
   }
 
+  @Override
   public Object clone() {
     // Shallow copy
     StreamFactory clone = new StreamFactory(functionNames);

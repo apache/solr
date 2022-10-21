@@ -30,10 +30,12 @@ public class TestRTimerTree extends SolrTestCase {
 
     private long start;
 
+    @Override
     public void start() {
       start = systemTime;
     }
 
+    @Override
     public double elapsed() {
       return systemTime - start;
     }

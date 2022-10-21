@@ -245,6 +245,7 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
         .withExpression(toExpression(factory).toString());
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.streamContext = context;
 
@@ -253,6 +254,7 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
     }
   }
 
+  @Override
   public StreamContext getStreamContext() {
     return streamContext;
   }

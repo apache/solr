@@ -34,6 +34,7 @@ public enum ComparatorOrder {
     }
   }
 
+  @Override
   public String toString() {
     switch (this) {
       case DESCENDING:

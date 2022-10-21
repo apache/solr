@@ -284,6 +284,7 @@ public class UpdateShardHandler implements SolrInfoBean {
     return recoveryExecutor;
   }
 
+  @Override
   public void close() {
     try {
       // do not interrupt, do not interrupt

@@ -357,6 +357,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     initCore();
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     testDone = false;
@@ -379,6 +380,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     server = null;
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     testDone = true;
@@ -1877,6 +1879,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
           new SolrZkClient(server.getZkAddress(), AbstractZkTestCase.TIMEOUT);
       doAnswer(
               new Answer<Void>() {
+                @Override
                 public Void answer(InvocationOnMock invocation) {
                   newZkClient.close();
                   return null;

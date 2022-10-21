@@ -352,6 +352,7 @@ public class HdfsTransactionLog extends TransactionLog {
     }
   }
 
+  @Override
   public String toString() {
     return "hdfs tlog{file=" + tlogFile.toString() + " refcount=" + refcount.get() + "}";
   }
@@ -365,6 +366,7 @@ public class HdfsTransactionLog extends TransactionLog {
     return new HDFSLogReader(startingPos);
   }
 
+  @Override
   public LogReader getSortedReader(long startingPos) {
     return new HDFSSortedLogReader(startingPos);
   }
@@ -407,6 +409,7 @@ public class HdfsTransactionLog extends TransactionLog {
      * @return The log record, or null if EOF
      * @throws IOException If there is a low-level I/O error.
      */
+    @Override
     public Object next() throws IOException, InterruptedException {
       long pos = fis.position();
 
@@ -451,6 +454,7 @@ public class HdfsTransactionLog extends TransactionLog {
       return o;
     }
 
+    @Override
     public void close() {
       try {
         fis.close();
@@ -570,6 +574,7 @@ public class HdfsTransactionLog extends TransactionLog {
      * @return The log record, or null if EOF
      * @throws IOException If there is a low-level I/O error.
      */
+    @Override
     public Object next() throws IOException {
       if (prevPos <= 0) return null;
 
@@ -611,10 +616,12 @@ public class HdfsTransactionLog extends TransactionLog {
     }
 
     /* returns the position in the log file of the last record returned by next() */
+    @Override
     public long position() {
       return prevPos + 4; // skip the length
     }
 
+    @Override
     public void close() {
       try {
         fis.close();

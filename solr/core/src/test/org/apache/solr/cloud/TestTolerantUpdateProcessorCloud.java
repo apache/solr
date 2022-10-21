@@ -1248,6 +1248,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
       this.msgSubStr = msgSubStr;
     }
 
+    @Override
     public String toString() {
       return "type=<" + type + ">,id=<" + id + ">,msgSubStr=<" + msgSubStr + ">";
     }

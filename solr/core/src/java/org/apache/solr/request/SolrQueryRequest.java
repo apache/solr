@@ -67,6 +67,7 @@ public interface SolrQueryRequest extends AutoCloseable {
    * This method should be called when all uses of this request are finished, so that resources can
    * be freed.
    */
+  @Override
   void close();
 
   /**

@@ -117,6 +117,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     useLegacyParams = rarely();
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();

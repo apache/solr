@@ -38,6 +38,7 @@ public class ZkDistributedCollectionLockFactory extends ZkDistributedLockFactory
     super(zkClient, rootPath);
   }
 
+  @Override
   public DistributedLock createLock(
       boolean isWriteLock,
       CollectionParams.LockLevel level,

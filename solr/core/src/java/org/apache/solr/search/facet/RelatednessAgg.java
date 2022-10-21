@@ -138,6 +138,7 @@ public class RelatednessAgg extends AggValueSource {
     throw new UnsupportedOperationException("NOT IMPLEMENTED " + name + " " + this);
   }
 
+  @Override
   public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots)
       throws IOException {
     // TODO: Ideally this is where we should check fgQ/bgQ for 'null' and apply defaults...
@@ -259,6 +260,7 @@ public class RelatednessAgg extends AggValueSource {
       }
     }
 
+    @Override
     public int compare(int slotA, int slotB) {
       int r = Double.compare(getRelatedness(slotA), getRelatedness(slotB));
       if (0 == r) {
@@ -440,6 +442,7 @@ public class RelatednessAgg extends AggValueSource {
       return docs.size();
     }
 
+    @Override
     public int compare(int slotA, int slotB) {
       final BucketData a = slotvalues[slotA];
       final BucketData b = slotvalues[slotB];

@@ -60,6 +60,7 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
 
   public abstract void open() throws IOException;
 
+  @Override
   public abstract void close() throws IOException;
 
   public abstract Tuple read() throws IOException;
@@ -217,10 +218,12 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
   }
 
   public static class IgnoreException extends IOException {
+    @Override
     public void printStackTrace(PrintWriter pw) {
       pw.print("Early Client Disconnect");
     }
 
+    @Override
     public String getMessage() {
       return "Early Client Disconnect";
     }

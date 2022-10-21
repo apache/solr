@@ -2347,18 +2347,22 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
       intCombos = new Combinations(all.length, comboSize);
     }
 
+    @Override
     public Iterator<EnumSet<Stat>> iterator() {
       return new Iterator<EnumSet<Stat>>() {
         final Iterator<int[]> wrapped = intCombos.iterator();
 
+        @Override
         public void remove() {
           wrapped.remove();
         }
 
+        @Override
         public boolean hasNext() {
           return wrapped.hasNext();
         }
 
+        @Override
         public EnumSet<Stat> next() {
           EnumSet<Stat> result = EnumSet.noneOf(Stat.class);
           int[] indexes = wrapped.next();

@@ -75,6 +75,7 @@ public class NodeMetricImpl<T> extends MetricImpl<T> implements NodeMetric<T> {
     this.registry = Registry.UNSPECIFIED;
   }
 
+  @Override
   public Registry getRegistry() {
     return registry;
   }

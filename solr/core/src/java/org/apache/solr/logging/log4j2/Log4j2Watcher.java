@@ -60,6 +60,7 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
       this.threshold = threshold;
     }
 
+    @Override
     public void append(LogEvent logEvent) {
       watcher.add(logEvent, logEvent.getTimeMillis());
     }

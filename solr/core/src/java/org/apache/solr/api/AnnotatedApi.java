@@ -337,6 +337,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
       }
     }
 
+    @Override
     public int hashCode() {
       return new HashCodeBuilder()
           .append(command)
@@ -348,6 +349,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
           .toHashCode();
     }
 
+    @Override
     public boolean equals(Object rhs) {
       if (null == rhs) return false;
       if (this == rhs) return true;

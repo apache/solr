@@ -96,6 +96,7 @@ public class SolrCmdDistributor implements Closeable {
     }
   }
 
+  @Override
   public void close() {
     clients.shutdown();
   }
@@ -431,6 +432,7 @@ public class SolrCmdDistributor implements Closeable {
       return isRetry && retries < node.getMaxRetries();
     }
 
+    @Override
     public String toString() {
       StringBuilder sb = new StringBuilder();
       sb.append("SolrCmdDistributor$Req: cmd=").append(cmd.toString());
@@ -507,6 +509,7 @@ public class SolrCmdDistributor implements Closeable {
      */
     public Req req;
 
+    @Override
     public String toString() {
       StringBuilder sb = new StringBuilder();
       sb.append("SolrCmdDistributor$Error: statusCode=").append(statusCode);
@@ -557,10 +560,12 @@ public class SolrCmdDistributor implements Closeable {
       this.maxRetries = maxRetries;
     }
 
+    @Override
     public String getCollection() {
       return collection;
     }
 
+    @Override
     public String getShardId() {
       return shardId;
     }

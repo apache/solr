@@ -257,6 +257,7 @@ public class Http2SolrClient extends SolrClient {
     return httpClient;
   }
 
+  @Override
   public void close() {
     // we wait for async requests, so far devs don't want to give sugar for this
     asyncTracker.waitForComplete();

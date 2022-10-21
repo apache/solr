@@ -1827,6 +1827,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   }
 
   public static class CreateNoErrorChecking extends ConfigSetAdminRequest.Create {
+    @Override
     public ConfigSetAdminRequest<Create, ConfigSetAdminResponse> setAction(ConfigSetAction action) {
       return super.setAction(action);
     }
@@ -1842,6 +1843,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   }
 
   public static class DeleteNoErrorChecking extends ConfigSetAdminRequest.Delete {
+    @Override
     public ConfigSetAdminRequest<Delete, ConfigSetAdminResponse> setAction(ConfigSetAction action) {
       return super.setAction(action);
     }

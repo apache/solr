@@ -49,6 +49,7 @@ public abstract class ElectionContext implements Closeable {
     this.zkClient = zkClient;
   }
 
+  @Override
   public void close() {}
 
   public void cancelElection() throws InterruptedException, KeeperException {

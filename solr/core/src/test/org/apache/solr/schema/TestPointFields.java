@@ -676,6 +676,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
       this.val = val;
     }
 
+    @Override
     public String toString() {
       return "(" + pos + ": " + val.toString() + ")";
     }

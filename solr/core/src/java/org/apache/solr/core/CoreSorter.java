@@ -120,6 +120,7 @@ public final class CoreSorter implements Comparator<CoreDescriptor> {
     return this;
   }
 
+  @Override
   public int compare(CoreDescriptor cd1, CoreDescriptor cd2) {
     String s1 = getShardName(cd1.getCloudDescriptor());
     String s2 = getShardName(cd2.getCloudDescriptor());

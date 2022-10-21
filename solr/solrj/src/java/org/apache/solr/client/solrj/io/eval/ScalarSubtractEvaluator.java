@@ -38,6 +38,7 @@ public class ScalarSubtractEvaluator extends ScalarAddEvaluator implements TwoVa
     }
   }
 
+  @Override
   protected double operate(double value, double d) {
     return value - d;
   }

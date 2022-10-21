@@ -362,6 +362,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
     return replicaState;
   }
 
+  @Override
   public Object clone() {
     return new Replica(name, node, collection, shard, core, state, type, propMap);
   }

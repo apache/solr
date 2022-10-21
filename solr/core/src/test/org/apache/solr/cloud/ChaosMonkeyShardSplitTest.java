@@ -61,6 +61,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
     System.clearProperty("solr.retries.to.followers");
   }
 
+  @Override
   @Test
   public void test() throws Exception {
     waitForThingsToLevelOut(15, TimeUnit.SECONDS);

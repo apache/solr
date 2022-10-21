@@ -93,6 +93,7 @@ class ClusterAbstractionsForTest {
      * comparing node names given that new instances of {@link Node} are created with names equal to
      * existing instances (See {@link Builders.NodeBuilder#build()}).
      */
+    @Override
     public boolean equals(Object obj) {
       if (obj == null) {
         return false;
@@ -107,6 +108,7 @@ class ClusterAbstractionsForTest {
       return Objects.equals(this.nodeName, other.nodeName);
     }
 
+    @Override
     public int hashCode() {
       return Objects.hashCode(nodeName);
     }
@@ -220,6 +222,7 @@ class ClusterAbstractionsForTest {
       return shardState;
     }
 
+    @Override
     public boolean equals(Object obj) {
       if (obj == null) {
         return false;
@@ -238,6 +241,7 @@ class ClusterAbstractionsForTest {
           && Objects.equals(this.leader, other.leader);
     }
 
+    @Override
     public int hashCode() {
       return Objects.hash(shardName, collection, shardState);
     }
@@ -296,6 +300,7 @@ class ClusterAbstractionsForTest {
       return node;
     }
 
+    @Override
     public boolean equals(Object obj) {
       if (obj == null) {
         return false;
@@ -315,6 +320,7 @@ class ClusterAbstractionsForTest {
           && Objects.equals(this.node, other.node);
     }
 
+    @Override
     public int hashCode() {
       return Objects.hash(replicaName, coreName, shard, replicaType, replicaState, node);
     }

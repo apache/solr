@@ -765,6 +765,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return jetty;
   }
 
+  @Override
   public final JettySolrRunner createJetty(
       File solrHome,
       String dataDir,

@@ -1043,6 +1043,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     }
   }
 
+  @Override
   public ManagedIndexSchema addFieldTypes(List<FieldType> fieldTypeList, boolean persist) {
     if (!isMutable) {
       String msg = "This ManagedIndexSchema is not mutable.";

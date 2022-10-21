@@ -50,6 +50,7 @@ public class InnerJoinStream extends BiJoinStream implements Expressible {
     super(expression, factory);
   }
 
+  @Override
   public Tuple read() throws IOException {
     // if we've already figured out the next joined tuple then just return it
     if (joinedTuples.size() > 0) {

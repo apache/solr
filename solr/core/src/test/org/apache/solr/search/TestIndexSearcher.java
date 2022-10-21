@@ -314,6 +314,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
 
       Thread t =
           new Thread() {
+            @Override
             public void run() {
               try {
                 doQuery(newCore);
@@ -386,6 +387,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
 
       Thread t =
           new Thread() {
+            @Override
             public void run() {
               try {
                 doQuery(newCore);

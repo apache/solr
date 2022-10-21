@@ -133,6 +133,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
           }
         }
 
+        @Override
         public void waitForSearcher(
             String collection, int cnt, int timeoutms, boolean failOnTimeout)
             throws InterruptedException {
@@ -1182,6 +1183,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     return res;
   }
 
+  @Override
   protected ZkCoreNodeProps getLeaderUrlFromZk(String collection, String slice) {
     ClusterState clusterState = getCommonCloudSolrClient().getClusterState();
     ZkNodeProps leader = clusterState.getCollection(collection).getLeader(slice);
@@ -1709,6 +1711,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     }
   }
 
+  @Override
   protected SolrClient createNewSolrClient(String collection, String baseUrl) {
     try {
       // setup the server...

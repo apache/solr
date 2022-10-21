@@ -95,6 +95,7 @@ public class SocketProxy {
     doOpen();
   }
 
+  @Override
   public String toString() {
     return "SocketyProxy: port=" + listenPort + "; target=" + target;
   }
@@ -349,6 +350,7 @@ public class SocketProxy {
         pause.get().countDown();
       }
 
+      @Override
       public void run() {
         byte[] buf = new byte[1024];
 
@@ -436,6 +438,7 @@ public class SocketProxy {
       pause.get().countDown();
     }
 
+    @Override
     public void run() {
       try {
         while (!socket.isClosed()) {

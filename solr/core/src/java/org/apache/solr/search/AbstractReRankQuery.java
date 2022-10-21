@@ -45,6 +45,7 @@ public abstract class AbstractReRankQuery extends RankQuery {
     this.reRankQueryRescorer = reRankQueryRescorer;
   }
 
+  @Override
   public RankQuery wrap(Query _mainQuery) {
     if (_mainQuery != null) {
       this.mainQuery = _mainQuery;
@@ -52,10 +53,12 @@ public abstract class AbstractReRankQuery extends RankQuery {
     return this;
   }
 
+  @Override
   public MergeStrategy getMergeStrategy() {
     return null;
   }
 
+  @Override
   @SuppressWarnings({"unchecked"})
   public TopDocsCollector<ScoreDoc> getTopDocsCollector(
       int len, QueryCommand cmd, IndexSearcher searcher) throws IOException {
@@ -71,6 +74,7 @@ public abstract class AbstractReRankQuery extends RankQuery {
         reRankDocs, len, reRankQueryRescorer, cmd, searcher, boostedPriority);
   }
 
+  @Override
   public Query rewrite(IndexReader reader) throws IOException {
     Query q = mainQuery.rewrite(reader);
     if (q != mainQuery) {

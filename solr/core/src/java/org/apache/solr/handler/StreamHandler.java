@@ -97,6 +97,7 @@ public class StreamHandler extends RequestHandlerBase
     return PermissionNameProvider.Name.READ_PERM;
   }
 
+  @Override
   @SuppressWarnings("unchecked")
   public void inform(SolrCore core) {
     String defaultCollection;
@@ -168,6 +169,7 @@ public class StreamHandler extends RequestHandlerBase
     }
   }
 
+  @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     SolrParams params = req.getParams();
     params = adjustParams(params);
@@ -331,6 +333,7 @@ public class StreamHandler extends RequestHandlerBase
     return adjustedParams;
   }
 
+  @Override
   public String getDescription() {
     return "StreamHandler";
   }
@@ -346,16 +349,21 @@ public class StreamHandler extends RequestHandlerBase
       this.e = e;
     }
 
+    @Override
     public StreamComparator getStreamSort() {
       return null;
     }
 
+    @Override
     public void close() {}
 
+    @Override
     public void open() {}
 
+    @Override
     public void setStreamContext(StreamContext context) {}
 
+    @Override
     public List<TupleStream> children() {
       return null;
     }
@@ -370,6 +378,7 @@ public class StreamHandler extends RequestHandlerBase
           .withExpression("--non-expressible--");
     }
 
+    @Override
     public Tuple read() {
       String msg = e.getMessage();
 
@@ -389,16 +398,21 @@ public class StreamHandler extends RequestHandlerBase
       this.it = col.iterator();
     }
 
+    @Override
     public StreamComparator getStreamSort() {
       return null;
     }
 
+    @Override
     public void close() {}
 
+    @Override
     public void open() {}
 
+    @Override
     public void setStreamContext(StreamContext context) {}
 
+    @Override
     public List<TupleStream> children() {
       return null;
     }
@@ -413,6 +427,7 @@ public class StreamHandler extends RequestHandlerBase
           .withExpression("--non-expressible--");
     }
 
+    @Override
     public Tuple read() {
       if (it.hasNext()) {
         return it.next().getInfo();
@@ -430,16 +445,21 @@ public class StreamHandler extends RequestHandlerBase
       this.message = message;
     }
 
+    @Override
     public StreamComparator getStreamSort() {
       return null;
     }
 
+    @Override
     public void close() {}
 
+    @Override
     public void open() {}
 
+    @Override
     public void setStreamContext(StreamContext context) {}
 
+    @Override
     public List<TupleStream> children() {
       return null;
     }
@@ -454,6 +474,7 @@ public class StreamHandler extends RequestHandlerBase
           .withExpression("--non-expressible--");
     }
 
+    @Override
     public Tuple read() {
       if (sendEOF) {
         return Tuple.EOF();
@@ -473,23 +494,28 @@ public class StreamHandler extends RequestHandlerBase
       this.tupleStream = tupleStream;
     }
 
+    @Override
     public StreamComparator getStreamSort() {
       return this.tupleStream.getStreamSort();
     }
 
+    @Override
     public void close() throws IOException {
       this.tupleStream.close();
     }
 
+    @Override
     public void open() throws IOException {
       this.begin = System.nanoTime();
       this.tupleStream.open();
     }
 
+    @Override
     public void setStreamContext(StreamContext context) {
       this.tupleStream.setStreamContext(context);
     }
 
+    @Override
     public List<TupleStream> children() {
       return this.tupleStream.children();
     }
@@ -504,6 +530,7 @@ public class StreamHandler extends RequestHandlerBase
           .withExpression("--non-expressible--");
     }
 
+    @Override
     public Tuple read() throws IOException {
       Tuple tuple = this.tupleStream.read();
       if (tuple.EOF) {

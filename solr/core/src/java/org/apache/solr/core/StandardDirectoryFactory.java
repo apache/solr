@@ -81,6 +81,7 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
     return super.normalize(new File(path).getCanonicalPath());
   }
 
+  @Override
   public boolean isPersistent() {
     return true;
   }
@@ -127,6 +128,7 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
   }
 
   // perform an atomic rename if possible
+  @Override
   public void renameWithOverwrite(Directory dir, String fileName, String toName)
       throws IOException {
     Directory baseDir = getBaseDir(dir);
