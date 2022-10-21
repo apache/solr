@@ -27,6 +27,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.CR
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESHARD;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.NUM_SUB_SHARDS;
+import static org.apache.solr.common.params.CommonAdminParams.SKIP_FREE_SPACE_CHECK;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -199,8 +200,13 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
             "SplitShardCmd: verify that there is enough space on disk to create sub-shards for slice: {}",
             parentShardLeader);
         t = timings.sub("checkDiskSpace");
-        checkDiskSpace(
-            collectionName, slice.get(), parentShardLeader, splitMethod, ccc.getSolrCloudManager());
+        boolean skipFreeSpaceCheck = message.getBool(SKIP_FREE_SPACE_CHECK, false);
+        if (skipFreeSpaceCheck) {
+            log.debug("Skipping check for sufficient disk space", message);
+        } else {
+          checkDiskSpace(
+                  collectionName, slice.get(), parentShardLeader, splitMethod, ccc.getSolrCloudManager());
+        }
         t.stop();
       }
     }

@@ -195,6 +195,9 @@ This slows down the replication process and consumes more disk space on replica 
 +
 A float value which must be smaller than `0.5` that allows to vary the sub-shard ranges by this percentage of total shard range, odd shards being larger and even shards being smaller.
 
+`skipFreeSpaceCheck`::
+A boolean value to skip checking for free disk space before shard splitting. Can be useful in case of shared file systems like HDFS. Defaults to `false`.
+
 `property._name_=_value_`::
 +
 [%autowidth,frame=none]
