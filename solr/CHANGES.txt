@@ -254,6 +254,7 @@ Bug Fixes
 
 * SOLR-16485: Fix NPE in ShardHandlerFactory when running in Standalone mode (Houston Putman)
 
+Other Changes
 ---------------------
 * SOLR-16351: Upgrade Carrot2 to 4.4.3, upgrade randomizedtesting to 2.8.0. (Dawid Weiss)
 
@@ -321,6 +322,8 @@ Bug Fixes
 * SOLR-16464: Upgrade commons-text to 1.10.0 (Kevin Risden)
 
 * SOLR-16482: Add an internal envVar for passing options to bin/solr that will not be overriden by the user. (Houston Putman)
+
+* SOLR-16486: Pin the OS Variant for the default base image of the Dockerfile (to Ubuntu 20). (Houston Putman, janhoy, Eva Müller)
 
 Build
 ---------------------
