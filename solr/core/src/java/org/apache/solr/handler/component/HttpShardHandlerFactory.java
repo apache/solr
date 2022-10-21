@@ -296,7 +296,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
 
   @Override
   public void setSecurityBuilder(HttpClientBuilderPlugin clientBuilderPlugin) {
-    clientBuilderPlugin.setup(defaultClient);
+    if (clientBuilderPlugin != null) {
+      clientBuilderPlugin.setup(defaultClient);
+    }
   }
 
   protected <T> T getParameter(
