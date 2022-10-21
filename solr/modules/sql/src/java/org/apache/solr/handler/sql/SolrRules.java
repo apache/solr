@@ -146,6 +146,7 @@ class SolrRules {
       super(LogicalFilter.class, SolrFilterRule::filter, "SolrFilterRule");
     }
 
+    @Override
     public RelNode convert(RelNode rel) {
       final LogicalFilter filter = (LogicalFilter) rel;
       final RelTraitSet traitSet = filter.getTraitSet().replace(out);
@@ -162,6 +163,7 @@ class SolrRules {
       super(LogicalProject.class, "SolrProjectRule");
     }
 
+    @Override
     public RelNode convert(RelNode rel) {
       final LogicalProject project = (LogicalProject) rel;
       final RelNode converted = convert(project.getInput(), out);

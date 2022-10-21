@@ -191,15 +191,18 @@ public class KnnStream extends TupleStream implements Expressible {
     return explanation;
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     cache = context.getSolrClientCache();
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     return l;
   }
 
+  @Override
   public void open() throws IOException {
     cloudSolrClient = cache.getCloudSolrClient(zkHost);
     ModifiableSolrParams params = getParams(this.props);
@@ -232,8 +235,10 @@ public class KnnStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public void close() throws IOException {}
 
+  @Override
   public Tuple read() throws IOException {
     if (documentIterator.hasNext()) {
       Tuple tuple = new Tuple();
@@ -256,6 +261,7 @@ public class KnnStream extends TupleStream implements Expressible {
     return params;
   }
 
+  @Override
   public int getCost() {
     return 0;
   }

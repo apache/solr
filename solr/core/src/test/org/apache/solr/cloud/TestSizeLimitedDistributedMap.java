@@ -116,13 +116,14 @@ public class TestSizeLimitedDistributedMap extends TestDistributedMap {
         }
         // there's no guarantees on exactly how many elements will be removed, but it should at
         // least NOT throw exception
-        assertTrue(!deletedItems.isEmpty());
+        assertFalse(deletedItems.isEmpty());
       } finally {
         ExecutorUtil.shutdownAndAwaitTermination(executorService);
       }
     }
   }
 
+  @Override
   protected DistributedMap createMap(SolrZkClient zkClient, String path) {
     return new SizeLimitedDistributedMap(zkClient, path, Overseer.NUM_RESPONSES_TO_STORE, null);
   }

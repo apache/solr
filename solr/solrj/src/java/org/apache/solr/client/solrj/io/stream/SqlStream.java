@@ -185,15 +185,18 @@ public class SqlStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.streamContext = context;
   }
 
+  @Override
   public void open() throws IOException {
     constructStream();
     tupleStream.open();
   }
 
+  @Override
   public List<TupleStream> children() {
     return null;
   }
@@ -218,15 +221,18 @@ public class SqlStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public void close() throws IOException {
     tupleStream.close();
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
+  @Override
   public StreamComparator getStreamSort() {
     return null;
   }
 
+  @Override
   public Tuple read() throws IOException {
     return tupleStream.read();
   }

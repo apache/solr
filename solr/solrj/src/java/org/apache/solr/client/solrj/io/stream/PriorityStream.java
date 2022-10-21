@@ -125,11 +125,13 @@ public class PriorityStream extends TupleStream implements Expressible {
         .withExpression(toExpression(factory, false).toString());
   }
 
+  @Override
   public void setStreamContext(StreamContext streamContext) {
     this.highPriorityTasks.setStreamContext(streamContext);
     tasks.setStreamContext(streamContext);
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     l.add(highPriorityTasks);
@@ -137,6 +139,7 @@ public class PriorityStream extends TupleStream implements Expressible {
     return l;
   }
 
+  @Override
   public void open() throws IOException {
     highPriorityTasks.open();
     Tuple tuple = highPriorityTasks.read();
@@ -150,18 +153,22 @@ public class PriorityStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public void close() throws IOException {
     currentStream.close();
   }
 
+  @Override
   public Tuple read() throws IOException {
     return currentStream.read();
   }
 
+  @Override
   public StreamComparator getStreamSort() {
     return null;
   }
 
+  @Override
   public int getCost() {
     return 0;
   }

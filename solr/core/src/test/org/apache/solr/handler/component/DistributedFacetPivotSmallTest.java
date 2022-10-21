@@ -2609,6 +2609,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
       return equal;
     }
 
+    @Override
     public int indexOf(Object o) {
       for (int i = 0; i < size(); i++) {
         if (get(i).equals(o)) {

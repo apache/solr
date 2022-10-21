@@ -110,6 +110,7 @@ public class MultipleFieldEqualitor implements StreamEqualitor {
     return false;
   }
 
+  @Override
   public boolean test(Tuple t1, Tuple t2) {
     for (Equalitor<Tuple> eq : eqs) {
       if (!eq.test(t1, t2)) {

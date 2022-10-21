@@ -153,6 +153,7 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
       this.inner = inner;
     }
 
+    @Override
     public boolean matches(Set<String> liveNodes, DocCollection collectionState) {
       final boolean result = inner.matches(liveNodes, collectionState);
       if (log.isInfoEnabled()) {

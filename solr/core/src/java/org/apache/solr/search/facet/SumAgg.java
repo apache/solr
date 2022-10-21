@@ -77,6 +77,7 @@ public class SumAgg extends SimpleAggValueSource {
       val += ((Number) facetResult).doubleValue();
     }
 
+    @Override
     protected double getDouble() {
       return val;
     }

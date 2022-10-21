@@ -99,26 +99,31 @@ public class NullStream extends TupleStream implements Expressible {
         .withExpression(toExpression(factory, false).toString());
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.stream.setStreamContext(context);
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     l.add(stream);
     return l;
   }
 
+  @Override
   public void open() throws IOException {
     start = new Date().getTime();
     count = 0;
     stream.open();
   }
 
+  @Override
   public void close() throws IOException {
     stream.close();
   }
 
+  @Override
   public Tuple read() throws IOException {
 
     if (eof != null) {
@@ -141,10 +146,12 @@ public class NullStream extends TupleStream implements Expressible {
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
+  @Override
   public StreamComparator getStreamSort() {
     return stream.getStreamSort();
   }
 
+  @Override
   public int getCost() {
     return 0;
   }

@@ -93,6 +93,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     }
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();

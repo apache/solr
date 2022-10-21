@@ -25,10 +25,12 @@ public abstract class SourceEvaluator implements StreamEvaluator {
   protected UUID nodeId = UUID.randomUUID();
   protected StreamContext streamContext;
 
+  @Override
   public void setStreamContext(StreamContext streamContext) {
     this.streamContext = streamContext;
   }
 
+  @Override
   public StreamContext getStreamContext() {
     return streamContext;
   }

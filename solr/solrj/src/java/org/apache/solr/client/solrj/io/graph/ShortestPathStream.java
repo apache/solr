@@ -324,15 +324,18 @@ public class ShortestPathStream extends TupleStream implements Expressible {
     return explanation;
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.streamContext = context;
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     return l;
   }
 
+  @Override
   public void open() throws IOException {
 
     List<Map<String, List<String>>> allVisited = new ArrayList<>();
@@ -470,6 +473,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
       this.nodes = nodes;
     }
 
+    @Override
     public List<Edge> call() {
 
       ModifiableSolrParams joinParams = new ModifiableSolrParams(queryParams);
@@ -543,10 +547,12 @@ public class ShortestPathStream extends TupleStream implements Expressible {
     return false;
   }
 
+  @Override
   public void close() throws IOException {
     this.found = false;
   }
 
+  @Override
   public Tuple read() throws IOException {
     if (shortestPaths.size() > 0) {
       found = true;
@@ -561,6 +567,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public int getCost() {
     return 0;
   }

@@ -79,6 +79,7 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
     }
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
@@ -94,6 +95,7 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
     random = random();
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     super.tearDown();

@@ -84,6 +84,7 @@ public class GraphHandler extends RequestHandlerBase
     return PermissionNameProvider.Name.READ_PERM;
   }
 
+  @Override
   public void inform(SolrCore core) {
     String defaultCollection;
     String defaultZkhost;
@@ -130,6 +131,7 @@ public class GraphHandler extends RequestHandlerBase
     }
   }
 
+  @Override
   @SuppressWarnings({"unchecked"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     SolrParams params = req.getParams();
@@ -160,6 +162,7 @@ public class GraphHandler extends RequestHandlerBase
     requestContext.put("traversal", traversal);
   }
 
+  @Override
   public String getDescription() {
     return "GraphHandler";
   }
@@ -175,20 +178,25 @@ public class GraphHandler extends RequestHandlerBase
       this.e = e;
     }
 
+    @Override
     public StreamComparator getStreamSort() {
       return null;
     }
 
+    @Override
     public void close() {}
 
+    @Override
     public void open() {}
 
     public Exception getException() {
       return this.e;
     }
 
+    @Override
     public void setStreamContext(StreamContext context) {}
 
+    @Override
     public List<TupleStream> children() {
       return null;
     }
@@ -198,6 +206,7 @@ public class GraphHandler extends RequestHandlerBase
       return null;
     }
 
+    @Override
     public Tuple read() {
       return Tuple.EXCEPTION(e.getMessage(), true);
     }
@@ -219,23 +228,28 @@ public class GraphHandler extends RequestHandlerBase
       this.tupleStream = tupleStream;
     }
 
+    @Override
     public StreamComparator getStreamSort() {
       return this.tupleStream.getStreamSort();
     }
 
+    @Override
     public void close() throws IOException {
       this.tupleStream.close();
     }
 
+    @Override
     public void open() throws IOException {
       this.begin = System.nanoTime();
       this.tupleStream.open();
     }
 
+    @Override
     public void setStreamContext(StreamContext context) {
       this.tupleStream.setStreamContext(context);
     }
 
+    @Override
     public List<TupleStream> children() {
       return this.tupleStream.children();
     }
@@ -245,6 +259,7 @@ public class GraphHandler extends RequestHandlerBase
       return null;
     }
 
+    @Override
     public Tuple read() throws IOException {
       Tuple tuple = this.tupleStream.read();
       if (tuple.EOF) {

@@ -275,6 +275,7 @@ public class ZkController implements Closeable {
       this.afterExpiration = afterExpiration;
     }
 
+    @Override
     public Object call() throws Exception {
       if (log.isInfoEnabled()) {
         log.info("Registering core {} afterExpiration? {}", descriptor.getName(), afterExpiration);
@@ -737,6 +738,7 @@ public class ZkController implements Closeable {
   }
 
   /** Closes the underlying ZooKeeper client. */
+  @Override
   public void close() {
     if (!this.isClosed) preClose();
 

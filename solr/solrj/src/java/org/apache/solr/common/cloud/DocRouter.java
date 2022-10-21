@@ -109,6 +109,7 @@ public abstract class DocRouter {
       return max;
     }
 
+    @Override
     public boolean includes(int hash) {
       return hash >= min && hash <= max;
     }

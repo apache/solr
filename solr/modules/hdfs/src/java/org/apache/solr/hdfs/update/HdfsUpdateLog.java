@@ -437,6 +437,7 @@ public class HdfsUpdateLog extends UpdateLog {
   // return true;
   // }
 
+  @Override
   public String toString() {
     return "HDFSUpdateLog{state=" + getState() + ", tlog=" + tlog + "}";
   }

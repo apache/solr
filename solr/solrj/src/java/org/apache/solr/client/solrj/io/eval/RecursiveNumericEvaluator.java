@@ -34,6 +34,7 @@ public abstract class RecursiveNumericEvaluator extends RecursiveEvaluator {
     super(expression, factory);
   }
 
+  @Override
   public Object normalizeInputType(Object value) throws StreamEvaluatorException {
     if (null == value) {
       return null;

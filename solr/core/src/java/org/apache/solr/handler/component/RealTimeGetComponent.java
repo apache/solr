@@ -1481,14 +1481,17 @@ public class RealTimeGetComponent extends SearchComponent {
     /**
      * @returns null
      */
+    @Override
     public DocList getDocList() {
       return null;
     }
 
+    @Override
     public ReturnFields getReturnFields() {
       return this.returnFields;
     }
 
+    @Override
     public SolrIndexSearcher getSearcher() {
       return this.searcher;
     }
@@ -1496,10 +1499,12 @@ public class RealTimeGetComponent extends SearchComponent {
     /**
      * @returns null
      */
+    @Override
     public Query getQuery() {
       return null;
     }
 
+    @Override
     public SolrQueryRequest getRequest() {
       return this.req;
     }
@@ -1507,6 +1512,7 @@ public class RealTimeGetComponent extends SearchComponent {
     /**
      * @returns null
      */
+    @Override
     public Iterator<SolrDocument> getProcessedDocuments() {
       return null;
     }

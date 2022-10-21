@@ -929,6 +929,7 @@ public class Overseer implements SolrCloseable {
     return updaterThread;
   }
 
+  @Override
   public synchronized void close() {
     if (this.id != null) {
       log.info("Overseer (id={}) closing", id);

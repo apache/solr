@@ -94,6 +94,7 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
       return synMappings;
     }
 
+    @Override
     public String toString() {
       return mappings.toString();
     }
@@ -401,6 +402,7 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
     return "/schema/analysis/synonyms/" + handle;
   }
 
+  @Override
   protected Class<? extends ManagedResource> getManagedResourceImplClass() {
     return SynonymManager.class;
   }

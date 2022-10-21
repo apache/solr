@@ -198,24 +198,29 @@ public class ReducerStream extends TupleStream implements Expressible {
         .withHelpers(new Explanation[] {eq.toExplanation(factory), op.toExplanation(factory)});
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.stream.setStreamContext(context);
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     l.add(stream);
     return l;
   }
 
+  @Override
   public void open() throws IOException {
     stream.open();
   }
 
+  @Override
   public void close() throws IOException {
     stream.close();
   }
 
+  @Override
   public Tuple read() throws IOException {
 
     while (true) {
@@ -250,10 +255,12 @@ public class ReducerStream extends TupleStream implements Expressible {
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
+  @Override
   public StreamComparator getStreamSort() {
     return stream.getStreamSort();
   }
 
+  @Override
   public int getCost() {
     return 0;
   }

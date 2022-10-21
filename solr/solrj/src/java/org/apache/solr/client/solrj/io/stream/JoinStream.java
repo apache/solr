@@ -148,24 +148,28 @@ public abstract class JoinStream extends TupleStream implements Expressible {
     return explanation;
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     for (PushBackStream stream : streams) {
       stream.setStreamContext(context);
     }
   }
 
+  @Override
   public void open() throws IOException {
     for (PushBackStream stream : streams) {
       stream.open();
     }
   }
 
+  @Override
   public void close() throws IOException {
     for (PushBackStream stream : streams) {
       stream.close();
     }
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> list = new ArrayList<>();
     for (TupleStream stream : streams) {
@@ -234,6 +238,7 @@ public abstract class JoinStream extends TupleStream implements Expressible {
     return firstMember;
   }
 
+  @Override
   public int getCost() {
     return 0;
   }

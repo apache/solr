@@ -307,6 +307,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
    * @see Currency#getDefaultFractionDigits
    * @see #getConvertedValueSource
    */
+  @Override
   public RawCurrencyValueSource getValueSource(SchemaField field, QParser parser) {
     getAmountField(field).checkFieldCacheSource();
     getCurrencyField(field).checkFieldCacheSource();

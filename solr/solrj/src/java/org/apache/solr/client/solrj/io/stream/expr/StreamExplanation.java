@@ -57,6 +57,7 @@ public class StreamExplanation extends Explanation {
     children.add(child);
   }
 
+  @Override
   public Map<String, Object> toMap(Map<String, Object> map) {
     map = super.toMap(map);
 

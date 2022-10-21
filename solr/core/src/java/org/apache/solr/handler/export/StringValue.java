@@ -68,11 +68,13 @@ class StringValue implements SortValue {
     this.lastString = lastString;
   }
 
+  @Override
   public StringValue copy() {
     StringValue copy = new StringValue(globalDocValues, field, comp);
     return copy;
   }
 
+  @Override
   public void setCurrentValue(int docId) throws IOException {
     // System.out.println(docId +":"+lastDocID);
     /*
@@ -101,6 +103,7 @@ class StringValue implements SortValue {
     return present;
   }
 
+  @Override
   public void setCurrentValue(SortValue sv) {
     StringValue v = (StringValue) sv;
     this.currentOrd = v.currentOrd;
@@ -110,6 +113,7 @@ class StringValue implements SortValue {
     this.toGlobal = v.toGlobal;
   }
 
+  @Override
   public Object getCurrentValue() throws IOException {
     assert present == true;
     if (currentOrd != lastOrd) {
@@ -120,6 +124,7 @@ class StringValue implements SortValue {
     return lastBytes;
   }
 
+  @Override
   public void toGlobalValue(SortValue previousValue) {
     lastOrd = currentOrd;
     StringValue sv = (StringValue) previousValue;
@@ -136,10 +141,12 @@ class StringValue implements SortValue {
     }
   }
 
+  @Override
   public String getField() {
     return field;
   }
 
+  @Override
   public void setNextReader(LeafReaderContext context) throws IOException {
     leafOrd = context.ord;
     if (ordinalMap != null) {
@@ -149,17 +156,20 @@ class StringValue implements SortValue {
     lastDocID = 0;
   }
 
+  @Override
   public void reset() {
     this.currentOrd = comp.resetValue();
     this.present = false;
     lastDocID = 0;
   }
 
+  @Override
   public int compareTo(SortValue o) {
     StringValue sv = (StringValue) o;
     return comp.compare(currentOrd, sv.currentOrd);
   }
 
+  @Override
   public String toString() {
     return Integer.toString(this.currentOrd);
   }

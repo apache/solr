@@ -93,6 +93,7 @@ public class LocalSolrQueryRequest extends SolrQueryRequestBase {
       this.user = user;
     }
 
+    @Override
     public String getName() {
       return user;
     }

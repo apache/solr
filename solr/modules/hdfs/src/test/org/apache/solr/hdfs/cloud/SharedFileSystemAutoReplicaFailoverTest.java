@@ -135,6 +135,7 @@ public class SharedFileSystemAutoReplicaFailoverTest extends AbstractFullDistrib
     useJettyDataDir = false;
   }
 
+  @Override
   protected String getSolrXml() {
     return "solr.xml";
   }

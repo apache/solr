@@ -78,6 +78,7 @@ public class TeamDraftInterleaving implements Interleaving {
    * @param rerankedB a ranked list of search results produced by a ranking model B
    * @return the interleaved ranking list
    */
+  @Override
   public InterleavingResult interleave(ScoreDoc[] rerankedA, ScoreDoc[] rerankedB) {
     List<ScoreDoc> interleavedResults = new ArrayList<>();
     HashSet<Integer> alreadyAdded = new HashSet<>();

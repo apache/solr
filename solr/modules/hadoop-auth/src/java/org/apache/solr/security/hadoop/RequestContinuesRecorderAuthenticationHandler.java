@@ -40,18 +40,22 @@ public class RequestContinuesRecorderAuthenticationHandler implements Authentica
     this.authHandler = authHandler;
   }
 
+  @Override
   public String getType() {
     return authHandler.getType();
   }
 
+  @Override
   public void init(Properties config) throws ServletException {
     // authHandler has already been init'ed, nothing to do here
   }
 
+  @Override
   public void destroy() {
     authHandler.destroy();
   }
 
+  @Override
   public boolean managementOperation(
       AuthenticationToken token, HttpServletRequest request, HttpServletResponse response)
       throws IOException, AuthenticationException {
@@ -62,6 +66,7 @@ public class RequestContinuesRecorderAuthenticationHandler implements Authentica
     return result;
   }
 
+  @Override
   public AuthenticationToken authenticate(HttpServletRequest request, HttpServletResponse response)
       throws IOException, AuthenticationException {
     return authHandler.authenticate(request, response);

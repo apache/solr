@@ -377,6 +377,7 @@ public class BlockDirectory extends FilterDirectory implements ShutdownAwareDire
     return dest;
   }
 
+  @Override
   public void deleteFile(String name) throws IOException {
     cache.delete(getFileCacheName(name));
     super.deleteFile(name);

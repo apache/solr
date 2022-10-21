@@ -263,6 +263,7 @@ public class ApiBag {
       this.isCoreSpecific = isCoreSpecific;
     }
 
+    @Override
     @SuppressWarnings({"unchecked"})
     public void call(SolrQueryRequest req, SolrQueryResponse rsp) {
 

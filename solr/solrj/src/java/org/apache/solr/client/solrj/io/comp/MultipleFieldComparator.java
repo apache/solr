@@ -45,6 +45,7 @@ public class MultipleFieldComparator implements StreamComparator {
     return comps;
   }
 
+  @Override
   public int compare(Tuple t1, Tuple t2) {
     for (StreamComparator comp : comps) {
       int i = comp.compare(t1, t2);

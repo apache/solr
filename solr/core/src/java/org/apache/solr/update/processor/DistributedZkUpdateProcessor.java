@@ -1245,6 +1245,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   }
 
   // TODO: optionally fail if n replicas are not reached...
+  @Override
   protected void doDistribFinish() {
     clusterState = zkController.getClusterState();
 

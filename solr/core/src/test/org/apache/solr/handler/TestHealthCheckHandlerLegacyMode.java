@@ -48,6 +48,7 @@ public class TestHealthCheckHandlerLegacyMode extends SolrTestCaseJ4 {
 
   private static final String context = "/solr";
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();

@@ -44,6 +44,7 @@ public class HashQParserPlugin extends QParserPlugin {
 
   public static final String NAME = "hash";
 
+  @Override
   public QParser createParser(
       String query, SolrParams localParams, SolrParams params, SolrQueryRequest request) {
     return new HashQParser(query, localParams, params, request);
@@ -56,6 +57,7 @@ public class HashQParserPlugin extends QParserPlugin {
       super(query, localParams, params, request);
     }
 
+    @Override
     public Query parse() {
       int workers = localParams.getInt("workers", 0);
       if (workers < 2) {

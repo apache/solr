@@ -302,11 +302,13 @@ public class TopicStream extends CloudSolrStream implements Expressible {
     return explanation;
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     return l;
   }
 
+  @Override
   public void open() throws IOException {
     this.tuples = new TreeSet<>();
     this.solrStreams = new ArrayList<>();
@@ -364,6 +366,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
     }
   }
 
+  @Override
   public void close() throws IOException {
     try {
 
@@ -387,6 +390,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
     }
   }
 
+  @Override
   public Tuple read() throws IOException {
     Tuple tuple = _read();
 
@@ -416,6 +420,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
     return tuple;
   }
 
+  @Override
   public int getCost() {
     return 0;
   }
@@ -530,6 +535,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
     }
   }
 
+  @Override
   protected void constructStreams() throws IOException {
     try {
       Slice[] slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);

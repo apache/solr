@@ -36,6 +36,7 @@ public class HashKey implements Serializable {
     return parts;
   }
 
+  @Override
   public int hashCode() {
     int h = 0;
     for (Object o : parts) {
@@ -45,6 +46,7 @@ public class HashKey implements Serializable {
     return h;
   }
 
+  @Override
   public boolean equals(Object o) {
     HashKey h = (HashKey) o;
     for (int i = 0; i < parts.length; i++) {
@@ -56,6 +58,7 @@ public class HashKey implements Serializable {
     return true;
   }
 
+  @Override
   public String toString() {
     StringBuilder buf = new StringBuilder();
     for (int i = 0; i < parts.length; i++) {
