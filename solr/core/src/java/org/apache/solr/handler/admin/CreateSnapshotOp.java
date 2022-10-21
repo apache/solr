@@ -28,15 +28,15 @@ import org.apache.solr.response.SolrQueryResponse;
 class CreateSnapshotOp implements CoreAdminHandler.CoreAdminOp {
   @Override
   public void execute(CoreAdminHandler.CallInfo it) throws Exception {
+    final CoreContainer coreContainer = it.handler.getCoreContainer();
     final SolrQueryRequest solrQueryRequest = it.req;
     final SolrQueryResponse solrQueryResponse = it.rsp;
-    final CoreContainer coreContainer = it.handler.getCoreContainer();
 
     final SnapshotAPI snapshotAPI = new SnapshotAPI(coreContainer, solrQueryRequest, solrQueryResponse);
 
     final SolrParams params = it.req.getParams();
-    final String commitName = params.required().get(CoreAdminParams.COMMIT_NAME);
     final String coreName = params.required().get(CoreAdminParams.CORE);
+    final String commitName = params.required().get(CoreAdminParams.COMMIT_NAME);
 
     final SnapshotAPI.CreateSnapshotResponse response = snapshotAPI.createSnapshot(coreName, commitName);
 

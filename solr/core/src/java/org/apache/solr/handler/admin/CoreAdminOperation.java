@@ -57,7 +57,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -71,9 +71,10 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
-import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
-import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaData;
 import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminOp;
+import org.apache.solr.handler.admin.api.SnapshotAPI;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.NumberUtils;
@@ -276,32 +277,18 @@ public enum CoreAdminOperation implements CoreAdminOp {
   LISTSNAPSHOTS_OP(
       LISTSNAPSHOTS,
       it -> {
+        final CoreContainer coreContainer = it.handler.getCoreContainer();
+        final SolrQueryRequest solrQueryRequest = it.req;
+        final SolrQueryResponse solrQueryResponse = it.rsp;
+
+        final SnapshotAPI snapshotAPI = new SnapshotAPI(coreContainer, solrQueryRequest, solrQueryResponse);
+
         final SolrParams params = it.req.getParams();
-        String cname = params.required().get(CoreAdminParams.CORE);
+        final String coreName = params.required().get(CoreAdminParams.CORE);
 
-        CoreContainer cc = it.handler.getCoreContainer();
+        final SnapshotAPI.ListSnapshotsResponse response = snapshotAPI.listSnapshots(coreName);
 
-        try (SolrCore core = cc.getCore(cname)) {
-          if (core == null) {
-            throw new SolrException(ErrorCode.BAD_REQUEST, "Unable to locate core " + cname);
-          }
-
-          SolrSnapshotMetaDataManager mgr = core.getSnapshotMetaDataManager();
-          @SuppressWarnings({"rawtypes"})
-          NamedList result = new NamedList();
-          for (String name : mgr.listSnapshots()) {
-            Optional<SnapshotMetaData> metadata = mgr.getSnapshotMetaData(name);
-            if (metadata.isPresent()) {
-              NamedList<String> props = new NamedList<>();
-              props.add(
-                  SolrSnapshotManager.GENERATION_NUM,
-                  String.valueOf(metadata.get().getGenerationNumber()));
-              props.add(SolrSnapshotManager.INDEX_DIR_PATH, metadata.get().getIndexDirPath());
-              result.add(name, props);
-            }
-          }
-          it.rsp.add(SolrSnapshotManager.SNAPSHOTS_INFO, result);
-        }
+        it.rsp.add(SolrSnapshotManager.SNAPSHOTS_INFO, response.snapshots);
       });
 
   final CoreAdminParams.CoreAdminAction action;
