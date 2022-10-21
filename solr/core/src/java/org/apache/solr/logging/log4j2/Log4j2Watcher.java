@@ -47,7 +47,7 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
   private static final String LOG4J2_WATCHER_APPENDER = "Log4j2WatcherAppender";
 
   @SuppressForbidden(reason = "class is specific to log4j2")
-  protected class Log4j2Appender extends AbstractAppender {
+  protected static class Log4j2Appender extends AbstractAppender {
 
     private Log4j2Watcher watcher;
     private ThresholdFilter filter;
@@ -78,7 +78,7 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
   }
 
   @SuppressForbidden(reason = "class is specific to log4j2")
-  protected class Log4j2Info extends LoggerInfo {
+  protected static class Log4j2Info extends LoggerInfo {
     final Level level;
 
     Log4j2Info(String name, Level level) {

@@ -80,7 +80,6 @@ allprojects { prj ->
             '-Xep:BadImport:OFF', // style preference that we don't want to enforce
             '-Xep:BadShiftAmount:OFF',
             '-Xep:CanIgnoreReturnValueSuggester:OFF',
-            '-Xep:ClassCanBeStatic:OFF',
             '-Xep:ComplexBooleanConstant:OFF',
             '-Xep:DoubleCheckedLocking:OFF',
             '-Xep:EmptyCatch:OFF',

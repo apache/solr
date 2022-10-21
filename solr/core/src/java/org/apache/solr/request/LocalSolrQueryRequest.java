@@ -86,7 +86,7 @@ public class LocalSolrQueryRequest extends SolrQueryRequestBase {
     this.userPrincipalName = s;
   }
 
-  private final class LocalPrincipal implements Principal {
+  private static final class LocalPrincipal implements Principal {
     private final String user;
 
     public LocalPrincipal(String user) {

@@ -592,7 +592,7 @@ public class JsonQueryRequestFacetingIntegrationTest extends SolrCloudTestCase {
     assertEquals(7, topLevelFacetData.getBucketBasedFacets("price_range").getBetween());
   }
 
-  private class FacetBucket {
+  private static class FacetBucket {
     private final Object val;
     private final int count;
 

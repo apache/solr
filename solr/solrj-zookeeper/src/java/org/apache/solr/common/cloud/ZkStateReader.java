@@ -1307,7 +1307,7 @@ public class ZkStateReader implements SolrCloseable {
     }
   }
 
-  private class VersionedCollectionProps {
+  private static class VersionedCollectionProps {
     int zkVersion;
     Map<String, String> props;
     long cacheUntilNs = 0;

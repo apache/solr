@@ -50,7 +50,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
     return new ReRankQParser(query, localParams, params, req);
   }
 
-  private class ReRankQParser extends QParser {
+  private static class ReRankQParser extends QParser {
 
     public ReRankQParser(
         String query, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
@@ -96,7 +96,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
     }
   }
 
-  private final class ReRankQuery extends AbstractReRankQuery {
+  private static final class ReRankQuery extends AbstractReRankQuery {
     private final Query reRankQuery;
     private final double reRankWeight;
 

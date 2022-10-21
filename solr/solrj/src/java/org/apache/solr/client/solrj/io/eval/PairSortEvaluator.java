@@ -97,7 +97,7 @@ public class PairSortEvaluator extends RecursiveNumericEvaluator implements TwoV
     return new Matrix(data);
   }
 
-  private class PairComp implements Comparator<double[]> {
+  private static class PairComp implements Comparator<double[]> {
     @Override
     public int compare(double[] a, double[] b) {
       if (a[0] > b[0]) {

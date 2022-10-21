@@ -110,7 +110,7 @@ public class ApiBag {
    * <p>This is only possible currently for AnnotatedApis. All other Api implementations will resort
    * to the default "overwriting" behavior of PathTrie
    */
-  class CommandAggregatingPathTrie extends PathTrie<Api> {
+  static class CommandAggregatingPathTrie extends PathTrie<Api> {
 
     public CommandAggregatingPathTrie(Set<String> reserved) {
       super(reserved);
@@ -145,7 +145,7 @@ public class ApiBag {
     }
   }
 
-  class CommandAggregatingAnnotatedApi extends AnnotatedApi {
+  static class CommandAggregatingAnnotatedApi extends AnnotatedApi {
 
     private Collection<AnnotatedApi> combinedApis;
 

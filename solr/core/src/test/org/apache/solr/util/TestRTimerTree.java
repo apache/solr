@@ -41,7 +41,7 @@ public class TestRTimerTree extends SolrTestCase {
     }
   }
 
-  private class MockRTimerTree extends RTimerTree {
+  private static class MockRTimerTree extends RTimerTree {
     @Override
     protected TimerImpl newTimerImpl() {
       return new MockTimerImpl();
