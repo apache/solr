@@ -17,7 +17,11 @@
 package org.apache.solr.search;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -49,19 +53,24 @@ public final class QueryResultKey implements Accountable {
 
   public QueryResultKey(
       Query query, List<Query> filters, Sort sort, int nc_flags, int minExactCount) {
+
+    List<Query> filtersWithoutNulls = filters.stream()
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
     this.query = query;
     this.sort = sort;
-    this.filters = filters;
+    this.filters = filtersWithoutNulls;
     this.nc_flags = nc_flags;
     this.minExactCount = minExactCount;
 
     int h = query.hashCode();
 
-    if (filters != null) {
-      for (Query filt : filters)
+    if (filtersWithoutNulls != null) {
+      for (Query filt : filtersWithoutNulls)
         // NOTE: simple summation used here so keys with the same filters but in
         // different orders get the same hashCode
         h += filt.hashCode();
+
     }
 
     sfields = (this.sort != null) ? this.sort.getSort() : defaultSort;
@@ -79,7 +88,7 @@ public final class QueryResultKey implements Accountable {
             + ramSfields
             + RamUsageEstimator.sizeOfObject(query, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED)
             + RamUsageEstimator.sizeOfObject(
-                filters, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED);
+                filtersWithoutNulls, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED);
   }
 
   @Override
