@@ -194,23 +194,15 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
     RTimerTree t;
     if (ccc.getCoreContainer().getNodeConfig().getMetricsConfig().isEnabled()) {
       // check disk space for shard split
-      if (Boolean.parseBoolean(System.getProperty(SHARDSPLIT_CHECKDISKSPACE_ENABLED, "true"))) {
+      if (Boolean.parseBoolean(System.getProperty(SHARDSPLIT_CHECKDISKSPACE_ENABLED, "true"))
+          || !message.getBool(SKIP_FREE_SPACE_CHECK, false)) {
         // 1. verify that there is enough space on disk to create sub-shards
         log.debug(
             "SplitShardCmd: verify that there is enough space on disk to create sub-shards for slice: {}",
             parentShardLeader);
         t = timings.sub("checkDiskSpace");
-        boolean skipFreeSpaceCheck = message.getBool(SKIP_FREE_SPACE_CHECK, false);
-        if (skipFreeSpaceCheck) {
-          log.debug("Skipping check for sufficient disk space", message);
-        } else {
-          checkDiskSpace(
-              collectionName,
-              slice.get(),
-              parentShardLeader,
-              splitMethod,
-              ccc.getSolrCloudManager());
-        }
+        checkDiskSpace(
+            collectionName, slice.get(), parentShardLeader, splitMethod, ccc.getSolrCloudManager());
         t.stop();
       }
     }
