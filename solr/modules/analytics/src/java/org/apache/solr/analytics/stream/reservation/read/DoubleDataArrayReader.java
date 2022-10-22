@@ -26,6 +26,7 @@ public class DoubleDataArrayReader extends ReductionDataArrayReader<DoubleConsum
   public DoubleDataArrayReader(DataInput inputStream, DoubleConsumer applier, IntConsumer signal) {
     super(inputStream, applier, signal);
   }
+
   @Override
   public void read(int size) throws IOException {
     for (int i = 0; i < size; ++i) {

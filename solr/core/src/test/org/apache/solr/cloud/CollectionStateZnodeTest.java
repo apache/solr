@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -28,16 +27,14 @@ public class CollectionStateZnodeTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(4)
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();
+    configureCluster(4).addConfig("conf", configset("cloud-minimal")).configure();
   }
-  
+
   @After
   public void afterTest() throws Exception {
     cluster.deleteAllCollections();
   }
-  
+
   @Test
   public void testZkNodeLocation() throws Exception {
 
@@ -46,25 +43,31 @@ public class CollectionStateZnodeTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     cluster.waitForActiveCollection(collectionName, 2, 4);
-    
-    waitForState("Collection not created", collectionName, (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
-    assertTrue("Collection path does not exist",
-        zkClient().exists(ZkStateReader.getCollectionPath(collectionName), true));
+
+    waitForState(
+        "Collection not created",
+        collectionName,
+        (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
+    assertTrue(
+        "Collection path does not exist",
+        zkClient().exists(DocCollection.getCollectionPath(collectionName), true));
 
     Stat stat = new Stat();
-    zkClient().getData(ZkStateReader.getCollectionPath(collectionName), null, stat, true);
+    zkClient().getData(DocCollection.getCollectionPath(collectionName), null, stat, true);
 
     DocCollection c = getCollectionState(collectionName);
 
-    assertEquals("DocCollection version should equal the znode version", stat.getVersion(), c.getZNodeVersion() );
+    assertEquals(
+        "DocCollection version should equal the znode version",
+        stat.getVersion(),
+        c.getZNodeVersion());
 
     // remove collection
     CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
     waitForState("Collection not deleted", collectionName, (n, coll) -> coll == null);
 
-    assertFalse("collection state should not exist",
-        zkClient().exists(ZkStateReader.getCollectionPath(collectionName), true));
-
+    assertFalse(
+        "collection state should not exist",
+        zkClient().exists(DocCollection.getCollectionPath(collectionName), true));
   }
 }
-

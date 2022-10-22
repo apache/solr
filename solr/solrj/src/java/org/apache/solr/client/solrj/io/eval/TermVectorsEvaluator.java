@@ -18,15 +18,14 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
-import java.util.ArrayList;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
@@ -37,10 +36,11 @@ public class TermVectorsEvaluator extends RecursiveObjectEvaluator implements Ma
 
   private int minTermLength = 3;
   private double minDocFreq = .05; // 5% of the docs min
-  private double maxDocFreq = .5;  // 50% of the docs max
+  private double maxDocFreq = .5; // 50% of the docs max
   private String[] excludes;
 
-  public TermVectorsEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+  public TermVectorsEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
 
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
@@ -58,7 +58,7 @@ public class TermVectorsEvaluator extends RecursiveObjectEvaluator implements Ma
         if (maxDocFreq < 0 || maxDocFreq > 1) {
           throw new IOException("Doc frequency percentage must be between 0 and 1");
         }
-      } else if(namedParam.getName().equals("exclude")) {
+      } else if (namedParam.getName().equals("exclude")) {
         this.excludes = namedParam.getParameter().toString().split(",");
       } else {
         throw new IOException("Unexpected named parameter:" + namedParam.getName());
@@ -70,15 +70,16 @@ public class TermVectorsEvaluator extends RecursiveObjectEvaluator implements Ma
   public Object doWork(Object... objects) throws IOException {
 
     if (objects.length == 1) {
-      //Just docs
-      if(!(objects[0] instanceof List)) {
+      // Just docs
+      if (!(objects[0] instanceof List)) {
         throw new IOException("The termVectors function expects a list of Tuples as a parameter.");
       } else {
-        List<?> list = (List<?>)objects[0];
-        if(list.size() > 0) {
+        List<?> list = (List<?>) objects[0];
+        if (list.size() > 0) {
           Object o = list.get(0);
-          if(!(o instanceof Tuple)) {
-            throw new IOException("The termVectors function expects a list of Tuples as a parameter.");
+          if (!(o instanceof Tuple)) {
+            throw new IOException(
+                "The termVectors function expects a list of Tuples as a parameter.");
           }
         } else {
           throw new IOException("Empty list was passed as a parameter to termVectors function.");
@@ -108,11 +109,11 @@ public class TermVectorsEvaluator extends RecursiveObjectEvaluator implements Ma
         for (String term : terms) {
 
           if (term.length() < minTermLength) {
-            //Eliminate terms due to length
+            // Eliminate terms due to length
             continue;
           }
 
-          if(excludes != null) {
+          if (excludes != null) {
             for (String exclude : excludes) {
               if (term.indexOf(exclude) > -1) {
                 continue OUTER;
@@ -132,7 +133,7 @@ public class TermVectorsEvaluator extends RecursiveObjectEvaluator implements Ma
         }
       }
 
-      //Eliminate terms based on frequency
+      // Eliminate terms based on frequency
 
       int min = (int) (tuples.size() * minDocFreq);
       int max = (int) (tuples.size() * maxDocFreq);

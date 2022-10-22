@@ -18,7 +18,6 @@ package org.apache.solr.handler.extraction;
 
 import java.io.File;
 import java.io.InputStream;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.SolrCore;
@@ -32,10 +31,11 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.tika.config.TikaConfig;
 
 /**
- * Handler for rich documents like PDF or Word or any other file format that Tika handles that need the text to be extracted
- * first from the document.
+ * Handler for rich documents like PDF or Word or any other file format that Tika handles that need
+ * the text to be extracted first from the document.
  */
-public class ExtractingRequestHandler extends ContentStreamHandlerBase implements SolrCoreAware , PermissionNameProvider {
+public class ExtractingRequestHandler extends ContentStreamHandlerBase
+    implements SolrCoreAware, PermissionNameProvider {
 
   public static final String PARSE_CONTEXT_CONFIG = "parseContext.config";
   public static final String CONFIG_LOCATION = "tika.config";
@@ -74,7 +74,8 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase implement
       if (parseContextConfigLoc == null) { // default:
         parseContextConfig = new ParseContextConfig();
       } else {
-        parseContextConfig = new ParseContextConfig(core.getResourceLoader(), parseContextConfigLoc);
+        parseContextConfig =
+            new ParseContextConfig(core.getResourceLoader(), parseContextConfigLoc);
       }
     } catch (Exception e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to load Tika Config", e);

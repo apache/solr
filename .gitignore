@@ -23,6 +23,9 @@ out/
 
 .editorconfig
 
+# syncthing
+.stignore
+
 # macOS
 .DS_Store
 
@@ -38,3 +41,4 @@ lucene/
 
 # Ignore gradle wrapper
 gradle/wrapper/gradle-wrapper.jar
+.gradletasknamecache

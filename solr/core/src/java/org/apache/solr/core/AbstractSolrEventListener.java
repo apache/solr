@@ -16,21 +16,27 @@
  */
 package org.apache.solr.core;
 
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.params.EventParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.search.SolrIndexSearcher;
 
-/**
- */
+/** */
 public class AbstractSolrEventListener implements SolrEventListener {
   private final SolrCore core;
-  public SolrCore getCore() { return core; }
+
+  public SolrCore getCore() {
+    return core;
+  }
 
   public AbstractSolrEventListener(SolrCore core) {
     this.core = core;
   }
+
   private NamedList<?> args;
-  public NamedList<?> getArgs() { return args; }
+
+  public NamedList<?> getArgs() {
+    return args;
+  }
 
   @Override
   public void init(NamedList<?> args) {
@@ -41,7 +47,7 @@ public class AbstractSolrEventListener implements SolrEventListener {
   public void postCommit() {
     throw new UnsupportedOperationException();
   }
-  
+
   @Override
   public void postSoftCommit() {
     throw new UnsupportedOperationException();
@@ -58,16 +64,18 @@ public class AbstractSolrEventListener implements SolrEventListener {
   }
 
   /**
-   * Add the {@link org.apache.solr.common.params.EventParams#EVENT} with either the {@link org.apache.solr.common.params.EventParams#NEW_SEARCHER}
-   * or {@link org.apache.solr.common.params.EventParams#FIRST_SEARCHER} values depending on the value of currentSearcher.
-   * <p>
-   * Makes a copy of NamedList and then adds the parameters.
+   * Add the {@link org.apache.solr.common.params.EventParams#EVENT} with either the {@link
+   * org.apache.solr.common.params.EventParams#NEW_SEARCHER} or {@link
+   * org.apache.solr.common.params.EventParams#FIRST_SEARCHER} values depending on the value of
+   * currentSearcher.
    *
+   * <p>Makes a copy of NamedList and then adds the parameters.
    *
    * @param currentSearcher If null, add FIRST_SEARCHER, otherwise NEW_SEARCHER
    * @param nlst The named list to add the EVENT value to
    */
-  protected NamedList<Object> addEventParms(SolrIndexSearcher currentSearcher, NamedList<Object> nlst) {
+  protected NamedList<Object> addEventParms(
+      SolrIndexSearcher currentSearcher, NamedList<Object> nlst) {
     NamedList<Object> result = new NamedList<>();
     result.addAll(nlst);
     if (currentSearcher != null) {

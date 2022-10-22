@@ -20,7 +20,7 @@ package org.apache.solr.cloud;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -29,12 +29,14 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+@LuceneTestCase.Nightly
 public abstract class AbstractChaosMonkeySafeLeaderTestBase extends AbstractFullDistribZkTestBase {
-  private static final Integer RUN_LENGTH = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.runlength", "-1"));
+  private static final Integer RUN_LENGTH =
+      Integer.parseInt(System.getProperty("solr.tests.cloud.cm.runlength", "-1"));
 
   @BeforeClass
   public static void beforeSuperClass() {
-    schemaString = "schema15.xml";      // we need a string id
+    schemaString = "schema15.xml"; // we need a string id
     System.setProperty("solr.autoCommit.maxTime", "15000");
     System.clearProperty("solr.httpclient.retries");
     System.clearProperty("solr.retries.on.forward");
@@ -48,8 +50,8 @@ public abstract class AbstractChaosMonkeySafeLeaderTestBase extends AbstractFull
     clearErrorHook();
   }
 
-  protected static final String[] fieldNames = new String[]{"f_i", "f_f", "f_d", "f_l", "f_dt"};
-  protected static final RandVal[] randVals = new RandVal[]{rint, rfloat, rdouble, rlong, rdate};
+  protected static final String[] fieldNames = new String[] {"f_i", "f_f", "f_d", "f_l", "f_dt"};
+  protected static final RandVal[] randVals = new RandVal[] {rint, rfloat, rdouble, rlong, rdate};
 
   public String[] getFieldNames() {
     return fieldNames;
@@ -60,6 +62,7 @@ public abstract class AbstractChaosMonkeySafeLeaderTestBase extends AbstractFull
   }
 
   protected abstract String getDirectoryFactory();
+
   @Override
   public void distribSetUp() throws Exception {
     useFactory(getDirectoryFactory());
@@ -109,7 +112,15 @@ public abstract class AbstractChaosMonkeySafeLeaderTestBase extends AbstractFull
     }
 
     for (int i = 0; i < threadCount; i++) {
-      StoppableIndexingThread indexThread = new StoppableIndexingThread(controlClient, cloudClient, Integer.toString(i), true, maxUpdates, batchSize, pauseBetweenUpdates); // random().nextInt(999) + 1
+      StoppableIndexingThread indexThread =
+          new StoppableIndexingThread(
+              controlClient,
+              cloudClient,
+              Integer.toString(i),
+              true,
+              maxUpdates,
+              batchSize,
+              pauseBetweenUpdates); // random().nextInt(999) + 1
       threads.add(indexThread);
       indexThread.start();
     }
@@ -122,8 +133,8 @@ public abstract class AbstractChaosMonkeySafeLeaderTestBase extends AbstractFull
       } else {
         int[] runTimes;
         if (TEST_NIGHTLY) {
-          runTimes = new int[] {5000, 6000, 10000, 15000, 25000, 30000,
-              30000, 45000, 90000, 120000};
+          runTimes =
+              new int[] {5000, 6000, 10000, 15000, 25000, 30000, 30000, 45000, 90000, 120000};
         } else {
           runTimes = new int[] {5000, 7000, 15000};
         }
@@ -163,9 +174,14 @@ public abstract class AbstractChaosMonkeySafeLeaderTestBase extends AbstractFull
 
     checkShardConsistency(batchSize == 1, true);
 
-    if (VERBOSE) System.out.println("control docs:" + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound() + "\n\n");
+    if (VERBOSE)
+      System.out.println(
+          "control docs:"
+              + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound()
+              + "\n\n");
 
-    // try and make a collection to make sure the overseer has survived the expiration and session loss
+    // try and make a collection to make sure the overseer has survived the expiration and session
+    // loss
 
     // sometimes we restart zookeeper as well
     if (random().nextBoolean()) {
@@ -176,12 +192,11 @@ public abstract class AbstractChaosMonkeySafeLeaderTestBase extends AbstractFull
 
     try (CloudSolrClient client = createCloudClient("collection1")) {
       createCollection(null, "testcollection", 1, 1, client, null, "conf1");
-
     }
     List<Integer> numShardsNumReplicas = new ArrayList<>(2);
     numShardsNumReplicas.add(1);
     numShardsNumReplicas.add(1);
-    checkForCollection("testcollection",numShardsNumReplicas, null);
+    checkForCollection("testcollection", numShardsNumReplicas, null);
   }
 
   private void tryDelete() throws Exception {
@@ -207,5 +222,4 @@ public abstract class AbstractChaosMonkeySafeLeaderTestBase extends AbstractFull
     addFields(doc, "rnd_b", true);
     indexDoc(doc);
   }
-
 }

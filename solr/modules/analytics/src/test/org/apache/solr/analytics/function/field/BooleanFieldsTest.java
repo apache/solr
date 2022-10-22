@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.solr.analytics.ExpressionFactory;
 import org.junit.Test;
 
@@ -37,15 +36,18 @@ public class BooleanFieldsTest extends AbstractAnalyticsFieldTest {
   @Test
   public void singleValuedBooleanTest() throws IOException {
     BooleanField valueField = new BooleanField("boolean_b");
-    Map<String,Boolean> values = new HashMap<>();
+    Map<String, Boolean> values = new HashMap<>();
 
-    Set<String> missing = collectFieldValues(valueField, id -> {
-      boolean value = valueField.getBoolean();
-      if (valueField.exists()) {
-        values.put(id, value);
-      }
-      return valueField.exists();
-    });
+    Set<String> missing =
+        collectFieldValues(
+            valueField,
+            id -> {
+              boolean value = valueField.getBoolean();
+              if (valueField.exists()) {
+                values.put(id, value);
+              }
+              return valueField.exists();
+            });
 
     checkSingleFieldValues(singleBooleans, values, missing);
   }
@@ -53,18 +55,22 @@ public class BooleanFieldsTest extends AbstractAnalyticsFieldTest {
   @Test
   public void multiValuedBooleanTest() throws IOException {
     BooleanMultiField valueField = new BooleanMultiField("boolean_bm");
-    Map<String,Map<Boolean,Integer>> values = new HashMap<>();
+    Map<String, Map<Boolean, Integer>> values = new HashMap<>();
 
-    Set<String> missing = collectFieldValues(valueField, id -> {
-      Map<Boolean, Integer> doc = new HashMap<>();
-      valueField.streamBooleans( value -> {
-        doc.put(value, doc.getOrDefault(value, 0) + 1);
-      });
-      if (doc.size() > 0) {
-        values.put(id, doc);
-      }
-      return doc.size() > 0;
-    });
+    Set<String> missing =
+        collectFieldValues(
+            valueField,
+            id -> {
+              Map<Boolean, Integer> doc = new HashMap<>();
+              valueField.streamBooleans(
+                  value -> {
+                    doc.put(value, doc.getOrDefault(value, 0) + 1);
+                  });
+              if (doc.size() > 0) {
+                values.put(id, doc);
+              }
+              return doc.size() > 0;
+            });
 
     checkMultiFieldValues(multiBooleans, values, missing, true);
   }

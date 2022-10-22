@@ -19,68 +19,73 @@ package org.apache.solr.ltr.model;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.norm.Normalizer;
 
 /**
- * A scoring model that computes scores using a dot product.
- * Example models are RankSVM and Pranking.
- * <p>
- * Example configuration:
- * <pre>{
-   "class" : "org.apache.solr.ltr.model.LinearModel",
-   "name" : "myModelName",
-   "features" : [
-       { "name" : "userTextTitleMatch" },
-       { "name" : "originalScore" },
-       { "name" : "isBook" }
-   ],
-   "params" : {
-       "weights" : {
-           "userTextTitleMatch" : 1.0,
-           "originalScore" : 0.5,
-           "isBook" : 0.1
-       }
-   }
-}</pre>
- * <p>
- * Training libraries:
+ * A scoring model that computes scores using a dot product. Example models are RankSVM and
+ * Pranking.
+ *
+ * <p>Example configuration:
+ *
+ * <pre>
+ * {
+ *   "class" : "org.apache.solr.ltr.model.LinearModel",
+ *   "name" : "myModelName",
+ *   "features" : [
+ *     { "name" : "userTextTitleMatch" },
+ *     { "name" : "originalScore" },
+ *     { "name" : "isBook" }
+ *   ],
+ *   "params" : {
+ *     "weights" : {
+ *       "userTextTitleMatch" : 1.0,
+ *       "originalScore" : 0.5,
+ *       "isBook" : 0.1
+ *     }
+ *   }
+ * }
+ * </pre>
+ *
+ * <p>Training libraries:
+ *
  * <ul>
- * <li> <a href="https://www.csie.ntu.edu.tw/~cjlin/liblinear/">
- * LIBLINEAR -- A Library for Large Linear Classification</a>
+ *   <li><a href="https://www.csie.ntu.edu.tw/~cjlin/liblinear/">LIBLINEAR -- A Library for Large
+ *       Linear Classification</a>
  * </ul>
+ *
  * <ul>
- * <li> <a href="https://www.csie.ntu.edu.tw/~cjlin/libsvm/">
- * LIBSVM -- A Library for Support Vector Machines</a>
+ *   <li><a href="https://www.csie.ntu.edu.tw/~cjlin/libsvm/">LIBSVM -- A Library for Support Vector
+ *       Machines</a>
  * </ul>
- * <p>
- * Background reading:
+ *
+ * <p>Background reading:
+ *
  * <ul>
- * <li> <a href="http://www.cs.cornell.edu/people/tj/publications/joachims_02c.pdf">
- * Thorsten Joachims. Optimizing Search Engines Using Clickthrough Data.
- * Proceedings of the ACM Conference on Knowledge Discovery and Data Mining (KDD), ACM, 2002.</a>
+ *   <li><a href="http://www.cs.cornell.edu/people/tj/publications/joachims_02c.pdf">Thorsten
+ *       Joachims. Optimizing Search Engines Using Clickthrough Data. Proceedings of the ACM
+ *       Conference on Knowledge Discovery and Data Mining (KDD), ACM, 2002.</a>
  * </ul>
+ *
  * <ul>
- * <li> <a href="https://papers.nips.cc/paper/2023-pranking-with-ranking.pdf">
- * Koby Crammer and Yoram Singer. Pranking with Ranking.
- * Advances in Neural Information Processing Systems (NIPS), 2001.</a>
+ *   <li><a href="https://papers.nips.cc/paper/2023-pranking-with-ranking.pdf">Koby Crammer and
+ *       Yoram Singer. Pranking with Ranking. Advances in Neural Information Processing Systems
+ *       (NIPS), 2001.</a>
  * </ul>
  */
 public class LinearModel extends LTRScoringModel {
 
   /**
-   * featureToWeight is part of the LTRScoringModel params map
-   * and therefore here it does not individually
-   * influence the class hashCode, equals, etc.
+   * featureToWeight is part of the LTRScoringModel params map and therefore here it does not
+   * individually influence the class hashCode, equals, etc.
    */
   protected Float[] featureToWeight;
 
   public void setWeights(Object weights) {
     @SuppressWarnings({"unchecked"})
-    final Map<String,Number> modelWeights = (Map<String, Number>) weights;
+    final Map<String, Number> modelWeights = (Map<String, Number>) weights;
     for (int ii = 0; ii < features.size(); ++ii) {
       final String key = features.get(ii).getName();
       final Number val = modelWeights.get(key);
@@ -88,10 +93,13 @@ public class LinearModel extends LTRScoringModel {
     }
   }
 
-  public LinearModel(String name, List<Feature> features,
+  public LinearModel(
+      String name,
+      List<Feature> features,
       List<Normalizer> norms,
-      String featureStoreName, List<Feature> allFeatures,
-      Map<String,Object> params) {
+      String featureStoreName,
+      List<Feature> allFeatures,
+      Map<String, Object> params) {
     super(name, features, norms, featureStoreName, allFeatures, params);
     featureToWeight = new Float[features.size()];
   }
@@ -100,7 +108,7 @@ public class LinearModel extends LTRScoringModel {
   protected void validate() throws ModelException {
     super.validate();
 
-    final ArrayList<String> missingWeightFeatureNames = new ArrayList<String>();
+    final ArrayList<String> missingWeightFeatureNames = new ArrayList<>();
     for (int i = 0; i < features.size(); ++i) {
       if (featureToWeight[i] == null) {
         missingWeightFeatureNames.add(features.get(i).getName());
@@ -110,7 +118,8 @@ public class LinearModel extends LTRScoringModel {
       throw new ModelException("Model " + name + " doesn't contain any weights");
     }
     if (!missingWeightFeatureNames.isEmpty()) {
-      throw new ModelException("Model " + name + " lacks weight(s) for "+missingWeightFeatureNames);
+      throw new ModelException(
+          "Model " + name + " lacks weight(s) for " + missingWeightFeatureNames);
     }
   }
 
@@ -124,24 +133,26 @@ public class LinearModel extends LTRScoringModel {
   }
 
   @Override
-  public Explanation explain(LeafReaderContext context, int doc,
-      float finalScore, List<Explanation> featureExplanations) {
+  public Explanation explain(
+      LeafReaderContext context, int doc, float finalScore, List<Explanation> featureExplanations) {
     final List<Explanation> details = new ArrayList<>();
     int index = 0;
 
     for (final Explanation featureExplain : featureExplanations) {
       final List<Explanation> featureDetails = new ArrayList<>();
-      featureDetails.add(Explanation.match(featureToWeight[index],
-          "weight on feature"));
+      featureDetails.add(Explanation.match(featureToWeight[index], "weight on feature"));
       featureDetails.add(featureExplain);
 
-      details.add(Explanation.match(featureExplain.getValue().floatValue()
-          * featureToWeight[index], "prod of:", featureDetails));
+      details.add(
+          Explanation.match(
+              featureExplain.getValue().floatValue() * featureToWeight[index],
+              "prod of:",
+              featureDetails));
       index++;
     }
 
-    return Explanation.match(finalScore, toString()
-        + " model applied to features, sum of:", details);
+    return Explanation.match(
+        finalScore, toString() + " model applied to features, sum of:", details);
   }
 
   @Override
@@ -150,7 +161,7 @@ public class LinearModel extends LTRScoringModel {
     sb.append("(name=").append(getName());
     sb.append(",featureWeights=[");
     for (int ii = 0; ii < features.size(); ++ii) {
-      if (ii>0) {
+      if (ii > 0) {
         sb.append(',');
       }
       final String key = features.get(ii).getName();
@@ -159,5 +170,4 @@ public class LinearModel extends LTRScoringModel {
     sb.append("])");
     return sb.toString();
   }
-
 }

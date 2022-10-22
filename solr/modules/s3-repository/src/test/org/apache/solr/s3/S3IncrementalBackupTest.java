@@ -20,7 +20,7 @@ package org.apache.solr.s3;
 import com.adobe.testing.s3mock.junit4.S3MockRule;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.lang.invoke.MethodHandles;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.cloud.api.collections.AbstractIncrementalBackupTest;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -88,6 +88,8 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
   public static void setupClass() throws Exception {
     System.setProperty("aws.accessKeyId", "foo");
     System.setProperty("aws.secretAccessKey", "bar");
+
+    AbstractS3ClientTest.setS3ConfFile();
 
     configureCluster(NUM_SHARDS) // nodes
         .addConfig("conf1", getFile("conf/solrconfig.xml").getParentFile().toPath())

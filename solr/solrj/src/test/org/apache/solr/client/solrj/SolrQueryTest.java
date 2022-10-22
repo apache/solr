@@ -24,9 +24,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
-
-import junit.framework.Assert;
-
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrQuery.SortClause;
@@ -34,72 +31,70 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
 
 /**
- * 
- *
  * @since solr 1.3
  */
 public class SolrQueryTest extends SolrTestCase {
-  
+
   public void testSolrQueryMethods() {
     SolrQuery q = new SolrQuery("dog");
     boolean b = false;
-    
+
     q.setFacetLimit(10);
     q.addFacetField("price");
     q.addFacetField("state");
-    Assert.assertEquals(q.getFacetFields().length, 2);
+    assertEquals(q.getFacetFields().length, 2);
     q.addFacetQuery("instock:true");
     q.addFacetQuery("instock:false");
     q.addFacetQuery("a:b");
-    Assert.assertEquals(q.getFacetQuery().length, 3);
-    
+    assertEquals(q.getFacetQuery().length, 3);
+
     b = q.removeFacetField("price");
-    Assert.assertEquals(b, true);
+    assertTrue(b);
     b = q.removeFacetField("price2");
-    Assert.assertEquals(b, false);
+    assertFalse(b);
     b = q.removeFacetField("state");
-    Assert.assertEquals(b, true);
-    Assert.assertEquals(null, q.getFacetFields());
-    
+    assertTrue(b);
+    assertNull(q.getFacetFields());
+
     b = q.removeFacetQuery("instock:true");
-    Assert.assertEquals(b, true);
+    assertTrue(b);
     b = q.removeFacetQuery("instock:false");
     b = q.removeFacetQuery("a:c");
-    Assert.assertEquals(b, false);
+    assertFalse(b);
     b = q.removeFacetQuery("a:b");
-    Assert.assertEquals(null, q.getFacetQuery());   
-    
+    assertNull(q.getFacetQuery());
+
     q.addSort("price", SolrQuery.ORDER.asc);
     q.addSort("date", SolrQuery.ORDER.desc);
     q.addSort("qty", SolrQuery.ORDER.desc);
     q.removeSort(new SortClause("date", SolrQuery.ORDER.desc));
-    Assert.assertEquals(2, q.getSorts().size());
+    assertEquals(2, q.getSorts().size());
     q.removeSort(new SortClause("price", SolrQuery.ORDER.asc));
     q.removeSort(new SortClause("qty", SolrQuery.ORDER.desc));
-    Assert.assertEquals(0, q.getSorts().size());
-    
+    assertEquals(0, q.getSorts().size());
+
     q.addHighlightField("hl1");
     q.addHighlightField("hl2");
     q.setHighlightSnippets(2);
-    Assert.assertEquals(2, q.getHighlightFields().length);
-    Assert.assertEquals(100, q.getHighlightFragsize());
-    Assert.assertEquals(q.getHighlightSnippets(), 2);
+    assertEquals(2, q.getHighlightFields().length);
+    assertEquals(100, q.getHighlightFragsize());
+    assertEquals(q.getHighlightSnippets(), 2);
     q.removeHighlightField("hl1");
     q.removeHighlightField("hl3");
-    Assert.assertEquals(1, q.getHighlightFields().length);
+    assertEquals(1, q.getHighlightFields().length);
     q.removeHighlightField("hl2");
-    Assert.assertEquals(null, q.getHighlightFields());
-    
-    // check to see that the removes are properly clearing the cgi params
-    Assert.assertEquals(q.toString(), "q=dog");
+    assertNull(q.getHighlightFields());
 
-    //Add time allowed param
+    // check to see that the removes are properly clearing the cgi params
+    assertEquals(q.toString(), "q=dog");
+
+    // Add time allowed param
     q.setTimeAllowed(1000);
-    Assert.assertEquals((Integer)1000, q.getTimeAllowed() );
-    //Adding a null should remove it
+    assertEquals((Integer) 1000, q.getTimeAllowed());
+    // Adding a null should remove it
     q.setTimeAllowed(null);
-    Assert.assertEquals(null, q.getTimeAllowed() ); 
-    
+    assertNull(q.getTimeAllowed());
+
     // System.out.println(q);
   }
 
@@ -113,9 +108,9 @@ public class SolrQueryTest extends SolrTestCase {
     q.addSort("date", SolrQuery.ORDER.desc);
     q.addSort("qty", SolrQuery.ORDER.desc);
     q.removeSort("date");
-    Assert.assertEquals(2, q.getSorts().size());
+    assertEquals(2, q.getSorts().size());
     q.removeSort("qty");
-    Assert.assertEquals(1, q.getSorts().size());
+    assertEquals(1, q.getSorts().size());
   }
 
   /*
@@ -127,7 +122,7 @@ public class SolrQueryTest extends SolrTestCase {
     q.addSort("date", SolrQuery.ORDER.desc);
     q.addSort("qty", SolrQuery.ORDER.desc);
     q.removeSort("qty");
-    Assert.assertEquals("date desc", q.getSortField());
+    assertEquals("date desc", q.getSortField());
   }
 
   /*
@@ -138,7 +133,7 @@ public class SolrQueryTest extends SolrTestCase {
     SolrQuery q = new SolrQuery("dog");
 
     try {
-      q.getSorts().add(new SortClause("price",  SolrQuery.ORDER.asc));
+      q.getSorts().add(new SortClause("price", SolrQuery.ORDER.asc));
       fail("The returned (empty) map should be immutable; put() should fail!");
     } catch (UnsupportedOperationException uoe) {
       // pass
@@ -146,15 +141,15 @@ public class SolrQueryTest extends SolrTestCase {
 
     q.addSort("qty", SolrQuery.ORDER.desc);
     try {
-      q.getSorts().add(new SortClause("price",  SolrQuery.ORDER.asc));
+      q.getSorts().add(new SortClause("price", SolrQuery.ORDER.asc));
       fail("The returned (non-empty) map should be immutable; put() should fail!");
     } catch (UnsupportedOperationException uoe) {
       // pass
     }
 
     // Should work even when setSorts passes an Immutable List
-    q.setSorts(Arrays.asList(new SortClause("price",  SolrQuery.ORDER.asc)));
-    q.addSort(new SortClause("price",  SolrQuery.ORDER.asc));
+    q.setSorts(Arrays.asList(new SortClause("price", SolrQuery.ORDER.asc)));
+    q.addSort(new SortClause("price", SolrQuery.ORDER.asc));
   }
 
   public void testSortClause() {
@@ -167,16 +162,16 @@ public class SolrQueryTest extends SolrTestCase {
 
     SolrQuery.SortClause sc1a = SolrQuery.SortClause.asc("sc1");
     SolrQuery.SortClause sc1b = SolrQuery.SortClause.asc("sc1");
-    Assert.assertEquals(sc1a, sc1b);
-    Assert.assertEquals(sc1a.hashCode(), sc1b.hashCode());
+    assertEquals(sc1a, sc1b);
+    assertEquals(sc1a.hashCode(), sc1b.hashCode());
 
     SolrQuery.SortClause sc2a = SolrQuery.SortClause.asc("sc2");
     SolrQuery.SortClause sc2b = SolrQuery.SortClause.desc("sc2");
-    Assert.assertFalse(sc2a.equals(sc2b));
+    assertNotEquals(sc2a, sc2b);
 
     SolrQuery.SortClause sc3a = SolrQuery.SortClause.asc("sc2");
     SolrQuery.SortClause sc3b = SolrQuery.SortClause.asc("not sc2");
-    Assert.assertFalse(sc3a.equals(sc3b));
+    assertNotEquals(sc3a, sc3b);
   }
 
   /*
@@ -191,25 +186,25 @@ public class SolrQueryTest extends SolrTestCase {
     q.addSort("price", SolrQuery.ORDER.asc);
     q.addSort("date", SolrQuery.ORDER.desc);
     q.addSort("qty", SolrQuery.ORDER.desc);
-    Assert.assertEquals(3, q.getSorts().size());
-    Assert.assertEquals("price asc,date desc,qty desc", q.get(CommonParams.SORT));
+    assertEquals(3, q.getSorts().size());
+    assertEquals("price asc,date desc,qty desc", q.get(CommonParams.SORT));
 
     // Remove one (middle)
     q.removeSort("date");
-    Assert.assertEquals(2, q.getSorts().size());
-    Assert.assertEquals("price asc,qty desc", q.get(CommonParams.SORT));
+    assertEquals(2, q.getSorts().size());
+    assertEquals("price asc,qty desc", q.get(CommonParams.SORT));
 
     // Remove remaining (last, first)
     q.removeSort("price");
     q.removeSort("qty");
-    Assert.assertTrue(q.getSorts().isEmpty());
-    Assert.assertNull(q.get(CommonParams.SORT));
+    assertTrue(q.getSorts().isEmpty());
+    assertNull(q.get(CommonParams.SORT));
 
     // Clear sort
     q.addSort("price", SolrQuery.ORDER.asc);
     q.clearSorts();
-    Assert.assertTrue(q.getSorts().isEmpty());
-    Assert.assertNull(q.get(CommonParams.SORT));
+    assertTrue(q.getSorts().isEmpty());
+    assertNull(q.get(CommonParams.SORT));
 
     // Add vs update
     q.clearSorts();
@@ -218,7 +213,7 @@ public class SolrQueryTest extends SolrTestCase {
     q.addSort("3", SolrQuery.ORDER.asc);
     q.addOrUpdateSort("2", SolrQuery.ORDER.desc);
     q.addOrUpdateSort("4", SolrQuery.ORDER.desc);
-    Assert.assertEquals("1 asc,2 desc,3 asc,4 desc", q.get(CommonParams.SORT));
+    assertEquals("1 asc,2 desc,3 asc,4 desc", q.get(CommonParams.SORT));
 
     // Using SortClause
     q.clearSorts();
@@ -227,12 +222,12 @@ public class SolrQueryTest extends SolrTestCase {
     q.addSort(new SortClause("3", SolrQuery.ORDER.asc));
     q.addOrUpdateSort(SortClause.desc("2"));
     q.addOrUpdateSort(SortClause.asc("4"));
-    Assert.assertEquals("1 asc,2 desc,3 asc,4 asc", q.get(CommonParams.SORT));
+    assertEquals("1 asc,2 desc,3 asc,4 asc", q.get(CommonParams.SORT));
     q.setSort(SortClause.asc("A"));
     q.addSort(SortClause.asc("B"));
     q.addSort(SortClause.asc("C"));
     q.addSort(SortClause.asc("D"));
-    Assert.assertEquals("A asc,B asc,C asc,D asc", q.get(CommonParams.SORT));
+    assertEquals("A asc,B asc,C asc,D asc", q.get(CommonParams.SORT));
 
     // removeSort should ignore the ORDER
     q.setSort(SortClause.asc("A"));
@@ -242,7 +237,7 @@ public class SolrQueryTest extends SolrTestCase {
     q.removeSort("A");
     q.removeSort(SortClause.asc("C"));
     q.removeSort(SortClause.desc("B"));
-    Assert.assertEquals("D asc", q.get(CommonParams.SORT));
+    assertEquals("D asc", q.get(CommonParams.SORT));
 
     // Verify that a query containing a SortClause is serializable
     q.clearSorts();
@@ -261,9 +256,15 @@ public class SolrQueryTest extends SolrTestCase {
 
   public void testFacetSortLegacy() {
     SolrQuery q = new SolrQuery("dog");
-    assertEquals("expected default value to be SORT_COUNT", FacetParams.FACET_SORT_COUNT, q.getFacetSortString());
+    assertEquals(
+        "expected default value to be SORT_COUNT",
+        FacetParams.FACET_SORT_COUNT,
+        q.getFacetSortString());
     q.setFacetSort(FacetParams.FACET_SORT_INDEX);
-    assertEquals("expected set value to be SORT_INDEX", FacetParams.FACET_SORT_INDEX, q.getFacetSortString());
+    assertEquals(
+        "expected set value to be SORT_INDEX",
+        FacetParams.FACET_SORT_INDEX,
+        q.getFacetSortString());
   }
 
   public void testFacetNumericRange() {
@@ -295,9 +296,9 @@ public class SolrQueryTest extends SolrTestCase {
   public void testFacetDateRange() {
     SolrQuery q = new SolrQuery("dog");
     Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"), Locale.UK);
-    calendar.set(2010, 1, 1);
+    calendar.set(2010, Calendar.FEBRUARY, 1);
     Date start = calendar.getTime();
-    calendar.set(2011, 1, 1);
+    calendar.set(2011, Calendar.FEBRUARY, 1);
     Date end = calendar.getTime();
     q.addDateRangeFacet("field", start, end, "+1MONTH");
     assertEquals("true", q.get(FacetParams.FACET));
@@ -308,65 +309,66 @@ public class SolrQueryTest extends SolrTestCase {
   }
 
   public void testSettersGetters() {
-      SolrQuery q = new SolrQuery("foo");
-      assertEquals(10, q.setFacetLimit(10).getFacetLimit());
-      assertEquals(10, q.setFacetMinCount(10).getFacetMinCount());
-      assertEquals("index", q.setFacetSort("index").getFacetSortString());
-      assertEquals(10, q.setHighlightSnippets(10).getHighlightSnippets());
-      assertEquals(10, q.setHighlightFragsize(10).getHighlightFragsize());
-      assertEquals(true, q.setHighlightRequireFieldMatch(true).getHighlightRequireFieldMatch());
-      assertEquals("foo", q.setHighlightSimplePre("foo").getHighlightSimplePre());
-      assertEquals("foo", q.setHighlightSimplePost("foo").getHighlightSimplePost());
-      assertEquals(true, q.setHighlight(true).getHighlight());
-      assertEquals("foo", q.setQuery("foo").getQuery());
-      assertEquals(10, q.setRows(10).getRows().intValue());
-      assertEquals(10, q.setStart(10).getStart().intValue());
-      assertEquals("foo", q.setRequestHandler("foo").getRequestHandler());
-      assertEquals(10, q.setTimeAllowed(10).getTimeAllowed().intValue());
-      
-      // non-standard
-      assertEquals("foo", q.setFacetPrefix("foo").get( FacetParams.FACET_PREFIX, null ) );
-      assertEquals("foo", q.setFacetPrefix("a", "foo").getFieldParam( "a", FacetParams.FACET_PREFIX, null ) );
+    SolrQuery q = new SolrQuery("foo");
+    assertEquals(10, q.setFacetLimit(10).getFacetLimit());
+    assertEquals(10, q.setFacetMinCount(10).getFacetMinCount());
+    assertEquals("index", q.setFacetSort("index").getFacetSortString());
+    assertEquals(10, q.setHighlightSnippets(10).getHighlightSnippets());
+    assertEquals(10, q.setHighlightFragsize(10).getHighlightFragsize());
+    assertTrue(q.setHighlightRequireFieldMatch(true).getHighlightRequireFieldMatch());
+    assertEquals("foo", q.setHighlightSimplePre("foo").getHighlightSimplePre());
+    assertEquals("foo", q.setHighlightSimplePost("foo").getHighlightSimplePost());
+    assertTrue(q.setHighlight(true).getHighlight());
+    assertEquals("foo", q.setQuery("foo").getQuery());
+    assertEquals(10, q.setRows(10).getRows().intValue());
+    assertEquals(10, q.setStart(10).getStart().intValue());
+    assertEquals("foo", q.setRequestHandler("foo").getRequestHandler());
+    assertEquals(10, q.setTimeAllowed(10).getTimeAllowed().intValue());
 
-      assertEquals( Boolean.TRUE, q.setFacetMissing(Boolean.TRUE).getBool( FacetParams.FACET_MISSING ) );
-      assertEquals( Boolean.FALSE, q.setFacetMissing( Boolean.FALSE ).getBool( FacetParams.FACET_MISSING ) );      
-      assertEquals( "true", q.setParam( "xxx", true ).getParams( "xxx" )[0] );
+    // non-standard
+    assertEquals("foo", q.setFacetPrefix("foo").get(FacetParams.FACET_PREFIX, null));
+    assertEquals(
+        "foo", q.setFacetPrefix("a", "foo").getFieldParam("a", FacetParams.FACET_PREFIX, null));
 
-      assertEquals( "x,y", q.setFields("x","y").getFields() );    
-      assertEquals( "x,y,score", q.setIncludeScore(true).getFields() );
-      assertEquals( "x,y,score", q.setIncludeScore(true).getFields() ); // set twice on purpose
-      assertEquals( "x,y", q.setIncludeScore(false).getFields() );
-      assertEquals( "x,y", q.setIncludeScore(false).getFields() ); // remove twice on purpose
+    assertEquals(Boolean.TRUE, q.setFacetMissing(Boolean.TRUE).getBool(FacetParams.FACET_MISSING));
+    assertEquals(
+        Boolean.FALSE, q.setFacetMissing(Boolean.FALSE).getBool(FacetParams.FACET_MISSING));
+    assertEquals("true", q.setParam("xxx", true).getParams("xxx")[0]);
 
+    assertEquals("x,y", q.setFields("x", "y").getFields());
+    assertEquals("x,y,score", q.setIncludeScore(true).getFields());
+    assertEquals("x,y,score", q.setIncludeScore(true).getFields()); // set twice on purpose
+    assertEquals("x,y", q.setIncludeScore(false).getFields());
+    assertEquals("x,y", q.setIncludeScore(false).getFields()); // remove twice on purpose
   }
-  
+
   public void testOrder() {
-    assertEquals( SolrQuery.ORDER.asc, SolrQuery.ORDER.desc.reverse() );
-    assertEquals( SolrQuery.ORDER.desc, SolrQuery.ORDER.asc.reverse() );
+    assertEquals(SolrQuery.ORDER.asc, SolrQuery.ORDER.desc.reverse());
+    assertEquals(SolrQuery.ORDER.desc, SolrQuery.ORDER.asc.reverse());
   }
-  
+
   public void testTerms() {
     SolrQuery q = new SolrQuery();
-    
+
     // check getters
-    assertEquals(false, q.getTerms());
+    assertFalse(q.getTerms());
     assertArrayEquals(null, q.getTermsFields());
     assertEquals("", q.getTermsLower());
     assertEquals("", q.getTermsUpper());
-    assertEquals(false, q.getTermsUpperInclusive());
-    assertEquals(true, q.getTermsLowerInclusive());
+    assertFalse(q.getTermsUpperInclusive());
+    assertTrue(q.getTermsLowerInclusive());
     assertEquals(10, q.getTermsLimit());
     assertEquals(1, q.getTermsMinCount());
     assertEquals(-1, q.getTermsMaxCount());
     assertEquals("", q.getTermsPrefix());
-    assertEquals(false, q.getTermsRaw());
+    assertFalse(q.getTermsRaw());
     assertEquals("count", q.getTermsSortString());
-    assertEquals(null, q.getTermsRegex());
+    assertNull(q.getTermsRegex());
     assertArrayEquals(null, q.getTermsRegexFlags());
 
     // check setters
     q.setTerms(true);
-    assertEquals(true, q.getTerms());
+    assertTrue(q.getTerms());
     q.addTermsField("testfield");
     assertEquals(1, q.getTermsFields().length);
     assertEquals("testfield", q.getTermsFields()[0]);
@@ -375,9 +377,9 @@ public class SolrQueryTest extends SolrTestCase {
     q.setTermsUpper("upper");
     assertEquals("upper", q.getTermsUpper());
     q.setTermsUpperInclusive(true);
-    assertEquals(true, q.getTermsUpperInclusive());
+    assertTrue(q.getTermsUpperInclusive());
     q.setTermsLowerInclusive(false);
-    assertEquals(false, q.getTermsLowerInclusive());
+    assertFalse(q.getTermsLowerInclusive());
     q.setTermsLimit(5);
     assertEquals(5, q.getTermsLimit());
     q.setTermsMinCount(2);
@@ -387,7 +389,7 @@ public class SolrQueryTest extends SolrTestCase {
     q.setTermsPrefix("prefix");
     assertEquals("prefix", q.getTermsPrefix());
     q.setTermsRaw(true);
-    assertEquals(true, q.getTermsRaw());
+    assertTrue(q.getTermsRaw());
     q.setTermsSortString("index");
     assertEquals("index", q.getTermsSortString());
     q.setTermsRegex("a.*");
@@ -402,37 +404,48 @@ public class SolrQueryTest extends SolrTestCase {
     solrQuery.addFacetQuery("field:value");
     assertTrue("Adding a Facet Query should enable facets", solrQuery.getBool(FacetParams.FACET));
   }
-  
+
   public void testFacetInterval() {
     SolrQuery solrQuery = new SolrQuery();
-    solrQuery.addIntervalFacets("field1", new String[]{});
+    solrQuery.addIntervalFacets("field1", new String[] {});
     assertTrue(solrQuery.getBool(FacetParams.FACET));
     assertEquals("field1", solrQuery.get(FacetParams.FACET_INTERVAL));
-    
-    solrQuery.addIntervalFacets("field2", new String[]{"[1,10]"});
-    assertArrayEquals(new String[]{"field1", "field2"}, solrQuery.getParams(FacetParams.FACET_INTERVAL));
+
+    solrQuery.addIntervalFacets("field2", new String[] {"[1,10]"});
+    assertArrayEquals(
+        new String[] {"field1", "field2"}, solrQuery.getParams(FacetParams.FACET_INTERVAL));
     assertEquals("[1,10]", solrQuery.get("f.field2.facet.interval.set"));
-    
-    solrQuery.addIntervalFacets("field3", new String[]{"[1,10]", "(10,100]", "(100,1000]", "(1000,*]"});
-    assertArrayEquals(new String[]{"field1", "field2", "field3"}, solrQuery.getParams(FacetParams.FACET_INTERVAL));
-    assertArrayEquals(new String[]{"[1,10]", "(10,100]", "(100,1000]", "(1000,*]"}, solrQuery.getParams("f.field3.facet.interval.set"));
-    
-    //Validate adding more intervals for an existing field
-    solrQuery.addIntervalFacets("field2", new String[]{"[10,100]"});
-    assertArrayEquals(new String[]{"[1,10]", "[10,100]"}, solrQuery.getParams("f.field2.facet.interval.set"));
-    
+
+    solrQuery.addIntervalFacets(
+        "field3", new String[] {"[1,10]", "(10,100]", "(100,1000]", "(1000,*]"});
+    assertArrayEquals(
+        new String[] {"field1", "field2", "field3"},
+        solrQuery.getParams(FacetParams.FACET_INTERVAL));
+    assertArrayEquals(
+        new String[] {"[1,10]", "(10,100]", "(100,1000]", "(1000,*]"},
+        solrQuery.getParams("f.field3.facet.interval.set"));
+
+    // Validate adding more intervals for an existing field
+    solrQuery.addIntervalFacets("field2", new String[] {"[10,100]"});
+    assertArrayEquals(
+        new String[] {"[1,10]", "[10,100]"}, solrQuery.getParams("f.field2.facet.interval.set"));
+
     assertNull(solrQuery.removeIntervalFacets("field1"));
-    assertArrayEquals(new String[]{"field2", "field3", "field2"}, solrQuery.getParams(FacetParams.FACET_INTERVAL));
+    assertArrayEquals(
+        new String[] {"field2", "field3", "field2"},
+        solrQuery.getParams(FacetParams.FACET_INTERVAL));
     assertNull(solrQuery.getParams("f.field1.facet.interval.set"));
-    
-    assertArrayEquals(new String[]{"[1,10]", "[10,100]"}, solrQuery.removeIntervalFacets("field2"));
-    assertArrayEquals(new String[]{"field3"}, solrQuery.getParams(FacetParams.FACET_INTERVAL));
+
+    assertArrayEquals(
+        new String[] {"[1,10]", "[10,100]"}, solrQuery.removeIntervalFacets("field2"));
+    assertArrayEquals(new String[] {"field3"}, solrQuery.getParams(FacetParams.FACET_INTERVAL));
     assertNull(solrQuery.getParams("f.field2.facet.interval.set"));
-    
-    assertArrayEquals(new String[]{"[1,10]", "(10,100]", "(100,1000]", "(1000,*]"}, solrQuery.removeIntervalFacets("field3"));
+
+    assertArrayEquals(
+        new String[] {"[1,10]", "(10,100]", "(100,1000]", "(1000,*]"},
+        solrQuery.removeIntervalFacets("field3"));
     assertNull(solrQuery.getParams(FacetParams.FACET_INTERVAL));
     assertNull(solrQuery.getParams("f.field3.facet.interval.set"));
-    
   }
 
   public void testMoreLikeThis() {
@@ -444,11 +457,11 @@ public class SolrQueryTest extends SolrTestCase {
     solrQuery.addMoreLikeThisField("mlt3");
     solrQuery.addMoreLikeThisField("mlt4");
     assertEquals(4, solrQuery.getMoreLikeThisFields().length);
-    solrQuery.setMoreLikeThisFields((String[])null);
-    assertTrue(null == solrQuery.getMoreLikeThisFields());
+    solrQuery.setMoreLikeThisFields((String[]) null);
+    assertNull(solrQuery.getMoreLikeThisFields());
     assertFalse(solrQuery.getMoreLikeThis());
 
-    assertEquals(true, solrQuery.setMoreLikeThisBoost(true).getMoreLikeThisBoost());
+    assertTrue(solrQuery.setMoreLikeThisBoost(true).getMoreLikeThisBoost());
     assertEquals("qf", solrQuery.setMoreLikeThisQF("qf").getMoreLikeThisQF());
     assertEquals(10, solrQuery.setMoreLikeThisMaxTokensParsed(10).getMoreLikeThisMaxTokensParsed());
     assertEquals(11, solrQuery.setMoreLikeThisMinTermFreq(11).getMoreLikeThisMinTermFreq());
@@ -457,6 +470,5 @@ public class SolrQueryTest extends SolrTestCase {
     assertEquals(14, solrQuery.setMoreLikeThisMinWordLen(14).getMoreLikeThisMinWordLen());
     assertEquals(15, solrQuery.setMoreLikeThisMaxQueryTerms(15).getMoreLikeThisMaxQueryTerms());
     assertEquals(16, solrQuery.setMoreLikeThisCount(16).getMoreLikeThisCount());
-
   }
 }

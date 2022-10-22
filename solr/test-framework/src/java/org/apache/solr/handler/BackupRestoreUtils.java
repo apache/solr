@@ -25,9 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-
 import org.apache.commons.io.IOUtils;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -41,10 +40,13 @@ public class BackupRestoreUtils extends SolrTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static int indexDocs(SolrClient leaderClient, String collectionName, long docsSeed) throws IOException, SolrServerException {
+  public static int indexDocs(SolrClient leaderClient, String collectionName, long docsSeed)
+      throws IOException, SolrServerException {
     leaderClient.deleteByQuery(collectionName, "*:*");
 
-    Random random = new Random(docsSeed);// use a constant seed for the whole test run so that we can easily re-index.
+    Random random =
+        new Random(
+            docsSeed); // use a constant seed for the whole test run so that we can easily re-index.
     int nDocs = TestUtil.nextInt(random, 1, 100);
     log.info("Indexing {} test docs", nDocs);
 
@@ -61,7 +63,8 @@ public class BackupRestoreUtils extends SolrTestCase {
     return nDocs;
   }
 
-  public static void verifyDocs(int nDocs, SolrClient leaderClient, String collectionName) throws SolrServerException, IOException {
+  public static void verifyDocs(int nDocs, SolrClient leaderClient, String collectionName)
+      throws SolrServerException, IOException {
     ModifiableSolrParams queryParams = new ModifiableSolrParams();
     queryParams.set("q", "*:*");
     QueryResponse response = leaderClient.query(collectionName, queryParams);
@@ -70,14 +73,16 @@ public class BackupRestoreUtils extends SolrTestCase {
     assertEquals(nDocs, response.getResults().getNumFound());
   }
 
-  public static void runCoreAdminCommand(String baseUrl, String coreName, String action, Map<String,String> params) throws IOException {
+  public static void runCoreAdminCommand(
+      String baseUrl, String coreName, String action, Map<String, String> params)
+      throws IOException {
     StringBuilder builder = new StringBuilder();
     builder.append(baseUrl);
     builder.append("/admin/cores?action=");
     builder.append(action);
     builder.append("&core=");
     builder.append(coreName);
-    for (Map.Entry<String,String> p : params.entrySet()) {
+    for (Map.Entry<String, String> p : params.entrySet()) {
       builder.append("&");
       builder.append(p.getKey());
       builder.append("=");
@@ -87,8 +92,20 @@ public class BackupRestoreUtils extends SolrTestCase {
     executeHttpRequest(leaderUrl);
   }
 
-  public static void runReplicationHandlerCommand(String baseUrl, String coreName, String action, String repoName, String backupName) throws IOException {
-    String leaderUrl = baseUrl + "/" + coreName + ReplicationHandler.PATH + "?command=" + action + "&repository="+repoName+"&name="+backupName;
+  public static void runReplicationHandlerCommand(
+      String baseUrl, String coreName, String action, String repoName, String backupName)
+      throws IOException {
+    String leaderUrl =
+        baseUrl
+            + "/"
+            + coreName
+            + ReplicationHandler.PATH
+            + "?command="
+            + action
+            + "&repository="
+            + repoName
+            + "&name="
+            + backupName;
     executeHttpRequest(leaderUrl);
   }
 

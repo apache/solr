@@ -16,6 +16,7 @@
  */
 package org.apache.solr.prometheus.exporter;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -25,8 +26,6 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -38,9 +37,7 @@ import org.apache.solr.prometheus.PrometheusExporterTestBase;
 import org.apache.solr.prometheus.utils.Helpers;
 import org.junit.After;
 
-/**
- * Test base class.
- */
+/** Test base class. */
 @ThreadLeakScope(ThreadLeakScope.Scope.NONE)
 public class SolrExporterTestBase extends PrometheusExporterTestBase {
 
@@ -58,17 +55,20 @@ public class SolrExporterTestBase extends PrometheusExporterTestBase {
     super.tearDown();
   }
 
-  protected void startMetricsExporterWithConfiguration(String scrapeConfiguration) throws Exception {
+  protected void startMetricsExporterWithConfiguration(String scrapeConfiguration)
+      throws Exception {
     try (ServerSocket socket = new ServerSocket(0)) {
       promtheusExporterPort = socket.getLocalPort();
     }
 
-    solrExporter = new SolrExporter(
-        promtheusExporterPort,
-        25,
-        10,
-        SolrScrapeConfiguration.solrCloud(cluster.getZkServer().getZkAddress()),
-        Helpers.loadConfiguration(scrapeConfiguration));
+    solrExporter =
+        new SolrExporter(
+            promtheusExporterPort,
+            25,
+            10,
+            SolrScrapeConfiguration.solrCloud(cluster.getZkServer().getZkAddress()),
+            Helpers.loadConfiguration(scrapeConfiguration),
+            "test");
 
     solrExporter.start();
     httpClient = HttpClients.createDefault();
@@ -97,7 +97,9 @@ public class SolrExporterTestBase extends PrometheusExporterTestBase {
 
     try (CloseableHttpResponse response = httpClient.execute(request)) {
       assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
-      try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.getEntity().getContent(), StandardCharsets.UTF_8))) {
+      try (BufferedReader reader =
+          new BufferedReader(
+              new InputStreamReader(response.getEntity().getContent(), StandardCharsets.UTF_8))) {
         String currentLine;
 
         while ((currentLine = reader.readLine()) != null) {
@@ -115,5 +117,4 @@ public class SolrExporterTestBase extends PrometheusExporterTestBase {
 
     return metrics;
   }
-
 }

@@ -17,30 +17,33 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-
 import java.util.Locale;
-
+import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.apache.solr.client.solrj.io.Tuple;
 
 public class GetValueEvaluator extends RecursiveObjectEvaluator implements TwoValueWorker {
   protected static final long serialVersionUID = 1L;
 
-  public GetValueEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public GetValueEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
 
-    if(2 != containedEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting exactly 2 values but found %d",expression,containedEvaluators.size()));
+    if (2 != containedEvaluators.size()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting exactly 2 values but found %d",
+              expression,
+              containedEvaluators.size()));
     }
   }
 
   @Override
   public Object doWork(Object value1, Object value2) throws IOException {
 
-    if(value1 instanceof Tuple) {
-      Tuple tuple = (Tuple)value1;
-      String key = (String)value2;
+    if (value1 instanceof Tuple) {
+      Tuple tuple = (Tuple) value1;
+      String key = (String) value2;
       key = key.replace("\"", "");
       return tuple.get(key);
     } else {

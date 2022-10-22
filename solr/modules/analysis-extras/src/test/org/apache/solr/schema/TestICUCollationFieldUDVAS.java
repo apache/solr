@@ -16,28 +16,17 @@
  */
 package org.apache.solr.schema;
 
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.appender.WriterAppender;
-import org.apache.logging.log4j.core.config.LoggerConfig;
-import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.apache.lucene.util.Version;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.XmlConfigFile;
+import org.apache.solr.util.LogListener;
 import org.junit.BeforeClass;
 
-import java.io.StringWriter;
-import java.util.function.BooleanSupplier;
-
 /**
- * Tests warn/failure of {@link ICUCollationField} when schema explicitly sets
- * <code>useDocValuesAsStored="true"</code>
+ * Tests warn/failure of {@link ICUCollationField} when schema explicitly sets <code>
+ * useDocValuesAsStored="true"</code>
  */
-@SuppressForbidden(reason = "test is specific to log4j2")
 public class TestICUCollationFieldUDVAS extends SolrTestCaseJ4 {
 
   private static final String ICU_FIELD_UDVAS_PROPNAME = "tests.icu_collation_field.udvas";
@@ -51,46 +40,25 @@ public class TestICUCollationFieldUDVAS extends SolrTestCaseJ4 {
     home = TestICUCollationFieldDocValues.setupSolrHome();
   }
 
-  private enum Mode { OK, WARN, FAIL }
+  private enum Mode {
+    OK,
+    WARN,
+    FAIL
+  }
 
   @SuppressWarnings("fallthrough")
   public void testInitCore() throws Exception {
     final Mode mode = pickRandom(Mode.values());
-    final BooleanSupplier messageLogged;
-    final Runnable cleanup;
-    Version useVersion = null;
+    Version useVersion;
     switch (mode) {
       case FAIL:
         useVersion = ICUCollationField.UDVAS_FORBIDDEN_AS_OF;
-        messageLogged = null;
-        cleanup = null;
         break;
       case WARN:
         useVersion = WARN_CEILING;
-        // fallthrough
+        break;
       case OK:
-        // `OK` leaves `useVersion == null`
-        final StringWriter writer = new StringWriter();
-        final WriterAppender appender = WriterAppender.createAppender(
-                PatternLayout
-                        .newBuilder()
-                        .withPattern("%-5p [%t]: %m%n")
-                        .build(),
-                null, writer, "ICUCollationUdvasTest", false, true);
-        appender.start();
-        final Logger logger = LogManager.getLogger(XmlConfigFile.class);
-        final Level level = logger.getLevel();
-        final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
-        final LoggerConfig config = ctx.getConfiguration().getLoggerConfig(logger.getName());
-        config.setLevel(Level.WARN);
-        config.addAppender(appender, Level.WARN, null);
-        ctx.updateLoggers();
-        messageLogged = () -> writer.toString().contains(ICUCollationField.UDVAS_MESSAGE);
-        cleanup = () -> {
-          config.setLevel(level);
-          config.removeAppender(appender.getName());
-          ctx.updateLoggers();
-        };
+        useVersion = null;
         break;
       default:
         throw new IllegalStateException();
@@ -100,46 +68,43 @@ public class TestICUCollationFieldUDVAS extends SolrTestCaseJ4 {
     if (mode == Mode.OK) {
       restoreLuceneMatchVersion = null;
     } else {
-      System.setProperty(random().nextBoolean() ? ICU_TYPE_UDVAS_PROPNAME : ICU_FIELD_UDVAS_PROPNAME, "true");
-      restoreLuceneMatchVersion = System.setProperty(TEST_LUCENE_MATCH_VERSION_PROPNAME, useVersion.toString());
+      System.setProperty(
+          random().nextBoolean() ? ICU_TYPE_UDVAS_PROPNAME : ICU_FIELD_UDVAS_PROPNAME, "true");
+      restoreLuceneMatchVersion =
+          System.setProperty(TEST_LUCENE_MATCH_VERSION_PROPNAME, useVersion.toString());
     }
-    try {
+    try (LogListener warnLog =
+        LogListener.warn(XmlConfigFile.class).substring(ICUCollationField.UDVAS_MESSAGE)) {
       initCore("solrconfig.xml", "schema.xml", home);
       switch (mode) {
         case FAIL:
           fail("expected failure for version " + useVersion);
           break;
         case WARN:
-          assertTrue("expected warning message was not logged", messageLogged.getAsBoolean());
+          assertEquals("expected warning message was not logged", 2, warnLog.getCount());
+          // Clear out the warnLog
+          warnLog.pollMessage();
+          warnLog.pollMessage();
           break;
         case OK:
-          assertFalse("unexpected warning message was logged", messageLogged.getAsBoolean());
+          assertEquals("unexpected warning message was logged", 0, warnLog.getCount());
           break;
       }
     } catch (SolrException ex) {
       assertSame("unexpected hard failure for " + useVersion + ": " + ex, mode, Mode.FAIL);
-      assertTrue("unexpected failure message", getRootCause(ex).getMessage().contains(ICUCollationField.UDVAS_MESSAGE));
+      assertTrue(
+          "unexpected failure message",
+          getRootCause(ex).getMessage().contains(ICUCollationField.UDVAS_MESSAGE));
     } finally {
-      switch (mode) {
-        case WARN:
-          restoreSysProps(restoreLuceneMatchVersion);
-          cleanup.run();
-          break;
-        case FAIL:
-          restoreSysProps(restoreLuceneMatchVersion);
-          break;
-        case OK:
-          // we didn't modify any sysprops, but did verify that the warning message wasn't logged, so have
-          // to cleanup appenders, etc.
-          cleanup.run();
-          break;
-      }
+      restoreSysProps(restoreLuceneMatchVersion);
     }
   }
 
   private static void restoreSysProps(String restoreLuceneMatchVersion) {
-    System.clearProperty(ICU_FIELD_UDVAS_PROPNAME);
-    System.clearProperty(ICU_TYPE_UDVAS_PROPNAME);
-    System.setProperty(TEST_LUCENE_MATCH_VERSION_PROPNAME, restoreLuceneMatchVersion);
+    if (restoreLuceneMatchVersion != null) {
+      System.clearProperty(ICU_FIELD_UDVAS_PROPNAME);
+      System.clearProperty(ICU_TYPE_UDVAS_PROPNAME);
+      System.setProperty(TEST_LUCENE_MATCH_VERSION_PROPNAME, restoreLuceneMatchVersion);
+    }
   }
 }

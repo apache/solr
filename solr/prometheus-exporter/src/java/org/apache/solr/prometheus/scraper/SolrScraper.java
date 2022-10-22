@@ -16,6 +16,10 @@
  */
 package org.apache.solr.prometheus.scraper;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.prometheus.client.Collector;
+import io.prometheus.client.Counter;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -28,17 +32,12 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.prometheus.client.Collector;
-import io.prometheus.client.Counter;
 import net.thisptr.jackson.jq.JsonQuery;
 import net.thisptr.jackson.jq.exception.JsonQueryException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.prometheus.collector.MetricSamples;
@@ -49,52 +48,69 @@ import org.slf4j.LoggerFactory;
 
 public abstract class SolrScraper implements Closeable {
 
-  private static final Counter scrapeErrorTotal = Counter.build()
-      .name("solr_exporter_scrape_error_total")
-      .help("Number of scrape error.")
-      .register(SolrExporter.defaultRegistry);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  protected static final String ZK_HOST_LABEL = "zk_host";
+  protected static final String BASE_URL_LABEL = "base_url";
+  protected static final String CLUSTER_ID_LABEL = "cluster_id";
+
+  private static final Counter scrapeErrorTotal =
+      Counter.build()
+          .name("solr_exporter_scrape_error_total")
+          .help("Number of scrape error.")
+          .labelNames(ZK_HOST_LABEL, BASE_URL_LABEL, CLUSTER_ID_LABEL)
+          .register(SolrExporter.defaultRegistry);
 
   protected static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  protected final String clusterId;
 
   protected final ExecutorService executor;
 
-  public abstract Map<String, MetricSamples> metricsForAllHosts(MetricsQuery query) throws IOException;
+  public abstract Map<String, MetricSamples> metricsForAllHosts(MetricsQuery query)
+      throws IOException;
 
   public abstract Map<String, MetricSamples> pingAllCores(MetricsQuery query) throws IOException;
-  public abstract Map<String, MetricSamples> pingAllCollections(MetricsQuery query) throws IOException;
+
+  public abstract Map<String, MetricSamples> pingAllCollections(MetricsQuery query)
+      throws IOException;
 
   public abstract MetricSamples search(MetricsQuery query) throws IOException;
+
   public abstract MetricSamples collections(MetricsQuery metricsQuery) throws IOException;
 
-  public SolrScraper(ExecutorService executor) {
+  public SolrScraper(ExecutorService executor, String clusterId) {
     this.executor = executor;
+    this.clusterId = clusterId;
   }
 
   protected Map<String, MetricSamples> sendRequestsInParallel(
-      Collection<String> items,
-      Function<String, MetricSamples> samplesCallable) throws IOException {
+      Collection<String> items, Function<String, MetricSamples> samplesCallable)
+      throws IOException {
 
     Map<String, MetricSamples> result = new HashMap<>(); // sync on this when adding to it below
 
     try {
-      // invoke each samplesCallable with each item and putting the results in the above "result" map.
+      // invoke each samplesCallable with each item and putting the results in the above "result"
+      // map.
       executor.invokeAll(
           items.stream()
-              .map(item -> (Callable<MetricSamples>) () -> {
-                try {
-                  final MetricSamples samples = samplesCallable.apply(item);
-                  synchronized (result) {
-                    result.put(item, samples);
-                  }
-                } catch (Exception e) {
-                  // do NOT totally fail; just log and move on
-                  log.warn("Error occurred during metrics collection", e);
-                }
-                return null;//not used
-              })
-              .collect(Collectors.toList())
-      );
+              .map(
+                  item ->
+                      (Callable<MetricSamples>)
+                          () -> {
+                            try {
+                              final MetricSamples samples = samplesCallable.apply(item);
+                              synchronized (result) {
+                                result.put(item, samples);
+                              }
+                            } catch (Exception e) {
+                              // do NOT totally fail; just log and move on
+                              log.warn("Error occurred during metrics collection", e);
+                            }
+                            return null; // not used
+                          })
+              .collect(Collectors.toList()));
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new RuntimeException(e);
@@ -105,6 +121,14 @@ public abstract class SolrScraper implements Closeable {
 
   protected MetricSamples request(SolrClient client, MetricsQuery query) throws IOException {
     MetricSamples samples = new MetricSamples();
+
+    String baseUrlLabelValue = "";
+    String zkHostLabelValue = "";
+    if (client instanceof Http2SolrClient) {
+      baseUrlLabelValue = ((Http2SolrClient) client).getBaseURL();
+    } else if (client instanceof CloudSolrClient) {
+      zkHostLabelValue = ((CloudSolrClient) client).getClusterStateProvider().getQuorumHosts();
+    }
 
     QueryRequest queryRequest = new QueryRequest(query.getParameters());
     queryRequest.setPath(query.getPath());
@@ -146,18 +170,23 @@ public abstract class SolrScraper implements Closeable {
           }
 
           /* Labels due to client */
-          if (client instanceof HttpSolrClient) {
-            labelNames.add("base_url");
-            labelValues.add(((HttpSolrClient) client).getBaseURL());
+          if (!baseUrlLabelValue.isEmpty()) {
+            labelNames.add(BASE_URL_LABEL);
+            labelValues.add(baseUrlLabelValue);
+          } else if (!zkHostLabelValue.isEmpty()) {
+            labelNames.add(ZK_HOST_LABEL);
+            labelValues.add(zkHostLabelValue);
           }
 
-          if (client instanceof CloudSolrClient) {
-            labelNames.add("zk_host");
-            labelValues.add(((CloudSolrClient) client).getZkHost());
-          }
+          // Add the unique cluster ID, either as specified on cmdline -i or baseUrl/zkHost
+          labelNames.add(CLUSTER_ID_LABEL);
+          labelValues.add(clusterId);
 
           // Deduce core if not there
-          if (labelNames.indexOf("core") < 0 && labelNames.indexOf("collection") >= 0 && labelNames.indexOf("shard") >= 0 && labelNames.indexOf("replica") >= 0) {
+          if (labelNames.indexOf("core") < 0
+              && labelNames.indexOf("collection") >= 0
+              && labelNames.indexOf("shard") >= 0
+              && labelNames.indexOf("replica") >= 0) {
             labelNames.add("core");
 
             String collection = labelValues.get(labelNames.indexOf("collection"));
@@ -167,22 +196,20 @@ public abstract class SolrScraper implements Closeable {
             labelValues.add(collection + "_" + shard + "_" + replica);
           }
 
-          samples.addSamplesIfNotPresent(name, new Collector.MetricFamilySamples(
+          samples.addSamplesIfNotPresent(
               name,
-              Collector.Type.valueOf(type),
-              help,
-              new ArrayList<>()));
+              new Collector.MetricFamilySamples(
+                  name, Collector.Type.valueOf(type), help, new ArrayList<>()));
 
-          samples.addSampleIfMetricExists(name, new Collector.MetricFamilySamples.Sample(
-              name, labelNames, labelValues, value));
+          samples.addSampleIfMetricExists(
+              name, new Collector.MetricFamilySamples.Sample(name, labelNames, labelValues, value));
         }
       } catch (JsonQueryException e) {
         log.error("Error apply JSON query={} to result", jsonQuery, e);
-        scrapeErrorTotal.inc();
+        scrapeErrorTotal.labels(zkHostLabelValue, baseUrlLabelValue, clusterId).inc();
       }
     }
 
     return samples;
   }
-
 }

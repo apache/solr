@@ -39,7 +39,8 @@ public class MetricsQueryTemplate {
   TYPE = COUNTER
   */
   private static final Pattern matchJqTemplate =
-      Pattern.compile("^\\$jq:(?<TEMPLATE>.*?)\\(\\s?(?<UNIQUE>[^,]*),\\s?(?<KEYSELECTOR>[^,]*)(,\\s?(?<METRIC>[^,]*)\\s?)?(,\\s?(?<TYPE>[^,]*)\\s?)?\\)$");
+      Pattern.compile(
+          "^\\$jq:(?<TEMPLATE>.*?)\\(\\s?(?<UNIQUE>[^,]*),\\s?(?<KEYSELECTOR>[^,]*)(,\\s?(?<METRIC>[^,]*)\\s?)?(,\\s?(?<TYPE>[^,]*)\\s?)?\\)$");
 
   public static Optional<Matcher> matches(String jsonQuery) {
     Optional<Matcher> maybe = Optional.empty();
@@ -103,7 +104,8 @@ public class MetricsQueryTemplate {
           metric = "$object.value." + metric;
         }
       } // else some kind of function, pass thru as-is
-    } // else there's a $ so just assume it is a fully qualified reference to the desired value, leave as-is
+    } // else there's a $ so just assume it is a fully qualified reference to the desired value,
+    // leave as-is
 
     return template
         .replace("{UNIQUE}", unique)
@@ -117,9 +119,9 @@ public class MetricsQueryTemplate {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     MetricsQueryTemplate that = (MetricsQueryTemplate) o;
-    return name.equals(that.name) &&
-        Objects.equals(defaultType, that.defaultType) &&
-        template.equals(that.template);
+    return name.equals(that.name)
+        && Objects.equals(defaultType, that.defaultType)
+        && template.equals(that.template);
   }
 
   @Override

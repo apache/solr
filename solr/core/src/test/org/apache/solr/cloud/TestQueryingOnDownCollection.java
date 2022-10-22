@@ -16,10 +16,8 @@
  */
 package org.apache.solr.cloud;
 
-import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -33,12 +31,9 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.Utils;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class TestQueryingOnDownCollection extends SolrCloudTestCase {
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String COLLECTION_NAME = "infected";
 
   private static final String USERNAME = "solr";
@@ -52,11 +47,11 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
         .configure();
   }
 
-  @Test
   /**
-   * Assert that requests to "down collection", i.e. a collection which has all replicas in down state
-   * (but are hosted on nodes that are live), fail fast and throw meaningful exceptions
+   * Assert that requests to "down collection", i.e. a collection which has all replicas in down
+   * state (but are hosted on nodes that are live), fail fast and throw meaningful exceptions
    */
+  @Test
   public void testQueryToDownCollectionShouldFailFast() throws Exception {
 
     CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 2, 1)
@@ -64,19 +59,20 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     // Add some dummy documents
-    UpdateRequest update = (UpdateRequest) new UpdateRequest().setBasicAuthCredentials(USERNAME, PASSWORD);
+    UpdateRequest update =
+        (UpdateRequest) new UpdateRequest().setBasicAuthCredentials(USERNAME, PASSWORD);
     for (int i = 0; i < 100; i++) {
       update.add("id", Integer.toString(i));
     }
     update.commit(cluster.getSolrClient(), COLLECTION_NAME);
 
-    // Bring down replicas but keep nodes up. This could've been done by some combinations of collections API operations;
-    // however, to make it faster, altering cluster state directly! ;-)
+    // Bring down replicas but keep nodes up. This could've been done by some combinations of
+    // collections API operations; however to make it faster, altering cluster state directly!
     downAllReplicas();
 
     // assert all replicas are in down state
     List<Replica> replicas = getCollectionState(COLLECTION_NAME).getReplicas();
-    for (Replica replica: replicas){
+    for (Replica replica : replicas) {
       assertEquals(replica.getState(), Replica.State.DOWN);
     }
 
@@ -85,69 +81,83 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
 
     SolrClient client = cluster.getJettySolrRunner(0).newClient();
 
-    SolrRequest<QueryResponse> req = new QueryRequest(new SolrQuery("*:*").setRows(0)).setBasicAuthCredentials(USERNAME, PASSWORD);
+    SolrRequest<QueryResponse> req =
+        new QueryRequest(new SolrQuery("*:*").setRows(0))
+            .setBasicAuthCredentials(USERNAME, PASSWORD);
 
-    // Without the SOLR-13793 fix, this causes requests to "down collection" to pile up (until the nodes run out 
-    // of serviceable threads and they crash, even for other collections hosted on the nodes).
-    SolrException error = expectThrows(SolrException.class,
-        "Request should fail after trying all replica nodes once",
-        () -> client.request(req, COLLECTION_NAME)
-    );
+    // Without the SOLR-13793 fix, this causes requests to "down collection" to pile up (until the
+    // nodes run out of serviceable threads, and they crash, even for other collections hosted on
+    // the
+    // nodes).
+    SolrException error =
+        expectThrows(
+            SolrException.class,
+            "Request should fail after trying all replica nodes once",
+            () -> client.request(req, COLLECTION_NAME));
 
     client.close();
 
     assertEquals(error.code(), SolrException.ErrorCode.INVALID_STATE.code);
-    assertTrue(error.getMessage().contains("No active replicas found for collection: " + COLLECTION_NAME));
+    assertTrue(
+        error.getMessage().contains("No active replicas found for collection: " + COLLECTION_NAME));
 
     // run same set of tests on v2 client which uses V2HttpCall
-    Http2SolrClient v2Client = new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
-        .build();
+    SolrClient v2Client =
+        new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString()).build();
 
-    error = expectThrows(SolrException.class,
-        "Request should fail after trying all replica nodes once",
-        () -> v2Client.request(req, COLLECTION_NAME)
-    );
+    error =
+        expectThrows(
+            SolrException.class,
+            "Request should fail after trying all replica nodes once",
+            () -> v2Client.request(req, COLLECTION_NAME));
 
     v2Client.close();
 
     assertEquals(error.code(), SolrException.ErrorCode.INVALID_STATE.code);
-    assertTrue(error.getMessage().contains("No active replicas found for collection: " + COLLECTION_NAME));
+    assertTrue(
+        error.getMessage().contains("No active replicas found for collection: " + COLLECTION_NAME));
   }
 
   @SuppressWarnings({"unchecked"})
   private void downAllReplicas() throws Exception {
-    byte[] collectionState = cluster.getZkClient().getData("/collections/" + COLLECTION_NAME + "/state.json",
-        null, null, true);
+    byte[] collectionState =
+        cluster
+            .getZkClient()
+            .getData("/collections/" + COLLECTION_NAME + "/state.json", null, null, true);
 
-    Map<String,Map<String,?>> infectedState = (Map<String,Map<String,?>>) Utils.fromJSON(collectionState);
-    Map<String, Object> shards = (Map<String, Object>) infectedState.get(COLLECTION_NAME).get("shards");
-    for(Map.Entry<String, Object> shard: shards.entrySet()) {
-      Map<String, Object> replicas = (Map<String, Object>) ((Map<String, Object>) shard.getValue() ).get("replicas");
+    Map<String, Map<String, ?>> infectedState =
+        (Map<String, Map<String, ?>>) Utils.fromJSON(collectionState);
+    Map<String, Object> shards =
+        (Map<String, Object>) infectedState.get(COLLECTION_NAME).get("shards");
+    for (Map.Entry<String, Object> shard : shards.entrySet()) {
+      Map<String, Object> replicas =
+          (Map<String, Object>) ((Map<String, Object>) shard.getValue()).get("replicas");
       for (Map.Entry<String, Object> replica : replicas.entrySet()) {
         ((Map<String, Object>) replica.getValue()).put("state", Replica.State.DOWN.toString());
       }
     }
 
-    cluster.getZkClient().setData("/collections/" + COLLECTION_NAME + "/state.json", Utils.toJSON(infectedState)
-        , true);
+    cluster
+        .getZkClient()
+        .setData(
+            "/collections/" + COLLECTION_NAME + "/state.json", Utils.toJSON(infectedState), true);
   }
 
-  protected static final String STD_CONF = "{\n" +
-      "  \"authentication\":{\n" +
-      "   \"blockUnknown\": true,\n" +
-      "   \"class\":\"solr.BasicAuthPlugin\",\n" +
-      "   \"credentials\":{\"solr\":\"EEKn7ywYk5jY8vG9TyqlG2jvYuvh1Q7kCCor6Hqm320= 6zkmjMjkMKyJX6/f0VarEWQujju5BzxZXub6WOrEKCw=\"}\n" +
-      "  },\n" +
-      "  \"authorization\":{\n" +
-      "   \"class\":\"solr.RuleBasedAuthorizationPlugin\",\n" +
-      "   \"permissions\":[\n" +
-      " {\"name\":\"security-edit\", \"role\":\"admin\"},\n" +
-      " {\"name\":\"collection-admin-edit\", \"role\":\"admin\"},\n" +
-      " {\"name\":\"core-admin-edit\", \"role\":\"admin\"}\n" +
-      "   ],\n" +
-      "   \"user-role\":{\"solr\":\"admin\"}\n" +
-      "  }\n" +
-      "}";
-
-
+  protected static final String STD_CONF =
+      "{\n"
+          + "  \"authentication\":{\n"
+          + "   \"blockUnknown\": true,\n"
+          + "   \"class\":\"solr.BasicAuthPlugin\",\n"
+          + "   \"credentials\":{\"solr\":\"EEKn7ywYk5jY8vG9TyqlG2jvYuvh1Q7kCCor6Hqm320= 6zkmjMjkMKyJX6/f0VarEWQujju5BzxZXub6WOrEKCw=\"}\n"
+          + "  },\n"
+          + "  \"authorization\":{\n"
+          + "   \"class\":\"solr.RuleBasedAuthorizationPlugin\",\n"
+          + "   \"permissions\":[\n"
+          + " {\"name\":\"security-edit\", \"role\":\"admin\"},\n"
+          + " {\"name\":\"collection-admin-edit\", \"role\":\"admin\"},\n"
+          + " {\"name\":\"core-admin-edit\", \"role\":\"admin\"}\n"
+          + "   ],\n"
+          + "   \"user-role\":{\"solr\":\"admin\"}\n"
+          + "  }\n"
+          + "}";
 }

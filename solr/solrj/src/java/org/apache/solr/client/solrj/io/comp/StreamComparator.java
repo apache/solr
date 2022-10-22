@@ -19,13 +19,14 @@ package org.apache.solr.client.solrj.io.comp;
 import java.io.Serializable;
 import java.util.Comparator;
 import java.util.Map;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 
 /** Defines a comparator we can use with TupleStreams */
 public interface StreamComparator extends Comparator<Tuple>, Expressible, Serializable {
   boolean isDerivedFrom(StreamComparator base);
-  StreamComparator copyAliased(Map<String,String> aliases);
+
+  StreamComparator copyAliased(Map<String, String> aliases);
+
   StreamComparator append(StreamComparator other);
 }

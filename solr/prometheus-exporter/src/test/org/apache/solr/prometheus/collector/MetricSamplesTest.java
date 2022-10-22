@@ -17,33 +17,28 @@
 
 package org.apache.solr.prometheus.collector;
 
+import io.prometheus.client.Collector;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import io.prometheus.client.Collector;
+import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-
-public class MetricSamplesTest {
+public class MetricSamplesTest extends SolrTestCase {
 
   private Collector.MetricFamilySamples.Sample sample(String name, Double value) {
-    return new Collector.MetricFamilySamples.Sample(name, Collections.emptyList(), Collections.emptyList(), value);
+    return new Collector.MetricFamilySamples.Sample(
+        name, Collections.emptyList(), Collections.emptyList(), value);
   }
 
-  private Collector.MetricFamilySamples samples(String metricName, Collector.Type type, Collector.MetricFamilySamples.Sample...samples) {
+  private Collector.MetricFamilySamples samples(
+      String metricName, Collector.Type type, Collector.MetricFamilySamples.Sample... samples) {
     return new Collector.MetricFamilySamples(
-        metricName,
-        type,
-        "help",
-        new ArrayList<>(Arrays.asList(samples))
-    );
+        metricName, type, "help", new ArrayList<>(Arrays.asList(samples)));
   }
 
   private void validateMetricSamples(
@@ -51,20 +46,25 @@ public class MetricSamplesTest {
       String metricName,
       List<Double> expectedValues) {
 
-    Collector.MetricFamilySamples test1 = allMetrics.stream()
-        .filter(s -> s.name.equals(metricName))
-        .findFirst()
-        .orElseThrow(() -> new RuntimeException(String.format(Locale.ROOT, "Unable to find item %s", metricName)));
+    Collector.MetricFamilySamples test1 =
+        allMetrics.stream()
+            .filter(s -> s.name.equals(metricName))
+            .findFirst()
+            .orElseThrow(() -> new RuntimeException("Unable to find item " + metricName));
 
-    assertEquals(expectedValues, test1.samples.stream().map(s -> s.value).collect(Collectors.toList()));
+    assertEquals(
+        expectedValues, test1.samples.stream().map(s -> s.value).collect(Collectors.toList()));
   }
 
   @Test
   public void asList() {
-    MetricSamples samples = new MetricSamples(Map.of(
-        "test1", samples("test1", Collector.Type.GAUGE, sample("test1", 1.0), sample("test1", 2.0)),
-        "test2", samples("test2", Collector.Type.GAUGE, sample("test2", 1.0))
-    ));
+    MetricSamples samples =
+        new MetricSamples(
+            Map.of(
+                "test1",
+                    samples(
+                        "test1", Collector.Type.GAUGE, sample("test1", 1.0), sample("test1", 2.0)),
+                "test2", samples("test2", Collector.Type.GAUGE, sample("test2", 1.0))));
 
     List<Collector.MetricFamilySamples> output = samples.asList();
 
@@ -76,15 +76,22 @@ public class MetricSamplesTest {
 
   @Test
   public void addAll() {
-    MetricSamples lhs = new MetricSamples(new HashMap<>(Map.of(
-        "same", samples("same", Collector.Type.GAUGE, sample("same", 1.0), sample("same", 2.0)),
-        "diff1", samples("diff1", Collector.Type.GAUGE, sample("diff1", 1.0))
-    )));
+    MetricSamples lhs =
+        new MetricSamples(
+            new HashMap<>(
+                Map.of(
+                    "same",
+                        samples(
+                            "same", Collector.Type.GAUGE, sample("same", 1.0), sample("same", 2.0)),
+                    "diff1", samples("diff1", Collector.Type.GAUGE, sample("diff1", 1.0)))));
 
-    MetricSamples rhs = new MetricSamples(Map.of(
-        "same", samples("test1", Collector.Type.GAUGE, sample("test1", 3.0), sample("test1", 4.0)),
-        "diff2", samples("diff2", Collector.Type.GAUGE, sample("diff2", 1.0))
-    ));
+    MetricSamples rhs =
+        new MetricSamples(
+            Map.of(
+                "same",
+                    samples(
+                        "test1", Collector.Type.GAUGE, sample("test1", 3.0), sample("test1", 4.0)),
+                "diff2", samples("diff2", Collector.Type.GAUGE, sample("diff2", 1.0))));
     lhs.addAll(rhs);
 
     List<Collector.MetricFamilySamples> output = lhs.asList();
@@ -93,5 +100,4 @@ public class MetricSamplesTest {
     validateMetricSamples(output, "diff1", Collections.singletonList(1.0));
     validateMetricSamples(output, "diff2", Collections.singletonList(1.0));
   }
-
 }

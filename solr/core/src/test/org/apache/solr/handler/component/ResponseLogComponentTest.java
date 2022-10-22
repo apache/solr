@@ -27,7 +27,7 @@ public class ResponseLogComponentTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    initCore("solrconfig-response-log-component.xml","schema12.xml");
+    initCore("solrconfig-response-log-component.xml", "schema12.xml");
     assertNull(h.validateUpdate(adoc("id", "1", "subject", "aa")));
     assertNull(h.validateUpdate(adoc("id", "two", "subject", "aa")));
     assertNull(h.validateUpdate(adoc("id", "3", "subject", "aa")));
@@ -38,9 +38,21 @@ public class ResponseLogComponentTest extends SolrTestCaseJ4 {
   public void testToLogIds() throws Exception {
     SolrQueryRequest req = null;
     try {
-      String handler="/withlog";
-      req = req("indent","true", "qt","/withlog",  "q","aa", "rows","2",
-          "fl","id,subject", "responseLog","true");
+      String handler = "/withlog";
+      req =
+          req(
+              "indent",
+              "true",
+              "qt",
+              "/withlog",
+              "q",
+              "aa",
+              "rows",
+              "2",
+              "fl",
+              "id,subject",
+              "responseLog",
+              "true");
       SolrQueryResponse qr = h.queryAndResponse(handler, req);
       NamedList<Object> entries = qr.getToLog();
       String responseLog = (String) entries.get("responseLog");
@@ -55,9 +67,21 @@ public class ResponseLogComponentTest extends SolrTestCaseJ4 {
   public void testToLogScores() throws Exception {
     SolrQueryRequest req = null;
     try {
-      String handler="/withlog";
-      req = req("indent","true", "qt","/withlog",  "q","aa", "rows","2",
-          "fl","id,subject,score", "responseLog","true");
+      String handler = "/withlog";
+      req =
+          req(
+              "indent",
+              "true",
+              "qt",
+              "/withlog",
+              "q",
+              "aa",
+              "rows",
+              "2",
+              "fl",
+              "id,subject,score",
+              "responseLog",
+              "true");
       SolrQueryResponse qr = h.queryAndResponse(handler, req);
       NamedList<Object> entries = qr.getToLog();
       String responseLog = (String) entries.get("responseLog");
@@ -67,20 +91,32 @@ public class ResponseLogComponentTest extends SolrTestCaseJ4 {
       req.close();
     }
   }
-  
+
   @Test
   public void testDisabling() throws Exception {
     SolrQueryRequest req = null;
     try {
-      String handler="/withlog";
-      req = req("indent","true", "qt","/withlog",  "q","aa", "rows","2",
-          "fl","id,subject", "responseLog","false");
+      String handler = "/withlog";
+      req =
+          req(
+              "indent",
+              "true",
+              "qt",
+              "/withlog",
+              "q",
+              "aa",
+              "rows",
+              "2",
+              "fl",
+              "id,subject",
+              "responseLog",
+              "false");
       SolrQueryResponse qr = h.queryAndResponse(handler, req);
       NamedList<Object> entries = qr.getToLog();
       String responseLog = (String) entries.get("responseLog");
       assertNull(responseLog);
     } finally {
       req.close();
-    }    
+    }
   }
 }

@@ -19,15 +19,15 @@ package org.apache.solr.request;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.apache.lucene.util.BytesRef;
 
 /**
- * An implementation of {@link Predicate} which returns true if the BytesRef matches the supplied regular expression.
+ * An implementation of {@link Predicate} which returns true if the BytesRef matches the supplied
+ * regular expression.
  */
 public class RegexBytesRefFilter implements Predicate<BytesRef> {
 
-  final private Pattern compiled;
+  private final Pattern compiled;
 
   public RegexBytesRefFilter(String regex) {
     this.compiled = Pattern.compile(regex);
@@ -42,5 +42,4 @@ public class RegexBytesRefFilter implements Predicate<BytesRef> {
   public boolean test(BytesRef term) {
     return includeString(term.utf8ToString());
   }
-
 }

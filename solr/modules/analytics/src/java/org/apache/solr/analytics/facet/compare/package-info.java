@@ -15,9 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Comparators used to sort the buckets of an analytics facet.
- */
+/** Comparators used to sort the buckets of an analytics facet. */
 package org.apache.solr.analytics.facet.compare;
-
-

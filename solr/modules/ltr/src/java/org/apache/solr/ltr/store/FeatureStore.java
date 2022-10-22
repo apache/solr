@@ -20,16 +20,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
-
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.feature.FeatureException;
 
 public class FeatureStore {
 
-  /** the name of the default feature store **/
+  /** the name of the default feature store */
   public static final String DEFAULT_FEATURE_STORE_NAME = "_DEFAULT_";
 
-  private final LinkedHashMap<String,Feature> store = new LinkedHashMap<>(); // LinkedHashMap because we need predictable iteration order
+  // LinkedHashMap because we need predictable iteration order
+  private final LinkedHashMap<String, Feature> store = new LinkedHashMap<>();
   private final String name;
 
   public FeatureStore(String name) {
@@ -47,15 +47,15 @@ public class FeatureStore {
   public void add(Feature feature) {
     final String name = feature.getName();
     if (store.containsKey(name)) {
-      throw new FeatureException(name
-          + " already contained in the store, please use a different name");
+      throw new FeatureException(
+          name + " already contained in the store, please use a different name");
     }
     feature.setIndex(store.size());
     store.put(name, feature);
   }
 
   public List<Feature> getFeatures() {
-    final List<Feature> storeValues = new ArrayList<Feature>(store.values());
+    final List<Feature> storeValues = new ArrayList<>(store.values());
     return Collections.unmodifiableList(storeValues);
   }
 
@@ -63,5 +63,4 @@ public class FeatureStore {
   public String toString() {
     return "FeatureStore [features=" + store.keySet() + "]";
   }
-
 }

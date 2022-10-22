@@ -26,7 +26,7 @@ import org.apache.lucene.search.similarities.BasicModelIn;
 import org.apache.lucene.search.similarities.BasicModelIne;
 import org.apache.lucene.search.similarities.DFRSimilarity;
 import org.apache.lucene.search.similarities.Normalization;
-import org.apache.lucene.search.similarities.Normalization.NoNormalization; // javadoc
+import org.apache.lucene.search.similarities.Normalization.NoNormalization;
 import org.apache.lucene.search.similarities.NormalizationH1;
 import org.apache.lucene.search.similarities.NormalizationH2;
 import org.apache.lucene.search.similarities.NormalizationH3;
@@ -37,64 +37,58 @@ import org.apache.solr.schema.SimilarityFactory;
 
 /**
  * Factory for {@link DFRSimilarity}
- * <p>
- * You must specify the implementations for all three components of
- * DFR (strings). In general the models are parameter-free, but two of the
- * normalizations take floating point parameters (see below):
+ *
+ * <p>You must specify the implementations for all three components of DFR (strings). In general the
+ * models are parameter-free, but two of the normalizations take floating point parameters (see
+ * below):
+ *
  * <ol>
- *    <li>{@link BasicModel basicModel}: Basic model of information content:
- *        <ul>
- *           <li>{@link BasicModelG G}: Geometric approximation of Bose-Einstein
- *           <li>{@link BasicModelIn I(n)}: Inverse document frequency
- *           <li>{@link BasicModelIne I(ne)}: Inverse expected document
- *               frequency [mixture of Poisson and IDF]
- *           <li>{@link BasicModelIF I(F)}: Inverse term frequency
- *               [approximation of I(ne)]
- *        </ul>
- *    <li>{@link AfterEffect afterEffect}: First normalization of information
- *        gain:
- *        <ul>
- *           <li>{@link AfterEffectL L}: Laplace's law of succession
- *           <li>{@link AfterEffectB B}: Ratio of two Bernoulli processes
- *        </ul>
- *    <li>{@link Normalization normalization}: Second (length) normalization:
- *        <ul>
- *           <li>{@link NormalizationH1 H1}: Uniform distribution of term
- *               frequency
- *               <ul>
- *                  <li>parameter c (float): hyper-parameter that controls
- *                      the term frequency normalization with respect to the
- *                      document length. The default is <code>1</code>
- *               </ul>
- *           <li>{@link NormalizationH2 H2}: term frequency density inversely
- *               related to length
- *               <ul>
- *                  <li>parameter c (float): hyper-parameter that controls
- *                      the term frequency normalization with respect to the
- *                      document length. The default is <code>1</code>
- *                </ul>
- *           <li>{@link NormalizationH3 H3}: term frequency normalization
- *               provided by Dirichlet prior
- *               <ul>
- *                  <li>parameter mu (float): smoothing parameter &mu;. The
- *                      default is <code>800</code>
- *               </ul>
- *           <li>{@link NormalizationZ Z}: term frequency normalization provided
- *                by a Zipfian relation
- *               <ul>
- *                  <li>parameter z (float): represents <code>A/(A+1)</code>
- *                      where A measures the specificity of the language.
- *                      The default is <code>0.3</code>
- *               </ul>
- *           <li>{@link NoNormalization none}: no second normalization
- *        </ul>
+ *   <li>{@link BasicModel basicModel}: Basic model of information content:
+ *       <ul>
+ *         <li>{@link BasicModelG G}: Geometric approximation of Bose-Einstein
+ *         <li>{@link BasicModelIn I(n)}: Inverse document frequency
+ *         <li>{@link BasicModelIne I(ne)}: Inverse expected document frequency [mixture of Poisson
+ *             and IDF]
+ *         <li>{@link BasicModelIF I(F)}: Inverse term frequency [approximation of I(ne)]
+ *       </ul>
+ *   <li>{@link AfterEffect afterEffect}: First normalization of information gain:
+ *       <ul>
+ *         <li>{@link AfterEffectL L}: Laplace's law of succession
+ *         <li>{@link AfterEffectB B}: Ratio of two Bernoulli processes
+ *       </ul>
+ *   <li>{@link Normalization normalization}: Second (length) normalization:
+ *       <ul>
+ *         <li>{@link NormalizationH1 H1}: Uniform distribution of term frequency
+ *             <ul>
+ *               <li>parameter c (float): hyper-parameter that controls the term frequency
+ *                   normalization with respect to the document length. The default is <code>1
+ *                   </code>
+ *             </ul>
+ *         <li>{@link NormalizationH2 H2}: term frequency density inversely related to length
+ *             <ul>
+ *               <li>parameter c (float): hyper-parameter that controls the term frequency
+ *                   normalization with respect to the document length. The default is <code>1
+ *                   </code>
+ *             </ul>
+ *         <li>{@link NormalizationH3 H3}: term frequency normalization provided by Dirichlet prior
+ *             <ul>
+ *               <li>parameter mu (float): smoothing parameter &mu;. The default is <code>800</code>
+ *             </ul>
+ *         <li>{@link NormalizationZ Z}: term frequency normalization provided by a Zipfian relation
+ *             <ul>
+ *               <li>parameter z (float): represents <code>A/(A+1)</code> where A measures the
+ *                   specificity of the language. The default is <code>0.3</code>
+ *             </ul>
+ *         <li>{@link NoNormalization none}: no second normalization
+ *       </ul>
  * </ol>
- * <p>
- * Optional settings:
+ *
+ * <p>Optional settings:
+ *
  * <ul>
- *   <li>discountOverlaps (bool): Sets
- *       {@link DFRSimilarity#setDiscountOverlaps(boolean)}</li>
+ *   <li>discountOverlaps (bool): Sets {@link DFRSimilarity#setDiscountOverlaps(boolean)}
  * </ul>
+ *
  * @lucene.experimental
  */
 public class DFRSimilarityFactory extends SimilarityFactory {
@@ -109,10 +103,11 @@ public class DFRSimilarityFactory extends SimilarityFactory {
     discountOverlaps = params.getBool("discountOverlaps", true);
     basicModel = parseBasicModel(params.get("basicModel"));
     afterEffect = parseAfterEffect(params.get("afterEffect"));
-    normalization = parseNormalization(
-        params.get("normalization"), params.get("c"), params.get("mu"), params.get("z"));
+    normalization =
+        parseNormalization(
+            params.get("normalization"), params.get("c"), params.get("mu"), params.get("z"));
   }
-  
+
   private BasicModel parseBasicModel(String expr) {
     if ("G".equals(expr)) {
       return new BasicModelG();
@@ -126,7 +121,7 @@ public class DFRSimilarityFactory extends SimilarityFactory {
       throw new RuntimeException("Invalid basicModel: " + expr);
     }
   }
-  
+
   private AfterEffect parseAfterEffect(String expr) {
     if ("B".equals(expr)) {
       return new AfterEffectB();
@@ -136,33 +131,26 @@ public class DFRSimilarityFactory extends SimilarityFactory {
       throw new RuntimeException("Invalid afterEffect: " + expr);
     }
   }
-  
+
   // also used by IBSimilarityFactory
   static Normalization parseNormalization(String expr, String c, String mu, String z) {
     if (mu != null && !"H3".equals(expr)) {
-      throw new RuntimeException(
-          "parameter mu only makes sense for normalization H3");
+      throw new RuntimeException("parameter mu only makes sense for normalization H3");
     }
     if (z != null && !"Z".equals(expr)) {
-      throw new RuntimeException(
-          "parameter z only makes sense for normalization Z");
+      throw new RuntimeException("parameter z only makes sense for normalization Z");
     }
     if (c != null && !("H1".equals(expr) || "H2".equals(expr))) {
-      throw new RuntimeException(
-          "parameter c only makese sense for normalizations H1 and H2");
+      throw new RuntimeException("parameter c only makese sense for normalizations H1 and H2");
     }
     if ("H1".equals(expr)) {
-      return (c != null) ? new NormalizationH1(Float.parseFloat(c))
-                         : new NormalizationH1();
+      return (c != null) ? new NormalizationH1(Float.parseFloat(c)) : new NormalizationH1();
     } else if ("H2".equals(expr)) {
-      return (c != null) ? new NormalizationH2(Float.parseFloat(c))
-                         : new NormalizationH2();
+      return (c != null) ? new NormalizationH2(Float.parseFloat(c)) : new NormalizationH2();
     } else if ("H3".equals(expr)) {
-      return (mu != null) ? new NormalizationH3(Float.parseFloat(mu))
-                          : new NormalizationH3();
+      return (mu != null) ? new NormalizationH3(Float.parseFloat(mu)) : new NormalizationH3();
     } else if ("Z".equals(expr)) {
-      return (z != null) ? new NormalizationZ(Float.parseFloat(z))
-                         : new NormalizationZ();
+      return (z != null) ? new NormalizationZ(Float.parseFloat(z)) : new NormalizationZ();
     } else if ("none".equals(expr)) {
       return new Normalization.NoNormalization();
     } else {

@@ -17,7 +17,6 @@
 package org.apache.solr.ltr.feature;
 
 import java.util.LinkedHashMap;
-
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.model.LinearModel;
@@ -32,16 +31,23 @@ public class TestFieldLengthFeature extends TestRerankBase {
     setuptest(false);
 
     assertU(adoc("id", "1", "title", "w1", "description", "w1"));
-    assertU(adoc("id", "2", "title", "w2 2asd asdd didid", "description",
-        "w2 2asd asdd didid"));
+    assertU(adoc("id", "2", "title", "w2 2asd asdd didid", "description", "w2 2asd asdd didid"));
     assertU(adoc("id", "3", "title", "w3", "description", "w3"));
     assertU(adoc("id", "4", "title", "w4", "description", "w4"));
     assertU(adoc("id", "5", "title", "w5", "description", "w5"));
-    assertU(adoc("id", "6", "title", "w1 w2", "description", "w1 w2"));
-    assertU(adoc("id", "7", "title", "w1 w2 w3 w4 w5", "description",
-        "w1 w2 w3 w4 w5 w8"));
-    assertU(adoc("id", "8", "title", "w1 w1 w1 w2 w2 w8", "description",
-        "w1 w1 w1 w2 w2"));
+    assertU(adoc("id", "6", "title", "w1 w2", "description", "w1 w2", "x_t", "1 2"));
+    assertU(
+        adoc("id", "7", "title", "w1 w2 w3 w4 w5", "description", "w1 w2 w3 w4 w5 w8", "x_t", "1"));
+    assertU(
+        adoc(
+            "id",
+            "8",
+            "title",
+            "w1 w1 w1 w2 w2 w8",
+            "description",
+            "w1 w1 w1 w2 w2",
+            "x_t",
+            "1 2 3"));
     assertU(commit());
   }
 
@@ -56,11 +62,14 @@ public class TestFieldLengthFeature extends TestRerankBase {
     assertU(adoc("id", "42", "title", "w10"));
     assertU(commit());
 
-    loadFeature("description-length2", FieldLengthFeature.class.getName(),
-            "{\"field\":\"description\"}");
+    loadFeature(
+        "description-length2", FieldLengthFeature.class.getName(), "{\"field\":\"description\"}");
 
-    loadModel("description-model2", LinearModel.class.getName(),
-            new String[] {"description-length2"}, "{\"weights\":{\"description-length2\":1.0}}");
+    loadModel(
+        "description-model2",
+        LinearModel.class.getName(),
+        new String[] {"description-length2"},
+        "{\"weights\":{\"description-length2\":1.0}}");
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("title:w10");
@@ -70,18 +79,20 @@ public class TestFieldLengthFeature extends TestRerankBase {
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==0.0");
   }
 
-
   @Test
   public void testIfFieldIsEmptyLengthIsZero() throws Exception {
     // add a document without the field 'description'
     assertU(adoc("id", "43", "title", "w11", "description", ""));
     assertU(commit());
 
-    loadFeature("description-length3", FieldLengthFeature.class.getName(),
-            "{\"field\":\"description\"}");
+    loadFeature(
+        "description-length3", FieldLengthFeature.class.getName(), "{\"field\":\"description\"}");
 
-    loadModel("description-model3", LinearModel.class.getName(),
-            new String[] {"description-length3"}, "{\"weights\":{\"description-length3\":1.0}}");
+    loadModel(
+        "description-model3",
+        LinearModel.class.getName(),
+        new String[] {"description-length3"},
+        "{\"weights\":{\"description-length3\":1.0}}");
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("title:w11");
@@ -91,14 +102,15 @@ public class TestFieldLengthFeature extends TestRerankBase {
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==0.0");
   }
 
-
   @Test
   public void testRanking() throws Exception {
-    loadFeature("title-length", FieldLengthFeature.class.getName(),
-        "{\"field\":\"title\"}");
+    loadFeature("title-length", FieldLengthFeature.class.getName(), "{\"field\":\"title\"}");
 
-    loadModel("title-model", LinearModel.class.getName(),
-        new String[] {"title-length"}, "{\"weights\":{\"title-length\":1.0}}");
+    loadModel(
+        "title-model",
+        LinearModel.class.getName(),
+        new String[] {"title-length"},
+        "{\"weights\":{\"title-length\":1.0}}");
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("title:w1");
@@ -132,10 +144,11 @@ public class TestFieldLengthFeature extends TestRerankBase {
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='2'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='6'");
 
-    loadFeature("description-length",
-        FieldLengthFeature.class.getName(),
-        "{\"field\":\"description\"}");
-    loadModel("description-model", LinearModel.class.getName(),
+    loadFeature(
+        "description-length", FieldLengthFeature.class.getName(), "{\"field\":\"description\"}");
+    loadModel(
+        "description-model",
+        LinearModel.class.getName(),
         new String[] {"description-length"},
         "{\"weights\":{\"description-length\":1.0}}");
     query.setQuery("title:w1");
@@ -152,13 +165,41 @@ public class TestFieldLengthFeature extends TestRerankBase {
   }
 
   @Test
-  public void testParamsToMap() throws Exception {
-    final LinkedHashMap<String,Object> params = new LinkedHashMap<String,Object>();
-    params.put("field", "field"+random().nextInt(10));
-    doTestParamsToMap(FieldLengthFeature.class.getName(), params);
+  public void testRankingDynamicField() throws Exception {
+    loadFeature("dynfield-length", FieldLengthFeature.class.getName(), "{\"field\":\"x_t\"}");
+
+    loadModel(
+        "dynfield-model",
+        LinearModel.class.getName(),
+        new String[] {"dynfield-length"},
+        "{\"weights\":{\"dynfield-length\":1.0}}");
+
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("title:w1");
+    query.add("fl", "*, score");
+    query.add("rows", "4");
+
+    // Normal term match
+    assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='8'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='6'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='7'");
+    // Normal term match
+
+    query.add("rq", "{!ltr model=dynfield-model reRankDocs=4}");
+
+    assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='8'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='6'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='7'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='1'");
   }
 
-
-
-
+  @Test
+  public void testParamsToMap() throws Exception {
+    final LinkedHashMap<String, Object> params = new LinkedHashMap<>();
+    params.put("field", "field" + random().nextInt(10));
+    doTestParamsToMap(FieldLengthFeature.class.getName(), params);
+  }
 }

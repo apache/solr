@@ -27,23 +27,24 @@ public enum NumberType {
 
   /** The SortField type that corrisponds with this NumberType */
   public final SortField.Type sortType;
-  /** 
-   * The effective value to use when sorting on this field should result in docs w/o a value 
-   * sorting "low" (which may be "first" or "last" depending on sort direction) 
+  /**
+   * The effective value to use when sorting on this field should result in docs w/o a value sorting
+   * "low" (which may be "first" or "last" depending on sort direction)
+   *
    * @see SortField#setMissingValue
    */
   public final Object sortMissingLow;
-  /** 
-   * The effective value to use when sorting on this field should result in docs w/o a value 
-   * sorting "low" (which may be "first" or "last" depending on sort direction) 
+  /**
+   * The effective value to use when sorting on this field should result in docs w/o a value sorting
+   * "low" (which may be "first" or "last" depending on sort direction)
+   *
    * @see SortField#setMissingValue
    */
   public final Object sortMissingHigh;
-  
+
   private NumberType(SortField.Type sortType, Object sortMissingLow, Object sortMissingHigh) {
     this.sortType = sortType;
     this.sortMissingLow = sortMissingLow;
     this.sortMissingHigh = sortMissingHigh;
-
   }
 }

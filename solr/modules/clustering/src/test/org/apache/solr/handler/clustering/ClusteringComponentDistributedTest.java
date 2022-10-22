@@ -16,6 +16,10 @@
  */
 package org.apache.solr.handler.clustering;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.response.Cluster;
@@ -23,18 +27,12 @@ import org.apache.solr.client.solrj.response.ClusteringResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
-
 @SuppressSSL
 public class ClusteringComponentDistributedTest extends BaseDistributedSearchTestCase {
-  private final static String QUERY_TESTSET_SAMPLE_DOCUMENTS = "testSet:sampleDocs";
+  private static final String QUERY_TESTSET_SAMPLE_DOCUMENTS = "testSet:sampleDocs";
 
   @Override
   public String getSolrHome() {
@@ -46,10 +44,7 @@ public class ClusteringComponentDistributedTest extends BaseDistributedSearchTes
     del("*:*");
 
     String[] languages = {
-        "English",
-        "French",
-        "German",
-        "Unknown",
+      "English", "French", "German", "Unknown",
     };
 
     int docId = 0;
@@ -59,8 +54,7 @@ public class ClusteringComponentDistributedTest extends BaseDistributedSearchTes
           "title", doc[0],
           "snippet", doc[1],
           "testSet", "sampleDocs",
-          "lang", languages[docId % languages.length]
-      );
+          "lang", languages[docId % languages.length]);
       docId++;
     }
     commit();
@@ -69,17 +63,23 @@ public class ClusteringComponentDistributedTest extends BaseDistributedSearchTes
   @Test
   @ShardsFixed(num = 2)
   public void testLingoAlgorithm() throws Exception {
-    compareToExpected(clusters(QUERY_TESTSET_SAMPLE_DOCUMENTS, params -> {
-      params.add(ClusteringComponent.REQUEST_PARAM_ENGINE, "lingo");
-    }));
+    compareToExpected(
+        clusters(
+            QUERY_TESTSET_SAMPLE_DOCUMENTS,
+            params -> {
+              params.add(ClusteringComponent.REQUEST_PARAM_ENGINE, "lingo");
+            }));
   }
 
   @Test
   @ShardsFixed(num = 2)
   public void testStcAlgorithm() throws Exception {
-    compareToExpected(clusters(QUERY_TESTSET_SAMPLE_DOCUMENTS, params -> {
-      params.add(ClusteringComponent.REQUEST_PARAM_ENGINE, "stc");
-    }));
+    compareToExpected(
+        clusters(
+            QUERY_TESTSET_SAMPLE_DOCUMENTS,
+            params -> {
+              params.add(ClusteringComponent.REQUEST_PARAM_ENGINE, "stc");
+            }));
   }
 
   private void compareToExpected(List<Cluster> actual) throws IOException {
@@ -88,7 +88,8 @@ public class ClusteringComponentDistributedTest extends BaseDistributedSearchTes
     ClusteringComponentTest.compareWhitespaceNormalized(toString(actual), expected);
   }
 
-  private List<Cluster> clusters(String query, Consumer<ModifiableSolrParams> paramsConsumer) throws Exception {
+  private List<Cluster> clusters(String query, Consumer<ModifiableSolrParams> paramsConsumer)
+      throws Exception {
     handle.clear();
     handle.put("responseHeader", SKIP);
     handle.put("response", SKIP);
@@ -103,7 +104,7 @@ public class ClusteringComponentDistributedTest extends BaseDistributedSearchTes
     QueryResponse response = query(true, params);
 
     ClusteringResponse clusteringResponse = response.getClusteringResponse();
-    Assert.assertNotNull(clusteringResponse);
+    assertNotNull(clusteringResponse);
 
     return clusteringResponse.getClusters();
   }
@@ -113,18 +114,19 @@ public class ClusteringComponentDistributedTest extends BaseDistributedSearchTes
   }
 
   private StringBuilder toString(List<Cluster> clusters, String indent, StringBuilder sb) {
-    clusters.forEach(c -> {
-      sb.append(indent);
-      sb.append("- " + c.getLabels().stream().collect(Collectors.joining("; ")));
-      if (!c.getDocs().isEmpty()) {
-        sb.append(" [" + c.getDocs().size() + "]");
-      }
-      sb.append("\n");
+    clusters.forEach(
+        c -> {
+          sb.append(indent);
+          sb.append("- " + c.getLabels().stream().collect(Collectors.joining("; ")));
+          if (!c.getDocs().isEmpty()) {
+            sb.append(" [" + c.getDocs().size() + "]");
+          }
+          sb.append("\n");
 
-      if (!c.getClusters().isEmpty()) {
-        toString(c.getClusters(), indent + "  ", sb);
-      }
-    });
+          if (!c.getClusters().isEmpty()) {
+            toString(c.getClusters(), indent + "  ", sb);
+          }
+        });
     return sb;
   }
 }

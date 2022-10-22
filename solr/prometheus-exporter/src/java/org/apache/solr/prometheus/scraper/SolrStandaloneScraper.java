@@ -16,6 +16,7 @@
  */
 package org.apache.solr.prometheus.scraper;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -23,10 +24,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-
-import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.IOUtils;
@@ -36,22 +35,25 @@ import org.apache.solr.prometheus.exporter.MetricsQuery;
 
 public class SolrStandaloneScraper extends SolrScraper {
 
-  private final HttpSolrClient solrClient;
+  private final Http2SolrClient solrClient;
 
-  public SolrStandaloneScraper(HttpSolrClient solrClient, ExecutorService executor) {
-    super(executor);
+  public SolrStandaloneScraper(
+      Http2SolrClient solrClient, ExecutorService executor, String clusterId) {
+    super(executor, clusterId);
     this.solrClient = solrClient;
   }
 
   @Override
   public Map<String, MetricSamples> pingAllCores(MetricsQuery query) throws IOException {
-    return sendRequestsInParallel(getCores(), core -> {
-      try {
-        return request(solrClient, query.withCore(core));
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    });
+    return sendRequestsInParallel(
+        getCores(),
+        core -> {
+          try {
+            return request(solrClient, query.withCore(core));
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 
   @Override
@@ -90,7 +92,8 @@ public class SolrStandaloneScraper extends SolrScraper {
       throw new IOException("Failed to get cores", e);
     }
 
-    JsonNode statusJsonNode = OBJECT_MAPPER.readTree((String) coreAdminResponse.get("response")).get("status");
+    JsonNode statusJsonNode =
+        OBJECT_MAPPER.readTree((String) coreAdminResponse.get("response")).get("status");
 
     for (JsonNode jsonNode : statusJsonNode) {
       cores.add(jsonNode.get("name").textValue());
@@ -103,5 +106,4 @@ public class SolrStandaloneScraper extends SolrScraper {
   public void close() {
     IOUtils.closeQuietly(solrClient);
   }
-
 }

@@ -18,9 +18,6 @@ package org.apache.solr.client.solrj.io.stream.ops;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import junit.framework.Assert;
-
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.ops.ReplaceOperation;
@@ -29,39 +26,38 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
 
-/**
- **/
-
+/** */
 public class OperationsTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;
-  
+
   public OperationsTest() {
     super();
-    
-    factory = new StreamFactory()
-      .withFunctionName("replace", ReplaceOperation.class);
+
+    factory = new StreamFactory().withFunctionName("replace", ReplaceOperation.class);
     values = new HashMap<>();
   }
-    
+
   @Test
-  public void replaceValueNullWithString() throws Exception{
+  public void replaceValueNullWithString() throws Exception {
     Tuple tuple;
     StreamOperation operation;
-        
-    operation = new ReplaceOperation("fieldA", StreamExpressionParser.parse("replace(null, withValue=foo)"), factory);
-    
+
+    operation =
+        new ReplaceOperation(
+            "fieldA", StreamExpressionParser.parse("replace(null, withValue=foo)"), factory);
+
     // replace
     values.clear();
     values.put("fieldB", "bar");
     values.put("fieldC", 123);
     tuple = new Tuple(values);
     operation.operate(tuple);
-    
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals("foo", tuple.get("fieldA"));
-    
+
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals("foo", tuple.get("fieldA"));
+
     // don't replace
     values.clear();
     values.put("fieldA", "exists");
@@ -69,28 +65,30 @@ public class OperationsTest extends SolrTestCase {
     values.put("fieldC", 123);
     tuple = new Tuple(values);
     operation.operate(tuple);
-    
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals("exists", tuple.get("fieldA"));
+
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals("exists", tuple.get("fieldA"));
   }
 
   @Test
-  public void replaceValueNullWithInt() throws Exception{
+  public void replaceValueNullWithInt() throws Exception {
     Tuple tuple;
     StreamOperation operation;
-    
-    operation = new ReplaceOperation("fieldA", StreamExpressionParser.parse("replace(null, withValue=123)"), factory);
-    
+
+    operation =
+        new ReplaceOperation(
+            "fieldA", StreamExpressionParser.parse("replace(null, withValue=123)"), factory);
+
     // replace
     values.clear();
     values.put("fieldB", "bar");
-    values.put("fieldC", (long)123);
+    values.put("fieldC", (long) 123);
     tuple = new Tuple(values);
     operation.operate(tuple);
-    
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals((long)123, tuple.get("fieldA"));
-    
+
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals((long) 123, tuple.get("fieldA"));
+
     // don't replace
     values.clear();
     values.put("fieldA", "exists");
@@ -98,86 +96,30 @@ public class OperationsTest extends SolrTestCase {
     values.put("fieldC", 123);
     tuple = new Tuple(values);
     operation.operate(tuple);
-    
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals("exists", tuple.get("fieldA"));
-  }
-  
-  @Test
-  public void replaceValueNullWithFloat() throws Exception{
-    Tuple tuple;
-    StreamOperation operation;
-    
-    operation = new ReplaceOperation("fieldA", StreamExpressionParser.parse("replace(null, withValue=123.45678)"), factory);
-    
-    // replace
-    values.clear();
-    values.put("fieldB", "bar");
-    values.put("fieldC", 123);
-    tuple = new Tuple(values);
-    operation.operate(tuple);
-    
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals(123.45678, tuple.get("fieldA"));
-    
-    // don't replace
-    values.clear();
-    values.put("fieldA", "exists");
-    values.put("fieldB", "bar");
-    values.put("fieldC", 123);
-    tuple = new Tuple(values);
-    operation.operate(tuple);
-    
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals("exists", tuple.get("fieldA"));
-  }
-  
-  @Test
-  public void replaceValueNullWithDouble() throws Exception{
-    Tuple tuple;
-    StreamOperation operation;
-    
-    operation = new ReplaceOperation("fieldA", StreamExpressionParser.parse("replace(null, withValue=123.45678912345)"), factory);
-    
-    // replace
-    values.clear();
-    values.put("fieldB", "bar");
-    values.put("fieldC", 123);
-    tuple = new Tuple(values);
-    operation.operate(tuple);
-    
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals(123.45678912345, tuple.get("fieldA"));
-    
-    // don't replace
-    values.clear();
-    values.put("fieldA", "exists");
-    values.put("fieldB", "bar");
-    values.put("fieldC", 123);
-    tuple = new Tuple(values);
-    operation.operate(tuple);
-    
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals("exists", tuple.get("fieldA"));
+
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals("exists", tuple.get("fieldA"));
   }
 
   @Test
-  public void replaceFieldNullWithString() throws Exception{
+  public void replaceValueNullWithFloat() throws Exception {
     Tuple tuple;
     StreamOperation operation;
-    
-    operation = new ReplaceOperation("fieldA", StreamExpressionParser.parse("replace(null, withField=fieldB)"), factory);
-    
+
+    operation =
+        new ReplaceOperation(
+            "fieldA", StreamExpressionParser.parse("replace(null, withValue=123.45678)"), factory);
+
     // replace
     values.clear();
     values.put("fieldB", "bar");
     values.put("fieldC", 123);
     tuple = new Tuple(values);
     operation.operate(tuple);
-    
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals("bar", tuple.get("fieldA"));
-    
+
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals(123.45678, tuple.get("fieldA"));
+
     // don't replace
     values.clear();
     values.put("fieldA", "exists");
@@ -185,28 +127,32 @@ public class OperationsTest extends SolrTestCase {
     values.put("fieldC", 123);
     tuple = new Tuple(values);
     operation.operate(tuple);
-    
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals("exists", tuple.get("fieldA"));
+
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals("exists", tuple.get("fieldA"));
   }
 
   @Test
-  public void replaceFieldNullWithInt() throws Exception{
+  public void replaceValueNullWithDouble() throws Exception {
     Tuple tuple;
     StreamOperation operation;
-    
-    operation = new ReplaceOperation("fieldA", StreamExpressionParser.parse("replace(null, withField=fieldC)"), factory);
-    
+
+    operation =
+        new ReplaceOperation(
+            "fieldA",
+            StreamExpressionParser.parse("replace(null, withValue=123.45678912345)"),
+            factory);
+
     // replace
     values.clear();
     values.put("fieldB", "bar");
     values.put("fieldC", 123);
     tuple = new Tuple(values);
     operation.operate(tuple);
-    
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals(123, tuple.get("fieldA"));
-    
+
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals(123.45678912345, tuple.get("fieldA"));
+
     // don't replace
     values.clear();
     values.put("fieldA", "exists");
@@ -214,27 +160,30 @@ public class OperationsTest extends SolrTestCase {
     values.put("fieldC", 123);
     tuple = new Tuple(values);
     operation.operate(tuple);
-    
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals("exists", tuple.get("fieldA"));
+
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals("exists", tuple.get("fieldA"));
   }
-  
+
   @Test
-  public void replaceFieldNullWithNonExistantField() throws Exception{
+  public void replaceFieldNullWithString() throws Exception {
     Tuple tuple;
     StreamOperation operation;
-    
-    operation = new ReplaceOperation("fieldA", StreamExpressionParser.parse("replace(null, withField=fieldD)"), factory);
-    
+
+    operation =
+        new ReplaceOperation(
+            "fieldA", StreamExpressionParser.parse("replace(null, withField=fieldB)"), factory);
+
     // replace
     values.clear();
     values.put("fieldB", "bar");
     values.put("fieldC", 123);
     tuple = new Tuple(values);
     operation.operate(tuple);
-    
-    Assert.assertNull(tuple.get("fieldA"));
-    
+
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals("bar", tuple.get("fieldA"));
+
     // don't replace
     values.clear();
     values.put("fieldA", "exists");
@@ -242,9 +191,69 @@ public class OperationsTest extends SolrTestCase {
     values.put("fieldC", 123);
     tuple = new Tuple(values);
     operation.operate(tuple);
-    
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals("exists", tuple.get("fieldA"));
-  }  
-  
+
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals("exists", tuple.get("fieldA"));
+  }
+
+  @Test
+  public void replaceFieldNullWithInt() throws Exception {
+    Tuple tuple;
+    StreamOperation operation;
+
+    operation =
+        new ReplaceOperation(
+            "fieldA", StreamExpressionParser.parse("replace(null, withField=fieldC)"), factory);
+
+    // replace
+    values.clear();
+    values.put("fieldB", "bar");
+    values.put("fieldC", 123);
+    tuple = new Tuple(values);
+    operation.operate(tuple);
+
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals(123, tuple.get("fieldA"));
+
+    // don't replace
+    values.clear();
+    values.put("fieldA", "exists");
+    values.put("fieldB", "bar");
+    values.put("fieldC", 123);
+    tuple = new Tuple(values);
+    operation.operate(tuple);
+
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals("exists", tuple.get("fieldA"));
+  }
+
+  @Test
+  public void replaceFieldNullWithNonExistantField() throws Exception {
+    Tuple tuple;
+    StreamOperation operation;
+
+    operation =
+        new ReplaceOperation(
+            "fieldA", StreamExpressionParser.parse("replace(null, withField=fieldD)"), factory);
+
+    // replace
+    values.clear();
+    values.put("fieldB", "bar");
+    values.put("fieldC", 123);
+    tuple = new Tuple(values);
+    operation.operate(tuple);
+
+    assertNull(tuple.get("fieldA"));
+
+    // don't replace
+    values.clear();
+    values.put("fieldA", "exists");
+    values.put("fieldB", "bar");
+    values.put("fieldC", 123);
+    tuple = new Tuple(values);
+    operation.operate(tuple);
+
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals("exists", tuple.get("fieldA"));
+  }
 }

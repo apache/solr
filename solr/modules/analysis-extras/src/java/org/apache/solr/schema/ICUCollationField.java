@@ -16,6 +16,11 @@
  */
 package org.apache.solr.schema;
 
+import static org.apache.solr.core.XmlConfigFile.assertWarnOrFail;
+
+import com.ibm.icu.text.Collator;
+import com.ibm.icu.text.RuleBasedCollator;
+import com.ibm.icu.util.ULocale;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -23,13 +28,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
-import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.analysis.icu.ICUCollationKeyAnalyzer;
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexableField;
@@ -37,52 +40,52 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.Version;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 
-import com.ibm.icu.text.Collator;
-import com.ibm.icu.text.RuleBasedCollator;
-import com.ibm.icu.util.ULocale;
-
-import static org.apache.solr.core.XmlConfigFile.assertWarnOrFail;
-
 /**
- * Field for collated sort keys. 
- * These can be used for locale-sensitive sort and range queries.
- * <p>
- * This field can be created in two ways: 
+ * Field for collated sort keys. These can be used for locale-sensitive sort and range queries.
+ *
+ * <p>This field can be created in two ways:
+ *
  * <ul>
- *  <li>Based upon a system collator associated with a Locale.
- *  <li>Based upon a tailored ruleset.
+ *   <li>Based upon a system collator associated with a Locale.
+ *   <li>Based upon a tailored ruleset.
  * </ul>
- * <p>
- * Using a System collator:
+ *
+ * <p>Using a System collator:
+ *
  * <ul>
- *  <li>locale: RFC 3066 locale ID (mandatory)
- *  <li>strength: 'primary','secondary','tertiary', 'quaternary', or 'identical' (optional)
- *  <li>decomposition: 'no', or 'canonical' (optional)
+ *   <li>locale: RFC 3066 locale ID (mandatory)
+ *   <li>strength: 'primary','secondary','tertiary', 'quaternary', or 'identical' (optional)
+ *   <li>decomposition: 'no', or 'canonical' (optional)
  * </ul>
- * <p>
- * Using a Tailored ruleset:
+ *
+ * <p>Using a Tailored ruleset:
+ *
  * <ul>
- *  <li>custom: UTF-8 text file containing rules supported by RuleBasedCollator (mandatory)
- *  <li>strength: 'primary','secondary','tertiary', 'quaternary', or 'identical' (optional)
- *  <li>decomposition: 'no' or 'canonical' (optional)
+ *   <li>custom: UTF-8 text file containing rules supported by RuleBasedCollator (mandatory)
+ *   <li>strength: 'primary','secondary','tertiary', 'quaternary', or 'identical' (optional)
+ *   <li>decomposition: 'no' or 'canonical' (optional)
  * </ul>
- * <p>
- * Expert options:
+ *
+ * <p>Expert options:
+ *
  * <ul>
- *  <li>alternate: 'shifted' or 'non-ignorable'. Can be used to ignore punctuation/whitespace.
- *  <li>caseLevel: 'true' or 'false'. Useful with strength=primary to ignore accents but not case.
- *  <li>caseFirst: 'lower' or 'upper'. Useful to control which is sorted first when case is not ignored.
- *  <li>numeric: 'true' or 'false'. Digits are sorted according to numeric value, e.g. foobar-9 sorts before foobar-10
- *  <li>variableTop: single character or contraction. Controls what is variable for 'alternate'
+ *   <li>alternate: 'shifted' or 'non-ignorable'. Can be used to ignore punctuation/whitespace.
+ *   <li>caseLevel: 'true' or 'false'. Useful with strength=primary to ignore accents but not case.
+ *   <li>caseFirst: 'lower' or 'upper'. Useful to control which is sorted first when case is not
+ *       ignored.
+ *   <li>numeric: 'true' or 'false'. Digits are sorted according to numeric value, e.g. foobar-9
+ *       sorts before foobar-10
+ *   <li>variableTop: single character or contraction. Controls what is variable for 'alternate'
  * </ul>
- * 
+ *
  * @see Collator
  * @see ULocale
  * @see RuleBasedCollator
@@ -91,13 +94,20 @@ public class ICUCollationField extends FieldType {
   private Analyzer analyzer;
   private boolean failHardOnUdvas;
 
-  // ICUCollation keys are not even necessarily valid UTF-8, so udvas is pathological. See SOLR-15777
+  // ICUCollation keys are not even necessarily valid UTF-8, so udvas is pathological. See
+  // SOLR-15777
   static final Version UDVAS_FORBIDDEN_AS_OF = Version.LUCENE_9_0_0;
-  static final String UDVAS_MESSAGE = "useDocValuesAsStored is forbidden for " + ICUCollationField.class + " as of "
-          + IndexSchema.LUCENE_MATCH_VERSION_PARAM + " " + UDVAS_FORBIDDEN_AS_OF;
+  static final String UDVAS_MESSAGE =
+      "useDocValuesAsStored is forbidden for "
+          + ICUCollationField.class
+          + " as of "
+          + IndexSchema.LUCENE_MATCH_VERSION_PARAM
+          + " "
+          + UDVAS_FORBIDDEN_AS_OF;
 
   private static void warnOrFailUdvas(boolean failHardOnUdvas) {
-    // NOTE: it may seem odd that we're checking these conditions ourselves rather than relying on the internal
+    // NOTE: it may seem odd that we're checking these conditions ourselves rather than relying on
+    // the internal
     // checking of `assertWarnOrFail(...)`. But the main reason we're logging this error via
     // `XMLConfigFile.assertWarnOrFail(...)` is because this is at its root an xml config file
     // error, so we log in a way that's consistent with that.
@@ -114,9 +124,9 @@ public class ICUCollationField extends FieldType {
   }
 
   @Override
-  protected void init(IndexSchema schema, Map<String,String> args) {
-    failHardOnUdvas = schema.luceneVersion.onOrAfter(UDVAS_FORBIDDEN_AS_OF);
-    if (on(trueProperties, USE_DOCVALUES_AS_STORED)) {
+  protected void init(IndexSchema schema, Map<String, String> args) {
+    failHardOnUdvas = schema.getDefaultLuceneMatchVersion().onOrAfter(UDVAS_FORBIDDEN_AS_OF);
+    if ((trueProperties & USE_DOCVALUES_AS_STORED) != 0) {
       // fail fast at fieldType init
       warnOrFailUdvas(failHardOnUdvas);
     }
@@ -125,16 +135,14 @@ public class ICUCollationField extends FieldType {
     setup(schema.getResourceLoader(), args);
     super.init(schema, args);
   }
-  
-  /**
-   * Setup the field according to the provided parameters
-   */
-  private void setup(ResourceLoader loader, Map<String,String> args) {
+
+  /** Setup the field according to the provided parameters */
+  private void setup(ResourceLoader loader, Map<String, String> args) {
     String custom = args.remove("custom");
     String localeID = args.remove("locale");
     String strength = args.remove("strength");
     String decomposition = args.remove("decomposition");
-    
+
     String alternate = args.remove("alternate");
     String caseLevel = args.remove("caseLevel");
     String caseFirst = args.remove("caseFirst");
@@ -143,38 +151,34 @@ public class ICUCollationField extends FieldType {
 
     if (custom == null && localeID == null)
       throw new SolrException(ErrorCode.SERVER_ERROR, "Either custom or locale is required.");
-    
+
     if (custom != null && localeID != null)
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Cannot specify both locale and custom. "
-          + "To tailor rules for a built-in language, see the javadocs for RuleBasedCollator. "
-          + "Then save the entire customized ruleset to a file, and use with the custom parameter");
-    
+      throw new SolrException(
+          ErrorCode.SERVER_ERROR,
+          "Cannot specify both locale and custom. "
+              + "To tailor rules for a built-in language, see the javadocs for RuleBasedCollator. "
+              + "Then save the entire customized ruleset to a file, and use with the custom parameter");
+
     final Collator collator;
-    
-    if (localeID != null) { 
+
+    if (localeID != null) {
       // create from a system collator, based on Locale.
       collator = createFromLocale(localeID);
-    } else { 
+    } else {
       // create from a custom ruleset
       collator = createFromRules(custom, loader);
     }
-    
+
     // set the strength flag, otherwise it will be the default.
     if (strength != null) {
-      if (strength.equalsIgnoreCase("primary"))
-        collator.setStrength(Collator.PRIMARY);
-      else if (strength.equalsIgnoreCase("secondary"))
-        collator.setStrength(Collator.SECONDARY);
-      else if (strength.equalsIgnoreCase("tertiary"))
-        collator.setStrength(Collator.TERTIARY);
-      else if (strength.equalsIgnoreCase("quaternary"))
-        collator.setStrength(Collator.QUATERNARY);
-      else if (strength.equalsIgnoreCase("identical"))
-        collator.setStrength(Collator.IDENTICAL);
-      else
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid strength: " + strength);
+      if (strength.equalsIgnoreCase("primary")) collator.setStrength(Collator.PRIMARY);
+      else if (strength.equalsIgnoreCase("secondary")) collator.setStrength(Collator.SECONDARY);
+      else if (strength.equalsIgnoreCase("tertiary")) collator.setStrength(Collator.TERTIARY);
+      else if (strength.equalsIgnoreCase("quaternary")) collator.setStrength(Collator.QUATERNARY);
+      else if (strength.equalsIgnoreCase("identical")) collator.setStrength(Collator.IDENTICAL);
+      else throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid strength: " + strength);
     }
-    
+
     // set the decomposition flag, otherwise it will be the default.
     if (decomposition != null) {
       if (decomposition.equalsIgnoreCase("no"))
@@ -184,7 +188,7 @@ public class ICUCollationField extends FieldType {
       else
         throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid decomposition: " + decomposition);
     }
-    
+
     // expert options: concrete subclasses are always a RuleBasedCollator
     RuleBasedCollator rbc = (RuleBasedCollator) collator;
     if (alternate != null) {
@@ -217,25 +221,22 @@ public class ICUCollationField extends FieldType {
 
     analyzer = new ICUCollationKeyAnalyzer(collator);
   }
-  
-  /**
-   * Create a locale from localeID.
-   * Then return the appropriate collator for the locale.
-   */
+
+  /** Create a locale from localeID. Then return the appropriate collator for the locale. */
   private Collator createFromLocale(String localeID) {
     return Collator.getInstance(new ULocale(localeID));
   }
-  
+
   /**
-   * Read custom rules from a file, and create a RuleBasedCollator
-   * The file cannot support comments, as # might be in the rules!
+   * Read custom rules from a file, and create a RuleBasedCollator The file cannot support comments,
+   * as # might be in the rules!
    */
   static Collator createFromRules(String fileName, ResourceLoader loader) {
     InputStream input = null;
     try {
-     input = loader.openResource(fileName);
-     String rules = IOUtils.toString(input, StandardCharsets.UTF_8);
-     return new RuleBasedCollator(rules);
+      input = loader.openResource(fileName);
+      String rules = IOUtils.toString(input, StandardCharsets.UTF_8);
+      return new RuleBasedCollator(rules);
     } catch (Exception e) {
       // io error or invalid rules
       throw new RuntimeException(e);
@@ -253,11 +254,11 @@ public class ICUCollationField extends FieldType {
   public SortField getSortField(SchemaField field, boolean top) {
     return getStringSort(field, top);
   }
-  
+
   @Override
   public Type getUninversionType(SchemaField sf) {
     if (sf.multiValued()) {
-      return Type.SORTED_SET_BINARY; 
+      return Type.SORTED_SET_BINARY;
     } else {
       return Type.SORTED;
     }
@@ -274,32 +275,36 @@ public class ICUCollationField extends FieldType {
   }
 
   /**
-   * analyze the text with the analyzer, instead of the collator.
-   * because icu collators are not thread safe, this keeps things 
-   * simple (we already have a threadlocal clone in the reused TS)
+   * analyze the text with the analyzer, instead of the collator. because icu collators are not
+   * thread safe, this keeps things simple (we already have a threadlocal clone in the reused TS)
    */
   private BytesRef getCollationKey(String field, String text) {
     try (TokenStream source = analyzer.tokenStream(field, text)) {
       source.reset();
-      
+
       TermToBytesRefAttribute termAtt = source.getAttribute(TermToBytesRefAttribute.class);
-      
 
       // we control the analyzer here: most errors are impossible
       if (!source.incrementToken())
         throw new IllegalArgumentException("analyzer returned no terms for text: " + text);
       BytesRef bytes = BytesRef.deepCopyOf(termAtt.getBytesRef());
       assert !source.incrementToken();
-      
+
       source.end();
       return bytes;
     } catch (IOException e) {
       throw new RuntimeException("Unable to analyze text: " + text, e);
     }
   }
-  
+
   @Override
-  protected Query getSpecializedRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
+  protected Query getSpecializedRangeQuery(
+      QParser parser,
+      SchemaField field,
+      String part1,
+      String part2,
+      boolean minInclusive,
+      boolean maxInclusive) {
     String f = field.getName();
     BytesRef low = part1 == null ? null : getCollationKey(f, part1);
     BytesRef high = part2 == null ? null : getCollationKey(f, part2);

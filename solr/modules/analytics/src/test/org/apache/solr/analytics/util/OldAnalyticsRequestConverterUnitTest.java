@@ -17,18 +17,17 @@
 
 package org.apache.solr.analytics.util;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-import org.apache.solr.analytics.legacy.facet.LegacyAbstractAnalyticsFacetTest;
-import org.apache.solr.common.params.SolrParams;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import static org.apache.solr.analytics.AnalyticsRequestParser.AnalyticsExpressionSortRequest;
 import static org.apache.solr.analytics.AnalyticsRequestParser.AnalyticsRequest;
 import static org.apache.solr.analytics.AnalyticsRequestParser.AnalyticsValueFacetRequest;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import org.apache.solr.analytics.AnalyticsRequestParser.AnalyticsFacetRequest;
 import org.apache.solr.analytics.AnalyticsRequestParser.AnalyticsRangeFacetRequest;
+import org.apache.solr.analytics.legacy.facet.LegacyAbstractAnalyticsFacetTest;
+import org.apache.solr.common.params.SolrParams;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 @ThreadLeakLingering(linger = 10)
 public class OldAnalyticsRequestConverterUnitTest extends LegacyAbstractAnalyticsFacetTest {
@@ -41,26 +40,34 @@ public class OldAnalyticsRequestConverterUnitTest extends LegacyAbstractAnalytic
 
   @Test
   public void testConvertFieldFacetWithDottedField() throws Exception {
-    SolrParams params = request(fileToStringArr(OldAnalyticsRequestConverterUnitTest.class, fileName)).getParams();
+    SolrParams params =
+        request(fileToStringArr(OldAnalyticsRequestConverterUnitTest.class, fileName)).getParams();
     AnalyticsRequest request = OldAnalyticsRequestConverter.convert(params);
-    final AnalyticsValueFacetRequest analyticsValueFacetRequest = (AnalyticsValueFacetRequest) request.groupings.get("df1").facets.get("long.dotfield");
+    final AnalyticsValueFacetRequest analyticsValueFacetRequest =
+        (AnalyticsValueFacetRequest) request.groupings.get("df1").facets.get("long.dotfield");
     assertNotNull("Sort param should be parsed for dotted field", analyticsValueFacetRequest.sort);
-    final AnalyticsExpressionSortRequest analyticsExpressionSortRequest = (AnalyticsExpressionSortRequest) analyticsValueFacetRequest.sort.criteria.get(0);
-    assertEquals("Sort param expression should be parsed for dotted field",
-        "mean", analyticsExpressionSortRequest.expression);
-    assertEquals("Sort param direction should be parsed for dotted field",
-        "asc", analyticsExpressionSortRequest.direction);
+    final AnalyticsExpressionSortRequest analyticsExpressionSortRequest =
+        (AnalyticsExpressionSortRequest) analyticsValueFacetRequest.sort.criteria.get(0);
+    assertEquals(
+        "Sort param expression should be parsed for dotted field",
+        "mean",
+        analyticsExpressionSortRequest.expression);
+    assertEquals(
+        "Sort param direction should be parsed for dotted field",
+        "asc",
+        analyticsExpressionSortRequest.direction);
   }
 
   @Test
   public void testConvertRangeFacetWithDottedField() throws Exception {
-    SolrParams params = request(fileToStringArr(OldAnalyticsRequestConverterUnitTest.class, fileName)).getParams();
+    SolrParams params =
+        request(fileToStringArr(OldAnalyticsRequestConverterUnitTest.class, fileName)).getParams();
     AnalyticsRequest request = OldAnalyticsRequestConverter.convert(params);
 
-    final AnalyticsFacetRequest analyticsFacetRequest = request.groupings.get("df2").facets.get("long.dotfield");
+    final AnalyticsFacetRequest analyticsFacetRequest =
+        request.groupings.get("df2").facets.get("long.dotfield");
     assertNotNull("Range facet param should be parsed for dotted field", analyticsFacetRequest);
-    assertEquals("30", ((AnalyticsRangeFacetRequest)analyticsFacetRequest).end);
-    assertEquals(true, ((AnalyticsRangeFacetRequest)analyticsFacetRequest).hardend);
-    
+    assertEquals("30", ((AnalyticsRangeFacetRequest) analyticsFacetRequest).end);
+    assertTrue(((AnalyticsRangeFacetRequest) analyticsFacetRequest).hardend);
   }
 }

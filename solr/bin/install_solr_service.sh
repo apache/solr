@@ -312,7 +312,8 @@ else
   cp "$SOLR_INSTALL_DIR/bin/solr.in.sh" "/etc/default/$SOLR_SERVICE.in.sh"
   mv "$SOLR_INSTALL_DIR/bin/solr.in.sh" "$SOLR_INSTALL_DIR/bin/solr.in.sh.orig"  
   mv "$SOLR_INSTALL_DIR/bin/solr.in.cmd" "$SOLR_INSTALL_DIR/bin/solr.in.cmd.orig"  
-  echo "SOLR_PID_DIR=\"$SOLR_VAR_DIR\"
+  echo "
+SOLR_PID_DIR=\"$SOLR_VAR_DIR\"
 SOLR_HOME=\"$SOLR_VAR_DIR/data\"
 LOG4J_PROPS=\"$SOLR_VAR_DIR/log4j2.xml\"
 SOLR_LOGS_DIR=\"$SOLR_VAR_DIR/logs\"
@@ -325,11 +326,6 @@ chmod 0640 "/etc/default/$SOLR_SERVICE.in.sh"
 # install data directories and files
 mkdir -p "$SOLR_VAR_DIR/data"
 mkdir -p "$SOLR_VAR_DIR/logs"
-if [ -f "$SOLR_VAR_DIR/data/solr.xml" ]; then
-  echo -e "\n$SOLR_VAR_DIR/data/solr.xml already exists. Skipping install ...\n"
-else
-  cp "$SOLR_INSTALL_DIR/server/solr/"{solr.xml,zoo.cfg} "$SOLR_VAR_DIR/data/"
-fi
 if [ -f "$SOLR_VAR_DIR/log4j2.xml" ]; then
   echo -e "\n$SOLR_VAR_DIR/log4j2.xml already exists. Skipping install ...\n"
 else

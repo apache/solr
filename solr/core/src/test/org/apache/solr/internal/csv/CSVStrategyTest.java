@@ -16,18 +16,17 @@
  */
 package org.apache.solr.internal.csv;
 
-import junit.framework.TestCase;
+import org.apache.solr.SolrTestCase;
 
 /**
  * CSVStrategyTest
  *
- * The test are organized in three different sections:
- * The 'setter/getter' section, the lexer section and finally the strategy 
- * section. In case a test fails, you should follow a top-down approach for 
- * fixing a potential bug (it's likely that the strategy itself fails if the lexer
- * has problems...).
+ * <p>The test are organized in three different sections: The 'setter/getter' section, the lexer
+ * section and finally the strategy section. In case a test fails, you should follow a top-down
+ * approach for fixing a potential bug (it's likely that the strategy itself fails if the lexer has
+ * problems...).
  */
-public class CSVStrategyTest extends TestCase {
+public class CSVStrategyTest extends SolrTestCase {
 
   // ======================================================
   //   getters
@@ -53,26 +52,25 @@ public class CSVStrategyTest extends TestCase {
     assertEquals(strategy.getDelimiter(), ',');
     assertEquals(strategy.getEncapsulator(), '"');
     assertEquals(strategy.getCommentStart(), CSVStrategy.COMMENTS_DISABLED);
-    assertEquals(true,  strategy.getIgnoreLeadingWhitespaces());
-    assertEquals(false, strategy.getUnicodeEscapeInterpretation());
-    assertEquals(true,  strategy.getIgnoreEmptyLines());
+    assertTrue(strategy.getIgnoreLeadingWhitespaces());
+    assertFalse(strategy.getUnicodeEscapeInterpretation());
+    assertTrue(strategy.getIgnoreEmptyLines());
     // explicit csv settings
     assertEquals(strategy.getDelimiter(), ',');
     assertEquals(strategy.getEncapsulator(), '"');
     assertEquals(strategy.getCommentStart(), CSVStrategy.COMMENTS_DISABLED);
-    assertEquals(true,  strategy.getIgnoreLeadingWhitespaces());
-    assertEquals(false, strategy.getUnicodeEscapeInterpretation());
-    assertEquals(true,  strategy.getIgnoreEmptyLines());
+    assertTrue(strategy.getIgnoreLeadingWhitespaces());
+    assertFalse(strategy.getUnicodeEscapeInterpretation());
+    assertTrue(strategy.getIgnoreEmptyLines());
   }
-  
+
   public void testSetExcelStrategy() {
     CSVStrategy strategy = CSVStrategy.EXCEL_STRATEGY;
     assertEquals(strategy.getDelimiter(), ',');
     assertEquals(strategy.getEncapsulator(), '"');
     assertEquals(strategy.getCommentStart(), CSVStrategy.COMMENTS_DISABLED);
-    assertEquals(false,  strategy.getIgnoreLeadingWhitespaces());
-    assertEquals(false, strategy.getUnicodeEscapeInterpretation());
-    assertEquals(false, strategy.getIgnoreEmptyLines());
+    assertFalse(strategy.getIgnoreLeadingWhitespaces());
+    assertFalse(strategy.getUnicodeEscapeInterpretation());
+    assertFalse(strategy.getIgnoreEmptyLines());
   }
-  
-} 
+}

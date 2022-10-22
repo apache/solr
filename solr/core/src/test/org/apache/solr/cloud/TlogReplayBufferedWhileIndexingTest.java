@@ -16,19 +16,18 @@
  */
 package org.apache.solr.cloud;
 
-import org.apache.lucene.util.LuceneTestCase.Nightly;
-import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.junit.Test;
 
-@Slow
 @Nightly
 @SuppressSSL
 /*
  * Implementation moved to AbstractTlogReplayBufferedWhileIndexingTestBase as it is also used by HDFS contrib
  * module tests
  */
-public class TlogReplayBufferedWhileIndexingTest extends AbstractTlogReplayBufferedWhileIndexingTestBase {
+public class TlogReplayBufferedWhileIndexingTest
+    extends AbstractTlogReplayBufferedWhileIndexingTestBase {
 
   public TlogReplayBufferedWhileIndexingTest() throws Exception {
     super();
@@ -39,5 +38,4 @@ public class TlogReplayBufferedWhileIndexingTest extends AbstractTlogReplayBuffe
   public void test() throws Exception {
     super.test();
   }
-
 }

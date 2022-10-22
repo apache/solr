@@ -22,13 +22,12 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
-
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
 public class CloudHttp2SolrClientMultiConstructorTest extends SolrTestCase {
-  
+
   /*
    * NOTE: If you only include one String argument, it will NOT use the
    * constructor with the variable argument list, which is the one that
@@ -37,7 +36,6 @@ public class CloudHttp2SolrClientMultiConstructorTest extends SolrTestCase {
   Collection<String> hosts;
 
   @Test
-  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testZkConnectionStringConstructorWithValidChroot() throws IOException {
     boolean setOrList = random().nextBoolean();
     int numOfZKServers = TestUtil.nextInt(random(), 1, 5);
@@ -47,21 +45,21 @@ public class CloudHttp2SolrClientMultiConstructorTest extends SolrTestCase {
 
     StringBuilder sb = new StringBuilder();
 
-    if(setOrList) {
+    if (setOrList) {
       /*
-        A LinkedHashSet is required here for testing, or we can't guarantee
-        the order of entries in the final string.
-       */
+       A LinkedHashSet is required here for testing, or we can't guarantee
+       the order of entries in the final string.
+      */
       hosts = new LinkedHashSet<>();
     } else {
       hosts = new ArrayList<>();
     }
 
-    for(int i=0; i<numOfZKServers; i++) {
+    for (int i = 0; i < numOfZKServers; i++) {
       String ZKString = "host" + i + ":2181";
       hosts.add(ZKString);
       sb.append(ZKString);
-      if(i<numOfZKServers -1) sb.append(",");
+      if (i < numOfZKServers - 1) sb.append(",");
     }
 
     String clientChroot = null;
@@ -70,13 +68,17 @@ public class CloudHttp2SolrClientMultiConstructorTest extends SolrTestCase {
       clientChroot = "/mychroot";
     }
 
-    try (CloudHttp2SolrClient client = new CloudHttp2SolrClient.Builder(new ArrayList<>(hosts), Optional.ofNullable(clientChroot)).build()) {
-      assertEquals(sb.toString(), client.getZkHost());
+    try (CloudSolrClient client =
+        new CloudHttp2SolrClient.Builder(new ArrayList<>(hosts), Optional.ofNullable(clientChroot))
+            .build()) {
+      try (ZkClientClusterStateProvider zkClientClusterStateProvider =
+          ZkClientClusterStateProvider.from(client)) {
+        assertEquals(sb.toString(), zkClientClusterStateProvider.getZkHost());
+      }
     }
   }
-  
+
   @Test(expected = IllegalArgumentException.class)
-  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testBadChroot() {
     final List<String> zkHosts = new ArrayList<>();
     zkHosts.add("host1:2181");

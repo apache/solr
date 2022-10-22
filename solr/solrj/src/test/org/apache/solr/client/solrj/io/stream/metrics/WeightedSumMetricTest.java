@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.io.stream.metrics;
 
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
@@ -24,21 +25,16 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.handler.SolrDefaultStreamFactory;
 import org.junit.Test;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+public class WeightedSumMetricTest extends SolrTestCase {
 
-public class WeightedSumMetricTest {
-
-  final long[] counts = new long[]{10, 20, 30, 40};
-  final double[] avg = new double[]{2, 4, 6, 8};
+  final long[] counts = new long[] {10, 20, 30, 40};
+  final double[] avg = new double[] {2, 4, 6, 8};
 
   @Test
   public void testWsumPojo() throws Exception {
     WeightedSumMetric wsum = new WeightedSumMetric("avg", "count");
     assertEquals("wsum(avg, count, false)", wsum.getIdentifier());
-    assertArrayEquals(new String[]{"avg", "count"}, wsum.getColumns());
+    assertArrayEquals(new String[] {"avg", "count"}, wsum.getColumns());
 
     StreamFactory factory = new SolrDefaultStreamFactory();
     StreamExpressionParameter expr = wsum.toExpression(factory);
@@ -54,13 +50,13 @@ public class WeightedSumMetricTest {
     Number weightedSum = updateMetric(wsum);
     assertNotNull(weightedSum);
     assertTrue(weightedSum instanceof Double);
-    assertTrue(weightedSum.doubleValue() == expectedSum);
+    assertEquals(weightedSum.doubleValue(), expectedSum, 0.0);
 
     wsum = new WeightedSumMetric("avg", "count", true);
     assertEquals("wsum(avg, count, true)", wsum.getIdentifier());
     weightedSum = updateMetric(wsum);
     assertNotNull(weightedSum);
-    assertTrue(weightedSum.longValue() == expectedSumLong);
+    assertEquals(weightedSum.longValue(), expectedSumLong);
   }
 
   private Number updateMetric(WeightedSumMetric wsum) {

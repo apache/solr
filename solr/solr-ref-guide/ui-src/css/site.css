@@ -1,0 +1,20 @@
+/* Solr Changes - Start */
+@import "typeface-noto-sans.css";
+@import "typeface-inconsolata.css";
+@import "perma-link.css";
+/* Solr Changes - End */
+@import "vars.css";
+@import "base.css";
+@import "body.css";
+@import "nav.css";
+@import "main.css";
+@import "toolbar.css";
+@import "breadcrumbs.css";
+@import "page-versions.css";
+@import "toc.css";
+@import "doc.css";
+@import "pagination.css";
+@import "header.css";
+@import "footer.css";
+@import "highlight.css";
+@import "print.css";
