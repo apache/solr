@@ -127,7 +127,7 @@ So, typically you will use the `solr-precreate` command which prepares the speci
 docker run -d -p 8983:8983 --name my_solr solr solr-precreate gettingstarted
 ----
 
-The `solr-precreate` command takes an optional extra argument to specify a configset directory below `/opt/solr/server/solr/configsets/` or you can specify a full path to a custom configset inside the container:
+The `solr-precreate` command takes an optional extra argument to specify a configset directory below `/var/solr/data/configsets/` or you can specify a full path to a custom configset inside the container:
 
 [source,bash]
 ----
