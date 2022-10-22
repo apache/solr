@@ -379,7 +379,8 @@ public class JWTIssuerConfig {
     private final long jwkCacheDuration;
     private final long refreshReprieveThreshold;
     private Collection<X509Certificate> trustedCerts;
-    private static final Set<String> PRETRUSTED_HOSTS = Set.of("localhost", "localhost.localdomain");
+    private static final Set<String> PRETRUSTED_HOSTS =
+        Set.of("localhost", "localhost.localdomain");
 
     public HttpsJwksFactory(long jwkCacheDuration, long refreshReprieveThreshold) {
       this.jwkCacheDuration = jwkCacheDuration;
