@@ -140,7 +140,7 @@ docker run -it -v $PWD/mysolrhome:/mysolrhome -e SOLR_HOME=/mysolrhome solr
 
 This does need a pre-configured directory at that location.
 
-To make this easier, Solr docker supports a INIT_SOLR_HOME setting, which copies the contents
+Until version 7, Solr docker supported an INIT_SOLR_HOME setting, which copies the contents
 from the default directory in the image to the SOLR_HOME (if it is empty).
 
 [source,bash]
