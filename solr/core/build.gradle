@@ -167,6 +167,9 @@ dependencies {
   // For faster XML processing than the JDK
   implementation 'org.codehaus.woodstox:stax2-api'
   implementation 'com.fasterxml.woodstox:woodstox-core'
+  // See https://issues.apache.org/jira/browse/LOG4J2-3609 due to needing these annotations
+  compileOnly 'biz.aQute.bnd:biz.aQute.bnd.annotation'
+  compileOnly 'org.osgi:osgi.annotation'
 
   testRuntimeOnly 'org.slf4j:jcl-over-slf4j'
 
