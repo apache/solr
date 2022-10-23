@@ -95,15 +95,8 @@ class ClusterAbstractionsForTest {
      */
     @Override
     public boolean equals(Object obj) {
-      if (obj == null) {
-        return false;
-      }
-      if (obj == this) {
-        return true;
-      }
-      if (obj.getClass() != getClass()) {
-        return false;
-      }
+      if (obj == this) return true;
+      if (!(obj instanceof NodeImpl)) return false;
       NodeImpl other = (NodeImpl) obj;
       return Objects.equals(this.nodeName, other.nodeName);
     }
@@ -224,15 +217,8 @@ class ClusterAbstractionsForTest {
 
     @Override
     public boolean equals(Object obj) {
-      if (obj == null) {
-        return false;
-      }
-      if (obj == this) {
-        return true;
-      }
-      if (obj.getClass() != getClass()) {
-        return false;
-      }
+      if (obj == this) return true;
+      if (!(obj instanceof ShardImpl)) return false;
       ShardImpl other = (ShardImpl) obj;
       return Objects.equals(this.shardName, other.shardName)
           && Objects.equals(this.collection, other.collection)
@@ -302,15 +288,8 @@ class ClusterAbstractionsForTest {
 
     @Override
     public boolean equals(Object obj) {
-      if (obj == null) {
-        return false;
-      }
-      if (obj == this) {
-        return true;
-      }
-      if (obj.getClass() != getClass()) {
-        return false;
-      }
+      if (obj == this) return true;
+      if (!(obj instanceof ReplicaImpl)) return false;
       ReplicaImpl other = (ReplicaImpl) obj;
       return Objects.equals(this.replicaName, other.replicaName)
           && Objects.equals(this.coreName, other.coreName)

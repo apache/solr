@@ -135,13 +135,10 @@ class SimpleClusterAbstractionsImpl {
      */
     @Override
     public boolean equals(Object obj) {
-      if (obj == null) {
-        return false;
-      }
       if (obj == this) {
         return true;
       }
-      if (obj.getClass() != getClass()) {
+      if (!(obj instanceof NodeImpl)) {
         return false;
       }
       NodeImpl other = (NodeImpl) obj;
@@ -305,13 +302,10 @@ class SimpleClusterAbstractionsImpl {
 
     @Override
     public boolean equals(Object obj) {
-      if (obj == null) {
-        return false;
-      }
       if (obj == this) {
         return true;
       }
-      if (obj.getClass() != getClass()) {
+      if (!(obj instanceof ShardImpl)) {
         return false;
       }
       ShardImpl other = (ShardImpl) obj;
@@ -468,13 +462,10 @@ class SimpleClusterAbstractionsImpl {
 
     @Override
     public boolean equals(Object obj) {
-      if (obj == null) {
-        return false;
-      }
       if (obj == this) {
         return true;
       }
-      if (obj.getClass() != getClass()) {
+      if (!(obj instanceof ReplicaImpl)) {
         return false;
       }
       ReplicaImpl other = (ReplicaImpl) obj;

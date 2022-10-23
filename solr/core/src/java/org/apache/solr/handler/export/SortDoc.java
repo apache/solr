@@ -38,7 +38,7 @@ class SortDoc implements Comparable<SortDoc> {
   @Override
   public boolean equals(Object obj) {
     // subclasses are not equal
-    if (!obj.getClass().equals(getClass())) {
+    if (!(obj instanceof SortDoc)) {
       return false;
     }
     return compareTo((SortDoc) obj) == 0;

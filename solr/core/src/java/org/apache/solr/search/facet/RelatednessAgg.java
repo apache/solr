@@ -118,7 +118,7 @@ public class RelatednessAgg extends AggValueSource {
 
   @Override
   public boolean equals(Object o) {
-    if (!Objects.equals(this.getClass(), o.getClass())) {
+    if (!(o instanceof RelatednessAgg)) {
       return false;
     }
     RelatednessAgg that = (RelatednessAgg) o;
@@ -568,7 +568,7 @@ public class RelatednessAgg extends AggValueSource {
 
     @Override
     public boolean equals(Object other) {
-      if (!Objects.equals(this.getClass(), other.getClass())) {
+      if (!(other instanceof BucketData)) {
         return false;
       }
       BucketData that = (BucketData) other;

@@ -170,9 +170,7 @@ public class OrdFieldSource extends ValueSource {
 
   @Override
   public boolean equals(Object o) {
-    return o != null
-        && o.getClass() == OrdFieldSource.class
-        && this.field.equals(((OrdFieldSource) o).field);
+    return o instanceof OrdFieldSource && this.field.equals(((OrdFieldSource) o).field);
   }
 
   private static final int hcode = OrdFieldSource.class.hashCode();
