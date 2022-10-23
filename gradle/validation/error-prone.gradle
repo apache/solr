@@ -83,7 +83,6 @@ allprojects { prj ->
             '-Xep:ComplexBooleanConstant:OFF',
             '-Xep:DoubleCheckedLocking:OFF',
             '-Xep:EmptyCatch:OFF',
-            '-Xep:EqualsGetClass:OFF',
             '-Xep:EqualsUnsafeCast:OFF',
             '-Xep:EscapedEntity:OFF',
             '-Xep:Finally:OFF',

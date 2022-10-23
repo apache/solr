@@ -194,7 +194,7 @@ public class FieldComparator implements StreamComparator {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (!(o instanceof FieldComparator)) return false;
     FieldComparator that = (FieldComparator) o;
     // comparator is based on the other fields so is not needed in this compare
     return leftFieldName.equals(that.leftFieldName)

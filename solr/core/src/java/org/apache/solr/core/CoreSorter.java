@@ -155,7 +155,7 @@ public final class CoreSorter implements Comparator<CoreDescriptor> {
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
+      if (!(o instanceof CountsForEachShard)) return false;
       CountsForEachShard that = (CountsForEachShard) o;
       return totalReplicasInDownNodes == that.totalReplicasInDownNodes
           && myReplicas == that.myReplicas

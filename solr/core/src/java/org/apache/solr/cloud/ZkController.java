@@ -186,16 +186,10 @@ public class ZkController implements Closeable {
     @Override
     public boolean equals(Object obj) {
       if (this == obj) return true;
-      if (obj == null) return false;
-      if (getClass() != obj.getClass()) return false;
+      if (!(obj instanceof ContextKey)) return false;
       ContextKey other = (ContextKey) obj;
-      if (collection == null) {
-        if (other.collection != null) return false;
-      } else if (!collection.equals(other.collection)) return false;
-      if (coreNodeName == null) {
-        if (other.coreNodeName != null) return false;
-      } else if (!coreNodeName.equals(other.coreNodeName)) return false;
-      return true;
+      return Objects.equals(collection, other.collection)
+          && Objects.equals(coreNodeName, other.coreNodeName);
     }
 
     @Override
@@ -2884,7 +2878,7 @@ public class ZkController implements Closeable {
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
+      if (!(o instanceof UnloadCoreOnDeletedWatcher)) return false;
       UnloadCoreOnDeletedWatcher that = (UnloadCoreOnDeletedWatcher) o;
       return Objects.equals(coreNodeName, that.coreNodeName)
           && Objects.equals(shard, that.shard)

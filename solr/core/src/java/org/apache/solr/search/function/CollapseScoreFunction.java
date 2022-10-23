@@ -32,11 +32,7 @@ public class CollapseScoreFunction extends ValueSource {
 
   @Override
   public boolean equals(Object o) {
-    if (o instanceof CollapseScoreFunction) {
-      return true;
-    } else {
-      return false;
-    }
+    return o instanceof CollapseScoreFunction;
   }
 
   @Override

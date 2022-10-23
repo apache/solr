@@ -252,7 +252,7 @@ public class LatLonPointSpatialField
       @Override
       public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (!(o instanceof DistanceSortValueSource)) return false;
         DistanceSortValueSource that = (DistanceSortValueSource) o;
         return Double.compare(that.multiplier, multiplier) == 0
             && Objects.equals(fieldName, that.fieldName)

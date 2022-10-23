@@ -1978,7 +1978,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
       TopDocs topDocs = topCollector.topDocs(0, len);
       if (cmd.getSort() != null
-          && cmd.getQuery() instanceof RankQuery == false
+          && !(cmd.getQuery() instanceof RankQuery)
           && (cmd.getFlags() & GET_SCORES) != 0) {
         TopFieldCollector.populateScores(topDocs.scoreDocs, this, query);
       }

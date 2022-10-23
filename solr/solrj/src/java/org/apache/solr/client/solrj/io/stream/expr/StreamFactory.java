@@ -592,12 +592,11 @@ public class StreamFactory implements Serializable {
       return Long.valueOf(original);
     } catch (Exception ignored) {
     }
-    ;
+
     try {
       return Double.valueOf(original);
     } catch (Exception ignored) {
     }
-    ;
 
     // is a string
     return original;
