@@ -278,17 +278,29 @@ public enum CoreAdminOperation implements CoreAdminOp {
       LISTSNAPSHOTS,
       it -> {
         final CoreContainer coreContainer = it.handler.getCoreContainer();
-        final SolrQueryRequest solrQueryRequest = it.req;
-        final SolrQueryResponse solrQueryResponse = it.rsp;
 
-        final SnapshotAPI snapshotAPI = new SnapshotAPI(coreContainer, solrQueryRequest, solrQueryResponse);
+        final SnapshotAPI snapshotAPI = new SnapshotAPI(coreContainer);
 
         final SolrParams params = it.req.getParams();
         final String coreName = params.required().get(CoreAdminParams.CORE);
 
         final SnapshotAPI.ListSnapshotsResponse response = snapshotAPI.listSnapshots(coreName);
 
-        it.rsp.add(SolrSnapshotManager.SNAPSHOTS_INFO, response.snapshots);
+        final NamedList<Object> snapshotsResult = new NamedList<>();
+        for (Map.Entry<String, SnapshotAPI.SnapshotInformation> snapshotEntry :
+            response.snapshots.entrySet()) {
+          final SnapshotAPI.SnapshotInformation snapshotInformation = snapshotEntry.getValue();
+
+          final NamedList<Object> snapshotResult = new NamedList<>();
+          snapshotResult.add(
+              SolrSnapshotManager.GENERATION_NUM,
+              String.valueOf(snapshotInformation.generationNumber));
+          snapshotResult.add(SolrSnapshotManager.INDEX_DIR_PATH, snapshotInformation.indexDirPath);
+
+          snapshotsResult.add(snapshotEntry.getKey(), snapshotResult);
+        }
+
+        it.rsp.add(SolrSnapshotManager.SNAPSHOTS_INFO, snapshotsResult);
       });
 
   final CoreAdminParams.CoreAdminAction action;

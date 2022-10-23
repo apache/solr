@@ -22,17 +22,13 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.admin.api.SnapshotAPI;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
 
 class CreateSnapshotOp implements CoreAdminHandler.CoreAdminOp {
   @Override
   public void execute(CoreAdminHandler.CallInfo it) throws Exception {
     final CoreContainer coreContainer = it.handler.getCoreContainer();
-    final SolrQueryRequest solrQueryRequest = it.req;
-    final SolrQueryResponse solrQueryResponse = it.rsp;
 
-    final SnapshotAPI snapshotAPI = new SnapshotAPI(coreContainer, solrQueryRequest, solrQueryResponse);
+    final SnapshotAPI snapshotAPI = new SnapshotAPI(coreContainer);
 
     final SolrParams params = it.req.getParams();
     final String coreName = params.required().get(CoreAdminParams.CORE);
