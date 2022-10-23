@@ -87,6 +87,8 @@ Other Changes
 
 * SOLR-16481: Upgrade Bats to 1.8.0 (Kevin Risden)
 
+* SOLR-16443: Upgrade Jackson bom to 2.13.4.20221013 (Kevin Risden)
+
 ==================  9.1.0 ==================
 
 New Features
@@ -251,6 +253,8 @@ Bug Fixes
 * SOLR-16463: Workaround for serious crash on JDK17+ due to JIT on caffeinecache (janhoy, Uwe Schindler)
 
 * SOLR-16478 :removing a replica should delete the PRS entry from the hostnode and not from overseer (Patson Luk via noble)
+
+* SOLR-16485: Fix NPE in ShardHandlerFactory when running in Standalone mode (Houston Putman)
 
 Other Changes
 ---------------------
