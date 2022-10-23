@@ -81,14 +81,22 @@ dependencies {
   runtimeOnly('org.eclipse.jetty:jetty-alpn-java-server', {
     exclude group: "org.eclipse.jetty.alpn", module: "alpn-api"
   })
-  jettyClientImplementation 'org.eclipse.jetty:jetty-http'
-  jettyClientImplementation 'org.eclipse.jetty:jetty-io'
+  jettyClientImplementation('org.eclipse.jetty:jetty-http', {
+    exclude group: "org.slf4j", module: "slf4j-api"
+  })
+  jettyClientImplementation('org.eclipse.jetty:jetty-io', {
+    exclude group: "org.slf4j", module: "slf4j-api"
+  })
   implementation 'org.eclipse.jetty:jetty-rewrite'
   implementation 'org.eclipse.jetty:jetty-server'
   implementation 'org.eclipse.jetty:jetty-servlet'
-  jettyClientImplementation 'org.eclipse.jetty:jetty-util'
+  jettyClientImplementation('org.eclipse.jetty:jetty-util', {
+    exclude group: "org.slf4j", module: "slf4j-api"
+  })
 
-  jettyClientImplementation 'org.eclipse.jetty.http2:http2-common'
+  jettyClientImplementation('org.eclipse.jetty.http2:http2-common', {
+    exclude group: "org.slf4j", module: "slf4j-api"
+  })
   implementation 'org.eclipse.jetty.http2:http2-server'
 
   implementation('org.glassfish.jersey.containers:jersey-container-jetty-http', {
@@ -188,7 +196,7 @@ dependencies {
 
   implementation 'org.apache.logging.log4j:log4j-api'
   implementation 'org.apache.logging.log4j:log4j-core'
-  implementation 'org.apache.logging.log4j:log4j-slf4j-impl'
+  runtimeOnly 'org.apache.logging.log4j:log4j-slf4j2-impl'
 
   // For faster XML processing than the JDK
   implementation 'org.codehaus.woodstox:stax2-api'
