@@ -16,19 +16,19 @@
 // specific language governing permissions and limitations
 // under the License.
 
-_Note: this article dates from Jan 2016. While this approach would still work, in Jan 2019 this would typically done with Docker cluster and orchestration tools like Kubernetes. See for example https://lucidworks.com/2019/02/07/running-solr-on-kubernetes-part-1/[this blog post]._
+_Note: this is a guide for using Solr with Docker without an orchestration tool like Kubernetes. While this approach would still work, it is more recommended to use tools like Kubernetes for production environments. This arcticle is good & recommended for local development only. For using Solr with Kubernetes, see https://solr.apache.org/operator/[Solr Operator] project, or for example https://lucidworks.com/2019/02/07/running-solr-on-kubernetes-part-1/[this blog post]._
 
-In this example I'll create a cluster with 3 ZooKeeper nodes and 3 Solr nodes, distributed over 3 machines (trinity10, trinity20, trinity30).
-I'll use an overlay network, specify fixed IP addresses when creating containers, and I'll pass in explicit `/etc/hosts` entries to make sure they are available even when nodes are down.
-I won't show the configuration of the key-value store to configuration to enable networking, see https://docs.docker.com/engine/userguide/networking/get-started-overlay/[the docs] for that.
-I'll not use Docker Swarm in this example, but specifically place and configure containers where I want them by ssh'ing into the appropriate Docker host.
+In this example we'll create a cluster with 3 ZooKeeper nodes and 3 Solr nodes, distributed over 3 machines (trinity10, trinity20, trinity30).
+We'll use an overlay network, specify fixed IP addresses when creating containers, and we'll pass in explicit `/etc/hosts` entries to make sure they are available even when nodes are down.
+We won't show the configuration of the key-value store to configuration to enable networking, see https://docs.docker.com/engine/userguide/networking/get-started-overlay/[the docs] for that.
+We'll not use Docker Swarm in this example, but specifically place and configure containers where we want them by ssh'ing into the appropriate Docker host.
 
-To make this example easier to understand I'll just use shell commands.
+To make this example easier to understand we'll just use shell commands.
 For actual use you may want to use a fancier deployment tool like http://www.fabfile.org[Fabric].
 
 NOTE: this example requires Docker 1.10.
 
-I'll run these commands from the first machine, trinity10.
+We'll run these commands from the first machine, trinity10.
 
 Create a network named "netzksolr" for this cluster.
 The `--ip-range` specifies the range of addresses to use for containers, whereas the `--subnet` specifies all possible addresses in this network.
@@ -233,8 +233,8 @@ docker port zksolrproxy 8002
 Or use a suitably configured HAProxy to round-robin between all Solr nodes.
 Or, instead of the overlay network, use http://www.projectcalico.org[Project Calico] and configure L3 routing so you do not need to mess with proxies.
 
-Now I can get to Solr on `http://trinity10:32774/solr/#/`.
-In the Cloud -> Tree -> /live_nodes view I see the Solr nodes.
+Now we can get to Solr on `http://trinity10:32774/solr/#/`.
+In the Cloud -> Tree -> /live_nodes view we see the Solr nodes.
 
 From the Solr UI select the collection1 core, and click on Cloud -> Graph to see how it has created
 two shards across our Solr nodes.
