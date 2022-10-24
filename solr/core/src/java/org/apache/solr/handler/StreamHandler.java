@@ -76,8 +76,7 @@ import org.slf4j.LoggerFactory;
  * org.apache.solr.handler.SolrDefaultStreamFactory}.
  *
  * <p>To add additional functions, just define them as plugins in solrconfig.xml via {@code
- * &lt;expressible name="count" class="org.apache.solr.client.solrj.io.stream.RecordCountStream"
- * /&gt; }
+ * <expressible name="count" class="org.apache.solr.client.solrj.io.stream.RecordCountStream" />}
  *
  * @since 5.1.0
  */

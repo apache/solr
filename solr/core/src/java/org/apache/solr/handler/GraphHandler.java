@@ -60,14 +60,11 @@ import org.slf4j.LoggerFactory;
  * org.apache.solr.client.solrj.io.stream.expr.DefaultStreamFactory}.
  *
  * <p>To add additional functions, just define them as plugins in solrconfig.xml via {@code
- * &lt;expressible name="count" class="org.apache.solr.client.solrj.io.stream.RecordCountStream"
- * /&gt; }
+ * <expressible name="count" class="org.apache.solr.client.solrj.io.stream.RecordCountStream" />}
  *
- * <p>The @deprecated configuration method as of Solr 8.5 is {@code &lt;lst
- * name="streamFunctions"&gt; &lt;str
- * name="group"&gt;org.apache.solr.client.solrj.io.stream.ReducerStream&lt;/str&gt; &lt;str
- * name="count"&gt;org.apache.solr.client.solrj.io.stream.RecordCountStream&lt;/str&gt; &lt;/lst&gt;
- * }
+ * <p>The @deprecated configuration method as of Solr 8.5 is {@code <lst name="streamFunctions"><str
+ * name="group">org.apache.solr.client.solrj.io.stream.ReducerStream</str><str
+ * name="count">org.apache.solr.client.solrj.io.stream.RecordCountStream</str></lst> }
  *
  * @since 6.1.0
  */
