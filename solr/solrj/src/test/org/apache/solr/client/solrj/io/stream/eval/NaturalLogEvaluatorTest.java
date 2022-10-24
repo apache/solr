@@ -25,7 +25,6 @@ import org.apache.solr.client.solrj.io.eval.AddEvaluator;
 import org.apache.solr.client.solrj.io.eval.NaturalLogEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class NaturalLogEvaluatorTest extends SolrTestCase {
@@ -51,8 +50,8 @@ public class NaturalLogEvaluatorTest extends SolrTestCase {
     values.clear();
     values.put("a", 100);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Double);
-    Assert.assertTrue(result.equals(Math.log(100)));
+    assertTrue(result instanceof Double);
+    assertEquals(result, Math.log(100));
   }
 
   @Test
@@ -62,8 +61,8 @@ public class NaturalLogEvaluatorTest extends SolrTestCase {
 
     values.clear();
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Double);
-    Assert.assertTrue(result.equals(Math.log(100)));
+    assertTrue(result instanceof Double);
+    assertEquals(result, Math.log(100));
   }
 
   @Test(expected = IOException.class)

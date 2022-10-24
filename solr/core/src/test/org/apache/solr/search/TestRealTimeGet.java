@@ -914,7 +914,7 @@ public class TestRealTimeGet extends TestRTGBase {
                         || (foundVer == info.version
                             && foundVal != info.val)) { // if the version matches, the val must
                       verbose("ERROR, id=", id, "found=", response, "model", info);
-                      assertTrue(false);
+                      fail();
                     }
                   }
                 }

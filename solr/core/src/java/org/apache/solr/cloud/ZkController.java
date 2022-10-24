@@ -1861,6 +1861,21 @@ public class ZkController implements Closeable {
     }
     CloudDescriptor cloudDescriptor = cd.getCloudDescriptor();
     if (removeCoreFromZk) {
+      // extra handling for PRS, we need to write the PRS entries from this node directly,
+      // as overseer does not and should not handle those entries
+      if (docCollection != null && docCollection.isPerReplicaState() && coreNodeName != null) {
+        if (log.isDebugEnabled()) {
+          log.debug(
+              "Unregistering core with coreNodeName {} of collection {} - deleting the PRS entries from ZK",
+              coreNodeName,
+              docCollection.getName());
+        }
+        PerReplicaStates perReplicaStates =
+            PerReplicaStatesFetcher.fetch(
+                docCollection.getZNode(), zkClient, docCollection.getPerReplicaStates());
+        PerReplicaStatesOps.deleteReplica(coreNodeName, perReplicaStates)
+            .persist(docCollection.getZNode(), zkClient);
+      }
       ZkNodeProps m =
           new ZkNodeProps(
               Overseer.QUEUE_OPERATION,

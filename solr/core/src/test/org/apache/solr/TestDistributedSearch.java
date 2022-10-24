@@ -1145,7 +1145,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
             Double val = (Double) svals.get(s);
             assertFalse("stat shouldn't be NaN: " + s, val.isNaN());
             assertFalse("stat shouldn't be Inf: " + s, val.isInfinite());
-            assertFalse("stat shouldn't be 0: " + s, val.equals(0.0D));
+            assertNotEquals("stat shouldn't be 0: " + s, 0.0D, val, 0.0);
           } else {
             // count or missing
             assertTrue(
@@ -1155,7 +1155,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
                 "stat should be a Long: " + s + " -> " + svals.get(s).getClass(),
                 svals.get(s) instanceof Long);
             Long val = (Long) svals.get(s);
-            assertFalse("stat shouldn't be 0: " + s, val.equals(0L));
+            assertNotEquals("stat shouldn't be 0: " + s, 0L, (long) val);
           }
         }
       }
@@ -1287,7 +1287,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
       // things we explicit expect because we asked for them
       // NOTE: min is expected to be null even though requested because of no values
-      assertEquals("wrong min", null, s.getMin());
+      assertNull("wrong min", s.getMin());
       assertTrue("mean should be NaN", ((Double) s.getMean()).isNaN());
       assertEquals("wrong stddev", 0.0D, s.getStddev(), 0.0D);
 
@@ -1842,9 +1842,10 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
             + counts.size(),
         counts.size(),
         pairs.length / 2);
-    assertTrue(
+    assertEquals(
         "Variable len param must be an even number, it was: " + pairs.length,
-        (pairs.length % 2) == 0);
+        0,
+        (pairs.length % 2));
     for (int pairs_idx = 0, counts_idx = 0;
         pairs_idx < pairs.length;
         pairs_idx += 2, counts_idx++) {
@@ -1876,9 +1877,10 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
             + counts.size(),
         counts.size(),
         pairs.length / 2);
-    assertTrue(
+    assertEquals(
         "Variable len param must be an even number, it was: " + pairs.length,
-        (pairs.length % 2) == 0);
+        0,
+        (pairs.length % 2));
     for (int pairs_idx = 0, counts_idx = 0;
         pairs_idx < pairs.length;
         pairs_idx += 2, counts_idx++) {
@@ -2013,13 +2015,12 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
                       + " header set if a shard is down",
                   Boolean.TRUE,
                   rsp.getHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
-              assertTrue(
-                  "Expected to find error in the down shard info: " + info,
-                  info.get("error") != null);
+              assertNotNull(
+                  "Expected to find error in the down shard info: " + info, info.get("error"));
             } else {
-              assertTrue(
+              assertNotNull(
                   "Expected timeAllowedError or to find shardAddress in the up shard info: " + info,
-                  info.get("shardAddress") != null);
+                  info.get("shardAddress"));
             }
           } else {
             assertEquals(
@@ -2029,9 +2030,9 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
                     + rsp,
                 Boolean.TRUE,
                 rsp.getHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
-            assertTrue(
+            assertNotNull(
                 "Expected to find error in the down shard info: " + info.toString(),
-                info.get("error") != null);
+                info.get("error"));
           }
         }
       }

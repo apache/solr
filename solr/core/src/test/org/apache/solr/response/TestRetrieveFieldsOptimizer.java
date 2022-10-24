@@ -21,7 +21,6 @@ import static org.apache.lucene.tests.util.LuceneTestCase.random;
 import static org.apache.solr.search.SolrReturnFields.FIELD_SOURCES.ALL_FROM_DV;
 import static org.apache.solr.search.SolrReturnFields.FIELD_SOURCES.ALL_FROM_STORED;
 import static org.apache.solr.search.SolrReturnFields.FIELD_SOURCES.MIXED_SOURCES;
-import static org.junit.Assert.fail;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.ByteArrayInputStream;
@@ -616,7 +615,7 @@ class RetrieveField {
         break;
 
       default:
-        fail("Found no case for field " + name + " type " + type);
+        SolrTestCaseJ4.fail("Found no case for field " + name + " type " + type);
         break;
     }
     // There are tricky cases with multiValued fields that are sometimes fetched from docValues that
@@ -677,7 +676,7 @@ class RetrieveField {
         break;
 
       default:
-        fail("Found no case for field " + name + " type " + type);
+        SolrTestCaseJ4.fail("Found no case for field " + name + " type " + type);
         break;
     }
   }

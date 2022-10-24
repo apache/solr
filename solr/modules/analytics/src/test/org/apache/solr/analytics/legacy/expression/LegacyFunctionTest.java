@@ -141,7 +141,7 @@ public class LegacyFunctionTest extends LegacyAbstractAnalyticsTest {
 
     result = (Double) getStatResult("ar", "mean", VAL_TYPE.DOUBLE);
     calculated = (Double) getStatResult("ar", "meanc", VAL_TYPE.DOUBLE);
-    assertTrue(result == calculated);
+    assertEquals(result, calculated, 0.0);
     assertEquals(getRawResponse(), result, calculated, 0.0);
   }
 

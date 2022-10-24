@@ -33,7 +33,6 @@ import org.apache.solr.schema.IntPointField;
 import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.ExternalPaths;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 
 public class ManagedSchemaDiffTest extends SolrCloudTestCase {
@@ -62,29 +61,29 @@ public class ManagedSchemaDiffTest extends SolrCloudTestCase {
     Map<String, Object> diff =
         ManagedSchemaDiff.diff(
             mapFieldsToPropertyValues(schema1FieldMap), mapFieldsToPropertyValues(schema2FieldMap));
-    Assert.assertTrue(diff.containsKey("updated"));
-    Assert.assertTrue(diff.containsKey("added"));
-    Assert.assertTrue(diff.containsKey("removed"));
+    assertTrue(diff.containsKey("updated"));
+    assertTrue(diff.containsKey("added"));
+    assertTrue(diff.containsKey("removed"));
 
     Map<String, Object> changedFields = getInnerMap(diff, "updated");
-    Assert.assertEquals(1, changedFields.size());
-    Assert.assertTrue(changedFields.containsKey("strfield"));
-    Assert.assertEquals(
+    assertEquals(1, changedFields.size());
+    assertTrue(changedFields.containsKey("strfield"));
+    assertEquals(
         Arrays.asList(
             Map.of("type", "string", "multiValued", false),
             Map.of("type", "strings", "multiValued", true)),
         changedFields.get("strfield"));
 
     Map<String, Object> addedFields = getInnerMap(diff, "added");
-    Assert.assertEquals(1, addedFields.size());
-    Assert.assertTrue(addedFields.containsKey("intfield"));
-    Assert.assertEquals(
+    assertEquals(1, addedFields.size());
+    assertTrue(addedFields.containsKey("intfield"));
+    assertEquals(
         schema2FieldMap.get("intfield").getNamedPropertyValues(true), addedFields.get("intfield"));
 
     Map<String, Object> removedFields = getInnerMap(diff, "removed");
-    Assert.assertEquals(1, removedFields.size());
-    Assert.assertTrue(removedFields.containsKey("boolfield"));
-    Assert.assertEquals(
+    assertEquals(1, removedFields.size());
+    assertTrue(removedFields.containsKey("boolfield"));
+    assertEquals(
         schema1FieldMap.get("boolfield").getNamedPropertyValues(true),
         removedFields.get("boolfield"));
   }
@@ -110,10 +109,10 @@ public class ManagedSchemaDiffTest extends SolrCloudTestCase {
     List<SimpleOrderedMap<Object>> list2 = Arrays.asList(obj1, obj3, obj4);
 
     Map<String, Object> diff = ManagedSchemaDiff.diff(list1, list2);
-    Assert.assertTrue(diff.containsKey("old"));
-    Assert.assertTrue(diff.containsKey("new"));
-    Assert.assertEquals(Collections.singletonList(obj2), diff.get("old"));
-    Assert.assertEquals(Arrays.asList(obj3, obj4), diff.get("new"));
+    assertTrue(diff.containsKey("old"));
+    assertTrue(diff.containsKey("new"));
+    assertEquals(Collections.singletonList(obj2), diff.get("old"));
+    assertEquals(Arrays.asList(obj3, obj4), diff.get("new"));
   }
 
   @SuppressWarnings("unchecked")

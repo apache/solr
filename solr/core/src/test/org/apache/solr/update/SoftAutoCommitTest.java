@@ -18,7 +18,6 @@ package org.apache.solr.update;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static org.junit.Assert.assertEquals;
 
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.BlockingQueue;
@@ -94,7 +93,7 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
     final int hardCommitMaxDocs = 7;
 
     // remainder of test designed with these assumptions
-    assert softCommitMaxDocs < hardCommitMaxDocs;
+    assertTrue(softCommitMaxDocs < hardCommitMaxDocs);
 
     CommitTracker hardTracker = updater.commitTracker;
     CommitTracker softTracker = updater.softCommitTracker;
@@ -524,7 +523,7 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
       final BlockingQueue<Long> queue)
       throws InterruptedException {
 
-    assert 0 < maxNumCommits;
+    assertTrue(0 < maxNumCommits);
 
     // these will be modified in each iteration of our assertion loop
     long prevTimestampNanos = startTimestampNanos;
@@ -637,6 +636,6 @@ class MockEventListener implements SolrEventListener {
   }
 
   public void assertSaneOffers() {
-    assertEquals("Failure of MockEventListener" + fail.toString(), 0, fail.length());
+    SolrTestCaseJ4.assertEquals("Failure of MockEventListener" + fail.toString(), 0, fail.length());
   }
 }

@@ -750,7 +750,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
 
   public static long addAndAssertVersion(long expectedCurrentVersion, Object... fields)
       throws Exception {
-    assert 0 < expectedCurrentVersion;
+    assertTrue(0 < expectedCurrentVersion);
     long currentVersion = addAndGetVersion(sdoc(fields), null);
     assertTrue(currentVersion > expectedCurrentVersion);
     return currentVersion;

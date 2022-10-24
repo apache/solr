@@ -308,7 +308,7 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
       q.set("shards", shardsParamValue);
     }
     if (otherParams != null) {
-      assert otherParams.length % 2 == 0;
+      assertEquals(0, otherParams.length % 2);
       for (int i = 0; i < otherParams.length; i += 2) {
         q.set(otherParams[i], otherParams[i + 1]);
       }

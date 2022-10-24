@@ -79,13 +79,13 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
 
   @Test
   public void testParseArgsAndInit() {
-    assertEquals(false, t_file.auto);
-    assertEquals(true, t_file_auto.auto);
+    assertFalse(t_file.auto);
+    assertTrue(t_file_auto.auto);
     assertEquals(0, t_file_auto.recursive);
     assertEquals(999, t_file_rec.recursive);
-    assertEquals(true, t_file.commit);
-    assertEquals(false, t_file.optimize);
-    assertEquals(null, t_file.out);
+    assertTrue(t_file.commit);
+    assertFalse(t_file.optimize);
+    assertNull(t_file.out);
 
     assertEquals(1, t_web.recursive);
     assertEquals(10, t_web.delay);
@@ -119,10 +119,9 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
     //    TODO: How to know what is the base if URL path ends with "foo"??
     //    assertEquals("http://[ff01::114]/fil.html", t_web.computeFullUrl(new
     // URL("http://[ff01::114]/foo?baz#hello"), "fil.html"));
-    assertEquals(null, t_web.computeFullUrl(new URL("http://[ff01::114]/"), "fil.jpg"));
-    assertEquals(
-        null, t_web.computeFullUrl(new URL("http://[ff01::114]/"), "mailto:hello@foo.bar"));
-    assertEquals(null, t_web.computeFullUrl(new URL("http://[ff01::114]/"), "ftp://server/file"));
+    assertNull(t_web.computeFullUrl(new URL("http://[ff01::114]/"), "fil.jpg"));
+    assertNull(t_web.computeFullUrl(new URL("http://[ff01::114]/"), "mailto:hello@foo.bar"));
+    assertNull(t_web.computeFullUrl(new URL("http://[ff01::114]/"), "ftp://server/file"));
   }
 
   @Test
@@ -201,9 +200,10 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
   public void testRobotsExclusion() throws MalformedURLException {
     assertFalse(t_web.pageFetcher.isDisallowedByRobots(new URL("http://[ff01::114]/")));
     assertTrue(t_web.pageFetcher.isDisallowedByRobots(new URL("http://[ff01::114]/disallowed")));
-    assertTrue(
+    assertEquals(
         "There should be two entries parsed from robots.txt",
-        t_web.pageFetcher.robotsCache.get("[ff01::114]").size() == 2);
+        2,
+        t_web.pageFetcher.robotsCache.get("[ff01::114]").size());
   }
 
   static class MockPageFetcher extends PageFetcher {

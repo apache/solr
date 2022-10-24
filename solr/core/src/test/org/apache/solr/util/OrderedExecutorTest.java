@@ -224,7 +224,7 @@ public class OrderedExecutorTest extends SolrTestCase {
       orderedExecutor.execute(key, () -> run.put(key, run.get(key) + 1));
     }
     orderedExecutor.shutdownAndAwaitTermination();
-    assertTrue(base.equals(run));
+    assertEquals(base, run);
   }
 
   private static class IntBox {

@@ -353,7 +353,7 @@ Request ID to track this action which will be processed asynchronously.
 
 Solr provides a repository abstraction to allow users to backup and restore their data to a variety of different storage systems.
 For example, a Solr cluster running on a local filesystem (e.g., EXT3) can store backup data on the same disk, on a remote network-mounted drive, in HDFS, or even in some popular "cloud storage" providers, depending on the 'repository' implementation chosen.
-Solr offers three different repository implementations out of the box (`LocalFileSystemRepository`, `HdfsBackupRepository`, and `GCSBackupRepository`), and allows users to create plugins for their own storage systems as needed.
+Solr offers multiple different repository implementations out of the box (`LocalFileSystemRepository`, `HdfsBackupRepository`, `GCSBackupRepository` and `S3BackupRepository`), and allows users to create plugins for their own storage systems as needed.
 
 Users can define any number of repositories in their `solr.xml` file.
 The backup and restore APIs described above allow users to select which of these definitions they want to use at runtime via the `repository` parameter.
