@@ -69,10 +69,11 @@ public abstract class AbstractMoveReplicaTestBase extends SolrCloudTestCase {
         .configure();
 
     // If Collection API is distributed let's not wait for Overseer.
-    if (isCollectionApiDistributed =
+    isCollectionApiDistributed =
         new CollectionAdminRequest.RequestApiDistributedProcessing()
             .process(cluster.getSolrClient())
-            .getIsCollectionApiDistributed()) {
+            .getIsCollectionApiDistributed();
+    if (isCollectionApiDistributed) {
       return;
     }
 
