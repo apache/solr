@@ -71,7 +71,8 @@ public final class QueryResultKey implements Accountable {
     if (this.sort == null) {
       this.sfields = List.of();
     } else {
-      this.sfields = Arrays.stream(sort.getSort()).filter(Objects::nonNull).collect(Collectors.toList());
+      this.sfields =
+          Arrays.stream(sort.getSort()).filter(Objects::nonNull).collect(Collectors.toList());
     }
     long ramSfields = RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
     for (SortField sf : sfields) {

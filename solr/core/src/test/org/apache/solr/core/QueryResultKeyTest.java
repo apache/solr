@@ -157,9 +157,8 @@ public class QueryResultKeyTest extends SolrTestCaseJ4 {
     query.add(new TermQuery(new Term("test", "field")), Occur.MUST);
 
     List<Query> filters =
-            Arrays.asList(
-                    new TermQuery(new Term("test", "field")),
-                    new TermQuery(new Term("test2", "field2")));
+        Arrays.asList(
+            new TermQuery(new Term("test", "field")), new TermQuery(new Term("test2", "field2")));
     QueryResultKey qrk1 = new QueryResultKey(query.build(), filters, sort1, 1);
 
     QueryResultKey qrk2 = new QueryResultKey(query.build(), filters, sort2, 1);
