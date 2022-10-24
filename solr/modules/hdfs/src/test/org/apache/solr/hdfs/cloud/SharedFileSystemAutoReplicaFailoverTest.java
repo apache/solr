@@ -30,7 +30,6 @@ import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
 import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
@@ -89,15 +88,6 @@ public class SharedFileSystemAutoReplicaFailoverTest extends AbstractFullDistrib
   private static final boolean DEBUG = true;
   private static MiniDFSCluster dfsCluster;
 
-  ThreadPoolExecutor executor =
-      new ExecutorUtil.MDCAwareThreadPoolExecutor(
-          0,
-          Integer.MAX_VALUE,
-          5,
-          TimeUnit.SECONDS,
-          new SynchronousQueue<>(),
-          new SolrNamedThreadFactory("testExecutor"));
-
   CompletionService<Object> completionService;
   Set<Future<Object>> pending;
   private final Map<String, String> collectionUlogDirMap = new HashMap<>();
@@ -141,6 +131,14 @@ public class SharedFileSystemAutoReplicaFailoverTest extends AbstractFullDistrib
   }
 
   public SharedFileSystemAutoReplicaFailoverTest() {
+    executor =
+        new ExecutorUtil.MDCAwareThreadPoolExecutor(
+            0,
+            Integer.MAX_VALUE,
+            5,
+            TimeUnit.SECONDS,
+            new SynchronousQueue<>(),
+            new SolrNamedThreadFactory("testExecutor"));
     completionService = new ExecutorCompletionService<>(executor);
     pending = new HashSet<>();
   }

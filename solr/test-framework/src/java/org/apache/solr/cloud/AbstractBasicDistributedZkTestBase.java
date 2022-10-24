@@ -97,13 +97,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
 
   private final boolean onlyLeaderIndexes = random().nextBoolean();
 
-  String t1 = "a_t";
-  String i1 = "a_i1";
-  String tlong = "other_tl1";
   String tsort = "t_sortable";
-
-  String oddField = "oddField_s";
-  String missingField = "ignore_exception__missing_but_valid_field_t";
 
   private Map<String, List<SolrClient>> otherCollectionClients = new HashMap<>();
 

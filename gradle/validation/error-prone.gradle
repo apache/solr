@@ -87,7 +87,6 @@ allprojects { prj ->
             '-Xep:EscapedEntity:OFF',
             '-Xep:Finally:OFF',
             '-Xep:FutureReturnValueIgnored:OFF',
-            '-Xep:HidingField:OFF',
             '-Xep:IdentityBinaryExpression:OFF',
             '-Xep:IdentityHashMapUsage:OFF',
             '-Xep:ImmutableEnumChecker:OFF',
