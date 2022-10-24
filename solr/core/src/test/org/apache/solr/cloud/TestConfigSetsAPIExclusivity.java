@@ -81,7 +81,7 @@ public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
     for (ConfigSetsAPIThread thread : threads) {
       thread.join();
     }
-    List<Exception> exceptions = new LinkedList<Exception>();
+    List<Exception> exceptions = new LinkedList<>();
     for (ConfigSetsAPIThread thread : threads) {
       exceptions.addAll(thread.getUnexpectedExceptions());
     }
@@ -107,7 +107,7 @@ public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
   private abstract static class ConfigSetsAPIThread extends Thread {
     private MiniSolrCloudCluster solrCluster;
     private int trials;
-    private List<Exception> unexpectedExceptions = new LinkedList<Exception>();
+    private List<Exception> unexpectedExceptions = new LinkedList<>();
     private List<String> allowedExceptions =
         Arrays.asList(
             new String[] {

@@ -60,8 +60,11 @@ http://localhost:8983/solr/admin/collections?action=CLUSTERSTATUS
 ====
 [.tab-label]*V2 API*
 
-We do not currently have a V2 equivalent.
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/cluster
 
+----
 ====
 --
 

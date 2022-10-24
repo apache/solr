@@ -720,9 +720,9 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     colsT1 =
         new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias);
     assertEquals(3, colsT1.size());
-    assertTrue(
+    assertFalse(
         "Preemptive creation appears to not be asynchronous anymore",
-        !colsT1.contains("myalias" + TRA + "2017-10-26"));
+        colsT1.contains("myalias" + TRA + "2017-10-26"));
     assertNumDocs("2017-10-23", 1, alias);
     assertNumDocs("2017-10-24", 1, alias);
     assertNumDocs("2017-10-25", 3, alias);
@@ -748,10 +748,10 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     List<String> cols;
     cols =
         new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias);
-    assertTrue(
+    assertFalse(
         "Preemptive creation happened twice and created a collection "
             + "further in the future than the configured time slice!",
-        !cols.contains("myalias" + TRA + "2017-10-27"));
+        cols.contains("myalias" + TRA + "2017-10-27"));
 
     validateCollectionCountAndAvailability(
         alias, 4, "Only 4 cols expected (preemptive create happened" + "twice among threads");
@@ -857,7 +857,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
 
     final List<String> cols =
         new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias);
-    assert !cols.isEmpty();
+    assertFalse(cols.isEmpty());
 
     assertArrayEquals(
         "expected reverse sorted",

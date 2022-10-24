@@ -65,7 +65,9 @@ dependencies {
 
   // Zookeeper dependency - some tests like HdfsCloudBackupRestore need this
   permitTestUnusedDeclared 'org.apache.zookeeper:zookeeper'
-  testImplementation 'org.apache.zookeeper:zookeeper'
+  testImplementation('org.apache.zookeeper:zookeeper', {
+    exclude group: "org.apache.yetus", module: "audience-annotations"
+  })
   // required for instantiating a Zookeeper server in tests or embedded
   testRuntimeOnly 'org.xerial.snappy:snappy-java'
 }
@@ -84,4 +86,11 @@ task copySolrCoreTestResources(type: Copy) {
 
 tasks.processTestResources.configure {
   dependsOn copySolrCoreTestResources
+}
+
+// Hadoop mini cluster doesn't handle reflection properly in JDK 16+
+// https://docs.gradle.org/current/userguide/upgrading_version_7.html#removes_implicit_add_opens_for_test_workers
+tasks.withType(Test).configureEach {
+  jvmArgs(["--add-opens=java.base/java.lang=ALL-UNNAMED",
+           "--add-opens=java.base/java.util=ALL-UNNAMED"])
 }

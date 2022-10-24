@@ -168,8 +168,8 @@ public class LegacyExpressionTest extends LegacyAbstractAnalyticsTest {
     String dateMath = (String) getStatResult("dmr", "dmme", VAL_TYPE.DATE);
     assertEquals(
         getRawResponse(),
-        new Date(Instant.parse(dateMath).toEpochMilli()),
-        dateMathParser.parseMath(math));
+        new Date(Instant.parse(dateMath).toEpochMilli()).toInstant(),
+        dateMathParser.parseMath(math).toInstant());
 
     math = (String) getStatResult("dmr", "cma", VAL_TYPE.STRING);
     dateMathParser = new DateMathParser();
@@ -179,8 +179,8 @@ public class LegacyExpressionTest extends LegacyAbstractAnalyticsTest {
     dateMath = (String) getStatResult("dmr", "dmma", VAL_TYPE.DATE);
     assertEquals(
         getRawResponse(),
-        new Date(Instant.parse(dateMath).toEpochMilli()),
-        dateMathParser.parseMath(math));
+        new Date(Instant.parse(dateMath).toEpochMilli()).toInstant(),
+        dateMathParser.parseMath(math).toInstant());
   }
 
   @Test

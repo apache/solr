@@ -27,7 +27,7 @@ class ScoreModeParser {
   @SuppressWarnings("serial")
   private static final Map<String, ScoreMode> lowerAndCapitalCase =
       Collections.unmodifiableMap(
-          new HashMap<String, ScoreMode>() {
+          new HashMap<>() {
             {
               for (ScoreMode s : ScoreMode.values()) {
                 put(s.name().toLowerCase(Locale.ROOT), s);

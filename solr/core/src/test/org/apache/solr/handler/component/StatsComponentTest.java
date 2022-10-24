@@ -1019,9 +1019,9 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     assertTrue(
         "schema no longer satisfies test requirements: foo_ss no longer multivalued",
         foo_ss.multiValued());
-    assertTrue(
+    assertFalse(
         "schema no longer satisfies test requirements: foo_ss's fieldtype no longer single valued",
-        !foo_ss.getType().isMultiValued());
+        foo_ss.getType().isMultiValued());
 
     assertQEx(
         "no failure trying to get stats facet on foo_ss",
@@ -1078,9 +1078,9 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     assertTrue(
         "schema no longer satisfies test requirements: cat_docValues no longer multivalued",
         catDocValues.multiValued());
-    assertTrue(
+    assertFalse(
         "schema no longer satisfies test requirements: cat_docValues fieldtype no longer single valued",
-        !catDocValues.getType().isMultiValued());
+        catDocValues.getType().isMultiValued());
     assertTrue(
         "schema no longer satisfies test requirements: cat_docValues no longer has docValues",
         catDocValues.hasDocValues());
@@ -1128,9 +1128,9 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     assertTrue(
         "schema no longer satisfies test requirements: cat_docValues no longer multivalued",
         catDocValues.multiValued());
-    assertTrue(
+    assertFalse(
         "schema no longer satisfies test requirements: cat_docValues fieldtype no longer single valued",
-        !catDocValues.getType().isMultiValued());
+        catDocValues.getType().isMultiValued());
     assertTrue(
         "schema no longer satisfies test requirements: cat_docValues no longer has docValues",
         catDocValues.hasDocValues());
@@ -1186,9 +1186,9 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     assertTrue(
         "schema no longer satisfies test requirements: cat_docValues no longer multivalued",
         catDocValues.multiValued());
-    assertTrue(
+    assertFalse(
         "schema no longer satisfies test requirements: cat_docValues fieldtype no longer single valued",
-        !catDocValues.getType().isMultiValued());
+        catDocValues.getType().isMultiValued());
     assertTrue(
         "schema no longer satisfies test requirements: cat_docValues no longer has docValues",
         catDocValues.hasDocValues());
@@ -1311,9 +1311,9 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     assertTrue(
         "schema no longer satisfies test requirements: cat_docValues no longer multivalued",
         catDocValues.multiValued());
-    assertTrue(
+    assertFalse(
         "schema no longer satisfies test requirements: cat_docValues fieldtype no longer single valued",
-        !catDocValues.getType().isMultiValued());
+        catDocValues.getType().isMultiValued());
     assertTrue(
         "schema no longer satisfies test requirements: cat_docValues no longer has docValues",
         catDocValues.hasDocValues());

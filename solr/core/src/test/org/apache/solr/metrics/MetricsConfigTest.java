@@ -91,7 +91,7 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
     MockMeterSupplier mockMeterSupplier = ((MockMeterSupplier) mgr.getMeterSupplier());
     assertEquals("bar", mockMeterSupplier.foo);
     MockTimerSupplier mockTimerSupplier = ((MockTimerSupplier) mgr.getTimerSupplier());
-    assertEquals(true, mockTimerSupplier.boolParam);
+    assertTrue(mockTimerSupplier.boolParam);
     assertEquals("strParam", mockTimerSupplier.strParam);
     assertEquals(-100, mockTimerSupplier.intParam);
 
@@ -118,7 +118,7 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
     NodeConfig cfg = loadNodeConfig("solr-metricsconfig1.xml");
     SolrMetricManager mgr =
         new SolrMetricManager(cfg.getSolrResourceLoader(), cfg.getMetricsConfig());
-    assertEquals("nullNumber", null, mgr.nullNumber());
+    assertNull("nullNumber", mgr.nullNumber());
     assertEquals("notANumber", -1, mgr.notANumber());
     assertEquals("nullNumber", "", mgr.nullString());
     assertTrue("nullObject", mgr.nullObject() instanceof Map);

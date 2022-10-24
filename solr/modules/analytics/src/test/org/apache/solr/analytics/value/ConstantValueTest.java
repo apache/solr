@@ -65,8 +65,8 @@ public class ConstantValueTest extends SolrTestCaseJ4 {
     uncasted = ConstantValue.creatorFunction.apply("1800-01-01T10:30:15.33Z");
     assertTrue(uncasted instanceof ConstantDateValue);
     assertEquals(
-        Date.from(Instant.parse("1800-01-01T10:30:15.33Z")),
-        ((ConstantDateValue) uncasted).getDate());
+        Instant.parse("1800-01-01T10:30:15.33Z"),
+        ((ConstantDateValue) uncasted).getDate().toInstant());
   }
 
   @Test
@@ -98,7 +98,7 @@ public class ConstantValueTest extends SolrTestCaseJ4 {
     ConstantBooleanValue val = new ConstantBooleanValue(true);
 
     assertTrue(val.exists());
-    assertEquals(true, val.getBoolean());
+    assertTrue(val.getBoolean());
     assertEquals("true", val.getString());
     assertEquals(Boolean.TRUE, val.getObject());
 
@@ -106,7 +106,7 @@ public class ConstantValueTest extends SolrTestCaseJ4 {
     counter.setValue(0);
     val.streamBooleans(
         value -> {
-          assertEquals(true, value);
+          assertTrue(value);
           assertEquals(0, counter.getInt());
           counter.setValue(1);
         });
@@ -128,14 +128,14 @@ public class ConstantValueTest extends SolrTestCaseJ4 {
     val = new ConstantBooleanValue(false);
 
     assertTrue(val.exists());
-    assertEquals(false, val.getBoolean());
+    assertFalse(val.getBoolean());
     assertEquals("false", val.getString());
     assertEquals(Boolean.FALSE, val.getObject());
 
     counter.setValue(0);
     val.streamBooleans(
         value -> {
-          assertEquals(false, value);
+          assertFalse(value);
           assertEquals(0, counter.getInt());
           counter.setValue(1);
         });
@@ -334,9 +334,9 @@ public class ConstantValueTest extends SolrTestCaseJ4 {
 
     assertTrue(val.exists());
     assertEquals(date.getTime(), val.getLong());
-    assertEquals(date, val.getDate());
+    assertEquals(date.toInstant(), val.getDate().toInstant());
     assertEquals("1800-01-01T10:30:15Z", val.getString());
-    assertEquals(date, val.getObject());
+    assertEquals(date.toInstant(), ((Date) val.getObject()).toInstant());
 
     TestIntValue counter = new TestIntValue();
     counter.setValue(0);
@@ -349,7 +349,7 @@ public class ConstantValueTest extends SolrTestCaseJ4 {
     counter.setValue(0);
     val.streamDates(
         value -> {
-          assertEquals(date, value);
+          assertEquals(date.toInstant(), value.toInstant());
           assertEquals(0, counter.getInt());
           counter.setValue(1);
         });
@@ -363,7 +363,7 @@ public class ConstantValueTest extends SolrTestCaseJ4 {
     counter.setValue(0);
     val.streamObjects(
         value -> {
-          assertEquals(date, value);
+          assertEquals(date.toInstant(), ((Date) value).toInstant());
           assertEquals(0, counter.getInt());
           counter.setValue(1);
         });

@@ -485,7 +485,7 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
                   } else {
                     fail(
                         String.format(
-                            Locale.ENGLISH, "There were more than one result: {}", response));
+                            Locale.ENGLISH, "There were more than one result: %s", response));
                   }
                 }
               } catch (Throwable e) {
@@ -600,7 +600,7 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
 
     public DocInfo(long version, int val1, long val2) {
       // must either be real positive version, or negative deleted version/indicator
-      assert version != 0;
+      assertNotEquals(0, version);
       this.version = version;
       this.intFieldValue = val1;
       this.longFieldValue = val2;

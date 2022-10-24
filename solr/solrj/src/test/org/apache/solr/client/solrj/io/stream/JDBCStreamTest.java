@@ -168,7 +168,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
             new FieldComparator("CODE", ComparatorOrder.ASCENDING));
     tuples = getTuples(stream);
 
-    assert (tuples.size() == 4);
+    assertEquals(4, tuples.size());
     assertOrderOf(tuples, "CODE", "NL", "NO", "NP", "US");
     assertOrderOf(tuples, "COUNTRY_NAME", "Netherlands", "Norway", "Nepal", "United States");
 
@@ -301,7 +301,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
       TupleStream selectStream =
           new SelectStream(
               jdbcStream,
-              new HashMap<String, String>() {
+              new HashMap<>() {
                 {
                   put("CODE", "code_s");
                   put("COUNTRY_NAME", "name_s");
@@ -768,7 +768,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
 
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
     tupleStream.open();
-    List<Tuple> tuples = new ArrayList<Tuple>();
+    List<Tuple> tuples = new ArrayList<>();
     for (Tuple t = tupleStream.read(); !t.EOF; t = tupleStream.read()) {
       tuples.add(t);
     }

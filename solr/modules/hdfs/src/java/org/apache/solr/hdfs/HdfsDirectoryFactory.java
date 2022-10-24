@@ -656,7 +656,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
       oldIndexPaths.add(ofs.getPath());
     }
 
-    Collections.sort(oldIndexPaths, Collections.reverseOrder());
+    oldIndexPaths.sort(Collections.reverseOrder());
 
     Set<String> livePaths = getLivePaths();
 

@@ -19,9 +19,9 @@ package org.apache.solr.prometheus.exporter;
 
 import java.util.Optional;
 import java.util.stream.Collectors;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.zookeeper.client.ConnectStringParser;
 
@@ -33,43 +33,34 @@ public class SolrClientFactory {
     this.settings = settings;
   }
 
-  public HttpSolrClient createStandaloneSolrClient(String solrHost) {
-    NoOpResponseParser responseParser = new NoOpResponseParser();
-    responseParser.setWriterType("json");
+  public Http2SolrClient createStandaloneSolrClient(String solrHost) {
+    Http2SolrClient http2SolrClient =
+        new Http2SolrClient.Builder(solrHost)
+            .idleTimeout(settings.getHttpReadTimeout())
+            .connectionTimeout(settings.getHttpConnectionTimeout())
+            .build();
 
-    HttpSolrClient.Builder standaloneBuilder = new HttpSolrClient.Builder();
+    http2SolrClient.setParser(new NoOpResponseParser("json"));
 
-    standaloneBuilder.withBaseSolrUrl(solrHost);
-
-    standaloneBuilder
-        .withConnectionTimeout(settings.getHttpConnectionTimeout())
-        .withSocketTimeout(settings.getHttpReadTimeout());
-
-    HttpSolrClient httpSolrClient = standaloneBuilder.build();
-    httpSolrClient.setParser(responseParser);
-
-    return httpSolrClient;
+    return http2SolrClient;
   }
 
   public CloudSolrClient createCloudSolrClient(String zookeeperConnectionString) {
-    NoOpResponseParser responseParser = new NoOpResponseParser();
-    responseParser.setWriterType("json");
-
     ConnectStringParser parser = new ConnectStringParser(zookeeperConnectionString);
 
-    var cloudBuilder =
-        new CloudLegacySolrClient.Builder(
-            parser.getServerAddresses().stream()
-                .map(address -> address.getHostString() + ":" + address.getPort())
-                .collect(Collectors.toList()),
-            Optional.ofNullable(parser.getChrootPath()));
+    CloudSolrClient client =
+        new CloudHttp2SolrClient.Builder(
+                parser.getServerAddresses().stream()
+                    .map(address -> address.getHostString() + ":" + address.getPort())
+                    .collect(Collectors.toList()),
+                Optional.ofNullable(parser.getChrootPath()))
+            .withInternalClientBuilder(
+                new Http2SolrClient.Builder()
+                    .idleTimeout(settings.getHttpReadTimeout())
+                    .connectionTimeout(settings.getHttpConnectionTimeout()))
+            .build();
 
-    cloudBuilder
-        .withConnectionTimeout(settings.getHttpConnectionTimeout())
-        .withSocketTimeout(settings.getHttpReadTimeout());
-
-    CloudSolrClient client = cloudBuilder.build();
-    client.setParser(responseParser);
+    client.setParser(new NoOpResponseParser("json"));
 
     client.connect();
 

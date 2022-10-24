@@ -157,7 +157,7 @@ public class ExplicitHLLTest extends SolrTestCase {
   @Test
   public void randomValuesTest() {
     final int explicitThreshold = 4096;
-    final HashSet<Long> canonical = new HashSet<Long>();
+    final HashSet<Long> canonical = new HashSet<>();
     final HLL hll = newHLL(explicitThreshold);
 
     for (int i = 0; i < explicitThreshold; i++) {
@@ -211,7 +211,7 @@ public class ExplicitHLLTest extends SolrTestCase {
     final LongHashSet internalSetA = hllA.explicitStorage;
     final LongHashSet internalSetB = hllB.explicitStorage;
 
-    assertTrue(internalSetA.equals(internalSetB));
+    assertEquals(internalSetA, internalSetB);
   }
 
   /**

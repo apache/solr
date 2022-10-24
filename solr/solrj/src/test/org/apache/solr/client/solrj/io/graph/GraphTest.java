@@ -109,7 +109,7 @@ public class GraphTest extends SolrCloudTestCase {
     paths = new HashSet<>();
     tuples = getTuples(stream);
 
-    assertTrue(tuples.size() == 2);
+    assertEquals(2, tuples.size());
 
     for (Tuple tuple : tuples) {
       paths.add(tuple.getStrings("path").toString());
@@ -130,7 +130,7 @@ public class GraphTest extends SolrCloudTestCase {
     paths = new HashSet<>();
     tuples = getTuples(stream);
 
-    assertTrue(tuples.size() == 2);
+    assertEquals(2, tuples.size());
 
     for (Tuple tuple : tuples) {
       paths.add(tuple.getStrings("path").toString());
@@ -150,7 +150,7 @@ public class GraphTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
     tuples = getTuples(stream);
 
-    assertTrue(tuples.size() == 0);
+    assertEquals(0, tuples.size());
 
     // Test with depth 2
 
@@ -163,7 +163,7 @@ public class GraphTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
     tuples = getTuples(stream);
 
-    assertTrue(tuples.size() == 0);
+    assertEquals(0, tuples.size());
 
     // Take out alex
     sParams = params("fq", "predicate_s:knows NOT to_s:alex");
@@ -175,7 +175,7 @@ public class GraphTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
     paths = new HashSet<>();
     tuples = getTuples(stream);
-    assertTrue(tuples.size() == 1);
+    assertEquals(1, tuples.size());
 
     for (Tuple tuple : tuples) {
       paths.add(tuple.getStrings("path").toString());
