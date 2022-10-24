@@ -13,7 +13,6 @@
      <New id="GzipHandler" class="org.eclipse.jetty.server.handler.gzip.GzipHandler">
        <Set name="minGzipSize"><Property name="jetty.gzip.minGzipSize" deprecated="gzip.minGzipSize" default="2048"/></Set>
        <Set name="inflateBufferSize"><Property name="jetty.gzip.inflateBufferSize" default="0"/></Set>
-       <Set name="deflaterPoolCapacity"><Property name="jetty.gzip.deflaterPoolCapacity" default="-1"/></Set>
        <Set name="includedMethodList"><Property name="jetty.gzip.includedMethodList" default="GET,POST" /></Set>
        <Set name="excludedMethodList"><Property name="jetty.gzip.excludedMethodList" default="" /></Set>
        <Set name="deflaterPool">
