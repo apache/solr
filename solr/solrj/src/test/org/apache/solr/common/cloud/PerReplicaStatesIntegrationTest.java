@@ -339,8 +339,8 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
         j.stop();
         j.start(true);
         stat = cluster.getZkClient().exists(DocCollection.getCollectionPath(PRS_COLL), null, true);
-        // ensure restart does not update the state.json, after addReplica/deleteReplica, 2 more updates hence at version 3
-        // on state.json version
+        // ensure restart does not update the state.json, after addReplica/deleteReplica, 2 more
+        // updates hence at version 3 on state.json version
         assertEquals(3, stat.getVersion());
       }
     } finally {
