@@ -1523,7 +1523,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     protected final boolean needsScores;
     protected final boolean expandNulls;
     private final MergeBoost boostDocs;
-    private int docBase = 0;
 
     protected AbstractBlockCollector(
         final String collapseField,

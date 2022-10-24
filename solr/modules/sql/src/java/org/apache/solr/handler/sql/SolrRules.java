@@ -104,8 +104,6 @@ class SolrRules {
    * Base class for planner rules that convert a relational expression to Solr calling convention.
    */
   abstract static class SolrConverterRule extends ConverterRule {
-    final Convention out = SolrRel.CONVENTION;
-
     SolrConverterRule(Class<? extends RelNode> clazz, String description) {
       this(clazz, relNode -> true, description);
     }

@@ -79,16 +79,16 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
 
   @SuppressForbidden(reason = "class is specific to log4j2")
   protected static class Log4j2Info extends LoggerInfo {
-    final Level level;
-
     Log4j2Info(String name, Level level) {
       super(name);
-      this.level = level;
+      if (level != null) {
+        this.level = level.toString();
+      }
     }
 
     @Override
     public String getLevel() {
-      return (level != null) ? level.toString() : null;
+      return (level != null) ? level : null;
     }
 
     @Override
@@ -98,7 +98,7 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
 
     @Override
     public boolean isSet() {
-      return (level != null) ? true : false;
+      return level != null;
     }
   }
 
