@@ -98,7 +98,6 @@ allprojects { prj ->
             '-Xep:MissingSummary:OFF',
             '-Xep:MixedMutabilityReturnType:OFF',
             '-Xep:MutablePublicArray:OFF', // this should be possible...
-            '-Xep:NarrowingCompoundAssignment:OFF',
             '-Xep:NegativeCharLiteral:OFF',
             '-Xep:NonAtomicVolatileUpdate:OFF',
             '-Xep:NonCanonicalType:OFF',

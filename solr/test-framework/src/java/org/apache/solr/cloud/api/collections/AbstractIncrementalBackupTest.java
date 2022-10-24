@@ -366,10 +366,10 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
             .get();
     try (FileInputStream fis = new FileInputStream(fileGetCorrupted)) {
       byte[] contents = fis.readAllBytes();
-      contents[contents.length - CodecUtil.footerLength() - 1] += 1;
-      contents[contents.length - CodecUtil.footerLength() - 2] += 1;
-      contents[contents.length - CodecUtil.footerLength() - 3] += 1;
-      contents[contents.length - CodecUtil.footerLength() - 4] += 1;
+      for (int i = 1; i < 5; i++) {
+        byte key = (byte) (contents.length - CodecUtil.footerLength() - i);
+        contents[key] = (byte) (contents[key] + 1);
+      }
       try (FileOutputStream fos = new FileOutputStream(fileGetCorrupted)) {
         fos.write(contents);
       }

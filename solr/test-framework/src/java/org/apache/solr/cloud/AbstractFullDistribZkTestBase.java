@@ -1733,7 +1733,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     // now check that the right # are on each shard
     theShards = shardToJetty.keySet();
-    int cnt = 0;
+    long cnt = 0;
     for (String s : theShards) {
       int times = shardToJetty.get(s).size();
       for (int i = 0; i < times; i++) {
