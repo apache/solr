@@ -107,7 +107,6 @@ allprojects { prj ->
             '-Xep:ObjectToString:OFF',
             '-Xep:ObjectsHashCodePrimitive:OFF',
             '-Xep:OperatorPrecedence:OFF',
-            '-Xep:ReferenceEquality:OFF',
             '-Xep:ReturnValueIgnored:OFF',
             '-Xep:SameNameButDifferent:OFF',
             '-Xep:ShortCircuitBoolean:OFF',

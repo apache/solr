@@ -597,7 +597,7 @@ public class LukeRequestHandler extends RequestHandlerBase {
     if (f.getDefaultValue() != null) {
       field.add("default", f.getDefaultValue());
     }
-    if (f == uniqueField) {
+    if (f.equals(uniqueField)) {
       field.add("uniqueKey", true);
     }
     if (ft.getIndexAnalyzer().getPositionIncrementGap(f.getName()) != 0) {

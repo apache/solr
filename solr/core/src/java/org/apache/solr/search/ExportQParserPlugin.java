@@ -96,7 +96,7 @@ public class ExportQParserPlugin extends QParserPlugin {
     @Override
     public Query rewrite(IndexReader reader) throws IOException {
       Query q = mainQuery.rewrite(reader);
-      if (q == mainQuery) {
+      if (q.equals(mainQuery)) {
         return super.rewrite(reader);
       } else {
         return clone().wrap(q);

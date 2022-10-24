@@ -640,7 +640,7 @@ public class IndexSchema {
         }
 
         // Unless the uniqueKeyField is marked 'required=false' then make sure it exists
-        if (Boolean.FALSE != explicitRequiredProp.get(uniqueKeyFieldName)) {
+        if (!Boolean.FALSE.equals(explicitRequiredProp.get(uniqueKeyFieldName))) {
           uniqueKeyField.required = true;
           requiredFields.add(uniqueKeyField);
         }

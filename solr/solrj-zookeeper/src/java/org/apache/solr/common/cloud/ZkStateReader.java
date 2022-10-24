@@ -30,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -352,7 +353,7 @@ public class ZkStateReader implements SolrCloseable {
                 }
               }
             }
-            stateHasChanged.set(oldState != watch.currentState);
+            stateHasChanged.set(!Objects.equals(oldState, watch.currentState));
             return watch;
           });
 

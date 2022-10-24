@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -774,7 +775,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     Slice slice = docCollection.getSlices().iterator().next();
     Replica newLeader = null;
     for (Replica replica : slice.getReplicas()) {
-      if (slice.getLeader() == replica) continue;
+      if (Objects.equals(slice.getLeader(), replica)) continue;
       newLeader = replica;
       break;
     }
@@ -1114,9 +1115,9 @@ public class TestTlogReplica extends SolrCloudTestCase {
         CloudDescriptor cloudDescriptor = solrCore.getCoreDescriptor().getCloudDescriptor();
         Slice slice = docCollection.getSlice(cloudDescriptor.getShardId());
         Replica replica = docCollection.getReplica(cloudDescriptor.getCoreNodeName());
-        if (slice.getLeader().equals(replica) && isLeader) {
+        if (Objects.equals(slice.getLeader(), replica) && isLeader) {
           rs.add(solrCore);
-        } else if (!slice.getLeader().equals(replica) && !isLeader) {
+        } else if (!Objects.equals(slice.getLeader(), replica) && !isLeader) {
           rs.add(solrCore);
         }
       }
@@ -1151,9 +1152,9 @@ public class TestTlogReplica extends SolrCloudTestCase {
         CloudDescriptor cloudDescriptor = solrCore.getCoreDescriptor().getCloudDescriptor();
         Slice slice = docCollection.getSlice(cloudDescriptor.getShardId());
         Replica replica = docCollection.getReplica(cloudDescriptor.getCoreNodeName());
-        if (slice.getLeader() == replica && isLeader) {
+        if (Objects.equals(slice.getLeader(), replica) && isLeader) {
           rs.add(solrRunner);
-        } else if (slice.getLeader() != replica && !isLeader) {
+        } else if (!Objects.equals(slice.getLeader(), replica) && !isLeader) {
           rs.add(solrRunner);
         }
       }
