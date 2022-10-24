@@ -1261,7 +1261,7 @@ public class FieldCacheImpl implements FieldCache {
   public SortedSetDocValues getDocTermOrds(LeafReader reader, String field, BytesRef prefix)
       throws IOException {
     // not a general purpose filtering mechanism...
-    assert prefix == null || prefix == INT32_TERM_PREFIX || prefix == INT64_TERM_PREFIX;
+    assert prefix == null || INT32_TERM_PREFIX.equals(prefix) || INT64_TERM_PREFIX.equals(prefix);
 
     SortedSetDocValues dv = reader.getSortedSetDocValues(field);
     if (dv != null) {

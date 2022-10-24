@@ -331,7 +331,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   @VisibleForTesting
   ElevationProvider getElevationProvider(IndexReader reader, SolrCore core) {
     synchronized (LOCK) {
-      if (cacheElevationProvider != null && cacheIndexReader.get() == reader) {
+      if (cacheElevationProvider != null && Objects.equals(cacheIndexReader.get(), reader)) {
         return cacheElevationProvider; // cache hit !
       }
 

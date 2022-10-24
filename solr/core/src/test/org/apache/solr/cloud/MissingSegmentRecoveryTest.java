@@ -69,7 +69,7 @@ public class MissingSegmentRecoveryTest extends SolrCloudTestCase {
 
     DocCollection state = getCollectionState(collection);
     leader = state.getLeader("shard1");
-    replica = getRandomReplica(state.getSlice("shard1"), (r) -> leader != r);
+    replica = getRandomReplica(state.getSlice("shard1"), (r) -> !leader.equals(r));
   }
 
   @After

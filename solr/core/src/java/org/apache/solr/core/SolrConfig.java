@@ -417,7 +417,7 @@ public class SolrConfig implements MapSerializable {
           pe);
     }
 
-    if (version == Version.LATEST && !versionWarningAlreadyLogged.getAndSet(true)) {
+    if (Objects.equals(version, Version.LATEST) && !versionWarningAlreadyLogged.getAndSet(true)) {
       log.warn(
           "You should not use LATEST as luceneMatchVersion property: "
               + "if you use this setting, and then Solr upgrades to a newer release of Lucene, "

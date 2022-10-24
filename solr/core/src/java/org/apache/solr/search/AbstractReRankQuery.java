@@ -77,7 +77,7 @@ public abstract class AbstractReRankQuery extends RankQuery {
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     Query q = mainQuery.rewrite(reader);
-    if (q != mainQuery) {
+    if (!q.equals(mainQuery)) {
       return rewrite(q);
     }
     return super.rewrite(reader);

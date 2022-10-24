@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.Terms;
@@ -596,7 +597,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
 
     // The middle should never be the last, since that means that we won't actually do a split.
     // Minimising the error (above) should already ensure this never happens.
-    assert middle != last;
+    assert !Objects.equals(middle, last);
 
     // Make sure to include the shard's current range in the new ranges so we don't create useless
     // empty shards.
