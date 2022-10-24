@@ -16,6 +16,13 @@
        <Set name="deflaterPoolCapacity"><Property name="jetty.gzip.deflaterPoolCapacity" default="-1"/></Set>
        <Set name="includedMethodList"><Property name="jetty.gzip.includedMethodList" default="GET,POST" /></Set>
        <Set name="excludedMethodList"><Property name="jetty.gzip.excludedMethodList" default="" /></Set>
+       <Set name="deflaterPool">
+         <New class="org.eclipse.jetty.util.compression.DeflaterPool">
+           <Arg type="int"><Property name="jetty.gzip.deflaterPool.capacity" deprecated="jetty.gzip.deflaterPoolCapacity" default="-1"/></Arg>
+           <Arg type="int"><Property name="jetty.gzip.deflaterPool.compressionLevel" deprecated="jetty.gzip.compressionLevel" default="-1"/></Arg>
+           <Arg type="boolean"><Property name="jetty.gzip.deflaterPool.noWrap" default="true"/></Arg>
+         </New>
+       </Set>
      </New>
    </Arg>
  </Call>
