@@ -500,11 +500,6 @@ class RetrieveField {
   final RetrieveFieldType testFieldType;
 
   RetrieveField(IndexSchema schema, String name, String type, Map<String, String> opts) {
-
-    Map<String, String> fullOpts = new HashMap<>(opts);
-    fullOpts.put("name", name);
-    fullOpts.put("type", type);
-
     this.name = name;
     this.type = type;
     this.schemaField = schema.newField(name, type, opts);

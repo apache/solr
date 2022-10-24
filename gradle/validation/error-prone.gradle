@@ -98,8 +98,7 @@ allprojects { prj ->
             '-Xep:LogicalAssignment:OFF',
             '-Xep:MissingSummary:OFF',
             '-Xep:MixedMutabilityReturnType:OFF',
-            '-Xep:ModifiedButNotUsed:OFF',
-            '-Xep:MutablePublicArray:OFF',
+            '-Xep:MutablePublicArray:OFF', // this should be possible...
             '-Xep:NarrowingCompoundAssignment:OFF',
             '-Xep:NegativeCharLiteral:OFF',
             '-Xep:NonAtomicVolatileUpdate:OFF',

@@ -21,7 +21,6 @@ import static org.hamcrest.CoreMatchers.containsString;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -33,7 +32,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.PluginInfo;
-import org.apache.solr.search.QueryParsing;
 import org.apache.solr.util.circuitbreaker.CPUCircuitBreaker;
 import org.apache.solr.util.circuitbreaker.CircuitBreaker;
 import org.apache.solr.util.circuitbreaker.CircuitBreakerManager;
@@ -79,11 +77,6 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
   }
 
   public void testCBAlwaysTrips() {
-    HashMap<String, String> args = new HashMap<String, String>();
-
-    args.put(QueryParsing.DEFTYPE, CircuitBreaker.NAME);
-    args.put(CommonParams.FL, "id");
-
     removeAllExistingCircuitBreakers();
 
     PluginInfo pluginInfo =
@@ -104,11 +97,6 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
   }
 
   public void testCBFakeMemoryPressure() {
-    HashMap<String, String> args = new HashMap<String, String>();
-
-    args.put(QueryParsing.DEFTYPE, CircuitBreaker.NAME);
-    args.put(CommonParams.FL, "id");
-
     removeAllExistingCircuitBreakers();
 
     PluginInfo pluginInfo =
@@ -130,10 +118,6 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
   public void testBuildingMemoryPressure() {
     ExecutorService executor =
         ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("TestCircuitBreaker"));
-    HashMap<String, String> args = new HashMap<String, String>();
-
-    args.put(QueryParsing.DEFTYPE, CircuitBreaker.NAME);
-    args.put(CommonParams.FL, "id");
 
     AtomicInteger failureCount = new AtomicInteger();
 
