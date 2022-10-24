@@ -663,7 +663,6 @@ public class SolrRequestParsers {
   }
 
   public static boolean isMultipart(HttpServletRequest req) {
-    // Jetty utilities
     String ct = req.getContentType();
     return ct != null && ct.startsWith("multipart/form-data");
   }
