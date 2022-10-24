@@ -75,6 +75,7 @@ import org.apache.solr.handler.admin.api.SingleCoreStatusAPI;
 import org.apache.solr.handler.admin.api.SplitCoreAPI;
 import org.apache.solr.handler.admin.api.SwapCoresAPI;
 import org.apache.solr.handler.admin.api.UnloadCoreAPI;
+import org.apache.solr.handler.replication.BackupAPI;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -364,6 +365,11 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     void call() throws Exception {
       op.execute(this);
     }
+  }
+
+  @Override
+  public Collection<Class<? extends JerseyResource>> getJerseyResources() {
+    return List.of(BackupAPI.class);
   }
 
   @Override
