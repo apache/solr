@@ -149,7 +149,7 @@ public abstract class LogWatcher<E> {
     String slf4jImpl;
 
     try {
-      slf4jImpl = LoggerFactory.getILoggerFactory().getClass().toString().replace("class ", "");
+      slf4jImpl = LoggerFactory.getILoggerFactory().getClass().getName();
       log.debug("SLF4J impl is {}", slf4jImpl);
       if (fname == null) {
         if ("org.apache.logging.slf4j.Log4jLoggerFactory".equals(slf4jImpl)) {
