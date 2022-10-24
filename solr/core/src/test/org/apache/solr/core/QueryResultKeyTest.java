@@ -109,7 +109,6 @@ public class QueryResultKeyTest extends SolrTestCaseJ4 {
   }
 
   public void testCreateKeyWithNullFilterList() {
-
     Sort sort = new Sort(new SortField("test", SortField.Type.INT));
     BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(new TermQuery(new Term("test", "field")), Occur.MUST);
@@ -119,8 +118,6 @@ public class QueryResultKeyTest extends SolrTestCaseJ4 {
   }
 
   public void testCreateKeyWithNullFilterListAndNullSort() {
-
-
     BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(new TermQuery(new Term("test", "field")), Occur.MUST);
 
@@ -137,14 +134,14 @@ public class QueryResultKeyTest extends SolrTestCaseJ4 {
     query.add(new TermQuery(new Term("test", "field")), Occur.MUST);
 
     List<Query> filters =
-        Arrays.<Query>asList(
+        Arrays.asList(
             new TermQuery(new Term("test", "field")),
             new TermQuery(new Term("test2", "field2")),
             null);
     QueryResultKey qrk1 = new QueryResultKey(query.build(), filters, sort, 1);
 
     List<Query> filters2 =
-        Arrays.<Query>asList(
+        Arrays.asList(
             new TermQuery(new Term("test2", "field2")), new TermQuery(new Term("test", "field")));
     QueryResultKey qrk2 = new QueryResultKey(query.build(), filters2, sort, 1);
     assertKeyEquals(qrk1, qrk2);
@@ -160,7 +157,7 @@ public class QueryResultKeyTest extends SolrTestCaseJ4 {
     query.add(new TermQuery(new Term("test", "field")), Occur.MUST);
 
     List<Query> filters =
-            Arrays.<Query>asList(
+            Arrays.asList(
                     new TermQuery(new Term("test", "field")),
                     new TermQuery(new Term("test2", "field2")));
     QueryResultKey qrk1 = new QueryResultKey(query.build(), filters, sort1, 1);
