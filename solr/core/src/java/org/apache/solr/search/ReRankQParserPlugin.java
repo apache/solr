@@ -90,7 +90,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
         float firstPassScore, boolean secondPassMatches, float secondPassScore) {
       float score = firstPassScore;
       if (secondPassMatches) {
-        score += reRankWeight * secondPassScore;
+        score = (float) (score + reRankWeight * secondPassScore);
       }
       return score;
     }

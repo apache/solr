@@ -246,7 +246,7 @@ public class TestJSONParser extends SolrTestCaseJ4 {
       JSONParser parser = getParser(new String(arr));
       parser.setFlags(random().nextInt()); // set random parser flags
 
-      int ret = 0;
+      double ret = 0;
       try {
         for (; ; ) {
           int ev = parser.nextEvent();
