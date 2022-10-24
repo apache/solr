@@ -50,7 +50,7 @@ public final class StartupLoggingUtils {
   }
 
   public static String getLoggerImplStr() { // nowarn
-    return loggerFactory.getClass().toString().replace("class ", "");
+    return loggerFactory.getClass().getName();
   }
 
   /**
