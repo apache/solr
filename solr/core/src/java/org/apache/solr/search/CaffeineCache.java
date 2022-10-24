@@ -275,7 +275,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase
   @Override
   public V put(K key, V val) {
     inserts.increment();
-    V old = cache.asMap().put(key, val);
+    V old = cache.asMap().compute(key, (k,v) -> val);
     recordRamBytes(key, old, val);
     return old;
   }
