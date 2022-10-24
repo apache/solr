@@ -62,7 +62,7 @@ public class LTRScoringQuery extends Query implements Accountable {
   private final boolean extractAllFeatures;
   private final LTRThreadModule ltrThreadMgr;
 
-  private final boolean missingFeatures;
+  private final boolean isNullSameAsZero;
 
   // limits the number of threads per query, so that multiple requests can be serviced
   // simultaneously
@@ -80,19 +80,19 @@ public class LTRScoringQuery extends Query implements Accountable {
 
 
   public LTRScoringQuery(LTRScoringModel ltrScoringModel) {
-    this(false, ltrScoringModel, Collections.<String, String[]>emptyMap(), false, null);
+    this(true, ltrScoringModel, Collections.<String, String[]>emptyMap(), false, null);
   }
 
   public LTRScoringQuery(LTRScoringModel ltrScoringModel, boolean extractAllFeatures) {
-    this(false, ltrScoringModel, Collections.<String, String[]>emptyMap(), extractAllFeatures, null);
+    this(true, ltrScoringModel, Collections.<String, String[]>emptyMap(), extractAllFeatures, null);
   }
 
-  public LTRScoringQuery(boolean missingFeatures, LTRScoringModel ltrScoringModel) {
-    this(missingFeatures, ltrScoringModel, Collections.<String, String[]>emptyMap(), false, null);
+  public LTRScoringQuery(boolean isNullSameAsZero, LTRScoringModel ltrScoringModel) {
+    this(isNullSameAsZero, ltrScoringModel, Collections.<String, String[]>emptyMap(), false, null);
   }
 
-  public LTRScoringQuery(boolean missingFeatures, LTRScoringModel ltrScoringModel, boolean extractAllFeatures) {
-    this(missingFeatures, ltrScoringModel, Collections.<String, String[]>emptyMap(), extractAllFeatures, null);
+  public LTRScoringQuery(boolean isNullSameAsZero, LTRScoringModel ltrScoringModel, boolean extractAllFeatures) {
+    this(isNullSameAsZero, ltrScoringModel, Collections.<String, String[]>emptyMap(), extractAllFeatures, null);
   }
 
   public LTRScoringQuery(
@@ -100,7 +100,7 @@ public class LTRScoringQuery extends Query implements Accountable {
           Map<String, String[]> externalFeatureInfo,
           boolean extractAllFeatures,
           LTRThreadModule ltrThreadMgr) {
-    this.missingFeatures = false;
+    this.isNullSameAsZero = true;
     this.ltrScoringModel = ltrScoringModel;
     this.efi = externalFeatureInfo;
     this.extractAllFeatures = extractAllFeatures;
@@ -113,12 +113,12 @@ public class LTRScoringQuery extends Query implements Accountable {
   }
 
   public LTRScoringQuery(
-      boolean missingFeatures,
+      boolean isNullSameAsZero,
       LTRScoringModel ltrScoringModel,
       Map<String, String[]> externalFeatureInfo,
       boolean extractAllFeatures,
       LTRThreadModule ltrThreadMgr) {
-    this.missingFeatures = missingFeatures;
+    this.isNullSameAsZero = isNullSameAsZero;
     this.ltrScoringModel = ltrScoringModel;
     this.efi = externalFeatureInfo;
     this.extractAllFeatures = extractAllFeatures;
@@ -370,13 +370,13 @@ public class LTRScoringQuery extends Query implements Accountable {
     private final String name;
     private float value;
 
-    private Float withNullValue;
+    private Float nullableValue;
     private boolean used;
 
     FeatureInfo(String n, float v, Float nv, boolean u) {
       name = n;
       value = v;
-      withNullValue = nv;
+      nullableValue = nv;
       used = u;
     }
 
@@ -384,8 +384,8 @@ public class LTRScoringQuery extends Query implements Accountable {
       this.value = value;
     }
 
-    public void setWithNullValue(Float value) {
-      this.withNullValue = value;
+    public void setNullableValue(Float value) {
+      this.nullableValue = value;
     }
 
     public String getName() {
@@ -396,8 +396,8 @@ public class LTRScoringQuery extends Query implements Accountable {
       return value;
     }
 
-    public float getWithNullValue() {
-      return withNullValue;
+    public Float getNullableValue() {
+      return nullableValue;
     }
 
     public boolean isUsed() {
@@ -416,7 +416,7 @@ public class LTRScoringQuery extends Query implements Accountable {
     private final Feature.FeatureWeight[] modelFeatureWeights;
     private final float[] modelFeatureValuesNormalized;
 
-    private final Float[] modelFeatureValuesNormalizedWithMissingBranch;
+    private final Float[] modelFeatureValuesNormalizedWithNulls;
     private final Feature.FeatureWeight[] extractedFeatureWeights;
 
     // List of all the feature names, values - used for both scoring and logging
@@ -449,7 +449,7 @@ public class LTRScoringQuery extends Query implements Accountable {
       this.extractedFeatureWeights = extractedFeatureWeights;
       this.modelFeatureWeights = modelFeatureWeights;
       this.modelFeatureValuesNormalized = new float[modelFeatureWeights.length];
-      this.modelFeatureValuesNormalizedWithMissingBranch = new Float[modelFeatureWeights.length];
+      this.modelFeatureValuesNormalizedWithNulls = new Float[modelFeatureWeights.length];
       this.featuresInfo = new FeatureInfo[allFeaturesSize];
       setFeaturesInfo();
     }
@@ -503,21 +503,21 @@ public class LTRScoringQuery extends Query implements Accountable {
       return ltrScoringModel.score(modelFeatureValuesNormalized);
     }
 
-    private float makeNormalizedFeaturesAndScoreWithMissingBranch() {
+    private float makeNormalizedFeaturesAndScoreWithNulls() {
       int pos = 0;
       for (final Feature.FeatureWeight feature : modelFeatureWeights) {
         final int featureId = feature.getIndex();
         FeatureInfo fInfo = featuresInfo[featureId];
         // not checking for finfo == null as that would be a bug we should catch
         if (fInfo.isUsed()) {
-          modelFeatureValuesNormalizedWithMissingBranch[pos] = fInfo.getWithNullValue();
+          modelFeatureValuesNormalizedWithNulls[pos] = fInfo.getNullableValue();
         } else {
-          modelFeatureValuesNormalizedWithMissingBranch[pos] = Float.NaN;
+          modelFeatureValuesNormalizedWithNulls[pos] = Float.NaN;
         }
         pos++;
       }
-      ltrScoringModel.normalizeFeaturesInPlaceWithMissingBranch(modelFeatureValuesNormalizedWithMissingBranch);
-      return ltrScoringModel.scoreWithMissingBranch(modelFeatureValuesNormalizedWithMissingBranch);
+      ltrScoringModel.normalizeFeaturesInPlaceWithNulls(modelFeatureValuesNormalizedWithNulls);
+      return ltrScoringModel.scoreNullFeatures(modelFeatureValuesNormalizedWithNulls);
     }
 
     @Override
@@ -525,7 +525,7 @@ public class LTRScoringQuery extends Query implements Accountable {
 
       final Explanation[] explanations = new Explanation[this.featuresInfo.length];
       for (final Feature.FeatureWeight feature : extractedFeatureWeights) {
-        if (missingFeatures) {
+        if (!isNullSameAsZero) {
           explanations[feature.getIndex()] = feature.explainWithMissingBranch(context, doc);
         }
         else {
@@ -553,7 +553,7 @@ public class LTRScoringQuery extends Query implements Accountable {
         // need to set default value everytime as the default value is used in 'dense'
         // mode even if used=false
         featuresInfo[featId].setValue(value);
-        featuresInfo[featId].setWithNullValue(Float.NaN);
+        featuresInfo[featId].setNullableValue(Float.NaN);
         featuresInfo[featId].setUsed(false);
       }
     }
@@ -672,12 +672,12 @@ public class LTRScoringQuery extends Query implements Accountable {
               Feature.FeatureWeight scFW = (Feature.FeatureWeight) subScorer.getWeight();
               final int featureId = scFW.getIndex();
               featuresInfo[featureId].setValue(subScorer.score());
-              featuresInfo[featureId].setWithNullValue(subScorer.score());
+              featuresInfo[featureId].setNullableValue(subScorer.score());
               featuresInfo[featureId].setUsed(true);
             }
           }
-          if (missingFeatures) {
-            return makeNormalizedFeaturesAndScoreWithMissingBranch();
+          if (!isNullSameAsZero) {
+            return makeNormalizedFeaturesAndScoreWithNulls();
           }
           else {
             return makeNormalizedFeaturesAndScore();
@@ -763,13 +763,13 @@ public class LTRScoringQuery extends Query implements Accountable {
                 Feature.FeatureWeight scFW = (Feature.FeatureWeight) scorer.getWeight();
                 final int featureId = scFW.getIndex();
                 featuresInfo[featureId].setValue(scorer.score());
-                featuresInfo[featureId].setWithNullValue(scorer.score());
+                featuresInfo[featureId].setNullableValue(scorer.score());
                 featuresInfo[featureId].setUsed(true);
               }
             }
           }
-          if (missingFeatures) {
-            return makeNormalizedFeaturesAndScoreWithMissingBranch();
+          if (!isNullSameAsZero) {
+            return makeNormalizedFeaturesAndScoreWithNulls();
           }
           else {
             return makeNormalizedFeaturesAndScore();

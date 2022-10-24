@@ -122,22 +122,22 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
             "{\"weights\":{\"featureC1\":5.0, \"featureC2\":25.0}}");
   }
 
-  protected void loadFeaturesAndModelsWithNull() throws Exception {
+  protected void loadFeaturesAndModelsWithNulls() throws Exception {
     loadFeatures("multipleadditivetreesmodel_features_with_missing_branch.json");
     loadModels("multipleadditivetreesmodel_with_missing_branch.json");
     loadModels("multipleadditivetreesmodel_with_missing_branch_for_interleaving.json");
   }
 
   @Test
-  public void featureTransformer_shouldWorkInSparseFormat_missingFeatures() throws Exception {
-    loadFeaturesAndModelsWithNull();
+  public void featureTransformer_shouldWorkInSparseFormat_withNulls() throws Exception {
+    loadFeaturesAndModelsWithNulls();
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
-    query.add("fl", "*, score,features:[fv format=sparse missingFeatures=true]");
+    query.add("fl", "*, score,features:[fv format=sparse isNullSameAsZero=false]");
     query.add("rows", "10");
     query.add("debugQuery", "true");
-    query.add("rq", "{!ltr model=multipleadditivetreesmodel missingFeatures=true reRankDocs=10 efi.user_query=w3 efi.user_device=0}");
+    query.add("rq", "{!ltr model=multipleadditivetreesmodel isNullSameAsZero=false reRankDocs=10 efi.user_query=w3 efi.user_device=0}");
 
     String[] expectedFeatureVectors =
             new String[] {
@@ -161,15 +161,15 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
   }
 
   @Test
-  public void featureTransformer_shouldWorkInDenseFormat_missingFeatures() throws Exception {
-    loadFeaturesAndModelsWithNull();
+  public void featureTransformer_shouldWorkInDenseFormat_withNulls() throws Exception {
+    loadFeaturesAndModelsWithNulls();
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
-    query.add("fl", "*, score,features:[fv format=dense missingFeatures=true]");
+    query.add("fl", "*, score,features:[fv format=dense isNullSameAsZero=false]");
     query.add("rows", "10");
     query.add("debugQuery", "true");
-    query.add("rq", "{!ltr model=multipleadditivetreesmodel missingFeatures=true reRankDocs=10 efi.user_query=w3 efi.user_device=0}");
+    query.add("rq", "{!ltr model=multipleadditivetreesmodel isNullSameAsZero=false reRankDocs=10 efi.user_query=w3 efi.user_device=0}");
 
     String[] expectedFeatureVectors =
             new String[] {
@@ -282,18 +282,18 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
   }
 
   @Test
-  public void interleaving_featureTransformer_shouldWorkInSparseFormat_withMissingFeatures() throws Exception {
+  public void interleaving_featureTransformer_shouldWorkInSparseFormat_withNulls() throws Exception {
     TeamDraftInterleaving.setRANDOM(
             new Random(10101011)); // Random Boolean Choices Generation from Seed: [0,0,1]
-    loadFeaturesAndModelsWithNull();
+    loadFeaturesAndModelsWithNulls();
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
-    query.add("fl", "*, score,features:[fv format=sparse missingFeatures=true]");
+    query.add("fl", "*, score,features:[fv format=sparse isNullSameAsZero=false]");
     query.add("rows", "10");
     query.add("debugQuery", "true");
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
-    query.add("rq", "{!ltr model=multipleadditivetreesmodel model=multipleadditivetreesmodelinterleaving reRankDocs=10 missingFeatures=true efi.user_query='w5' efi.user_device=0}");
+    query.add("rq", "{!ltr model=multipleadditivetreesmodel model=multipleadditivetreesmodelinterleaving reRankDocs=10 isNullSameAsZero=false efi.user_query='w5' efi.user_device=0}");
 
     /*
     Doc1 = "constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-20)
@@ -327,18 +327,18 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
   }
 
   @Test
-  public void interleaving_featureTransformer_shouldWorkInDenseFormat_withMissingFeatures() throws Exception {
+  public void interleaving_featureTransformer_shouldWorkInDenseFormat_withNulls() throws Exception {
     TeamDraftInterleaving.setRANDOM(
             new Random(10101011)); // Random Boolean Choices Generation from Seed: [0,0,1]
-    loadFeaturesAndModelsWithNull();
+    loadFeaturesAndModelsWithNulls();
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
-    query.add("fl", "*, score,features:[fv format=dense missingFeatures=true]");
+    query.add("fl", "*, score,features:[fv format=dense isNullSameAsZero=false]");
     query.add("rows", "10");
     query.add("debugQuery", "true");
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
-    query.add("rq", "{!ltr model=multipleadditivetreesmodel model=multipleadditivetreesmodelinterleaving reRankDocs=10 missingFeatures=true efi.user_query='w5' efi.user_device=0}");
+    query.add("rq", "{!ltr model=multipleadditivetreesmodel model=multipleadditivetreesmodelinterleaving reRankDocs=10 isNullSameAsZero=false efi.user_query='w5' efi.user_device=0}");
 
     /*
     Doc1 = "constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-20)

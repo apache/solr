@@ -73,7 +73,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
   private static String DEFAULT_LOGGING_MODEL_NAME = "logging-model";
 
-  public static final String MISSING_FEATURES = "missingFeatures";
+  public static final String IS_NULL_SAME_ZERO = "isNullSameAsZero";
 
   private String fvCacheName;
   private String loggingModelName = DEFAULT_LOGGING_MODEL_NAME;
@@ -133,18 +133,18 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     SolrQueryRequestContextUtils.setFvStoreName(
         req, (fvStoreName == null ? defaultStore : fvStoreName));
 
-    boolean missingFeatures = false;
-    String missingFeatureExternalParameter = localparams.get(MISSING_FEATURES);
-    if (missingFeatureExternalParameter != null) {
-      missingFeatures = Boolean.parseBoolean(missingFeatureExternalParameter);
+    boolean isNullSameAsZero = true;
+    String isNullSameAsZeroExternalParameter = localparams.get(IS_NULL_SAME_ZERO);
+    if (isNullSameAsZeroExternalParameter != null) {
+      isNullSameAsZero = Boolean.parseBoolean(isNullSameAsZeroExternalParameter);
     }
 
     // Create and supply the feature logger to be used
     SolrQueryRequestContextUtils.setFeatureLogger(
-        req, createFeatureLogger(localparams.get(FV_FORMAT), missingFeatures));
+        req, createFeatureLogger(localparams.get(FV_FORMAT), isNullSameAsZero));
 
     return new FeatureTransformer(
-        name, localparams, req, (fvStoreName != null) /* hasExplicitFeatureStore */, missingFeatures);
+        name, localparams, req, (fvStoreName != null) /* hasExplicitFeatureStore */, isNullSameAsZero);
   }
 
   /**
@@ -154,7 +154,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
    *
    * @return a feature logger for the format specified.
    */
-  private FeatureLogger createFeatureLogger(String formatStr, boolean missingFeatures) {
+  private FeatureLogger createFeatureLogger(String formatStr, boolean isNullSameAsZero) {
     final FeatureLogger.FeatureFormat format;
     if (formatStr != null) {
       format = FeatureLogger.FeatureFormat.valueOf(formatStr.toUpperCase(Locale.ROOT));
@@ -164,7 +164,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     if (fvCacheName == null) {
       throw new IllegalArgumentException("a fvCacheName must be configured");
     }
-    return new CSVFeatureLogger(fvCacheName, format, csvKeyValueDelimiter, csvFeatureSeparator, missingFeatures);
+    return new CSVFeatureLogger(fvCacheName, format, csvKeyValueDelimiter, csvFeatureSeparator, isNullSameAsZero);
   }
 
   class FeatureTransformer extends DocTransformer {
@@ -192,7 +192,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     private FeatureLogger featureLogger;
     private boolean docsWereNotReranked;
 
-    private boolean missingFeatures;
+    private boolean isNullSameAsZero;
 
     /**
      * @param name Name of the field to be added in a document representing the feature vectors
@@ -202,12 +202,12 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
         SolrParams localparams,
         SolrQueryRequest req,
         boolean hasExplicitFeatureStore,
-        boolean missingFeatures) {
+        boolean isNullSameAsZero) {
       this.name = name;
       this.localparams = localparams;
       this.req = req;
       this.hasExplicitFeatureStore = hasExplicitFeatureStore;
-      this.missingFeatures = missingFeatures;
+      this.isNullSameAsZero = isNullSameAsZero;
     }
 
     @Override
@@ -244,7 +244,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
       final LoggingModel loggingModel = createLoggingModel(transformerFeatureStore);
       setupRerankingQueriesForLogging(
-              missingFeatures, transformerFeatureStore, transformerExternalFeatureInfo, loggingModel);
+              isNullSameAsZero, transformerFeatureStore, transformerExternalFeatureInfo, loggingModel);
       setupRerankingWeightsForLogging(context);
     }
 
@@ -288,18 +288,18 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
      * @param transformerExternalFeatureInfo explicit efi for the transformer
      */
     private void setupRerankingQueriesForLogging(
-        boolean missingFeatures,
+        boolean isNullSameAsZero,
         String transformerFeatureStore,
         Map<String, String[]> transformerExternalFeatureInfo,
         LoggingModel loggingModel) {
       if (docsWereNotReranked) { // no reranking query
         LTRScoringQuery loggingQuery =
             new LTRScoringQuery(
-                missingFeatures,
-                loggingModel,
-                transformerExternalFeatureInfo,
-                true /* extractAllFeatures */,
-                threadManager);
+                    isNullSameAsZero,
+                    loggingModel,
+                    transformerExternalFeatureInfo,
+                    true /* extractAllFeatures */,
+                    threadManager);
         rerankingQueries = new LTRScoringQuery[] {loggingQuery};
       } else {
         rerankingQueries = new LTRScoringQuery[rerankingQueriesFromContext.length];
@@ -323,13 +323,13 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
           for (int i = 0; i < rerankingQueries.length; i++) {
             rerankingQueries[i] =
                 new LTRScoringQuery(
-                    missingFeatures,
-                    matchingRerankingModel,
-                    (!transformerExternalFeatureInfo.isEmpty()
-                        ? transformerExternalFeatureInfo
-                        : rerankingQueries[i].getExternalFeatureInfo()),
-                    true /* extractAllFeatures */,
-                    threadManager);
+                        isNullSameAsZero,
+                        matchingRerankingModel,
+                        (!transformerExternalFeatureInfo.isEmpty()
+                                ? transformerExternalFeatureInfo
+                                : rerankingQueries[i].getExternalFeatureInfo()),
+                        true /* extractAllFeatures */,
+                        threadManager);
           }
         }
       }

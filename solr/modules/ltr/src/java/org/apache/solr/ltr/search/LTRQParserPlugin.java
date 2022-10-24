@@ -80,7 +80,7 @@ public class LTRQParserPlugin extends QParserPlugin
   /** query parser plugin:the param that selects the interleaving algorithm to use */
   public static final String INTERLEAVING_ALGORITHM = "interleavingAlgorithm";
 
-  public static final String MISSING_FEATURES = "missingFeatures";
+  public static final String IS_NULL_SAME_AS_ZERO = "isNullSameAsZero";
 
   @Override
   public void init(NamedList<?> args) {
@@ -161,10 +161,10 @@ public class LTRQParserPlugin extends QParserPlugin
       final String tranformerFeatureStoreName = SolrQueryRequestContextUtils.getFvStoreName(req);
       final Map<String, String[]> externalFeatureInfo = extractEFIParams(localParams);
 
-      boolean missingFeatures = false;
-      String[] missingFeatureExternalParameter = localParams.getParams(LTRQParserPlugin.MISSING_FEATURES);
-      if (missingFeatureExternalParameter != null) {
-        missingFeatures = Boolean.parseBoolean(missingFeatureExternalParameter[0]);
+      boolean isNullSameAsZero = true;
+      String[] isNullSameAsZeroExternalParameter = localParams.getParams(LTRQParserPlugin.IS_NULL_SAME_AS_ZERO);
+      if (isNullSameAsZeroExternalParameter != null) {
+        isNullSameAsZero = Boolean.parseBoolean(isNullSameAsZeroExternalParameter[0]);
       }
 
       LTRScoringQuery rerankingQuery = null;
@@ -196,19 +196,19 @@ public class LTRQParserPlugin extends QParserPlugin
             rerankingQuery =
                 rerankingQueries[i] =
                     new LTRInterleavingScoringQuery(
-                        missingFeatures,
+                            isNullSameAsZero,
+                            ltrScoringModel,
+                            externalFeatureInfo,
+                            featuresRequestedFromSameStore,
+                            threadManager);
+          } else {
+            rerankingQuery =
+                new LTRScoringQuery(
+                        isNullSameAsZero,
                         ltrScoringModel,
                         externalFeatureInfo,
                         featuresRequestedFromSameStore,
                         threadManager);
-          } else {
-            rerankingQuery =
-                new LTRScoringQuery(
-                    missingFeatures,
-                    ltrScoringModel,
-                    externalFeatureInfo,
-                    featuresRequestedFromSameStore,
-                    threadManager);
             rerankingQueries[i] = null;
           }
 

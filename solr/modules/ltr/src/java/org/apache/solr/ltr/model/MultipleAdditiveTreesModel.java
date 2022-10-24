@@ -305,7 +305,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
   }
 
   @Override
-  public float scoreWithMissingBranch(Float[] modelFeatureValuesNormalized) {
+  public float scoreNullFeatures(Float[] modelFeatureValuesNormalized) {
     float score = 0;
     for (final RegressionTree t : trees) {
       score += t.scoreWithMissingBranch(modelFeatureValuesNormalized);
@@ -506,17 +506,17 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
   @Override
   public Explanation explain(
           LeafReaderContext context, int doc, float finalScore, List<Explanation> featureExplanations) {
-    boolean missingFeatures = false;
+    boolean isNullSameAsZero = true;
     for (Explanation explain : featureExplanations) {
       if (Float.isNaN((Float) explain.getValue())) {
-        missingFeatures = true;
+        isNullSameAsZero = false;
         break;
       }
     }
 
     final List<Explanation> details = new ArrayList<>();
 
-    if (missingFeatures) {
+    if (!isNullSameAsZero) {
       final Float[] fv = new Float[featureExplanations.size()];
       int index = 0;
       for (final Explanation featureExplain : featureExplanations) {

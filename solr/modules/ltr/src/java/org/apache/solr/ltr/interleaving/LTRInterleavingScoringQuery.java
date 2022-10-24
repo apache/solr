@@ -32,12 +32,12 @@ public class LTRInterleavingScoringQuery extends LTRScoringQuery {
   }
 
   public LTRInterleavingScoringQuery(
-      boolean missingFeatures,
+      boolean isNullSameAsZero,
       LTRScoringModel ltrScoringModel,
       Map<String, String[]> externalFeatureInfo,
       boolean extractAllFeatures,
       LTRThreadModule ltrThreadMgr) {
-    super(missingFeatures, ltrScoringModel, externalFeatureInfo, extractAllFeatures, ltrThreadMgr);
+    super(isNullSameAsZero, ltrScoringModel, externalFeatureInfo, extractAllFeatures, ltrThreadMgr);
   }
 
   public Set<Integer> getPickedInterleavingDocIds() {
