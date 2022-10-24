@@ -78,7 +78,6 @@ public class LTRScoringQuery extends Query implements Accountable {
   // Original solr request
   private SolrQueryRequest request;
 
-
   public LTRScoringQuery(LTRScoringModel ltrScoringModel) {
     this(true, ltrScoringModel, Collections.<String, String[]>emptyMap(), false, null);
   }
@@ -416,7 +415,6 @@ public class LTRScoringQuery extends Query implements Accountable {
     private final Feature.FeatureWeight[] modelFeatureWeights;
     private final float[] modelFeatureValuesNormalized;
 
-    private final Float[] modelFeatureValuesNormalizedWithNulls;
     private final Feature.FeatureWeight[] extractedFeatureWeights;
 
     // List of all the feature names, values - used for both scoring and logging
@@ -449,7 +447,6 @@ public class LTRScoringQuery extends Query implements Accountable {
       this.extractedFeatureWeights = extractedFeatureWeights;
       this.modelFeatureWeights = modelFeatureWeights;
       this.modelFeatureValuesNormalized = new float[modelFeatureWeights.length];
-      this.modelFeatureValuesNormalizedWithNulls = new Float[modelFeatureWeights.length];
       this.featuresInfo = new FeatureInfo[allFeaturesSize];
       setFeaturesInfo();
     }
@@ -459,7 +456,7 @@ public class LTRScoringQuery extends Query implements Accountable {
         String featName = extractedFeatureWeights[i].getName();
         int featId = extractedFeatureWeights[i].getIndex();
         float value = extractedFeatureWeights[i].getDefaultValue();
-        featuresInfo[featId] = new FeatureInfo(featName, value, Float.NaN, false);
+        featuresInfo[featId] = new FeatureInfo(featName, value, null, false);
       }
     }
 
@@ -504,6 +501,7 @@ public class LTRScoringQuery extends Query implements Accountable {
     }
 
     private float makeNormalizedFeaturesAndScoreWithNulls() {
+      Float[] modelFeatureValuesNormalizedWithNulls = new Float[modelFeatureWeights.length];
       int pos = 0;
       for (final Feature.FeatureWeight feature : modelFeatureWeights) {
         final int featureId = feature.getIndex();
@@ -517,7 +515,7 @@ public class LTRScoringQuery extends Query implements Accountable {
         pos++;
       }
       ltrScoringModel.normalizeFeaturesInPlaceWithNulls(modelFeatureValuesNormalizedWithNulls);
-      return ltrScoringModel.scoreNullFeatures(modelFeatureValuesNormalizedWithNulls);
+      return ltrScoringModel.scoreNullableFeatures(modelFeatureValuesNormalizedWithNulls);
     }
 
     @Override

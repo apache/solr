@@ -255,9 +255,9 @@ public class TestWrapperModel extends TestRerankBase {
     ++methodCount;
     Mockito.verify(wrappedModel, Mockito.times(1)).score(null);
 
-    // scoreNullFeatures : delegate
+    // scoreNullableFeatures : delegate
     Mockito.reset(wrappedModel);
-    wrapperModel.scoreNullFeatures(null);
+    wrapperModel.scoreNullableFeatures(null);
     ++methodCount;
     Mockito.verify(wrappedModel, Mockito.times(0)).score(null);
 

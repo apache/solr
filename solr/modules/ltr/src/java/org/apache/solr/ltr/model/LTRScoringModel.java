@@ -293,7 +293,7 @@ public abstract class LTRScoringModel implements Accountable {
    */
   public abstract float score(float[] modelFeatureValuesNormalized);
 
-  public float scoreNullFeatures(Float[] modelFeatureValuesNormalized) {
+  public float scoreNullableFeatures(Float[] modelFeatureValuesNormalized) {
     return 0;
   }
 

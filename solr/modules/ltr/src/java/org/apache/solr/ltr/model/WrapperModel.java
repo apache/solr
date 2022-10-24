@@ -153,8 +153,8 @@ public abstract class WrapperModel extends AdapterModel {
   }
 
   @Override
-  public float scoreNullFeatures(Float[] modelFeatureValuesNormalizedWithNulls) {
-    return model.scoreNullFeatures(modelFeatureValuesNormalizedWithNulls);
+  public float scoreNullableFeatures(Float[] modelFeatureValuesNormalizedWithNulls) {
+    return model.scoreNullableFeatures(modelFeatureValuesNormalizedWithNulls);
   }
 
   @Override

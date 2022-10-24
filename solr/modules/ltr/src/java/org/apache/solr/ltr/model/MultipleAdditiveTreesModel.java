@@ -305,7 +305,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
   }
 
   @Override
-  public float scoreNullFeatures(Float[] modelFeatureValuesNormalized) {
+  public float scoreNullableFeatures(Float[] modelFeatureValuesNormalized) {
     float score = 0;
     for (final RegressionTree t : trees) {
       score += t.scoreWithMissingBranch(modelFeatureValuesNormalized);
