@@ -17,8 +17,8 @@
 package org.apache.solr.schema;
 
 import static java.util.Optional.ofNullable;
-import static org.apache.lucene.codecs.lucene91.Lucene91HnswVectorsFormat.DEFAULT_BEAM_WIDTH;
-import static org.apache.lucene.codecs.lucene91.Lucene91HnswVectorsFormat.DEFAULT_MAX_CONN;
+import static org.apache.lucene.codecs.lucene94.Lucene94HnswVectorsFormat.DEFAULT_BEAM_WIDTH;
+import static org.apache.lucene.codecs.lucene94.Lucene94HnswVectorsFormat.DEFAULT_MAX_CONN;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -264,8 +264,9 @@ public class DenseVectorField extends FloatPointField {
         "Function queries are not supported for Dense Vector fields.");
   }
 
-  public Query getKnnVectorQuery(String fieldName, float[] vectorToSearch, int topK) {
-    return new KnnVectorQuery(fieldName, vectorToSearch, topK);
+  public Query getKnnVectorQuery(
+      String fieldName, float[] vectorToSearch, int topK, Query filterQuery) {
+    return new KnnVectorQuery(fieldName, vectorToSearch, topK, filterQuery);
   }
 
   /**

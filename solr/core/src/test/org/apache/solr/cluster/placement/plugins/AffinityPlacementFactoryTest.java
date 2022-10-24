@@ -18,7 +18,14 @@
 package org.apache.solr.cluster.placement.plugins;
 
 import java.lang.invoke.MethodHandles;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -29,8 +36,14 @@ import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
 import org.apache.solr.cluster.Shard;
 import org.apache.solr.cluster.SolrCollection;
-import org.apache.solr.cluster.placement.*;
+import org.apache.solr.cluster.placement.AttributeValues;
 import org.apache.solr.cluster.placement.Builders;
+import org.apache.solr.cluster.placement.DeleteReplicasRequest;
+import org.apache.solr.cluster.placement.PlacementContext;
+import org.apache.solr.cluster.placement.PlacementException;
+import org.apache.solr.cluster.placement.PlacementPlan;
+import org.apache.solr.cluster.placement.PlacementPlugin;
+import org.apache.solr.cluster.placement.ReplicaPlacement;
 import org.apache.solr.cluster.placement.impl.ModificationRequestImpl;
 import org.apache.solr.cluster.placement.impl.PlacementRequestImpl;
 import org.apache.solr.common.util.Pair;
@@ -276,7 +289,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     final int AZ2_TLOGPULL = 7;
 
     final int AZ3_NRT_LOWCORES = 4;
-    final int AZ3_NRT_HIGHCORES = 6;
+    // final int AZ3_NRT_HIGHCORES = 6;
     final int AZ3_TLOGPULL = 8;
 
     final String AZ1 = "AZ1";
@@ -793,7 +806,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
     assertEquals(4, pp.getReplicaPlacements().size());
     for (ReplicaPlacement rp : pp.getReplicaPlacements()) {
-      assertFalse("should not put any replicas on " + smallNode, rp.getNode().equals(smallNode));
+      assertNotEquals("should not put any replicas on " + smallNode, rp.getNode(), smallNode);
     }
   }
 
@@ -953,7 +966,6 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
 
     PlacementContext placementContext = clusterBuilder.buildPlacementContext();
     Map<String, Set<String>> nodeNamesByType = new HashMap<>();
-    Cluster cluster = placementContext.getCluster();
     AttributeValues attributeValues =
         placementContext
             .getAttributeFetcher()
@@ -980,7 +992,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     assertEquals("expected 3 placements: " + pp, 3, pp.getReplicaPlacements().size());
     Set<String> type0nodes = nodeNamesByType.get("type_0");
     Set<String> type1nodes = nodeNamesByType.get("type_1");
-    Set<String> type2nodes = nodeNamesByType.get("type_2");
+    // Set<String> type2nodes = nodeNamesByType.get("type_2");
 
     for (ReplicaPlacement p : pp.getReplicaPlacements()) {
       assertTrue(type0nodes.contains(p.getNode().getName()));
@@ -1055,7 +1067,6 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Slow
   public void testScalability() throws Exception {
     // for non-nightly we scale a bit, but retain test speed - for nightly test speed can be 2+
     // minutes
@@ -1077,8 +1088,10 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     runTestScalability(numNodes, 100, nrtReplicas, tlogReplicas, pullReplicas);
     runTestScalability(numNodes, 200, nrtReplicas, tlogReplicas, pullReplicas);
     runTestScalability(numNodes, 500, nrtReplicas, tlogReplicas, pullReplicas);
-    runTestScalability(numNodes, 1000, nrtReplicas, tlogReplicas, pullReplicas);
-    runTestScalability(numNodes, 2000, nrtReplicas, tlogReplicas, pullReplicas);
+    if (TEST_NIGHTLY) {
+      runTestScalability(numNodes, 1000, nrtReplicas, tlogReplicas, pullReplicas);
+      runTestScalability(numNodes, 2000, nrtReplicas, tlogReplicas, pullReplicas);
+    }
 
     log.info("==== numReplicas ====");
     runTestScalability(numNodes, numShards, TEST_NIGHTLY ? 100 : 10, 0, 0);

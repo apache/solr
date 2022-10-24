@@ -25,7 +25,6 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -227,7 +226,6 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
     eventsListener.events.clear();
     eventsListener.setExpectedType(ClusterEvent.EventType.CLUSTER_PROPERTIES_CHANGED);
     ClusterProperties clusterProperties = new ClusterProperties(cluster.getZkClient());
-    Map<String, Object> oldProps = new HashMap<>(clusterProperties.getClusterProperties());
     clusterProperties.setClusterProperty("ext.foo", "bar");
     eventsListener.waitForExpectedEvent(30);
     assertNotNull(
@@ -263,10 +261,9 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
         ClusterEvent.EventType.CLUSTER_PROPERTIES_CHANGED,
         event.getType());
     propertiesChanged = (ClusterPropertiesChangedEvent) event;
-    assertEquals(
+    assertNull(
         "new properties should not have 'ext.foo' property: "
             + propertiesChanged.getNewClusterProperties(),
-        null,
         propertiesChanged.getNewClusterProperties().get("ext.foo"));
   }
 

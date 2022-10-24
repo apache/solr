@@ -29,8 +29,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
-import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -154,8 +152,8 @@ public class TestOrdValues extends SolrTestCase {
           inOrder
               ? id2String(N_DOCS - i) // in-order ==> larger  values first
               : id2String(i + 1); // reverse  ==> smaller values first
-      assertTrue(
-          "id of result " + i + " should be " + expectedId + " != " + score, expectedId.equals(id));
+      assertEquals(
+          "id of result " + i + " should be " + expectedId + " != " + score, expectedId, id);
     }
     r.close();
   }
@@ -163,10 +161,10 @@ public class TestOrdValues extends SolrTestCase {
   // LUCENE-1250
   public void testEqualsNull() {
     OrdFieldSource ofs = new OrdFieldSource("f");
-    assertFalse(ofs.equals(null));
+    assertNotEquals(null, ofs);
 
     ReverseOrdFieldSource rofs = new ReverseOrdFieldSource("f");
-    assertFalse(rofs.equals(null));
+    assertNotEquals(null, rofs);
   }
 
   /**
@@ -181,9 +179,6 @@ public class TestOrdValues extends SolrTestCase {
   protected static final String TEXT_FIELD = "text";
   protected static final String INT_FIELD = "iii";
   protected static final String FLOAT_FIELD = "fff";
-
-  protected ValueSource INT_VALUESOURCE = new IntFieldSource(INT_FIELD);
-  protected ValueSource FLOAT_VALUESOURCE = new FloatFieldSource(FLOAT_FIELD);
 
   private static final String DOC_TEXT_LINES[] = {
     "Well, this is just some plain text we use for creating the ",
@@ -293,11 +288,6 @@ public class TestOrdValues extends SolrTestCase {
   // some text line for regular search
   private static String textLine(int docNum) {
     return DOC_TEXT_LINES[docNum % DOC_TEXT_LINES.length];
-  }
-
-  // extract expected doc score from its ID Field: "ID7" --> 7.0
-  protected static float expectedFieldScore(String docIDFieldVal) {
-    return Float.parseFloat(docIDFieldVal.substring(2));
   }
 
   // debug messages (change DBG to true for anything to print)

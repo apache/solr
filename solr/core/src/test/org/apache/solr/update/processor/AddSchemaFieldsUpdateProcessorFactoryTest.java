@@ -43,7 +43,7 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
   private static final String confDir = collection + "/conf";
 
   @Before
-  private void initManagedSchemaCore() throws Exception {
+  public void initManagedSchemaCore() throws Exception {
     File tmpSolrHome = createTempDir().toFile();
     File tmpConfDir = new File(tmpSolrHome, confDir);
     File testHomeConfDir = new File(TEST_HOME(), confDir);
@@ -221,14 +221,11 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     String field2String2 = "1,234,567,890,123,456,789";
     Long field2Value2 = 1234567890123456789L;
     String field3String1 = "blah-blah";
-    String field3Value1 = field3String1;
     String field3String2 = "-5.28E-3";
-    Double field3Value2 = -5.28E-3;
     String field4String1 = "1999-04-17 17:42";
     DateTimeFormatter dateTimeFormatter =
         DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm", Locale.ROOT).withZone(ZoneOffset.UTC);
     LocalDateTime dateTime = LocalDateTime.parse(field4String1, dateTimeFormatter);
-    Date field4Value1 = Date.from(dateTime.atZone(ZoneOffset.UTC).toInstant());
     DateTimeFormatter dateTimeFormatter2 =
         DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss", Locale.ROOT).withZone(ZoneOffset.UTC);
     String field4Value1String = dateTime.format(dateTimeFormatter2) + "Z";
@@ -345,7 +342,7 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
   }
 
   @After
-  private void deleteCoreAndTempSolrHomeDirectory() {
+  public void deleteCoreAndTempSolrHomeDirectory() {
     deleteCore();
   }
 }

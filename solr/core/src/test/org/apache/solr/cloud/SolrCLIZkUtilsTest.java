@@ -21,7 +21,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -422,7 +421,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     assertTrue("Should be an individual file", Files.isRegularFile(locPath));
     assertTrue("File should have some data", Files.size(locPath) > 100);
     boolean foundApache = false;
-    for (String line : Files.readAllLines(locPath, Charset.forName("UTF-8"))) {
+    for (String line : Files.readAllLines(locPath, StandardCharsets.UTF_8)) {
       if (line.contains("Apache Software Foundation")) {
         foundApache = true;
         break;
@@ -473,7 +472,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     Path file = Paths.get(tmp.toAbsolutePath().toString(), "zknode.data");
     List<String> lines = new ArrayList<>();
     lines.add("{Some Arbitrary Data}");
-    Files.write(file, lines, Charset.forName("UTF-8"));
+    Files.write(file, lines, StandardCharsets.UTF_8);
     // First, just copy the data up the cp7 since it's a directory.
     args =
         new String[] {
@@ -941,7 +940,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
         tool.runTool(
             SolrCLI.processCommandLineArgs(
                 SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args));
-    assertFalse("Should fail when trying to remove /.", res == 0);
+    assertNotEquals("Should fail when trying to remove /.", 0, res);
   }
 
   // Check that all children of fileRoot are children of zkRoot and vice-versa

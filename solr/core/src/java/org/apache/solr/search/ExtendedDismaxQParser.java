@@ -21,7 +21,6 @@ import com.google.common.collect.Multimaps;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -949,10 +948,8 @@ public class ExtendedDismaxQParser extends QParser {
     RANGE
   }
 
-  static final RuntimeException unknownField = new RuntimeException("UnknownField");
-
-  static {
-    unknownField.fillInStackTrace();
+  static RuntimeException unknownField() {
+    return new RuntimeException("UnknownField");
   }
 
   /**
@@ -1192,7 +1189,7 @@ public class ExtendedDismaxQParser extends QParser {
         if (exceptions) {
           FieldType ft = schema.getFieldTypeNoEx(field);
           if (ft == null && null == MagicFieldName.get(field)) {
-            throw unknownField;
+            throw unknownField();
           }
         }
 
@@ -1267,7 +1264,7 @@ public class ExtendedDismaxQParser extends QParser {
         if (exceptions) {
           FieldType ft = schema.getFieldTypeNoEx(field);
           if (ft == null && null == MagicFieldName.get(field)) {
-            throw unknownField;
+            throw unknownField();
           }
         }
         return getQuery();
@@ -1566,11 +1563,14 @@ public class ExtendedDismaxQParser extends QParser {
       if (!userFieldsMap.containsKey(MagicFieldName.QUERY.field)) {
         userFieldsMap.put("-" + MagicFieldName.QUERY.field, null);
       }
-      Collections.sort(dynUserFields);
       dynamicUserFields = dynUserFields.toArray(new DynamicField[dynUserFields.size()]);
-      Collections.sort(negDynUserFields);
+      Arrays.sort(dynamicUserFields);
+      // Avoid creating the array twice by converting to an array first and using Arrays.sort(),
+      // rather than Collections.sort() then converting to an array, since Collections.sort()
+      // copies to an array first, then sets each collection member from the array.
       negativeDynamicUserFields =
           negDynUserFields.toArray(new DynamicField[negDynUserFields.size()]);
+      Arrays.sort(negativeDynamicUserFields);
     }
 
     /**

@@ -25,12 +25,13 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.Utils;
 import org.noggit.JSONWriter;
 
 /** ZkNodeProps contains generic immutable properties. */
-public class ZkNodeProps implements JSONWriter.Writable {
+public class ZkNodeProps implements JSONWriter.Writable, MapWriter {
 
   protected final Map<String, Object> propMap;
 
@@ -40,6 +41,10 @@ public class ZkNodeProps implements JSONWriter.Writable {
 
     // TODO: store an unmodifiable map, but in a way that guarantees not to wrap more than once.
     // Always wrapping introduces a memory leak.
+  }
+
+  public ZkNodeProps(MapWriter mw) {
+    propMap = mw.toMap(new HashMap<>());
   }
 
   public ZkNodeProps plus(String key, Object val) {
@@ -141,6 +146,11 @@ public class ZkNodeProps implements JSONWriter.Writable {
     if (o == null) return b;
     if (o instanceof Boolean) return (boolean) o;
     return Boolean.parseBoolean(o.toString());
+  }
+
+  @Override
+  public void writeMap(EntryWriter ew) throws IOException {
+    propMap.forEach(ew.getBiConsumer());
   }
 
   @Override

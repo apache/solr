@@ -674,7 +674,7 @@ public class TestJSONParser extends SolrTestCaseJ4 {
       String sval = Long.toString(val);
       JSONParser parser = getParser("[" + val + "]");
       parser.nextEvent();
-      assertTrue(parser.nextEvent() == JSONParser.LONG);
+      assertEquals(JSONParser.LONG, parser.nextEvent());
       if (random().nextBoolean()) {
         assertEquals(val, parser.getLong());
       } else {

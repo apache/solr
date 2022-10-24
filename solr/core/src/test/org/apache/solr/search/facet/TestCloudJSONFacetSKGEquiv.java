@@ -38,7 +38,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -78,7 +77,6 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
   private static final String DEBUG_LABEL = MethodHandles.lookup().lookupClass().getName();
   private static final String COLLECTION_NAME = DEBUG_LABEL + "_collection";
 
-  private static final int DEFAULT_LIMIT = FacetField.DEFAULT_FACET_LIMIT;
   private static final int MAX_FIELD_NUM = 15;
   private static final int UNIQUE_FIELD_VALS = 50;
 
@@ -101,11 +99,11 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
   /** A basic client for operations at the cloud level, default collection will be set */
   private static CloudSolrClient CLOUD_CLIENT;
   /** One client per node */
-  private static final ArrayList<HttpSolrClient> CLIENTS = new ArrayList<>(5);
+  private static final ArrayList<SolrClient> CLIENTS = new ArrayList<>(5);
 
   @BeforeClass
-  private static void createMiniSolrCloudCluster() throws Exception {
-    // sanity check constants
+  public static void createMiniSolrCloudCluster() throws Exception {
+    // check constants
     assertTrue(
         "bad test constants: some suffixes will never be tested",
         (MULTI_STR_FIELD_SUFFIXES.length < MAX_FIELD_NUM)
@@ -196,7 +194,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
    * @see #randFieldValue
    */
   private static String field(final String[] suffixes, final int fieldNum) {
-    assert fieldNum < MAX_FIELD_NUM;
+    assertTrue(fieldNum < MAX_FIELD_NUM);
 
     final String suffix = suffixes[fieldNum % suffixes.length];
     return "field_" + fieldNum + suffix;
@@ -232,12 +230,12 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
   }
 
   @AfterClass
-  private static void afterClass() throws Exception {
+  public static void afterClass() throws Exception {
     if (null != CLOUD_CLIENT) {
       CLOUD_CLIENT.close();
       CLOUD_CLIENT = null;
     }
-    for (HttpSolrClient client : CLIENTS) {
+    for (SolrClient client : CLIENTS) {
       client.close();
     }
     CLIENTS.clear();
@@ -761,7 +759,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
   }
 
   private static String buildORQuery(String... clauses) {
-    assert 0 < clauses.length;
+    assertTrue(0 < clauses.length);
     return "(" + String.join(" OR ", clauses) + ")";
   }
 
@@ -867,8 +865,8 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
      * value to use for testing them against in a solr request.
      */
     public static String toJSONFacetParamValue(final Map<String, ? extends Facet> facets) {
-      assert null != facets;
-      assert !facets.isEmpty();
+      assertNotNull(facets);
+      assertFalse(facets.isEmpty());
 
       return JSONUtil.toJSON(facets, -1); // no newlines
     }
@@ -927,7 +925,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
 
     public RelatednessFacet(
         final String foreQ, final String backQ, final Map<String, Object> options) {
-      assert null != options;
+      assertNotNull(options);
 
       final String f = null == foreQ ? "$fore" : "{!v='" + foreQ + "'}";
       final String b = null == backQ ? "$back" : "{!v='" + backQ + "'}";
@@ -982,7 +980,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
      * @param options can set any of options used in a term facet other than field or (sub) facets
      */
     public TermFacet(final String field, final Map<String, Object> options) {
-      assert null != field;
+      assertNotNull(field);
 
       jsonData.put("method", "${method_val:smart}");
 
@@ -1018,12 +1016,12 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
           facetField,
           map(
               "limit", randomLimitParam(random()),
-              "overrequest", randomOverrequestParam(random(), sort),
+              "overrequest", randomOverrequestParam(random()),
               "prefix", randomPrefixParam(random(), facetField),
               "perSeg", randomPerSegParam(random()),
               "sort", sort,
-              "prelim_sort", randomPrelimSortParam(random(), sort),
-              "allBuckets", randomAllBucketsParam(random(), sort),
+              "prelim_sort", randomPrelimSortParam(sort),
+              "allBuckets", randomAllBucketsParam(random()),
               "refine", randomRefineParam(random())));
     }
 
@@ -1073,7 +1071,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
      *
      * @return a Boolean, may be null
      */
-    public static Boolean randomAllBucketsParam(final Random r, final String sort) {
+    public static Boolean randomAllBucketsParam(final Random r) {
       switch (r.nextInt(4)) {
         case 0:
           return true;
@@ -1137,8 +1135,9 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
         // never used a prefix on a numeric field
         return null;
       }
-      assert (facetField.contains("multi_s") || facetField.contains("solo_s"))
-          : "possible facet fields have changed, breaking test";
+      assertTrue(
+          "possible facet fields have changed, breaking test",
+          facetField.contains("multi_s") || facetField.contains("solo_s"));
 
       switch (r.nextInt(5)) {
         case 0:
@@ -1182,9 +1181,8 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
      * picks a random value for the "prelim_sort" param, biased in favor of interesting test cases.
      *
      * @return a sort string (w/direction), or null to specify nothing (trigger default behavior)
-     * @see #randomSortParam
      */
-    public static String randomPrelimSortParam(final Random r, final String sort) {
+    public static String randomPrelimSortParam(final String sort) {
 
       if (null != sort && sort.startsWith("skg") && 1 == TestUtil.nextInt(random(), 0, 3)) {
         return "count desc";
@@ -1221,7 +1219,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
      *     behavior)
      * @see #UNIQUE_FIELD_VALS
      */
-    public static Integer randomOverrequestParam(final Random r, final String sort) {
+    public static Integer randomOverrequestParam(final Random r) {
 
       switch (r.nextInt(10)) {
         case 0:
@@ -1309,7 +1307,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
   }
 
   public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
-    assert null != client.getDefaultCollection();
+    assertNotNull(client.getDefaultCollection());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(
         client.getDefaultCollection(), ZkStateReader.from(client), true, true, 330);
   }

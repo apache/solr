@@ -23,9 +23,11 @@ import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.Stats;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ShardRequestTracker;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.zookeeper.KeeperException;
@@ -78,6 +80,10 @@ public interface CollectionCommandContext {
         "Bug! offerStateUpdate() should not be called when distributed cluster state updates are enabled");
   }
 
+  default void offerStateUpdate(MapWriter data) throws KeeperException, InterruptedException {
+    offerStateUpdate(Utils.toJSON(data));
+  }
+
   default String getOverseerId() {
     throw new IllegalStateException(
         "Bug! getOverseerId() default implementation should never be called");
@@ -99,7 +105,6 @@ public interface CollectionCommandContext {
    * updates are distributed.
    */
   default void submitIntraProcessMessage(Overseer.Message message) {
-    throw new IllegalStateException(
-        "Bug! submitIntraProcessMessage() should not be called when distributed state updates are enabled");
+    // this is ignored
   }
 }

@@ -73,7 +73,7 @@ public class SubtractFunctionTest extends SolrTestCaseJ4 {
     subtrahend.setValue(21.56F).setExists(true);
     func.streamDoubles(
         value -> {
-          assertTrue("There should be no values to stream", false);
+          fail("There should be no values to stream");
         });
 
     // Multiple values, no value
@@ -81,7 +81,7 @@ public class SubtractFunctionTest extends SolrTestCaseJ4 {
     subtrahend.setExists(false);
     func.streamDoubles(
         value -> {
-          assertTrue("There should be no values to stream", false);
+          fail("There should be no values to stream");
         });
 
     // Multiple values, one value
@@ -111,7 +111,7 @@ public class SubtractFunctionTest extends SolrTestCaseJ4 {
     subtrahend.setValues();
     func.streamDoubles(
         value -> {
-          assertTrue("There should be no values to stream", false);
+          fail("There should be no values to stream");
         });
 
     // Multiple values, no value
@@ -119,7 +119,7 @@ public class SubtractFunctionTest extends SolrTestCaseJ4 {
     subtrahend.setValues(4L, 10023L);
     func.streamDoubles(
         value -> {
-          assertTrue("There should be no values to stream", false);
+          fail("There should be no values to stream");
         });
 
     // Multiple values, one value

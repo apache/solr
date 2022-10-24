@@ -243,8 +243,6 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
         // and how few iterations we have left
         if (3 < namedSnapshots.size()
             && random().nextInt(3 + numBackupIters - i) < random().nextInt(namedSnapshots.size())) {
-
-          assert 0 < namedSnapshots.size() : "Something broke the conditional";
           final String snapshotName = namedSnapshots.poll();
           final String backupName = "backup_as_of_" + snapshotName;
           log.info("Creating {} from {} in iter={}", backupName, snapshotName, i);
@@ -321,8 +319,6 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
   /**
    * Validates a backup dir exists, passes check index, and contains a number of "real" documents
    * that match its name
-   *
-   * @see #getNumRealDocsFromBackupName
    */
   private void validateBackup(final File backup) throws IOException {
     log.info("Checking Validity of {}", backup);

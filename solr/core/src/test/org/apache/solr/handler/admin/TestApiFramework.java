@@ -61,7 +61,6 @@ import org.apache.solr.handler.CollectionsAPI;
 import org.apache.solr.handler.PingRequestHandler;
 import org.apache.solr.handler.SchemaHandler;
 import org.apache.solr.handler.SolrConfigHandler;
-import org.apache.solr.handler.api.ApiRegistrar;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
@@ -81,8 +80,9 @@ public class TestApiFramework extends SolrTestCaseJ4 {
         new TestCollectionAPIs.MockCollectionsHandler();
     containerHandlers.put(COLLECTIONS_HANDLER_PATH, collectionsHandler);
     containerHandlers.getApiBag().registerObject(new CollectionsAPI(collectionsHandler));
-    ApiRegistrar.registerCollectionApis(containerHandlers.getApiBag(), collectionsHandler);
-    ApiRegistrar.registerShardApis(containerHandlers.getApiBag(), collectionsHandler);
+    for (Api api : collectionsHandler.getApis()) {
+      containerHandlers.getApiBag().register(api);
+    }
     containerHandlers.put(CORES_HANDLER_PATH, new CoreAdminHandler(mockCC));
     containerHandlers.put(CONFIGSETS_HANDLER_PATH, new ConfigSetsHandler(mockCC));
     out.put("getRequestHandlers", containerHandlers);
@@ -123,10 +123,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     api = V2HttpCall.getApiInfo(containerHandlers, "/collections/hello", "POST", null, parts);
     assertConditions(
         api.getSpec(),
-        Map.of(
-            "/methods[0]", "POST",
-            "/commands/add-replica-property", NOT_NULL,
-            "/commands/delete-replica-property", NOT_NULL));
+        Map.of("/methods[0]", "POST", "/commands/delete-replica-property", NOT_NULL));
     assertEquals("hello", parts.get("collection"));
 
     api =
@@ -155,17 +152,6 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     methodNames.add(rsp.getValues()._getStr("/spec[1]/methods[0]", null));
     assertTrue(methodNames.contains("POST"));
     assertTrue(methodNames.contains("GET"));
-
-    rsp = invoke(coreHandlers, "/", "/collections/hello/_introspect", mockCC);
-    assertConditions(
-        rsp.getValues().asMap(2),
-        Map.of(
-            "/availableSubPaths", NOT_NULL,
-            "availableSubPaths /collections/hello/config/{component}", NOT_NULL,
-            "availableSubPaths /collections/hello/schema", NOT_NULL,
-            "availableSubPaths /collections/hello/shards", NOT_NULL,
-            "availableSubPaths /collections/hello/shards/{shard}", NOT_NULL,
-            "availableSubPaths /collections/hello/shards/{shard}/{replica}", NOT_NULL));
   }
 
   public void testPayload() {

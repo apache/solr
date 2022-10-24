@@ -49,13 +49,12 @@ public class AlternateDirectoryTest extends SolrTestCaseJ4 {
 
   public static class TestFSDirectoryFactory extends StandardDirectoryFactory {
     public static volatile boolean openCalled = false;
-    public static volatile Directory dir;
 
     @Override
     public Directory create(String path, LockFactory lockFactory, DirContext dirContext) {
       openCalled = true;
 
-      return dir = newFSDirectory(Path.of(path), lockFactory);
+      return newFSDirectory(Path.of(path), lockFactory);
     }
   }
 

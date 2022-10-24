@@ -309,7 +309,6 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Slow
   public void testRandom() throws Exception {
     // All field values will be a number between 0 and cardinality
     int cardinality = 10000;
@@ -350,7 +349,8 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
           "test_ds_p",
           "test_dts_p"
         };
-    for (int i = 0; i < atLeast(500); i++) {
+    int docs = atLeast(500);
+    for (int i = 0; i < docs; i++) {
       if (random().nextInt(50) == 0) {
         // have some empty docs
         assertU(adoc("id", String.valueOf(i)));
@@ -399,7 +399,9 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     }
     assertU(commit());
 
-    for (int i = 0; i < atLeast(10000); i++) {
+    // Scale higher for nightlies than typically
+    int queries = TEST_NIGHTLY ? atLeast(10000) : atLeast(1000);
+    for (int i = 0; i < queries; i++) {
       doTestQuery(cardinality, fields);
     }
   }
@@ -557,7 +559,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     Number[] values = new Number[2];
     FieldType ft = h.getCore().getLatestSchema().getField(fieldName).getType();
     if (ft.getNumberType() == null) {
-      assert ft instanceof StrField;
+      assertTrue(ft instanceof StrField);
       values[0] = randomInt(max);
       values[1] = randomInt(max);
       Arrays.sort(values, (o1, o2) -> String.valueOf(o1).compareTo(String.valueOf(o2)));
@@ -1048,7 +1050,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
   private void assertIntervalKey(
       String fieldName, String intervalStr, String expectedKey, String... params)
       throws SyntaxError {
-    assert (params.length & 1) == 0 : "Params must have an even number of elements";
+    assertEquals("Params must have an even number of elements", 0, (params.length & 1));
     SchemaField f = h.getCore().getLatestSchema().getField(fieldName);
     ModifiableSolrParams solrParams = new ModifiableSolrParams();
     for (int i = 0; i < params.length - 1; ) {
@@ -1610,7 +1612,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
 
   private void assertIntervalQuery(
       String field, String query, int resultCount, String... intervals) {
-    assert (intervals.length & 1) == 0;
+    assertEquals(0, (intervals.length & 1));
     int idx = 0;
     String[] params = new String[intervals.length + 6];
     params[idx++] = "q";

@@ -80,8 +80,6 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   protected static final JSONAuditEventFormatter formatter = new JSONAuditEventFormatter();
 
   protected static final int NUM_SERVERS = 1;
-  protected static final int NUM_SHARDS = 1;
-  protected static final int REPLICATION_FACTOR = 1;
   // Use a harness per thread to be able to beast this test
   private ThreadLocal<AuditTestHarness> testHarness = new ThreadLocal<>();
 
@@ -238,15 +236,16 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
         .cluster
         .getSolrClient()
         .request(CollectionAdminRequest.createCollection("test", 1, 1));
-    expectThrows(
-        SolrException.class,
-        () -> {
-          testHarness
-              .get()
-              .cluster
-              .getSolrClient()
-              .query("test", new MapSolrParams(Collections.singletonMap("q", "a(bc")));
-        });
+    Exception e =
+        expectThrows(
+            SolrException.class,
+            () -> {
+              testHarness
+                  .get()
+                  .cluster
+                  .getSolrClient()
+                  .query("test", new MapSolrParams(Collections.singletonMap("q", "a(bc")));
+            });
     final List<AuditEvent> events = testHarness.get().receiver.waitForAuditEvents(3);
     assertAuditEvent(events.get(0), COMPLETED, "/admin/cores");
     assertAuditEvent(events.get(1), COMPLETED, "/admin/collections");
@@ -639,6 +638,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     public void close() throws Exception {
       shutdownCluster();
       receiverThread.interrupt();
+      receiverThread.join();
       receiver.close();
       receiverThread = null;
     }

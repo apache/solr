@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,7 +28,6 @@ import java.util.Set;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -51,8 +49,6 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Test of TolerantUpdateProcessor using a MiniSolrCloud. Updates (that include failures which
@@ -65,8 +61,6 @@ import org.slf4j.LoggerFactory;
  */
 public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   private static final int NUM_SHARDS = 2;
   private static final int REPLICATION_FACTOR = 2;
   private static final int NUM_SERVERS = 5;
@@ -77,19 +71,19 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
   private static CloudSolrClient CLOUD_CLIENT;
 
   /** A client for talking directly to the leader of shard1 */
-  private static HttpSolrClient S_ONE_LEADER_CLIENT;
+  private static SolrClient S_ONE_LEADER_CLIENT;
 
   /** A client for talking directly to the leader of shard2 */
-  private static HttpSolrClient S_TWO_LEADER_CLIENT;
+  private static SolrClient S_TWO_LEADER_CLIENT;
 
   /** A client for talking directly to a passive replica of shard1 */
-  private static HttpSolrClient S_ONE_NON_LEADER_CLIENT;
+  private static SolrClient S_ONE_NON_LEADER_CLIENT;
 
   /** A client for talking directly to a passive replica of shard2 */
-  private static HttpSolrClient S_TWO_NON_LEADER_CLIENT;
+  private static SolrClient S_TWO_NON_LEADER_CLIENT;
 
   /** A client for talking directly to a node that has no piece of the collection */
-  private static HttpSolrClient NO_COLLECTION_CLIENT;
+  private static SolrClient NO_COLLECTION_CLIENT;
 
   /** id field doc routing prefix for shard1 */
   private static final String S_ONE_PRE = "abc!";
@@ -235,7 +229,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
   }
 
   @Before
-  private void clearCollection() throws Exception {
+  public void clearCollection() throws Exception {
     assertEquals(0, CLOUD_CLIENT.deleteByQuery("*:*").getStatus());
     assertEquals(0, CLOUD_CLIENT.commit().getStatus());
   }

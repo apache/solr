@@ -41,9 +41,9 @@ public class TestDelegationTokenResponse extends SolrTestCase {
   private String getNestedMapJson(String outerKey, String innerKey, Object innerValue) {
     CharArr out = new CharArr();
     JSONWriter w = new JSONWriter(out, 2);
-    Map<String, Object> innerMap = new HashMap<String, Object>();
+    Map<String, Object> innerMap = new HashMap<>();
     innerMap.put(innerKey, innerValue);
-    Map<String, Map<String, Object>> outerMap = new HashMap<String, Map<String, Object>>();
+    Map<String, Map<String, Object>> outerMap = new HashMap<>();
     outerMap.put(outerKey, innerMap);
     w.write(outerMap);
     return out.toString();
@@ -52,7 +52,7 @@ public class TestDelegationTokenResponse extends SolrTestCase {
   private String getMapJson(String key, Object value) {
     CharArr out = new CharArr();
     JSONWriter w = new JSONWriter(out, 2);
-    Map<String, Object> map = new HashMap<String, Object>();
+    Map<String, Object> map = new HashMap<>();
     map.put(key, value);
     w.write(map);
     return out.toString();

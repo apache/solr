@@ -29,7 +29,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.math3.primes.Primes;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -49,7 +48,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Slow
 public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -78,7 +76,6 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
   protected long committedModelClock;
   protected int clientIndexUsedForCommit;
   protected volatile int lastId;
-  protected final String field = "val_l";
 
   private void initModel(int ndocs) {
     for (int i = 0; i < ndocs; i++) {
@@ -488,7 +485,7 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
                   } else {
                     fail(
                         String.format(
-                            Locale.ENGLISH, "There were more than one result: {}", response));
+                            Locale.ENGLISH, "There were more than one result: %s", response));
                   }
                 }
               } catch (Throwable e) {
@@ -603,7 +600,7 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
 
     public DocInfo(long version, int val1, long val2) {
       // must either be real positive version, or negative deleted version/indicator
-      assert version != 0;
+      assertNotEquals(0, version);
       this.version = version;
       this.intFieldValue = val1;
       this.longFieldValue = val2;

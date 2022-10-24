@@ -44,12 +44,10 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZkStateReaderAccessor;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ZkContainer;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,12 +55,6 @@ import org.slf4j.LoggerFactory;
 public class DeleteReplicaTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  @BeforeClass
-  public static void setupCluster() {
-    System.setProperty("solr.zkclienttimeout", "45000");
-    System.setProperty("distribUpdateSoTimeout", "15000");
-  }
 
   @Before
   @Override
@@ -184,7 +176,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
 
     Replica newLeader = cluster.getZkStateReader().getLeaderRetry(collectionName, "shard1");
 
-    assertFalse(leader.equals(newLeader));
+    assertNotEquals(leader, newLeader);
 
     // Confirm that the instance and data directory were deleted by default
     assertFalse(
@@ -288,7 +280,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
               cluster.getOpenOverseer().getSolrCloudManager(),
               cluster.getOpenOverseer().getZkStateReader());
     } else {
-      cluster.getOpenOverseer().getStateUpdateQueue().offer(Utils.toJSON(m));
+      cluster.getOpenOverseer().getStateUpdateQueue().offer(m);
     }
 
     waitForState(
@@ -320,7 +312,6 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Slow
   public void raceConditionOnDeleteAndRegisterReplica() throws Exception {
     final String collectionName = "raceDeleteReplicaCollection";
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2)
@@ -335,7 +326,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     JettySolrRunner leaderJetty = getJettyForReplica(leader);
     Replica replica1 =
         shard1.getReplicas(replica -> !replica.getName().equals(leader.getName())).get(0);
-    assertFalse(replica1.getName().equals(leader.getName()));
+    assertNotEquals(replica1.getName(), leader.getName());
 
     JettySolrRunner replica1Jetty = getJettyForReplica(replica1);
 
@@ -381,7 +372,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
                         cluster.getOpenOverseer().getSolrCloudManager(),
                         cluster.getOpenOverseer().getZkStateReader());
               } else {
-                cluster.getOpenOverseer().getStateUpdateQueue().offer(Utils.toJSON(m));
+                cluster.getOpenOverseer().getStateUpdateQueue().offer(m);
               }
 
               boolean replicaDeleted = false;

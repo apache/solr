@@ -141,7 +141,7 @@ public class TestInjection {
 
   public static volatile String wrongIndexFingerprint = null;
 
-  private static volatile Set<Timer> timers = Collections.synchronizedSet(new HashSet<Timer>());
+  private static volatile Set<Timer> timers = Collections.synchronizedSet(new HashSet<>());
 
   private static volatile AtomicInteger countPrepRecoveryOpPauseForever = new AtomicInteger(0);
 
@@ -248,7 +248,7 @@ public class TestInjection {
         int delay = rand.nextInt(randomDelayMaxInCoreCreationInSec);
         log.info("Inject random core creation delay of {}s", delay);
         try {
-          Thread.sleep(delay * 1000);
+          Thread.sleep(delay * 1000L);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
         }

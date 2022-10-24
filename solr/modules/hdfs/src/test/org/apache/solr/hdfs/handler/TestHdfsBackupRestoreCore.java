@@ -38,8 +38,8 @@ import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
@@ -200,7 +200,7 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
     String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final String shardBackupId = new ShardBackupId("standalone", BackupId.zero()).getIdAsString();
 
-    try (HttpSolrClient leaderClient = getHttpSolrClient(replicaBaseUrl)) {
+    try (SolrClient leaderClient = getHttpSolrClient(replicaBaseUrl)) {
       // Create a backup.
       if (testViaReplicationHandler) {
         log.info("Running Backup via replication handler");

@@ -43,7 +43,6 @@ public class TestManagedStopFilterFactory extends RestTestBase {
   @Before
   public void before() throws Exception {
     File tmpSolrHome = createTempDir().toFile();
-    File tmpConfDir = new File(tmpSolrHome, confDir);
     FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
 
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
@@ -61,7 +60,7 @@ public class TestManagedStopFilterFactory extends RestTestBase {
   }
 
   @After
-  private void after() throws Exception {
+  public void after() throws Exception {
     if (null != jetty) {
       jetty.stop();
       jetty = null;

@@ -34,7 +34,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -75,7 +76,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Slow
+@LuceneTestCase.Nightly
 @LogLevel(
     "org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.cloud.overseer=DEBUG;org.apache.solr.cloud.api.collections=DEBUG;org.apache.solr.cloud.OverseerTaskProcessor=DEBUG;org.apache.solr.util.TestInjection=DEBUG")
 public class ShardSplitTest extends BasicDistributedZkTest {
@@ -947,7 +948,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     getCommonCloudSolrClient();
     String url = getUrlFromZk(cloudClient.getClusterState(), collectionName);
 
-    try (HttpSolrClient collectionClient = getHttpSolrClient(url)) {
+    try (SolrClient collectionClient = getHttpSolrClient(url)) {
 
       ClusterState clusterState = cloudClient.getClusterState();
       final DocRouter router = clusterState.getCollection(collectionName).getRouter();
@@ -1018,7 +1019,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     getCommonCloudSolrClient();
     String url = getUrlFromZk(cloudClient.getClusterState(), collectionName);
 
-    try (HttpSolrClient collectionClient = getHttpSolrClient(url)) {
+    try (SolrClient collectionClient = getHttpSolrClient(url)) {
 
       String splitKey = "b!";
 
@@ -1173,7 +1174,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     ZkCoreNodeProps shard1_0 =
         getLeaderUrlFromZk(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1_0);
     QueryResponse response;
-    try (HttpSolrClient shard1_0Client = getHttpSolrClient(shard1_0.getCoreUrl())) {
+    try (SolrClient shard1_0Client = getHttpSolrClient(shard1_0.getCoreUrl())) {
       response = shard1_0Client.query(query);
     }
     long shard10Count = response.getResults().getNumFound();
@@ -1181,7 +1182,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     ZkCoreNodeProps shard1_1 =
         getLeaderUrlFromZk(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1_1);
     QueryResponse response2;
-    try (HttpSolrClient shard1_1Client = getHttpSolrClient(shard1_1.getCoreUrl())) {
+    try (SolrClient shard1_1Client = getHttpSolrClient(shard1_1.getCoreUrl())) {
       response2 = shard1_1Client.query(query);
     }
     long shard11Count = response2.getResults().getNumFound();
@@ -1204,7 +1205,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     for (Replica replica : slice.getReplicas()) {
       String coreUrl = new ZkCoreNodeProps(replica).getCoreUrl();
       QueryResponse response;
-      try (HttpSolrClient client = getHttpSolrClient(coreUrl)) {
+      try (SolrClient client = getHttpSolrClient(coreUrl)) {
         response = client.query(query);
       }
       numFound[c++] = response.getResults().getNumFound();
@@ -1258,7 +1259,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
         ((HttpSolrClient) shardToJetty.get(SHARD1).get(0).client.getSolrClient()).getBaseURL();
     baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
 
-    try (HttpSolrClient baseServer = getHttpSolrClient(baseUrl, 30000, 60000 * 5)) {
+    try (SolrClient baseServer = getHttpSolrClient(baseUrl, 30000, 60000 * 5)) {
       NamedList<Object> rsp = baseServer.request(request);
       if (log.isInfoEnabled()) {
         log.info("Shard split response: {}", Utils.toJSONString(rsp));

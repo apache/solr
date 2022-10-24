@@ -25,7 +25,6 @@ import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_VALUE
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.util.Utils.fromJSONString;
 
-import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -48,17 +47,13 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.ClusterAPI;
 import org.apache.solr.handler.CollectionsAPI;
-import org.apache.solr.handler.api.ApiRegistrar;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.SolrRequestParsers;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class TestCollectionAPIs extends SolrTestCaseJ4 {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Test
   public void testCopyParamsToMap() {
@@ -89,8 +84,9 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
       final CollectionsAPI collectionsAPI = new CollectionsAPI(collectionsHandler);
       apiBag.registerObject(new CollectionsAPI(collectionsHandler));
       apiBag.registerObject(collectionsAPI.collectionsCommands);
-      ApiRegistrar.registerCollectionApis(apiBag, collectionsHandler);
-      ApiRegistrar.registerShardApis(apiBag, collectionsHandler);
+      for (Api api : collectionsHandler.getApis()) {
+        apiBag.register(api);
+      }
 
       ClusterAPI clusterAPI = new ClusterAPI(collectionsHandler, null);
       apiBag.registerObject(clusterAPI);
@@ -207,13 +203,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         apiBag,
         "/collections/collName",
         POST,
-        "{add-replica-property : {name:propA , value: VALA, shard: shard1, replica:replica1}}",
-        "{collection: collName, shard: shard1, replica : replica1 , property : propA , operation : addreplicaprop, property.value : 'VALA'}");
-
-    compareOutput(
-        apiBag,
-        "/collections/collName",
-        POST,
         "{delete-replica-property : {property: propA , shard: shard1, replica:replica1} }",
         "{collection: collName, shard: shard1, replica : replica1 , property : propA , operation : deletereplicaprop}");
 
@@ -265,22 +254,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     Map<String, ?> expected = (Map<String, ?>) fromJSONString(expectedOutputMapJson);
     assertMapEqual(expected, output);
     return output;
-  }
-
-  static void assertErrorContains(
-      final ApiBag apiBag,
-      final String path,
-      final SolrRequest.METHOD method,
-      final String payload,
-      String expectedErrorMsg) {
-    RuntimeException e =
-        expectThrows(RuntimeException.class, () -> makeCall(apiBag, path, method, payload));
-    assertTrue(
-        "Expected exception with error message '"
-            + expectedErrorMsg
-            + "' but got: "
-            + e.getMessage(),
-        e.getMessage().contains(expectedErrorMsg));
   }
 
   public static Pair<SolrQueryRequest, SolrQueryResponse> makeCall(

@@ -20,7 +20,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.AppendEvaluator;
@@ -49,10 +48,10 @@ public class AppendEvaluatorTest extends SolrTestCase {
     values.put("a", 1);
     values.put("b", Arrays.asList("foo", "bar", "baz"));
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof List);
-    Assert.assertEquals(1D, ((List) result).get(0));
-    Assert.assertEquals("foo", ((List) result).get(1));
-    Assert.assertEquals("bar", ((List) result).get(2));
-    Assert.assertEquals("baz", ((List) result).get(3));
+    assertTrue(result instanceof List);
+    assertEquals(1D, ((List) result).get(0));
+    assertEquals("foo", ((List) result).get(1));
+    assertEquals("bar", ((List) result).get(2));
+    assertEquals("baz", ((List) result).get(3));
   }
 }

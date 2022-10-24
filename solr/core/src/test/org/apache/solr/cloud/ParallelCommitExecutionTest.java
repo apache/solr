@@ -79,7 +79,7 @@ public class ParallelCommitExecutionTest extends SolrCloudTestCase {
   }
 
   @AfterClass
-  private static void afterClass() throws Exception {
+  public static void afterClass() throws Exception {
     if (null != CLOUD_CLIENT) {
       CLOUD_CLIENT.close();
       CLOUD_CLIENT = null;
@@ -102,7 +102,7 @@ public class ParallelCommitExecutionTest extends SolrCloudTestCase {
   }
 
   public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
-    assert null != client.getDefaultCollection();
+    assertNotNull(client.getDefaultCollection());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(
         client.getDefaultCollection(), ZkStateReader.from(client), true, true, 330);
   }

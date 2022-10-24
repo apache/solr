@@ -37,7 +37,6 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.UpdateLog;
-import org.apache.solr.update.VersionInfo;
 import org.apache.solr.util.TestHarness;
 import org.junit.After;
 import org.junit.Before;
@@ -95,7 +94,6 @@ public class TestStressRecovery extends TestRTGBase {
 
     final UpdateHandler uHandler = h.getCore().getUpdateHandler();
     final UpdateLog uLog = uHandler.getUpdateLog();
-    final VersionInfo vInfo = uLog.getVersionInfo();
     final Object stateChangeLock = new Object();
     this.visibleModel = model;
     final Semaphore[] writePermissions = new Semaphore[nWriteThreads];
@@ -348,7 +346,7 @@ public class TestStressRecovery extends TestRTGBase {
                         || (foundVer == info.version
                             && foundVal != info.val)) { // if the version matches, the val must
                       verbose("ERROR, id=", id, "found=", response, "model", info);
-                      assertTrue(false);
+                      fail();
                     }
                   }
                 }
@@ -375,7 +373,7 @@ public class TestStressRecovery extends TestRTGBase {
 
     int bufferedAddsApplied = 0;
     do {
-      assertTrue(uLog.getState() == UpdateLog.State.ACTIVE);
+      assertSame(uLog.getState(), UpdateLog.State.ACTIVE);
 
       // before we start buffering updates, we want to point
       // visibleModel away from the live model.
@@ -386,7 +384,7 @@ public class TestStressRecovery extends TestRTGBase {
         uLog.bufferUpdates();
       }
 
-      assertTrue(uLog.getState() == UpdateLog.State.BUFFERING);
+      assertSame(uLog.getState(), UpdateLog.State.BUFFERING);
 
       // sometimes wait for a second to allow time for writers to write something
       if (random().nextBoolean()) Thread.sleep(random().nextInt(10) + 1);

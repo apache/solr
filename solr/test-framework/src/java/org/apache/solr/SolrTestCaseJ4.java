@@ -48,7 +48,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -158,6 +157,7 @@ import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.TestHarness;
 import org.apache.solr.util.TestInjection;
 import org.apache.zookeeper.KeeperException;
+import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -220,7 +220,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     try (Writer writer =
         new OutputStreamWriter(
             Files.newOutputStream(coreDirectory.resolve(CORE_PROPERTIES_FILENAME)),
-            Charset.forName("UTF-8"))) {
+            StandardCharsets.UTF_8)) {
       properties.store(writer, testname);
     }
   }
@@ -233,7 +233,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
     if (expectedStrings != null) {
       for (String expectedString : expectedStrings) {
-        assertThat(thrown.getMessage(), containsString(expectedString));
+        MatcherAssert.assertThat(thrown.getMessage(), containsString(expectedString));
       }
     }
   }

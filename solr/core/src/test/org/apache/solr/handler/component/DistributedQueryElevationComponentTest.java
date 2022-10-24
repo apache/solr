@@ -18,6 +18,7 @@ package org.apache.solr.handler.component;
 
 import org.apache.lucene.util.Constants;
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -166,8 +167,8 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
 
     // Force javabin format
     final String clientUrl = ((HttpSolrClient) clients.get(0)).getBaseURL();
-    HttpSolrClient client = getHttpSolrClient(clientUrl);
-    client.setParser(new BinaryResponseParser());
+    SolrClient client = getHttpSolrClient(clientUrl);
+    ((HttpSolrClient) client).setParser(new BinaryResponseParser());
     SolrQuery solrQuery =
         new SolrQuery("XXXX")
             .setParam("qt", "/elevate")

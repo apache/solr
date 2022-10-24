@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
@@ -32,12 +31,9 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.Utils;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class TestQueryingOnDownCollection extends SolrCloudTestCase {
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String COLLECTION_NAME = "infected";
 
   private static final String USERNAME = "solr";
@@ -106,7 +102,7 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
         error.getMessage().contains("No active replicas found for collection: " + COLLECTION_NAME));
 
     // run same set of tests on v2 client which uses V2HttpCall
-    Http2SolrClient v2Client =
+    SolrClient v2Client =
         new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString()).build();
 
     error =

@@ -578,7 +578,7 @@ public class SimplePostTool {
       try {
         if (!srcFile.isFile() || srcFile.isHidden()) continue;
         postFile(srcFile, out, type);
-        Thread.sleep(delay * 1000);
+        Thread.sleep(delay * 1000L);
         filesPosted++;
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
@@ -685,9 +685,9 @@ public class SimplePostTool {
                   appendParam(
                       solrUrl.toString(),
                       "literal.id="
-                          + URLEncoder.encode(url.toString(), "UTF-8")
+                          + URLEncoder.encode(url.toString(), UTF_8)
                           + "&literal.url="
-                          + URLEncoder.encode(url.toString(), "UTF-8")));
+                          + URLEncoder.encode(url.toString(), UTF_8)));
           ByteBuffer content = result.content;
           boolean success =
               postData(
@@ -698,7 +698,7 @@ public class SimplePostTool {
                   postUrl);
           if (success) {
             info("POSTed web resource " + url + " (depth: " + level + ")");
-            Thread.sleep(delay * 1000);
+            Thread.sleep(delay * 1000L);
             numPages++;
             // Pull links from HTML pages only
             if (recursive > level && result.contentType.equals("text/html")) {

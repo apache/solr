@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -25,7 +24,6 @@ import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrDocument;
@@ -42,12 +40,8 @@ import org.apache.solr.common.params.SolrParams;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class TestCloudDeleteByQuery extends SolrCloudTestCase {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final int NUM_SHARDS = 2;
   private static final int REPLICATION_FACTOR = 2;
@@ -59,19 +53,19 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
   private static CloudSolrClient CLOUD_CLIENT;
 
   /** A client for talking directly to the leader of shard1 */
-  private static HttpSolrClient S_ONE_LEADER_CLIENT;
+  private static SolrClient S_ONE_LEADER_CLIENT;
 
   /** A client for talking directly to the leader of shard2 */
-  private static HttpSolrClient S_TWO_LEADER_CLIENT;
+  private static SolrClient S_TWO_LEADER_CLIENT;
 
   /** A client for talking directly to a passive replica of shard1 */
-  private static HttpSolrClient S_ONE_NON_LEADER_CLIENT;
+  private static SolrClient S_ONE_NON_LEADER_CLIENT;
 
   /** A client for talking directly to a passive replica of shard2 */
-  private static HttpSolrClient S_TWO_NON_LEADER_CLIENT;
+  private static SolrClient S_TWO_NON_LEADER_CLIENT;
 
   /** A client for talking directly to a node that has no piece of the collection */
-  private static HttpSolrClient NO_COLLECTION_CLIENT;
+  private static SolrClient NO_COLLECTION_CLIENT;
 
   /** id field doc routing prefix for shard1 */
   private static final String S_ONE_PRE = "abc!";
@@ -80,7 +74,7 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
   private static final String S_TWO_PRE = "XYZ!";
 
   @AfterClass
-  private static void afterClass() throws Exception {
+  public static void afterClass() throws Exception {
     if (null != CLOUD_CLIENT) {
       CLOUD_CLIENT.close();
       CLOUD_CLIENT = null;
@@ -108,7 +102,7 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
   }
 
   @BeforeClass
-  private static void createMiniSolrCloudCluster() throws Exception {
+  public static void createMiniSolrCloudCluster() throws Exception {
 
     final String configName = "solrCloudCollectionConfig";
     final Path configDir = TEST_COLL1_CONF();
@@ -224,7 +218,7 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
   }
 
   @Before
-  private void clearCloudCollection() throws Exception {
+  public void clearCloudCollection() throws Exception {
     assertEquals(0, CLOUD_CLIENT.deleteByQuery("*:*").getStatus());
     assertEquals(0, CLOUD_CLIENT.commit().getStatus());
   }

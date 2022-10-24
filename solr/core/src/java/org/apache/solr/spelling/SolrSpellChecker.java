@@ -31,6 +31,8 @@ import org.apache.solr.client.solrj.response.SpellCheckResponse;
 import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.component.ResponseBuilder;
+import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.SpellCheckMergeData;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
@@ -75,6 +77,12 @@ public abstract class SolrSpellChecker {
     }
     return name;
   }
+
+  /** modify the shard request to be used in a distributed environment. */
+  public void modifyRequest(ResponseBuilder rb, ShardRequest sreq) {
+    /* No-Op */
+  }
+
   /** Integrate spelling suggestions from the various shards in a distributed environment. */
   public SpellingResult mergeSuggestions(
       SpellCheckMergeData mergeData, int numSug, int count, boolean extendedResults) {

@@ -562,7 +562,7 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
             .process(solrClient)
             .getAliasesAsLists()
             .get(getSaferTestName());
-    assert !cols.isEmpty();
+    assertFalse(cols.isEmpty());
 
     for (String category : categories) {
       List<String> cats =

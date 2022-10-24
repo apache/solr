@@ -33,7 +33,6 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import org.apache.lucene.tests.util.LuceneTestCase;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -50,7 +49,6 @@ import org.junit.Test;
  * All base tests will be done with CloudSolrStream. Under the covers CloudSolrStream uses
  * SolrStream so SolrStream will get fully exercised through these tests.
  */
-@Slow
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40", "Lucene41", "Lucene42", "Lucene45"})
 public class JdbcTest extends SolrCloudTestCase {
 
@@ -344,8 +342,8 @@ public class JdbcTest extends SolrCloudTestCase {
 
       Properties p = ((ConnectionImpl) con).getProperties();
 
-      assert (p.getProperty("aggregationMode").equals("map_reduce"));
-      assert (p.getProperty("numWorkers").equals("2"));
+      assertEquals("map_reduce", p.getProperty("aggregationMode"));
+      assertEquals("2", p.getProperty("numWorkers"));
 
       try (Statement stmt = con.createStatement()) {
         try (ResultSet rs =
@@ -449,10 +447,10 @@ public class JdbcTest extends SolrCloudTestCase {
     try (Connection con =
         DriverManager.getConnection("jdbc:solr://" + zkHost, providedProperties)) {
       Properties p = ((ConnectionImpl) con).getProperties();
-      assert (p.getProperty("username").equals(""));
-      assert (p.getProperty("password").equals(""));
-      assert (p.getProperty("testKey1").equals("testValue"));
-      assert (p.getProperty("testKey2").equals(""));
+      assertEquals("", p.getProperty("username"));
+      assertEquals("", p.getProperty("password"));
+      assertEquals("testValue", p.getProperty("testKey1"));
+      assertEquals("", p.getProperty("testKey2"));
 
       try (Statement stmt = con.createStatement()) {
         try (ResultSet rs =
@@ -601,9 +599,9 @@ public class JdbcTest extends SolrCloudTestCase {
       con.setCatalog(zkHost);
       assertEquals(zkHost, con.getCatalog());
 
-      assertEquals(null, con.getSchema());
+      assertNull(con.getSchema());
       con.setSchema("myschema");
-      assertEquals(null, con.getSchema());
+      assertNull(con.getSchema());
 
       DatabaseMetaData databaseMetaData = con.getMetaData();
       assertNotNull(databaseMetaData);
@@ -973,13 +971,13 @@ public class JdbcTest extends SolrCloudTestCase {
     assertEquals(9, rs.getByte(4));
     assertFalse(rs.wasNull());
 
-    assertEquals(null, rs.getObject("testnull_i"));
+    assertNull(rs.getObject("testnull_i"));
     assertTrue(rs.wasNull());
-    assertEquals(null, rs.getObject(5));
+    assertNull(rs.getObject(5));
     assertTrue(rs.wasNull());
-    assertEquals(null, rs.getString("testnull_i"));
+    assertNull(rs.getString("testnull_i"));
     assertTrue(rs.wasNull());
-    assertEquals(null, rs.getString(5));
+    assertNull(rs.getString(5));
     assertTrue(rs.wasNull());
     assertEquals(0D, rs.getDouble("testnull_i"), 0);
     assertTrue(rs.wasNull());
@@ -1064,7 +1062,7 @@ public class JdbcTest extends SolrCloudTestCase {
                     + " WHERE d_multi IS NOT NULL GROUP BY d_multi ORDER BY count(*) DESC")) {
           assertTrue(rs.next());
           assertEquals(2, rs.getLong("the_count"));
-          assertTrue(3d == rs.getDouble("d_multi"));
+          assertEquals(3d, rs.getDouble("d_multi"), 0.0);
           assertTrue(rs.next()); // 4 other values, all with count 1
           assertTrue(rs.next());
           assertTrue(rs.next());

@@ -221,7 +221,7 @@ public class PreAnalyzedFieldTest extends SolrTestCaseJ4 {
     CharTermAttribute termAttr = stream.addAttribute(CharTermAttribute.class);
     stream.reset();
     while (stream.incrementToken()) {
-      assertFalse("zero-length token", termAttr.length() == 0);
+      assertNotEquals("zero-length token", 0, termAttr.length());
     }
     stream.end();
     stream.close();

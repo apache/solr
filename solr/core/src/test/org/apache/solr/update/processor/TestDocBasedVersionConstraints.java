@@ -36,6 +36,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
@@ -696,7 +697,7 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     config.add("versionField", "_version_");
     factory.init(config);
     IndexSchema schema = h.getCore().getLatestSchema();
-    assertThat(factory.canCreateTombstoneDocument(schema), is(true));
+    MatcherAssert.assertThat(factory.canCreateTombstoneDocument(schema), is(true));
   }
 
   public void testCanCreateTombstonesMissingRequiredField() {
@@ -707,11 +708,11 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     factory.init(config);
     IndexSchema schema = h.getCore().getLatestSchema();
     SchemaField sf = schema.getField("sku1");
-    assertThat(sf, is(not(nullValue())));
-    assertThat(schema.getRequiredFields(), not(hasItem(sf)));
+    MatcherAssert.assertThat(sf, is(not(nullValue())));
+    MatcherAssert.assertThat(schema.getRequiredFields(), not(hasItem(sf)));
     try {
       schema.getRequiredFields().add(sf);
-      assertThat(factory.canCreateTombstoneDocument(schema), is(false));
+      MatcherAssert.assertThat(factory.canCreateTombstoneDocument(schema), is(false));
     } finally {
       schema.getRequiredFields().remove(sf);
     }
@@ -728,7 +729,7 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     SchemaField sf2 = new SchemaField("sku1_with_default", sf.getType(), sf.getProperties(), "foo");
     try {
       schema.getRequiredFields().add(sf2);
-      assertThat(factory.canCreateTombstoneDocument(schema), is(true));
+      MatcherAssert.assertThat(factory.canCreateTombstoneDocument(schema), is(true));
     } finally {
       schema.getRequiredFields().remove(sf2);
     }
@@ -745,11 +746,11 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     factory.init(config);
     IndexSchema schema = h.getCore().getLatestSchema();
     SchemaField sf = schema.getField("sku1");
-    assertThat(sf, is(not(nullValue())));
-    assertThat(schema.getRequiredFields(), not(hasItem(sf)));
+    MatcherAssert.assertThat(sf, is(not(nullValue())));
+    MatcherAssert.assertThat(schema.getRequiredFields(), not(hasItem(sf)));
     try {
       schema.getRequiredFields().add(sf);
-      assertThat(factory.canCreateTombstoneDocument(schema), is(true));
+      MatcherAssert.assertThat(factory.canCreateTombstoneDocument(schema), is(true));
     } finally {
       schema.getRequiredFields().remove(sf);
     }
@@ -763,11 +764,11 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     factory.init(config);
     IndexSchema schema = h.getCore().getLatestSchema();
     SchemaField versionField = schema.getField("_version_");
-    assertThat(versionField, is(not(nullValue())));
-    assertThat(schema.getRequiredFields(), not(hasItem(versionField)));
+    MatcherAssert.assertThat(versionField, is(not(nullValue())));
+    MatcherAssert.assertThat(schema.getRequiredFields(), not(hasItem(versionField)));
     try {
       schema.getRequiredFields().add(versionField);
-      assertThat(factory.canCreateTombstoneDocument(schema), is(true));
+      MatcherAssert.assertThat(factory.canCreateTombstoneDocument(schema), is(true));
     } finally {
       schema.getRequiredFields().remove(versionField);
     }
@@ -781,14 +782,14 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     factory.init(config);
     IndexSchema schema = h.getCore().getLatestSchema();
     SchemaField uniqueKeyField = schema.getField("id");
-    assertThat(uniqueKeyField, is(not(nullValue())));
-    assertThat(uniqueKeyField, equalTo(schema.getUniqueKeyField()));
-    assertThat(schema.getRequiredFields(), hasItem(schema.getUniqueKeyField()));
-    assertThat(factory.canCreateTombstoneDocument(schema), is(true));
+    MatcherAssert.assertThat(uniqueKeyField, is(not(nullValue())));
+    MatcherAssert.assertThat(uniqueKeyField, equalTo(schema.getUniqueKeyField()));
+    MatcherAssert.assertThat(schema.getRequiredFields(), hasItem(schema.getUniqueKeyField()));
+    MatcherAssert.assertThat(factory.canCreateTombstoneDocument(schema), is(true));
   }
 
   private void updateWithChain(String chain, String... fields) throws Exception {
-    assert fields.length % 2 == 0;
+    assertEquals(0, fields.length % 2);
     SolrInputDocument doc = new SolrInputDocument(fields);
     updateJ(jsonAdd(doc), params("update.chain", chain));
   }

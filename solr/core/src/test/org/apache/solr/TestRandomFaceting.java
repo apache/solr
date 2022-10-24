@@ -29,7 +29,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -41,16 +40,11 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Slow
 public class TestRandomFaceting extends SolrTestCaseJ4 {
 
   private static final Pattern trieFields = Pattern.compile(".*_t.");
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  public static final String FOO_STRING_FIELD = "foo_s1";
-  public static final String SMALL_STRING_FIELD = "small_s1";
-  public static final String SMALL_INT_FIELD = "small_i";
 
   @BeforeClass
   public static void beforeTests() throws Exception {
@@ -68,8 +62,6 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
 
   @SuppressWarnings({"rawtypes"})
   Map<Comparable, Doc> model = null;
-
-  boolean validateResponses = true;
 
   void init() {
     Random rand = random();
@@ -104,12 +96,12 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
 
     // TODO: doubles, multi-floats, ints with precisionStep>0, booleans
     types.add(new FldType("small_tf", ZERO_ONE, new FVal(-4, 5)));
-    assert trieFields.matcher("small_tf").matches();
-    assert !trieFields.matcher("small_f").matches();
+    assertTrue(trieFields.matcher("small_tf").matches());
+    assertFalse(trieFields.matcher("small_f").matches());
 
     types.add(new FldType("foo_ti", ZERO_ONE, new IRange(-2, indexSize)));
-    assert trieFields.matcher("foo_ti").matches();
-    assert !trieFields.matcher("foo_i").matches();
+    assertTrue(trieFields.matcher("foo_ti").matches());
+    assertFalse(trieFields.matcher("foo_i").matches());
 
     types.add(
         new FldType(
@@ -313,7 +305,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
           responses.add(strResponse);
 
           if (responses.size() > 1) {
-            validateResponse(responses.get(0), strResponse, params, method, methods);
+            validateResponse(responses.get(0), strResponse, params, methods);
           }
         }
       }
@@ -328,11 +320,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
   }
 
   private void validateResponse(
-      String expected,
-      String actual,
-      ModifiableSolrParams params,
-      String method,
-      List<String> methods)
+      String expected, String actual, ModifiableSolrParams params, List<String> methods)
       throws Exception {
     if (params.getBool("facet.exists", false)) {
       if (isSortByCount(params)) { // it's challenged with facet.sort=count
@@ -370,7 +358,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
         e -> {
           List<Object> facetSortedByIndex = (List<Object>) e.getValue();
           Map<Integer, List<Object>> stratas =
-              new HashMap<Integer, List<Object>>() {
+              new HashMap<>() {
                 @Override // poor man multimap, I won't do that anymore, I swear.
                 public List<Object> get(Object key) {
                   if (!containsKey(key)) {

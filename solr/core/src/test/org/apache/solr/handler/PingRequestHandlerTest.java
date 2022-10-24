@@ -87,7 +87,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
 
   public void testEnablingServer() throws Exception {
 
-    assertTrue(!healthcheckFile.exists());
+    assertFalse(healthcheckFile.exists());
 
     // first make sure that ping responds back that the service is disabled
     SolrQueryResponse sqr = makeRequest(handler, req());
@@ -116,7 +116,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
 
   public void testDisablingServer() throws Exception {
 
-    assertTrue(!healthcheckFile.exists());
+    assertFalse(healthcheckFile.exists());
 
     healthcheckFile.createNewFile();
 
