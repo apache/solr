@@ -783,8 +783,8 @@ public class JSONParser {
         throw err("Single quoted strings not allowed");
       }
     } else {
-      if (isName && (flags & ALLOW_UNQUOTED_KEYS) == 0
-          || !isName && (flags & ALLOW_UNQUOTED_STRING_VALUES) == 0
+      if ((isName && (flags & ALLOW_UNQUOTED_KEYS) == 0)
+          || (!isName && (flags & ALLOW_UNQUOTED_STRING_VALUES) == 0)
           || eof) {
         if (isName) {
           throw err("Expected quoted string");

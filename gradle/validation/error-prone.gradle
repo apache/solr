@@ -62,8 +62,6 @@ allprojects { prj ->
 
         options.errorprone.disableWarningsInGeneratedCode = true
         options.errorprone.errorproneArgs = [
-            '-Xep:InlineMeSuggester:OFF', // We don't use this annotation
-
             // bug patterns related to our tests
             '-Xep:ExtendingJUnitAssert:OFF', // we inherit from LuceneTestCase which extends Assert
             '-Xep:UseCorrectAssertInTests:OFF', // and this is a consequence of the above
@@ -85,6 +83,7 @@ allprojects { prj ->
             '-Xep:IdentityBinaryExpression:OFF',
             '-Xep:InconsistentCapitalization:OFF',
             '-Xep:InlineFormatString:OFF', // this introduces redundancy in format strings
+            '-Xep:InlineMeSuggester:OFF', // We don't use this annotation
             '-Xep:InputStreamSlowMultibyteRead:OFF',
             '-Xep:InvalidBlockTag:OFF', // this is needed for tags like lucene.internal
             '-Xep:JavaUtilDate:OFF',
@@ -95,7 +94,6 @@ allprojects { prj ->
             '-Xep:NonAtomicVolatileUpdate:OFF',
             '-Xep:NonCanonicalType:OFF',
             '-Xep:ObjectToString:OFF',
-            '-Xep:OperatorPrecedence:OFF',
             '-Xep:ReturnValueIgnored:OFF',
             '-Xep:SameNameButDifferent:OFF',
             '-Xep:ShortCircuitBoolean:OFF',
