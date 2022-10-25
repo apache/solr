@@ -25,7 +25,7 @@ import org.apache.solr.core.CloudConfig;
 import org.apache.solr.util.CryptoKeys;
 
 /**
- * Creates and mediates access to the {@link CryptoKeys.RSAKeyPair} used by this Solr node.
+ * Creates and mediates access to the CryptoKeys.RSAKeyPair used by this Solr node.
  *
  * <p>Expected to be created once on each Solr node for the life of that process.
  */
