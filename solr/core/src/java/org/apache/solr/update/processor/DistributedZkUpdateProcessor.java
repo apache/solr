@@ -1261,12 +1261,12 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     // send in a background thread
 
     cmdDistrib.finish();
-    List<SolrCmdDistributor.SolrError> errors = cmdDistrib.getErrors();
+    List<SolrCmdDistributor.Error> errors = cmdDistrib.getErrors();
     // TODO - we may need to tell about more than one error...
 
-    List<SolrCmdDistributor.SolrError> errorsForClient = new ArrayList<>(errors.size());
+    List<SolrCmdDistributor.Error> errorsForClient = new ArrayList<>(errors.size());
     Set<String> replicasShouldBeInLowerTerms = new HashSet<>();
-    for (final SolrCmdDistributor.SolrError error : errors) {
+    for (final SolrCmdDistributor.Error error : errors) {
 
       if (error.req.node instanceof SolrCmdDistributor.ForwardNode) {
         // if it's a forward, any fail is a problem -
