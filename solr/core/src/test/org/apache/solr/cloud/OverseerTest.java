@@ -1087,13 +1087,13 @@ public class OverseerTest extends SolrTestCaseJ4 {
               overseerClient.close();
               overseerClient = electNewOverseer(zkAddress);
             } catch (Throwable e) {
-              // e.printStackTrace();
+              log.error("error killing overseer", e);
             }
           }
           try {
             Thread.sleep(100);
           } catch (Throwable e) {
-            // e.printStackTrace();
+            log.error("error during sleep", e);
           }
         }
       } catch (Throwable t) {
@@ -1229,7 +1229,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
             q.offer(Utils.toJSON(m));
             break;
           } catch (SolrException | KeeperException | AlreadyClosedException e) {
-            e.printStackTrace();
+            log.error("error updating state", e);
           }
         }
 
@@ -1247,7 +1247,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
                 getOpenOverseer());
             break;
           } catch (SolrException | KeeperException | AlreadyClosedException e) {
-            e.printStackTrace();
+            log.error("error publishing state", e);
           }
         }
 
@@ -1272,7 +1272,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
                 getOpenOverseer());
             break;
           } catch (SolrException | AlreadyClosedException e) {
-            e.printStackTrace();
+            log.error("error publishing state", e);
           }
         }
 
@@ -1292,7 +1292,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
                 getOpenOverseer());
             break;
           } catch (SolrException | AlreadyClosedException e) {
-            e.printStackTrace();
+            log.error("error publishing state", e);
           }
         }
 
@@ -1312,7 +1312,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
                 getOpenOverseer());
             break;
           } catch (SolrException | AlreadyClosedException e) {
-            e.printStackTrace();
+            log.error("error publishing state", e);
           }
         }
 
