@@ -65,9 +65,8 @@ public class PointMerger {
       if (readers.isEmpty()) {
         return;
       }
-      long ndocs =
-          readers.get(readers.size() - 1).docBase
-              + readers.get(readers.size() - 1).reader().maxDoc();
+      LeafReaderContext leafReaderContext = readers.get(readers.size() - 1);
+      long ndocs = (long) leafReaderContext.docBase + leafReaderContext.reader().maxDoc();
       for (LeafReaderContext ctx : readers) {
         PointValues pv = ctx.reader().getPointValues(field.getName());
         if (pv == null) continue;

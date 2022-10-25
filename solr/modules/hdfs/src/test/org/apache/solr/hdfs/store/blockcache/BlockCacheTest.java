@@ -37,7 +37,7 @@ public class BlockCacheTest extends SolrTestCase {
     int blockSize = 1024;
 
     int slabSize = blockSize * 4096;
-    long totalMemory = 2 * slabSize;
+    long totalMemory = 2L * slabSize;
 
     BlockCache blockCache = new BlockCache(new Metrics(), true, totalMemory, slabSize, blockSize);
     byte[] buffer = new byte[1024];
