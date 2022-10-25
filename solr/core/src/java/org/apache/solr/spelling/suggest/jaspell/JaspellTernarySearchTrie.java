@@ -64,16 +64,16 @@ public class JaspellTernarySearchTrie implements Accountable {
   protected static final class TSTNode implements Accountable {
 
     /** Index values for accessing relatives array. */
-    static final int PARENT = 0, LOKID = 1, EQKID = 2, HIKID = 3;
+    protected static final int PARENT = 0, LOKID = 1, EQKID = 2, HIKID = 3;
 
     /** The key to the node. */
-    Object data;
+    protected Object data;
 
     /** The relative nodes. */
-    final TSTNode[] relatives = new TSTNode[4];
+    protected final TSTNode[] relatives = new TSTNode[4];
 
     /** The char used in the split. */
-    char splitchar;
+    protected char splitchar;
 
     /**
      * Constructor method.
@@ -81,7 +81,7 @@ public class JaspellTernarySearchTrie implements Accountable {
      * @param splitchar The char used in the split.
      * @param parent The parent node.
      */
-    TSTNode(char splitchar, TSTNode parent) {
+    protected TSTNode(char splitchar, TSTNode parent) {
       this.splitchar = splitchar;
       relatives[PARENT] = parent;
     }

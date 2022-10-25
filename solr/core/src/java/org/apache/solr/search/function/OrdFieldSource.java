@@ -124,7 +124,7 @@ public class OrdFieldSource extends ValueSource {
         }
       }
 
-      private String toTerm(String readableValue) {
+      protected String toTerm(String readableValue) {
         return readableValue;
       }
 

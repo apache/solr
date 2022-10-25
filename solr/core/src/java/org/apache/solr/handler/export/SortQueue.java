@@ -25,8 +25,8 @@ import org.apache.lucene.util.ArrayUtil;
  */
 final class SortQueue {
 
-  private int size = 0;
-  final int maxSize;
+  protected int size = 0;
+  protected final int maxSize;
   private final SortDoc[] heap;
   private final SortDoc proto;
   private SortDoc[] cache;
@@ -64,7 +64,7 @@ final class SortQueue {
     return t1.lessThan(t2);
   }
 
-  private void populate() {
+  protected void populate() {
     cache = new SortDoc[heap.length];
     for (int i = 1; i < heap.length; i++) {
       cache[i] = heap[i] = proto.copy();
@@ -72,7 +72,7 @@ final class SortQueue {
     size = maxSize;
   }
 
-  void reset() {
+  protected void reset() {
     if (cache != null) {
       System.arraycopy(cache, 1, heap, 1, heap.length - 1);
       size = maxSize;
