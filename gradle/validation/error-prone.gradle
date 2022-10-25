@@ -69,7 +69,6 @@ allprojects { prj ->
             '-Xep:UseCorrectAssertInTests:OFF', // and this is a consequence of the above
             '-Xep:CatchFail:OFF', // our code is generally descriptive enough, fix case by case if tests fail
             '-Xep:JUnit4TestNotRun:OFF', // RandomizedRunner finds unannotated test methods no problem
-            '-Xep:CatchAndPrintStackTrace:OFF', // TODO: there's a lot of these but they should be easy to address
             '-Xep:StaticAssignmentInConstructor:OFF', // we assign SolrTestCaseJ4.configString in many tests, difficult to untangle
             '-Xep:ComparableType:OFF', // SolrTestCaseJ4.Doc and Fld are messy
 

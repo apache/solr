@@ -247,7 +247,8 @@ public class OrderedExecutorTest extends SolrTestCase {
               isRunning.countDown();
               blockingLatch.await();
             } catch (InterruptedException e) {
-              e.printStackTrace();
+              Thread.currentThread().interrupt();
+              log.error("interrupted", e);
             }
           });
 
