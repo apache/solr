@@ -467,7 +467,7 @@ public class JSONParser {
     out.unsafeWrite(firstChar); // unsafe OK since we know output is big enough
     // We build up the number in the negative plane since it's larger (by one) than
     // the positive plane.
-    long v = '0' - firstChar;
+    long v = (long) '0' - firstChar;
     // can't overflow a long in 18 decimal digits (i.e. 17 additional after the first).
     // we also need 22 additional to handle double so we'll handle in 2 separate loops.
     int i;

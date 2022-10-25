@@ -115,7 +115,7 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
       Metrics metrics = new Metrics();
       int blockSize = 8192;
       int slabSize = blockSize * 16384;
-      long totalMemory = 1 * slabSize;
+      long totalMemory = 1L * slabSize;
       BlockCache blockCache = new BlockCache(metrics, true, totalMemory, slabSize, blockSize);
       BlockDirectoryCache cache =
           new BlockDirectoryCache(blockCache, "/collection1", metrics, true);

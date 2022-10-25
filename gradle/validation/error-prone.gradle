@@ -87,7 +87,6 @@ allprojects { prj ->
             '-Xep:InconsistentCapitalization:OFF',
             '-Xep:InlineFormatString:OFF', // this introduces redundancy in format strings
             '-Xep:InputStreamSlowMultibyteRead:OFF',
-            '-Xep:IntLongMath:OFF',
             '-Xep:InvalidBlockTag:OFF', // this is needed for tags like lucene.internal
             '-Xep:JavaUtilDate:OFF',
             '-Xep:MissingSummary:OFF',
