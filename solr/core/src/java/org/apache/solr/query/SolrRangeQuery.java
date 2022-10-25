@@ -280,7 +280,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
 
       if (upper != null) {
         int cmp = curr.compareTo(upper);
-        if (cmp < 0 || cmp == 0 && includeUpper()) {
+        if (cmp < 0 || (cmp == 0 && includeUpper())) {
           return curr;
         } else {
           curr = null;

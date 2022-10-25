@@ -841,7 +841,7 @@ public class SolrRequestParsers {
 
         boolean schemaRestPath = false;
         int idx = uri.indexOf("/schema");
-        if (idx >= 0 && uri.endsWith("/schema") || uri.contains("/schema/")) {
+        if ((idx >= 0 && uri.endsWith("/schema")) || uri.contains("/schema/")) {
           schemaRestPath = true;
         }
 
