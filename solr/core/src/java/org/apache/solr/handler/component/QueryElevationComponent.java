@@ -56,15 +56,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.BoostQuery;
-import org.apache.lucene.search.FieldComparator;
-import org.apache.lucene.search.FieldComparatorSource;
-import org.apache.lucene.search.SimpleFieldComparator;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.common.SolrException;
@@ -81,6 +73,7 @@ import org.apache.solr.response.transform.ElevatedMarkerFactory;
 import org.apache.solr.response.transform.ExcludedMarkerFactory;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.CollapsingQParserPlugin;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortSpec;
@@ -129,6 +122,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   private static final boolean DEFAULT_SUBSET_MATCH = false;
   private static final String DEFAULT_EXCLUDE_MARKER_FIELD_NAME = "excluded";
   private static final String DEFAULT_EDITORIAL_MARKER_FIELD_NAME = "elevated";
+  private static final boolean DEFAULT_ELEVATE_FILTERED_DOCS = false;
   private static final WeakReference<IndexReader> NULL_REF = new WeakReference<>(null);
 
   protected SolrParams initArgs;
@@ -550,6 +544,24 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         }
       }
       rb.setQuery(queryBuilder.build());
+    }
+
+    List<Query> filters = rb.getFilters();
+    if (params.getBool(QueryElevationParams.ELEVATE_FILTERED_DOCS, DEFAULT_ELEVATE_FILTERED_DOCS)
+      && filters != null && !filters.isEmpty()) {
+      // Change the filter queries to match forced documents
+      List<Query> updatedFilters = new ArrayList<Query>();
+      for (Query q : filters) {
+        if (q instanceof CollapsingQParserPlugin.CollapsingPostFilter) {
+          updatedFilters.add(q);
+          continue;
+        }
+        BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
+        queryBuilder.add(q, BooleanClause.Occur.SHOULD);
+        queryBuilder.add(elevation.includeQuery, BooleanClause.Occur.SHOULD);
+        updatedFilters.add(queryBuilder.build());
+      }
+      rb.setFilters(updatedFilters);
     }
   }
 

@@ -59,4 +59,11 @@ public interface QueryElevationParams {
    * set this to true. False by default.
    */
   String ELEVATE_ONLY_DOCS_MATCHING_QUERY = "elevateOnlyDocsMatchingQuery";
+
+  /**
+   * By default, the component respects the fq parameter.
+   * If you want to elevate documents that do not match the provided filters,
+   * set this to true. False by default.
+   */
+  String ELEVATE_FILTERED_DOCS = "elevateFilteredDocs";
 }
