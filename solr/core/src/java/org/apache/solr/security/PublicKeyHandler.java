@@ -18,15 +18,21 @@
 package org.apache.solr.security;
 
 import com.google.common.annotations.VisibleForTesting;
-import java.io.IOException;
-import java.net.URL;
-import java.security.spec.InvalidKeySpecException;
+import org.apache.solr.api.Api;
+import org.apache.solr.api.JerseyResource;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.CryptoKeys;
+
+import java.io.IOException;
+import java.net.URL;
+import java.security.spec.InvalidKeySpecException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 public class PublicKeyHandler extends RequestHandlerBase {
   public static final String PATH = "/admin/info/key";
@@ -81,5 +87,20 @@ public class PublicKeyHandler extends RequestHandlerBase {
   @Override
   public Name getPermissionName(AuthorizationContext request) {
     return Name.ALL;
+  }
+
+  @Override
+  public Boolean registerV2() {
+    return Boolean.TRUE;
+  }
+
+  @Override
+  public Collection<Api> getApis() {
+    return new ArrayList<>();
+  }
+
+  @Override
+  public Collection<Class<? extends JerseyResource>> getJerseyResources() {
+    return List.of(PublicKeyAPI.class);
   }
 }
