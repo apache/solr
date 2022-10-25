@@ -93,8 +93,6 @@ Other Changes
 
 * SOLR-16443: Upgrade Jackson bom to 2.13.4.20221013 (Kevin Risden)
 
-* SOLR-16467: Upgrade semver4j to 2.2.0 to fix failures with some locales (Kevin Risden)
-
 ==================  9.1.0 ==================
 
 New Features
