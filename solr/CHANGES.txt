@@ -76,8 +76,6 @@ Bug Fixes
 
 * SOLR-16363: DirectUpdateHandler2 should not throw UnknownFormatConversionException (Kevin Risden)
 
-* SOLR-16416: OverseerPrioritizer operations are now retried on failure. (Houston Putman)
-
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
@@ -263,6 +261,8 @@ Bug Fixes
 * SOLR-16478 :removing a replica should delete the PRS entry from the hostnode and not from overseer (Patson Luk via noble)
 
 * SOLR-16485: Fix NPE in ShardHandlerFactory when running in Standalone mode (Houston Putman)
+
+* SOLR-16416: OverseerPrioritizer now runs after all handlers are registered, and retries on failures. (Houston Putman)
 
 Other Changes
 ---------------------
