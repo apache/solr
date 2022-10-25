@@ -36,6 +36,10 @@ public class PublicKeyAPI extends JerseyResource {
     public PublicKeyAPI(CloudConfig cloudConfig) {
         // TODO 'CloudConfig' will be used later as a potential source for the RSA key pairs
     }
+
+    public PublicKeyResponse getPublicKey() {
+        return null;
+    }
     
     public static class PublicKeyResponse extends SolrJerseyResponse {
         @JsonProperty("key")
