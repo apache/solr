@@ -76,6 +76,8 @@ Bug Fixes
 
 * SOLR-16363: DirectUpdateHandler2 should not throw UnknownFormatConversionException (Kevin Risden)
 
+* SOLR-16416: OverseerPrioritizer operations are now retried on failure. (Houston Putman)
+
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
