@@ -26,16 +26,15 @@ class DeleteSnapshotOp implements CoreAdminHandler.CoreAdminOp {
 
   @Override
   public void execute(CoreAdminHandler.CallInfo it) throws Exception {
-    final CoreContainer coreContainer = it.handler.getCoreContainer();
-
-    final SnapshotAPI snapshotAPI = new SnapshotAPI(coreContainer);
-
     final SolrParams params = it.req.getParams();
     final String commitName = params.required().get(CoreAdminParams.COMMIT_NAME);
     final String coreName = params.required().get(CoreAdminParams.CORE);
 
-    final SnapshotAPI.DeleteSnapshotResponse response = snapshotAPI.deleteSnapshot(coreName, commitName);
+    final CoreContainer coreContainer = it.handler.getCoreContainer();
+    final SnapshotAPI snapshotAPI = new SnapshotAPI(coreContainer);
 
+    final SnapshotAPI.DeleteSnapshotResponse response =
+        snapshotAPI.deleteSnapshot(coreName, commitName);
 
     it.rsp.add(CoreAdminParams.CORE, response.coreName);
     it.rsp.add(CoreAdminParams.COMMIT_NAME, response.commitName);

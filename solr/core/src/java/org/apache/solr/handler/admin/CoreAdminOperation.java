@@ -57,7 +57,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Map;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -73,8 +72,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminOp;
 import org.apache.solr.handler.admin.api.SnapshotAPI;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.NumberUtils;
@@ -277,12 +274,11 @@ public enum CoreAdminOperation implements CoreAdminOp {
   LISTSNAPSHOTS_OP(
       LISTSNAPSHOTS,
       it -> {
-        final CoreContainer coreContainer = it.handler.getCoreContainer();
-
-        final SnapshotAPI snapshotAPI = new SnapshotAPI(coreContainer);
-
         final SolrParams params = it.req.getParams();
         final String coreName = params.required().get(CoreAdminParams.CORE);
+
+        final CoreContainer coreContainer = it.handler.getCoreContainer();
+        final SnapshotAPI snapshotAPI = new SnapshotAPI(coreContainer);
 
         final SnapshotAPI.ListSnapshotsResponse response = snapshotAPI.listSnapshots(coreName);
 
