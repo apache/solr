@@ -1564,6 +1564,7 @@ public class IndexSchema {
     private Set<String> requestedSourceFields;
     private Set<String> requestedDestinationFields;
 
+    @SuppressWarnings("ImmutableEnumChecker")
     public enum Handler {
       NAME(IndexSchema.NAME, sp -> sp.schema.getSchemaName()),
       VERSION(IndexSchema.VERSION, sp -> sp.schema.getVersion()),
@@ -1687,11 +1688,10 @@ public class IndexSchema {
   }
 
   public static Map<String, String> nameMapping =
-      Collections.unmodifiableMap(
-          Stream.of(SchemaProps.Handler.values())
-              .collect(
-                  Collectors.toMap(
-                      SchemaProps.Handler::getNameLower, SchemaProps.Handler::getRealName)));
+      Stream.of(SchemaProps.Handler.values())
+          .collect(
+              Collectors.toUnmodifiableMap(
+                  SchemaProps.Handler::getNameLower, SchemaProps.Handler::getRealName));
 
   public Map<String, Object> getNamedPropertyValues(String name, SolrParams params) {
     return new SchemaProps(name, params, this).toMap(new LinkedHashMap<>());

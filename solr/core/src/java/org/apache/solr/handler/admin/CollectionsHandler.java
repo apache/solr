@@ -575,6 +575,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     results.add("status", status);
   }
 
+  @SuppressWarnings("ImmutableEnumChecker")
   public enum CollectionOperation implements CollectionOp {
     CREATE_OP(
         CREATE,
@@ -632,7 +633,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           copyPropertiesWithPrefix(req.getParams(), props, PROPERTY_PREFIX);
           return copyPropertiesWithPrefix(req.getParams(), props, "router.");
         }),
-    @SuppressWarnings({"unchecked"})
     COLSTATUS_OP(
         COLSTATUS,
         (req, rsp, h) -> {
@@ -854,7 +854,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         }),
 
     /** List the aliases and associated properties. */
-    @SuppressWarnings({"unchecked"})
     LISTALIASES_OP(
         LISTALIASES,
         (req, rsp, h) -> {
@@ -1062,7 +1061,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           cp.setCollectionProperty(collection, name, val);
           return null;
         }),
-    @SuppressWarnings({"unchecked"})
     REQUESTSTATUS_OP(
         REQUESTSTATUS,
         (req, rsp, h) -> {
@@ -1128,14 +1126,13 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     DELETESTATUS_OP(
         DELETESTATUS,
         new CollectionOp() {
-          @SuppressWarnings("unchecked")
           @Override
           public Map<String, Object> execute(
               SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler h) throws Exception {
             final CoreContainer coreContainer = h.coreContainer;
             final String requestId = req.getParams().get(REQUESTID);
             final ZkController zkController = coreContainer.getZkController();
-            Boolean flush = req.getParams().getBool(CollectionAdminParams.FLUSH, false);
+            boolean flush = req.getParams().getBool(CollectionAdminParams.FLUSH, false);
 
             if (requestId == null && !flush) {
               throw new SolrException(
@@ -1229,7 +1226,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           return copyPropertiesWithPrefix(req.getParams(), props, PROPERTY_PREFIX);
         }),
     OVERSEERSTATUS_OP(OVERSEERSTATUS, (req, rsp, h) -> new LinkedHashMap<>()),
-    @SuppressWarnings({"unchecked"})
     DISTRIBUTEDAPIPROCESSING_OP(
         DISTRIBUTEDAPIPROCESSING,
         (req, rsp, h) -> {
@@ -1241,7 +1237,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           return null;
         }),
     /** Handle list collection request. Do list collection request to zk host */
-    @SuppressWarnings({"unchecked"})
     LIST_OP(
         LIST,
         (req, rsp, h) -> {
@@ -1858,8 +1853,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     }
 
     public final CollectionOp fun;
-    CollectionAction action;
-    long timeOut;
+    final CollectionAction action;
+    final long timeOut;
 
     CollectionOperation(CollectionAction action, CollectionOp fun) {
       this(action, DEFAULT_COLLECTION_OP_TIMEOUT, fun);
