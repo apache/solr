@@ -467,7 +467,9 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
                         Optional<Double> indexSizeOpt =
                             replicaMetrics.getReplicaMetric(ReplicaMetricImpl.INDEX_SIZE_GB);
                         assertTrue("indexSize", indexSizeOpt.isPresent());
-                        indexSizeOpt.get();
+                        assertTrue(
+                            "wrong type, expected Double but was " + indexSizeOpt.get().getClass(),
+                            indexSizeOpt.get() instanceof Double);
                         assertTrue(
                             "indexSize should be > 0 but was " + indexSizeOpt.get(),
                             indexSizeOpt.get() > 0);

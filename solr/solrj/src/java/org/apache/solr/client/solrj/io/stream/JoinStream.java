@@ -121,8 +121,9 @@ public abstract class JoinStream extends TupleStream implements Expressible {
     }
 
     // on
-    if (eq != null) {
-      expression.addParameter(new StreamExpressionNamedParameter("on", eq.toExpression(factory)));
+    if (eq instanceof Expressible) {
+      expression.addParameter(
+          new StreamExpressionNamedParameter("on", ((Expressible) eq).toExpression(factory)));
     } else {
       throw new IOException(
           "This JoinStream contains a non-expressible equalitor - it cannot be converted to an expression");

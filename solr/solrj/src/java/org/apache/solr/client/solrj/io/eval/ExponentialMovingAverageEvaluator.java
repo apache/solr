@@ -56,7 +56,7 @@ public class ExponentialMovingAverageEvaluator extends RecursiveNumericEvaluator
     Number window = (Number) values[1];
     Number alpha;
     if (2 == values.length) {
-      if (observations == null) {
+      if (!(observations instanceof List<?>)) {
         throw new IOException(
             String.format(
                 Locale.ROOT,
@@ -72,7 +72,7 @@ public class ExponentialMovingAverageEvaluator extends RecursiveNumericEvaluator
                 toExpression(constructingFactory),
                 observations.size()));
       }
-      if (window == null) {
+      if (!(window instanceof Number)) {
         throw new IOException(
             String.format(
                 Locale.ROOT,
@@ -93,7 +93,7 @@ public class ExponentialMovingAverageEvaluator extends RecursiveNumericEvaluator
 
     if (3 == values.length) {
       alpha = (Number) values[2];
-      if (alpha == null) {
+      if (!(alpha instanceof Number)) {
         throw new IOException(
             String.format(
                 Locale.ROOT,

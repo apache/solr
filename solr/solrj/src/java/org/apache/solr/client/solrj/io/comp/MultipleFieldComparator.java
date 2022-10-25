@@ -25,6 +25,7 @@ import java.util.UUID;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
+import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -74,11 +75,11 @@ public class MultipleFieldComparator implements StreamComparator {
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
     StringBuilder sb = new StringBuilder();
     for (StreamComparator comp : comps) {
-      if (comp != null) {
+      if (comp instanceof Expressible) {
         if (sb.length() > 0) {
           sb.append(",");
         }
-        sb.append(comp.toExpression(factory));
+        sb.append(((Expressible) comp).toExpression(factory));
       } else {
         throw new IOException(
             "This MultiComp contains a non-expressible comparator - it cannot be converted to an expression");
