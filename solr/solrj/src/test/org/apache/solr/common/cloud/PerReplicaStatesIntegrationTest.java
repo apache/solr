@@ -87,7 +87,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
 
       // Test delete replica
       Replica leader = c.getReplica((s, replica) -> replica.isLeader());
-      CollectionAdminRequest.deleteReplica(testCollection, leader.shard, leader.getName())
+      CollectionAdminRequest.deleteReplica(testCollection, "shard1", leader.getName())
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(testCollection, 2, 4);
       prs =
