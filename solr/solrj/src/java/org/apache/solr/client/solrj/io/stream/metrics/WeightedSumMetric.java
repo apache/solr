@@ -17,7 +17,7 @@
 package org.apache.solr.client.solrj.io.stream.metrics;
 
 import java.io.IOException;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -81,7 +81,7 @@ public class WeightedSumMetric extends Metric {
     Object o = tuple.get(valueCol);
     if (c instanceof Number && o instanceof Number) {
       if (parts == null) {
-        parts = new LinkedList<>();
+        parts = new ArrayList<>();
       }
       Number count = (Number) c;
       Number value = (Number) o;

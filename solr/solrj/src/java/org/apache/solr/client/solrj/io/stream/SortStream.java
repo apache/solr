@@ -95,7 +95,9 @@ public class SortStream extends TupleStream implements Expressible {
     worker =
         new Worker() {
 
-          private LinkedList<Tuple> tuples = new LinkedList<>();
+          @SuppressWarnings("JdkObsolete")
+          private final LinkedList<Tuple> tuples = new LinkedList<>();
+
           private Tuple eofTuple;
 
           public void readStream(TupleStream stream) throws IOException {
@@ -143,10 +145,9 @@ public class SortStream extends TupleStream implements Expressible {
     }
 
     // by
-    if (comparator instanceof Expressible) {
+    if (comparator != null) {
       expression.addParameter(
-          new StreamExpressionNamedParameter(
-              "by", ((Expressible) comparator).toExpression(factory)));
+          new StreamExpressionNamedParameter("by", comparator.toExpression(factory)));
     } else {
       throw new IOException(
           "This SortStream contains a non-expressible equalitor - it cannot be converted to an expression");

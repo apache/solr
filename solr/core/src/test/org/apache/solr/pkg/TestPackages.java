@@ -53,7 +53,7 @@ import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
-import org.apache.solr.client.solrj.request.beans.Package;
+import org.apache.solr.client.solrj.request.beans.PackagePayload;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -129,7 +129,7 @@ public class TestPackages extends SolrCloudTestCase {
         FILE1,
         "L3q/qIGs4NaF6JiO0ZkMUFa88j0OmYc+I6O7BOdNuMct/xoZ4h73aZHZGc0+nmI1f/U3bOlMPINlSOM6LK3JpQ==");
 
-    Package.AddVersion add = new Package.AddVersion();
+    PackagePayload.AddVersion add = new PackagePayload.AddVersion();
     add.version = "1.0";
     add.pkg = "mypkg";
     add.files = Arrays.asList(new String[] {FILE1});
@@ -210,7 +210,7 @@ public class TestPackages extends SolrCloudTestCase {
         EXPR1,
         "ZOT11arAiPmPZYOHzqodiNnxO9pRyRozWZEBX8XGjU1/HJptFnZK+DI7eXnUtbNaMcbXE2Ze8hh4M/eGyhY8BQ==");
 
-    Package.AddVersion add = new Package.AddVersion();
+    PackagePayload.AddVersion add = new PackagePayload.AddVersion();
     add.version = "1.0";
     add.pkg = "mypkg";
     add.files = Arrays.asList(new String[] {FILE1, URP1, EXPR1});
@@ -399,7 +399,7 @@ public class TestPackages extends SolrCloudTestCase {
 
     assertEquals("Version 2", result.getResults().get(0).getFieldValue("TestVersionedURP.Ver_s"));
 
-    Package.DelVersion delVersion = new Package.DelVersion();
+    PackagePayload.DelVersion delVersion = new PackagePayload.DelVersion();
     delVersion.pkg = "mypkg";
     delVersion.version = "1.0";
     V2Request delete =
@@ -577,7 +577,7 @@ public class TestPackages extends SolrCloudTestCase {
     String FILE2 = "/mypkg/v.0.12/jar_b.jar";
     String FILE3 = "/mypkg/v.0.13/jar_a.jar";
 
-    Package.AddVersion add = new Package.AddVersion();
+    PackagePayload.AddVersion add = new PackagePayload.AddVersion();
     add.version = "0.12";
     add.pkg = "test_pkg";
     add.files = List.of(FILE1, FILE2);
@@ -652,7 +652,7 @@ public class TestPackages extends SolrCloudTestCase {
         Map.of(":packages:test_pkg[1]:version", "0.13", ":packages:test_pkg[1]:files[0]", FILE3));
 
     // Now we will just delete one version
-    Package.DelVersion delVersion = new Package.DelVersion();
+    PackagePayload.DelVersion delVersion = new PackagePayload.DelVersion();
     delVersion.version = "0.1"; // this version does not exist
     delVersion.pkg = "test_pkg";
     req =
@@ -759,7 +759,7 @@ public class TestPackages extends SolrCloudTestCase {
         FILE2,
         "gI6vYUDmSXSXmpNEeK1cwqrp4qTeVQgizGQkd8A4Prx2K8k7c5QlXbcs4lxFAAbbdXz9F4esBqTCiLMjVDHJ5Q==");
 
-    Package.AddVersion add = new Package.AddVersion();
+    PackagePayload.AddVersion add = new PackagePayload.AddVersion();
     add.version = "1.0";
     add.pkg = "schemapkg";
     add.files = Arrays.asList(FILE1, FILE2);
@@ -800,7 +800,7 @@ public class TestPackages extends SolrCloudTestCase {
             ":fieldType:_packageinfo_:version",
             "1.0"));
 
-    add = new Package.AddVersion();
+    add = new PackagePayload.AddVersion();
     add.version = "2.0";
     add.pkg = "schemapkg";
     add.files = Arrays.asList(FILE1);

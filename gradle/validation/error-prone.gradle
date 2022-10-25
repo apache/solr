@@ -74,17 +74,14 @@ allprojects { prj ->
             '-Xep:StaticAssignmentInConstructor:OFF', // we assign SolrTestCaseJ4.configString in many tests, difficult to untangle
             '-Xep:ComparableType:OFF', // SolrTestCaseJ4.Doc and Fld are messy
 
-            '-Xep:AlmostJavadoc:OFF',
             '-Xep:AlreadyChecked:OFF',
             '-Xep:AmbiguousMethodReference:OFF',
             '-Xep:ArgumentSelectionDefectChecker:OFF',
             '-Xep:BadImport:OFF', // style preference that we don't want to enforce
-            '-Xep:BadInstanceof:OFF',
             '-Xep:BadShiftAmount:OFF',
             '-Xep:CanIgnoreReturnValueSuggester:OFF',
             '-Xep:ClassCanBeStatic:OFF',
             '-Xep:ComplexBooleanConstant:OFF',
-            '-Xep:DoubleBraceInitialization:OFF',
             '-Xep:DoubleCheckedLocking:OFF',
             '-Xep:EmptyCatch:OFF',
             '-Xep:EqualsGetClass:OFF',
@@ -100,12 +97,8 @@ allprojects { prj ->
             '-Xep:InlineFormatString:OFF', // this introduces redundancy in format strings
             '-Xep:InputStreamSlowMultibyteRead:OFF',
             '-Xep:IntLongMath:OFF',
-            '-Xep:InvalidBlockTag:OFF',
-            '-Xep:InvalidInlineTag:OFF',
-            '-Xep:InvalidParam:OFF',
-            '-Xep:JavaLangClash:OFF',
+            '-Xep:InvalidBlockTag:OFF', // this is needed for tags like lucene.internal
             '-Xep:JavaUtilDate:OFF',
-            '-Xep:JdkObsolete:OFF',
             '-Xep:LogicalAssignment:OFF',
             '-Xep:MissingOverride:OFF',
             '-Xep:MissingSummary:OFF',
@@ -119,7 +112,6 @@ allprojects { prj ->
             '-Xep:ObjectToString:OFF',
             '-Xep:ObjectsHashCodePrimitive:OFF',
             '-Xep:OperatorPrecedence:OFF',
-            '-Xep:ProtectedMembersInFinalClass:OFF',
             '-Xep:ReferenceEquality:OFF',
             '-Xep:ReturnValueIgnored:OFF',
             '-Xep:SameNameButDifferent:OFF',
@@ -136,7 +128,6 @@ allprojects { prj ->
             '-Xep:UnescapedEntity:OFF',
             '-Xep:UnicodeEscape:OFF',
             '-Xep:UnnecessaryParentheses:OFF',
-            '-Xep:UnsynchronizedOverridesSynchronized:OFF',
             '-Xep:UnusedMethod:OFF',
             '-Xep:UnusedVariable:OFF',
             '-Xep:WaitNotInLoop:OFF',

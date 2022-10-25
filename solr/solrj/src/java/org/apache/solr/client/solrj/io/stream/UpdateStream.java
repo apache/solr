@@ -185,7 +185,7 @@ public class UpdateStream extends TupleStream implements Expressible {
         new StreamExpressionNamedParameter("batchSize", Integer.toString(updateBatchSize)));
 
     if (includeStreams) {
-      if (tupleSource instanceof Expressible) {
+      if (tupleSource != null) {
         expression.addParameter(((Expressible) tupleSource).toExpression(factory));
       } else {
         throw new IOException(

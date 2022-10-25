@@ -46,8 +46,6 @@ public class GraphTest extends SolrCloudTestCase {
 
   private static final String id = "id";
 
-  private static final int TIMEOUT = 30;
-
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(2)
@@ -112,7 +110,7 @@ public class GraphTest extends SolrCloudTestCase {
     assertEquals(2, tuples.size());
 
     for (Tuple tuple : tuples) {
-      paths.add(tuple.getStrings("path").toString());
+      paths.add(tuple.get("path").toString());
     }
 
     assertTrue(paths.contains("[jim, dave, alex, steve]"));
@@ -133,7 +131,7 @@ public class GraphTest extends SolrCloudTestCase {
     assertEquals(2, tuples.size());
 
     for (Tuple tuple : tuples) {
-      paths.add(tuple.getStrings("path").toString());
+      paths.add(tuple.get("path").toString());
     }
 
     assertTrue(paths.contains("[jim, dave, alex, steve]"));
@@ -178,7 +176,7 @@ public class GraphTest extends SolrCloudTestCase {
     assertEquals(1, tuples.size());
 
     for (Tuple tuple : tuples) {
-      paths.add(tuple.getStrings("path").toString());
+      paths.add(tuple.get("path").toString());
     }
 
     assertTrue(paths.contains("[jim, stan, mary, steve]"));

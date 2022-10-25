@@ -135,7 +135,7 @@ import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
-import org.apache.solr.pkg.PackageLoader;
+import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.search.SolrFieldCacheBean;
@@ -283,7 +283,7 @@ public class CoreContainer {
       new DelegatingPlacementPluginFactory();
 
   private PackageStoreAPI packageStoreAPI;
-  private PackageLoader packageLoader;
+  private SolrPackageLoader packageLoader;
 
   private final Set<Path> allowPaths;
 
@@ -696,7 +696,7 @@ public class CoreContainer {
     return replayUpdatesExecutor;
   }
 
-  public PackageLoader getPackageLoader() {
+  public SolrPackageLoader getPackageLoader() {
     return packageLoader;
   }
 
@@ -780,7 +780,7 @@ public class CoreContainer {
       containerHandlers.getApiBag().registerObject(packageStoreAPI.readAPI);
       containerHandlers.getApiBag().registerObject(packageStoreAPI.writeAPI);
 
-      packageLoader = new PackageLoader(this);
+      packageLoader = new SolrPackageLoader(this);
       containerHandlers.getApiBag().registerObject(packageLoader.getPackageAPI().editAPI);
       containerHandlers.getApiBag().registerObject(packageLoader.getPackageAPI().readAPI);
       ZookeeperReadAPI zookeeperReadAPI = new ZookeeperReadAPI(this);

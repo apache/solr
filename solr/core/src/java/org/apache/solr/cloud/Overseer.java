@@ -22,10 +22,10 @@ import com.codahale.metrics.Timer;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -314,11 +314,11 @@ public class Overseer implements SolrCloseable {
             }
           }
 
-          LinkedList<Pair<String, byte[]>> queue = null;
+          ArrayDeque<Pair<String, byte[]>> queue = null;
           try {
             // We do not need to filter any nodes here cause all processed nodes are removed once we
             // flush clusterstate
-            queue = new LinkedList<>(stateUpdateQueue.peekElements(1000, 3000L, (x) -> true));
+            queue = new ArrayDeque<>(stateUpdateQueue.peekElements(1000, 3000L, (x) -> true));
           } catch (KeeperException.SessionExpiredException e) {
             log.warn("Solr cannot talk to ZK, exiting Overseer main queue loop", e);
             return;
@@ -368,7 +368,7 @@ public class Overseer implements SolrCloseable {
               if (isClosed) break;
               // if an event comes in the next 100ms batch it together
               queue =
-                  new LinkedList<>(
+                  new ArrayDeque<>(
                       stateUpdateQueue.peekElements(
                           1000, 100, node -> !processedNodes.contains(node)));
             }

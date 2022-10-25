@@ -388,8 +388,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     Set<Map.Entry<String, String>> entries = queryParams.entrySet();
     // parameters
     for (Map.Entry<String, String> param : entries) {
-      assert param.getKey() instanceof String && param.getValue() instanceof String
-          : "Bad types passed";
+      assert param.getKey() != null && param.getValue() != null : "Bad types passed";
       String value = param.getValue().toString();
 
       // SOLR-8409: This is a special case where the params contain a " character
@@ -557,7 +556,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       joinSParams.set("qt", "/export");
       joinSParams.set(SORT, gather + " asc," + traverseTo + " asc");
 
-      StringBuffer nodeQuery = new StringBuffer();
+      StringBuilder nodeQuery = new StringBuilder();
 
       boolean comma = false;
       for (String node : nodes) {
