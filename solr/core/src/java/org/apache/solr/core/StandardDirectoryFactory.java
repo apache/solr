@@ -86,7 +86,7 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
   }
 
   @Override
-  protected synchronized void removeDirectory(CacheValue cacheValue) throws IOException {
+  protected void removeDirectory(CacheValue cacheValue) throws IOException {
     Path dirPath = Path.of(cacheValue.path);
     PathUtils.deleteDirectory(dirPath);
   }
