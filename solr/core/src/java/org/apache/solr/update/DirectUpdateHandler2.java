@@ -313,12 +313,12 @@ public class DirectUpdateHandler2 extends UpdateHandler
           SolrException.ErrorCode.BAD_REQUEST,
           String.format(
               Locale.ROOT,
-              "Exception writing document id %s to the index; possible analysis error: "
-                  + iae.getMessage()
-                  + (iae.getCause() instanceof BytesRefHash.MaxBytesLengthExceededException
-                      ? ". Perhaps the document has an indexed string field (solr.StrField) which is too large"
-                      : ""),
-              cmd.getPrintableId()),
+              "Exception writing document id %s to the index; possible analysis error: %s%s",
+              cmd.getPrintableId(),
+              iae.getMessage(),
+              (iae.getCause() instanceof BytesRefHash.MaxBytesLengthExceededException
+                  ? ". Perhaps the document has an indexed string field (solr.StrField) which is too large"
+                  : "")),
           iae);
     } catch (RuntimeException t) {
       throw new SolrException(

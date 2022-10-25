@@ -49,6 +49,8 @@ Bug Fixes
 
 * SOLR-16483: Fix IndexOutOfBounds in RecursiveNumericEvaluator (Bendegúz Ács via Kevin Risden)
 
+* SOLR-16363: DirectUpdateHandler2 should not throw UnknownFormatConversionException (Kevin Risden)
+
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
