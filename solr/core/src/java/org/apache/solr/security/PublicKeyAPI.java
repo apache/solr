@@ -20,7 +20,6 @@ package org.apache.solr.security;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.apache.solr.api.JerseyResource;
-import org.apache.solr.core.CloudConfig;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.jersey.SolrJerseyResponse;
 
@@ -39,9 +38,11 @@ import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONT
 @Path("/node/key")
 public class PublicKeyAPI extends JerseyResource {
 
+    private final SolrNodeKeyPair nodeKeyPair;
+
     @Inject
-    public PublicKeyAPI(CloudConfig cloudConfig) {
-        // TODO 'CloudConfig' will be used later as a potential source for the RSA key pairs
+    public PublicKeyAPI(SolrNodeKeyPair nodeKeyPair) {
+        this.nodeKeyPair = nodeKeyPair;
     }
 
     @GET
@@ -49,8 +50,7 @@ public class PublicKeyAPI extends JerseyResource {
     @PermissionName(PermissionNameProvider.Name.ALL)
     public PublicKeyResponse getPublicKey() {
         final PublicKeyResponse response = instantiateJerseyResponse(PublicKeyResponse.class);
-        response.key = "hello-world";
-
+        response.key = nodeKeyPair.getKeyPair().getPublicKeyStr();
         return response;
     }
 

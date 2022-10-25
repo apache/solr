@@ -109,6 +109,7 @@ import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.security.SecurityPluginHolder;
+import org.apache.solr.security.SolrNodeKeyPair;
 import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.OrderedExecutor;
@@ -128,7 +129,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.spec.InvalidKeySpecException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -236,6 +236,8 @@ public class CoreContainer {
   protected final SolrResourceLoader loader;
 
   protected final Path solrHome;
+
+  protected final SolrNodeKeyPair nodeKeyPair;
 
   protected final CoresLocator coresLocator;
 
@@ -389,12 +391,8 @@ public class CoreContainer {
     this.cfg = requireNonNull(config);
     this.loader = config.getSolrResourceLoader();
     this.solrHome = config.getSolrHome();
-
-    try {
-      containerHandlers.put(PublicKeyHandler.PATH, new PublicKeyHandler(cfg.getCloudConfig()));
-    } catch (IOException | InvalidKeySpecException e) {
-      throw new RuntimeException("Bad PublicKeyHandler configuration.", e);
-    }
+    this.nodeKeyPair = new SolrNodeKeyPair(cfg.getCloudConfig());
+    containerHandlers.put(PublicKeyHandler.PATH, new PublicKeyHandler(nodeKeyPair));
     if (null != this.cfg.getBooleanQueryMaxClauseCount()) {
       IndexSearcher.setMaxClauseCount(this.cfg.getBooleanQueryMaxClauseCount());
     }
@@ -639,6 +637,7 @@ public class CoreContainer {
    */
   protected CoreContainer(Object testConstructor) {
     solrHome = null;
+    nodeKeyPair = null;
     loader = null;
     coresLocator = null;
     cfg = null;
@@ -1088,8 +1087,8 @@ public class CoreContainer {
                     new AbstractBinder() {
                       @Override
                       protected void configure() {
-                        bindFactory(new InjectionFactories.SingletonFactory<>(cfg.getCloudConfig()))
-                                .to(CloudConfig.class)
+                        bindFactory(new InjectionFactories.SingletonFactory<>(nodeKeyPair))
+                                .to(SolrNodeKeyPair.class)
                                 .in(Singleton.class);
                       }
                     });

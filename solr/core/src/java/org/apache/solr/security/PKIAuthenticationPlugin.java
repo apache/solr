@@ -16,26 +16,7 @@
  */
 package org.apache.solr.security;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 import com.google.common.annotations.VisibleForTesting;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.nio.ByteBuffer;
-import java.security.InvalidKeyException;
-import java.security.Principal;
-import java.security.PublicKey;
-import java.security.SignatureException;
-import java.time.Instant;
-import java.util.Base64;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpException;
 import org.apache.http.HttpHeaders;
@@ -60,6 +41,26 @@ import org.apache.solr.util.CryptoKeys;
 import org.eclipse.jetty.client.api.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.servlet.FilterChain;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.nio.ByteBuffer;
+import java.security.InvalidKeyException;
+import java.security.Principal;
+import java.security.PublicKey;
+import java.security.SignatureException;
+import java.time.Instant;
+import java.util.Base64;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class PKIAuthenticationPlugin extends AuthenticationPlugin
     implements HttpClientBuilderPlugin {
@@ -103,6 +104,8 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     return interceptorRegistered;
   }
 
+  // TODO We only use PublicKeyHandler here to gain access to the underlying keypair; let's nuke the indirection and
+  //  just pass in the SolrNodeKeyPair instance directly
   public PKIAuthenticationPlugin(
       CoreContainer cores, String nodeName, PublicKeyHandler publicKeyHandler) {
     this.publicKeyHandler = publicKeyHandler;
@@ -461,7 +464,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
 
     String s = usr + " " + System.currentTimeMillis();
     byte[] payload = s.getBytes(UTF_8);
-    byte[] payloadCipher = publicKeyHandler.keyPair.encrypt(ByteBuffer.wrap(payload));
+    byte[] payloadCipher = publicKeyHandler.getKeyPair().encrypt(ByteBuffer.wrap(payload));
     String base64Cipher = Base64.getEncoder().encodeToString(payloadCipher);
     log.trace("generateToken: usr={} token={}", usr, base64Cipher);
     return Optional.of(myNodeName + " " + base64Cipher);
@@ -476,7 +479,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     String s = myNodeName + " " + user + " " + Instant.now().toEpochMilli();
 
     byte[] payload = s.getBytes(UTF_8);
-    byte[] signature = publicKeyHandler.keyPair.signSha256(payload);
+    byte[] signature = publicKeyHandler.getKeyPair().signSha256(payload);
     String base64Signature = Base64.getEncoder().encodeToString(signature);
     return Optional.of(s + " " + base64Signature);
   }
@@ -505,7 +508,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
 
   @VisibleForTesting
   public String getPublicKey() {
-    return publicKeyHandler.getPublicKey();
+    return publicKeyHandler.getKeyPair().getPublicKeyStr();
   }
 
   public static final String HEADER = "SolrAuth";
