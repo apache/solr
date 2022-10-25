@@ -1805,8 +1805,8 @@ if [[ -n "${SOLR_MODULES:-}" ]] ; then
 fi
 
 # Default placement plugin
-if [[ -n "${SOLR_DEFAULT_PLACEMENT_PLUGIN:-}" ]] ; then
-  SOLR_OPTS+=("-Dsolr.defaultPlacementPlugin=$SOLR_DEFAULT_PLACEMENT_PLUGIN")
+if [[ -n "${SOLR_PLACEMENTPLUGIN_DEFAULT:-}" ]] ; then
+  SOLR_OPTS+=("-Dsolr.placementplugin.default=$SOLR_PLACEMENTPLUGIN_DEFAULT")
 fi
 
 : ${SOLR_SERVER_DIR:=$DEFAULT_SERVER_DIR}

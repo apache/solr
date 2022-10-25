@@ -284,4 +284,4 @@
 
 # Configure the default replica placement plugin to use if one is not configured in cluster properties
 # See https://solr.apache.org/guide/solr/latest/configuration-guide/replica-placement-plugins.html for details
-#SOLR_DEFAULT_PLACEMENT_PLUGIN=simple
+#SOLR_PLACEMENTPLUGIN_DEFAULT=simple

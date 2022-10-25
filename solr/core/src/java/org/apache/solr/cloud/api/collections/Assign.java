@@ -66,7 +66,7 @@ import org.slf4j.LoggerFactory;
 public class Assign {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String SYSTEM_COLL_PREFIX = ".sys.";
-  public static final String DEFAULT_PLACEMENT_PLUGIN_SYSPROP = "solr.defaultPlacementPlugin";
+  public static final String PLACEMENTPLUGIN_DEFAULT_SYSPROP = "solr.placementplugin.default";
 
   public static String getCounterNodePath(String collection) {
     return ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/counter";
@@ -566,7 +566,7 @@ public class Assign {
         coreContainer.getPlacementPluginFactory().createPluginInstance();
     if (placementPlugin == null) {
       // Otherwise use the default
-      String defaultPluginId = System.getProperty(DEFAULT_PLACEMENT_PLUGIN_SYSPROP);
+      String defaultPluginId = System.getProperty(PLACEMENTPLUGIN_DEFAULT_SYSPROP);
       if (defaultPluginId != null) {
         switch (defaultPluginId.toLowerCase(Locale.ROOT)) {
           case "simple":
@@ -585,12 +585,12 @@ public class Assign {
             throw new SolrException(
                 SolrException.ErrorCode.SERVER_ERROR,
                 "Invalid value for system property '"
-                    + DEFAULT_PLACEMENT_PLUGIN_SYSPROP
+                    + PLACEMENTPLUGIN_DEFAULT_SYSPROP
                     + "'. Supported values are 'simple', 'random', 'affinity' and 'minimizecores'");
         }
         log.info(
             "Default replica placement plugin set in {} to {}",
-            DEFAULT_PLACEMENT_PLUGIN_SYSPROP,
+            PLACEMENTPLUGIN_DEFAULT_SYSPROP,
             defaultPluginId);
       } else {
         // TODO: Consider making the ootb default AffinityPlacementFactory, see https://issues.apache.org/jira/browse/SOLR-16492

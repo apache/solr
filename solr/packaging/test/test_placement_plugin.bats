@@ -30,7 +30,7 @@ teardown() {
 }
 
 @test "Affinity placement plugin using sysprop" {
-  run solr start -c -Dsolr.defaultPlacementPlugin=affinity
+  run solr start -c -Dsolr.placementplugin.default=affinity
   solr assert -c http://localhost:8983/solr -t 3000
   run solr create_collection -c COLL_NAME
   collection_exists COLL_NAME
@@ -38,7 +38,7 @@ teardown() {
 }
 
 @test "Affinity placement plugin using ENV" {
-  export SOLR_DEFAULT_PLACEMENT_PLUGIN=random
+  export SOLR_PLACEMENTPLUGIN_DEFAULT=random
   run solr start -c
   solr assert -c http://localhost:8983/solr -t 3000
   run solr create_collection -c COLL_NAME

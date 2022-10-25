@@ -240,4 +240,4 @@ REM set SOLR_MODULES=extraction,ltr
 
 REM Configure the default replica placement plugin to use if one is not configured in cluster properties
 REM See https://solr.apache.org/guide/solr/latest/configuration-guide/replica-placement-plugins.html for details
-REM set SOLR_DEFAULT_PLACEMENT_PLUGIN=simple
+REM set SOLR_PLACEMENTPLUGIN_DEFAULT=simple
