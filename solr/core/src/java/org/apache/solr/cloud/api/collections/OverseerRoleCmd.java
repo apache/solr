@@ -110,7 +110,7 @@ public class OverseerRoleCmd implements CollApiCmds.CollectionApiCommand {
     new Thread(
             () -> {
               try {
-                overseerPrioritizer.prioritizeOverseerNodesWithRetries(ccc.getOverseerId(), 5);
+                overseerPrioritizer.prioritizeOverseerNodes(ccc.getOverseerId());
               } catch (Exception e) {
                 log.error("Error in prioritizing Overseer", e);
               }

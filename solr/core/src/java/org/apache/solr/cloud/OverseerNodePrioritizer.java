@@ -64,26 +64,6 @@ public class OverseerNodePrioritizer {
     this.overseer = overseer;
   }
 
-  public synchronized void prioritizeOverseerNodesWithRetries(String overseerId, int retryCount)
-      throws Exception {
-    boolean successful = false;
-    for (int i = 0; i < retryCount && !successful; i++) {
-      try {
-        prioritizeOverseerNodes(overseerId);
-        successful = true;
-      } catch (InterruptedException ie) {
-        Thread.currentThread().interrupt();
-        return;
-      } catch (Exception e) {
-        if (i < retryCount - 1) {
-          log.warn("Error in prioritizing Overseer. Retrying", e);
-        } else {
-          throw e;
-        }
-      }
-    }
-  }
-
   public synchronized void prioritizeOverseerNodes(String overseerId) throws Exception {
     SolrZkClient zk = zkStateReader.getZkClient();
     List<String> overseerDesignates = new ArrayList<>();
@@ -138,11 +118,13 @@ public class OverseerNodePrioritizer {
     }
     if (!designateNodeId.equals(electionNodes.get(1))) { // checking if it is already at no:1
       log.info("asking node {} to come join election at head", designateNodeId);
-      invokeOverseerOp(designateNodeId, "rejoinAtHead"); // ask designate to come first
+      invokeOverseerOpWithRetries(
+          designateNodeId, "rejoinAtHead", 5); // ask designate to come first
       if (log.isInfoEnabled()) {
         log.info("asking the old first in line {} to rejoin election  ", electionNodes.get(1));
       }
-      invokeOverseerOp(electionNodes.get(1), "rejoin"); // ask second inline to go behind
+      invokeOverseerOpWithRetries(
+          electionNodes.get(1), "rejoin", 5); // ask second inline to go behind
       if (log.isInfoEnabled()) {
         List<String> newElectionNodes =
             OverseerTaskProcessor.getSortedElectionNodes(
@@ -152,6 +134,22 @@ public class OverseerNodePrioritizer {
     }
     // now ask the current leader to QUIT , so that the designate can takeover
     overseer.sendQuitToOverseer(OverseerTaskProcessor.getLeaderId(zkStateReader.getZkClient()));
+  }
+
+  private void invokeOverseerOpWithRetries(String electionNode, String op, int retryCount) {
+    boolean successful = false;
+    for (int i = 0; i < retryCount && !successful; i++) {
+      try {
+        invokeOverseerOp(electionNode, op);
+        successful = true;
+      } catch (SolrException e) {
+        if (i < retryCount - 1) {
+          log.warn("Exception occurred while invoking Overseer Operation '{}'. Retrying.", op, e);
+        } else {
+          throw e;
+        }
+      }
+    }
   }
 
   private void invokeOverseerOp(String electionNode, String op) {

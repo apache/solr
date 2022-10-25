@@ -202,7 +202,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
           oldestItemInWorkQueue);
 
     try {
-      prioritizer.prioritizeOverseerNodesWithRetries(myId, 5);
+      prioritizer.prioritizeOverseerNodes(myId);
     } catch (AlreadyClosedException e) {
       return;
     } catch (Exception e) {
