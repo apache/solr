@@ -83,7 +83,6 @@ allprojects { prj ->
             '-Xep:ComplexBooleanConstant:OFF',
             '-Xep:DoubleCheckedLocking:OFF',
             '-Xep:EmptyCatch:OFF',
-            '-Xep:EqualsUnsafeCast:OFF',
             '-Xep:Finally:OFF',
             '-Xep:FutureReturnValueIgnored:OFF',
             '-Xep:IdentityBinaryExpression:OFF',

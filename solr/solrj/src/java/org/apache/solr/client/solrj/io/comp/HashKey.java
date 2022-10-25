@@ -48,6 +48,7 @@ public class HashKey implements Serializable {
 
   @Override
   public boolean equals(Object o) {
+    if (!(o instanceof HashKey)) return false;
     HashKey h = (HashKey) o;
     for (int i = 0; i < parts.length; i++) {
       if (!parts[i].equals(h.parts[i])) {
