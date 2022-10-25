@@ -18,9 +18,8 @@ package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
-import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.TARGET_NODE_NAME_PROP;
+import static org.apache.solr.common.params.CollectionParams.SOURCE_NODE;
+import static org.apache.solr.common.params.CollectionParams.TARGET_NODE;
 import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
@@ -98,9 +97,8 @@ public class ReplaceNodeAPI extends AdminAPIBase {
   public ZkNodeProps createRemoteMessage(
       String nodeName, String targetNodeName, ReplaceNodeRequestBody requestBody) {
     final Map<String, Object> remoteMessage = new HashMap<>();
-    remoteMessage.put(NODE_NAME_PROP, nodeName);
-    remoteMessage.put(TARGET_NODE_NAME_PROP, targetNodeName);
-    remoteMessage.put(PROPERTY_VALUE_PROP, requestBody.value);
+    remoteMessage.put(SOURCE_NODE, nodeName);
+    remoteMessage.put(TARGET_NODE, requestBody.value);
     remoteMessage.put(QUEUE_OPERATION, CollectionAction.REPLACENODE.toLower());
 
     return new ZkNodeProps(remoteMessage);
