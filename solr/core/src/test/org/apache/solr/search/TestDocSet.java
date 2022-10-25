@@ -60,6 +60,7 @@ public class TestDocSet extends SolrTestCase {
   }
 
   // test the DocSetCollector
+  @SuppressWarnings("BadShiftAmount")
   public void collect(DocSet set, int maxDoc) {
     int smallSetSize = maxDoc >> 64 + 3;
     if (set.size() > 1) {
