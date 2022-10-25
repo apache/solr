@@ -144,6 +144,7 @@ public class PluginInfoTest extends DOMUtilTestBase {
     assertNotNull(childInfo);
     PluginInfo notExistent = pi.getChild("doesnotExist");
     assertNull(notExistent);
+    assertTrue(childInfo instanceof PluginInfo);
     assertEquals(0, (int) (Integer) childInfo.initArgs.get("index"));
     Node node2 = getNode(configWithNoChildren, "plugin");
     PluginInfo pi2 = new PluginInfo(node2, "with No Children", false, false);
@@ -159,6 +160,7 @@ public class PluginInfoTest extends DOMUtilTestBase {
     assertEquals(2, children.size());
     for (PluginInfo childInfo : children) {
       assertNotNull(childInfo);
+      assertTrue(childInfo instanceof PluginInfo);
     }
   }
 

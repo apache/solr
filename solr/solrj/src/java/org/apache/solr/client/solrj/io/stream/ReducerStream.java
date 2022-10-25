@@ -169,14 +169,15 @@ public class ReducerStream extends TupleStream implements Expressible {
     }
 
     // over
-    if (eq != null) {
-      expression.addParameter(new StreamExpressionNamedParameter("by", eq.toExpression(factory)));
+    if (eq instanceof Expressible) {
+      expression.addParameter(
+          new StreamExpressionNamedParameter("by", ((Expressible) eq).toExpression(factory)));
     } else {
       throw new IOException(
           "This ReducerStream contains a non-expressible comparator - it cannot be converted to an expression");
     }
 
-    if (op != null) {
+    if (op instanceof Expressible) {
       expression.addParameter(op.toExpression(factory));
     } else {
       throw new IOException(
