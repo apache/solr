@@ -64,6 +64,26 @@ public class OverseerNodePrioritizer {
     this.overseer = overseer;
   }
 
+  public synchronized void prioritizeOverseerNodesWithRetries(String overseerId, int retryCount)
+      throws Exception {
+    boolean successful = false;
+    for (int i = 0; i < retryCount && !successful; i++) {
+      try {
+        prioritizeOverseerNodes(overseerId);
+        successful = true;
+      } catch (InterruptedException ie) {
+        Thread.currentThread().interrupt();
+        return;
+      } catch (Exception e) {
+        if (i < retryCount - 1) {
+          log.warn("Error in prioritizing Overseer. Retrying", e);
+        } else {
+          throw e;
+        }
+      }
+    }
+  }
+
   public synchronized void prioritizeOverseerNodes(String overseerId) throws Exception {
     SolrZkClient zk = zkStateReader.getZkClient();
     List<String> overseerDesignates = new ArrayList<>();
