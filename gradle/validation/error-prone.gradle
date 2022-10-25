@@ -95,7 +95,7 @@ allprojects { prj ->
             '-Xep:InlineFormatString:OFF', // this introduces redundancy in format strings
             '-Xep:InputStreamSlowMultibyteRead:OFF',
             '-Xep:IntLongMath:OFF',
-            '-Xep:InvalidBlockTag:OFF', // this is needed for tags like lucene.internal
+            '-Xep:InvalidBlockTag:OFF',
             '-Xep:InvalidInlineTag:OFF',
             '-Xep:InvalidParam:OFF',
             '-Xep:JavaLangClash:OFF',
