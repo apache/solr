@@ -1797,13 +1797,11 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           final RequiredSolrParams requiredParams = req.getParams().required();
           final ReplaceNodeAPI.ReplaceNodeRequestBody requestBody =
               new ReplaceNodeAPI.ReplaceNodeRequestBody();
-          requestBody.value = requiredParams.get(TARGET_NODE);
-          final String targetNodeName = requiredParams.get(TARGET_NODE);
-
+          requestBody.targetNode = requiredParams.get(TARGET_NODE);
           final ReplaceNodeAPI replaceNodeAPI = new ReplaceNodeAPI(h.coreContainer, req, rsp);
           final SolrJerseyResponse replaceNodeResponse =
               replaceNodeAPI.replaceNode(
-                  requiredParams.get(SOURCE_NODE), targetNodeName, requestBody);
+                  requiredParams.get(SOURCE_NODE), requestBody);
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, replaceNodeResponse);
           return null;
         }),

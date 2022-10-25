@@ -18,6 +18,7 @@ package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
+import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
 import static org.apache.solr.common.params.CollectionParams.SOURCE_NODE;
 import static org.apache.solr.common.params.CollectionParams.TARGET_NODE;
 import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
@@ -51,7 +52,7 @@ import org.apache.solr.response.SolrQueryResponse;
  *
  * <p>This API is analogous to the v1 /admin/collections?action=REPLACENODE command.
  */
-@Path("/nodes/{nodeName}/commands/replace/{targetNodeName}")
+@Path("cluster/nodes/{nodeName}/commands/replace/")
 public class ReplaceNodeAPI extends AdminAPIBase {
 
   @Inject
@@ -69,16 +70,13 @@ public class ReplaceNodeAPI extends AdminAPIBase {
       @Parameter(description = "The name of the node to be replaced.", required = true)
           @PathParam("nodeName")
           String nodeName,
-      @Parameter(description = "The name of the new node.", required = true)
-          @PathParam("targetNodeName")
-          String targetNodeName,
-      @RequestBody(description = "The value of the targetNodeName", required = true)
+         @RequestBody(description = "The name of the target node ", required = true)
           ReplaceNodeRequestBody requestBody)
       throws Exception {
     final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
     final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
     /** TODO Record node for log and tracing */
-    final ZkNodeProps remoteMessage = createRemoteMessage(nodeName, targetNodeName, requestBody);
+    final ZkNodeProps remoteMessage = createRemoteMessage(nodeName, requestBody);
     final SolrResponse remoteResponse =
         CollectionsHandler.submitCollectionApiCommand(
             coreContainer,
@@ -95,10 +93,10 @@ public class ReplaceNodeAPI extends AdminAPIBase {
   }
 
   public ZkNodeProps createRemoteMessage(
-      String nodeName, String targetNodeName, ReplaceNodeRequestBody requestBody) {
+      String nodeName, ReplaceNodeRequestBody requestBody) {
     final Map<String, Object> remoteMessage = new HashMap<>();
     remoteMessage.put(SOURCE_NODE, nodeName);
-    remoteMessage.put(TARGET_NODE, requestBody.value);
+    remoteMessage.put(TARGET_NODE, requestBody.targetNode);
     remoteMessage.put(QUEUE_OPERATION, CollectionAction.REPLACENODE.toLower());
 
     return new ZkNodeProps(remoteMessage);
@@ -108,12 +106,12 @@ public class ReplaceNodeAPI extends AdminAPIBase {
 
     public ReplaceNodeRequestBody() {}
 
-    public ReplaceNodeRequestBody(String value) {
-      this.value = value;
+    public ReplaceNodeRequestBody(String targetNode) {
+      this.targetNode = targetNode;
     }
 
-    @Schema(description = "The value to assign to the targetNode.", required = true)
-    @JsonProperty("value")
-    public String value;
+    @Schema(description = "The name of the targetNode.", required = true)
+    @JsonProperty("targetNode")
+    public String targetNode;
   }
 }
