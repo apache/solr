@@ -86,7 +86,6 @@ allprojects { prj ->
             '-Xep:Finally:OFF',
             '-Xep:FutureReturnValueIgnored:OFF',
             '-Xep:IdentityBinaryExpression:OFF',
-            '-Xep:IdentityHashMapUsage:OFF',
             '-Xep:ImmutableEnumChecker:OFF',
             '-Xep:InconsistentCapitalization:OFF',
             '-Xep:InlineFormatString:OFF', // this introduces redundancy in format strings
