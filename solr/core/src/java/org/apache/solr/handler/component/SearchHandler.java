@@ -55,7 +55,7 @@ import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageListeners;
-import org.apache.solr.pkg.SolrPackageLoader;
+import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.CursorMark;
@@ -200,7 +200,7 @@ public class SearchHandler extends RequestHandlerBase
                 }
 
                 @Override
-                public void changed(SolrPackageLoader.SolrPackage pkg, Ctx ctx) {
+                public void changed(PackageLoader.Package pkg, Ctx ctx) {
                   // we could optimize this by listening to only relevant packages,
                   // but it is not worth optimizing as these are lightweight objects
                   components = null;

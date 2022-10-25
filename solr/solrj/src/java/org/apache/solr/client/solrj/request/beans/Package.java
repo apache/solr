@@ -22,7 +22,7 @@ import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 
 /** Just a container class for POJOs used in Package APIs */
-public class PackagePayload {
+public class Package {
   public static class AddVersion implements ReflectMapWriter {
     @JsonProperty(value = "package", required = true)
     public String pkg;
