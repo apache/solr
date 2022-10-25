@@ -18,6 +18,9 @@
 package org.apache.solr.security;
 
 import com.google.common.annotations.VisibleForTesting;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -25,10 +28,6 @@ import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.CryptoKeys;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 
 public class PublicKeyHandler extends RequestHandlerBase {
   public static final String PATH = "/admin/info/key";
@@ -50,7 +49,8 @@ public class PublicKeyHandler extends RequestHandlerBase {
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, new PublicKeyAPI(nodeKeyPair).getPublicKey());
+    V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+        rsp, new PublicKeyAPI(nodeKeyPair).getPublicKey());
   }
 
   @Override

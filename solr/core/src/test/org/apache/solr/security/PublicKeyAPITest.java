@@ -20,17 +20,15 @@ package org.apache.solr.security;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
 
-/**
- * Unit test for {@link PublicKeyAPI}
- */
+/** Unit test for {@link PublicKeyAPI} */
 public class PublicKeyAPITest extends SolrTestCaseJ4 {
 
-    @Test
-    public void testRetrievesPublicKey() {
-        final SolrNodeKeyPair nodeKeyPair = new SolrNodeKeyPair(null);
+  @Test
+  public void testRetrievesPublicKey() {
+    final SolrNodeKeyPair nodeKeyPair = new SolrNodeKeyPair(null);
 
-        final PublicKeyAPI.PublicKeyResponse response = new PublicKeyAPI(nodeKeyPair).getPublicKey();
+    final PublicKeyAPI.PublicKeyResponse response = new PublicKeyAPI(nodeKeyPair).getPublicKey();
 
-        assertEquals(nodeKeyPair.getKeyPair().getPublicKeyStr(), response.key);
-    }
+    assertEquals(nodeKeyPair.getKeyPair().getPublicKeyStr(), response.key);
+  }
 }

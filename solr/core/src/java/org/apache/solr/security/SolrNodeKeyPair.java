@@ -17,46 +17,47 @@
 
 package org.apache.solr.security;
 
+import java.io.IOException;
+import java.net.URL;
+import java.security.spec.InvalidKeySpecException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.util.CryptoKeys;
 
-import java.io.IOException;
-import java.net.URL;
-import java.security.spec.InvalidKeySpecException;
-
 /**
  * Creates and mediates access to the {@link CryptoKeys.RSAKeyPair} used by this Solr node.
  *
- * Expected to be created once on each Solr node for the life of that process.
+ * <p>Expected to be created once on each Solr node for the life of that process.
  */
 public class SolrNodeKeyPair {
 
-    private final CryptoKeys.RSAKeyPair keyPair;
+  private final CryptoKeys.RSAKeyPair keyPair;
 
-    public SolrNodeKeyPair(CloudConfig cloudConfig ) {
-        keyPair = createKeyPair(cloudConfig);
+  public SolrNodeKeyPair(CloudConfig cloudConfig) {
+    keyPair = createKeyPair(cloudConfig);
+  }
+
+  public CryptoKeys.RSAKeyPair getKeyPair() {
+    return keyPair;
+  }
+
+  private static CryptoKeys.RSAKeyPair createKeyPair(CloudConfig config) {
+    if (config == null) {
+      return new CryptoKeys.RSAKeyPair();
     }
 
-    public CryptoKeys.RSAKeyPair getKeyPair() { return keyPair; }
+    String publicKey = config.getPkiHandlerPublicKeyPath();
+    String privateKey = config.getPkiHandlerPrivateKeyPath();
 
-    private static CryptoKeys.RSAKeyPair createKeyPair(CloudConfig config) {
-        if (config == null) {
-            return new CryptoKeys.RSAKeyPair();
-        }
-
-        String publicKey = config.getPkiHandlerPublicKeyPath();
-        String privateKey = config.getPkiHandlerPrivateKeyPath();
-
-        // If both properties unset, then we fall back to generating a new key pair
-        if (StringUtils.isEmpty(publicKey) && StringUtils.isEmpty(privateKey)) {
-            return new CryptoKeys.RSAKeyPair();
-        }
-
-        try {
-            return new CryptoKeys.RSAKeyPair(new URL(privateKey), new URL(publicKey));
-        } catch (IOException | InvalidKeySpecException e) {
-            throw new RuntimeException("Bad PublicKeyHandler configuration.", e);
-        }
+    // If both properties unset, then we fall back to generating a new key pair
+    if (StringUtils.isEmpty(publicKey) && StringUtils.isEmpty(privateKey)) {
+      return new CryptoKeys.RSAKeyPair();
     }
+
+    try {
+      return new CryptoKeys.RSAKeyPair(new URL(privateKey), new URL(publicKey));
+    } catch (IOException | InvalidKeySpecException e) {
+      throw new RuntimeException("Bad PublicKeyHandler configuration.", e);
+    }
+  }
 }
