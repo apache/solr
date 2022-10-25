@@ -95,7 +95,6 @@ allprojects { prj ->
             '-Xep:NonAtomicVolatileUpdate:OFF',
             '-Xep:NonCanonicalType:OFF',
             '-Xep:ObjectToString:OFF',
-            '-Xep:ObjectsHashCodePrimitive:OFF',
             '-Xep:OperatorPrecedence:OFF',
             '-Xep:ReturnValueIgnored:OFF',
             '-Xep:SameNameButDifferent:OFF',
