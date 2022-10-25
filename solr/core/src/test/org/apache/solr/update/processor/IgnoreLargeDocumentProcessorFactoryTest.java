@@ -22,6 +22,8 @@ import static org.hamcrest.Matchers.containsString;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -89,9 +91,9 @@ public class IgnoreLargeDocumentProcessorFactoryTest extends SolrTestCase {
   public void testEstimateObjectSize() {
     assertEquals(estimate("abc"), 6);
     assertEquals(estimate("abcdefgh"), 16);
-    List<String> keys = List.of("int", "long", "double", "float", "str");
+    List<String> keys = Arrays.asList("int", "long", "double", "float", "str");
     assertEquals(estimate(keys), 42);
-    List<Object> values = List.of(12, 5L, 12.0, 5.0, "duck");
+    List<Object> values = Arrays.asList(12, 5L, 12.0, 5.0, "duck");
     assertEquals(estimate(values), 8);
 
     Map<String, Object> map = new HashMap<>();
@@ -123,9 +125,9 @@ public class IgnoreLargeDocumentProcessorFactoryTest extends SolrTestCase {
   public void testEstimateObjectSizeWithSingleChild() {
     assertEquals(estimate("abc"), 6);
     assertEquals(estimate("abcdefgh"), 16);
-    List<String> keys = List.of("int", "long", "double", "float", "str");
+    List<String> keys = Arrays.asList("int", "long", "double", "float", "str");
     assertEquals(estimate(keys), 42);
-    List<Object> values = List.of(12, 5L, 12.0, 5.0, "duck");
+    List<Object> values = Arrays.asList(12, 5L, 12.0, 5.0, "duck");
     assertEquals(estimate(values), 8);
     final String childDocKey = "testChildDoc";
 
@@ -164,9 +166,9 @@ public class IgnoreLargeDocumentProcessorFactoryTest extends SolrTestCase {
   public void testEstimateObjectSizeWithChildList() {
     assertEquals(estimate("abc"), 6);
     assertEquals(estimate("abcdefgh"), 16);
-    List<String> keys = List.of("int", "long", "double", "float", "str");
+    List<String> keys = Arrays.asList("int", "long", "double", "float", "str");
     assertEquals(estimate(keys), 42);
-    List<Object> values = List.of(12, 5L, 12.0, 5.0, "duck");
+    List<Object> values = Arrays.asList(12, 5L, 12.0, 5.0, "duck");
     assertEquals(estimate(values), 8);
     final String childDocKey = "testChildDoc";
 
@@ -192,7 +194,12 @@ public class IgnoreLargeDocumentProcessorFactoryTest extends SolrTestCase {
       childDocument.addField(entry.getKey(), entry.getValue());
     }
     List<SolrInputDocument> childList =
-        List.of(childDocument, new SolrInputDocument(childDocument));
+        new ArrayList<>() {
+          {
+            add(childDocument);
+            add(new SolrInputDocument(childDocument));
+          }
+        };
     document.addField(childDocKey, childList);
     mapWChild.put(childDocKey, childList);
     assertEquals(
