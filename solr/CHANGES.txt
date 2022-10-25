@@ -84,6 +84,8 @@ Build
 
 * SOLR-16476: Remove commons-text dependency from solr-core (Kevin Risden)
 
+* SOLR-16442: Upgrade to Lucene 9.4.1 (Christine Poerschke)
+
 Other Changes
 ---------------------
 * SOLR-16150: Embedded ZK Server used for zkRun should advertise itself on specific bound interfaces instead of
