@@ -34,7 +34,6 @@ import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SHAR
 import static org.apache.solr.cloud.api.collections.RoutedAlias.CREATE_COLLECTION_PREFIX;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
@@ -43,7 +42,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.TARGET_NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.ALIAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
@@ -99,6 +97,8 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.RE
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.RESTORE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.SPLITSHARD;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.SYNCSHARD;
+import static org.apache.solr.common.params.CollectionParams.SOURCE_NODE;
+import static org.apache.solr.common.params.CollectionParams.TARGET_NODE;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.IN_PLACE_MOVE;
 import static org.apache.solr.common.params.CommonAdminParams.NUM_SUB_SHARDS;
@@ -1797,17 +1797,13 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           final RequiredSolrParams requiredParams = req.getParams().required();
           final ReplaceNodeAPI.ReplaceNodeRequestBody requestBody =
               new ReplaceNodeAPI.ReplaceNodeRequestBody();
-          requestBody.value = requiredParams.get(PROPERTY_VALUE_PROP);
-          final String targetNodeName = requiredParams.get(TARGET_NODE_NAME_PROP);
-          final String trimmedTargetNodeName =
-              targetNodeName.startsWith(PROPERTY_PREFIX)
-                  ? targetNodeName.substring(PROPERTY_PREFIX.length())
-                  : targetNodeName;
+          requestBody.value = requiredParams.get(TARGET_NODE);
+          final String targetNodeName = requiredParams.get(TARGET_NODE);
 
           final ReplaceNodeAPI replaceNodeAPI = new ReplaceNodeAPI(h.coreContainer, req, rsp);
           final SolrJerseyResponse replaceNodeResponse =
               replaceNodeAPI.replaceNode(
-                  requiredParams.get(NODE_NAME_PROP), trimmedTargetNodeName, requestBody);
+                  requiredParams.get(SOURCE_NODE), targetNodeName, requestBody);
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, replaceNodeResponse);
           return null;
         }),
@@ -1821,7 +1817,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
               map,
               CollectionParams.FROM_NODE,
               CollectionParams.SOURCE_NODE,
-              CollectionParams.TARGET_NODE,
+              TARGET_NODE,
               WAIT_FOR_FINAL_STATE,
               IN_PLACE_MOVE,
               "replica",
