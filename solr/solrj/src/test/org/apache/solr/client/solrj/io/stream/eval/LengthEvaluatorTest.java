@@ -17,8 +17,8 @@
 package org.apache.solr.client.solrj.io.stream.eval;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
 
 public class LengthEvaluatorTest extends SolrTestCase {
+
   StreamFactory factory;
   Map<String, Object> values;
 
@@ -48,19 +49,39 @@ public class LengthEvaluatorTest extends SolrTestCase {
     Object result;
 
     values.clear();
-    values.put("a", List.of(1, 2, 4));
+    values.put(
+        "a",
+        new ArrayList<Integer>() {
+          {
+            add(1);
+            add(2);
+            add(4);
+          }
+        });
     result = evaluator.evaluate(new Tuple(values));
     assertTrue(result instanceof Long);
     assertEquals(3L, result);
 
     values.clear();
-    values.put("a", List.of("a", "b"));
+    values.put(
+        "a",
+        new ArrayList<String>() {
+          {
+            add("a");
+            add("b");
+          }
+        });
     result = evaluator.evaluate(new Tuple(values));
     assertTrue(result instanceof Long);
     assertEquals(2L, result);
 
     values.clear();
-    values.put("a", List.of());
+    values.put(
+        "a",
+        new ArrayList<String>() {
+          {
+          }
+        });
     result = evaluator.evaluate(new Tuple(values));
     assertTrue(result instanceof Long);
     assertEquals(0L, result);

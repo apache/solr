@@ -16,9 +16,9 @@
  */
 package org.apache.solr.client.solrj.io.stream.eval;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 import org.apache.solr.SolrTestCase;
@@ -40,15 +40,50 @@ public class FieldValueEvaluatorTest extends SolrTestCase {
   @Test
   public void listTypes() throws Exception {
     values.clear();
-    values.put("a", List.of(true, false));
-    values.put("b", List.of(0.0, 1.1));
-    values.put("c", List.of(0, 1));
-    values.put("d", List.of(0L, 1L));
-    values.put("e", List.of("first", "second"));
+    values.put(
+        "a",
+        new ArrayList<Boolean>() {
+          {
+            add(true);
+            add(false);
+          }
+        });
+    values.put(
+        "b",
+        new ArrayList<Double>() {
+          {
+            add(0.0);
+            add(1.1);
+          }
+        });
+    values.put(
+        "c",
+        new ArrayList<Integer>() {
+          {
+            add(0);
+            add(1);
+          }
+        });
+    values.put(
+        "d",
+        new ArrayList<Long>() {
+          {
+            add(0L);
+            add(1L);
+          }
+        });
+    values.put(
+        "e",
+        new ArrayList<String>() {
+          {
+            add("first");
+            add("second");
+          }
+        });
 
     Tuple tuple = new Tuple(values);
 
-    for (String fieldName : List.of("a", "b", "c", "d", "e")) {
+    for (String fieldName : new String[] {"a", "b", "c", "d", "e"}) {
       assertTrue(new FieldValueEvaluator(fieldName).evaluate(tuple) instanceof Collection);
       assertEquals(2, ((Collection<?>) new FieldValueEvaluator(fieldName).evaluate(tuple)).size());
     }
@@ -92,11 +127,46 @@ public class FieldValueEvaluatorTest extends SolrTestCase {
   public void iterableTypes() throws Exception {
     values.clear();
 
-    values.put("a", new PriorityQueue<>(List.of(true, false)));
-    values.put("b", new PriorityQueue<>(List.of(0.0, 1.1)));
-    values.put("c", new PriorityQueue<>(List.of(0, 1)));
-    values.put("d", new PriorityQueue<>(List.of(0L, 1L)));
-    values.put("e", new PriorityQueue<>(List.of("first", "second")));
+    values.put(
+        "a",
+        new PriorityQueue<Boolean>() {
+          {
+            add(true);
+            add(false);
+          }
+        });
+    values.put(
+        "b",
+        new PriorityQueue<Double>() {
+          {
+            add(0.0);
+            add(1.1);
+          }
+        });
+    values.put(
+        "c",
+        new PriorityQueue<Integer>() {
+          {
+            add(0);
+            add(1);
+          }
+        });
+    values.put(
+        "d",
+        new PriorityQueue<Long>() {
+          {
+            add(0L);
+            add(1L);
+          }
+        });
+    values.put(
+        "e",
+        new PriorityQueue<String>() {
+          {
+            add("first");
+            add("second");
+          }
+        });
 
     Tuple tuple = new Tuple(values);
 
