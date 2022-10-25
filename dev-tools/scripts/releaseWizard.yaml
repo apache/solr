@@ -707,7 +707,9 @@ groups:
       commands:
         - !Command
           cmd: echo foo | gpg --detach-sign --use-agent --pinentry-mode loopback --local-user {{ gpg.gpg_fingerprint | default("<gpg_fingerprint>", True) }}
-          tee: true
+          tee: false
+          shell: true
+          live: true
   - !Todo
     id: build_rc
     title: Build the release candidate
