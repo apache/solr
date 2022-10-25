@@ -17,11 +17,10 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Deque;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -53,7 +52,7 @@ public class CartesianProductStream extends TupleStream implements Expressible {
   private StreamComparator orderBy;
 
   // Used to contain the sorted queue of generated tuples
-  private Deque<Tuple> generatedTuples;
+  private LinkedList<Tuple> generatedTuples;
 
   public CartesianProductStream(StreamExpression expression, StreamFactory factory)
       throws IOException {
@@ -239,7 +238,7 @@ public class CartesianProductStream extends TupleStream implements Expressible {
     return generatedTuples.pop();
   }
 
-  private Deque<Tuple> generateTupleList(Tuple original) throws IOException {
+  private LinkedList<Tuple> generateTupleList(Tuple original) throws IOException {
     Map<String, Object> evaluatedValues = new HashMap<>();
 
     for (NamedEvaluator evaluator : evaluators) {
@@ -271,7 +270,7 @@ public class CartesianProductStream extends TupleStream implements Expressible {
       generatedTupleList.sort(orderBy);
     }
 
-    return new ArrayDeque<>(generatedTupleList);
+    return new LinkedList<>(generatedTupleList);
   }
 
   private boolean iterate(
@@ -320,7 +319,7 @@ public class CartesianProductStream extends TupleStream implements Expressible {
 
   public void open() throws IOException {
     stream.open();
-    generatedTuples = new ArrayDeque<>();
+    generatedTuples = new LinkedList<>();
   }
 
   public void close() throws IOException {

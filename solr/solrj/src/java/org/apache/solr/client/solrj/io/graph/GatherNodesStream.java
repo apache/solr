@@ -556,7 +556,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       joinSParams.set("qt", "/export");
       joinSParams.set(SORT, gather + " asc," + traverseTo + " asc");
 
-      StringBuilder nodeQuery = new StringBuilder();
+      StringBuffer nodeQuery = new StringBuffer();
 
       boolean comma = false;
       for (String node : nodes) {

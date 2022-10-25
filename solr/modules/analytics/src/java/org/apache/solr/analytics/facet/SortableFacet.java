@@ -20,6 +20,7 @@ import com.google.common.collect.Iterables;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.analytics.facet.compare.FacetResultsComparator;
@@ -46,7 +47,7 @@ public abstract class SortableFacet extends AnalyticsFacet {
 
   @Override
   public Iterable<Map<String, Object>> createResponse() {
-    final List<Map<String, Object>> results = new ArrayList<>();
+    final LinkedList<Map<String, Object>> results = new LinkedList<>();
     // Export each expression in the bucket.
     for (FacetBucket bucket : getBuckets()) {
       Map<String, Object> bucketMap = new HashMap<>();
@@ -90,7 +91,7 @@ public abstract class SortableFacet extends AnalyticsFacet {
       }
       facetResultsIter = Iterables.limit(facetResultsIter, sort.getLimit());
     } else if (sort.getLimit() == 0) {
-      return new ArrayList<>();
+      return new LinkedList<FacetBucket>();
     }
     return facetResultsIter;
   }

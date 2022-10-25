@@ -17,8 +17,7 @@
 package org.apache.solr.request;
 
 import java.io.IOException;
-import java.util.ArrayDeque;
-import java.util.Deque;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
@@ -123,7 +122,7 @@ class PerSegmentSingleValuedFaceting {
     // The list of pending tasks that aren't immediately submitted
     // TODO: Is there a completion service, or a delegating executor that can
     // limit the number of concurrent tasks submitted to a bigger executor?
-    Deque<Callable<SegFacet>> pending = new ArrayDeque<>();
+    LinkedList<Callable<SegFacet>> pending = new LinkedList<>();
 
     int threads = nThreads <= 0 ? Integer.MAX_VALUE : nThreads;
 

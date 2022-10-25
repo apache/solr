@@ -27,6 +27,7 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -57,7 +58,7 @@ public class SocketProxy {
 
   private CountDownLatch closed = new CountDownLatch(1);
 
-  public List<Bridge> connections = new ArrayList<>();
+  public List<Bridge> connections = new LinkedList<>();
 
   private final int listenPort;
 

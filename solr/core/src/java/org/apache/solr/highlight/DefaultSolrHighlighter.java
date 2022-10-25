@@ -948,11 +948,8 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
    */
   static final class TokenOrderingFilter extends TokenFilter {
     private final int windowSize;
-
-    @SuppressWarnings("JdkObsolete")
     private final LinkedList<OrderedToken> queue =
         new LinkedList<>(); // TODO replace with Deque, Array impl
-
     private boolean done = false;
     private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 

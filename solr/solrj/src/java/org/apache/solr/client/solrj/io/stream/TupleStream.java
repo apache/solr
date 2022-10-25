@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -124,7 +125,7 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
   static List<Replica> getReplicas(
       String zkHost, String collection, StreamContext streamContext, SolrParams requestParams)
       throws IOException {
-    List<Replica> replicas = new ArrayList<>();
+    List<Replica> replicas = new LinkedList<>();
 
     // SolrCloud Sharding
     SolrClientCache solrClientCache =

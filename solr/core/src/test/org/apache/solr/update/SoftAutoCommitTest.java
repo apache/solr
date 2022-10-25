@@ -604,7 +604,7 @@ class MockEventListener implements SolrEventListener {
   public final BlockingQueue<Long> searcher = new LinkedBlockingQueue<>(1000);
 
   // if non enpty, then at least one offer failed (queues full)
-  private final StringBuilder fail = new StringBuilder();
+  private StringBuffer fail = new StringBuffer();
 
   public MockEventListener() {
     /* NOOP */
@@ -613,19 +613,19 @@ class MockEventListener implements SolrEventListener {
   @Override
   public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {
     Long now = System.nanoTime();
-    if (!searcher.offer(now)) fail.append(", newSearcher @ ").append(now);
+    if (!searcher.offer(now)) fail.append(", newSearcher @ " + now);
   }
 
   @Override
   public void postCommit() {
     Long now = System.nanoTime();
-    if (!hard.offer(now)) fail.append(", hardCommit @ ").append(now);
+    if (!hard.offer(now)) fail.append(", hardCommit @ " + now);
   }
 
   @Override
   public void postSoftCommit() {
     Long now = System.nanoTime();
-    if (!soft.offer(now)) fail.append(", softCommit @ ").append(now);
+    if (!soft.offer(now)) fail.append(", softCommit @ " + now);
   }
 
   public void clear() {

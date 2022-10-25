@@ -41,6 +41,7 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -205,7 +206,7 @@ public class GCSBackupRepository implements BackupRepository {
     final String blobName = appendTrailingSeparatorIfNecessary(path.toString());
 
     final String pathStr = blobName;
-    final List<String> result = new ArrayList<>();
+    final LinkedList<String> result = new LinkedList<>();
     storage
         .list(
             bucketName,

@@ -31,6 +31,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -587,7 +588,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
   private void checkNoTwoShardsUseTheSameIndexDir() {
     Map<String, Set<String>> indexDirToShardNamesMap = new HashMap<>();
 
-    List<MBeanServer> servers = new ArrayList<>();
+    List<MBeanServer> servers = new LinkedList<>();
     servers.add(ManagementFactory.getPlatformMBeanServer());
     servers.addAll(MBeanServerFactory.findMBeanServer(null));
     for (final MBeanServer server : servers) {

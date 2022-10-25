@@ -32,6 +32,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -128,7 +129,7 @@ public class JettySolrRunner {
 
   private volatile boolean startedBefore = false;
 
-  private List<FilterHolder> extraFilters;
+  private LinkedList<FilterHolder> extraFilters;
 
   private static final String excludePatterns =
       "/partials/.+,/libs/.+,/css/.+,/js/.+,/img/.+,/templates/.+";
@@ -403,7 +404,7 @@ public class JettySolrRunner {
 
               debugFilter =
                   root.addFilter(DebugFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
-              extraFilters = new ArrayList<>();
+              extraFilters = new LinkedList<>();
               for (Map.Entry<Class<? extends Filter>, String> entry :
                   config.extraFilters.entrySet()) {
                 extraFilters.add(

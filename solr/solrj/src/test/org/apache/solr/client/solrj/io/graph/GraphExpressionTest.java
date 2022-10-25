@@ -150,7 +150,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     assertEquals(2, tuples.size());
 
     for (Tuple tuple : tuples) {
-      paths.add(tuple.get("path").toString());
+      paths.add(tuple.getStrings("path").toString());
     }
 
     assertTrue(paths.contains("[jim, dave, alex, steve]"));
@@ -177,7 +177,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     assertEquals(2, tuples.size());
 
     for (Tuple tuple : tuples) {
-      paths.add(tuple.get("path").toString());
+      paths.add(tuple.getStrings("path").toString());
     }
 
     assertTrue(paths.contains("[jim, dave, alex, steve]"));
@@ -241,7 +241,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     assertEquals(1, tuples.size());
 
     for (Tuple tuple : tuples) {
-      paths.add(tuple.get("path").toString());
+      paths.add(tuple.getStrings("path").toString());
     }
 
     assertTrue(paths.contains("[jim, stan, mary, steve]"));

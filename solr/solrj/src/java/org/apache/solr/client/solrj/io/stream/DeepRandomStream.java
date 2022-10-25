@@ -21,12 +21,11 @@ import static org.apache.solr.common.params.CommonParams.ROWS;
 import static org.apache.solr.common.params.CommonParams.SORT;
 
 import java.io.IOException;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Deque;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -73,7 +72,7 @@ public class DeepRandomStream extends TupleStream implements Expressible {
   protected transient Map<String, Tuple> eofTuples;
   protected transient CloudSolrClient cloudSolrClient;
   protected transient List<TupleStream> solrStreams;
-  protected transient Deque<TupleWrapper> tuples;
+  protected transient LinkedList<TupleWrapper> tuples;
   protected transient StreamContext streamContext;
 
   public DeepRandomStream() {
@@ -271,7 +270,7 @@ public class DeepRandomStream extends TupleStream implements Expressible {
   }
 
   public void open() throws IOException {
-    this.tuples = new ArrayDeque<>();
+    this.tuples = new LinkedList<>();
     this.solrStreams = new ArrayList<>();
     this.eofTuples = Collections.synchronizedMap(new HashMap<>());
     constructStreams();

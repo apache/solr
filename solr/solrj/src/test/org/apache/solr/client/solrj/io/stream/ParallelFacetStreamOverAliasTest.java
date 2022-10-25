@@ -21,6 +21,7 @@ import static org.apache.solr.client.solrj.io.stream.FacetStream.TIERED_PARAM;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -109,7 +110,7 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
     }
 
     List<String> collections = new ArrayList<>(NUM_COLLECTIONS);
-    final List<Exception> errors = new ArrayList<>();
+    final List<Exception> errors = new LinkedList<>();
     Stream.iterate(1, n -> n + 1)
         .limit(NUM_COLLECTIONS)
         .forEach(
@@ -165,7 +166,7 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
       // cleanup the alias and the collections behind it
       CollectionAdminRequest.deleteAlias(ALIAS_NAME).process(cluster.getSolrClient());
       if (listOfCollections != null) {
-        final List<Exception> errors = new ArrayList<>();
+        final List<Exception> errors = new LinkedList<>();
         listOfCollections.stream()
             .map(CollectionAdminRequest::deleteCollection)
             .forEach(

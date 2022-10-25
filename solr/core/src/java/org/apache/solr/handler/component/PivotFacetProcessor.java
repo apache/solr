@@ -190,7 +190,6 @@ public class PivotFacetProcessor extends SimpleFacets {
    * @param facetQueries the list of facet queries hung under this pivot
    * @param facetRanges the list of facet ranges hung under this pivot
    */
-  @SuppressWarnings("JdkObsolete")
   private SimpleOrderedMap<List<NamedList<Object>>> processSingle(
       List<String> pivotFields,
       String refinements,

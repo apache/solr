@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
@@ -2347,7 +2348,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
   }
 
   protected List<Tuple> getTuples(final SolrParams params, String baseUrl) throws IOException {
-    List<Tuple> tuples = new ArrayList<>();
+    List<Tuple> tuples = new LinkedList<>();
     try (TupleStream tupleStream = new SolrStream(baseUrl, params)) {
       tupleStream.open();
       for (; ; ) {

@@ -1352,7 +1352,6 @@ public class TestRecovery extends SolrTestCaseJ4 {
     }
   }
 
-  @SuppressWarnings("JdkObsolete")
   private void addDocs(int nDocs, int start, LinkedList<Long> versions) throws Exception {
     for (int i = 0; i < nDocs; i++) {
       versions.addFirst(addAndGetVersion(sdoc("id", Integer.toString(start + nDocs)), null));
@@ -1360,7 +1359,6 @@ public class TestRecovery extends SolrTestCaseJ4 {
   }
 
   @Test
-  @SuppressWarnings("JdkObsolete")
   public void testRemoveOldLogs() throws Exception {
     try {
       TestInjection.skipIndexWriterCommitOnClose = true;

@@ -17,12 +17,12 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.ArrayDeque;
-import java.util.Deque;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.apache.commons.math3.util.MathArrays;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
@@ -74,7 +74,10 @@ public class FindDelayEvaluator extends RecursiveNumericEvaluator implements Two
     double[] secondArray =
         StreamSupport.stream(
                 Spliterators.spliteratorUnknownSize(
-                    ((Deque<?>) new ArrayDeque<>(((List<?>) second))).descendingIterator(),
+                    ((LinkedList<?>)
+                            ((List<?>) second)
+                                .stream().collect(Collectors.toCollection(LinkedList::new)))
+                        .descendingIterator(),
                     Spliterator.ORDERED),
                 false)
             .mapToDouble(value -> ((Number) value).doubleValue())

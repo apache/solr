@@ -95,9 +95,7 @@ public class SortStream extends TupleStream implements Expressible {
     worker =
         new Worker() {
 
-          @SuppressWarnings("JdkObsolete")
-          private final LinkedList<Tuple> tuples = new LinkedList<>();
-
+          private LinkedList<Tuple> tuples = new LinkedList<>();
           private Tuple eofTuple;
 
           public void readStream(TupleStream stream) throws IOException {

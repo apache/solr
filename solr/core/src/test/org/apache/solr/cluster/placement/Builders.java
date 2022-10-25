@@ -17,11 +17,11 @@
 
 package org.apache.solr.cluster.placement;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.cluster.Cluster;
@@ -54,12 +54,12 @@ public class Builders {
 
   public static class ClusterBuilder {
     /** {@link NodeBuilder} for the live nodes of the cluster. */
-    private List<NodeBuilder> nodeBuilders = new ArrayList<>();
+    private LinkedList<NodeBuilder> nodeBuilders = new LinkedList<>();
 
-    private final List<CollectionBuilder> collectionBuilders = new ArrayList<>();
+    private LinkedList<CollectionBuilder> collectionBuilders = new LinkedList<>();
 
     public ClusterBuilder initializeLiveNodes(int countNodes) {
-      nodeBuilders = new ArrayList<>();
+      nodeBuilders = new LinkedList<>();
       for (int n = 0; n < countNodes; n++) {
         // Default name, can be changed
         NodeBuilder nodeBuilder = new NodeBuilder().setNodeName("node_" + n);
@@ -71,7 +71,7 @@ public class Builders {
       return this;
     }
 
-    public List<NodeBuilder> getLiveNodeBuilders() {
+    public LinkedList<NodeBuilder> getLiveNodeBuilders() {
       return nodeBuilders;
     }
 
@@ -87,7 +87,7 @@ public class Builders {
     }
 
     public List<Node> buildLiveNodes() {
-      List<Node> liveNodes = new ArrayList<>();
+      List<Node> liveNodes = new LinkedList<>();
       for (NodeBuilder nodeBuilder : nodeBuilders) {
         liveNodes.add(nodeBuilder.build());
       }
@@ -207,7 +207,7 @@ public class Builders {
 
   public static class CollectionBuilder {
     private final String collectionName;
-    private List<ShardBuilder> shardBuilders = new ArrayList<>();
+    private LinkedList<ShardBuilder> shardBuilders = new LinkedList<>();
     private Map<String, String> customProperties = new HashMap<>();
     int replicaNumber = 0; // global replica numbering for the collection
     private CollectionMetricsBuilder collectionMetricsBuilder = new CollectionMetricsBuilder();
@@ -229,7 +229,7 @@ public class Builders {
      * @return The internal shards data structure to allow test code to modify the replica
      *     distribution to nodes.
      */
-    public List<ShardBuilder> getShardBuilders() {
+    public LinkedList<ShardBuilder> getShardBuilders() {
       return shardBuilders;
     }
 
@@ -266,11 +266,11 @@ public class Builders {
      */
     public CollectionBuilder customCollectionSetup(
         List<List<String>> shardsReplicas, List<NodeBuilder> liveNodes) {
-      shardBuilders = new ArrayList<>();
+      shardBuilders = new LinkedList<>();
       int shardNumber = 1; // Shard numbering starts at 1
       for (List<String> replicasOnNodes : shardsReplicas) {
         String shardName = buildShardName(shardNumber++);
-        List<ReplicaBuilder> replicas = new ArrayList<>();
+        LinkedList<ReplicaBuilder> replicas = new LinkedList<>();
         ReplicaBuilder leader = null;
 
         for (String replicaNode : replicasOnNodes) {
@@ -361,7 +361,7 @@ public class Builders {
         List<Integer> initialSizeGBPerShard) {
       Iterator<NodeBuilder> nodeIterator = nodes.iterator();
 
-      shardBuilders = new ArrayList<>();
+      shardBuilders = new LinkedList<>();
       if (initialSizeGBPerShard != null && initialSizeGBPerShard.size() != countShards) {
         throw new RuntimeException(
             "list of shard sizes must be the same length as the countShards!");
@@ -373,7 +373,7 @@ public class Builders {
         CollectionMetricsBuilder.ShardMetricsBuilder shardMetricsBuilder =
             new CollectionMetricsBuilder.ShardMetricsBuilder(shardName);
 
-        List<ReplicaBuilder> replicas = new ArrayList<>();
+        LinkedList<ReplicaBuilder> replicas = new LinkedList<>();
         ReplicaBuilder leader = null;
         CollectionMetricsBuilder.ReplicaMetricsBuilder leaderMetrics = null;
 
@@ -466,7 +466,7 @@ public class Builders {
 
   public static class ShardBuilder {
     private String shardName;
-    private List<ReplicaBuilder> replicaBuilders = new ArrayList<>();
+    private LinkedList<ReplicaBuilder> replicaBuilders = new LinkedList<>();
     private ReplicaBuilder leaderReplicaBuilder;
 
     public ShardBuilder setShardName(String shardName) {
@@ -478,11 +478,11 @@ public class Builders {
       return shardName;
     }
 
-    public List<ReplicaBuilder> getReplicaBuilders() {
+    public LinkedList<ReplicaBuilder> getReplicaBuilders() {
       return replicaBuilders;
     }
 
-    public ShardBuilder setReplicaBuilders(List<ReplicaBuilder> replicaBuilders) {
+    public ShardBuilder setReplicaBuilders(LinkedList<ReplicaBuilder> replicaBuilders) {
       this.replicaBuilders = replicaBuilders;
       return this;
     }

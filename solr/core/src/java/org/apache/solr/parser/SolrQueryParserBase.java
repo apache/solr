@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -607,7 +608,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     switch (synonymQueryStyle) {
       case PICK_BEST:
         {
-          List<Query> sidePathSynonymQueries = new ArrayList<>();
+          List<Query> sidePathSynonymQueries = new LinkedList<>();
           sidePathQueriesIterator.forEachRemaining(sidePathSynonymQueries::add);
           return new DisjunctionMaxQuery(sidePathSynonymQueries, 0.0f);
         }

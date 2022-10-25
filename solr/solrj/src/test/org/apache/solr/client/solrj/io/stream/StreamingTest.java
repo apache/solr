@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -3074,7 +3075,7 @@ public class StreamingTest extends SolrCloudTestCase {
         t = stream.read();
       }
 
-      List<String> baseUrls = new ArrayList<>();
+      List<String> baseUrls = new LinkedList<>();
       ZkStateReader zkStateReader = cluster.getZkStateReader();
       List<String> resolved =
           zkStateReader.aliasesManager.getAliases().resolveAliases(MULTI_REPLICA_COLLECTIONORALIAS);

@@ -41,6 +41,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -873,7 +874,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
   protected ManagedIndexSchema analyzeInputDocs(
       final Map<String, List<Object>> docs, ManagedIndexSchema schema, List<String> langs) {
     // collect the fields to add ... adding all fields at once is faster than one-at-a-time
-    List<SchemaField> fieldsToAdd = new ArrayList<>();
+    List<SchemaField> fieldsToAdd = new LinkedList<>();
     for (String field : docs.keySet()) {
       List<Object> sampleValues = docs.getOrDefault(field, Collections.emptyList());
 

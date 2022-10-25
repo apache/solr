@@ -491,7 +491,7 @@ public class PhrasesIdentificationComponent extends SearchComponent {
      * @return the original user input, decorated to indicate the identified phrases
      */
     public String summarize(final List<Phrase> results) {
-      final StringBuilder out = new StringBuilder(rawInput);
+      final StringBuffer out = new StringBuffer(rawInput);
 
       // sort by *reverse* position so we can go back to front
       final List<Phrase> reversed =
