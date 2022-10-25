@@ -593,7 +593,7 @@ public class Assign {
             DEFAULT_PLACEMENT_PLUGIN_SYSPROP,
             defaultPluginId);
       } else {
-        // TODO: Replace this with a better options, such as the AffinityPlacementFactory
+        // TODO: Consider making the ootb default AffinityPlacementFactory, see https://issues.apache.org/jira/browse/SOLR-16492
         placementPlugin = (new SimplePlacementFactory()).createPluginInstance();
       }
     }
