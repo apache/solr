@@ -1629,9 +1629,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
 
     // Throw exception on directory traversal attempts
-    protected String validateFilenameOrError(String filename) {
-      if (filename != null) {
-        Path filePath = Paths.get(filename);
+    protected String validateFilenameOrError(String fileName) {
+      if (fileName != null) {
+        Path filePath = Paths.get(fileName);
         filePath.forEach(
             subpath -> {
               if ("..".equals(subpath.toString())) {
@@ -1641,7 +1641,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         if (filePath.isAbsolute()) {
           throw new SolrException(ErrorCode.FORBIDDEN, "File name must be relative");
         }
-        return filename;
+        return fileName;
       } else return null;
     }
 

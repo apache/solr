@@ -204,9 +204,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   protected static volatile ExecutorService testExecutor;
 
-  protected void writeCoreProperties(Path coreDirectory, String corename) throws IOException {
+  protected void writeCoreProperties(Path coreDirectory, String coreName) throws IOException {
     Properties props = new Properties();
-    props.setProperty("name", corename);
+    props.setProperty("name", coreName);
     props.setProperty("configSet", "collection1");
     props.setProperty("config", "${solrconfig:solrconfig.xml}");
     props.setProperty("schema", "${schema:schema.xml}");

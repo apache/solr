@@ -1030,8 +1030,8 @@ public class Http2SolrClient extends SolrClient {
       return this;
     }
 
-    public Builder connectionTimeout(int connectionTimeOut) {
-      this.connectionTimeout = connectionTimeOut;
+    public Builder connectionTimeout(int connectionTimeout) {
+      this.connectionTimeout = connectionTimeout;
       return this;
     }
 
