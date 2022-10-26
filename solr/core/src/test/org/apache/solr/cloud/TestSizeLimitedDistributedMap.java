@@ -17,8 +17,8 @@
 
 package org.apache.solr.cloud;
 
+import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -31,7 +31,7 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 public class TestSizeLimitedDistributedMap extends TestDistributedMap {
 
   public void testCleanup() throws Exception {
-    final List<String> deletedItems = new LinkedList<>();
+    final List<String> deletedItems = new ArrayList<>();
     final Set<String> expectedKeys = new HashSet<>();
     int numResponsesToStore = TEST_NIGHTLY ? Overseer.NUM_RESPONSES_TO_STORE : 100;
 
@@ -74,7 +74,7 @@ public class TestSizeLimitedDistributedMap extends TestDistributedMap {
 
   public void testConcurrentCleanup() throws Exception {
     final Set<String> expectedKeys = new HashSet<>();
-    final List<String> deletedItems = new LinkedList<>();
+    final List<String> deletedItems = new ArrayList<>();
     int numResponsesToStore = TEST_NIGHTLY ? Overseer.NUM_RESPONSES_TO_STORE : 100;
 
     try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), 10000)) {
