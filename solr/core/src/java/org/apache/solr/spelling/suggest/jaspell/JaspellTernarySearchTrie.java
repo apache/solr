@@ -764,7 +764,7 @@ public class JaspellTernarySearchTrie implements Accountable {
    * the methods mentioned above provide overloaded versions that allow you to specify the maximum
    * number of return values, in which case this value is temporarily overridden.
    *
-   * <p>*@param num The number of values that will be returned when calling the methods above.
+   * @param num The number of values that will be returned when calling the methods above.
    */
   public void setNumReturnValues(int num) {
     defaultNumReturnValues = (num < 0) ? -1 : num;
