@@ -18,7 +18,6 @@ package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
-import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
 import static org.apache.solr.common.params.CollectionParams.SOURCE_NODE;
 import static org.apache.solr.common.params.CollectionParams.TARGET_NODE;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
@@ -71,7 +70,7 @@ public class ReplaceNodeAPI extends AdminAPIBase {
       @Parameter(description = "The name of the node to be replaced.", required = true)
           @PathParam("sourceNodeName")
           String nodeName,
-         @RequestBody(description = "Contains user provided parameters", required = true)
+      @RequestBody(description = "Contains user provided parameters", required = true)
           ReplaceNodeRequestBody requestBody)
       throws Exception {
     final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
@@ -93,8 +92,7 @@ public class ReplaceNodeAPI extends AdminAPIBase {
     return response;
   }
 
-  public ZkNodeProps createRemoteMessage(
-      String nodeName, ReplaceNodeRequestBody requestBody) {
+  public ZkNodeProps createRemoteMessage(String nodeName, ReplaceNodeRequestBody requestBody) {
     final Map<String, Object> remoteMessage = new HashMap<>();
     remoteMessage.put(SOURCE_NODE, nodeName);
     remoteMessage.put(TARGET_NODE, requestBody.targetNodeName);
@@ -116,6 +114,7 @@ public class ReplaceNodeAPI extends AdminAPIBase {
     @Schema(description = "The name of the targetNode.")
     @JsonProperty("targetNodeName")
     public String targetNodeName;
+
     @JsonProperty("waitForFinalState")
     public Boolean waitForFinalState = false;
   }
