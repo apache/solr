@@ -51,6 +51,7 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
         .configure();
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     shutdownCluster();

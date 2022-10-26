@@ -199,10 +199,12 @@ public class DaemonStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public int hashCode() {
     return id.hashCode();
   }
 
+  @Override
   public boolean equals(Object o) {
     if (o instanceof DaemonStream) {
       return id.equals(((DaemonStream) o).id);
@@ -214,6 +216,7 @@ public class DaemonStream extends TupleStream implements Expressible {
     return id;
   }
 
+  @Override
   public void open() throws IOException {
     if (this.streamRunner != null && this.closed == false) {
       log.error("There is already a running daemon named '{}', no action taken", id);
@@ -231,6 +234,7 @@ public class DaemonStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public Tuple read() throws IOException {
     try {
       return queue.take();
@@ -239,10 +243,12 @@ public class DaemonStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public StreamComparator getStreamSort() {
     return tupleStream.getStreamSort();
   }
 
+  @Override
   public void setStreamContext(StreamContext streamContext) {
     this.tupleStream.setStreamContext(streamContext);
   }
@@ -251,6 +257,7 @@ public class DaemonStream extends TupleStream implements Expressible {
     streamRunner.setShutdown(true);
   }
 
+  @Override
   public void close() {
     if (closed) {
       return;
@@ -261,6 +268,7 @@ public class DaemonStream extends TupleStream implements Expressible {
     this.closed = true;
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> children = new ArrayList<>();
     children.add(tupleStream);
@@ -329,6 +337,7 @@ public class DaemonStream extends TupleStream implements Expressible {
       }
     }
 
+    @Override
     public void run() {
       executingThread = Thread.currentThread();
       try {

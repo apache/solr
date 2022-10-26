@@ -2523,7 +2523,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
     public boolean equals(Object obj) {
       if (this == obj) return true;
       if (obj == null) return false;
-      if (!obj.getClass().isAssignableFrom(PivotField.class)) return false;
+      if (!(obj instanceof PivotField)) return false;
       PivotField other = (PivotField) obj;
       if (getCount() != other.getCount()) return false;
       if (getField() == null) {
@@ -2568,12 +2568,12 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
         }
       }
       if (getFacetQuery() == null) {
-        if (other.getFacetQuery() != null) return false;
+        return other.getFacetQuery() == null;
       } else {
         if (getFacetQuery().size() != other.getFacetQuery().size()) return false;
         for (Map.Entry<String, Integer> entry : getFacetQuery().entrySet()) {
           Integer otherQCount = other.getFacetQuery().get(entry.getKey());
-          if (otherQCount == null || !otherQCount.equals(entry.getValue())) return false;
+          if (!Objects.equals(otherQCount, entry.getValue())) return false;
         }
       }
       return true;
@@ -2609,6 +2609,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
       return equal;
     }
 
+    @Override
     public int indexOf(Object o) {
       for (int i = 0; i < size(); i++) {
         if (get(i).equals(o)) {

@@ -105,6 +105,7 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
     }
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     if (null != proxies) {

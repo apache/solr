@@ -188,20 +188,24 @@ public class RollupStream extends TupleStream implements Expressible {
     return explanation;
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.tupleStream.setStreamContext(context);
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     l.add(tupleStream);
     return l;
   }
 
+  @Override
   public void open() throws IOException {
     tupleStream.open();
   }
 
+  @Override
   public void close() throws IOException {
     tupleStream.close();
     this.currentMetrics = null;
@@ -209,6 +213,7 @@ public class RollupStream extends TupleStream implements Expressible {
     this.finished = false;
   }
 
+  @Override
   public Tuple read() throws IOException {
 
     while (true) {
@@ -277,6 +282,7 @@ public class RollupStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public int getCost() {
     return 0;
   }

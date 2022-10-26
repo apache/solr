@@ -39,6 +39,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     schemaString = "schema15.xml"; // we need a string id
   }
 
+  @Override
   @Test
   public void test() {
     ModifiableSolrParams params = new ModifiableSolrParams();

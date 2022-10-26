@@ -89,10 +89,12 @@ class SolrFilter extends Filter implements SolrRel {
     return super.computeSelfCost(planner, mq).multiplyBy(0.1);
   }
 
+  @Override
   public SolrFilter copy(RelTraitSet traitSet, RelNode input, RexNode condition) {
     return new SolrFilter(getCluster(), traitSet, input, condition);
   }
 
+  @Override
   public void implement(Implementor implementor) {
     implementor.visitChild(0, getInput());
     if (getInput() instanceof SolrAggregate) {

@@ -93,6 +93,7 @@ public class HdfsWriteToMultipleCollectionsTest extends AbstractBasicDistributed
     fixShardCount(3);
   }
 
+  @Override
   protected String getSolrXml() {
     return "solr.xml";
   }

@@ -180,7 +180,7 @@ public class HttpSolrClientConPoolTest extends SolrJettyTestBase {
       for (int i = 0; i < 2; i++) {
         roundRobin.commit();
       }
-      int total = 0;
+      long total = 0;
       for (int i = 0; i < 2; i++) {
         total += roundRobin.query(new SolrQuery("*:*")).getResults().getNumFound();
       }

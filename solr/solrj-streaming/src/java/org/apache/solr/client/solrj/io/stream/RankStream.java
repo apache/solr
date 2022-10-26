@@ -20,9 +20,10 @@ import static org.apache.solr.common.params.CommonParams.SORT;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.LinkedList;
+import java.util.Deque;
 import java.util.List;
 import java.util.Locale;
 import java.util.PriorityQueue;
@@ -52,7 +53,7 @@ public class RankStream extends TupleStream implements Expressible {
   private int size;
   private transient PriorityQueue<Tuple> top;
   private transient boolean finished = false;
-  private transient LinkedList<Tuple> topList;
+  private transient Deque<Tuple> topList;
 
   public RankStream(TupleStream tupleStream, int size, StreamComparator comp) throws IOException {
     init(tupleStream, size, comp);
@@ -179,22 +180,26 @@ public class RankStream extends TupleStream implements Expressible {
         .withHelper(comp.toExplanation(factory));
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.stream.setStreamContext(context);
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     l.add(stream);
     return l;
   }
 
+  @Override
   public void open() throws IOException {
     this.top = new PriorityQueue<>(size, new ReverseComp(comp));
-    this.topList = new LinkedList<>();
+    this.topList = new ArrayDeque<>();
     stream.open();
   }
 
+  @Override
   public void close() throws IOException {
     stream.close();
   }
@@ -203,6 +208,7 @@ public class RankStream extends TupleStream implements Expressible {
     return this.comp;
   }
 
+  @Override
   public Tuple read() throws IOException {
     if (!finished) {
       while (true) {
@@ -234,10 +240,12 @@ public class RankStream extends TupleStream implements Expressible {
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
+  @Override
   public StreamComparator getStreamSort() {
     return comp;
   }
 
+  @Override
   public int getCost() {
     return 0;
   }
@@ -251,6 +259,7 @@ public class RankStream extends TupleStream implements Expressible {
       this.comp = comp;
     }
 
+    @Override
     public int compare(Tuple t1, Tuple t2) {
       return comp.compare(t1, t2) * (-1);
     }

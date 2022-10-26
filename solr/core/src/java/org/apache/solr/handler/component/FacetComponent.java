@@ -524,6 +524,7 @@ public class FacetComponent extends SearchComponent {
     rb.addRequest(this, shardsRefineRequestPivot);
   }
 
+  @Override
   public void modifyRequest(ResponseBuilder rb, SearchComponent who, ShardRequest sreq) {
 
     if (!rb.doFacets) return;
@@ -1451,6 +1452,7 @@ public class FacetComponent extends SearchComponent {
       counted = new FixedBitSet[rb.shards.length];
     }
 
+    @Override
     protected void fillParams(ResponseBuilder rb, SolrParams params, String field) {
       super.fillParams(rb, params, field);
       this.overrequestRatio =

@@ -629,7 +629,8 @@ public abstract class LBSolrClient extends SolrClient {
     long timeAllowedNano = getTimeAllowedInNanos(request);
     long timeOutTime = System.nanoTime() + timeAllowedNano;
     for (int attempts = 0; attempts < maxTries; attempts++) {
-      if (timeAllowedExceeded = isTimeExceeded(timeAllowedNano, timeOutTime)) {
+      timeAllowedExceeded = isTimeExceeded(timeAllowedNano, timeOutTime);
+      if (timeAllowedExceeded) {
         break;
       }
 
@@ -657,7 +658,8 @@ public abstract class LBSolrClient extends SolrClient {
 
     // try other standard servers that we didn't try just now
     for (ServerWrapper wrapper : zombieServers.values()) {
-      if (timeAllowedExceeded = isTimeExceeded(timeAllowedNano, timeOutTime)) {
+      timeAllowedExceeded = isTimeExceeded(timeAllowedNano, timeOutTime);
+      if (timeAllowedExceeded) {
         break;
       }
 

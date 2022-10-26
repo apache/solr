@@ -26,6 +26,7 @@ public class SolrInputDocumentReaderTest extends SolrTestCase {
   private SolrInputDocument doc;
   private String[] allFields;
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();

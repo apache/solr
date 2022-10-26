@@ -105,6 +105,7 @@ public class DbscanEvaluator extends RecursiveObjectEvaluator implements ManyVal
       this.point = point;
     }
 
+    @Override
     public double[] getPoint() {
       return this.point;
     }

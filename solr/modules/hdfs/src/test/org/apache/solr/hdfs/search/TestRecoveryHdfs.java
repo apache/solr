@@ -718,6 +718,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("JdkObsolete")
   public void testRemoveOldLogs() throws Exception {
     try {
       TestInjection.skipIndexWriterCommitOnClose = true;

@@ -156,12 +156,14 @@ public class MergeStream extends TupleStream implements Expressible {
     return explanation;
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     for (PushBackStream stream : streams) {
       stream.setStreamContext(context);
     }
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     for (PushBackStream stream : streams) {
@@ -170,18 +172,21 @@ public class MergeStream extends TupleStream implements Expressible {
     return l;
   }
 
+  @Override
   public void open() throws IOException {
     for (PushBackStream stream : streams) {
       stream.open();
     }
   }
 
+  @Override
   public void close() throws IOException {
     for (PushBackStream stream : streams) {
       stream.close();
     }
   }
 
+  @Override
   public Tuple read() throws IOException {
 
     // might be able to optimize this by sorting the streams based on the next to read tuple from
@@ -254,10 +259,12 @@ public class MergeStream extends TupleStream implements Expressible {
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
+  @Override
   public StreamComparator getStreamSort() {
     return comp;
   }
 
+  @Override
   public int getCost() {
     return 0;
   }

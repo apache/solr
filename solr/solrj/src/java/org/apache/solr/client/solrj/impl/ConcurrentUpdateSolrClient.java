@@ -21,7 +21,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
-import java.util.LinkedList;
+import java.util.ArrayDeque;
 import java.util.Locale;
 import java.util.Queue;
 import java.util.Set;
@@ -111,7 +111,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     this.client.setFollowRedirects(false);
     this.queue = new LinkedBlockingQueue<>(builder.queueSize);
     this.threadCount = builder.threadCount;
-    this.runners = new LinkedList<>();
+    this.runners = new ArrayDeque<>();
     this.streamDeletes = builder.streamDeletes;
     this.connectionTimeout = builder.connectionTimeoutMillis;
     this.soTimeout = builder.socketTimeoutMillis;

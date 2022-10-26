@@ -23,6 +23,7 @@ public interface OneValueWorker extends ValueWorker {
 
   Object doWork(Object value) throws IOException;
 
+  @Override
   default Object doWork(Object... values) throws IOException {
     if (1 != values.length) {
       throw new IOException(

@@ -397,6 +397,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("JdkObsolete")
   public void testAddHttpRequestToContext() throws Exception {
     HttpServletRequest request = getMock("/solr/select", null, -1);
     when(request.getMethod()).thenReturn("GET");

@@ -365,6 +365,7 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
         this.errors = errors;
       }
 
+      @Override
       public OutcomeCountingConcurrentUpdateSolrClient build() {
         return new OutcomeCountingConcurrentUpdateSolrClient(this);
       }

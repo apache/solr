@@ -16,9 +16,9 @@
  */
 package org.apache.solr.handler.component;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -198,7 +198,7 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
    *     org.apache.solr.handler.component.TrackingShardHandlerFactory#setTrackingQueue(java.util.List,
    *     java.util.Queue)
    */
-  public static class RequestTrackingQueue extends LinkedList<ShardRequestAndParams> {
+  public static class RequestTrackingQueue extends ArrayDeque<ShardRequestAndParams> {
     private final Map<String, List<ShardRequestAndParams>> requests = new ConcurrentHashMap<>();
 
     @Override

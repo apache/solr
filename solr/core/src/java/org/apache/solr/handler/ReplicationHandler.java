@@ -183,6 +183,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       return new CommitVersionInfo(generation, version);
     }
 
+    @Override
     public String toString() {
       return "generation=" + generation + ",version=" + version;
     }
@@ -1681,6 +1682,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
     }
 
+    @Override
     public void write(OutputStream out) throws IOException {
       createOutputStream(out);
 
@@ -1807,6 +1809,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       super(solrParams);
     }
 
+    @Override
     protected Path initFile() {
       // if it is a tlog file read from tlog directory
       return Path.of(core.getUpdateHandler().getUpdateLog().getLogDir(), tlogFileName);
@@ -1819,6 +1822,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       super(solrParams);
     }
 
+    @Override
     protected Path initFile() {
       // if it is a conf file read from config directory
       return core.getResourceLoader().getConfigPath().resolve(cfileName);

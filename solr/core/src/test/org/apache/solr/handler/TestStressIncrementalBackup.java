@@ -110,6 +110,7 @@ public class TestStressIncrementalBackup extends SolrCloudTestCase {
     // possible to create a lot of index churn w/ segment merging
     final Thread heavyCommitting =
         new Thread() {
+          @Override
           public void run() {
             try {
               int docIdCounter = 0;
