@@ -1055,19 +1055,6 @@ public class CoreContainer {
                   clusterSingletons.getSingletons().put(singleton.getName(), singleton);
                 }
               });
-
-      clusterSingletons.setReady();
-      if (NodeRoles.MODE_PREFERRED.equals(nodeRoles.getRoleMode(NodeRoles.Role.OVERSEER))) {
-        try {
-          log.info("This node has been started as a preferred overseer");
-          zkSys.getZkController().setPreferredOverseer();
-        } catch (KeeperException | InterruptedException e) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, e);
-        }
-      }
-      if (!distributedCollectionCommandRunner.isPresent()) {
-        zkSys.getZkController().checkOverseerDesignate();
-      }
     }
 
     final CoreContainer thisCCRef = this;
@@ -1084,6 +1071,22 @@ public class CoreContainer {
               }
             });
     jerseyAppHandler = new ApplicationHandler(containerHandlers.getJerseyEndpoints());
+
+    // Do Node setup logic after all handlers have been registered.
+    if (isZooKeeperAware()) {
+      clusterSingletons.setReady();
+      if (NodeRoles.MODE_PREFERRED.equals(nodeRoles.getRoleMode(NodeRoles.Role.OVERSEER))) {
+        try {
+          log.info("This node has been started as a preferred overseer");
+          zkSys.getZkController().setPreferredOverseer();
+        } catch (KeeperException | InterruptedException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        }
+      }
+      if (!distributedCollectionCommandRunner.isPresent()) {
+        zkSys.getZkController().checkOverseerDesignate();
+      }
+    }
 
     // This is a bit redundant but these are two distinct concepts for all they're accomplished at
     // the same time.
