@@ -192,6 +192,7 @@ public class ShuffleStream extends CloudSolrStream implements Expressible {
     return explanation;
   }
 
+  @Override
   public ModifiableSolrParams adjustParams(ModifiableSolrParams mParams) {
     mParams.set(CommonParams.QT, "/export");
     return mParams;

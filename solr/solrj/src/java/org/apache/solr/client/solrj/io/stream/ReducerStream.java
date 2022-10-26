@@ -169,15 +169,14 @@ public class ReducerStream extends TupleStream implements Expressible {
     }
 
     // over
-    if (eq instanceof Expressible) {
-      expression.addParameter(
-          new StreamExpressionNamedParameter("by", ((Expressible) eq).toExpression(factory)));
+    if (eq != null) {
+      expression.addParameter(new StreamExpressionNamedParameter("by", eq.toExpression(factory)));
     } else {
       throw new IOException(
           "This ReducerStream contains a non-expressible comparator - it cannot be converted to an expression");
     }
 
-    if (op instanceof Expressible) {
+    if (op != null) {
       expression.addParameter(op.toExpression(factory));
     } else {
       throw new IOException(
@@ -199,24 +198,29 @@ public class ReducerStream extends TupleStream implements Expressible {
         .withHelpers(new Explanation[] {eq.toExplanation(factory), op.toExplanation(factory)});
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.stream.setStreamContext(context);
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     l.add(stream);
     return l;
   }
 
+  @Override
   public void open() throws IOException {
     stream.open();
   }
 
+  @Override
   public void close() throws IOException {
     stream.close();
   }
 
+  @Override
   public Tuple read() throws IOException {
 
     while (true) {
@@ -251,10 +255,12 @@ public class ReducerStream extends TupleStream implements Expressible {
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
+  @Override
   public StreamComparator getStreamSort() {
     return stream.getStreamSort();
   }
 
+  @Override
   public int getCost() {
     return 0;
   }

@@ -161,17 +161,20 @@ public class ScoreNodesStream extends TupleStream implements Expressible {
         .withExpression(toExpression(factory, false).toString());
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.clientCache = context.getSolrClientCache();
     this.stream.setStreamContext(context);
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     l.add(stream);
     return l;
   }
 
+  @Override
   public void open() throws IOException {
     stream.open();
     Tuple node = null;
@@ -256,6 +259,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible {
     tuples = nodes.values().iterator();
   }
 
+  @Override
   public void close() throws IOException {
     stream.close();
   }
@@ -264,6 +268,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible {
     return null;
   }
 
+  @Override
   public Tuple read() throws IOException {
     if (tuples.hasNext()) {
       return tuples.next();
@@ -272,10 +277,12 @@ public class ScoreNodesStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public StreamComparator getStreamSort() {
     return null;
   }
 
+  @Override
   public int getCost() {
     return 0;
   }

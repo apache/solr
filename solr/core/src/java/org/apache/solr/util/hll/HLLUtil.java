@@ -22,11 +22,11 @@ final class HLLUtil {
    * Precomputed <code>pwMaxMask</code> values indexed by <code>registerSizeInBits</code>.
    * Calculated with this formula:
    *
-   * <pre>
-   *     int maxRegisterValue = (1 << registerSizeInBits) - 1;
-   *     // Mask with all bits set except for (maxRegisterValue - 1) least significant bits (see #addRaw())
-   *     return ~((1L << (maxRegisterValue - 1)) - 1);
-   * </pre>
+   * <pre>{@code
+   * int maxRegisterValue = (1 << registerSizeInBits) - 1;
+   * // Mask with all bits set except for (maxRegisterValue - 1) least significant bits (see #addRaw())
+   * return ~((1L << (maxRegisterValue - 1)) - 1);
+   * }</pre>
    *
    * @see #pwMaxMask(int)
    */

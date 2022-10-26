@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.admin;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
@@ -45,10 +44,7 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 
 public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
 
@@ -56,8 +52,6 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
   }
-
-  @Rule public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   public String getCoreName() {
     return this.getClass().getName() + "_sys_vars";

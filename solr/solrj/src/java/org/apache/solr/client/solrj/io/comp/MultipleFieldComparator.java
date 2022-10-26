@@ -25,7 +25,6 @@ import java.util.UUID;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -46,6 +45,7 @@ public class MultipleFieldComparator implements StreamComparator {
     return comps;
   }
 
+  @Override
   public int compare(Tuple t1, Tuple t2) {
     for (StreamComparator comp : comps) {
       int i = comp.compare(t1, t2);
@@ -60,7 +60,7 @@ public class MultipleFieldComparator implements StreamComparator {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (!(o instanceof MultipleFieldComparator)) return false;
     MultipleFieldComparator that = (MultipleFieldComparator) o;
     return Arrays.equals(comps, that.comps);
   }
@@ -74,11 +74,11 @@ public class MultipleFieldComparator implements StreamComparator {
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
     StringBuilder sb = new StringBuilder();
     for (StreamComparator comp : comps) {
-      if (comp instanceof Expressible) {
+      if (comp != null) {
         if (sb.length() > 0) {
           sb.append(",");
         }
-        sb.append(((Expressible) comp).toExpression(factory));
+        sb.append(comp.toExpression(factory));
       } else {
         throw new IOException(
             "This MultiComp contains a non-expressible comparator - it cannot be converted to an expression");

@@ -70,7 +70,7 @@ public class TestSolrDeletionPolicy1 extends SolrTestCaseJ4 {
     Map<Long, IndexCommit> commits = delPolicy.getCommits();
     IndexCommit latest = delPolicy.getLatestCommit();
     for (Long gen : commits.keySet()) {
-      if (commits.get(gen) == latest) continue;
+      if (commits.get(gen).equals(latest)) continue;
       assertEquals(1, commits.get(gen).getSegmentCount());
     }
   }

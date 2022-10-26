@@ -120,6 +120,7 @@ public class CollectionsRepairEventListenerTest extends SolrCloudTestCase {
     repairListener.start();
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();

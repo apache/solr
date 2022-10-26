@@ -46,24 +46,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** The class that holds a mapping of various packages and classloaders */
-public class PackageLoader implements Closeable {
+public class SolrPackageLoader implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String LATEST = "$LATEST";
 
   private final CoreContainer coreContainer;
-  private final Map<String, Package> packageClassLoaders = new ConcurrentHashMap<>();
+  private final Map<String, SolrPackage> packageClassLoaders = new ConcurrentHashMap<>();
 
   private PackageAPI.Packages myCopy = new PackageAPI.Packages();
 
   private PackageAPI packageAPI;
 
-  public Optional<Package.Version> getPackageVersion(String pkg, String version) {
-    Package p = packageClassLoaders.get(pkg);
+  public Optional<SolrPackage.Version> getPackageVersion(String pkg, String version) {
+    SolrPackage p = packageClassLoaders.get(pkg);
     if (p == null) return Optional.empty();
     return Optional.ofNullable(p.getVersion(version));
   }
 
-  public PackageLoader(CoreContainer coreContainer) {
+  public SolrPackageLoader(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
     packageAPI = new PackageAPI(coreContainer, this);
     refreshPackageConf();
@@ -73,11 +73,11 @@ public class PackageLoader implements Closeable {
     return packageAPI;
   }
 
-  public Package getPackage(String key) {
+  public SolrPackage getPackage(String key) {
     return packageClassLoaders.get(key);
   }
 
-  public Map<String, Package> getPackages() {
+  public Map<String, SolrPackage> getPackages() {
     return Collections.emptyMap();
   }
 
@@ -85,19 +85,19 @@ public class PackageLoader implements Closeable {
     log.debug(
         "{} updated to version {}", ZkStateReader.SOLR_PKGS_PATH, packageAPI.pkgs.znodeVersion);
 
-    List<Package> updated = new ArrayList<>();
+    List<SolrPackage> updated = new ArrayList<>();
     Map<String, List<PackageAPI.PkgVersion>> modified = getModified(myCopy, packageAPI.pkgs);
 
     for (Map.Entry<String, List<PackageAPI.PkgVersion>> e : modified.entrySet()) {
       if (e.getValue() != null) {
-        Package p = packageClassLoaders.get(e.getKey());
+        SolrPackage p = packageClassLoaders.get(e.getKey());
         if (e.getValue() != null && p == null) {
-          packageClassLoaders.put(e.getKey(), p = new Package(e.getKey()));
+          packageClassLoaders.put(e.getKey(), p = new SolrPackage(e.getKey()));
         }
         p.updateVersions(e.getValue());
         updated.add(p);
       } else {
-        Package p = packageClassLoaders.remove(e.getKey());
+        SolrPackage p = packageClassLoaders.remove(e.getKey());
         if (p != null) {
           // other classes are holding to a reference to this object
           // they should know that this is removed
@@ -143,9 +143,9 @@ public class PackageLoader implements Closeable {
   }
 
   public void notifyListeners(String pkg) {
-    Package p = packageClassLoaders.get(pkg);
+    SolrPackage p = packageClassLoaders.get(pkg);
     if (p != null) {
-      List<Package> l = Collections.singletonList(p);
+      List<SolrPackage> l = Collections.singletonList(p);
       for (SolrCore core : coreContainer.getCores()) {
         core.getPackageListeners().packagesUpdated(l);
       }
@@ -153,14 +153,14 @@ public class PackageLoader implements Closeable {
   }
 
   /** represents a package definition in the packages.json */
-  public class Package implements Closeable {
+  public class SolrPackage implements Closeable {
     final String name;
     final Map<String, Version> myVersions = new ConcurrentHashMap<>();
     private List<String> sortedVersions = new CopyOnWriteArrayList<>();
     String latest;
     private boolean deleted;
 
-    Package(String name) {
+    SolrPackage(String name) {
       this.name = name;
     }
 
@@ -255,7 +255,7 @@ public class PackageLoader implements Closeable {
     }
 
     public class Version implements MapWriter, Closeable {
-      private final Package parent;
+      private final SolrPackage parent;
       private SolrResourceLoader loader;
 
       private final PackageAPI.PkgVersion version;
@@ -266,7 +266,7 @@ public class PackageLoader implements Closeable {
         version.writeMap(ew);
       }
 
-      Version(Package parent, PackageAPI.PkgVersion v) {
+      Version(SolrPackage parent, PackageAPI.PkgVersion v) {
         this.parent = parent;
         this.version = v;
         List<Path> paths = new ArrayList<>();
@@ -367,6 +367,6 @@ public class PackageLoader implements Closeable {
 
   @Override
   public void close() {
-    for (Package p : packageClassLoaders.values()) closeWhileHandlingException(p);
+    for (SolrPackage p : packageClassLoaders.values()) closeWhileHandlingException(p);
   }
 }

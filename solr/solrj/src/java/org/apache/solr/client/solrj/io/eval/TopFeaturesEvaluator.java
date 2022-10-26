@@ -103,6 +103,7 @@ public class TopFeaturesEvaluator extends RecursiveObjectEvaluator implements Tw
       this.value = value.doubleValue();
     }
 
+    @Override
     public int compareTo(Pair pair) {
 
       int c = value.compareTo(pair.value);

@@ -75,6 +75,7 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
     return getBuilder(HttpClientUtil.getHttpClientBuilder());
   }
 
+  @Override
   public void close() {
     HttpClientUtil.removeRequestInterceptor(bufferedEntityInterceptor);
   }
@@ -88,6 +89,7 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
     SPNEGOAuthentication authentication =
         new SPNEGOAuthentication(null) {
 
+          @Override
           public boolean matches(String type, URI uri, String realm) {
             return this.getType().equals(type);
           }
@@ -174,10 +176,12 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
         // Get the credentials from the JAAS configuration rather than here
         Credentials useJaasCreds =
             new Credentials() {
+              @Override
               public String getPassword() {
                 return null;
               }
 
+              @Override
               public Principal getUserPrincipal() {
                 return null;
               }

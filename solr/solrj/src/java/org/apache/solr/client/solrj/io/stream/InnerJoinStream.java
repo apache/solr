@@ -32,10 +32,14 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
  * @since 6.0.0
  */
 public class InnerJoinStream extends BiJoinStream implements Expressible {
+  @SuppressWarnings("JdkObsolete")
+  private final LinkedList<Tuple> joinedTuples = new LinkedList<>();
 
-  private LinkedList<Tuple> joinedTuples = new LinkedList<>();
-  private LinkedList<Tuple> leftTupleGroup = new LinkedList<>();
-  private LinkedList<Tuple> rightTupleGroup = new LinkedList<>();
+  @SuppressWarnings("JdkObsolete")
+  private final LinkedList<Tuple> leftTupleGroup = new LinkedList<>();
+
+  @SuppressWarnings("JdkObsolete")
+  private final LinkedList<Tuple> rightTupleGroup = new LinkedList<>();
 
   public InnerJoinStream(TupleStream leftStream, TupleStream rightStream, StreamEqualitor eq)
       throws IOException {
@@ -46,6 +50,7 @@ public class InnerJoinStream extends BiJoinStream implements Expressible {
     super(expression, factory);
   }
 
+  @Override
   public Tuple read() throws IOException {
     // if we've already figured out the next joined tuple then just return it
     if (joinedTuples.size() > 0) {

@@ -39,6 +39,7 @@ public class GreaterThanEvaluator extends RecursiveBooleanEvaluator implements M
     }
   }
 
+  @Override
   protected Checker constructChecker(Object fromValue) throws IOException {
     if (null == fromValue) {
       throw new IOException(

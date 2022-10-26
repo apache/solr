@@ -93,12 +93,14 @@ public class ParallelListStream extends TupleStream implements Expressible {
     return explanation;
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     for (TupleStream stream : streams) {
       stream.setStreamContext(context);
     }
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<TupleStream>();
     for (TupleStream stream : streams) {
@@ -107,6 +109,7 @@ public class ParallelListStream extends TupleStream implements Expressible {
     return l;
   }
 
+  @Override
   public Tuple read() throws IOException {
     while (true) {
       if (currentStream == null) {
@@ -128,8 +131,10 @@ public class ParallelListStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public void close() throws IOException {}
 
+  @Override
   public void open() throws IOException {
     openStreams();
   }
@@ -159,7 +164,7 @@ public class ParallelListStream extends TupleStream implements Expressible {
     }
   }
 
-  protected class StreamOpener implements Callable<StreamIndex> {
+  protected static class StreamOpener implements Callable<StreamIndex> {
 
     private StreamIndex streamIndex;
 
@@ -167,13 +172,14 @@ public class ParallelListStream extends TupleStream implements Expressible {
       this.streamIndex = streamIndex;
     }
 
+    @Override
     public StreamIndex call() throws Exception {
       streamIndex.getTupleStream().open();
       return streamIndex;
     }
   }
 
-  protected class StreamIndex {
+  protected static class StreamIndex {
     private TupleStream tupleStream;
     private int index;
 
@@ -192,10 +198,12 @@ public class ParallelListStream extends TupleStream implements Expressible {
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
+  @Override
   public StreamComparator getStreamSort() {
     return null;
   }
 
+  @Override
   public int getCost() {
     return 0;
   }

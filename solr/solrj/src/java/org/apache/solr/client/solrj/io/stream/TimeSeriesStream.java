@@ -336,14 +336,17 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
     return explanation;
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     cache = context.getSolrClientCache();
   }
 
+  @Override
   public List<TupleStream> children() {
     return new ArrayList<>();
   }
 
+  @Override
   public void open() throws IOException {
     if (cache != null) {
       cloudSolrClient = cache.getCloudSolrClient(zkHost);
@@ -368,12 +371,14 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public void close() throws IOException {
     if (cache == null) {
       cloudSolrClient.close();
     }
   }
 
+  @Override
   public Tuple read() throws IOException {
     if (index < tuples.size()) {
       Tuple tuple = tuples.get(index);
@@ -595,6 +600,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public int getCost() {
     return 0;
   }

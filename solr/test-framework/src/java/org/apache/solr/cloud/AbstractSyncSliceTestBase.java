@@ -144,7 +144,7 @@ public abstract class AbstractSyncSliceTestBase extends AbstractFullDistribZkTes
     CloudJettyRunner deadJetty = leaderJetty;
 
     // let's get the latest leader
-    while (deadJetty == leaderJetty) {
+    while (deadJetty.equals(leaderJetty)) {
       updateMappingsFromZk(this.jettys, this.clients);
       leaderJetty = shardToLeaderJetty.get("shard1");
     }

@@ -18,7 +18,6 @@ package org.apache.solr.core;
 
 import static org.hamcrest.core.StringContains.containsString;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -36,14 +35,8 @@ import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 
 public class TestSolrXml extends SolrTestCaseJ4 {
-
-  @Rule public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
-
   // tmp dir, cleaned up automatically.
   private Path solrHome;
 

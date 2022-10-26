@@ -62,6 +62,7 @@ public abstract class AbstractUnloadDistributedZkTestBase extends AbstractFullDi
     fixShardCount(4); // needs at least 4 servers
   }
 
+  @Override
   protected String getSolrXml() {
     return "solr.xml";
   }

@@ -493,7 +493,7 @@ public class TestFiltering extends SolrTestCaseJ4 {
       // sanity check
       assertJQ(req("q", "*:*"), "/response/numFound==" + model.indexSize);
 
-      int totalMatches = 0;
+      long totalMatches = 0;
       int nonZeros = 0;
       for (int qiter = 0; qiter < queryIter; qiter++) {
         model.clear();

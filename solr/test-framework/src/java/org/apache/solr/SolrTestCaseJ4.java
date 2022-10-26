@@ -70,6 +70,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
@@ -1826,7 +1827,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     public boolean equals(Object o) {
       if (!(o instanceof Doc)) return false;
       Doc other = (Doc) o;
-      return this == other || id != null && id.equals(other.id);
+      return this == other || Objects.equals(id, other.id);
     }
 
     @Override

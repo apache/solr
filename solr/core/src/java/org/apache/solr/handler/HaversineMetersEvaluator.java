@@ -49,6 +49,7 @@ public class HaversineMetersEvaluator extends RecursiveEvaluator {
 
     public HaversineDistance() {}
 
+    @Override
     public double compute(double[] a, double[] b) throws DimensionMismatchException {
       return SloppyMath.haversinMeters(a[0], a[1], b[0], b[1]);
     }

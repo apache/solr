@@ -109,7 +109,7 @@ public class FileFloatSource extends ValueSource {
 
   @Override
   public boolean equals(Object o) {
-    if (o.getClass() != FileFloatSource.class) return false;
+    if (!(o instanceof FileFloatSource)) return false;
     FileFloatSource other = (FileFloatSource) o;
     return this.field.getName().equals(other.field.getName())
         && this.keyField.getName().equals(other.keyField.getName())

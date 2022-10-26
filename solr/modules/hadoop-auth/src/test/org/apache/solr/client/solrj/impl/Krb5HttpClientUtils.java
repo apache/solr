@@ -46,6 +46,7 @@ public class Krb5HttpClientUtils {
     SPNEGOAuthentication authentication =
         new SPNEGOAuthentication(null) {
 
+          @Override
           public boolean matches(String type, URI uri, String realm) {
             return this.getType().equals(type);
           }

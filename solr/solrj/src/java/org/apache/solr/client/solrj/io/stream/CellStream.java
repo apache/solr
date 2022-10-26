@@ -101,10 +101,12 @@ public class CellStream extends TupleStream implements Expressible {
     return explanation;
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.stream.setStreamContext(context);
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     l.add(stream);
@@ -112,6 +114,7 @@ public class CellStream extends TupleStream implements Expressible {
     return l;
   }
 
+  @Override
   public Tuple read() throws IOException {
     if (tuple.EOF) {
       return tuple;
@@ -122,8 +125,10 @@ public class CellStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public void close() throws IOException {}
 
+  @Override
   public void open() throws IOException {
     try {
       stream.open();
@@ -146,10 +151,12 @@ public class CellStream extends TupleStream implements Expressible {
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
+  @Override
   public StreamComparator getStreamSort() {
     return null;
   }
 
+  @Override
   public int getCost() {
     return 0;
   }
