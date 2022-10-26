@@ -1799,7 +1799,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           final ReplaceNodeAPI.ReplaceNodeRequestBody requestBody =
               new ReplaceNodeAPI.ReplaceNodeRequestBody();
           requestBody.targetNodeName = params.get(TARGET_NODE);
-          requestBody.waitForFinalState = params.getBool(WAIT_FOR_FINAL_STATE, false);
+          requestBody.waitForFinalState = params.getBool(WAIT_FOR_FINAL_STATE);
+          requestBody.async = params.get(ASYNC);
           final ReplaceNodeAPI replaceNodeAPI = new ReplaceNodeAPI(h.coreContainer, req, rsp);
           final SolrJerseyResponse replaceNodeResponse =
               replaceNodeAPI.replaceNode(requiredParams.get(SOURCE_NODE), requestBody);

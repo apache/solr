@@ -18,68 +18,98 @@ package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Optional;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.cloud.OverseerSolrResponse;
-import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
-import org.apache.solr.common.util.NamedList;
+import javax.inject.Singleton;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.Application;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
-import org.apache.solr.jersey.SolrJerseyResponse;
+import org.apache.solr.handler.admin.api.ReplaceNodeAPI.ReplaceNodeRequestBody;
+import org.apache.solr.jersey.InjectionFactories;
+import org.apache.solr.jersey.SolrJacksonMapper;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.junit.Before;
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
+import org.glassfish.jersey.process.internal.RequestScoped;
+import org.glassfish.jersey.server.ResourceConfig;
+import org.glassfish.jersey.test.JerseyTest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 /** Unit tests for {@link ReplaceNodeAPI} */
-public class ReplaceNodeAPITest extends SolrTestCaseJ4 {
+public class ReplaceNodeAPITest extends JerseyTest {
 
   private CoreContainer mockCoreContainer;
   private static final String sourceNodeName = "demoSourceNode";
   private static final String targetNodeName = "demoTargetNode";
+
+  public static final String async = "async";
   private static final boolean waitForFinalState = false;
   private SolrQueryRequest mockQueryRequest;
   private SolrQueryResponse queryResponse;
-  private ReplaceNodeAPI replaceNodeApi;
-  private DistributedCollectionConfigSetCommandRunner mockCommandRunner;
 
   @BeforeClass
   public static void ensureWorkingMockito() {
     assumeWorkingMockito();
   }
 
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
+  protected Application configure() {
+    resetMocks();
+    final ResourceConfig config = new ResourceConfig();
+    config.register(ReplaceNodeAPI.class);
+    config.register(SolrJacksonMapper.class);
+    config.register(
+        new AbstractBinder() {
+          @Override
+          protected void configure() {
+            bindFactory(new InjectionFactories.SingletonFactory<>(mockCoreContainer))
+                .to(CoreContainer.class)
+                .in(Singleton.class);
+          }
+        });
+    config.register(
+        new AbstractBinder() {
+          @Override
+          protected void configure() {
+            bindFactory(InjectionFactories.SolrQueryRequestFactory.class)
+                .to(SolrQueryRequest.class)
+                .in(RequestScoped.class);
+          }
+        });
+    config.register(
+        new AbstractBinder() {
+          @Override
+          protected void configure() {
+            bindFactory(InjectionFactories.SolrQueryResponseFactory.class)
+                .to(SolrQueryResponse.class)
+                .in(RequestScoped.class);
+          }
+        });
 
-    mockCoreContainer = mock(CoreContainer.class);
-    mockCommandRunner = mock(DistributedCollectionConfigSetCommandRunner.class);
-    when(mockCoreContainer.getDistributedCollectionCommandRunner())
-        .thenReturn(Optional.of(mockCommandRunner));
-    when(mockCommandRunner.runCollectionCommand(any(), any(), anyLong()))
-        .thenReturn(new OverseerSolrResponse(new NamedList<>()));
-    mockQueryRequest = mock(SolrQueryRequest.class);
-    queryResponse = new SolrQueryResponse();
-    replaceNodeApi = new ReplaceNodeAPI(mockCoreContainer, mockQueryRequest, queryResponse);
+    return config;
   }
 
   @Test
   public void testSuccessfulReplaceNodeCommand() throws Exception {
-    when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
     final String expectedJson = "{\"responseHeader\":{\"status\":0,\"QTime\":0}}";
     final CollectionsHandler collectionsHandler = mock(CollectionsHandler.class);
     when(mockCoreContainer.getCollectionsHandler()).thenReturn(collectionsHandler);
     ReplaceNodeAPI.ReplaceNodeRequestBody requestBody =
-        new ReplaceNodeAPI.ReplaceNodeRequestBody(targetNodeName, waitForFinalState);
-    final SolrJerseyResponse response = replaceNodeApi.replaceNode(sourceNodeName, requestBody);
+        new ReplaceNodeAPI.ReplaceNodeRequestBody(targetNodeName, waitForFinalState, async);
+    Entity<ReplaceNodeRequestBody> entity = Entity.entity(requestBody, MediaType.APPLICATION_JSON);
+    final Response response =
+        target("cluster/nodes/" + sourceNodeName + "/commands/replace").request().post(entity);
+    final String jsonBody = response.readEntity(String.class);
+    assertEquals(200, response.getStatus());
+    assertEquals("application/json", response.getHeaders().getFirst("Content-type"));
+    assertEquals(expectedJson, "{\"responseHeader\":{\"status\":0,\"QTime\":0}}");
+  }
 
-    assertEquals(0, response.responseHeader.status);
-    assertEquals(0, response.responseHeader.qTime);
+  private void resetMocks() {
+    mockCoreContainer = mock(CoreContainer.class);
   }
 }
