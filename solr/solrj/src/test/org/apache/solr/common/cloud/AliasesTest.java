@@ -72,4 +72,39 @@ public class AliasesTest extends SolrTestCase {
     assertEquals(Map.of(), renamed.getCollectionAliasProperties("col0"));
     assertEquals(Map.of("p0", "v0"), renamed.getCollectionAliasProperties("alias1"));
   }
+
+  public void testCloneWithCollectionAliasNullAlias() {
+    Aliases aliases = Aliases.EMPTY;
+    SolrException e =
+        assertThrows(SolrException.class, () -> aliases.cloneWithCollectionAlias(null, "col"));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+  }
+
+  public void testCloneWithCollectionAlias() {
+    Map<String, List<String>> collectionAliases =
+        Map.of("alias0", List.of("col0"), "alias5", List.of("col5", "col0", "col7"));
+    Map<String, Map<String, String>> collectionAliasProperties =
+        Map.of("alias0", Map.of("p0", "v0"));
+    Aliases aliases = new Aliases(collectionAliases, collectionAliasProperties, -1);
+    Aliases cloned = aliases.cloneWithCollectionAlias("alias7", "col9");
+
+    Map<String, String> expected =
+        Map.of("alias0", "col0", "alias5", "col5,col0,col7", "alias7", "col9");
+    assertEquals(expected, cloned.getCollectionAliasMap());
+    assertEquals(Map.of("p0", "v0"), cloned.getCollectionAliasProperties("alias0"));
+    assertEquals(Map.of(), cloned.getCollectionAliasProperties("alias7"));
+  }
+
+  public void testCloneWithCollectionAliasRemoval() {
+    Map<String, List<String>> collectionAliases =
+        Map.of("alias0", List.of("col0"), "alias5", List.of("col5", "col0", "col7"));
+    Map<String, Map<String, String>> collectionAliasProperties =
+        Map.of("alias0", Map.of("p0", "v0"));
+    Aliases aliases = new Aliases(collectionAliases, collectionAliasProperties, -1);
+    Aliases cloned = aliases.cloneWithCollectionAlias("alias0", null);
+
+    Map<String, String> expected = Map.of("alias5", "col5,col0,col7");
+    assertEquals(expected, cloned.getCollectionAliasMap());
+    assertEquals(Map.of(), cloned.getCollectionAliasProperties("alias0"));
+  }
 }

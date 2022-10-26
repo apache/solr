@@ -319,7 +319,7 @@ public class Aliases {
    */
   public Aliases cloneWithCollectionAlias(String alias, String collections) {
     if (alias == null) {
-      throw new NullPointerException("Alias name cannot be null");
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Alias name cannot be null");
     }
     Map<String, Map<String, String>> newColProperties;
     Map<String, List<String>> newColAliases =
