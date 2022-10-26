@@ -78,6 +78,8 @@ Bug Fixes
 
 * SOLR-16293: Luke request fails for document with a binary field (Kevin Risden)
 
+* SOLR-16477: Collection RENAME api creates broken alias (Alex Deparvu via Kevin Risden)
+
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
