@@ -233,6 +233,8 @@ Bug Fixes
 
 * SOLR-16485: Fix NPE in ShardHandlerFactory when running in Standalone mode (Houston Putman)
 
+* SOLR-16412: Race condition could trigger error on concurrent SizeLimitedDistributedMap cleanup (Patson Luk via noble)
+
 Other Changes
 ---------------------
 * SOLR-16351: Upgrade Carrot2 to 4.4.3, upgrade randomizedtesting to 2.8.0. (Dawid Weiss)
