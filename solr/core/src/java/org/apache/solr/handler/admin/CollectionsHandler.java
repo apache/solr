@@ -1794,10 +1794,12 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     REPLACENODE_OP(
         REPLACENODE,
         (req, rsp, h) -> {
+          final SolrParams params = req.getParams();
           final RequiredSolrParams requiredParams = req.getParams().required();
           final ReplaceNodeAPI.ReplaceNodeRequestBody requestBody =
               new ReplaceNodeAPI.ReplaceNodeRequestBody();
-          requestBody.targetNode = requiredParams.get(TARGET_NODE);
+          requestBody.targetNodeName = params.get(TARGET_NODE);
+          requestBody.waitForFinalState = params.getBool(WAIT_FOR_FINAL_STATE, false);
           final ReplaceNodeAPI replaceNodeAPI = new ReplaceNodeAPI(h.coreContainer, req, rsp);
           final SolrJerseyResponse replaceNodeResponse =
               replaceNodeAPI.replaceNode(

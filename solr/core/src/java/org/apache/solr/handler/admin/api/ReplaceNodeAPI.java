@@ -21,6 +21,7 @@ import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
 import static org.apache.solr.common.params.CollectionParams.SOURCE_NODE;
 import static org.apache.solr.common.params.CollectionParams.TARGET_NODE;
+import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
@@ -52,7 +53,7 @@ import org.apache.solr.response.SolrQueryResponse;
  *
  * <p>This API is analogous to the v1 /admin/collections?action=REPLACENODE command.
  */
-@Path("cluster/nodes/{nodeName}/commands/replace/")
+@Path("cluster/nodes/{sourceNodeName}/commands/replace/")
 public class ReplaceNodeAPI extends AdminAPIBase {
 
   @Inject
@@ -68,9 +69,9 @@ public class ReplaceNodeAPI extends AdminAPIBase {
   @PermissionName(COLL_EDIT_PERM)
   public SolrJerseyResponse replaceNode(
       @Parameter(description = "The name of the node to be replaced.", required = true)
-          @PathParam("nodeName")
+          @PathParam("sourceNodeName")
           String nodeName,
-         @RequestBody(description = "The name of the target node ", required = true)
+         @RequestBody(description = "Contains user provided parameters", required = true)
           ReplaceNodeRequestBody requestBody)
       throws Exception {
     final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
@@ -96,7 +97,8 @@ public class ReplaceNodeAPI extends AdminAPIBase {
       String nodeName, ReplaceNodeRequestBody requestBody) {
     final Map<String, Object> remoteMessage = new HashMap<>();
     remoteMessage.put(SOURCE_NODE, nodeName);
-    remoteMessage.put(TARGET_NODE, requestBody.targetNode);
+    remoteMessage.put(TARGET_NODE, requestBody.targetNodeName);
+    remoteMessage.put(WAIT_FOR_FINAL_STATE, requestBody.waitForFinalState);
     remoteMessage.put(QUEUE_OPERATION, CollectionAction.REPLACENODE.toLower());
 
     return new ZkNodeProps(remoteMessage);
@@ -106,12 +108,15 @@ public class ReplaceNodeAPI extends AdminAPIBase {
 
     public ReplaceNodeRequestBody() {}
 
-    public ReplaceNodeRequestBody(String targetNode) {
-      this.targetNode = targetNode;
+    public ReplaceNodeRequestBody(String targetNodeName, Boolean waitForFinalState) {
+      this.targetNodeName = targetNodeName;
+      this.waitForFinalState = waitForFinalState;
     }
 
-    @Schema(description = "The name of the targetNode.", required = true)
-    @JsonProperty("targetNode")
-    public String targetNode;
+    @Schema(description = "The name of the targetNode.")
+    @JsonProperty("targetNodeName")
+    public String targetNodeName;
+    @JsonProperty("waitForFinalState")
+    public Boolean waitForFinalState = false;
   }
 }
