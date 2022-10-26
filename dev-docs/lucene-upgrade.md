@@ -74,15 +74,6 @@ gradlew precommit
 gradlew test
 ```
 
-## Documentation
-
-### `solr/solr-ref-guide/antora.yml` update
-
-```
-- lucene-javadocs: 'https://lucene.apache.org/core/9_3_0'
-+ lucene-javadocs: 'https://lucene.apache.org/core/9_4_0'
-```
-
 ## Finish
 
 Push the local branch to github (fork) and open a pull request.
