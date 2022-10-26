@@ -1284,9 +1284,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
     } else {
       newUpdateHandler = createUpdateHandler(updateHandlerClass, updateHandler);
     }
-    if (newUpdateHandler instanceof SolrMetricProducer) {
-      coreMetricManager.registerMetricProducer(
-          "updateHandler", (SolrMetricProducer) newUpdateHandler);
+    if (newUpdateHandler != null) {
+      coreMetricManager.registerMetricProducer("updateHandler", newUpdateHandler);
     }
     infoRegistry.put("updateHandler", newUpdateHandler);
     return newUpdateHandler;
@@ -3428,9 +3427,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
   public void registerInfoBean(String name, SolrInfoBean solrInfoBean) {
     infoRegistry.put(name, solrInfoBean);
 
-    if (solrInfoBean instanceof SolrMetricProducer) {
-      SolrMetricProducer producer = (SolrMetricProducer) solrInfoBean;
-      coreMetricManager.registerMetricProducer(name, producer);
+    if (solrInfoBean != null) {
+      coreMetricManager.registerMetricProducer(name, solrInfoBean);
     }
   }
 

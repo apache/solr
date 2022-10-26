@@ -93,14 +93,14 @@ public class PriorityStream extends TupleStream implements Expressible {
 
     // stream
     if (includeStreams) {
-      if (highPriorityTasks instanceof Expressible) {
+      if (highPriorityTasks != null) {
         expression.addParameter(((Expressible) highPriorityTasks).toExpression(factory));
       } else {
         throw new IOException(
             "The SchedulerStream contains a non-expressible TupleStream - it cannot be converted to an expression");
       }
 
-      if (tasks instanceof Expressible) {
+      if (tasks != null) {
         expression.addParameter(((Expressible) tasks).toExpression(factory));
       } else {
         throw new IOException(

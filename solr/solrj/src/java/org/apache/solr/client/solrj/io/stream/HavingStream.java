@@ -112,7 +112,7 @@ public class HavingStream extends TupleStream implements Expressible {
       expression.addParameter("<stream>");
     }
 
-    if (evaluator instanceof Expressible) {
+    if (evaluator != null) {
       expression.addParameter(evaluator.toExpression(factory));
     } else {
       throw new IOException(

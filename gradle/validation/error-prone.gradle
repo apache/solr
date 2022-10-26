@@ -78,7 +78,6 @@ allprojects { prj ->
             '-Xep:AmbiguousMethodReference:OFF',
             '-Xep:ArgumentSelectionDefectChecker:OFF',
             '-Xep:BadImport:OFF', // style preference that we don't want to enforce
-            '-Xep:BadInstanceof:OFF',
             '-Xep:BadShiftAmount:OFF',
             '-Xep:CanIgnoreReturnValueSuggester:OFF',
             '-Xep:ComplexBooleanConstant:OFF',
