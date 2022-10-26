@@ -23,14 +23,14 @@ Since Solr is Apache 2.0 licensed open source software designed for extensibilit
 
 Solr's xref:query-guide:query-syntax-and-parsers.adoc[query syntax and parsers] offer support for everything from the simplest keyword searching through to complex queries on multiple fields and xref:query-guide:faceting.adoc[faceted] search results.
 xref:query-guide:collapse-and-expand-results.adoc[Collapsing] and xref:query-guide:result-clustering.adoc[clustering] results offer compelling features for e-commerce and storefronts.
-Streaming calculations across large sets of text documents are available via xref:query-guide:streaming-expressions.adoc[streaming expressions].
-Powerful xref:query-guide:math-expressions.adoc[math expressions] provide the backbone for advanced analysis and predictive analytics use cases.
+xref:query-guide:streaming-expressions.adoc[Streaming expressions] allow you to conduct analytics on an entire corpus, a subset matching a query, or a random sample from a set of documents.
+Powerful xref:query-guide:math-expressions.adoc[math expressions] build on streaming expressions to provide the backbone for advanced analysis and predictive analytics use cases.
 
-Advanced relevancy tuning is also supported.
+Advanced relevancy tuning is also supported;
 Solr provides access to almost all of Lucene's text analysis features including tokenization, stemming, synonyms and much more, allowing you to tune relevancy based on knowledge of your users and your domain.
 Solr even allows for customization of relevancy via machine learning using the xref:query-guide:learning-to-rank.adoc[] feature.
 
-Queries are transmitted to Solr via HTTP 1.0, 1.1 or 2.0 requests and the response is typically a list of structured document descriptors.
+Queries are transmitted to Solr via HTTP 1.1 or 2.0 requests and the response is typically a list of structured document descriptors.
 In the classic example, 10 descriptors are returned, each including a URL to locate the document (often rendered as "10 blue links"). However, Solr can go far beyond document locators and many other types of document metadata might also be included.  Flexible schema configurations allow nearly any type of metadata to be associated with a document indexed in Solr.
 The xref:indexing-guide:schema-elements.adoc[schema elements] page of the indexing guide has more details on these options.
 
