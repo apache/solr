@@ -114,8 +114,8 @@ import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.pkg.PackageListeners;
-import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.pkg.PackagePluginHolder;
+import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
@@ -313,8 +313,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
     if (pkg == null) {
       return resourceLoader;
     }
-    PackageLoader.Package aPackage = coreContainer.getPackageLoader().getPackage(pkg);
-    PackageLoader.Package.Version latest = aPackage.getLatest();
+    SolrPackageLoader.SolrPackage aSolrPackage = coreContainer.getPackageLoader().getPackage(pkg);
+    SolrPackageLoader.SolrPackage.Version latest = aSolrPackage.getLatest();
     return latest.getLoader();
   }
 

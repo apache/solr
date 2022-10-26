@@ -44,7 +44,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteExecutionException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
-import org.apache.solr.client.solrj.request.beans.Package;
+import org.apache.solr.client.solrj.request.beans.PackagePayload;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.ClusterSingleton;
@@ -58,7 +58,7 @@ import org.apache.solr.filestore.TestDistribPackageStore;
 import org.apache.solr.filestore.TestDistribPackageStore.Fetcher;
 import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageListeners;
-import org.apache.solr.pkg.PackageLoader;
+import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.pkg.TestPackages;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -97,7 +97,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     }
 
     @Override
-    public void changed(PackageLoader.Package pkg, Ctx ctx) {
+    public void changed(SolrPackageLoader.SolrPackage pkg, Ctx ctx) {
       changeCalled.release();
     }
 
@@ -297,7 +297,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     // We have two versions of the plugin in 2 different jar files. they are already uploaded to
     // the package store
     listener.reset();
-    Package.AddVersion add = new Package.AddVersion();
+    PackagePayload.AddVersion add = new PackagePayload.AddVersion();
     add.version = "1.0";
     add.pkg = "mypkg";
     add.files = singletonList(FILE1);
