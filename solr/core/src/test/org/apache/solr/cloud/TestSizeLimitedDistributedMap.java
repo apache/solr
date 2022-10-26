@@ -74,7 +74,7 @@ public class TestSizeLimitedDistributedMap extends TestDistributedMap {
 
   public void testConcurrentCleanup() throws Exception {
     final Set<String> expectedKeys = new HashSet<>();
-    final List<String> deletedItems = new LinkedList<>();
+    final List<String> deletedItems = new ArrayList<>();
     int numResponsesToStore = TEST_NIGHTLY ? Overseer.NUM_RESPONSES_TO_STORE : 100;
 
     try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), 10000)) {
