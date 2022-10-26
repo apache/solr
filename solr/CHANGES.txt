@@ -76,6 +76,10 @@ Bug Fixes
 
 * SOLR-16363: DirectUpdateHandler2 should not throw UnknownFormatConversionException (Kevin Risden)
 
+* SOLR-16293: Luke request fails for document with a binary field (Kevin Risden)
+
+* SOLR-16477: Collection RENAME api creates broken alias (Alex Deparvu via Kevin Risden)
+
 * SOLR-10918: Fix IntPointField hashing for HLL (Houston Putman)
 
 Build
