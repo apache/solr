@@ -69,14 +69,14 @@ public class ReplaceNodeAPI extends AdminAPIBase {
   public SolrJerseyResponse replaceNode(
       @Parameter(description = "The name of the node to be replaced.", required = true)
           @PathParam("sourceNodeName")
-          String nodeName,
+          String sourceNodeName,
       @RequestBody(description = "Contains user provided parameters", required = true)
           ReplaceNodeRequestBody requestBody)
       throws Exception {
     final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
     final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
     /** TODO Record node for log and tracing */
-    final ZkNodeProps remoteMessage = createRemoteMessage(nodeName, requestBody);
+    final ZkNodeProps remoteMessage = createRemoteMessage(sourceNodeName, requestBody);
     final SolrResponse remoteResponse =
         CollectionsHandler.submitCollectionApiCommand(
             coreContainer,
