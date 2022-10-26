@@ -152,145 +152,149 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
       // elevated docs 1, 2, and 3 are returned even though our query "ZZZZ" doesn't match them
       assertQ(
-        "",
-        req(
-          CommonParams.Q, "ZZZZ",
-          CommonParams.QT, "/elevate",
-          CommonParams.FL, "id, score, [elevated]"),
-        "//*[@numFound='3']",
-        "//result/doc[1]/str[@name='id'][.='1']",
-        "//result/doc[2]/str[@name='id'][.='2']",
-        "//result/doc[3]/str[@name='id'][.='3']",
-        "//result/doc[1]/bool[@name='[elevated]'][.='true']",
-        "//result/doc[2]/bool[@name='[elevated]'][.='true']",
-        "//result/doc[3]/bool[@name='[elevated]'][.='true']");
+          "",
+          req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              CommonParams.FL, "id, score, [elevated]"),
+          "//*[@numFound='3']",
+          "//result/doc[1]/str[@name='id'][.='1']",
+          "//result/doc[2]/str[@name='id'][.='2']",
+          "//result/doc[3]/str[@name='id'][.='3']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[2]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[3]/bool[@name='[elevated]'][.='true']");
 
       // the elevation component respects the fq parameter
-      // if we add fq=str_s:b the results will exclude docs 1 and 3 even though those docs are elevated
+      // if we add fq=str_s:b the results will exclude docs 1 and 3 even though those docs are
+      // elevated
       assertQ(
-        "",
-        req(
-          CommonParams.Q, "ZZZZ",
-          CommonParams.QT, "/elevate",
-          CommonParams.FL, "id, score, [elevated]",
-          CommonParams.FQ, "str_s:b"),
-        "//*[@numFound='1']",
-        "//result/doc[1]/str[@name='id'][.='2']",
-        "//result/doc[1]/bool[@name='[elevated]'][.='true']");
+          "",
+          req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "str_s:b"),
+          "//*[@numFound='1']",
+          "//result/doc[1]/str[@name='id'][.='2']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']");
 
-      // if we explicitly set QueryElevationParams.ELEVATE_FILTERED_DOCS=false (which is the default)
+      // if we explicitly set QueryElevationParams.ELEVATE_FILTERED_DOCS=false (which is the
+      // default)
       // we should see the same behavior as above
       assertQ(
-        "",
-        req(
-          CommonParams.Q, "ZZZZ",
-          CommonParams.QT, "/elevate",
-          CommonParams.FL, "id, score, [elevated]",
-          CommonParams.FQ, "str_s:b",
-          QueryElevationParams.ELEVATE_FILTERED_DOCS, "false"),
-        "//*[@numFound='1']",
-        "//result/doc[1]/str[@name='id'][.='2']",
-        "//result/doc[1]/bool[@name='[elevated]'][.='true']");
+          "",
+          req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "str_s:b",
+              QueryElevationParams.ELEVATE_FILTERED_DOCS, "false"),
+          "//*[@numFound='1']",
+          "//result/doc[1]/str[@name='id'][.='2']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']");
 
       // if we set QueryElevationParams.ELEVATE_FILTERED_DOCS=true we should see docs 1 and 3
       // returned even though they don't match the filter query
       assertQ(
-        "",
-        req(
-          CommonParams.Q, "ZZZZ",
-          CommonParams.QT, "/elevate",
-          CommonParams.FL, "id, score, [elevated]",
-          CommonParams.FQ, "str_s:b",
-          QueryElevationParams.ELEVATE_FILTERED_DOCS, "true"),
-        "//*[@numFound='3']",
-        "//result/doc[1]/str[@name='id'][.='1']",
-        "//result/doc[2]/str[@name='id'][.='2']",
-        "//result/doc[3]/str[@name='id'][.='3']",
-        "//result/doc[1]/bool[@name='[elevated]'][.='true']",
-        "//result/doc[2]/bool[@name='[elevated]'][.='true']",
-        "//result/doc[3]/bool[@name='[elevated]'][.='true']");
+          "",
+          req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "str_s:b",
+              QueryElevationParams.ELEVATE_FILTERED_DOCS, "true"),
+          "//*[@numFound='3']",
+          "//result/doc[1]/str[@name='id'][.='1']",
+          "//result/doc[2]/str[@name='id'][.='2']",
+          "//result/doc[3]/str[@name='id'][.='3']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[2]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[3]/bool[@name='[elevated]'][.='true']");
 
       // if we search for MMMM we should get one match; no documents are elevated for this query
       assertQ(
-        "",
-        req(
-          CommonParams.Q, "MMMM",
-          CommonParams.QT, "/elevate",
-          CommonParams.FL, "id, score, [elevated]"),
-        "//*[@numFound='1']",
-        "//result/doc[1]/str[@name='id'][.='4']",
-        "//result/doc[1]/bool[@name='[elevated]'][.='false']");
+          "",
+          req(
+              CommonParams.Q, "MMMM",
+              CommonParams.QT, "/elevate",
+              CommonParams.FL, "id, score, [elevated]"),
+          "//*[@numFound='1']",
+          "//result/doc[1]/str[@name='id'][.='4']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='false']");
 
       // if we add fq=str_s:b, our one document that matches MMMM will no longer be returned
       assertQ(
-        "",
-        req(
-          CommonParams.Q, "MMMM",
-          CommonParams.QT, "/elevate",
-          CommonParams.FL, "id, score, [elevated]",
-          CommonParams.FQ, "str_s:b"),
-        "//*[@numFound='0']");
+          "",
+          req(
+              CommonParams.Q, "MMMM",
+              CommonParams.QT, "/elevate",
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "str_s:b"),
+          "//*[@numFound='0']");
 
-      // if we set QueryElevationParams.ELEVATE_FILTERED_DOCS=true we should see the same behavior as before
+      // if we set QueryElevationParams.ELEVATE_FILTERED_DOCS=true we should see the same behavior
+      // as before
       // filters are only bypassed for elevated documents
       // our MMMM document is not elevated so it is still subject to the filter
       assertQ(
-        "",
-        req(
-          CommonParams.Q, "MMMM",
-          CommonParams.QT, "/elevate",
-          CommonParams.FL, "id, score, [elevated]",
-          CommonParams.FQ, "str_s:b",
-          QueryElevationParams.ELEVATE_FILTERED_DOCS, "true"),
-        "//*[@numFound='0']");
+          "",
+          req(
+              CommonParams.Q, "MMMM",
+              CommonParams.QT, "/elevate",
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "str_s:b",
+              QueryElevationParams.ELEVATE_FILTERED_DOCS, "true"),
+          "//*[@numFound='0']");
 
       // when collapsing, all elevated docs are visible by default
       assertQ(
-        "",
-        req(
-          CommonParams.Q, "ZZZZ",
-          CommonParams.QT, "/elevate",
-          CommonParams.FQ, "{!collapse field=str_s sort='score desc'}",
-          CommonParams.FL, "id, score, [elevated]"),
-        "//*[@numFound='3']",
-        "//result/doc[1]/str[@name='id'][.='1']",
-        "//result/doc[2]/str[@name='id'][.='2']",
-        "//result/doc[3]/str[@name='id'][.='3']",
-        "//result/doc[1]/bool[@name='[elevated]'][.='true']",
-        "//result/doc[2]/bool[@name='[elevated]'][.='true']",
-        "//result/doc[3]/bool[@name='[elevated]'][.='true']");
+          "",
+          req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              CommonParams.FQ, "{!collapse field=str_s sort='score desc'}",
+              CommonParams.FL, "id, score, [elevated]"),
+          "//*[@numFound='3']",
+          "//result/doc[1]/str[@name='id'][.='1']",
+          "//result/doc[2]/str[@name='id'][.='2']",
+          "//result/doc[3]/str[@name='id'][.='3']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[2]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[3]/bool[@name='[elevated]'][.='true']");
 
       // when collapsing, an added filter has the expected effect
       assertQ(
-        "",
-        req(
-          CommonParams.Q, "ZZZZ",
-          CommonParams.QT, "/elevate",
-          CommonParams.FQ, "{!collapse field=str_s sort='score desc'}",
-          CommonParams.FL, "id, score, [elevated]",
-          CommonParams.FQ, "str_s:b"),
-        "//*[@numFound='1']",
-        "//result/doc[1]/str[@name='id'][.='2']",
-        "//result/doc[1]/bool[@name='[elevated]'][.='true']");
+          "",
+          req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              CommonParams.FQ, "{!collapse field=str_s sort='score desc'}",
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "str_s:b"),
+          "//*[@numFound='1']",
+          "//result/doc[1]/str[@name='id'][.='2']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']");
 
-      // when collapsing, QueryElevationParams.ELEVATE_FILTERED_DOCS can still be used to prevent elevated documents
+      // when collapsing, QueryElevationParams.ELEVATE_FILTERED_DOCS can still be used to prevent
+      // elevated documents
       // from being affected by filters
       assertQ(
-        "",
-        req(
-          CommonParams.Q, "ZZZZ",
-          CommonParams.QT, "/elevate",
-          CommonParams.FQ, "{!collapse field=str_s sort='score desc'}",
-          CommonParams.FL, "id, score, [elevated]",
-          CommonParams.FQ, "str_s:b",
-          QueryElevationParams.ELEVATE_FILTERED_DOCS, "true"),
-        "//*[@numFound='3']",
-        "//result/doc[1]/str[@name='id'][.='1']",
-        "//result/doc[2]/str[@name='id'][.='2']",
-        "//result/doc[3]/str[@name='id'][.='3']",
-        "//result/doc[1]/bool[@name='[elevated]'][.='true']",
-        "//result/doc[2]/bool[@name='[elevated]'][.='true']",
-        "//result/doc[3]/bool[@name='[elevated]'][.='true']");
+          "",
+          req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              CommonParams.FQ, "{!collapse field=str_s sort='score desc'}",
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "str_s:b",
+              QueryElevationParams.ELEVATE_FILTERED_DOCS, "true"),
+          "//*[@numFound='3']",
+          "//result/doc[1]/str[@name='id'][.='1']",
+          "//result/doc[2]/str[@name='id'][.='2']",
+          "//result/doc[3]/str[@name='id'][.='3']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[2]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[3]/bool[@name='[elevated]'][.='true']");
 
     } finally {
       delete();

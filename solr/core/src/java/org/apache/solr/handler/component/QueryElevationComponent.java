@@ -56,7 +56,16 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
+import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.FieldComparatorSource;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SimpleFieldComparator;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.common.SolrException;
@@ -548,7 +557,8 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
     List<Query> filters = rb.getFilters();
     if (params.getBool(QueryElevationParams.ELEVATE_FILTERED_DOCS, DEFAULT_ELEVATE_FILTERED_DOCS)
-      && filters != null && !filters.isEmpty()) {
+        && filters != null
+        && !filters.isEmpty()) {
       // Change the filter queries to match forced documents
       List<Query> updatedFilters = new ArrayList<Query>();
       for (Query q : filters) {
