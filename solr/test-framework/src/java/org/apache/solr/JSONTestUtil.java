@@ -345,7 +345,6 @@ class CollectionTester {
     }
 
     Set<String> keys = match != null ? match : expectedMap.keySet();
-    Set<String> visited = new HashSet<>();
 
     Iterator<Map.Entry<String, Object>> iter = ordered ? v.entrySet().iterator() : null;
 

@@ -253,7 +253,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
 
     // Delete the docs by query indicated.
     req = new UpdateRequest();
-    req.deleteByQuery("id:(" + StringUtils.join(byQueriesSet, " OR ") + ")");
+    req.deleteByQuery("id:(" + StringUtils.join(byQueryList, " OR ") + ")");
     sendNonDirectUpdateRequestReplicaWithRetry(rep, req, expectedRfDBQ, coll);
   }
 

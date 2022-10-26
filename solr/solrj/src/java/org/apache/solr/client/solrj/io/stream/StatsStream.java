@@ -213,15 +213,18 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
     return explanation;
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.context = context;
     cache = context.getSolrClientCache();
   }
 
+  @Override
   public List<TupleStream> children() {
     return new ArrayList<>();
   }
 
+  @Override
   public void open() throws IOException {
 
     @SuppressWarnings({"unchecked"})
@@ -290,8 +293,10 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
     return builder.toString();
   }
 
+  @Override
   public void close() throws IOException {}
 
+  @Override
   public Tuple read() throws IOException {
     if (parallelizedStream != null) {
       return parallelizedStream.read();
@@ -383,6 +388,7 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
     }
   }
 
+  @Override
   public int getCost() {
     return 0;
   }

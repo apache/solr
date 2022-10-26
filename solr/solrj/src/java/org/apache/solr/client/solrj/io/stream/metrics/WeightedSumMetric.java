@@ -76,6 +76,7 @@ public class WeightedSumMetric extends Metric {
     setIdentifier(FUNC, "(", valueCol, ", " + countCol + ", " + outputLong + ")");
   }
 
+  @Override
   public void update(Tuple tuple) {
     Object c = tuple.get(countCol);
     Object o = tuple.get(valueCol);
@@ -89,14 +90,17 @@ public class WeightedSumMetric extends Metric {
     }
   }
 
+  @Override
   public Metric newInstance() {
     return new WeightedSumMetric(valueCol, countCol, outputLong);
   }
 
+  @Override
   public String[] getColumns() {
     return new String[] {valueCol, countCol};
   }
 
+  @Override
   public Number getValue() {
     long total = sumCounts();
     double wavg = 0d;

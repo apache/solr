@@ -727,7 +727,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
           // If the tokenStream is right from the term vectors, then CachingTokenFilter is
           // unnecessary. It should be okay if OffsetLimit won't get applied in this case.
           final TokenStream tempTokenStream;
-          if (tstream != tvStream) {
+          if (!tstream.equals(tvStream)) {
             if (maxCharsToAnalyze >= thisText.length()) {
               tempTokenStream = new CachingTokenFilter(tstream);
             } else {

@@ -925,6 +925,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     assertEquals(10, rsp.getResults().getNumFound());
   }
 
+  @Override
   @Test
   public void testStreamingRequest() throws Exception {
     SolrClient client = getSolrClient();

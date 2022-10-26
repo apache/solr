@@ -116,7 +116,7 @@ public class MetricsQueryTemplate {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (!(o instanceof MetricsQueryTemplate)) return false;
     MetricsQueryTemplate that = (MetricsQueryTemplate) o;
     return name.equals(that.name)
         && Objects.equals(defaultType, that.defaultType)

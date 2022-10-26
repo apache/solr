@@ -610,6 +610,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     return solr.request(qr);
   }
 
+  @Override
   protected int getReplicaPort(Replica replica) {
     String replicaNode = replica.getNodeName();
     String tmp = replicaNode.substring(replicaNode.indexOf(':') + 1);

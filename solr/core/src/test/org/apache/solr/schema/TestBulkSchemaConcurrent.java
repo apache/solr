@@ -58,6 +58,7 @@ public class TestBulkSchemaConcurrent extends AbstractFullDistribZkTestBase {
     System.setProperty("enable.update.log", "true");
   }
 
+  @Override
   protected String getCloudSolrConfig() {
     return "solrconfig-managed-schema.xml";
   }

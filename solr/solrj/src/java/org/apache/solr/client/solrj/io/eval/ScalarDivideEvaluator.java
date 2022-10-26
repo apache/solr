@@ -38,6 +38,7 @@ public class ScalarDivideEvaluator extends ScalarAddEvaluator implements TwoValu
     }
   }
 
+  @Override
   protected double operate(double value, double d) {
     return value / d;
   }

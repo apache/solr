@@ -35,6 +35,7 @@ public class ZkDistributedConfigSetLockFactory extends ZkDistributedLockFactory
     super(zkClient, rootPath);
   }
 
+  @Override
   public DistributedLock createLock(boolean isWriteLock, String configSetName) {
     Preconditions.checkArgument(configSetName != null, "configSetName can't be null");
 
@@ -49,12 +50,12 @@ public class ZkDistributedConfigSetLockFactory extends ZkDistributedLockFactory
    * <p>The tree of lock directories is very flat, given there's no real structure to what's being
    * locked in a config set:
    *
-   * <pre>
-   *   rootPath/
-   *      configSet1/ <-- EPHEMERAL config set locks go here
-   *      configSet2/ <-- EPHEMERAL config set locks go here
-   *      etc...
-   * </pre>
+   * <pre>{@code
+   * rootPath/
+   *    configSet1/ <-- EPHEMERAL config set locks go here
+   *    configSet2/ <-- EPHEMERAL config set locks go here
+   *    etc...
+   * }</pre>
    *
    * This method will create the path where the {@code EPHEMERAL} lock nodes should go.
    *

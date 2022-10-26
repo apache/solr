@@ -377,7 +377,6 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         // refresh the locally cached cluster state
         // we know we have the latest because otherwise deleteshard would have failed
         clusterState = zkStateReader.getClusterState();
-        collection = clusterState.getCollection(collectionName);
       }
 
       // 4. create the child sub-shards in CONSTRUCTION state
@@ -558,14 +557,6 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       t.stop();
 
       log.debug("Successfully applied buffered updates on : {}", subShardNames);
-
-      // 9. determine node placement for additional replicas
-      Set<String> nodes = clusterState.getLiveNodes();
-      List<String> nodeList = new ArrayList<>(nodes.size());
-      nodeList.addAll(nodes);
-
-      // Remove the node that hosts the parent shard for replica creation.
-      nodeList.remove(nodeName);
 
       // TODO: change this to handle sharding a slice into > 2 sub-shards.
 
@@ -1252,7 +1243,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       String path = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection;
       try {
         List<String> names = cloudManager.getDistribStateManager().listData(path);
-        for (String name : cloudManager.getDistribStateManager().listData(path)) {
+        for (String name : names) {
           if (name.endsWith("-splitting")) {
             try {
               cloudManager.getDistribStateManager().removeData(path + "/" + name, -1);

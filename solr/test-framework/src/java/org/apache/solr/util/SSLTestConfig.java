@@ -335,14 +335,17 @@ public class SSLTestConfig {
     private static final SecureRandomSpi NOT_SECURE_SPI =
         new SecureRandomSpi() {
           /** returns a new byte[] filled with static data */
+          @Override
           public byte[] engineGenerateSeed(int numBytes) {
             return fillData(new byte[numBytes]);
           }
           /** fills the byte[] with static data */
+          @Override
           public void engineNextBytes(byte[] bytes) {
             fillData(bytes);
           }
           /** NOOP */
+          @Override
           public void engineSetSeed(byte[] seed) {
             /* NOOP */
           }
@@ -353,30 +356,37 @@ public class SSLTestConfig {
     }
 
     /** returns a new byte[] filled with static data */
+    @Override
     public byte[] generateSeed(int numBytes) {
       return fillData(new byte[numBytes]);
     }
     /** fills the byte[] with static data */
+    @Override
     public void nextBytes(byte[] bytes) {
       fillData(bytes);
     }
 
+    @Override
     public void nextBytes(byte[] bytes, SecureRandomParameters params) {
       fillData(bytes);
     }
     /** NOOP */
+    @Override
     public void setSeed(byte[] seed) {
       /* NOOP */
     }
     /** NOOP */
+    @Override
     public void setSeed(long seed) {
       /* NOOP */
     }
 
+    @Override
     public void reseed() {
       /* NOOP */
     }
 
+    @Override
     public void reseed(SecureRandomParameters params) {
       /* NOOP */
     }

@@ -246,7 +246,7 @@ public class TestJSONParser extends SolrTestCaseJ4 {
       JSONParser parser = getParser(new String(arr));
       parser.setFlags(random().nextInt()); // set random parser flags
 
-      int ret = 0;
+      double ret = 0;
       try {
         for (; ; ) {
           int ev = parser.nextEvent();
@@ -302,7 +302,7 @@ public class TestJSONParser extends SolrTestCaseJ4 {
 
     @Override
     public boolean equals(Object o) {
-      return (getClass() == o.getClass() && digits.equals(((Num) o).digits));
+      return (o instanceof Num && digits.equals(((Num) o).digits));
     }
 
     @Override

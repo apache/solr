@@ -63,6 +63,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
         .configure();
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     System.setProperty("enable.packages", "true");

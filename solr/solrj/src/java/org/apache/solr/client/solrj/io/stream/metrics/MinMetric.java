@@ -61,10 +61,12 @@ public class MinMetric extends Metric {
     setIdentifier(functionName, "(", columnName, ")");
   }
 
+  @Override
   public String[] getColumns() {
     return new String[] {columnName};
   }
 
+  @Override
   public Number getValue() {
     if (longMin == Long.MAX_VALUE) {
       return doubleMin;
@@ -73,6 +75,7 @@ public class MinMetric extends Metric {
     }
   }
 
+  @Override
   public void update(Tuple tuple) {
     Object o = tuple.get(columnName);
     if (o instanceof Double) {
@@ -100,6 +103,7 @@ public class MinMetric extends Metric {
     }
   }
 
+  @Override
   public Metric newInstance() {
     return new MinMetric(columnName);
   }

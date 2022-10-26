@@ -98,7 +98,7 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
             (n, c) -> DocCollection.isFullyActive(n, c, 2, 1));
 
     fiveHundredsByNode = new LinkedHashMap<>();
-    int httpOk = 0;
+    long httpOk = 0;
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       MetricRegistry metricRegistry = ((JettySolrRunnerWithMetrics) jetty).getMetricRegistry();
 
@@ -301,7 +301,7 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
         }; // add more cases here
 
     params.add(cases[random().nextInt(cases.length)]);
-    for (; ; creep *= 1.5) {
+    for (; ; creep = (int) (creep * 1.5)) {
       try (Trap catchClass = catchCount(creep)) {
 
         params.set("boundary", creep);

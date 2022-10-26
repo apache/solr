@@ -37,6 +37,7 @@ public class AndEvaluator extends RecursiveBooleanEvaluator implements ManyValue
     }
   }
 
+  @Override
   protected Checker constructChecker(Object fromValue) throws IOException {
     if (null == fromValue) {
       throw new IOException(

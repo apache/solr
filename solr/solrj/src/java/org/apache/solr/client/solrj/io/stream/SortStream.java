@@ -100,6 +100,7 @@ public class SortStream extends TupleStream implements Expressible {
 
           private Tuple eofTuple;
 
+          @Override
           public void readStream(TupleStream stream) throws IOException {
             Tuple tuple = stream.read();
             while (!tuple.EOF) {
@@ -109,10 +110,12 @@ public class SortStream extends TupleStream implements Expressible {
             eofTuple = tuple;
           }
 
+          @Override
           public void sort() {
             tuples.sort(comparator);
           }
 
+          @Override
           public Tuple read() {
             if (tuples.isEmpty()) {
               return eofTuple;
@@ -168,16 +171,19 @@ public class SortStream extends TupleStream implements Expressible {
         .withHelper(comparator.toExplanation(factory));
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.stream.setStreamContext(context);
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     l.add(stream);
     return l;
   }
 
+  @Override
   public void open() throws IOException {
     stream.open();
 
@@ -185,20 +191,24 @@ public class SortStream extends TupleStream implements Expressible {
     worker.sort();
   }
 
+  @Override
   public void close() throws IOException {
     stream.close();
   }
 
+  @Override
   public Tuple read() throws IOException {
     // return next from sorted order
     return worker.read();
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
+  @Override
   public StreamComparator getStreamSort() {
     return comparator;
   }
 
+  @Override
   public int getCost() {
     return 0;
   }

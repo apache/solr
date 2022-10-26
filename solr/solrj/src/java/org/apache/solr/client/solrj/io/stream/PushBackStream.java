@@ -44,6 +44,7 @@ public class PushBackStream extends TupleStream implements Expressible {
     this.stream = stream;
   }
 
+  @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
     if (stream instanceof Expressible) {
       return ((Expressible) stream).toExpression(factory);
@@ -53,24 +54,29 @@ public class PushBackStream extends TupleStream implements Expressible {
         "This PushBackStream contains a non-expressible TupleStream - it cannot be converted to an expression");
   }
 
+  @Override
   public Explanation toExplanation(StreamFactory factory) throws IOException {
     return stream.toExplanation(factory);
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.stream.setStreamContext(context);
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     l.add(stream);
     return l;
   }
 
+  @Override
   public void open() throws IOException {
     stream.open();
   }
 
+  @Override
   public void close() throws IOException {
     stream.close();
   }
@@ -79,6 +85,7 @@ public class PushBackStream extends TupleStream implements Expressible {
     this.tuple = tuple;
   }
 
+  @Override
   public Tuple read() throws IOException {
     if (tuple != null) {
       Tuple t = tuple;
@@ -93,10 +100,12 @@ public class PushBackStream extends TupleStream implements Expressible {
    * Return the stream sort - ie, the order in which records are returned This returns the
    * streamSort of the substream
    */
+  @Override
   public StreamComparator getStreamSort() {
     return stream.getStreamSort();
   }
 
+  @Override
   public int getCost() {
     return 0;
   }

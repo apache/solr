@@ -140,9 +140,9 @@ public class TestCloudRecovery extends SolrCloudTestCase {
     }
 
     // check metrics
-    int replicationCount = 0;
-    int errorsCount = 0;
-    int skippedCount = 0;
+    long replicationCount = 0;
+    long errorsCount = 0;
+    long skippedCount = 0;
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       SolrMetricManager manager = jetty.getCoreContainer().getMetricManager();
       List<String> registryNames =

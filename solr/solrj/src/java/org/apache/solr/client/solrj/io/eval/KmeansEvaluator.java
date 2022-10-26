@@ -101,6 +101,7 @@ public class KmeansEvaluator extends RecursiveObjectEvaluator implements TwoValu
       this.point = point;
     }
 
+    @Override
     public double[] getPoint() {
       return this.point;
     }

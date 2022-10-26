@@ -296,6 +296,7 @@ public class Tuple implements Cloneable, MapWriter {
     this.fields.put(StreamParams.METRICS, metrics);
   }
 
+  @Override
   public Tuple clone() {
     Tuple clone = new Tuple(this);
     return clone;
