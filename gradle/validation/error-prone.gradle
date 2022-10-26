@@ -83,7 +83,6 @@ allprojects { prj ->
             '-Xep:BadShiftAmount:OFF',
             '-Xep:CanIgnoreReturnValueSuggester:OFF',
             '-Xep:ComplexBooleanConstant:OFF',
-            '-Xep:DoubleBraceInitialization:OFF',
             '-Xep:DoubleCheckedLocking:OFF',
             '-Xep:EmptyCatch:OFF',
             '-Xep:EqualsUnsafeCast:OFF',
