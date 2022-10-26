@@ -20,33 +20,29 @@ apply plugin: 'java-library'
 description = 'Solrj-Streaming - SolrJ requiring Streaming Expressions'
 
 dependencies {
+  implementation project(':solr:solrj')
 
+  // declare dependencies we use even though already declared by solrj-core
+  implementation 'org.slf4j:slf4j-api'
+  implementation 'org.apache.httpcomponents:httpclient'
+  implementation 'org.apache.httpcomponents:httpcore'
+  implementation 'org.apache.commons:commons-math3'
 
-    implementation project(':solr:solrj')
+  testImplementation project(':solr:test-framework')
+  testImplementation project(':solr:core')
+  testImplementation project(':solr:solrj-zookeeper')
 
-    // declare dependencies we use even though already declared by solrj-core
-    implementation 'org.slf4j:slf4j-api'
-    implementation 'org.apache.httpcomponents:httpclient'
-    implementation 'org.apache.httpcomponents:httpcore'
-    implementation 'org.apache.commons:commons-math3'
+  testRuntimeOnly project(':solr:modules:sql')
+  testRuntimeOnly "org.hsqldb:hsqldb" // runtime because via JDBC reflection
 
-    testImplementation project(':solr:test-framework')
-    testImplementation project(':solr:core')
+  testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
+  testImplementation 'org.apache.lucene:lucene-test-framework'
+  testImplementation 'junit:junit'
 
-    testImplementation 'junit:junit'
-    testImplementation 'commons-io:commons-io'
-    testImplementation 'com.google.guava:guava'
-    testImplementation project(':solr:solrj-zookeeper')
+  testImplementation('org.apache.zookeeper:zookeeper', {
+    exclude group: "org.apache.yetus", module: "audience-annotations"
+  })
+  permitTestUnusedDeclared 'org.apache.zookeeper:zookeeper'
 
-    permitTestUsedUndeclared project(':solr:solrj-zookeeper') // duh!
-
-    testImplementation('org.apache.zookeeper:zookeeper', {
-        exclude group: "org.apache.yetus", module: "audience-annotations"
-    })
-
-    testRuntimeOnly project(':solr:modules:sql')
-    testRuntimeOnly "org.hsqldb:hsqldb" // runtime because via JDBC reflection
-
-
-
+  permitTestUsedUndeclared project(':solr:solrj-streaming') // duh!
 }
