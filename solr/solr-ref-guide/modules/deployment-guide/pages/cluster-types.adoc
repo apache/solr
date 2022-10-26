@@ -42,6 +42,7 @@ A replica has the same configuration as the shard and any other replicas for the
 
 It's possible to have replicas without having created shards.
 In this case, each replica would be a full copy of the entire index, instead of being only a copy of a part of the entire index.
+When not using shards, it would be pretty hard to scale up since all of the index is stored on each replica, e.g. one node.
 
 The number of replicas determines the level of fault tolerance the entire cluster has in the event of a node failure.
 It also dictates the theoretical limit on the number of concurrent search requests that can be processed under heavy load.
