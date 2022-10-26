@@ -80,13 +80,12 @@ allprojects { prj ->
             '-Xep:EmptyCatch:OFF',
             '-Xep:Finally:OFF',
             '-Xep:FutureReturnValueIgnored:OFF',
-            '-Xep:IdentityBinaryExpression:OFF',
             '-Xep:InlineFormatString:OFF', // this introduces redundancy in format strings
             '-Xep:InlineMeSuggester:OFF', // We don't use this annotation
             '-Xep:InputStreamSlowMultibyteRead:OFF',
             '-Xep:InvalidBlockTag:OFF', // this is needed for tags like lucene.internal
             '-Xep:JavaUtilDate:OFF',
-            '-Xep:MissingSummary:OFF',
+            '-Xep:MissingSummary:OFF', // style preference that we don't want to enforce
             '-Xep:MixedMutabilityReturnType:OFF',
             '-Xep:MutablePublicArray:OFF', // this should be possible...
             '-Xep:NegativeCharLiteral:OFF',
@@ -106,7 +105,7 @@ allprojects { prj ->
             '-Xep:TypeParameterShadowing:OFF',
             '-Xep:TypeParameterUnusedInFormals:OFF',
             '-Xep:UnicodeEscape:OFF', // can't enable since Lucene/Solr tests use unicode a bunch
-            '-Xep:UnnecessaryParentheses:OFF',
+            '-Xep:UnnecessaryParentheses:OFF', // style preference that we don't want to enforce
             '-Xep:UnusedMethod:OFF',
             '-Xep:UnusedVariable:OFF',
             '-Xep:WaitNotInLoop:OFF',
