@@ -47,7 +47,7 @@ public abstract class JoinStream extends TupleStream implements Expressible {
 
   public JoinStream(
       StreamEqualitor eq, TupleStream first, TupleStream second, TupleStream... others) {
-    this.streams = new ArrayList<PushBackStream>();
+    this.streams = new ArrayList<>();
 
     this.eq = eq;
 
@@ -83,7 +83,7 @@ public abstract class JoinStream extends TupleStream implements Expressible {
               streamExpressions.size()));
     }
 
-    this.streams = new ArrayList<PushBackStream>();
+    this.streams = new ArrayList<>();
     for (StreamExpression streamExpression : streamExpressions) {
       this.streams.add(new PushBackStream(factory.constructStream(streamExpression)));
     }
@@ -121,9 +121,8 @@ public abstract class JoinStream extends TupleStream implements Expressible {
     }
 
     // on
-    if (eq instanceof Expressible) {
-      expression.addParameter(
-          new StreamExpressionNamedParameter("on", ((Expressible) eq).toExpression(factory)));
+    if (eq != null) {
+      expression.addParameter(new StreamExpressionNamedParameter("on", eq.toExpression(factory)));
     } else {
       throw new IOException(
           "This JoinStream contains a non-expressible equalitor - it cannot be converted to an expression");
@@ -168,7 +167,7 @@ public abstract class JoinStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> list = new ArrayList<TupleStream>();
+    List<TupleStream> list = new ArrayList<>();
     for (TupleStream stream : streams) {
       list.add(stream);
     }

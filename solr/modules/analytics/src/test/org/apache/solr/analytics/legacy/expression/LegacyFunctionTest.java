@@ -33,7 +33,6 @@ public class LegacyFunctionTest extends LegacyAbstractAnalyticsTest {
   public static final int NUM_LOOPS = 100;
 
   @BeforeClass
-  @SuppressWarnings("LongDoubleConversion")
   public static void beforeClass() throws Exception {
     initCore("solrconfig-analytics.xml", "schema-analytics.xml");
     h.update("<delete><query>*:*</query></delete>");
@@ -54,7 +53,7 @@ public class LegacyFunctionTest extends LegacyAbstractAnalyticsTest {
       double div_if = (double) i / f;
       double div_ld = (double) l / d;
       double pow_if = Math.pow(i, f);
-      double pow_ld = Math.pow(l, d);
+      double pow_ld = Math.pow((double) l, d);
       int neg_i = i * -1;
       long neg_l = l * -1;
       String dm_2y = (1802 + j % DATE) + "-06-30T23:59:59Z";
@@ -142,7 +141,7 @@ public class LegacyFunctionTest extends LegacyAbstractAnalyticsTest {
 
     result = (Double) getStatResult("ar", "mean", VAL_TYPE.DOUBLE);
     calculated = (Double) getStatResult("ar", "meanc", VAL_TYPE.DOUBLE);
-    assertTrue(result == calculated);
+    assertEquals(result, calculated, 0.0);
     assertEquals(getRawResponse(), result, calculated, 0.0);
   }
 

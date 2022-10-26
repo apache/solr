@@ -258,9 +258,9 @@ public class PivotFacetFieldValueCollection implements Iterable<PivotFacetValue>
 
     if (dirty) {
       if (facetFieldSort.equals(FacetParams.FACET_SORT_COUNT)) {
-        Collections.sort(this.explicitValues, new PivotFacetCountComparator());
+        this.explicitValues.sort(new PivotFacetCountComparator());
       } else if (facetFieldSort.equals(FacetParams.FACET_SORT_INDEX)) {
-        Collections.sort(this.explicitValues, new PivotFacetValueComparator());
+        this.explicitValues.sort(new PivotFacetValueComparator());
       }
       dirty = false;
     }

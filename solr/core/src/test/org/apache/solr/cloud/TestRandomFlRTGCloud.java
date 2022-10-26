@@ -77,8 +77,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   /** A basic client for operations at the cloud level, default collection will be set */
   private static CloudSolrClient CLOUD_CLIENT;
   /** One client per node */
-  private static final List<HttpSolrClient> CLIENTS =
-      Collections.synchronizedList(new ArrayList<>(5));
+  private static final List<SolrClient> CLIENTS = Collections.synchronizedList(new ArrayList<>(5));
 
   /** Always included in fl, so we can check what doc we're looking at */
   private static final FlValidator ID_VALIDATOR = new SimpleFieldValueValidator("id");
@@ -181,12 +180,12 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   }
 
   @AfterClass
-  private static void afterClass() throws Exception {
+  public static void afterClass() throws Exception {
     if (null != CLOUD_CLIENT) {
       CLOUD_CLIENT.close();
       CLOUD_CLIENT = null;
     }
-    for (HttpSolrClient client : CLIENTS) {
+    for (SolrClient client : CLIENTS) {
       client.close();
     }
     CLIENTS.clear();
@@ -270,11 +269,10 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
    *
    * @return <code>0</code> if a commit was done, else <code>itersSinceLastCommit + 1</code>
    */
-  @SuppressWarnings("NarrowCalculation")
   private static int maybeCommit(
       final Random rand, final int itersSinceLastCommit, final int numIters)
       throws IOException, SolrServerException {
-    final float threshold = itersSinceLastCommit / numIters;
+    final float threshold = (float) itersSinceLastCommit / numIters;
     if (rand.nextFloat() < threshold) {
       log.info("COMMIT");
       assertEquals(0, getRandClient(rand).commit().getStatus());
@@ -351,7 +349,9 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       knownDocs[docId] = null;
     }
     assertEquals(
-        "Failed delete: " + docIds, 0, getRandClient(random()).deleteById(ids).getStatus());
+        "Failed delete: " + Arrays.toString(docIds),
+        0,
+        getRandClient(random()).deleteById(ids).getStatus());
   }
 
   /**
@@ -504,7 +504,6 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
         }
       }
     } else {
-      assert 1 == idsToRequest.size();
       params.add("id", idsToRequest.get(0));
     }
 
@@ -644,7 +643,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   }
 
   public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
-    assert null != client.getDefaultCollection();
+    assertNotNull(client.getDefaultCollection());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(
         client.getDefaultCollection(), ZkStateReader.from(client), true, true, 330);
   }
@@ -1360,7 +1359,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
         final SolrInputDocument expected,
         final SolrDocument actual,
         final String wt) {
-      assertEquals(fl, null, actual.getFirstValue(fieldName));
+      assertNull(fl, actual.getFirstValue(fieldName));
       return Collections.emptySet();
     }
   }

@@ -388,8 +388,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     Set<Map.Entry<String, String>> entries = queryParams.entrySet();
     // parameters
     for (Map.Entry<String, String> param : entries) {
-      assert param.getKey() instanceof String && param.getValue() instanceof String
-          : "Bad types passed";
+      assert param.getKey() != null && param.getValue() != null : "Bad types passed";
       String value = param.getValue().toString();
 
       // SOLR-8409: This is a special case where the params contain a " character
@@ -557,7 +556,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       joinSParams.set("qt", "/export");
       joinSParams.set(SORT, gather + " asc," + traverseTo + " asc");
 
-      StringBuffer nodeQuery = new StringBuffer();
+      StringBuilder nodeQuery = new StringBuilder();
 
       boolean comma = false;
       for (String node : nodes) {
@@ -607,7 +606,6 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     }
   }
 
-  @SuppressWarnings("NarrowCalculation")
   private String[] getTenSecondWindow(int size, int lag, String start) {
     try {
       List<String> windowList = new ArrayList<>();
@@ -619,17 +617,17 @@ public class GatherNodesStream extends TupleStream implements Expressible {
         ++i;
         Instant windowInstant =
             size > 0
-                ? instant.plus(10 * i, ChronoUnit.SECONDS)
-                : instant.minus(10 * i, ChronoUnit.SECONDS);
+                ? instant.plus(10L * i, ChronoUnit.SECONDS)
+                : instant.minus(10L * i, ChronoUnit.SECONDS);
         String windowString = windowInstant.toString();
         windowString = windowString.substring(0, 18) + "0Z";
         windowList.add(windowString);
       }
 
       List<String> laggedWindow = windowList.subList(lag, windowList.size());
-      return laggedWindow.toArray(new String[laggedWindow.size()]);
+      return laggedWindow.toArray(new String[0]);
     } catch (ParseException e) {
-      log.warn("Unparseable date:{}", String.valueOf(start));
+      log.warn("Unparseable date: {}", start);
       return new String[0];
     }
   }

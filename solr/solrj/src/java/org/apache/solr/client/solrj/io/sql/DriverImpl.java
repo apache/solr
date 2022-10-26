@@ -56,7 +56,7 @@ public class DriverImpl implements Driver {
 
     if (!props.containsKey("collection")) {
       throw new SQLException(
-          "The connection url has no connection properties. At a mininum the collection must be specified.");
+          "The connection url has no connection properties. At a minimum the collection must be specified.");
     }
     String collection = (String) props.remove("collection");
 

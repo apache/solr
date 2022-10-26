@@ -423,9 +423,6 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
 
               // These are the cores we _expect_ to find on this node according to the CLUSTERSTATUS
               var cores = nodes[node]['cores'];
-              if (! cores) {
-                cores = {};
-              }
               var indexSizeTotal = 0;
               var docsTotal = 0;
               var graphData = [];
@@ -467,9 +464,11 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
                 graphObj['pct'] = (core['sizeInBytes'] / indexSizeTotal) * 100;
                 graphData.push(graphObj);
               }
-              cores.sort(function (a, b) {
-                return b.sizeInBytes - a.sizeInBytes
-              });
+              if (cores) {
+                cores.sort(function (a, b) {
+                  return b.sizeInBytes - a.sizeInBytes
+                });
+              }
               graphData.sort(function (a, b) {
                 return b.size - a.size
               });

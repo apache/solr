@@ -95,7 +95,7 @@ public class SharedFileSystemAutoReplicaFailoverTest extends AbstractFullDistrib
           Integer.MAX_VALUE,
           5,
           TimeUnit.SECONDS,
-          new SynchronousQueue<Runnable>(),
+          new SynchronousQueue<>(),
           new SolrNamedThreadFactory("testExecutor"));
 
   CompletionService<Object> completionService;

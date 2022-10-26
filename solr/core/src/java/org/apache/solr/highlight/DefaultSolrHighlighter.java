@@ -783,7 +783,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     if (frags.size() > 0) {
       // sort such that the fragments with the highest score come first
       if (!preserveMulti) {
-        Collections.sort(frags, (arg0, arg1) -> Float.compare(arg1.getScore(), arg0.getScore()));
+        frags.sort((arg0, arg1) -> Float.compare(arg1.getScore(), arg0.getScore()));
       }
 
       // Truncate list to hl.snippets, but not when hl.preserveMulti
@@ -948,12 +948,15 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
    */
   static final class TokenOrderingFilter extends TokenFilter {
     private final int windowSize;
+
+    @SuppressWarnings("JdkObsolete")
     private final LinkedList<OrderedToken> queue =
         new LinkedList<>(); // TODO replace with Deque, Array impl
+
     private boolean done = false;
     private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 
-    protected TokenOrderingFilter(TokenStream input, int windowSize) {
+    private TokenOrderingFilter(TokenStream input, int windowSize) {
       super(input);
       this.windowSize = windowSize;
     }

@@ -30,7 +30,6 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -811,7 +810,7 @@ public class LukeRequestHandler extends RequestHandlerBase {
     /** This is a destructive call... the queue is empty at the end */
     public NamedList<Integer> toNamedList(IndexSchema schema) {
       // reverse the list..
-      List<TermInfo> aslist = new LinkedList<>();
+      List<TermInfo> aslist = new ArrayList<>();
       while (size() > 0) {
         aslist.add(0, pop());
       }

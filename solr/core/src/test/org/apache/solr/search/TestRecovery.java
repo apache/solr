@@ -653,7 +653,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       assertEquals(UpdateLog.State.BUFFERING, ulog.getState());
 
       Future<UpdateLog.RecoveryInfo> rinfoFuture = ulog.applyBufferedUpdates();
-      assertTrue(rinfoFuture == null);
+      assertNull(rinfoFuture);
       assertEquals(UpdateLog.State.ACTIVE, ulog.getState());
 
       ulog.bufferUpdates();
@@ -725,7 +725,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       assertEquals(6, bufferedOps.getValue() - initialOps);
 
       rinfoFuture = ulog.applyBufferedUpdates();
-      assertTrue(rinfoFuture != null);
+      assertNotNull(rinfoFuture);
 
       assertEquals(UpdateLog.State.APPLYING_BUFFERED, ulog.getState());
 
@@ -785,7 +785,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       logReplay.drainPermits();
       rinfoFuture = ulog.applyBufferedUpdates();
-      assertTrue(rinfoFuture != null);
+      assertNotNull(rinfoFuture);
       assertEquals(UpdateLog.State.APPLYING_BUFFERED, ulog.getState());
 
       // apply a single update
@@ -880,7 +880,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       ulog.bufferUpdates();
       assertEquals(UpdateLog.State.BUFFERING, ulog.getState());
       Future<UpdateLog.RecoveryInfo> rinfoFuture = ulog.applyBufferedUpdates();
-      assertTrue(rinfoFuture == null);
+      assertNull(rinfoFuture);
       assertEquals(UpdateLog.State.ACTIVE, ulog.getState());
 
       ulog.bufferUpdates();
@@ -1295,7 +1295,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
     assertU(commit());
     long D1Version2 = getVer(req("q", "id:D1"));
 
-    assert (D1Version2 > D1Version1);
+    assertTrue(D1Version2 > D1Version1);
 
     assertJQ(
         req("qt", "/get", "getVersions", "2"),
@@ -1352,6 +1352,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
     }
   }
 
+  @SuppressWarnings("JdkObsolete")
   private void addDocs(int nDocs, int start, LinkedList<Long> versions) throws Exception {
     for (int i = 0; i < nDocs; i++) {
       versions.addFirst(addAndGetVersion(sdoc("id", Integer.toString(start + nDocs)), null));
@@ -1359,6 +1360,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("JdkObsolete")
   public void testRemoveOldLogs() throws Exception {
     try {
       TestInjection.skipIndexWriterCommitOnClose = true;

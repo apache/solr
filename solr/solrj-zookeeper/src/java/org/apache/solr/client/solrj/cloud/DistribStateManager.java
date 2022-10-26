@@ -17,10 +17,10 @@
 package org.apache.solr.client.solrj.cloud;
 
 import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -96,8 +96,8 @@ public interface DistribStateManager extends SolrCloseable {
    */
   default List<String> listTree(String root)
       throws NoSuchElementException, IOException, KeeperException, InterruptedException {
-    Deque<String> queue = new LinkedList<String>();
-    List<String> tree = new ArrayList<String>();
+    Deque<String> queue = new ArrayDeque<>();
+    List<String> tree = new ArrayList<>();
     if (!root.startsWith("/")) {
       root = "/" + root;
     }

@@ -40,7 +40,7 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
 
   private final SolrCore.Provider coreProvider;
   private final SolrConfig.SolrPluginInfo pluginMeta;
-  private PackageLoader.Package.Version pkgVersion;
+  private SolrPackageLoader.SolrPackage.Version pkgVersion;
   private PluginInfo info;
 
   public PackagePluginHolder(PluginInfo info, SolrCore core, SolrConfig.SolrPluginInfo pluginMeta) {
@@ -64,7 +64,7 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
               }
 
               @Override
-              public void changed(PackageLoader.Package pkg, Ctx ctx) {
+              public void changed(SolrPackageLoader.SolrPackage pkg, Ctx ctx) {
                 coreProvider.withCore(c -> reload(pkg, c));
               }
 
@@ -79,28 +79,28 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
     SolrConfig.SolrPluginInfo plugin = SolrConfig.classVsSolrPluginInfo.get(type.getName());
     PluginInfo info =
         new PluginInfo(plugin.tag, Collections.singletonMap("class", inst.getClass().getName()));
-    return new PluginBag.PluginHolder<T>(info, inst);
+    return new PluginBag.PluginHolder<>(info, inst);
   }
 
   public static <T> PluginBag.PluginHolder<T> createHolder(
       PluginInfo info, SolrCore core, Class<T> type, String msg) {
     if (info.cName.pkg == null) {
-      return new PluginBag.PluginHolder<T>(info, core.createInitInstance(info, type, msg, null));
+      return new PluginBag.PluginHolder<>(info, core.createInitInstance(info, type, msg, null));
     } else {
-      return new PackagePluginHolder<T>(
+      return new PackagePluginHolder<>(
           info, core, SolrConfig.classVsSolrPluginInfo.get(type.getName()));
     }
   }
 
-  private synchronized void reload(PackageLoader.Package pkg, SolrCore core) {
+  private synchronized void reload(SolrPackageLoader.SolrPackage pkg, SolrCore core) {
     String lessThan = core.getSolrConfig().maxPackageVersion(info.pkgName);
-    PackageLoader.Package.Version newest = pkg.getLatest(lessThan);
+    SolrPackageLoader.SolrPackage.Version newest = pkg.getLatest(lessThan);
     if (newest == null) {
       log.error("No latest version available for package : {}", pkg.name());
       return;
     }
     if (lessThan != null) {
-      PackageLoader.Package.Version pkgLatest = pkg.getLatest();
+      SolrPackageLoader.SolrPackage.Version pkgLatest = pkg.getLatest();
       if (pkgLatest != newest) {
         if (log.isInfoEnabled()) {
           log.info(
@@ -134,7 +134,7 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
   }
 
   @SuppressWarnings({"unchecked"})
-  protected Object initNewInstance(PackageLoader.Package.Version newest, SolrCore core) {
+  protected Object initNewInstance(SolrPackageLoader.SolrPackage.Version newest, SolrCore core) {
     Object instance =
         SolrCore.createInstance(
             pluginInfo.className,

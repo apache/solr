@@ -117,7 +117,7 @@ public class ComplementStream extends TupleStream implements Expressible {
 
     if (includeStreams) {
       // streams
-      if (streamA instanceof Expressible) {
+      if (streamA != null) {
         expression.addParameter(((Expressible) streamA).toExpression(factory));
       } else {
         throw new IOException(
@@ -162,7 +162,7 @@ public class ComplementStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l = new ArrayList<TupleStream>();
+    List<TupleStream> l = new ArrayList<>();
     l.add(streamA);
     l.add(streamB);
     return l;

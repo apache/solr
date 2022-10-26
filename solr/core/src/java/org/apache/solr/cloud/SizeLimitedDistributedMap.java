@@ -70,7 +70,7 @@ public class SizeLimitedDistributedMap extends DistributedMap {
       int cleanupSize = maxSize / 10;
 
       final PriorityQueue<Long> priorityQueue =
-          new PriorityQueue<Long>(cleanupSize) {
+          new PriorityQueue<>(cleanupSize) {
             @Override
             protected boolean lessThan(Long a, Long b) {
               return (a > b);

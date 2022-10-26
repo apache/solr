@@ -24,6 +24,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -153,13 +154,13 @@ public class RouteFieldTest extends SolrCloudTestCase {
     params.add(CommonParams.SORT, "sorter asc");
     params.add(CommonParams.ROWS, "1000");
 
-    HttpSolrClient httpSC = new HttpSolrClient.Builder(urlId).build();
-    SolrDocumentList docsId = (SolrDocumentList) httpSC.request(request).get("response");
-    httpSC.close();
+    SolrClient solrClient = new HttpSolrClient.Builder(urlId).build();
+    SolrDocumentList docsId = (SolrDocumentList) solrClient.request(request).get("response");
+    solrClient.close();
 
-    httpSC = new HttpSolrClient.Builder(urlRoute).build();
-    SolrDocumentList docsRoute = (SolrDocumentList) httpSC.request(request).get("response");
-    httpSC.close();
+    solrClient = new HttpSolrClient.Builder(urlRoute).build();
+    SolrDocumentList docsRoute = (SolrDocumentList) solrClient.request(request).get("response");
+    solrClient.close();
 
     assertEquals(
         "We should have the exact same number of docs on each shard",

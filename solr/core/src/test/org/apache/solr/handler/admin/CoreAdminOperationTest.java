@@ -360,25 +360,6 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testInvokeUnexpectedFailuresResultIn500Exception() {
-    final Throwable cause = new NullPointerException();
-    whenUnexpectedErrorOccursDuringCoreAdminOp(cause);
-
-    Exception ex =
-        expectThrows(Exception.class, () -> CoreAdminOperation.INVOKE_OP.execute(callInfo));
-    assertSolrExceptionWithCodeAndCause(ex, ErrorCode.SERVER_ERROR.code, cause);
-  }
-
-  @Test
-  public void testInvokeMissingClassParamResultsIn400SolrException() {
-    whenCoreAdminOpHasParams(Maps.newHashMap());
-
-    Exception ex =
-        expectThrows(Exception.class, () -> CoreAdminOperation.INVOKE_OP.execute(callInfo));
-    assertSolrExceptionWithCode(ex, ErrorCode.BAD_REQUEST.code);
-  }
-
-  @Test
   public void testBackupUnexpectedFailuresResultIn500Exception() {
     final Throwable cause = new NullPointerException();
     whenUnexpectedErrorOccursDuringCoreAdminOp(cause);

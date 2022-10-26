@@ -16,8 +16,8 @@
  */
 package org.apache.solr.util;
 
-import com.github.zafarkhaja.semver.ParseException;
 import org.apache.solr.SolrTestCase;
+import org.semver4j.SemverException;
 
 public class TestSolrVersion extends SolrTestCase {
   private static final SolrVersion SOLR_9_0_1 = SolrVersion.valueOf("9.0.1");
@@ -45,20 +45,17 @@ public class TestSolrVersion extends SolrTestCase {
   }
 
   public void testParseExceptions() {
-    expectThrows(ParseException.class, () -> SolrVersion.valueOf("SOLR_7_0_0"));
+    expectThrows(SemverException.class, () -> SolrVersion.valueOf("SOLR_7_0_0"));
   }
 
   public void testSatisfies() {
     assertTrue(SOLR_9_0_1.satisfies("~9.0"));
     assertTrue(SOLR_9_0_1.satisfies("9.x"));
     assertTrue(SOLR_9_0_1.satisfies("9"));
+    assertTrue(SOLR_9_0_1.satisfies("<=9"));
     assertTrue(SOLR_9_0_1.satisfies("<9.1"));
-    assertTrue(SOLR_9_0_1.satisfies(">9.0"));
+    assertFalse(SOLR_9_0_1.satisfies(">9.0"));
     assertFalse(SOLR_9_0_1.satisfies("8.x"));
-  }
-
-  public void testSatisfiesParseFailure() {
-    assertThrows(
-        SolrVersion.InvalidSemVerExpressionException.class, () -> SOLR_9_0_1.satisfies(":"));
+    assertTrue(SOLR_9_0_1.satisfies("8 - 9"));
   }
 }

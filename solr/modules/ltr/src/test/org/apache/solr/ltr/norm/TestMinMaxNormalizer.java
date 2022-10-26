@@ -16,9 +16,6 @@
  */
 package org.apache.solr.ltr.norm;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,7 +23,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrResourceLoader;
 import org.junit.Test;
 
-public class TestMinMaxNormalizer {
+public class TestMinMaxNormalizer extends SolrTestCaseJ4 {
 
   private final SolrResourceLoader solrResourceLoader =
       new SolrResourceLoader(Paths.get("").toAbsolutePath());
@@ -46,26 +43,26 @@ public class TestMinMaxNormalizer {
 
   @Test
   public void testInvalidMinMaxNoParams() {
-    implTestMinMax(new HashMap<String, Object>(), Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY);
+    implTestMinMax(new HashMap<>(), Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY);
   }
 
   @Test
   public void testInvalidMinMaxMissingMax() {
-    final Map<String, Object> params = new HashMap<String, Object>();
+    final Map<String, Object> params = new HashMap<>();
     params.put("min", "0.0f");
     implTestMinMax(params, 0.0f, Float.POSITIVE_INFINITY);
   }
 
   @Test
   public void testInvalidMinMaxMissingMin() {
-    final Map<String, Object> params = new HashMap<String, Object>();
+    final Map<String, Object> params = new HashMap<>();
     params.put("max", "0.0f");
     implTestMinMax(params, Float.NEGATIVE_INFINITY, 0.0f);
   }
 
   @Test
   public void testMinMaxNormalizerMinLargerThanMax() {
-    final Map<String, Object> params = new HashMap<String, Object>();
+    final Map<String, Object> params = new HashMap<>();
     params.put("min", "10.0f");
     params.put("max", "0.0f");
     implTestMinMax(params, 10.0f, 0.0f);
@@ -73,7 +70,7 @@ public class TestMinMaxNormalizer {
 
   @Test
   public void testMinMaxNormalizerMinEqualToMax() {
-    final Map<String, Object> params = new HashMap<String, Object>();
+    final Map<String, Object> params = new HashMap<>();
     params.put("min", "10.0f");
     params.put("max", "10.0f");
     final NormalizerException expectedException =
@@ -87,7 +84,7 @@ public class TestMinMaxNormalizer {
 
   @Test
   public void testNormalizer() {
-    final Map<String, Object> params = new HashMap<String, Object>();
+    final Map<String, Object> params = new HashMap<>();
     params.put("min", "5.0f");
     params.put("max", "10.0f");
     final Normalizer n = implTestMinMax(params, 5.0f, 10.0f);

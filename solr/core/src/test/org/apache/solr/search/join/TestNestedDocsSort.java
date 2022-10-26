@@ -100,7 +100,7 @@ public class TestNestedDocsSort extends SolrTestCaseJ4 {
   }
 
   private void parseAssertNe(String sortField, String sortField2) {
-    assertFalse(parse(sortField).equals(parse(sortField2)));
+    assertNotEquals(parse(sortField), parse(sortField2));
   }
 
   private SortField parse(String a) {

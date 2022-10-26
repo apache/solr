@@ -38,11 +38,11 @@ import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteResultHandler;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.SolrInputDocument;
@@ -398,7 +398,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           exampleSolrHomeDir.isDirectory());
 
       if ("techproducts".equals(exampleName)) {
-        HttpSolrClient solrClient =
+        SolrClient solrClient =
             getHttpSolrClient("http://localhost:" + bindPort + "/solr/" + exampleName);
         try {
           SolrQuery query = new SolrQuery("*:*");
@@ -415,14 +415,15 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
             }
             numFound = solrClient.query(query).getResults().getNumFound();
           }
-          assertTrue(
+          assertEquals(
               "expected 32 docs in the "
                   + exampleName
                   + " example but found "
                   + numFound
                   + ", output: "
                   + toolOutput,
-              numFound == 32);
+              32,
+              numFound);
         } finally {
           solrClient.close();
         }
@@ -605,6 +606,6 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
         tool.runTool(
             SolrCLI.processCommandLineArgs(
                 SolrCLI.joinCommonAndToolOptions(tool.getOptions()), toolArgs));
-    assertTrue("Execution should have failed with return code 1", code == 1);
+    assertEquals("Execution should have failed with return code 1", 1, code);
   }
 }

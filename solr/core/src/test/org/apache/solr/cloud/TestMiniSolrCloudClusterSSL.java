@@ -33,6 +33,7 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.lucene.tests.util.TestRuleRestoreSystemProperties;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -66,7 +67,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
   static {
     try {
       DEFAULT_SSL_CONTEXT = SSLContext.getDefault();
-      assert null != DEFAULT_SSL_CONTEXT;
+      assertNotNull(DEFAULT_SSL_CONTEXT);
     } catch (Exception e) {
       throw new RuntimeException(
           "Unable to initialize 'Default' SSLContext Algorithm, JVM is borked", e);
@@ -218,7 +219,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
             expectThrows(
                 SolrServerException.class,
                 () -> {
-                  try (HttpSolrClient client = getRandomizedHttpSolrClient(baseURL)) {
+                  try (SolrClient client = getRandomizedHttpSolrClient(baseURL)) {
                     CoreAdminRequest req = new CoreAdminRequest();
                     req.setAction(CoreAdminAction.STATUS);
                     client.request(req);
@@ -311,14 +312,14 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
       assertEquals("http vs https: " + baseURL, ssl ? "https" : "http:", baseURL.substring(0, 5));
 
       // verify solr client success with expected protocol
-      try (HttpSolrClient client = getRandomizedHttpSolrClient(baseURL)) {
+      try (SolrClient client = getRandomizedHttpSolrClient(baseURL)) {
         assertEquals(0, CoreAdminRequest.getStatus(/* all */ null, client).getStatus());
       }
 
       // sanity check the HttpClient used under the hood by our the cluster's CloudSolrClient
       // ensure it has the necessary protocols/credentials for each jetty server
 
-      try (HttpSolrClient client = getRandomizedHttpSolrClient(baseURL)) {
+      try (SolrClient client = getRandomizedHttpSolrClient(baseURL)) {
         assertEquals(0, CoreAdminRequest.getStatus(/* all */ null, client).getStatus());
       }
 
@@ -329,7 +330,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
       expectThrows(
           SolrServerException.class,
           () -> {
-            try (HttpSolrClient client = getRandomizedHttpSolrClient(wrongBaseURL)) {
+            try (SolrClient client = getRandomizedHttpSolrClient(wrongBaseURL)) {
               CoreAdminRequest req = new CoreAdminRequest();
               req.setAction(CoreAdminAction.STATUS);
               client.request(req);
@@ -400,7 +401,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
 
     final SSLConnectionSocketFactory sslFactory =
         clientConfig.buildClientSSLConnectionSocketFactory();
-    assert null != sslFactory;
+    assertNotNull(sslFactory);
 
     final Registry<ConnectionSocketFactory> socketFactoryReg =
         RegistryBuilder.<ConnectionSocketFactory>create()
@@ -420,7 +421,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
    *
    * @see #getHttpSolrClient
    */
-  public static HttpSolrClient getRandomizedHttpSolrClient(String url) {
+  public static SolrClient getRandomizedHttpSolrClient(String url) {
     // NOTE: at the moment, SolrTestCaseJ4 already returns "new HttpSolrClient" most of the time,
     // so this method may seem redundant -- but the point here is to sanity check 2 things:
     // 1) a direct test that "new HttpSolrClient" works given the current JVM/sysprop defaults

@@ -48,7 +48,6 @@ class BigEndianAscendingWordDeserializer implements IWordDeserializer {
    *     than or equal to zero.
    * @param bytes the byte array containing the serialized words. Cannot be <code>null</code>.
    */
-  @SuppressWarnings("NarrowCalculation")
   public BigEndianAscendingWordDeserializer(
       final int wordLength, final int bytePadding, final byte[] bytes) {
     if ((wordLength < 1) || (wordLength > 64)) {
@@ -66,7 +65,7 @@ class BigEndianAscendingWordDeserializer implements IWordDeserializer {
     this.bytePadding = bytePadding;
 
     final int dataBytes = (bytes.length - bytePadding);
-    final long dataBits = (dataBytes * BITS_PER_BYTE);
+    final long dataBits = ((long) dataBytes * BITS_PER_BYTE);
 
     this.wordCount = (int) (dataBits / wordLength);
 

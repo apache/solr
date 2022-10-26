@@ -20,9 +20,10 @@ import static org.apache.solr.common.params.CommonParams.SORT;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.LinkedList;
+import java.util.Deque;
 import java.util.List;
 import java.util.Locale;
 import java.util.PriorityQueue;
@@ -52,7 +53,7 @@ public class RankStream extends TupleStream implements Expressible {
   private int size;
   private transient PriorityQueue<Tuple> top;
   private transient boolean finished = false;
-  private transient LinkedList<Tuple> topList;
+  private transient Deque<Tuple> topList;
 
   public RankStream(TupleStream tupleStream, int size, StreamComparator comp) throws IOException {
     init(tupleStream, size, comp);
@@ -184,14 +185,14 @@ public class RankStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l = new ArrayList<TupleStream>();
+    List<TupleStream> l = new ArrayList<>();
     l.add(stream);
     return l;
   }
 
   public void open() throws IOException {
-    this.top = new PriorityQueue<Tuple>(size, new ReverseComp(comp));
-    this.topList = new LinkedList<Tuple>();
+    this.top = new PriorityQueue<>(size, new ReverseComp(comp));
+    this.topList = new ArrayDeque<>();
     stream.open();
   }
 

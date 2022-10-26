@@ -254,7 +254,7 @@ class SubQueryAugmenter extends DocTransformer {
     /**
      * @return null if prefix doesn't match, field is absent or empty
      */
-    protected Collection<Object> mapToDocField(String param) {
+    private Collection<Object> mapToDocField(String param) {
 
       if (param.startsWith(prefixDotRowDot)) {
         final String docFieldName = param.substring(prefixDotRowDot.length());
@@ -269,7 +269,7 @@ class SubQueryAugmenter extends DocTransformer {
       return null;
     }
 
-    protected String convertFieldValue(Object val) {
+    private String convertFieldValue(Object val) {
 
       if (val instanceof IndexableField) {
         IndexableField f = (IndexableField) val;
@@ -281,7 +281,7 @@ class SubQueryAugmenter extends DocTransformer {
     @Override
     public Iterator<String> getParameterNamesIterator() {
       final Iterator<String> fieldNames = doc.getFieldNames().iterator();
-      return new Iterator<String>() {
+      return new Iterator<>() {
 
         @Override
         public boolean hasNext() {

@@ -17,7 +17,6 @@
 
 package org.apache.solr.response;
 
-import static junit.framework.Assert.fail;
 import static org.apache.lucene.tests.util.LuceneTestCase.random;
 import static org.apache.solr.search.SolrReturnFields.FIELD_SOURCES.ALL_FROM_DV;
 import static org.apache.solr.search.SolrReturnFields.FIELD_SOURCES.ALL_FROM_STORED;
@@ -616,7 +615,7 @@ class RetrieveField {
         break;
 
       default:
-        fail("Found no case for field " + name + " type " + type);
+        SolrTestCaseJ4.fail("Found no case for field " + name + " type " + type);
         break;
     }
     // There are tricky cases with multiValued fields that are sometimes fetched from docValues that
@@ -655,18 +654,18 @@ class RetrieveField {
     switch (testFieldType.getSolrTypeClass()) {
       case "solr.TrieIntField":
       case "solr.TrieLongField":
-        Collections.sort(valsAsStrings, Comparator.comparingInt(Integer::parseInt));
+        valsAsStrings.sort(Comparator.comparingInt(Integer::parseInt));
         break;
       case "solr.IntPointField":
       case "solr.LongPointField":
-        Collections.sort(valsAsStrings, Comparator.comparingLong(Long::parseLong));
+        valsAsStrings.sort(Comparator.comparingLong(Long::parseLong));
         break;
 
       case "solr.TrieFloatField":
       case "solr.FloatPointField":
       case "solr.TrieDoubleField":
       case "solr.DoublePointField":
-        Collections.sort(valsAsStrings, Comparator.comparingDouble(Double::parseDouble));
+        valsAsStrings.sort(Comparator.comparingDouble(Double::parseDouble));
         break;
 
       case "solr.TrieDateField":
@@ -677,7 +676,7 @@ class RetrieveField {
         break;
 
       default:
-        fail("Found no case for field " + name + " type " + type);
+        SolrTestCaseJ4.fail("Found no case for field " + name + " type " + type);
         break;
     }
   }

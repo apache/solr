@@ -17,7 +17,7 @@
 package org.apache.solr.security.hadoop;
 
 import java.io.IOException;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -215,7 +215,7 @@ public class HadoopAuthFilter extends DelegationTokenAuthenticationFilter {
     }
 
     private List<AuthInfo> createAuthInfo(SolrZkClient zkClient) {
-      List<AuthInfo> ret = new LinkedList<AuthInfo>();
+      List<AuthInfo> ret = new ArrayList<>();
 
       // In theory the credentials to add could change here if zookeeper hasn't been initialized
       ZkCredentialsProvider credentialsProvider =

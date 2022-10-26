@@ -736,15 +736,13 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
             "solr.core.collection1:QUERY./dumphandler.dumphandlergauge"),
         resp);
 
-    assertEquals(
-        null,
+    assertNull(
         resp.getValues()
             ._getStr(
                 Arrays.asList(
                     "metrics", "solr.core.collection1:QUERY./dumphandler.dumphandlergauge", "d_k1"),
                 null));
-    assertEquals(
-        null,
+    assertNull(
         resp.getValues()
             ._getStr(
                 Arrays.asList(

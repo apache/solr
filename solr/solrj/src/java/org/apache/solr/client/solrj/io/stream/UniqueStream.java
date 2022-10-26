@@ -127,10 +127,9 @@ public class UniqueStream extends TupleStream implements Expressible {
     }
 
     // over
-    if (originalEqualitor instanceof Expressible) {
+    if (originalEqualitor != null) {
       expression.addParameter(
-          new StreamExpressionNamedParameter(
-              "over", ((Expressible) originalEqualitor).toExpression(factory)));
+          new StreamExpressionNamedParameter("over", originalEqualitor.toExpression(factory)));
     } else {
       throw new IOException(
           "This UniqueStream contains a non-expressible equalitor - it cannot be converted to an expression");
@@ -161,7 +160,7 @@ public class UniqueStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l = new ArrayList<TupleStream>();
+    List<TupleStream> l = new ArrayList<>();
     l.add(originalStream);
     return l;
   }

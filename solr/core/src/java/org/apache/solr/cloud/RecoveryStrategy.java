@@ -29,6 +29,7 @@ import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.HttpUriRequestResponse;
@@ -279,7 +280,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
   }
 
   private final void commitOnLeader(String leaderUrl) throws SolrServerException, IOException {
-    try (HttpSolrClient client = recoverySolrClientBuilder(leaderUrl).build()) {
+    try (SolrClient client = recoverySolrClientBuilder(leaderUrl).build()) {
       UpdateRequest ureq = new UpdateRequest();
       ureq.setParams(new ModifiableSolrParams());
       // ureq.getParams().set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
@@ -442,7 +443,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
   /**
    * @return true if we have reached max attempts or should stop recovering for some other reason
    */
-  @SuppressWarnings("NarrowCalculation")
   private boolean waitBetweenRecoveries(String coreName) {
     // lets pause for a moment and we need to try again...
     // TODO: we don't want to retry for some problems?
@@ -473,7 +473,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
       // Wait an exponential interval between retries, start at 4 seconds and work up to a minute.
       // Meanwhile we will check in 2s sub-intervals to see if we've been closed
       // Maximum loop count is 30 because we never want to wait longer than a minute (2s * 30 = 1m)
-      int loopCount = retries < 5 ? (int) Math.pow(2, retries) : 30;
+      long loopCount = retries < 5 ? Math.round(Math.pow(2, retries)) : 30;
       if (log.isInfoEnabled()) {
         log.info(
             "Wait [{}] seconds before trying to recover again (attempt={})",
@@ -805,7 +805,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
         return leaderReplica;
       }
 
-      try (HttpSolrClient httpSolrClient =
+      try (SolrClient httpSolrClient =
           recoverySolrClientBuilder(leaderReplica.getCoreUrl()).build()) {
         httpSolrClient.ping();
         return leaderReplica;

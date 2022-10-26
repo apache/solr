@@ -21,7 +21,7 @@ import static org.apache.solr.handler.ReplicationTestHelper.SolrInstance;
 import static org.apache.solr.handler.ReplicationTestHelper.assertVersions;
 import static org.apache.solr.handler.ReplicationTestHelper.createNewSolrClient;
 import static org.apache.solr.handler.ReplicationTestHelper.invokeReplicationCommand;
-import static org.junit.matchers.JUnitMatchers.containsString;
+import static org.hamcrest.CoreMatchers.containsString;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -79,6 +79,7 @@ import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
+import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -99,7 +100,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   private static final long TIMEOUT = 30000;
 
   JettySolrRunner leaderJetty, followerJetty, repeaterJetty;
-  HttpSolrClient leaderClient, followerClient, repeaterClient;
+  SolrClient leaderClient, followerClient, repeaterClient;
   SolrInstance leader = null, follower = null, repeater = null;
 
   static String context = "/solr";
@@ -267,14 +268,14 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     params.set("qt", "/admin/cores");
     QueryRequest req = new QueryRequest(params);
 
-    try (HttpSolrClient adminClient = adminClient(s)) {
+    try (SolrClient adminClient = adminClient(s)) {
       NamedList<Object> res = adminClient.request(req);
       assertNotNull("null response from server", res);
       return res;
     }
   }
 
-  private HttpSolrClient adminClient(SolrClient client) {
+  private SolrClient adminClient(SolrClient client) {
     String adminUrl = ((HttpSolrClient) client).getBaseURL().replace("/collection1", "");
     return getHttpSolrClient(adminUrl);
   }
@@ -876,7 +877,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // compare results
     String cmp =
         BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
-    assertEquals(null, cmp);
+    assertNull(cmp);
 
     // index fetch from the follower to the leader
 
@@ -895,7 +896,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     leaderQueryRsp = rQuery(nDocs + 3, "*:*", leaderClient);
     leaderQueryResult = (SolrDocumentList) leaderQueryRsp.get("response");
     cmp = BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
-    assertEquals(null, cmp);
+    assertNull(cmp);
 
     assertVersions(leaderClient, followerClient);
 
@@ -909,7 +910,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     leaderQueryRsp = rQuery(nDocs + 3, "*:*", leaderClient);
     leaderQueryResult = (SolrDocumentList) leaderQueryRsp.get("response");
     cmp = BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
-    assertEquals(null, cmp);
+    assertNull(cmp);
 
     assertVersions(leaderClient, followerClient);
 
@@ -931,7 +932,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     leaderQueryRsp = rQuery(nDocs + 3, "*:*", leaderClient);
     leaderQueryResult = (SolrDocumentList) leaderQueryRsp.get("response");
     cmp = BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
-    assertEquals(null, cmp);
+    assertNull(cmp);
 
     assertVersions(leaderClient, followerClient);
     pullFromTo(followerJetty, leaderJetty);
@@ -944,7 +945,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     leaderQueryRsp = rQuery(nDocs + 3, "*:*", leaderClient);
     leaderQueryResult = (SolrDocumentList) leaderQueryRsp.get("response");
     cmp = BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
-    assertEquals(null, cmp);
+    assertNull(cmp);
 
     assertVersions(leaderClient, followerClient);
 
@@ -1030,7 +1031,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         // compare results
         String cmp =
             BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
-        assertEquals(null, cmp);
+        assertNull(cmp);
 
         assertVersions(leaderClient, followerClient);
 
@@ -1079,7 +1080,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
               livePaths.toString() + ":" + livePaths.size(),
               3 == livePaths.size() || 4 == livePaths.size());
         } else {
-          assertTrue(livePaths.toString() + ":" + livePaths.size(), 3 == livePaths.size());
+          assertEquals(livePaths.toString() + ":" + livePaths.size(), 3, livePaths.size());
         }
 
         // :TODO: assert that one of the paths is a subpath of hte other
@@ -1092,7 +1093,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         if (afterReload) {
           assertTrue("found:" + cnt + Arrays.asList(new File(ddir).list()), 1 == cnt || 2 == cnt);
         } else {
-          assertTrue("found:" + cnt + Arrays.asList(new File(ddir).list()), 1 == cnt);
+          assertEquals("found:" + cnt + Arrays.asList(new File(ddir).list()), 1, cnt);
         }
       }
     }
@@ -1238,7 +1239,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // compare results
     String cmp =
         BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
-    assertEquals(null, cmp);
+    assertNull(cmp);
   }
 
   @Test
@@ -1297,7 +1298,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       // compare results
       String cmp =
           BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
-      assertEquals(null, cmp);
+      assertNull(cmp);
 
     } finally {
       resetFactory();
@@ -1347,7 +1348,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // compare results
     String cmp =
         BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
-    assertEquals(null, cmp);
+    assertNull(cmp);
 
     Object version = getIndexVersion(leaderClient).get("indexversion");
 
@@ -1393,7 +1394,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // compare results
     String cmp =
         BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
-    assertEquals(null, cmp);
+    assertNull(cmp);
 
     // start config files replication test
     // clear leader index
@@ -1453,7 +1454,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     checkForSingleIndex(followerJetty, true);
   }
 
-  @SuppressWarnings("NarrowCalculation")
   @Test
   public void testRateLimitedReplication() throws Exception {
 
@@ -1494,7 +1494,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     }
 
     float approximateTimeInSeconds =
-        Math.round(totalBytes / 1024 / 1024 / 0.1); // maxWriteMBPerSec=0.1 in solrconfig
+        Math.round((float) totalBytes / 1024 / 1024 / 0.1); // maxWriteMBPerSec=0.1 in solrconfig
 
     // Start again and replicate the data
     useFactory(null);
@@ -1605,7 +1605,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
               followerClient.query(q);
             });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, thrown.code());
-    assertThat(thrown.getMessage(), containsString("Missing required parameter: command"));
+    MatcherAssert.assertThat(
+        thrown.getMessage(), containsString("Missing required parameter: command"));
   }
 
   @Test
@@ -1619,7 +1620,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
               followerClient.query(q);
             });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, thrown.code());
-    assertThat(thrown.getMessage(), containsString("Missing required parameter: name"));
+    MatcherAssert.assertThat(
+        thrown.getMessage(), containsString("Missing required parameter: name"));
   }
 
   @Test
@@ -1792,7 +1794,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     final long sleepInterval = 200;
     long timeSlept = 0;
 
-    try (HttpSolrClient adminClient = adminClient(client)) {
+    try (SolrClient adminClient = adminClient(client)) {
       SolrParams p = params("action", "status", "core", "collection1");
       while (timeSlept < TIMEOUT) {
         QueryRequest req = new QueryRequest(p);

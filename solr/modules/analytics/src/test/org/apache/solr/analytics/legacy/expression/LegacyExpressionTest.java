@@ -127,7 +127,6 @@ public class LegacyExpressionTest extends LegacyAbstractAnalyticsTest {
     assertEquals(getRawResponse(), Math.pow(meanResult, countResult), result, 0.0);
   }
 
-  @SuppressWarnings("LongDoubleConversion")
   @Test
   public void negateTest() throws Exception {
     double sumResult = (Double) getStatResult("nr", "sum", VAL_TYPE.DOUBLE);
@@ -136,10 +135,9 @@ public class LegacyExpressionTest extends LegacyAbstractAnalyticsTest {
 
     long countResult = ((Long) getStatResult("nr", "count", VAL_TYPE.LONG));
     long lresult = (Long) getStatResult("nr", "c", VAL_TYPE.LONG);
-    assertEquals(getRawResponse(), -1 * countResult, lresult, 0.0);
+    assertEquals(getRawResponse(), -1 * countResult, lresult);
   }
 
-  @SuppressWarnings("LongDoubleConversion")
   @Test
   public void absoluteValueTest() throws Exception {
     double sumResult = (Double) getStatResult("avr", "sum", VAL_TYPE.DOUBLE);
@@ -148,13 +146,13 @@ public class LegacyExpressionTest extends LegacyAbstractAnalyticsTest {
 
     long countResult = ((Long) getStatResult("avr", "count", VAL_TYPE.LONG));
     long lresult = (Long) getStatResult("avr", "c", VAL_TYPE.LONG);
-    assertEquals(getRawResponse(), countResult, lresult, 0.0);
+    assertEquals(getRawResponse(), countResult, lresult);
   }
 
   @Test
   public void constantNumberTest() throws Exception {
     int result = (Integer) getStatResult("cnr", "c8", VAL_TYPE.INTEGER);
-    assertEquals(getRawResponse(), 8, result, 0.0);
+    assertEquals(getRawResponse(), 8, result);
 
     double dresult = (Double) getStatResult("cnr", "c10", VAL_TYPE.DOUBLE);
     assertEquals(getRawResponse(), 10.0, dresult, 0.0);
@@ -170,8 +168,8 @@ public class LegacyExpressionTest extends LegacyAbstractAnalyticsTest {
     String dateMath = (String) getStatResult("dmr", "dmme", VAL_TYPE.DATE);
     assertEquals(
         getRawResponse(),
-        new Date(Instant.parse(dateMath).toEpochMilli()),
-        dateMathParser.parseMath(math));
+        new Date(Instant.parse(dateMath).toEpochMilli()).toInstant(),
+        dateMathParser.parseMath(math).toInstant());
 
     math = (String) getStatResult("dmr", "cma", VAL_TYPE.STRING);
     dateMathParser = new DateMathParser();
@@ -181,8 +179,8 @@ public class LegacyExpressionTest extends LegacyAbstractAnalyticsTest {
     dateMath = (String) getStatResult("dmr", "dmma", VAL_TYPE.DATE);
     assertEquals(
         getRawResponse(),
-        new Date(Instant.parse(dateMath).toEpochMilli()),
-        dateMathParser.parseMath(math));
+        new Date(Instant.parse(dateMath).toEpochMilli()).toInstant(),
+        dateMathParser.parseMath(math).toInstant());
   }
 
   @Test
