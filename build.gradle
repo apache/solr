@@ -160,7 +160,6 @@ apply from: file('gradle/validation/validate-log-calls.gradle')
 apply from: file('gradle/validation/check-broken-links.gradle')
 
 apply from: file('gradle/validation/solr.config-file-sanity.gradle')
-apply from: file('gradle/validation/solr.ref-guide-files.gradle')
 
 apply from: file('gradle/validation/spotless.gradle')
 
