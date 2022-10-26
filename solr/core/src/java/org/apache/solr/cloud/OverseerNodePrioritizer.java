@@ -145,6 +145,12 @@ public class OverseerNodePrioritizer {
       } catch (SolrException e) {
         if (i < retryCount - 1) {
           log.warn("Exception occurred while invoking Overseer Operation '{}'. Retrying.", op, e);
+          try {
+            Thread.sleep(100);
+          } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            break;
+          }
         } else {
           throw e;
         }
