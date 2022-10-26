@@ -51,6 +51,8 @@ Bug Fixes
 
 * SOLR-16363: DirectUpdateHandler2 should not throw UnknownFormatConversionException (Kevin Risden)
 
+* SOLR-16293: Luke request fails for document with a binary field (Kevin Risden)
+
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
