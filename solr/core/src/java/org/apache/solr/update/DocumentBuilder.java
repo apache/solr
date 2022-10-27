@@ -336,16 +336,17 @@ public class DocumentBuilder {
                 + ": "
                 + originalFieldValue);
       }
+      Object fieldValue = originalFieldValue;
       // Perhaps trim the length of a copy field
       if (originalFieldValue instanceof CharSequence && cf.getMaxChars() > 0) {
-        originalFieldValue = cf.getLimitedValue(originalFieldValue.toString());
+        fieldValue = cf.getLimitedValue(originalFieldValue.toString());
       }
 
       // TODO ban copyField populating uniqueKeyField; too problematic to support
       addField(
           out,
           destinationField,
-          originalFieldValue,
+          fieldValue,
           destinationField.getName().equals(uniqueKeyFieldName) ? false : forInPlaceUpdate);
       // record the field as having a originalFieldValue
       usedFields.add(destinationField.getName());
