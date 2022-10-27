@@ -20,7 +20,8 @@ package org.apache.solr.handler.admin;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.admin.api.SnapshotAPI;
+import org.apache.solr.handler.admin.api.CoreSnapshotAPI;
+import org.apache.solr.handler.api.V2ApiUtils;
 
 class DeleteSnapshotOp implements CoreAdminHandler.CoreAdminOp {
 
@@ -31,12 +32,11 @@ class DeleteSnapshotOp implements CoreAdminHandler.CoreAdminOp {
     final String coreName = params.required().get(CoreAdminParams.CORE);
 
     final CoreContainer coreContainer = it.handler.getCoreContainer();
-    final SnapshotAPI snapshotAPI = new SnapshotAPI(coreContainer);
+    final CoreSnapshotAPI coreSnapshotAPI = new CoreSnapshotAPI(coreContainer);
 
-    final SnapshotAPI.DeleteSnapshotResponse response =
-        snapshotAPI.deleteSnapshot(coreName, commitName);
+    final CoreSnapshotAPI.DeleteSnapshotResponse response =
+        coreSnapshotAPI.deleteSnapshot(coreName, commitName);
 
-    it.rsp.add(CoreAdminParams.CORE, response.coreName);
-    it.rsp.add(CoreAdminParams.COMMIT_NAME, response.commitName);
+    V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, response);
   }
 }

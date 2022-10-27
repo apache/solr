@@ -55,6 +55,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.AllCoresStatusAPI;
+import org.apache.solr.handler.admin.api.CoreSnapshotAPI;
 import org.apache.solr.handler.admin.api.CreateCoreAPI;
 import org.apache.solr.handler.admin.api.MergeIndexesAPI;
 import org.apache.solr.handler.admin.api.OverseerOperationAPI;
@@ -68,7 +69,6 @@ import org.apache.solr.handler.admin.api.RequestCoreCommandStatusAPI;
 import org.apache.solr.handler.admin.api.RequestCoreRecoveryAPI;
 import org.apache.solr.handler.admin.api.RequestSyncShardAPI;
 import org.apache.solr.handler.admin.api.SingleCoreStatusAPI;
-import org.apache.solr.handler.admin.api.SnapshotAPI;
 import org.apache.solr.handler.admin.api.SplitCoreAPI;
 import org.apache.solr.handler.admin.api.SwapCoresAPI;
 import org.apache.solr.handler.admin.api.UnloadCoreAPI;
@@ -481,7 +481,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
 
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
-    return List.of(SnapshotAPI.class);
+    return List.of(CoreSnapshotAPI.class);
   }
 
   static {

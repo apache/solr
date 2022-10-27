@@ -71,7 +71,7 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminOp;
-import org.apache.solr.handler.admin.api.SnapshotAPI;
+import org.apache.solr.handler.admin.api.CoreSnapshotAPI;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.NumberUtils;
@@ -278,14 +278,15 @@ public enum CoreAdminOperation implements CoreAdminOp {
         final String coreName = params.required().get(CoreAdminParams.CORE);
 
         final CoreContainer coreContainer = it.handler.getCoreContainer();
-        final SnapshotAPI snapshotAPI = new SnapshotAPI(coreContainer);
+        final CoreSnapshotAPI coreSnapshotAPI = new CoreSnapshotAPI(coreContainer);
 
-        final SnapshotAPI.ListSnapshotsResponse response = snapshotAPI.listSnapshots(coreName);
+        final CoreSnapshotAPI.ListSnapshotsResponse response =
+            coreSnapshotAPI.listSnapshots(coreName);
 
         final NamedList<Object> snapshotsResult = new NamedList<>();
-        for (Map.Entry<String, SnapshotAPI.SnapshotInformation> snapshotEntry :
+        for (Map.Entry<String, CoreSnapshotAPI.SnapshotInformation> snapshotEntry :
             response.snapshots.entrySet()) {
-          final SnapshotAPI.SnapshotInformation snapshotInformation = snapshotEntry.getValue();
+          final CoreSnapshotAPI.SnapshotInformation snapshotInformation = snapshotEntry.getValue();
 
           final NamedList<Object> snapshotResult = new NamedList<>();
           snapshotResult.add(
@@ -297,6 +298,10 @@ public enum CoreAdminOperation implements CoreAdminOp {
         }
 
         it.rsp.add(SolrSnapshotManager.SNAPSHOTS_INFO, snapshotsResult);
+
+        // The line below will change the structure of the response body. Seeking clarification on
+        // next steps.
+        // V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, response);
       });
 
   final CoreAdminParams.CoreAdminAction action;

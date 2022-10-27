@@ -23,6 +23,7 @@ import static org.apache.solr.security.PermissionNameProvider.Name.CORE_READ_PER
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -43,16 +44,17 @@ import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
+import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.jersey.SolrJerseyResponse;
 
 @Path("/cores/{coreName}/snapshots")
-public class SnapshotAPI extends JerseyResource {
+public class CoreSnapshotAPI extends JerseyResource {
 
   private final CoreContainer coreContainer;
 
   @Inject
-  public SnapshotAPI(CoreContainer coreContainer) {
+  public CoreSnapshotAPI(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
   }
 
@@ -102,18 +104,23 @@ public class SnapshotAPI extends JerseyResource {
   }
 
   public static class CreateSnapshotResponse extends SolrJerseyResponse {
+    @Schema(description = "The name of the core.")
     @JsonProperty(CoreAdminParams.CORE)
     public String core;
 
+    @Schema(description = "The name of the created snapshot.")
     @JsonProperty(CoreAdminParams.SNAPSHOT_NAME)
     public String commitName;
 
+    @Schema(description = "The path to the directory containing the index files.")
     @JsonProperty(SolrSnapshotManager.INDEX_DIR_PATH)
     public String indexDirPath;
 
+    @Schema(description = "The generation value for the created snapshot.")
     @JsonProperty(SolrSnapshotManager.GENERATION_NUM)
     public long generation;
 
+    @Schema(description = "The list of index filenames contained within the created snapshot.")
     @JsonProperty(SolrSnapshotManager.FILE_LIST)
     public Collection<String> files;
   }
@@ -156,14 +163,17 @@ public class SnapshotAPI extends JerseyResource {
   }
 
   public static class ListSnapshotsResponse extends SolrJerseyResponse {
+    @Schema(description = "The collection of snapshots found for the requested core.")
     @JsonProperty(SolrSnapshotManager.SNAPSHOTS_INFO)
     public Map<String, SnapshotInformation> snapshots;
   }
 
-  public static class SnapshotInformation {
+  public static class SnapshotInformation implements JacksonReflectMapWriter {
+    @Schema(description = "The generation value for the snapshot.")
     @JsonProperty(SolrSnapshotManager.GENERATION_NUM)
     public final long generationNumber;
 
+    @Schema(description = "The path to the directory containing the index files.")
     @JsonProperty(SolrSnapshotManager.INDEX_DIR_PATH)
     public final String indexDirPath;
 
@@ -209,9 +219,11 @@ public class SnapshotAPI extends JerseyResource {
   }
 
   public static class DeleteSnapshotResponse extends SolrJerseyResponse {
+    @Schema(description = "The name of the core.")
     @JsonProperty(CoreAdminParams.CORE)
     public String coreName;
 
+    @Schema(description = "The name of the deleted snapshot.")
     @JsonProperty(CoreAdminParams.SNAPSHOT_NAME)
     public String commitName;
   }

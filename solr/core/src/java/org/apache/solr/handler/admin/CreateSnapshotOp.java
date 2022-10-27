@@ -20,8 +20,8 @@ package org.apache.solr.handler.admin;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.snapshots.SolrSnapshotManager;
-import org.apache.solr.handler.admin.api.SnapshotAPI;
+import org.apache.solr.handler.admin.api.CoreSnapshotAPI;
+import org.apache.solr.handler.api.V2ApiUtils;
 
 class CreateSnapshotOp implements CoreAdminHandler.CoreAdminOp {
   @Override
@@ -31,15 +31,11 @@ class CreateSnapshotOp implements CoreAdminHandler.CoreAdminOp {
     final String commitName = params.required().get(CoreAdminParams.COMMIT_NAME);
 
     final CoreContainer coreContainer = it.handler.getCoreContainer();
-    final SnapshotAPI snapshotAPI = new SnapshotAPI(coreContainer);
+    final CoreSnapshotAPI coreSnapshotAPI = new CoreSnapshotAPI(coreContainer);
 
-    final SnapshotAPI.CreateSnapshotResponse response =
-        snapshotAPI.createSnapshot(coreName, commitName);
+    final CoreSnapshotAPI.CreateSnapshotResponse response =
+        coreSnapshotAPI.createSnapshot(coreName, commitName);
 
-    it.rsp.add(CoreAdminParams.CORE, response.core);
-    it.rsp.add(CoreAdminParams.COMMIT_NAME, response.commitName);
-    it.rsp.add(SolrSnapshotManager.INDEX_DIR_PATH, response.indexDirPath);
-    it.rsp.add(SolrSnapshotManager.GENERATION_NUM, response.generation);
-    it.rsp.add(SolrSnapshotManager.FILE_LIST, response.files);
+    V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, response);
   }
 }
