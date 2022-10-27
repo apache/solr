@@ -900,7 +900,7 @@ public class IndexFetcher {
    * terminate the fsync service and wait for all the tasks to complete. If it is already terminated
    */
   private void terminateAndWaitFsyncService() throws Exception {
-    if (fsyncService.isTerminated()) return;
+    if (ExecutorUtil.isTerminated(fsyncService)) return;
     fsyncService.shutdown();
     // give a long wait say 1 hr
     fsyncService.awaitTermination(3600, TimeUnit.SECONDS);
