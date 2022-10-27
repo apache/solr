@@ -306,7 +306,7 @@ public class DocumentBuilder {
   }
 
   private static boolean addCopyFields(
-      Object originalFieldValue,
+      final Object originalFieldValue,
       FieldType originalFieldType,
       List<CopyField> copyFields,
       boolean forInPlaceUpdate,
