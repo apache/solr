@@ -35,6 +35,8 @@ New Features
 
 * SOLR-16435: Add Request timeout to Http2SolrClient (Tomás Fernández Löbbe)
 
+* SOLR-16500: Enable JDK 19 preview options for MMapDirectory V2 (Kevin Risden)
+
 Improvements
 ---------------------
 
