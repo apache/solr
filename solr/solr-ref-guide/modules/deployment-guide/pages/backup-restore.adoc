@@ -259,7 +259,7 @@ curl -X POST http://localhost:8983/solr/admin/cores?action=CREATESNAPSHOT&core=t
 ====
 [.tab-label]*V2 API*
 
-With the v2 API, the core and snapshot names are part of the path, no longer query parameters.
+With the v2 API, the core and snapshot names are part of the path instead of query parameters.
 
 [source,bash]
 ----
@@ -308,7 +308,7 @@ curl http://localhost:8983/solr/admin/cores?action=LISTSNAPSHOTS&core=techproduc
 ====
 [.tab-label]*V2 API*
 
-With the v2 API, the core and snapshot names are part of the path, no longer query parameters.
+With the v2 API, the core and snapshot names are part of the path instead of query parameters.
 
 [source,bash]
 ----
@@ -357,7 +357,7 @@ curl -X DELETE http://localhost:8983/solr/admin/cores?action=DELETESNAPSHOT&core
 ====
 [.tab-label]*V2 API*
 
-With the v2 API, the core and snapshot names are part of the path, no longer query parameters.
+With the v2 API, the core and snapshot names are part of the path instead of query parameters.
 
 [source,bash]
 ----
