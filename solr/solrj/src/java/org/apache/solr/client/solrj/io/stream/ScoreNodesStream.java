@@ -24,7 +24,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -43,20 +42,18 @@ import org.apache.solr.common.params.TermsParams;
 import org.apache.solr.common.util.NamedList;
 
 /**
- *  Iterates over a gatherNodes() expression and scores the Tuples based on tf-idf.
+ * Iterates over a gatherNodes() expression and scores the Tuples based on tf-idf.
  *
- *  Expression Syntax:
+ * <p>Expression Syntax:
  *
- *  Default function call uses the "count(*)" field for termFreq.
+ * <p>Default function call uses the "count(*)" field for termFreq.
  *
- *  You can use a different value for termFreq by providing the termFreq param
- *  scoreNodes(gatherNodes(...), termFreq="min(weight)")
+ * <p>You can use a different value for termFreq by providing the termFreq param
+ * scoreNodes(gatherNodes(...), termFreq="min(weight)")
  *
  * @since 6.2.0
- **/
-
-public class ScoreNodesStream extends TupleStream implements Expressible
-{
+ */
+public class ScoreNodesStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
 
@@ -77,21 +74,28 @@ public class ScoreNodesStream extends TupleStream implements Expressible
 
   public ScoreNodesStream(StreamExpression expression, StreamFactory factory) throws IOException {
     // grab all parameters out
-    List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
+    List<StreamExpression> streamExpressions =
+        factory.getExpressionOperandsRepresentingTypes(
+            expression, Expressible.class, TupleStream.class);
     StreamExpressionNamedParameter nodeFreqParam = factory.getNamedOperand(expression, "termFreq");
 
     String docFreqField = "count(*)";
-    if(nodeFreqParam != null) {
+    if (nodeFreqParam != null) {
       docFreqField = nodeFreqParam.getParameter().toString();
     }
 
-    if(1 != streamExpressions.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting a single stream but found %d",expression, streamExpressions.size()));
+    if (1 != streamExpressions.size()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting a single stream but found %d",
+              expression,
+              streamExpressions.size()));
     }
 
     zkHost = factory.getDefaultZkHost();
 
-    if(null == zkHost){
+    if (null == zkHost) {
       throw new IOException("zkHost not found");
     }
 
@@ -100,14 +104,16 @@ public class ScoreNodesStream extends TupleStream implements Expressible
     init(stream, docFreqField);
   }
 
-  private void init(TupleStream tupleStream, String termFreq) throws IOException{
+  private void init(TupleStream tupleStream, String termFreq) throws IOException {
     this.stream = tupleStream;
     this.termFreq = termFreq;
-    if(stream instanceof FacetStream) {
+    if (stream instanceof FacetStream) {
       FacetStream facetStream = (FacetStream) stream;
 
-      if(facetStream.getBuckets().length != 1) {
-        throw new IOException("scoreNodes operates over a single bucket. Num buckets:"+facetStream.getBuckets().length);
+      if (facetStream.getBuckets().length != 1) {
+        throw new IOException(
+            "scoreNodes operates over a single bucket. Num buckets:"
+                + facetStream.getBuckets().length);
       }
 
       this.bucket = facetStream.getBuckets()[0].toString();
@@ -117,27 +123,27 @@ public class ScoreNodesStream extends TupleStream implements Expressible
   }
 
   @Override
-  public StreamExpression toExpression(StreamFactory factory) throws IOException{
+  public StreamExpression toExpression(StreamFactory factory) throws IOException {
     return toExpression(factory, true);
   }
 
-  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams) throws IOException {
+  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams)
+      throws IOException {
     // function name
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
 
     // nodeFreqField
     expression.addParameter(new StreamExpressionNamedParameter("termFreq", termFreq));
 
-    if(includeStreams){
+    if (includeStreams) {
       // stream
-      if(stream instanceof Expressible){
-        expression.addParameter(((Expressible)stream).toExpression(factory));
+      if (stream instanceof Expressible) {
+        expression.addParameter(((Expressible) stream).toExpression(factory));
+      } else {
+        throw new IOException(
+            "This ScoreNodesStream contains a non-expressible TupleStream - it cannot be converted to an expression");
       }
-      else{
-        throw new IOException("This ScoreNodesStream contains a non-expressible TupleStream - it cannot be converted to an expression");
-      }
-    }
-    else{
+    } else {
       expression.addParameter("<stream>");
     }
 
@@ -148,40 +154,41 @@ public class ScoreNodesStream extends TupleStream implements Expressible
   public Explanation toExplanation(StreamFactory factory) throws IOException {
 
     return new StreamExplanation(getStreamNodeId().toString())
-        .withChildren(new Explanation[]{
-            stream.toExplanation(factory)
-        })
+        .withChildren(new Explanation[] {stream.toExplanation(factory)})
         .withFunctionName(factory.getFunctionName(this.getClass()))
         .withImplementingClass(this.getClass().getName())
         .withExpressionType(ExpressionType.STREAM_DECORATOR)
         .withExpression(toExpression(factory, false).toString());
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.clientCache = context.getSolrClientCache();
     this.stream.setStreamContext(context);
   }
 
+  @Override
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList<>();
+    List<TupleStream> l = new ArrayList<>();
     l.add(stream);
     return l;
   }
 
+  @Override
   public void open() throws IOException {
     stream.open();
     Tuple node = null;
     StringBuilder builder = new StringBuilder();
     String field = null;
     String collection = null;
-    while(true) {
+    while (true) {
       node = stream.read();
-      if(node.EOF) {
+      if (node.EOF) {
         break;
       }
 
-      if(facet) {
-        //Turn the facet tuple into a node.
+      if (facet) {
+        // Turn the facet tuple into a node.
         String nodeId = node.getString(bucket);
         node.put("node", nodeId);
         node.remove(bucket);
@@ -189,14 +196,14 @@ public class ScoreNodesStream extends TupleStream implements Expressible
         node.put("field", bucket);
       }
 
-      if(!node.getFields().containsKey("node")) {
+      if (!node.getFields().containsKey("node")) {
         throw new IOException("node field not present in the Tuple");
       }
 
       String nodeId = node.getString("node");
 
       nodes.put(nodeId, node);
-      if(builder.length() > 0) {
+      if (builder.length() > 0) {
         builder.append(",");
         field = node.getString("field");
         collection = node.getString("collection");
@@ -214,31 +221,32 @@ public class ScoreNodesStream extends TupleStream implements Expressible
 
     QueryRequest request = new QueryRequest(params);
 
-
     try {
 
-      //Get the response from the terms component
+      // Get the response from the terms component
       NamedList<?> response = client.request(request, collection);
       @SuppressWarnings({"unchecked"})
-      NamedList<Number> stats = (NamedList<Number>)response.get("indexstats");
+      NamedList<Number> stats = (NamedList<Number>) response.get("indexstats");
       long numDocs = stats.get("numDocs").longValue();
       @SuppressWarnings({"unchecked"})
-      NamedList<NamedList<Number>> fields = (NamedList<NamedList<Number>>)response.get("terms");
+      NamedList<NamedList<Number>> fields = (NamedList<NamedList<Number>>) response.get("terms");
 
       int size = fields.size();
-      for(int i=0; i<size; i++) {
+      for (int i = 0; i < size; i++) {
         String fieldName = fields.getName(i);
         NamedList<Number> terms = fields.get(fieldName);
         int tsize = terms.size();
-        for(int t=0; t<tsize; t++) {
+        for (int t = 0; t < tsize; t++) {
           String term = terms.getName(t);
           Number docFreq = terms.get(term);
           Tuple tuple = nodes.get(term);
-          if(!tuple.getFields().containsKey(termFreq)) {
+          if (!tuple.getFields().containsKey(termFreq)) {
             throw new Exception("termFreq field not present in the Tuple");
           }
-          Number termFreqValue = (Number)tuple.get(termFreq);
-          float score = (float)(Math.log(termFreqValue.floatValue())+1.0) * (float) (Math.log((numDocs + 1) / (docFreq.doubleValue() + 1)) + 1.0);
+          Number termFreqValue = (Number) tuple.get(termFreq);
+          float score =
+              (float) (Math.log(termFreqValue.floatValue()) + 1.0)
+                  * (float) (Math.log((numDocs + 1) / (docFreq.doubleValue() + 1)) + 1.0);
           tuple.put("nodeScore", score);
           tuple.put("docFreq", docFreq);
           tuple.put("numDocs", numDocs);
@@ -251,28 +259,31 @@ public class ScoreNodesStream extends TupleStream implements Expressible
     tuples = nodes.values().iterator();
   }
 
+  @Override
   public void close() throws IOException {
     stream.close();
   }
 
-  public StreamComparator getComparator(){
+  public StreamComparator getComparator() {
     return null;
   }
 
+  @Override
   public Tuple read() throws IOException {
-    if(tuples.hasNext()) {
+    if (tuples.hasNext()) {
       return tuples.next();
     } else {
       return Tuple.EOF();
     }
   }
 
-  public StreamComparator getStreamSort(){
+  @Override
+  public StreamComparator getStreamSort() {
     return null;
   }
 
+  @Override
   public int getCost() {
     return 0;
   }
-
 }

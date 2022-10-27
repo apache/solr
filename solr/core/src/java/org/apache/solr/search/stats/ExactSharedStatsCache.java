@@ -20,29 +20,30 @@ import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.SolrQueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This class implements exact caching of statistics. It requires an additional
- * round-trip to parse query at shard servers, and return term statistics for
- * query terms (and collection statistics for term fields).
- * <p>Global statistics are accumulated in the instance of this component (with the same life-cycle as
- * SolrSearcher), in unbounded maps. NOTE: This may lead to excessive memory usage, in which case
- * a {@link LRUStatsCache} should be considered.</p>
+ * This class implements exact caching of statistics. It requires an additional round-trip to parse
+ * query at shard servers, and return term statistics for query terms (and collection statistics for
+ * term fields).
+ *
+ * <p>Global statistics are accumulated in the instance of this component (with the same life-cycle
+ * as SolrSearcher), in unbounded maps. NOTE: This may lead to excessive memory usage, in which case
+ * a {@link LRUStatsCache} should be considered.
  */
 public class ExactSharedStatsCache extends ExactStatsCache {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   // local stats obtained from shard servers
-  private final Map<String,Map<String,TermStats>> perShardTermStats = new ConcurrentHashMap<>();
-  private final Map<String,Map<String,CollectionStats>> perShardColStats = new ConcurrentHashMap<>();
+  private final Map<String, Map<String, TermStats>> perShardTermStats = new ConcurrentHashMap<>();
+  private final Map<String, Map<String, CollectionStats>> perShardColStats =
+      new ConcurrentHashMap<>();
   // global stats synchronized from the leader
-  private final Map<String,TermStats> currentGlobalTermStats = new ConcurrentHashMap<>();
-  private final Map<String,CollectionStats> currentGlobalColStats = new ConcurrentHashMap<>();
+  private final Map<String, TermStats> currentGlobalTermStats = new ConcurrentHashMap<>();
+  private final Map<String, CollectionStats> currentGlobalColStats = new ConcurrentHashMap<>();
 
   @Override
   protected StatsSource doGet(SolrQueryRequest req) {
@@ -62,8 +63,8 @@ public class ExactSharedStatsCache extends ExactStatsCache {
   }
 
   @Override
-  protected void addToPerShardColStats(SolrQueryRequest req, String shard,
-      Map<String,CollectionStats> colStats) {
+  protected void addToPerShardColStats(
+      SolrQueryRequest req, String shard, Map<String, CollectionStats> colStats) {
     perShardColStats.put(shard, colStats);
   }
 
@@ -73,29 +74,32 @@ public class ExactSharedStatsCache extends ExactStatsCache {
   }
 
   @Override
-  protected void addToPerShardTermStats(SolrQueryRequest req, String shard, String termStatsString) {
-    Map<String,TermStats> termStats = StatsUtil
-        .termStatsMapFromString(termStatsString);
+  protected void addToPerShardTermStats(
+      SolrQueryRequest req, String shard, String termStatsString) {
+    Map<String, TermStats> termStats = StatsUtil.termStatsMapFromString(termStatsString);
     if (termStats != null) {
       perShardTermStats.put(shard, termStats);
     }
   }
-  
-  protected Map<String,CollectionStats> getPerShardColStats(ResponseBuilder rb, String shard) {
+
+  @Override
+  protected Map<String, CollectionStats> getPerShardColStats(ResponseBuilder rb, String shard) {
     return perShardColStats.get(shard);
   }
 
+  @Override
   protected TermStats getPerShardTermStats(SolrQueryRequest req, String t, String shard) {
-    Map<String,TermStats> cache = perShardTermStats.get(shard);
-    return (cache != null) ? cache.get(t) : null; //Term doesn't exist in shard;
+    Map<String, TermStats> cache = perShardTermStats.get(shard);
+    return (cache != null) ? cache.get(t) : null; // Term doesn't exist in shard;
   }
 
-  protected void addToGlobalColStats(SolrQueryRequest req,
-      Entry<String,CollectionStats> e) {
+  @Override
+  protected void addToGlobalColStats(SolrQueryRequest req, Entry<String, CollectionStats> e) {
     currentGlobalColStats.put(e.getKey(), e.getValue());
   }
 
-  protected void addToGlobalTermStats(SolrQueryRequest req, Entry<String,TermStats> e) {
+  @Override
+  protected void addToGlobalTermStats(SolrQueryRequest req, Entry<String, TermStats> e) {
     currentGlobalTermStats.put(e.getKey(), e.getValue());
   }
 }

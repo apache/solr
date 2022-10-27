@@ -16,13 +16,9 @@
  */
 package org.apache.solr.update.processor;
 
-
-/**
- * A passthrough processor that does nothing.
- */
+/** A pass through processor that does nothing. */
 public class CustomUpdateRequestProcessor extends UpdateRequestProcessor {
-  public CustomUpdateRequestProcessor( UpdateRequestProcessor next) {
+  public CustomUpdateRequestProcessor(UpdateRequestProcessor next) {
     super(next);
   }
 }
-

@@ -27,7 +27,7 @@
       }
     },
     "update":{
-      "class":"solr.UpdateRequestHandlerApi",
+      "class":"solr.V2UpdateRequestHandler",
       "useParams": "_UPDATE_JSON_DOCS"
     },
     "/config": {
@@ -77,18 +77,6 @@
     "/admin/plugins": {
       "class": "solr.PluginInfoHandler"
     },
-    "/admin/threads": {
-      "class": "solr.ThreadDumpHandler",
-      "useParams":"_ADMIN_THREADS"
-    },
-    "/admin/properties": {
-      "class": "solr.PropertiesRequestHandler",
-      "useParams":"_ADMIN_PROPERTIES"
-    },
-    "/admin/logging": {
-      "class": "solr.LoggingHandler",
-      "useParams":"_ADMIN_LOGGING"
-    },
     "/admin/file": {
       "class": "solr.ShowFileRequestHandler",
       "useParams":"_ADMIN_FILE"
@@ -121,6 +109,7 @@
     },
     "/sql": {
       "class": "solr.SQLHandler",
+      "startup": "lazy",
       "useParams":"_SQL",
       "invariants": {
         "distrib": false

@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-
 import org.apache.solr.schema.ManagedIndexSchema;
 
 class SchemaDesignerSettings implements SchemaDesignerConstants {
@@ -42,13 +41,17 @@ class SchemaDesignerSettings implements SchemaDesignerConstants {
     this.isDisabled = getSettingAsBool(stored, DESIGNER_KEY + DISABLED, false);
     this.publishedVersion = null;
     this.copyFrom = (String) stored.get(DESIGNER_KEY + COPY_FROM_PARAM);
-    this.languages = (List<String>) stored.getOrDefault(DESIGNER_KEY + LANGUAGES_PARAM, Collections.emptyList());
-    this.dynamicFieldsEnabled = getSettingAsBool(stored, DESIGNER_KEY + ENABLE_DYNAMIC_FIELDS_PARAM, true);
-    this.nestedDocsEnabled = getSettingAsBool(stored, DESIGNER_KEY + ENABLE_NESTED_DOCS_PARAM, false);
+    this.languages =
+        (List<String>) stored.getOrDefault(DESIGNER_KEY + LANGUAGES_PARAM, Collections.emptyList());
+    this.dynamicFieldsEnabled =
+        getSettingAsBool(stored, DESIGNER_KEY + ENABLE_DYNAMIC_FIELDS_PARAM, true);
+    this.nestedDocsEnabled =
+        getSettingAsBool(stored, DESIGNER_KEY + ENABLE_NESTED_DOCS_PARAM, false);
     this.fieldGuessingEnabled = getSettingAsBool(stored, AUTO_CREATE_FIELDS, true);
   }
 
-  static boolean getSettingAsBool(final Map<String, Object> stored, final String key, final boolean defaultValue) {
+  static boolean getSettingAsBool(
+      final Map<String, Object> stored, final String key, final boolean defaultValue) {
     boolean settingAsBool = defaultValue;
     final Object settingValue = stored != null ? stored.get(key) : null;
     if (settingValue != null) {
@@ -141,19 +144,26 @@ class SchemaDesignerSettings implements SchemaDesignerConstants {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (!(o instanceof SchemaDesignerSettings)) return false;
     SchemaDesignerSettings that = (SchemaDesignerSettings) o;
-    return isDisabled == that.isDisabled &&
-        dynamicFieldsEnabled == that.dynamicFieldsEnabled &&
-        nestedDocsEnabled == that.nestedDocsEnabled &&
-        fieldGuessingEnabled == that.fieldGuessingEnabled &&
-        Objects.equals(copyFrom, that.copyFrom) &&
-        languages.equals(that.languages) &&
-        Objects.equals(publishedVersion, that.publishedVersion);
+    return isDisabled == that.isDisabled
+        && dynamicFieldsEnabled == that.dynamicFieldsEnabled
+        && nestedDocsEnabled == that.nestedDocsEnabled
+        && fieldGuessingEnabled == that.fieldGuessingEnabled
+        && Objects.equals(copyFrom, that.copyFrom)
+        && languages.equals(that.languages)
+        && Objects.equals(publishedVersion, that.publishedVersion);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(copyFrom, isDisabled, languages, dynamicFieldsEnabled, nestedDocsEnabled, fieldGuessingEnabled, publishedVersion);
+    return Objects.hash(
+        copyFrom,
+        isDisabled,
+        languages,
+        dynamicFieldsEnabled,
+        nestedDocsEnabled,
+        fieldGuessingEnabled,
+        publishedVersion);
   }
 }

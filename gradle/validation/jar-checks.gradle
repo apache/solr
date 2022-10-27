@@ -112,7 +112,9 @@ subprojects {
           conf = conf.copyRecursive()
           conf.canBeResolved = true
           conf.canBeConsumed = true
-          conf.excludeRules = excludeRules
+          def newConfExcludeRules = new HashSet<>(conf.excludeRules)
+          newConfExcludeRules.addAll(excludeRules)
+          conf.excludeRules = newConfExcludeRules
         }
         if (conf.canBeResolved) {
           queue.addAll(conf.resolvedConfiguration.firstLevelModuleDependencies)
@@ -125,7 +127,7 @@ subprojects {
       while (!queue.isEmpty()) {
         def dep = queue.removeFirst()
 
-        // Skip any artifacts from other Solr modules (they will be resolved there).
+        // Skip any artifacts from other Solr Modules (they will be resolved there).
         if (dep.moduleGroup == "org.apache.solr") {
           continue
         }
@@ -178,7 +180,7 @@ subprojects {
       }
 
       if (errors) {
-        def msg = "Dependency checksum validation failed:\n  - " + errors.join("\n  - ")
+        def msg = "Dependency checksum validation failed:\n  - " + errors.join("\n  - ") + "\n\nThese missing checksums can be generated using:\n  ./gradlew updateLicenses"
         if (failOnError) {
           throw new GradleException(msg)
         } else {

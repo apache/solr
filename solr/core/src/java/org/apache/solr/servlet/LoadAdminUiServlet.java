@@ -15,73 +15,65 @@
  * limitations under the License.
  */
 package org.apache.solr.servlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
-
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.CloseShieldOutputStream;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.text.StringEscapeUtils;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 
 /**
  * A simple servlet to load the Solr Admin UI
- * 
+ *
  * @since solr 4.0
  */
 public final class LoadAdminUiServlet extends BaseSolrServlet {
 
   // check system properties for whether or not admin UI is disabled, default is false
-  private static final boolean disabled = Boolean.parseBoolean(System.getProperty("disableAdminUI", "false"));
+  private static final boolean disabled =
+      Boolean.parseBoolean(System.getProperty("disableAdminUI", "false"));
 
   @Override
   public void doGet(HttpServletRequest _request, HttpServletResponse _response) throws IOException {
-    if(disabled){
-      _response.sendError(404, "Solr Admin UI is disabled. To enable it, change the default value of SOLR_ADMIN_UI_" +
-          "ENABLED in bin/solr.in.sh or solr.in.cmd.");
+    if (disabled) {
+      _response.sendError(
+          404,
+          "Solr Admin UI is disabled. To enable it, change the default value of SOLR_ADMIN_UI_"
+              + "ENABLED in bin/solr.in.sh or solr.in.cmd.");
       return;
     }
     HttpServletRequest request = ServletUtils.closeShield(_request, false);
     HttpServletResponse response = ServletUtils.closeShield(_response, false);
 
-
-    response.addHeader("X-Frame-Options", "DENY"); // security: SOLR-7966 - avoid clickjacking for admin interface
+    response.addHeader(
+        "X-Frame-Options", "DENY"); // security: SOLR-7966 - avoid clickjacking for admin interface
 
     // This attribute is set by the SolrDispatchFilter
     String admin = request.getRequestURI().substring(request.getContextPath().length());
     CoreContainer cores = (CoreContainer) request.getAttribute("org.apache.solr.CoreContainer");
     InputStream in = getServletContext().getResourceAsStream(admin);
     Writer out = null;
-    if(in != null && cores != null) {
+    if (in != null && cores != null) {
       try {
         response.setCharacterEncoding("UTF-8");
         response.setContentType("text/html");
 
         // We have to close this to flush OutputStreamWriter buffer
-        out = new OutputStreamWriter(new CloseShieldOutputStream(response.getOutputStream()), StandardCharsets.UTF_8);
+        out =
+            new OutputStreamWriter(
+                CloseShieldOutputStream.wrap(response.getOutputStream()), StandardCharsets.UTF_8);
 
-        String html = IOUtils.toString(in, "UTF-8");
         Package pack = SolrCore.class.getPackage();
-
-        String[] search = new String[] { 
-            "${contextPath}", 
-            "${adminPath}",
-            "${version}" 
-        };
-        String[] replace = new String[] {
-            StringEscapeUtils.escapeEcmaScript(request.getContextPath()),
-            StringEscapeUtils.escapeEcmaScript(CommonParams.CORES_HANDLER_PATH),
-            StringEscapeUtils.escapeEcmaScript(pack.getSpecificationVersion())
-        };
-        
-        out.write( StringUtils.replaceEach(html, search, replace) );
+        String html =
+            IOUtils.toString(in, StandardCharsets.UTF_8)
+                .replace("${version}", pack.getSpecificationVersion());
+        out.write(html);
       } finally {
         IOUtils.closeQuietly(in);
         IOUtils.closeQuietly(out);
@@ -90,5 +82,4 @@ public final class LoadAdminUiServlet extends BaseSolrServlet {
       response.sendError(404);
     }
   }
-
 }

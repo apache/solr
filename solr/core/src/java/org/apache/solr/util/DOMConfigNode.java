@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-
 import org.apache.solr.cluster.api.SimpleMap;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.util.DOMUtil;
@@ -30,14 +29,11 @@ import org.apache.solr.common.util.WrappedSimpleMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-/**
- * Read using DOM
- */
+/** Read using DOM */
 public class DOMConfigNode implements ConfigNode {
 
   private final Node node;
   SimpleMap<String> attrs;
-
 
   @Override
   public String name() {
@@ -57,26 +53,25 @@ public class DOMConfigNode implements ConfigNode {
   public SimpleMap<String> attributes() {
     if (attrs != null) return attrs;
     Map<String, String> attrs = DOMUtil.toMap(node.getAttributes());
-    return this.attrs = attrs.size() == 0 ?
-            EMPTY :
-            new WrappedSimpleMap<>(attrs);
+    return this.attrs = attrs.size() == 0 ? EMPTY : new WrappedSimpleMap<>(attrs);
   }
 
   @Override
   public ConfigNode child(String name) {
-    Node n  =  DOMUtil.getChild(node, name);
-    return n == null? null: new DOMConfigNode(n);
+    Node n = DOMUtil.getChild(node, name);
+    return n == null ? null : new DOMConfigNode(n);
   }
 
   @Override
   public List<ConfigNode> getAll(String name) {
     List<ConfigNode> result = new ArrayList<>();
-    forEachChild(it -> {
-      if (name.equals(it.name())) {
-        result.add(it);
-      }
-      return Boolean.TRUE;
-    });
+    forEachChild(
+        it -> {
+          if (name.equals(it.name())) {
+            result.add(it);
+          }
+          return Boolean.TRUE;
+        });
     return result;
   }
 
@@ -85,11 +80,11 @@ public class DOMConfigNode implements ConfigNode {
     NodeList nlst = node.getChildNodes();
     for (int i = 0; i < nlst.getLength(); i++) {
       Node item = nlst.item(i);
-      if(item.getNodeType() != Node.ELEMENT_NODE) continue;
+      if (item.getNodeType() != Node.ELEMENT_NODE) continue;
       Boolean toContinue = fun.apply(new DOMConfigNode(item));
-      if (Boolean.FALSE == toContinue) break;
+      if (Boolean.FALSE.equals(toContinue)) break;
     }
   }
-  private static final SimpleMap<String> EMPTY = new WrappedSimpleMap<>(Collections.emptyMap());
 
+  private static final SimpleMap<String> EMPTY = new WrappedSimpleMap<>(Collections.emptyMap());
 }

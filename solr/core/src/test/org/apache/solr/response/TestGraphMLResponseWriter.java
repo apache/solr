@@ -18,20 +18,19 @@
 package org.apache.solr.response;
 
 import java.io.StringWriter;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
-
+import java.util.List;
+import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.graph.Traversal;
-import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
-import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
+import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.BaseTestHarness;
 import org.junit.BeforeClass;
@@ -41,17 +40,18 @@ public class TestGraphMLResponseWriter extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
-    initCore("solrconfig.xml","schema12.xml");
+    initCore("solrconfig.xml", "schema12.xml");
   }
 
   @Test
   @SuppressWarnings({"unchecked"})
   public void testGraphMLOutput() throws Exception {
-    SolrQueryRequest request = req("blah", "blah"); // Just need a request to attach the stream and traversal to.
+    // Just need a request to attach the stream and traversal to.
+    SolrQueryRequest request = req("blah", "blah");
     SolrQueryResponse response = new SolrQueryResponse();
     @SuppressWarnings({"rawtypes"})
     Map context = request.getContext();
-    TupleStream stream = new TestStream(); //Simulates a GatherNodesStream
+    TupleStream stream = new TestStream(); // Simulates a GatherNodesStream
     Traversal traversal = new Traversal();
     context.put("traversal", traversal);
     context.put("stream", stream);
@@ -61,30 +61,32 @@ public class TestGraphMLResponseWriter extends SolrTestCaseJ4 {
     graphMLResponseWriter.write(writer, request, response);
     String graphML = writer.toString();
 
-    //Validate the nodes
-    String error = BaseTestHarness.validateXPath(graphML,
-                                   "//graph/node[1][@id ='bill']",
-                                   "//graph/node[2][@id ='jim']",
-                                   "//graph/node[3][@id ='max']");
-    if(error != null) {
+    // Validate the nodes
+    String error =
+        BaseTestHarness.validateXPath(
+            graphML,
+            "//graph/node[1][@id ='bill']",
+            "//graph/node[2][@id ='jim']",
+            "//graph/node[3][@id ='max']");
+    if (error != null) {
       throw new Exception(error);
     }
-    //Validate the edges
-    error = BaseTestHarness.validateXPath(graphML,
-                            "//graph/edge[1][@source ='jim']",
-                            "//graph/edge[1][@target ='bill']",
-                            "//graph/edge[2][@source ='max']",
-                            "//graph/edge[2][@target ='bill']",
-                            "//graph/edge[3][@source ='max']",
-                            "//graph/edge[3][@target ='jim']",
-                            "//graph/edge[4][@source ='jim']",
-                            "//graph/edge[4][@target ='max']"
-        );
+    // Validate the edges
+    error =
+        BaseTestHarness.validateXPath(
+            graphML,
+            "//graph/edge[1][@source ='jim']",
+            "//graph/edge[1][@target ='bill']",
+            "//graph/edge[2][@source ='max']",
+            "//graph/edge[2][@target ='bill']",
+            "//graph/edge[3][@source ='max']",
+            "//graph/edge[3][@target ='jim']",
+            "//graph/edge[4][@source ='jim']",
+            "//graph/edge[4][@target ='max']");
 
-    if(error != null) {
+    if (error != null) {
       throw new Exception(error);
     }
-
   }
 
   @SuppressWarnings({"unchecked"})
@@ -93,7 +95,7 @@ public class TestGraphMLResponseWriter extends SolrTestCaseJ4 {
     private Iterator<Tuple> tuples;
 
     public TestStream() {
-        //Create some nodes
+      // Create some nodes
       List<Tuple> testTuples = new ArrayList<>();
       @SuppressWarnings({"rawtypes"})
       Map m1 = new HashMap();
@@ -124,25 +126,26 @@ public class TestGraphMLResponseWriter extends SolrTestCaseJ4 {
       tuples = testTuples.iterator();
     }
 
+    @Override
     public StreamComparator getStreamSort() {
       return null;
     }
 
-    public void close() {
+    @Override
+    public void close() {}
 
-    }
+    @Override
+    public void open() {}
 
-    public void open() {
-
-    }
-
+    @Override
     public List<TupleStream> children() {
       return null;
     }
 
+    @Override
     @SuppressWarnings({"unchecked"})
     public Tuple read() {
-      if(tuples.hasNext()) {
+      if (tuples.hasNext()) {
         return tuples.next();
       } else {
         @SuppressWarnings({"rawtypes"})
@@ -152,13 +155,12 @@ public class TestGraphMLResponseWriter extends SolrTestCaseJ4 {
       }
     }
 
-    public void setStreamContext(StreamContext streamContext) {
+    @Override
+    public void setStreamContext(StreamContext streamContext) {}
 
-    }
-
+    @Override
     public Explanation toExplanation(StreamFactory factory) {
       return null;
     }
-
   }
 }

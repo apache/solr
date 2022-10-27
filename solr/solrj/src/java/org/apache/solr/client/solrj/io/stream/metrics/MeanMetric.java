@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.io.stream.metrics;
 
 import java.io.IOException;
 import java.util.Locale;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
@@ -36,83 +35,93 @@ public class MeanMetric extends Metric {
   private long longSum;
   private long count;
 
-  public MeanMetric(String columnName){
+  public MeanMetric(String columnName) {
     init("avg", columnName, false);
   }
 
-  public MeanMetric(String columnName, boolean outputLong){
+  public MeanMetric(String columnName, boolean outputLong) {
     init("avg", columnName, outputLong);
   }
 
-  public MeanMetric(StreamExpression expression, StreamFactory factory) throws IOException{
+  public MeanMetric(StreamExpression expression, StreamFactory factory) throws IOException {
     // grab all parameters out
     String functionName = expression.getFunctionName();
     String columnName = factory.getValueOperand(expression, 0);
     String outputLong = factory.getValueOperand(expression, 1);
 
-
     // validate expression contains only what we want.
-    if(null == columnName){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expected %s(columnName)", expression, functionName));
+    if (null == columnName) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expected %s(columnName)",
+              expression,
+              functionName));
     }
 
     boolean ol = false;
-    if(outputLong != null) {
+    if (outputLong != null) {
       ol = Boolean.parseBoolean(outputLong);
     }
-    
+
     init(functionName, columnName, ol);
   }
-  
-  private void init(String functionName, String columnName, boolean outputLong){
+
+  private void init(String functionName, String columnName, boolean outputLong) {
     this.columnName = columnName;
     this.outputLong = outputLong;
     setFunctionName(functionName);
     setIdentifier(functionName, "(", columnName, ")");
   }
-  
+
+  @Override
   public void update(Tuple tuple) {
     ++count;
     Object o = tuple.get(columnName);
-    if(o instanceof Double) {
+    if (o instanceof Double) {
       Double d = (Double) o;
       doubleSum += d;
-    } else if(o instanceof Float) {
+    } else if (o instanceof Float) {
       Float f = (Float) o;
       doubleSum += f.doubleValue();
-    } else if(o instanceof Integer) {
-      Integer i = (Integer)o;
+    } else if (o instanceof Integer) {
+      Integer i = (Integer) o;
       longSum += i.longValue();
     } else if (o instanceof Long) {
-      Long l = (Long)o;
+      Long l = (Long) o;
       longSum += l;
     }
   }
 
+  @Override
   public Metric newInstance() {
     return new MeanMetric(columnName, outputLong);
   }
 
+  @Override
   public String[] getColumns() {
-    return new String[]{columnName};
+    return new String[] {columnName};
   }
 
+  @Override
   public Number getValue() {
-    double dcount = (double)count;
-    if(longSum == 0) {
-      return doubleSum/dcount;
+    double dcount = (double) count;
+    if (longSum == 0) {
+      return doubleSum / dcount;
     } else {
-      double mean = longSum/dcount;
-      if(outputLong) {
+      double mean = longSum / dcount;
+      if (outputLong) {
         return Math.round(mean);
       } else {
         return mean;
       }
     }
   }
-  
+
   @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
-    return new StreamExpression(getFunctionName()).withParameter(columnName).withParameter(Boolean.toString(outputLong));
+    return new StreamExpression(getFunctionName())
+        .withParameter(columnName)
+        .withParameter(Boolean.toString(outputLong));
   }
 }

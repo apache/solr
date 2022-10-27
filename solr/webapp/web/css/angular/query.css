@@ -165,3 +165,12 @@ limitations under the License.
 #content #query #result #response
 {
 }
+
+#content #query #form label a.help
+{
+    background-image: url( ../../img/ico/question-white.png );
+    background-position: 0 50%;
+    color: #4D4D4D;
+    padding-left: 21px;
+    margin-left: 5px;
+}

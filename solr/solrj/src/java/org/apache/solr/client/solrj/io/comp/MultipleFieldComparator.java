@@ -22,20 +22,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 
-
-/**
- *  Wraps multiple Comparators to provide sub-sorting.
- **/
-
+/** Wraps multiple Comparators to provide sub-sorting. */
 public class MultipleFieldComparator implements StreamComparator {
 
   private static final long serialVersionUID = 1;
@@ -47,14 +41,15 @@ public class MultipleFieldComparator implements StreamComparator {
     this.comps = comps;
   }
 
-  public StreamComparator[] getComps(){
+  public StreamComparator[] getComps() {
     return comps;
   }
-  
+
+  @Override
   public int compare(Tuple t1, Tuple t2) {
-    for(StreamComparator comp : comps) {
+    for (StreamComparator comp : comps) {
       int i = comp.compare(t1, t2);
-      if(i != 0) {
+      if (i != 0) {
         return i;
       }
     }
@@ -65,7 +60,7 @@ public class MultipleFieldComparator implements StreamComparator {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (!(o instanceof MultipleFieldComparator)) return false;
     MultipleFieldComparator that = (MultipleFieldComparator) o;
     return Arrays.equals(comps, that.comps);
   }
@@ -78,75 +73,78 @@ public class MultipleFieldComparator implements StreamComparator {
   @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
     StringBuilder sb = new StringBuilder();
-    for(StreamComparator comp : comps){
-      if(comp instanceof Expressible){
-        if(sb.length() > 0){ sb.append(","); }
-        sb.append(((Expressible)comp).toExpression(factory));
-      }
-      else{
-        throw new IOException("This MultiComp contains a non-expressible comparator - it cannot be converted to an expression");
+    for (StreamComparator comp : comps) {
+      if (comp != null) {
+        if (sb.length() > 0) {
+          sb.append(",");
+        }
+        sb.append(comp.toExpression(factory));
+      } else {
+        throw new IOException(
+            "This MultiComp contains a non-expressible comparator - it cannot be converted to an expression");
       }
     }
-    
+
     return new StreamExpressionValue(sb.toString());
   }
-  
+
   @Override
-  public boolean isDerivedFrom(StreamComparator base){
-    if(null == base){ return false; }
-    if(base instanceof MultipleFieldComparator){
-      MultipleFieldComparator baseComp = (MultipleFieldComparator)base;
-      
-      if(baseComp.comps.length >= comps.length){
-        for(int idx = 0; idx < comps.length; ++idx){
-          if(!comps[idx].isDerivedFrom(baseComp.comps[idx])){
+  public boolean isDerivedFrom(StreamComparator base) {
+    if (null == base) {
+      return false;
+    }
+    if (base instanceof MultipleFieldComparator) {
+      MultipleFieldComparator baseComp = (MultipleFieldComparator) base;
+
+      if (baseComp.comps.length >= comps.length) {
+        for (int idx = 0; idx < comps.length; ++idx) {
+          if (!comps[idx].isDerivedFrom(baseComp.comps[idx])) {
             return false;
           }
         }
-        
+
         return true;
       }
     }
-    
+
     return false;
   }
 
   @Override
   public Explanation toExplanation(StreamFactory factory) throws IOException {
     return new Explanation(comparatorNodeId.toString())
-      .withExpressionType(ExpressionType.SORTER)
-      .withImplementingClass(getClass().getName())
-      .withExpression(toExpression(factory).toString());
+        .withExpressionType(ExpressionType.SORTER)
+        .withImplementingClass(getClass().getName())
+        .withExpression(toExpression(factory).toString());
   }
-  
+
   @Override
-  public MultipleFieldComparator copyAliased(Map<String,String> aliases){
+  public MultipleFieldComparator copyAliased(Map<String, String> aliases) {
     StreamComparator[] aliasedComps = new StreamComparator[comps.length];
-    
-    for(int idx = 0; idx < comps.length; ++idx){
+
+    for (int idx = 0; idx < comps.length; ++idx) {
       aliasedComps[idx] = comps[idx].copyAliased(aliases);
     }
-    
+
     return new MultipleFieldComparator(aliasedComps);
   }
-  
+
   @Override
-  public StreamComparator append(StreamComparator other){
+  public StreamComparator append(StreamComparator other) {
     List<StreamComparator> newComps = new ArrayList<>();
-    
-    for(StreamComparator comp : comps){
+
+    for (StreamComparator comp : comps) {
       newComps.add(comp);
     }
-    
-    if(other instanceof FieldComparator){
+
+    if (other instanceof FieldComparator) {
       newComps.add(other);
-    }
-    else if(other instanceof MultipleFieldComparator){
-      for(StreamComparator comp : ((MultipleFieldComparator)other).comps){
+    } else if (other instanceof MultipleFieldComparator) {
+      for (StreamComparator comp : ((MultipleFieldComparator) other).comps) {
         newComps.add(comp);
       }
     }
-    
+
     return new MultipleFieldComparator(newComps.toArray(new StreamComparator[newComps.size()]));
   }
 }

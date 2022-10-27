@@ -17,17 +17,13 @@
 
 package org.apache.solr.packagemanager;
 
-
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 
-/**
- * Describes a package (along with all released versions) as it appears in a repository.
- */
+/** Describes a package (along with all released versions) as it appears in a repository. */
 public class SolrPackage implements Comparable<SolrPackage>, ReflectMapWriter {
 
   @JsonProperty("name")
@@ -87,10 +83,11 @@ public class SolrPackage implements Comparable<SolrPackage>, ReflectMapWriter {
 
   public static class Plugin implements ReflectMapWriter {
     public String name;
-    
+
     @JsonProperty("type")
-    public String type = "collection"; // if not specified, assume collection level plugin (backward compatability)
-    
+    public String type =
+        "collection"; // if not specified, assume collection level plugin (backward compatability)
+
     @JsonProperty("setup-command")
     public Command setupCommand;
 
@@ -134,11 +131,10 @@ public class SolrPackage implements Comparable<SolrPackage>, ReflectMapWriter {
 
     @JsonProperty("expected")
     public String expected;
-    
+
     @Override
-      public String toString() {
-        return jsonStr();
-      }
+    public String toString() {
+      return jsonStr();
+    }
   }
 }
-

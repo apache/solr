@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.io.stream;
 
+import static org.apache.solr.common.params.CommonParams.ID;
+
 import java.io.IOException;
 import java.lang.Thread.State;
 import java.lang.invoke.MethodHandles;
@@ -27,23 +29,20 @@ import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.params.CommonParams.ID;
 
 /**
  * @since 6.0.0
@@ -66,51 +65,65 @@ public class DaemonStream extends TupleStream implements Expressible {
   private boolean closed = false;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public DaemonStream(StreamExpression expression, StreamFactory factory) throws IOException{
+  public DaemonStream(StreamExpression expression, StreamFactory factory) throws IOException {
 
-    List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
+    List<StreamExpression> streamExpressions =
+        factory.getExpressionOperandsRepresentingTypes(
+            expression, Expressible.class, TupleStream.class);
 
     TupleStream tupleStream = factory.constructStream(streamExpressions.get(0));
 
     StreamExpressionNamedParameter idExpression = factory.getNamedOperand(expression, ID);
-    StreamExpressionNamedParameter runExpression = factory.getNamedOperand(expression, "runInterval");
-    StreamExpressionNamedParameter queueExpression = factory.getNamedOperand(expression, "queueSize");
-    StreamExpressionNamedParameter terminateExpression = factory.getNamedOperand(expression, "terminate");
-
+    StreamExpressionNamedParameter runExpression =
+        factory.getNamedOperand(expression, "runInterval");
+    StreamExpressionNamedParameter queueExpression =
+        factory.getNamedOperand(expression, "queueSize");
+    StreamExpressionNamedParameter terminateExpression =
+        factory.getNamedOperand(expression, "terminate");
 
     String id = null;
     long runInterval = 0L;
     int queueSize = 0;
     boolean terminate = false;
 
-    if(idExpression == null) {
+    if (idExpression == null) {
       throw new IOException("Invalid expression id parameter expected");
     } else {
       id = ((StreamExpressionValue) idExpression.getParameter()).getValue();
     }
 
-    if(runExpression == null) {
+    if (runExpression == null) {
       runInterval = 2000;
     } else {
-      runInterval = Long.parseLong(((StreamExpressionValue) runExpression.getParameter()).getValue());
+      runInterval =
+          Long.parseLong(((StreamExpressionValue) runExpression.getParameter()).getValue());
     }
 
-    if(queueExpression != null) {
-       queueSize= Integer.parseInt(((StreamExpressionValue) queueExpression.getParameter()).getValue());
+    if (queueExpression != null) {
+      queueSize =
+          Integer.parseInt(((StreamExpressionValue) queueExpression.getParameter()).getValue());
     }
 
-    if(terminateExpression != null) {
-      terminate = Boolean.parseBoolean(((StreamExpressionValue) terminateExpression.getParameter()).getValue());
+    if (terminateExpression != null) {
+      terminate =
+          Boolean.parseBoolean(
+              ((StreamExpressionValue) terminateExpression.getParameter()).getValue());
     }
 
-    if(1 != streamExpressions.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting a single stream but found %d",expression, streamExpressions.size()));
+    if (1 != streamExpressions.size()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting a single stream but found %d",
+              expression,
+              streamExpressions.size()));
     }
 
     init(tupleStream, id, runInterval, queueSize, terminate);
   }
 
-  public DaemonStream(TupleStream tupleStream, String id, long runInterval, int queueSize, boolean terminate) {
+  public DaemonStream(
+      TupleStream tupleStream, String id, long runInterval, int queueSize, boolean terminate) {
     init(tupleStream, id, runInterval, queueSize, terminate);
   }
 
@@ -119,45 +132,47 @@ public class DaemonStream extends TupleStream implements Expressible {
   }
 
   @Override
-  public StreamExpression toExpression(StreamFactory factory) throws IOException{
+  public StreamExpression toExpression(StreamFactory factory) throws IOException {
     return toExpression(factory, true);
   }
-  
-  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams) throws IOException {
+
+  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams)
+      throws IOException {
     // function name
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
 
-    if(includeStreams){
+    if (includeStreams) {
       // streams
-      if(tupleStream instanceof Expressible){
-        expression.addParameter(((Expressible)tupleStream).toExpression(factory));
+      if (tupleStream instanceof Expressible) {
+        expression.addParameter(((Expressible) tupleStream).toExpression(factory));
       } else {
-        throw new IOException("This UniqueStream contains a non-expressible TupleStream - it cannot be converted to an expression");
+        throw new IOException(
+            "This UniqueStream contains a non-expressible TupleStream - it cannot be converted to an expression");
       }
-    }
-    else{
+    } else {
       expression.addParameter("<stream>");
     }
 
     expression.addParameter(new StreamExpressionNamedParameter(ID, id));
-    expression.addParameter(new StreamExpressionNamedParameter("runInterval", Long.toString(runInterval)));
-    expression.addParameter(new StreamExpressionNamedParameter("queueSize", Integer.toString(queueSize)));
-    expression.addParameter(new StreamExpressionNamedParameter("terminate", Boolean.toString(terminate)));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("runInterval", Long.toString(runInterval)));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("queueSize", Integer.toString(queueSize)));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("terminate", Boolean.toString(terminate)));
 
     return expression;
   }
-  
+
   @Override
   public Explanation toExplanation(StreamFactory factory) throws IOException {
 
     return new StreamExplanation(getStreamNodeId().toString())
-      .withChildren(new Explanation[] {
-        tupleStream.toExplanation(factory)
-      })
-      .withFunctionName(factory.getFunctionName(this.getClass()))
-      .withImplementingClass(this.getClass().getName())
-      .withExpressionType(ExpressionType.STREAM_DECORATOR)
-      .withExpression(toExpression(factory, false).toString());
+        .withChildren(new Explanation[] {tupleStream.toExplanation(factory)})
+        .withFunctionName(factory.getFunctionName(this.getClass()))
+        .withImplementingClass(this.getClass().getName())
+        .withExpressionType(ExpressionType.STREAM_DECORATOR)
+        .withExpression(toExpression(factory, false).toString());
   }
 
   public int remainingCapacity() {
@@ -168,14 +183,15 @@ public class DaemonStream extends TupleStream implements Expressible {
     init(tupleStream, id, runInterval, queueSize, false);
   }
 
-  public void init(TupleStream tupleStream, String id, long runInterval, int queueSize, boolean terminate) {
+  public void init(
+      TupleStream tupleStream, String id, long runInterval, int queueSize, boolean terminate) {
     this.tupleStream = tupleStream;
     this.id = id;
     this.runInterval = runInterval;
     this.queueSize = queueSize;
     this.terminate = terminate;
 
-    if(queueSize > 0) {
+    if (queueSize > 0) {
       queue = new ArrayBlockingQueue<>(queueSize);
       eatTuples = false;
     } else {
@@ -183,13 +199,15 @@ public class DaemonStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public int hashCode() {
     return id.hashCode();
   }
 
+  @Override
   public boolean equals(Object o) {
-    if(o instanceof DaemonStream) {
-      return id.equals(((DaemonStream)o).id);
+    if (o instanceof DaemonStream) {
+      return id.equals(((DaemonStream) o).id);
     }
     return false;
   }
@@ -198,6 +216,7 @@ public class DaemonStream extends TupleStream implements Expressible {
     return id;
   }
 
+  @Override
   public void open() throws IOException {
     if (this.streamRunner != null && this.closed == false) {
       log.error("There is already a running daemon named '{}', no action taken", id);
@@ -205,15 +224,17 @@ public class DaemonStream extends TupleStream implements Expressible {
     }
     this.closed = false;
     this.streamRunner = new StreamRunner(runInterval, id);
-    ExecutorService service = ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("DaemonStream-" + id));
+    ExecutorService service =
+        ExecutorUtil.newMDCAwareSingleThreadExecutor(
+            new SolrNamedThreadFactory("DaemonStream-" + id));
     try {
       service.submit(this.streamRunner);
-    }
-    finally {
+    } finally {
       service.shutdown();
     }
   }
 
+  @Override
   public Tuple read() throws IOException {
     try {
       return queue.take();
@@ -222,10 +243,12 @@ public class DaemonStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public StreamComparator getStreamSort() {
     return tupleStream.getStreamSort();
   }
 
+  @Override
   public void setStreamContext(StreamContext streamContext) {
     this.tupleStream.setStreamContext(streamContext);
   }
@@ -234,8 +257,9 @@ public class DaemonStream extends TupleStream implements Expressible {
     streamRunner.setShutdown(true);
   }
 
+  @Override
   public void close() {
-    if(closed) {
+    if (closed) {
       return;
     }
     if (streamRunner != null) {
@@ -244,6 +268,7 @@ public class DaemonStream extends TupleStream implements Expressible {
     this.closed = true;
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> children = new ArrayList<>();
     children.add(tupleStream);
@@ -312,6 +337,7 @@ public class DaemonStream extends TupleStream implements Expressible {
       }
     }
 
+    @Override
     public void run() {
       executingThread = Thread.currentThread();
       try {
@@ -340,14 +366,14 @@ public class DaemonStream extends TupleStream implements Expressible {
                 if (tuple.getFields().containsKey("sleepMillis")) {
                   this.sleepMillis = tuple.getLong("sleepMillis");
 
-                  if(terminate && sleepMillis > 0) {
-                    //TopicStream provides sleepMillis > 0 if the last run had no Tuples.
-                    //This means the topic queue is empty. Time to terminate.
-                    //Remove ourselves from the daemons map.
-                    if(daemons != null) {
+                  if (terminate && sleepMillis > 0) {
+                    // TopicStream provides sleepMillis > 0 if the last run had no Tuples.
+                    // This means the topic queue is empty. Time to terminate.
+                    // Remove ourselves from the daemons map.
+                    if (daemons != null) {
                       daemons.remove(id);
                     }
-                    //Break out of the thread loop and end the run.
+                    // Break out of the thread loop and end the run.
                     break OUTER;
                   }
 
@@ -371,8 +397,8 @@ public class DaemonStream extends TupleStream implements Expressible {
               break OUTER;
             }
           } catch (Throwable t) {
-            log.error("Fatal Error in DaemonStream: {}",  id, t);
-            //For anything other then IOException break out of the loop and shutdown the thread.
+            log.error("Fatal Error in DaemonStream: {}", id, t);
+            // For anything other then IOException break out of the loop and shutdown the thread.
             break OUTER;
           } finally {
             try {
@@ -398,7 +424,7 @@ public class DaemonStream extends TupleStream implements Expressible {
         }
       }
 
-      if(!eatTuples) {
+      if (!eatTuples) {
         try {
           queue.put(Tuple.EOF());
         } catch (InterruptedException e) {

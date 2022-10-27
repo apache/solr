@@ -16,11 +16,18 @@
  */
 package org.apache.solr.uninverting;
 
-import org.apache.lucene.analysis.MockAnalyzer;
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
@@ -31,28 +38,20 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.tests.analysis.MockAnalyzer;
+import org.apache.lucene.tests.index.RandomIndexWriter;
+import org.apache.lucene.tests.util.TestUtil;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.index.SlowCompositeReaderWrapper;
 import org.apache.solr.legacy.LegacyDoubleField;
 import org.apache.solr.legacy.LegacyFloatField;
 import org.apache.solr.legacy.LegacyIntField;
 import org.apache.solr.legacy.LegacyLongField;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
-import org.apache.solr.SolrTestCase;
-import org.apache.lucene.util.TestUtil;
-import org.apache.solr.index.SlowCompositeReaderWrapper;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 /** random assortment of tests against legacy numerics */
 public class TestLegacyFieldCache extends SolrTestCase {
@@ -64,7 +63,11 @@ public class TestLegacyFieldCache extends SolrTestCase {
   public static void beforeClass() throws Exception {
     NUM_DOCS = atLeast(500);
     directory = newDirectory();
-    RandomIndexWriter writer= new RandomIndexWriter(random(), directory, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+    RandomIndexWriter writer =
+        new RandomIndexWriter(
+            random(),
+            directory,
+            newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     long theLong = Long.MAX_VALUE;
     double theDouble = Double.MAX_VALUE;
     int theInt = Integer.MAX_VALUE;
@@ -72,17 +75,17 @@ public class TestLegacyFieldCache extends SolrTestCase {
     if (VERBOSE) {
       System.out.println("TEST: setUp");
     }
-    for (int i = 0; i < NUM_DOCS; i++){
+    for (int i = 0; i < NUM_DOCS; i++) {
       Document doc = new Document();
       doc.add(new LegacyLongField("theLong", theLong--, Field.Store.NO));
       doc.add(new LegacyDoubleField("theDouble", theDouble--, Field.Store.NO));
       doc.add(new LegacyIntField("theInt", theInt--, Field.Store.NO));
       doc.add(new LegacyFloatField("theFloat", theFloat--, Field.Store.NO));
-      if (i%2 == 0) {
+      if (i % 2 == 0) {
         doc.add(new LegacyIntField("sparse", i, Field.Store.NO));
       }
 
-      if (i%2 == 0) {
+      if (i % 2 == 0) {
         doc.add(new LegacyIntField("numInt", i, Field.Store.NO));
       }
       writer.addDocument(doc);
@@ -107,12 +110,13 @@ public class TestLegacyFieldCache extends SolrTestCase {
 
   public void test() throws IOException {
     FieldCache cache = FieldCache.DEFAULT;
-    NumericDocValues doubles = cache.getNumerics(reader, "theDouble", FieldCache.LEGACY_DOUBLE_PARSER);
+    NumericDocValues doubles =
+        cache.getNumerics(reader, "theDouble", FieldCache.LEGACY_DOUBLE_PARSER);
     for (int i = 0; i < NUM_DOCS; i++) {
       assertEquals(i, doubles.nextDoc());
       assertEquals(Double.doubleToLongBits(Double.MAX_VALUE - i), doubles.longValue());
     }
-    
+
     NumericDocValues longs = cache.getNumerics(reader, "theLong", FieldCache.LEGACY_LONG_PARSER);
     for (int i = 0; i < NUM_DOCS; i++) {
       assertEquals(i, longs.nextDoc());
@@ -124,7 +128,7 @@ public class TestLegacyFieldCache extends SolrTestCase {
       assertEquals(i, ints.nextDoc());
       assertEquals(Integer.MAX_VALUE - i, ints.longValue());
     }
-    
+
     NumericDocValues floats = cache.getNumerics(reader, "theFloat", FieldCache.LEGACY_FLOAT_PARSER);
     for (int i = 0; i < NUM_DOCS; i++) {
       assertEquals(i, floats.nextDoc());
@@ -132,19 +136,35 @@ public class TestLegacyFieldCache extends SolrTestCase {
     }
 
     Bits docsWithField = cache.getDocsWithField(reader, "theLong", null);
-    assertSame("Second request to cache return same array", docsWithField, cache.getDocsWithField(reader, "theLong", null));
-    assertTrue("docsWithField(theLong) must be class Bits.MatchAllBits", docsWithField instanceof Bits.MatchAllBits);
-    assertTrue("docsWithField(theLong) Size: " + docsWithField.length() + " is not: " + NUM_DOCS, docsWithField.length() == NUM_DOCS);
+    assertSame(
+        "Second request to cache return same array",
+        docsWithField,
+        cache.getDocsWithField(reader, "theLong", null));
+    assertTrue(
+        "docsWithField(theLong) must be class Bits.MatchAllBits",
+        docsWithField instanceof Bits.MatchAllBits);
+    assertEquals(
+        "docsWithField(theLong) Size: " + docsWithField.length() + " is not: " + NUM_DOCS,
+        docsWithField.length(),
+        NUM_DOCS);
     for (int i = 0; i < docsWithField.length(); i++) {
       assertTrue(docsWithField.get(i));
     }
-    
+
     docsWithField = cache.getDocsWithField(reader, "sparse", null);
-    assertSame("Second request to cache return same array", docsWithField, cache.getDocsWithField(reader, "sparse", null));
-    assertFalse("docsWithField(sparse) must not be class Bits.MatchAllBits", docsWithField instanceof Bits.MatchAllBits);
-    assertTrue("docsWithField(sparse) Size: " + docsWithField.length() + " is not: " + NUM_DOCS, docsWithField.length() == NUM_DOCS);
+    assertSame(
+        "Second request to cache return same array",
+        docsWithField,
+        cache.getDocsWithField(reader, "sparse", null));
+    assertFalse(
+        "docsWithField(sparse) must not be class Bits.MatchAllBits",
+        docsWithField instanceof Bits.MatchAllBits);
+    assertEquals(
+        "docsWithField(sparse) Size: " + docsWithField.length() + " is not: " + NUM_DOCS,
+        docsWithField.length(),
+        NUM_DOCS);
     for (int i = 0; i < docsWithField.length(); i++) {
-      assertEquals(i%2 == 0, docsWithField.get(i));
+      assertEquals(i % 2 == 0, docsWithField.get(i));
     }
 
     FieldCache.DEFAULT.purgeByCacheKey(reader.getCoreCacheHelper().getKey());
@@ -152,7 +172,9 @@ public class TestLegacyFieldCache extends SolrTestCase {
 
   public void testEmptyIndex() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter writer= new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())).setMaxBufferedDocs(500));
+    IndexWriter writer =
+        new IndexWriter(
+            dir, newIndexWriterConfig(new MockAnalyzer(random())).setMaxBufferedDocs(500));
     writer.close();
     IndexReader r = DirectoryReader.open(dir);
     LeafReader reader = SlowCompositeReaderWrapper.wrap(r);
@@ -182,7 +204,7 @@ public class TestLegacyFieldCache extends SolrTestCase {
     NumericDocValues ints = cache.getNumerics(reader, "sparse", FieldCache.LEGACY_INT_PARSER);
     assertEquals(4, cache.getCacheEntries().length);
     for (int i = 0; i < reader.maxDoc(); i++) {
-      if (i%2 == 0) {
+      if (i % 2 == 0) {
         assertEquals(i, ints.nextDoc());
         assertEquals(i, ints.longValue());
       }
@@ -190,13 +212,13 @@ public class TestLegacyFieldCache extends SolrTestCase {
 
     NumericDocValues numInts = cache.getNumerics(reader, "numInt", FieldCache.LEGACY_INT_PARSER);
     for (int i = 0; i < reader.maxDoc(); i++) {
-      if (i%2 == 0) {
+      if (i % 2 == 0) {
         assertEquals(i, numInts.nextDoc());
         assertEquals(i, numInts.longValue());
       }
     }
   }
-  
+
   public void testGetDocsWithFieldThreadSafety() throws Exception {
     final FieldCache cache = FieldCache.DEFAULT;
     cache.purgeAllCaches();
@@ -206,60 +228,64 @@ public class TestLegacyFieldCache extends SolrTestCase {
     final AtomicBoolean failed = new AtomicBoolean();
     final AtomicInteger iters = new AtomicInteger();
     final int NUM_ITER = 200 * RANDOM_MULTIPLIER;
-    final CyclicBarrier restart = new CyclicBarrier(NUM_THREADS,
-                                                    new Runnable() {
-                                                      @Override
-                                                      public void run() {
-                                                        cache.purgeAllCaches();
-                                                        iters.incrementAndGet();
-                                                      }
-                                                    });
-    for(int threadIDX=0;threadIDX<NUM_THREADS;threadIDX++) {
-      threads[threadIDX] = new Thread() {
-          @Override
-          public void run() {
+    final CyclicBarrier restart =
+        new CyclicBarrier(
+            NUM_THREADS,
+            new Runnable() {
+              @Override
+              public void run() {
+                cache.purgeAllCaches();
+                iters.incrementAndGet();
+              }
+            });
+    for (int threadIDX = 0; threadIDX < NUM_THREADS; threadIDX++) {
+      threads[threadIDX] =
+          new Thread() {
+            @Override
+            public void run() {
 
-            try {
-              while(!failed.get()) {
-                final int op = random().nextInt(3);
-                if (op == 0) {
-                  // Purge all caches & resume, once all
-                  // threads get here:
-                  restart.await();
-                  if (iters.get() >= NUM_ITER) {
-                    break;
-                  }
-                } else if (op == 1) {
-                  Bits docsWithField = cache.getDocsWithField(reader, "sparse", null);
-                  for (int i = 0; i < docsWithField.length(); i++) {
-                    assertEquals(i%2 == 0, docsWithField.get(i));
-                  }
-                } else {
-                  NumericDocValues ints = cache.getNumerics(reader, "sparse", FieldCache.LEGACY_INT_PARSER);
-                  for (int i = 0; i < reader.maxDoc(); i++) {
-                    if (i%2 == 0) {
-                      assertEquals(i, ints.nextDoc());
-                      assertEquals(i, ints.longValue());
+              try {
+                while (!failed.get()) {
+                  final int op = random().nextInt(3);
+                  if (op == 0) {
+                    // Purge all caches & resume, once all
+                    // threads get here:
+                    restart.await();
+                    if (iters.get() >= NUM_ITER) {
+                      break;
+                    }
+                  } else if (op == 1) {
+                    Bits docsWithField = cache.getDocsWithField(reader, "sparse", null);
+                    for (int i = 0; i < docsWithField.length(); i++) {
+                      assertEquals(i % 2 == 0, docsWithField.get(i));
+                    }
+                  } else {
+                    NumericDocValues ints =
+                        cache.getNumerics(reader, "sparse", FieldCache.LEGACY_INT_PARSER);
+                    for (int i = 0; i < reader.maxDoc(); i++) {
+                      if (i % 2 == 0) {
+                        assertEquals(i, ints.nextDoc());
+                        assertEquals(i, ints.longValue());
+                      }
                     }
                   }
                 }
+              } catch (Throwable t) {
+                failed.set(true);
+                restart.reset();
+                throw new RuntimeException(t);
               }
-            } catch (Throwable t) {
-              failed.set(true);
-              restart.reset();
-              throw new RuntimeException(t);
             }
-          }
-        };
+          };
       threads[threadIDX].start();
     }
 
-    for(int threadIDX=0;threadIDX<NUM_THREADS;threadIDX++) {
+    for (int threadIDX = 0; threadIDX < NUM_THREADS; threadIDX++) {
       threads[threadIDX].join();
     }
     assertFalse(failed.get());
   }
-  
+
   public void testDocValuesIntegration() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(null);
@@ -274,63 +300,71 @@ public class TestLegacyFieldCache extends SolrTestCase {
     DirectoryReader ir = iw.getReader();
     iw.close();
     LeafReader ar = getOnlyLeafReader(ir);
-    
+
     // Binary type: can be retrieved via getTerms()
-    expectThrows(IllegalStateException.class, () -> {
-      FieldCache.DEFAULT.getNumerics(ar, "binary", FieldCache.LEGACY_INT_PARSER);
-    });
-    
+    expectThrows(
+        IllegalStateException.class,
+        () -> {
+          FieldCache.DEFAULT.getNumerics(ar, "binary", FieldCache.LEGACY_INT_PARSER);
+        });
+
     // Sorted type: can be retrieved via getTerms(), getTermsIndex(), getDocTermOrds()
-    expectThrows(IllegalStateException.class, () -> {
-      FieldCache.DEFAULT.getNumerics(ar, "sorted", FieldCache.LEGACY_INT_PARSER);
-    });
-    
+    expectThrows(
+        IllegalStateException.class,
+        () -> {
+          FieldCache.DEFAULT.getNumerics(ar, "sorted", FieldCache.LEGACY_INT_PARSER);
+        });
+
     // Numeric type: can be retrieved via getInts() and so on
-    NumericDocValues numeric = FieldCache.DEFAULT.getNumerics(ar, "numeric", FieldCache.LEGACY_INT_PARSER);
+    NumericDocValues numeric =
+        FieldCache.DEFAULT.getNumerics(ar, "numeric", FieldCache.LEGACY_INT_PARSER);
     assertEquals(0, numeric.nextDoc());
     assertEquals(42, numeric.longValue());
-       
-    // SortedSet type: can be retrieved via getDocTermOrds() 
-    expectThrows(IllegalStateException.class, () -> {
-      FieldCache.DEFAULT.getNumerics(ar, "sortedset", FieldCache.LEGACY_INT_PARSER);
-    });
-    
+
+    // SortedSet type: can be retrieved via getDocTermOrds()
+    expectThrows(
+        IllegalStateException.class,
+        () -> {
+          FieldCache.DEFAULT.getNumerics(ar, "sortedset", FieldCache.LEGACY_INT_PARSER);
+        });
+
     ir.close();
     dir.close();
   }
-  
-  public void testNonexistantFields() throws Exception {
+
+  public void testNonexistentFields() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
     iw.addDocument(doc);
     DirectoryReader ir = iw.getReader();
     iw.close();
-    
+
     LeafReader ar = getOnlyLeafReader(ir);
-    
+
     final FieldCache cache = FieldCache.DEFAULT;
     cache.purgeAllCaches();
     assertEquals(0, cache.getCacheEntries().length);
-    
+
     NumericDocValues ints = cache.getNumerics(ar, "bogusints", FieldCache.LEGACY_INT_PARSER);
     assertEquals(NO_MORE_DOCS, ints.nextDoc());
-    
+
     NumericDocValues longs = cache.getNumerics(ar, "boguslongs", FieldCache.LEGACY_LONG_PARSER);
     assertEquals(NO_MORE_DOCS, longs.nextDoc());
-    
+
     NumericDocValues floats = cache.getNumerics(ar, "bogusfloats", FieldCache.LEGACY_FLOAT_PARSER);
     assertEquals(NO_MORE_DOCS, floats.nextDoc());
-    
-    NumericDocValues doubles = cache.getNumerics(ar, "bogusdoubles", FieldCache.LEGACY_DOUBLE_PARSER);
+
+    NumericDocValues doubles =
+        cache.getNumerics(ar, "bogusdoubles", FieldCache.LEGACY_DOUBLE_PARSER);
     assertEquals(NO_MORE_DOCS, doubles.nextDoc());
-    
+
     // check that we cached nothing
     assertEquals(0, cache.getCacheEntries().length);
     ir.close();
     dir.close();
   }
-  
+
   public void testNonIndexedFields() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
@@ -345,25 +379,26 @@ public class TestLegacyFieldCache extends SolrTestCase {
     iw.addDocument(doc);
     DirectoryReader ir = iw.getReader();
     iw.close();
-    
+
     LeafReader ar = getOnlyLeafReader(ir);
-    
+
     final FieldCache cache = FieldCache.DEFAULT;
     cache.purgeAllCaches();
     assertEquals(0, cache.getCacheEntries().length);
-    
+
     NumericDocValues ints = cache.getNumerics(ar, "bogusints", FieldCache.LEGACY_INT_PARSER);
     assertEquals(NO_MORE_DOCS, ints.nextDoc());
-    
+
     NumericDocValues longs = cache.getNumerics(ar, "boguslongs", FieldCache.LEGACY_LONG_PARSER);
     assertEquals(NO_MORE_DOCS, longs.nextDoc());
-    
+
     NumericDocValues floats = cache.getNumerics(ar, "bogusfloats", FieldCache.LEGACY_FLOAT_PARSER);
     assertEquals(NO_MORE_DOCS, floats.nextDoc());
-    
-    NumericDocValues doubles = cache.getNumerics(ar, "bogusdoubles", FieldCache.LEGACY_DOUBLE_PARSER);
+
+    NumericDocValues doubles =
+        cache.getNumerics(ar, "bogusdoubles", FieldCache.LEGACY_DOUBLE_PARSER);
     assertEquals(NO_MORE_DOCS, doubles.nextDoc());
-    
+
     // check that we cached nothing
     assertEquals(0, cache.getCacheEntries().length);
     ir.close();
@@ -409,7 +444,9 @@ public class TestLegacyFieldCache extends SolrTestCase {
     }
     iw.forceMerge(1);
     final DirectoryReader reader = iw.getReader();
-    final NumericDocValues longs = FieldCache.DEFAULT.getNumerics(getOnlyLeafReader(reader), "f", FieldCache.LEGACY_LONG_PARSER);
+    final NumericDocValues longs =
+        FieldCache.DEFAULT.getNumerics(
+            getOnlyLeafReader(reader), "f", FieldCache.LEGACY_LONG_PARSER);
     for (int i = 0; i < values.length; ++i) {
       if (missing.contains(i) == false) {
         assertEquals(i, longs.nextDoc());
@@ -461,7 +498,9 @@ public class TestLegacyFieldCache extends SolrTestCase {
     }
     iw.forceMerge(1);
     final DirectoryReader reader = iw.getReader();
-    final NumericDocValues ints = FieldCache.DEFAULT.getNumerics(getOnlyLeafReader(reader), "f", FieldCache.LEGACY_INT_PARSER);
+    final NumericDocValues ints =
+        FieldCache.DEFAULT.getNumerics(
+            getOnlyLeafReader(reader), "f", FieldCache.LEGACY_INT_PARSER);
     for (int i = 0; i < values.length; ++i) {
       if (missing.contains(i) == false) {
         assertEquals(i, ints.nextDoc());
@@ -473,5 +512,4 @@ public class TestLegacyFieldCache extends SolrTestCase {
     iw.close();
     dir.close();
   }
-
 }

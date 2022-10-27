@@ -16,9 +16,6 @@
  */
 package org.apache.solr.client.solrj.io;
 
-import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.params.StreamParams;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -29,46 +26,45 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.params.StreamParams;
 
 /**
- *  A simple abstraction of a record containing key/value pairs.
- *  Convenience methods are provided for returning single and multiValue String, Long and Double values.
- *  Note that ints and floats are treated as longs and doubles respectively.
- *
-**/
-
+ * A simple abstraction of a record containing key/value pairs. Convenience methods are provided for
+ * returning single and multiValue String, Long and Double values. Note that ints and floats are
+ * treated as longs and doubles respectively.
+ */
 public class Tuple implements Cloneable, MapWriter {
 
   /**
-   *  When EOF field is true the Tuple marks the end of the stream.
-   *  The EOF Tuple will not contain a record from the stream, but it may contain
-   *  metrics/aggregates gathered by underlying streams.
-   * */
+   * When EOF field is true the Tuple marks the end of the stream. The EOF Tuple will not contain a
+   * record from the stream, but it may contain metrics/aggregates gathered by underlying streams.
+   */
   public boolean EOF;
   /**
-   * When EXCEPTION field is true the Tuple marks an exception in the stream
-   * and the corresponding "EXCEPTION" field contains a related message.
+   * When EXCEPTION field is true the Tuple marks an exception in the stream and the corresponding
+   * "EXCEPTION" field contains a related message.
    */
   public boolean EXCEPTION;
 
   /**
    * Tuple fields.
+   *
    * @deprecated use {@link #getFields()} instead of this public field.
    */
-  @Deprecated
-  public Map<String, Object> fields = new HashMap<>(2);
+  @Deprecated public Map<String, Object> fields = new HashMap<>(2);
   /**
    * External serializable field names.
+   *
    * @deprecated use {@link #getFieldNames()} instead of this public field.
    */
-  @Deprecated
-  public List<String> fieldNames;
+  @Deprecated public List<String> fieldNames;
   /**
    * Mapping of external field names to internal tuple field names.
+   *
    * @deprecated use {@link #getFieldLabels()} instead of this public field.
    */
-  @Deprecated
-  public Map<String, String> fieldLabels;
+  @Deprecated public Map<String, String> fieldLabels;
 
   public Tuple() {
     // just an empty tuple
@@ -85,6 +81,7 @@ public class Tuple implements Cloneable, MapWriter {
 
   /**
    * A copy constructor.
+   *
    * @param fields map containing keys and values to be copied to this tuple
    */
   public Tuple(Map<String, ?> fields) {
@@ -93,6 +90,7 @@ public class Tuple implements Cloneable, MapWriter {
 
   /**
    * A copy constructor
+   *
    * @param original Tuple that will be copied
    */
   public Tuple(Tuple original) {
@@ -136,7 +134,9 @@ public class Tuple implements Cloneable, MapWriter {
     return String.valueOf(this.fields.get(key));
   }
 
-  public String getException() { return (String)this.fields.get(StreamParams.EXCEPTION); }
+  public String getException() {
+    return (String) this.fields.get(StreamParams.EXCEPTION);
+  }
 
   public Long getLong(String key) {
     Object o = this.fields.get(key);
@@ -148,9 +148,9 @@ public class Tuple implements Cloneable, MapWriter {
     if (o instanceof Long) {
       return (Long) o;
     } else if (o instanceof Number) {
-      return ((Number)o).longValue();
+      return ((Number) o).longValue();
     } else {
-      //Attempt to parse the long
+      // Attempt to parse the long
       return Long.parseLong(o.toString());
     }
   }
@@ -166,7 +166,7 @@ public class Tuple implements Cloneable, MapWriter {
     if (o instanceof Boolean) {
       return (Boolean) o;
     } else {
-      //Attempt to parse the Boolean
+      // Attempt to parse the Boolean
       return Boolean.parseBoolean(o.toString());
     }
   }
@@ -187,7 +187,7 @@ public class Tuple implements Cloneable, MapWriter {
     if (o instanceof Date) {
       return (Date) o;
     } else {
-      //Attempt to parse the Date from a String
+      // Attempt to parse the Date from a String
       return new Date(Instant.parse(o.toString()).toEpochMilli());
     }
   }
@@ -196,7 +196,7 @@ public class Tuple implements Cloneable, MapWriter {
   public List<Date> getDates(String key) {
     List<String> vals = (List<String>) this.fields.get(key);
     if (vals == null) return null;
-    
+
     List<Date> ret = new ArrayList<>();
     for (String dateStr : (List<String>) this.fields.get(key)) {
       ret.add(new Date(Instant.parse(dateStr).toEpochMilli()));
@@ -212,47 +212,47 @@ public class Tuple implements Cloneable, MapWriter {
     }
 
     if (o instanceof Double) {
-      return (Double)o;
+      return (Double) o;
     } else {
-      //Attempt to parse the double
+      // Attempt to parse the double
       return Double.parseDouble(o.toString());
     }
   }
 
   @SuppressWarnings({"unchecked"})
   public List<String> getStrings(String key) {
-    return (List<String>)this.fields.get(key);
+    return (List<String>) this.fields.get(key);
   }
 
   @SuppressWarnings({"unchecked"})
   public List<Long> getLongs(String key) {
-    return (List<Long>)this.fields.get(key);
+    return (List<Long>) this.fields.get(key);
   }
 
   @SuppressWarnings({"unchecked"})
   public List<Double> getDoubles(String key) {
-    return (List<Double>)this.fields.get(key);
+    return (List<Double>) this.fields.get(key);
   }
 
-  /**
-   * Return all tuple fields and their values.
-   */
+  /** Return all tuple fields and their values. */
   public Map<String, Object> getFields() {
     return this.fields;
   }
 
   /**
    * Return all tuple fields.
+   *
    * @deprecated use {@link #getFields()} instead.
    */
   @Deprecated(since = "8.6.0")
-  public Map<String,Object> getMap() {
+  public Map<String, Object> getMap() {
     return this.fields;
   }
 
   /**
-   * This represents the mapping of external field labels to the tuple's
-   * internal field names if they are different from field names.
+   * This represents the mapping of external field labels to the tuple's internal field names if
+   * they are different from field names.
+   *
    * @return field labels or null
    */
   public Map<String, String> getFieldLabels() {
@@ -264,9 +264,10 @@ public class Tuple implements Cloneable, MapWriter {
   }
 
   /**
-   * A list of field names to serialize. This list (together with
-   * the mapping in {@link #getFieldLabels()} determines what tuple values
-   * are serialized and their external (serialized) names.
+   * A list of field names to serialize. This list (together with the mapping in {@link
+   * #getFieldLabels()} determines what tuple values are serialized and their external (serialized)
+   * names.
+   *
    * @return list of external field names or null
    */
   public List<String> getFieldNames() {
@@ -278,41 +279,44 @@ public class Tuple implements Cloneable, MapWriter {
   }
 
   @SuppressWarnings({"unchecked"})
-  public List<Map<?,?>> getMaps(String key) {
-    return (List<Map<?,?>>) this.fields.get(key);
+  public List<Map<?, ?>> getMaps(String key) {
+    return (List<Map<?, ?>>) this.fields.get(key);
   }
 
-  public void setMaps(String key, List<Map<?,?>> maps) {
+  public void setMaps(String key, List<Map<?, ?>> maps) {
     this.fields.put(key, maps);
   }
 
   @SuppressWarnings({"unchecked"})
-  public Map<String, Map<?,?>> getMetrics() {
-    return (Map<String, Map<?,?>>) this.fields.get(StreamParams.METRICS);
+  public Map<String, Map<?, ?>> getMetrics() {
+    return (Map<String, Map<?, ?>>) this.fields.get(StreamParams.METRICS);
   }
 
-  public void setMetrics(Map<String, Map<?,?>> metrics) {
+  public void setMetrics(Map<String, Map<?, ?>> metrics) {
     this.fields.put(StreamParams.METRICS, metrics);
   }
 
+  @Override
   public Tuple clone() {
     Tuple clone = new Tuple(this);
     return clone;
   }
 
   /**
-   * The other tuples fields and fieldLabels will be putAll'd directly to this's fields and fieldLabels while
-   * other's fieldNames will be added such that duplicates aren't present.
+   * The other tuples fields and fieldLabels will be putAll'd directly to this's fields and
+   * fieldLabels while other's fieldNames will be added such that duplicates aren't present.
+   *
    * @param other Tuple to be merged into this.
    */
   public void merge(Tuple other) {
     this.putAll(other.getFields());
     if (other.fieldNames != null) {
       if (this.fieldNames != null) {
-        this.fieldNames.addAll(other.fieldNames.stream()
-                                       .filter(otherFieldName -> !this.fieldNames.contains(otherFieldName))
-                                       .collect(Collectors.toList()));
-     } else {
+        this.fieldNames.addAll(
+            other.fieldNames.stream()
+                .filter(otherFieldName -> !this.fieldNames.contains(otherFieldName))
+                .collect(Collectors.toList()));
+      } else {
         this.fieldNames = new ArrayList<>(other.fieldNames);
       }
     }
@@ -328,13 +332,14 @@ public class Tuple implements Cloneable, MapWriter {
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
     if (fieldNames == null) {
-      fields.forEach((k, v) -> {
-        try {
-          ew.put(k, v);
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
-      });
+      fields.forEach(
+          (k, v) -> {
+            try {
+              ew.put(k, v);
+            } catch (IOException e) {
+              throw new RuntimeException(e);
+            }
+          });
     } else {
       for (String fieldName : fieldNames) {
         String label = fieldLabels.get(fieldName);
@@ -343,9 +348,7 @@ public class Tuple implements Cloneable, MapWriter {
     }
   }
 
-  /**
-   * Create a new empty tuple marked as EOF.
-   */
+  /** Create a new empty tuple marked as EOF. */
   public static Tuple EOF() {
     Tuple tuple = new Tuple();
     tuple.put(StreamParams.EOF, true);
@@ -354,6 +357,7 @@ public class Tuple implements Cloneable, MapWriter {
 
   /**
    * Create a new empty tuple marked as EXCEPTION, and optionally EOF.
+   *
    * @param msg exception message
    * @param eof if true the tuple will be marked as EOF
    */
@@ -368,6 +372,7 @@ public class Tuple implements Cloneable, MapWriter {
 
   /**
    * Create a new empty tuple marked as EXCEPTION and optionally EOF.
+   *
    * @param t exception - full stack trace will be used as an exception message
    * @param eof if true the tuple will be marked as EOF
    */

@@ -23,7 +23,7 @@ import java.util.Map;
 /**
  * Represents a "range" facet in a JSON request query.
  *
- * Ready for use with {@link JsonQueryRequest#withFacet(String, Map)}
+ * <p>Ready for use with {@link JsonQueryRequest#withFacet(String, Map)}
  */
 public class RangeFacetMap extends JsonFacetMap<RangeFacetMap> {
   public RangeFacetMap(String field, long start, long end, long gap) {
@@ -67,7 +67,7 @@ public class RangeFacetMap extends JsonFacetMap<RangeFacetMap> {
   /**
    * Creates a "range" facet representation for a date field
    *
-   * @param gap a DateMathParser compatible time/interval String.  (e.g. "+1MONTH")
+   * @param gap a DateMathParser compatible time/interval String. (e.g. "+1MONTH")
    */
   public RangeFacetMap(String field, Date start, Date end, String gap) {
     super("range");
@@ -89,12 +89,15 @@ public class RangeFacetMap extends JsonFacetMap<RangeFacetMap> {
   }
 
   @Override
-  public RangeFacetMap getThis() { return this; }
+  public RangeFacetMap getThis() {
+    return this;
+  }
 
   /**
-   * Indicates whether the facet's last bucket should stop exactly at {@code end}, or be extended to be {@code gap} wide
+   * Indicates whether the facet's last bucket should stop exactly at {@code end}, or be extended to
+   * be {@code gap} wide
    *
-   * Defaults to false if not specified.
+   * <p>Defaults to false if not specified.
    *
    * @param hardEnd true if the final bucket should be truncated at {@code end}; false otherwise
    */
@@ -104,7 +107,11 @@ public class RangeFacetMap extends JsonFacetMap<RangeFacetMap> {
   }
 
   public enum OtherBuckets {
-    BEFORE("before"), AFTER("after"), BETWEEN("between"), NONE("none"), ALL("all");
+    BEFORE("before"),
+    AFTER("after"),
+    BETWEEN("between"),
+    NONE("none"),
+    ALL("all");
 
     private final String value;
 
@@ -112,13 +119,17 @@ public class RangeFacetMap extends JsonFacetMap<RangeFacetMap> {
       this.value = value;
     }
 
-    public String toString() { return value; }
+    @Override
+    public String toString() {
+      return value;
+    }
   }
 
   /**
-   * Indicates that an additional range bucket(s) should be computed and added to those computed for {@code start} and {@code end}
+   * Indicates that an additional range bucket(s) should be computed and added to those computed for
+   * {@code start} and {@code end}
    *
-   * See {@link OtherBuckets} for possible options.
+   * <p>See {@link OtherBuckets} for possible options.
    */
   public RangeFacetMap setOtherBuckets(OtherBuckets bucketSpecifier) {
     if (bucketSpecifier == null) {
@@ -129,9 +140,10 @@ public class RangeFacetMap extends JsonFacetMap<RangeFacetMap> {
   }
 
   /**
-   * Indicates that buckets should be returned only if they have a count of at least {@code minOccurrences}
+   * Indicates that buckets should be returned only if they have a count of at least {@code
+   * minOccurrences}
    *
-   * Defaults to '0' if not specified.
+   * <p>Defaults to '0' if not specified.
    */
   public RangeFacetMap setMinCount(int minOccurrences) {
     if (minOccurrences < 0) {

@@ -32,11 +32,12 @@ import org.w3c.dom.Element;
 // SolrQueryBuilder's queryFactory constructor argument.
 public class HandyQueryBuilder extends SolrSpanQueryBuilder {
 
-  public HandyQueryBuilder(String defaultField, Analyzer analyzer,
-      SolrQueryRequest req, SpanQueryBuilder spanFactory) {
+  public HandyQueryBuilder(
+      String defaultField, Analyzer analyzer, SolrQueryRequest req, SpanQueryBuilder spanFactory) {
     super(defaultField, analyzer, req, spanFactory);
   }
 
+  @Override
   public Query getQuery(Element e) throws ParserException {
     final BooleanQuery.Builder bq = new BooleanQuery.Builder();
     final Query lhsQ = getSubQuery(e, "Left");
@@ -46,10 +47,10 @@ public class HandyQueryBuilder extends SolrSpanQueryBuilder {
     return bq.build();
   }
 
+  @Override
   public SpanQuery getSpanQuery(Element e) throws ParserException {
     SpanQuery subQueries[] = {
-        getSubSpanQuery(e, "Left"),
-        getSubSpanQuery(e, "Right"),
+      getSubSpanQuery(e, "Left"), getSubSpanQuery(e, "Right"),
     };
 
     return new SpanOrQuery(subQueries);

@@ -18,7 +18,6 @@ package org.apache.solr.schema;
 
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.lucene.document.FeatureField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
@@ -33,34 +32,33 @@ import org.apache.solr.search.RankQParserPlugin;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 
 /**
- * <p>
- * {@code RankField}s can be used to store scoring factors to improve document ranking. They should be used
- * in combination with {@link RankQParserPlugin}. To use:
- * </p>
- * <p>
- * Define the {@code RankField} {@code fieldType} in your schema:
- * </p>
+ * {@code RankField}s can be used to store scoring factors to improve document ranking. They should
+ * be used in combination with {@link RankQParserPlugin}. To use:
+ *
+ * <p>Define the {@code RankField} {@code fieldType} in your schema:
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="rank" class="solr.RankField" /&gt;
  * </pre>
- * <p>
- * Add fields to the schema, i.e.:
- * </p>
+ *
+ * <p>Add fields to the schema, i.e.:
+ *
  * <pre class="prettyprint">
  * &lt;field name="pagerank" type="rank" /&gt;
  * </pre>
- * 
+ *
  * Query using the {@link RankQParserPlugin}, for example
+ *
  * <pre class="prettyprint">
  * http://localhost:8983/solr/techproducts?q=memory _query_:{!rank f='pagerank', function='log' scalingFactor='1.2'}
  * </pre>
- * 
+ *
  * @see RankQParserPlugin
  * @lucene.experimental
  * @since 8.6
  */
 public class RankField extends FieldType {
-  
+
   /*
    * While the user can create multiple RankFields, internally we use a single Lucene field,
    * and we map the Solr field name to the "feature" in Lucene's FeatureField. This is mainly
@@ -74,27 +72,32 @@ public class RankField extends FieldType {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
-  }
-  
+  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {}
+
   @Override
-  protected void init(IndexSchema schema, Map<String,String> args) {
+  protected void init(IndexSchema schema, Map<String, String> args) {
     super.init(schema, args);
     if (schema.getFieldOrNull(INTERNAL_RANK_FIELD_NAME) != null) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "A field named \"" + INTERNAL_RANK_FIELD_NAME + "\" can't be defined in the schema");
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "A field named \"" + INTERNAL_RANK_FIELD_NAME + "\" can't be defined in the schema");
     }
-    for (int prop:new int[] {STORED, DOC_VALUES, OMIT_TF_POSITIONS, SORT_MISSING_FIRST, SORT_MISSING_LAST}) {
+    for (int prop :
+        new int[] {STORED, DOC_VALUES, OMIT_TF_POSITIONS, SORT_MISSING_FIRST, SORT_MISSING_LAST}) {
       if ((trueProperties & prop) != 0) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Property \"" + getPropertyName(prop) + "\" can't be set to true in RankFields");
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Property \"" + getPropertyName(prop) + "\" can't be set to true in RankFields");
       }
     }
-    for (int prop:new int[] {UNINVERTIBLE, INDEXED, MULTIVALUED}) {
+    for (int prop : new int[] {UNINVERTIBLE, INDEXED, MULTIVALUED}) {
       if ((falseProperties & prop) != 0) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Property \"" + getPropertyName(prop) + "\" can't be set to false in RankFields");
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Property \"" + getPropertyName(prop) + "\" can't be set to false in RankFields");
       }
     }
     properties &= ~(UNINVERTIBLE | STORED | DOC_VALUES);
-    
   }
 
   @Override
@@ -106,12 +109,15 @@ public class RankField extends FieldType {
     try {
       featureValue = Float.parseFloat(val);
     } catch (NumberFormatException nfe) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error while creating field '" + name + "' from value '" + val + "'. Expecting float.", nfe);
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Error while creating field '" + name + "' from value '" + val + "'. Expecting float.",
+          nfe);
     }
     // Internally, we always use the same field
     return new FeatureField(INTERNAL_RANK_FIELD_NAME, name, featureValue);
   }
-  
+
   @Override
   public Query getExistenceQuery(QParser parser, SchemaField field) {
     return new TermQuery(new Term(INTERNAL_RANK_FIELD_NAME, field.getName()));
@@ -119,22 +125,26 @@ public class RankField extends FieldType {
 
   @Override
   public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
-    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-        "Only a \"*\" term query can be done on RankFields");
+    throw new SolrException(
+        SolrException.ErrorCode.BAD_REQUEST, "Only a \"*\" term query can be done on RankFields");
   }
-  
+
   @Override
-  protected Query getSpecializedRangeQuery(QParser parser, SchemaField field, String part1, String part2,
-      boolean minInclusive, boolean maxInclusive) {
-    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-        "Range queries not supported on RankFields");
+  protected Query getSpecializedRangeQuery(
+      QParser parser,
+      SchemaField field,
+      String part1,
+      String part2,
+      boolean minInclusive,
+      boolean maxInclusive) {
+    throw new SolrException(
+        SolrException.ErrorCode.BAD_REQUEST, "Range queries not supported on RankFields");
   }
 
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
     // We could use FeatureField.newFeatureSort()
-    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
-        "can not sort on a rank field: " + field.getName());
+    throw new SolrException(
+        SolrException.ErrorCode.BAD_REQUEST, "can not sort on a rank field: " + field.getName());
   }
-
 }

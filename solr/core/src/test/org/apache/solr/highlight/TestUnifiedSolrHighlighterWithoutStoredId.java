@@ -16,11 +16,10 @@
  */
 package org.apache.solr.highlight;
 
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-/** Tests for the UnifiedHighlighter Solr plugin **/
+/** Tests for the UnifiedHighlighter Solr plugin * */
 public class TestUnifiedSolrHighlighterWithoutStoredId extends TestUnifiedSolrHighlighter {
 
   @BeforeClass

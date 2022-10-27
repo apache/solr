@@ -39,32 +39,27 @@ public class AnalyticsQueryTest extends SolrTestCaseJ4 {
     assertU(commit());
   }
 
-
   @Test
-  public void testAnalyticsQuery() throws Exception {
+  public void testAnalyticsQuery() {
 
-    String[] doc = {"id","1", "sort_i", "100"};
+    String[] doc = {"id", "1", "sort_i", "100"};
     assertU(adoc(doc));
     assertU(commit());
-    String[] doc1 = {"id","2", "sort_i", "50"};
+    String[] doc1 = {"id", "2", "sort_i", "50"};
     assertU(adoc(doc1));
 
-
-
-    String[] doc2 = {"id","3", "sort_i", "1000"};
+    String[] doc2 = {"id", "3", "sort_i", "1000"};
     assertU(adoc(doc2));
     assertU(commit());
-    String[] doc3 = {"id","4", "sort_i", "2000"};
+    String[] doc3 = {"id", "4", "sort_i", "2000"};
     assertU(adoc(doc3));
 
-
-    String[] doc4 = {"id","5", "sort_i", "2"};
+    String[] doc4 = {"id", "5", "sort_i", "2"};
     assertU(adoc(doc4));
     assertU(commit());
-    String[] doc5 = {"id","6", "sort_i","11"};
+    String[] doc5 = {"id", "6", "sort_i", "11"};
     assertU(adoc(doc5));
     assertU(commit());
-
 
     ModifiableSolrParams params = new ModifiableSolrParams();
 
@@ -79,6 +74,5 @@ public class AnalyticsQueryTest extends SolrTestCaseJ4 {
     params.add("fq", "{!count}");
 
     assertQ(req(params), " //lst[@name='analytics']/int[@name='mycount'][.=2]");
-
   }
 }

@@ -29,7 +29,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
-
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -57,16 +56,24 @@ public class RestoreCore implements Callable<Boolean> {
     this.repository = repository;
   }
 
-  public static RestoreCore create(BackupRepository backupRepo, SolrCore core, URI location, String backupname) {
-    RestoreRepository repository = new BasicRestoreRepository(backupRepo.resolveDirectory(location, backupname), backupRepo);
+  public static RestoreCore create(
+      BackupRepository backupRepo, SolrCore core, URI location, String backupname) {
+    RestoreRepository repository =
+        new BasicRestoreRepository(backupRepo.resolveDirectory(location, backupname), backupRepo);
     return new RestoreCore(core, repository);
   }
 
-  public static RestoreCore createWithMetaFile(BackupRepository repo, SolrCore core, URI location, ShardBackupId shardBackupId) throws IOException {
+  public static RestoreCore createWithMetaFile(
+      BackupRepository repo, SolrCore core, URI location, ShardBackupId shardBackupId)
+      throws IOException {
     BackupFilePaths incBackupFiles = new BackupFilePaths(repo, location);
     URI shardBackupMetadataDir = incBackupFiles.getShardBackupMetadataDir();
-    ShardBackupIdRestoreRepository resolver = new ShardBackupIdRestoreRepository(location, incBackupFiles.getIndexDir(),
-            repo, ShardBackupMetadata.from(repo, shardBackupMetadataDir, shardBackupId));
+    ShardBackupIdRestoreRepository resolver =
+        new ShardBackupIdRestoreRepository(
+            location,
+            incBackupFiles.getIndexDir(),
+            repo,
+            ShardBackupMetadata.from(repo, shardBackupMetadataDir, shardBackupId));
     return new RestoreCore(core, resolver);
   }
 
@@ -85,14 +92,22 @@ public class RestoreCore implements Callable<Boolean> {
     Directory indexDir = null;
     try {
 
-      restoreIndexDir = core.getDirectoryFactory().get(restoreIndexPath,
-              DirectoryFactory.DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
+      restoreIndexDir =
+          core.getDirectoryFactory()
+              .get(
+                  restoreIndexPath,
+                  DirectoryFactory.DirContext.DEFAULT,
+                  core.getSolrConfig().indexConfig.lockType);
 
-      //Prefer local copy.
-      indexDir = core.getDirectoryFactory().get(indexDirPath,
-              DirectoryFactory.DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
+      // Prefer local copy.
+      indexDir =
+          core.getDirectoryFactory()
+              .get(
+                  indexDirPath,
+                  DirectoryFactory.DirContext.DEFAULT,
+                  core.getSolrConfig().indexConfig.lockType);
       Set<String> indexDirFiles = new HashSet<>(Arrays.asList(indexDir.listAll()));
-      //Move all files from backupDir to restoreIndexDir
+      // Move all files from backupDir to restoreIndexDir
       for (String filename : repository.listAllFiles()) {
         checkInterrupted();
         try {
@@ -105,11 +120,12 @@ public class RestoreCore implements Callable<Boolean> {
             } else {
               compareResult = IndexFetcher.compareFile(indexDir, filename, cs.size, cs.checksum);
             }
-            if (!compareResult.equal ||
-                    (IndexFetcher.filesToAlwaysDownloadIfNoChecksums(filename, cs.size, compareResult))) {
+            if (!compareResult.equal
+                || (IndexFetcher.filesToAlwaysDownloadIfNoChecksums(
+                    filename, cs.size, compareResult))) {
               repository.repoCopy(filename, restoreIndexDir);
             } else {
-              //prefer local copy
+              // prefer local copy
               repository.localCopy(indexDir, filename, restoreIndexDir);
             }
           } else {
@@ -117,7 +133,8 @@ public class RestoreCore implements Callable<Boolean> {
           }
         } catch (Exception e) {
           log.warn("Exception while restoring the backup index ", e);
-          throw new SolrException(SolrException.ErrorCode.UNKNOWN, "Exception while restoring the backup index", e);
+          throw new SolrException(
+              SolrException.ErrorCode.UNKNOWN, "Exception while restoring the backup index", e);
         }
       }
       log.debug("Switching directories");
@@ -130,12 +147,17 @@ public class RestoreCore implements Callable<Boolean> {
         success = true;
         log.info("Successfully restored to the backup index");
       } catch (Exception e) {
-        //Rollback to the old index directory. Delete the restore index directory and mark the restore as failed.
+        // Rollback to the old index directory. Delete the restore index directory and mark the
+        // restore as failed.
         log.warn("Could not switch to restored index. Rolling back to the current index", e);
         Directory dir = null;
         try {
-          dir = core.getDirectoryFactory().get(core.getDataDir(), DirectoryFactory.DirContext.META_DATA,
-                  core.getSolrConfig().indexConfig.lockType);
+          dir =
+              core.getDirectoryFactory()
+                  .get(
+                      core.getDataDir(),
+                      DirectoryFactory.DirContext.META_DATA,
+                      core.getSolrConfig().indexConfig.lockType);
           dir.deleteFile(IndexFetcher.INDEX_PROPERTIES);
         } finally {
           if (dir != null) {
@@ -147,7 +169,8 @@ public class RestoreCore implements Callable<Boolean> {
         core.getDirectoryFactory().remove(restoreIndexDir);
         core.getUpdateHandler().newIndexWriter(false);
         openNewSearcher();
-        throw new SolrException(SolrException.ErrorCode.UNKNOWN, "Exception while restoring the backup index", e);
+        throw new SolrException(
+            SolrException.ErrorCode.UNKNOWN, "Exception while restoring the backup index", e);
       }
       if (success) {
         core.getDirectoryFactory().doneWithDirectory(indexDir);
@@ -181,20 +204,20 @@ public class RestoreCore implements Callable<Boolean> {
     }
   }
 
-  /**
-   * A minimal version of {@link BackupRepository} used for restoring
-   */
+  /** A minimal version of {@link BackupRepository} used for restoring */
   private interface RestoreRepository {
     String[] listAllFiles() throws IOException;
+
     IndexInput openInput(String filename) throws IOException;
+
     void repoCopy(String filename, Directory dest) throws IOException;
+
     void localCopy(Directory src, String filename, Directory dest) throws IOException;
+
     Checksum checksum(String filename) throws IOException;
   }
 
-  /**
-   * A basic {@link RestoreRepository} simply delegates all calls to {@link BackupRepository}
-   */
+  /** A basic {@link RestoreRepository} simply delegates all calls to {@link BackupRepository} */
   private static class BasicRestoreRepository implements RestoreRepository {
     protected final URI backupPath;
     protected final BackupRepository repository;
@@ -204,22 +227,27 @@ public class RestoreCore implements Callable<Boolean> {
       this.repository = repository;
     }
 
+    @Override
     public String[] listAllFiles() throws IOException {
       return repository.listAll(backupPath);
     }
 
+    @Override
     public IndexInput openInput(String filename) throws IOException {
       return repository.openInput(backupPath, filename, IOContext.READONCE);
     }
 
+    @Override
     public void repoCopy(String filename, Directory dest) throws IOException {
       repository.copyFileTo(backupPath, filename, dest);
     }
 
+    @Override
     public void localCopy(Directory src, String filename, Directory dest) throws IOException {
       dest.copyFrom(src, filename, filename, IOContext.READONCE);
     }
 
+    @Override
     public Checksum checksum(String filename) throws IOException {
       try (IndexInput indexInput = repository.openInput(backupPath, filename, IOContext.READONCE)) {
         try {
@@ -234,9 +262,7 @@ public class RestoreCore implements Callable<Boolean> {
     }
   }
 
-  /**
-   * A {@link RestoreRepository} based on information stored in {@link ShardBackupMetadata}
-   */
+  /** A {@link RestoreRepository} based on information stored in {@link ShardBackupMetadata} */
   private static class ShardBackupIdRestoreRepository implements RestoreRepository {
 
     private final ShardBackupMetadata shardBackupMetadata;
@@ -244,7 +270,11 @@ public class RestoreCore implements Callable<Boolean> {
     protected final URI backupPath;
     protected final BackupRepository repository;
 
-    public ShardBackupIdRestoreRepository(URI backupPath, URI indexURI, BackupRepository repository, ShardBackupMetadata shardBackupMetadata) {
+    public ShardBackupIdRestoreRepository(
+        URI backupPath,
+        URI indexURI,
+        BackupRepository repository,
+        ShardBackupMetadata shardBackupMetadata) {
       this.shardBackupMetadata = shardBackupMetadata;
       this.indexURI = indexURI;
       this.backupPath = backupPath;
@@ -273,6 +303,7 @@ public class RestoreCore implements Callable<Boolean> {
       dest.copyFrom(src, filename, filename, IOContext.READONCE);
     }
 
+    @Override
     public Checksum checksum(String filename) {
       Optional<ShardBackupMetadata.BackedFile> backedFile = shardBackupMetadata.getFile(filename);
       return backedFile.map(bf -> bf.fileChecksum).orElse(null);

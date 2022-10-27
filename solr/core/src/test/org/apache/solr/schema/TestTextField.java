@@ -25,26 +25,32 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.junit.Test;
 
-/**
- * Tests directly {@link org.apache.solr.schema.TextField} methods.
- */
+/** Tests directly {@link org.apache.solr.schema.TextField} methods. */
 public class TestTextField extends SolrTestCaseJ4 {
 
   @Test
   public void testAnalyzeMultiTerm() {
     // No terms provided by the StopFilter (stop word) for the multi-term part.
-    // This is supported. Check TextField.analyzeMultiTerm returns null (and does not throw an exception).
-    BytesRef termBytes = TextField.analyzeMultiTerm("field", "the", new StopAnalyzer(EnglishAnalyzer.ENGLISH_STOP_WORDS_SET));
+    // This is supported. Check TextField.analyzeMultiTerm returns null (and does not throw an
+    // exception).
+    BytesRef termBytes =
+        TextField.analyzeMultiTerm(
+            "field", "the", new StopAnalyzer(EnglishAnalyzer.ENGLISH_STOP_WORDS_SET));
     assertNull(termBytes);
 
     // One term provided by the WhitespaceTokenizer for the multi-term part.
-    // This is the regular case. Check TextField.analyzeMultiTerm returns it (and does not throw an exception).
+    // This is the regular case. Check TextField.analyzeMultiTerm returns it (and does not throw an
+    // exception).
     termBytes = TextField.analyzeMultiTerm("field", "Sol", new WhitespaceAnalyzer());
     assertEquals("Sol", termBytes.utf8ToString());
 
     // Two terms provided by the WhitespaceTokenizer for the multi-term part.
     // This is not allowed. Expect an exception.
-    SolrException exception = expectThrows(SolrException.class, () -> TextField.analyzeMultiTerm("field", "term1 term2", new WhitespaceAnalyzer()));
-    assertEquals("Unexpected error code", SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
+    SolrException exception =
+        expectThrows(
+            SolrException.class,
+            () -> TextField.analyzeMultiTerm("field", "term1 term2", new WhitespaceAnalyzer()));
+    assertEquals(
+        "Unexpected error code", SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
   }
 }

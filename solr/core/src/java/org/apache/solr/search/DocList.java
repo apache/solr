@@ -19,40 +19,37 @@ package org.apache.solr.search;
 import org.apache.lucene.search.TotalHits;
 
 /**
- * <code>DocList</code> represents the result of a query: an ordered list of document ids with optional score.
- * This list contains a subset of the complete list of documents actually matched: <code>size()</code>
- * document ids starting at <code>offset()</code>.
- *
+ * <code>DocList</code> represents the result of a query: an ordered list of document ids with
+ * optional score. This list contains a subset of the complete list of documents actually matched:
+ * <code>size()</code> document ids starting at <code>offset()</code>.
  *
  * @since solr 0.9
  */
 public interface DocList {
 
   /**
-   * Returns the zero based offset of this list within the total ordered list of matches to the query.
+   * Returns the zero based offset of this list within the total ordered list of matches to the
+   * query.
    */
   public int offset();
 
-  /**
-   * Returns the number of ids in this list.
-   */
+  /** Returns the number of ids in this list. */
   public int size();
 
   /**
-   * Returns the total number of matches for the search
-   * (as opposed to just the number collected according
-   * to <code>offset()</code> and <code>size()</code>).
-   * Hence it's always true that matches() &gt;= size()
+   * Returns the total number of matches for the search (as opposed to just the number collected
+   * according to <code>offset()</code> and <code>size()</code>). Hence it's always true that
+   * matches() &gt;= size()
+   *
    * @return number of matches for the search(query &amp; any filters)
    */
   public long matches();
-  
+
   public TotalHits.Relation hitCountRelation();
 
-
-  /***
+  /*
   public int getDoc(int pos);
-  ***/
+  */
 
   // hmmm, what if a different slice could be generated from an existing DocSet
   // (and was before)...
@@ -62,29 +59,25 @@ public interface DocList {
   // should the big slice be cached independently, and a new class called
   // DocListSubset be created to refer to a range within the DocList?
 
-  /**
-   * Get a subset of an existing DocList.
-   * Returns null if not possible.
-   */
+  /** Get a subset of an existing DocList. Returns null if not possible. */
   public DocList subset(int offset, int len);
 
   /**
    * Returns an iterator that may be used to iterate over the documents in this DocList
    *
-   * <p>
-   * The order of the documents returned by this iterator is based on the
-   * Sort order of the search that produced it.  The Scoring information
-   * is meaningful only if <code>hasScores()</code> returns true.
-   * </p>
+   * <p>The order of the documents returned by this iterator is based on the Sort order of the
+   * search that produced it. The Scoring information is meaningful only if <code>hasScores()</code>
+   * returns true.
+   *
    * @see #hasScores
    */
   public DocIterator iterator();
-    
+
   /** True if scores were retained */
   public boolean hasScores();
 
-  /** The maximum score for the search... only valid if
-   * scores were retained (if hasScores()==true)
+  /**
+   * The maximum score for the search... only valid if scores were retained (if hasScores()==true)
    */
   public float maxScore();
 }

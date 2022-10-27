@@ -21,7 +21,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
@@ -50,7 +49,7 @@ public class PivotFacetHelper {
     if (values.isEmpty()) {
       return "";
     }
-    
+
     StringBuilder out = new StringBuilder();
     for (String val : values) {
       if (null == val) {
@@ -61,7 +60,7 @@ public class PivotFacetHelper {
       }
       out.append(',');
     }
-    out.deleteCharAt(out.length()-1);  // prune the last separator
+    out.deleteCharAt(out.length() - 1); // prune the last separator
     return out.toString();
     // return StrUtils.join(values, ',');
   }
@@ -91,73 +90,90 @@ public class PivotFacetHelper {
     return out;
   }
 
-  /** @see PivotListEntry#VALUE */
+  /**
+   * @see PivotListEntry#VALUE
+   */
   @SuppressWarnings({"rawtypes"})
   public static Comparable getValue(NamedList<Object> pivotList) {
     return (Comparable) PivotListEntry.VALUE.extract(pivotList);
   }
 
-  /** @see PivotListEntry#FIELD */
+  /**
+   * @see PivotListEntry#FIELD
+   */
   public static String getField(NamedList<Object> pivotList) {
     return (String) PivotListEntry.FIELD.extract(pivotList);
   }
-  
-  /** @see PivotListEntry#COUNT */
+
+  /**
+   * @see PivotListEntry#COUNT
+   */
   public static Integer getCount(NamedList<Object> pivotList) {
     return (Integer) PivotListEntry.COUNT.extract(pivotList);
   }
 
-  /** @see PivotListEntry#PIVOT */
+  /**
+   * @see PivotListEntry#PIVOT
+   */
   @SuppressWarnings({"unchecked"})
   public static List<NamedList<Object>> getPivots(NamedList<Object> pivotList) {
     return (List<NamedList<Object>>) PivotListEntry.PIVOT.extract(pivotList);
   }
-  
-  /** @see PivotListEntry#STATS */
+
+  /**
+   * @see PivotListEntry#STATS
+   */
   @SuppressWarnings({"unchecked"})
   public static NamedList<NamedList<NamedList<?>>> getStats(NamedList<Object> pivotList) {
     return (NamedList<NamedList<NamedList<?>>>) PivotListEntry.STATS.extract(pivotList);
   }
 
-  /** @see PivotListEntry#QUERIES */
+  /**
+   * @see PivotListEntry#QUERIES
+   */
   @SuppressWarnings({"unchecked"})
   public static NamedList<Number> getQueryCounts(NamedList<Object> pivotList) {
     return (NamedList<Number>) PivotListEntry.QUERIES.extract(pivotList);
   }
-  
-  /** @see PivotListEntry#RANGES */
+
+  /**
+   * @see PivotListEntry#RANGES
+   */
   @SuppressWarnings({"unchecked"})
   public static SimpleOrderedMap<SimpleOrderedMap<Object>> getRanges(NamedList<Object> pivotList) {
     return (SimpleOrderedMap<SimpleOrderedMap<Object>>) PivotListEntry.RANGES.extract(pivotList);
   }
-  
+
   /**
-   * Given a mapping of keys to {@link StatsValues} representing the currently 
-   * known "merged" stats (which may be null if none exist yet), and a 
-   * {@link NamedList} containing the "stats" response block returned by an individual 
-   * shard, this method accumulates the stats for each {@link StatsField} found in
-   * the shard response with the existing mergeStats
+   * Given a mapping of keys to {@link StatsValues} representing the currently known "merged" stats
+   * (which may be null if none exist yet), and a {@link NamedList} containing the "stats" response
+   * block returned by an individual shard, this method accumulates the stats for each {@link
+   * StatsField} found in the shard response with the existing mergeStats
    *
-   * @return the original <code>merged</code> Map after modifying, or a new Map if the <code>merged</code> param was originally null.
+   * @return the original <code>merged</code> Map after modifying, or a new Map if the <code>merged
+   *     </code> param was originally null.
    * @see StatsInfo#getStatsField
    * @see StatsValuesFactory#createStatsValues
    * @see StatsValues#accumulate(NamedList)
    */
-  public static Map<String,StatsValues> mergeStats
-    (Map<String,StatsValues> merged, 
-     NamedList<NamedList<NamedList<?>>> remoteWrapper, 
-     StatsInfo statsInfo) {
+  public static Map<String, StatsValues> mergeStats(
+      Map<String, StatsValues> merged,
+      NamedList<NamedList<NamedList<?>>> remoteWrapper,
+      StatsInfo statsInfo) {
 
     if (null == merged) merged = new LinkedHashMap<>();
 
     NamedList<NamedList<?>> remoteStats = StatsComponent.unwrapStats(remoteWrapper);
 
-    for (Entry<String,NamedList<?>> entry : remoteStats) {
+    for (Entry<String, NamedList<?>> entry : remoteStats) {
       StatsValues receivingStatsValues = merged.get(entry.getKey());
       if (receivingStatsValues == null) {
         StatsField receivingStatsField = statsInfo.getStatsField(entry.getKey());
         if (null == receivingStatsField) {
-          throw new SolrException(ErrorCode.SERVER_ERROR , "No stats.field found corresponding to pivot stats received from shard: "+entry.getKey());
+          throw new SolrException(
+              ErrorCode.SERVER_ERROR,
+              "No stats.field found corresponding to pivot stats received from shard: "
+                  + entry.getKey());
         }
         receivingStatsValues = StatsValuesFactory.createStatsValues(receivingStatsField);
         merged.put(entry.getKey(), receivingStatsValues);
@@ -168,12 +184,13 @@ public class PivotFacetHelper {
   }
 
   /**
-   * Merges query counts returned by a shard into global query counts.
-   * Entries found only in shard's query counts will be added to global counts.
-   * Entries found in both shard and global query counts will be summed.
+   * Merges query counts returned by a shard into global query counts. Entries found only in shard's
+   * query counts will be added to global counts. Entries found in both shard and global query
+   * counts will be summed.
    *
-   * @param globalQueryCounts The global query counts (across all shards) in which to merge the shard query counts
-   * @param shardQueryCounts  Named list from a shard response to be merged into the global counts.
+   * @param globalQueryCounts The global query counts (across all shards) in which to merge the
+   *     shard query counts
+   * @param shardQueryCounts Named list from a shard response to be merged into the global counts.
    * @return NamedList containing merged values
    */
   static NamedList<Number> mergeQueryCounts(
@@ -186,7 +203,10 @@ public class PivotFacetHelper {
       if (idx == -1) {
         globalQueryCounts.add(entry.getKey(), entry.getValue());
       } else {
-        globalQueryCounts.setVal(idx, FacetComponent.num(globalQueryCounts.getVal(idx).longValue() + entry.getValue().longValue()));
+        globalQueryCounts.setVal(
+            idx,
+            FacetComponent.num(
+                globalQueryCounts.getVal(idx).longValue() + entry.getValue().longValue()));
       }
     }
     return globalQueryCounts;

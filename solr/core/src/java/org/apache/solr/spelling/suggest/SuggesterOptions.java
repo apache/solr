@@ -19,27 +19,32 @@ package org.apache.solr.spelling.suggest;
 import org.apache.lucene.util.CharsRef;
 
 /**
- * Encapsulates the inputs required to be passed on to 
- * the underlying suggester in {@link SolrSuggester}
- **/
+ * Encapsulates the inputs required to be passed on to the underlying suggester in {@link
+ * SolrSuggester}
+ */
 public class SuggesterOptions {
-  
+
   /** The token to lookup */
   CharsRef token;
-  
+
   /** Number of suggestions requested */
   int count;
 
-  /** A Solr or Lucene query for filtering suggestions*/
+  /** A Solr or Lucene query for filtering suggestions */
   String contextFilterQuery;
 
-  /** Are all terms required?*/
+  /** Are all terms required? */
   boolean allTermsRequired;
 
-  /** Highlight term in results?*/
+  /** Highlight term in results? */
   boolean highlight;
 
-  public SuggesterOptions(CharsRef token, int count, String contextFilterQuery, boolean allTermsRequired, boolean highlight) {
+  public SuggesterOptions(
+      CharsRef token,
+      int count,
+      String contextFilterQuery,
+      boolean allTermsRequired,
+      boolean highlight) {
     this.token = token;
     this.count = count;
     this.contextFilterQuery = contextFilterQuery;

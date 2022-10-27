@@ -16,49 +16,45 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
-import org.eclipse.jetty.servlet.ServletHolder;
-
-import javax.servlet.Filter;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TreeMap;
+import javax.servlet.Filter;
+import org.eclipse.jetty.servlet.ServletHolder;
 
 public class JettyConfig {
 
-  // by default jetty will start with http2 + http1 support
   public final boolean onlyHttp1;
-
   public final int port;
-
+  public final int portRetryTime;
   public final String context;
-
+  public final boolean stopAtShutdown;
+  public final Long waitForLoadingCoresToFinishMs;
+  public final Map<ServletHolder, String> extraServlets;
+  public final Map<Class<? extends Filter>, String> extraFilters;
+  public final SSLConfig sslConfig;
   public final boolean enableV2;
 
-
-  public final boolean stopAtShutdown;
-  
-  public final Long waitForLoadingCoresToFinishMs;
-
-  public final Map<ServletHolder, String> extraServlets;
-
-  public final Map<Class<? extends Filter>, String> extraFilters;
-
-  public final SSLConfig sslConfig;
-  
-  public final int portRetryTime;
-
-  private JettyConfig(boolean onlyHttp1, int port, int portRetryTime , String context, boolean stopAtShutdown,
-                      Long waitForLoadingCoresToFinishMs, Map<ServletHolder, String> extraServlets,
-                      Map<Class<? extends Filter>, String> extraFilters, SSLConfig sslConfig, boolean enableV2) {
+  private JettyConfig(
+      boolean onlyHttp1,
+      int port,
+      int portRetryTime,
+      String context,
+      boolean stopAtShutdown,
+      Long waitForLoadingCoresToFinishMs,
+      Map<ServletHolder, String> extraServlets,
+      Map<Class<? extends Filter>, String> extraFilters,
+      SSLConfig sslConfig,
+      boolean enableV2) {
     this.onlyHttp1 = onlyHttp1;
     this.port = port;
+    this.portRetryTime = portRetryTime;
     this.context = context;
     this.stopAtShutdown = stopAtShutdown;
     this.waitForLoadingCoresToFinishMs = waitForLoadingCoresToFinishMs;
     this.extraServlets = extraServlets;
     this.extraFilters = extraFilters;
     this.sslConfig = sslConfig;
-    this.portRetryTime = portRetryTime;
     this.enableV2 = enableV2;
   }
 
@@ -68,12 +64,17 @@ public class JettyConfig {
 
   public static Builder builder(JettyConfig other) {
     Builder builder = new Builder();
+
+    builder.onlyHttp1 = other.onlyHttp1;
     builder.port = other.port;
+    builder.portRetryTime = other.portRetryTime;
     builder.context = other.context;
     builder.stopAtShutdown = other.stopAtShutdown;
+    builder.waitForLoadingCoresToFinishMs = other.waitForLoadingCoresToFinishMs;
     builder.extraServlets = other.extraServlets;
     builder.extraFilters = other.extraFilters;
     builder.sslConfig = other.sslConfig;
+    builder.enableV2 = other.enableV2;
     return builder;
   }
 
@@ -94,7 +95,8 @@ public class JettyConfig {
       this.onlyHttp1 = useOnlyHttp1;
       return this;
     }
-    public Builder enableV2(boolean flag){
+
+    public Builder enableV2(boolean flag) {
       this.enableV2 = flag;
       return this;
     }
@@ -113,7 +115,7 @@ public class JettyConfig {
       this.stopAtShutdown = stopAtShutdown;
       return this;
     }
-    
+
     public Builder waitForLoadingCoresToFinish(Long waitForLoadingCoresToFinishMs) {
       this.waitForLoadingCoresToFinishMs = waitForLoadingCoresToFinishMs;
       return this;
@@ -125,8 +127,7 @@ public class JettyConfig {
     }
 
     public Builder withServlets(Map<ServletHolder, String> servlets) {
-      if (servlets != null)
-        extraServlets.putAll(servlets);
+      if (servlets != null) extraServlets.putAll(servlets);
       return this;
     }
 
@@ -136,8 +137,7 @@ public class JettyConfig {
     }
 
     public Builder withFilters(Map<Class<? extends Filter>, String> filters) {
-      if (filters != null)
-        extraFilters.putAll(filters);
+      if (filters != null) extraFilters.putAll(filters);
       return this;
     }
 
@@ -145,18 +145,24 @@ public class JettyConfig {
       this.sslConfig = sslConfig;
       return this;
     }
-    
+
     public Builder withPortRetryTime(int portRetryTime) {
       this.portRetryTime = portRetryTime;
       return this;
     }
 
-
     public JettyConfig build() {
-      return new JettyConfig(onlyHttp1, port, portRetryTime, context, stopAtShutdown,
-          waitForLoadingCoresToFinishMs, extraServlets, extraFilters, sslConfig, enableV2);
+      return new JettyConfig(
+          onlyHttp1,
+          port,
+          portRetryTime,
+          context,
+          stopAtShutdown,
+          waitForLoadingCoresToFinishMs,
+          extraServlets,
+          extraFilters,
+          sslConfig,
+          enableV2);
     }
-
   }
-
 }

@@ -18,23 +18,21 @@ package org.apache.solr.logging;
 
 import java.io.Closeable;
 import java.util.Map;
-
 import org.slf4j.MDC;
 
-
 /**
- * Takes a 'snapshot' of the current MDC context map which is restored on (auto) close.  
- * This can be used to ensure that no MDC values set (or overridden) inside of call stack
- * will "leak" beyond that call stack.
+ * Takes a 'snapshot' of the current MDC context map which is restored on (auto) close. This can be
+ * used to ensure that no MDC values set (or overridden) inside of call stack will "leak" beyond
+ * that call stack.
  *
  * <pre>
  * try (var mdcSnapshot = MDCSnapshot.create()) {
  *   assert null != mdcSnapshot; // prevent compiler warning
- * 
+ *
  *   // ... arbitrary calls to MDC methods
  * }
  * </pre>
- * 
+ *
  * @see org.slf4j.MDC#putCloseable
  */
 public final class MDCSnapshot implements Closeable {
@@ -42,16 +40,17 @@ public final class MDCSnapshot implements Closeable {
   public static MDCSnapshot create() {
     return new MDCSnapshot();
   }
-  
-  private final Map<String,String> snapshot;
+
+  private final Map<String, String> snapshot;
+
   private MDCSnapshot() {
     this.snapshot = MDC.getCopyOfContextMap();
-    assert null != snapshot;
   }
-  
+
+  @Override
   public void close() {
     MDC.clear();
-    if (! snapshot.isEmpty()) { // common case optimization
+    if (snapshot != null && !snapshot.isEmpty()) { // common case optimization
       MDC.setContextMap(snapshot);
     }
   }

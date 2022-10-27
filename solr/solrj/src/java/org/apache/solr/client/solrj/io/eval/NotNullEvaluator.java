@@ -18,31 +18,36 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.Locale;
-
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class NotNullEvaluator extends RecursiveBooleanEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
 
-  public NotNullEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public NotNullEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
 
-    if(containedEvaluators.size() != 1){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting one parameter but found %d",expression,containedEvaluators.size()));
+    if (containedEvaluators.size() != 1) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting one parameter but found %d",
+              expression,
+              containedEvaluators.size()));
     }
   }
 
-  public Object doWork(Object ... values) throws IOException {
+  @Override
+  public Object doWork(Object... values) throws IOException {
 
-    if(values[0] == null) {
+    if (values[0] == null) {
       return false;
     }
 
-    if(values[0] instanceof String) {
-      //Check to see if the this tuple had a null value for that string.
+    if (values[0] instanceof String) {
+      // Check to see if the this tuple had a null value for that string.
       String nullField = getStreamContext().getTupleContext().get("null");
-      if(nullField != null && nullField.equals(values[0])) {
+      if (nullField != null && nullField.equals(values[0])) {
         return false;
       }
     }
@@ -50,6 +55,7 @@ public class NotNullEvaluator extends RecursiveBooleanEvaluator implements ManyV
     return true;
   }
 
+  @Override
   protected Checker constructChecker(Object value) throws IOException {
     return null;
   }

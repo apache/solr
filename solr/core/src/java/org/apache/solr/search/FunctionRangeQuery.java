@@ -18,41 +18,54 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 import java.util.Map;
-
+import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.ValueSourceScorer;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Weight;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.search.function.ValueSourceRangeFilter;
 
-// This class works as either a normal constant score query, or as a PostFilter using a collector
-public class FunctionRangeQuery extends SolrConstantScoreQuery implements PostFilter {
+// This class works as either an ExtendedQuery, or as a PostFilter using a collector
+public class FunctionRangeQuery extends ExtendedQueryBase implements PostFilter {
 
   final ValueSourceRangeFilter rangeFilt;
 
   public FunctionRangeQuery(ValueSourceRangeFilter filter) {
-    super(filter);
+    super();
     this.rangeFilt = filter;
-    this.cost = 100; // default behavior should be PostFiltering
+    super.setCost(100); // default behavior should be PostFiltering
+  }
+
+  @Override
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
+    return rangeFilt.createWeight(searcher, scoreMode, boost);
   }
 
   @Override
   public DelegatingCollector getFilterCollector(IndexSearcher searcher) {
-    Map<Object,Object> fcontext = ValueSource.newContext(searcher);
-    Weight weight = rangeFilt.createWeight(searcher, ScoreMode.COMPLETE, 1);
+    Map<Object, Object> fcontext = ValueSource.newContext(searcher);
+    Weight weight = null;
+    try {
+      weight = rangeFilt.createWeight(searcher, ScoreMode.COMPLETE, 1);
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
     return new FunctionRangeCollector(fcontext, weight);
   }
 
   class FunctionRangeCollector extends DelegatingCollector {
-    final Map<Object,Object> fcontext;
+    final Map<Object, Object> fcontext;
     final Weight weight;
-    ValueSourceScorer scorer;
+    ValueSourceScorer valueSourceScorer;
     int maxdoc;
 
-    public FunctionRangeCollector(Map<Object,Object> fcontext, Weight weight) {
+    public FunctionRangeCollector(Map<Object, Object> fcontext, Weight weight) {
       this.fcontext = fcontext;
       this.weight = weight;
     }
@@ -60,7 +73,7 @@ public class FunctionRangeQuery extends SolrConstantScoreQuery implements PostFi
     @Override
     public void collect(int doc) throws IOException {
       assert doc < maxdoc;
-      if (scorer.matches(doc)) {
+      if (valueSourceScorer.matches(doc)) {
         leafDelegate.collect(doc);
       }
     }
@@ -70,7 +83,34 @@ public class FunctionRangeQuery extends SolrConstantScoreQuery implements PostFi
       super.doSetNextReader(context);
       maxdoc = context.reader().maxDoc();
       FunctionValues dv = rangeFilt.getValueSource().getValues(fcontext, context);
-      scorer = dv.getRangeScorer(weight, context, rangeFilt.getLowerVal(), rangeFilt.getUpperVal(), rangeFilt.isIncludeLower(), rangeFilt.isIncludeUpper());
+      valueSourceScorer =
+          dv.getRangeScorer(
+              weight,
+              context,
+              rangeFilt.getLowerVal(),
+              rangeFilt.getUpperVal(),
+              rangeFilt.isIncludeLower(),
+              rangeFilt.isIncludeUpper());
     }
+  }
+
+  @Override
+  public String toString(String field) {
+    return "FunctionRangeQuery(" + field + ")";
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    return sameClassAs(obj) && Objects.equals(rangeFilt, ((FunctionRangeQuery) obj).rangeFilt);
+  }
+
+  @Override
+  public int hashCode() {
+    return 31 * classHash() + rangeFilt.hashCode();
   }
 }

@@ -20,16 +20,13 @@ package org.apache.solr.client.solrj.util;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
-
 import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.B64Code;
 
-/**
- * BasicAuthentication that does not care about uri and realm
- */
+/** BasicAuthentication that does not care about uri and realm */
 public class SolrBasicAuthentication implements Authentication {
 
   private final String value;
@@ -44,12 +41,19 @@ public class SolrBasicAuthentication implements Authentication {
   }
 
   @Override
-  public Result authenticate(Request request, ContentResponse response, HeaderInfo headerInfo, Attributes context) {
+  public Result authenticate(
+      Request request, ContentResponse response, HeaderInfo headerInfo, Attributes context) {
     return new Result() {
       @Override
       public URI getURI() {
         // cache result by host and port
-        return URI.create(String.format(Locale.ROOT, "%s://%s:%d", request.getScheme(), request.getHost(), request.getPort()));
+        return URI.create(
+            String.format(
+                Locale.ROOT,
+                "%s://%s:%d",
+                request.getScheme(),
+                request.getHost(),
+                request.getPort()));
       }
 
       @Override

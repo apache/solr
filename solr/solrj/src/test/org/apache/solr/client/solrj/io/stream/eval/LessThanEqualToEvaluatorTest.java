@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.stream.eval;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.LessThanEqualToEvaluator;
@@ -27,230 +26,226 @@ import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
 
-import junit.framework.Assert;
-
 public class LessThanEqualToEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;
-  
+
   public LessThanEqualToEvaluatorTest() {
     super();
-    
-    factory = new StreamFactory()
-      .withFunctionName("lte", LessThanEqualToEvaluator.class);
-    values = new HashMap<String,Object>();
+
+    factory = new StreamFactory().withFunctionName("lte", LessThanEqualToEvaluator.class);
+    values = new HashMap<>();
   }
-    
+
   @Test
-  public void lteTwoIntegers() throws Exception{
+  public void lteTwoIntegers() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("lte(a,b)");
     Object result;
-    
+
     values.clear();
     values.put("a", 1);
     values.put("b", 1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(true, result);
-    
+    assertTrue(result instanceof Boolean);
+    assertEquals(true, result);
+
     values.clear();
     values.put("a", 1);
     values.put("b", 1.0);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(true, result);
-    
+    assertTrue(result instanceof Boolean);
+    assertEquals(true, result);
+
     values.clear();
     values.put("a", 1.0);
     values.put("b", 1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(true, result);
-    
+    assertTrue(result instanceof Boolean);
+    assertEquals(true, result);
+
     values.clear();
     values.put("a", 1);
     values.put("b", 2);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(true, result);
-    
+    assertTrue(result instanceof Boolean);
+    assertEquals(true, result);
+
     values.clear();
     values.put("a", -1);
     values.put("b", -1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(true, result);
-    
+    assertTrue(result instanceof Boolean);
+    assertEquals(true, result);
+
     values.clear();
     values.put("a", 1);
     values.put("b", 2.0);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(true, result);
-    
+    assertTrue(result instanceof Boolean);
+    assertEquals(true, result);
+
     values.clear();
     values.put("a", 1.0);
     values.put("b", 2);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(true, result);
-    
+    assertTrue(result instanceof Boolean);
+    assertEquals(true, result);
+
     values.clear();
     values.put("a", 2);
     values.put("b", 1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(false, result);
-    
+    assertTrue(result instanceof Boolean);
+    assertEquals(false, result);
+
     values.clear();
     values.put("a", 2);
     values.put("b", 1.0);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(false, result);
-    
+    assertTrue(result instanceof Boolean);
+    assertEquals(false, result);
+
     values.clear();
     values.put("a", 2.0);
     values.put("b", 1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(false, result);
-    
+    assertTrue(result instanceof Boolean);
+    assertEquals(false, result);
+
     values.clear();
     values.put("a", 3);
     values.put("b", 2);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(false, result);
-    
+    assertTrue(result instanceof Boolean);
+    assertEquals(false, result);
+
     values.clear();
     values.put("a", -1);
     values.put("b", -2);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(false, result);
-    
+    assertTrue(result instanceof Boolean);
+    assertEquals(false, result);
+
     values.clear();
     values.put("a", -2);
     values.put("b", -1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(true, result);
-    
+    assertTrue(result instanceof Boolean);
+    assertEquals(true, result);
+
     values.clear();
     values.put("a", 3);
     values.put("b", 2.0);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(false, result);
-    
+    assertTrue(result instanceof Boolean);
+    assertEquals(false, result);
+
     values.clear();
     values.put("a", 3.0);
     values.put("b", 2);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(false, result);
+    assertTrue(result instanceof Boolean);
+    assertEquals(false, result);
   }
-  
+
   @Test
-  public void lteTwoStrings() throws Exception{
+  public void lteTwoStrings() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("lte(a,b)");
     Object result;
     String foo = "foo";
     String bar = "bar";
-    
+
     values.clear();
     values.put("a", "foo");
     values.put("b", "foo");
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(true, result);
-    
+    assertTrue(result instanceof Boolean);
+    assertEquals(true, result);
+
     values.clear();
     values.put("a", "foo");
     values.put("b", "bar");
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(false, result);
-    
+    assertTrue(result instanceof Boolean);
+    assertEquals(false, result);
+
     values.clear();
     values.put("a", "foo bar baz");
     values.put("b", "foo bar baz");
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(true, result);
-    
+    assertTrue(result instanceof Boolean);
+    assertEquals(true, result);
+
     values.clear();
     values.put("a", "foo bar baz");
     values.put("b", "foo bar jaz");
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(true, result);
-    
+    assertTrue(result instanceof Boolean);
+    assertEquals(true, result);
+
     values.clear();
     values.put("a", foo);
     values.put("b", foo);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(true, result);
-    
+    assertTrue(result instanceof Boolean);
+    assertEquals(true, result);
+
     values.clear();
     values.put("a", foo);
     values.put("b", bar);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(false, result);
+    assertTrue(result instanceof Boolean);
+    assertEquals(false, result);
   }
-  
+
   @Test(expected = IOException.class)
-  public void lteTwoBooleans() throws Exception{
+  public void lteTwoBooleans() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("lte(a,b)");
 
     values.clear();
     values.put("a", true);
-    values.put("b",true);
+    values.put("b", true);
     evaluator.evaluate(new Tuple(values));
   }
 
   @Test(expected = IOException.class)
-  public void lteDifferentTypes1() throws Exception{
+  public void lteDifferentTypes1() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("lte(a,b)");
-    
+
     values.clear();
     values.put("a", true);
-    values.put("b",1);
+    values.put("b", 1);
     evaluator.evaluate(new Tuple(values));
   }
 
   @Test(expected = IOException.class)
-  public void lteDifferentTypes2() throws Exception{
+  public void lteDifferentTypes2() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("lte(a,b)");
-    
+
     values.clear();
     values.put("a", 1);
-    values.put("b",false);
-    evaluator.evaluate(new Tuple(values));
-  }
-  
-  @Test(expected = IOException.class)
-  public void lteDifferentTypes3() throws Exception{
-    StreamEvaluator evaluator = factory.constructEvaluator("lte(a,b)");
-    
-    values.clear();
-    values.put("a", "1");
-    values.put("b",1);
-    evaluator.evaluate(new Tuple(values));
-  }
-  
-  @Test(expected = IOException.class)
-  public void lteDifferentTypes4() throws Exception{
-    StreamEvaluator evaluator = factory.constructEvaluator("lte(a,b)");
-    
-    values.clear();
-    values.put("a", "true");
-    values.put("b",true);
+    values.put("b", false);
     evaluator.evaluate(new Tuple(values));
   }
 
+  @Test(expected = IOException.class)
+  public void lteDifferentTypes3() throws Exception {
+    StreamEvaluator evaluator = factory.constructEvaluator("lte(a,b)");
+
+    values.clear();
+    values.put("a", "1");
+    values.put("b", 1);
+    evaluator.evaluate(new Tuple(values));
+  }
+
+  @Test(expected = IOException.class)
+  public void lteDifferentTypes4() throws Exception {
+    StreamEvaluator evaluator = factory.constructEvaluator("lte(a,b)");
+
+    values.clear();
+    values.put("a", "true");
+    values.put("b", true);
+    evaluator.evaluate(new Tuple(values));
+  }
 }

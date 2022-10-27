@@ -18,7 +18,6 @@
 package org.apache.solr.handler.export;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
@@ -32,15 +31,18 @@ public class IntValue implements SortValue {
   private int lastDocID;
   protected boolean present;
 
+  @Override
   public Object getCurrentValue() {
     assert present == true;
     return currentValue;
   }
 
+  @Override
   public String getField() {
     return field;
   }
 
+  @Override
   public IntValue copy() {
     return new IntValue(field, comp);
   }
@@ -52,14 +54,17 @@ public class IntValue implements SortValue {
     this.present = false;
   }
 
+  @Override
   public void setNextReader(LeafReaderContext context) throws IOException {
     this.vals = DocValues.getNumeric(context.reader(), field);
     lastDocID = 0;
   }
 
+  @Override
   public void setCurrentValue(int docId) throws IOException {
     if (docId < lastDocID) {
-      throw new AssertionError("docs were sent out-of-order: lastDocID=" + lastDocID + " vs doc=" + docId);
+      throw new AssertionError(
+          "docs were sent out-of-order: lastDocID=" + lastDocID + " vs doc=" + docId);
     }
     lastDocID = docId;
     int curDocID = vals.docID();
@@ -75,26 +80,28 @@ public class IntValue implements SortValue {
     }
   }
 
-  public void toGlobalValue(SortValue previousValue) {
-
-  }
+  @Override
+  public void toGlobalValue(SortValue previousValue) {}
 
   @Override
   public boolean isPresent() {
     return this.present;
   }
 
+  @Override
   public int compareTo(SortValue o) {
     IntValue iv = (IntValue) o;
     return comp.compare(currentValue, iv.currentValue);
   }
 
+  @Override
   public void setCurrentValue(SortValue sv) {
     IntValue iv = (IntValue) sv;
     this.currentValue = iv.currentValue;
     this.present = iv.present;
   }
 
+  @Override
   public void reset() {
     currentValue = comp.resetValue();
     this.present = false;
