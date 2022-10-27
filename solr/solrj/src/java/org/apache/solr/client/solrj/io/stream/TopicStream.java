@@ -39,8 +39,8 @@ import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
@@ -302,11 +302,13 @@ public class TopicStream extends CloudSolrStream implements Expressible {
     return explanation;
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     return l;
   }
 
+  @Override
   public void open() throws IOException {
     this.tuples = new TreeSet<>();
     this.solrStreams = new ArrayList<>();
@@ -364,6 +366,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
     }
   }
 
+  @Override
   public void close() throws IOException {
     try {
 
@@ -387,6 +390,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
     }
   }
 
+  @Override
   public Tuple read() throws IOException {
     Tuple tuple = _read();
 
@@ -416,6 +420,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
     return tuple;
   }
 
+  @Override
   public int getCost() {
     return 0;
   }
@@ -509,10 +514,10 @@ public class TopicStream extends CloudSolrStream implements Expressible {
       for (Replica replica : replicas) {
         if (replica.getState() == Replica.State.ACTIVE
             && liveNodes.contains(replica.getNodeName())) {
-          HttpSolrClient httpClient =
+          SolrClient solrClient =
               streamContext.getSolrClientCache().getHttpSolrClient(replica.getCoreUrl());
           try {
-            SolrDocument doc = httpClient.getById(id);
+            SolrDocument doc = solrClient.getById(id);
             if (doc != null) {
               @SuppressWarnings({"unchecked"})
               List<String> checkpoints = (List<String>) doc.getFieldValue("checkpoint_ss");
@@ -530,6 +535,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
     }
   }
 
+  @Override
   protected void constructStreams() throws IOException {
     try {
       Slice[] slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);

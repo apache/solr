@@ -68,7 +68,7 @@ public class TestManagedResource extends SolrTestCaseJ4 {
     }
   }
 
-  private class ManagedTestResource extends ManagedResource {
+  private static class ManagedTestResource extends ManagedResource {
 
     private Object managedData;
 
@@ -179,7 +179,7 @@ public class TestManagedResource extends SolrTestCaseJ4 {
     }
   }
 
-  private class CustomStorageFormatResource extends ManagedTestResource {
+  private static class CustomStorageFormatResource extends ManagedTestResource {
     private CustomStorageFormatResource(
         String resourceId, SolrResourceLoader loader, StorageIO storageIO) throws SolrException {
       super(resourceId, loader, storageIO);

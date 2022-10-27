@@ -158,25 +158,25 @@ public class IfFunctionTest extends SolrTestCaseJ4 {
     cond.setValue(true).setExists(true);
     then.setValue(false).setExists(true);
     els.setValue(true).setExists(true);
-    assertEquals(false, func.getBoolean());
+    assertFalse(func.getBoolean());
     assertTrue(func.exists());
 
     cond.setValue(true).setExists(true);
     then.setValue(true).setExists(true);
     els.setValue(false).setExists(true);
-    assertEquals(true, func.getBoolean());
+    assertTrue(func.getBoolean());
     assertTrue(func.exists());
 
     cond.setValue(false).setExists(true);
     then.setValue(false).setExists(true);
     els.setValue(true).setExists(true);
-    assertEquals(true, func.getBoolean());
+    assertTrue(func.getBoolean());
     assertTrue(func.exists());
 
     cond.setValue(false).setExists(true);
     then.setValue(true).setExists(true);
     els.setValue(false).setExists(true);
-    assertEquals(false, func.getBoolean());
+    assertFalse(func.getBoolean());
     assertTrue(func.exists());
   }
 

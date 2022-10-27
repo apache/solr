@@ -20,11 +20,11 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
@@ -134,7 +134,7 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
 
     DocCollection state = getCollectionState(targetCollection);
     Replica replica = state.getReplicas().get(0);
-    try (HttpSolrClient collectionClient = getHttpSolrClient(replica.getCoreUrl())) {
+    try (SolrClient collectionClient = getHttpSolrClient(replica.getCoreUrl())) {
 
       SolrQuery solrQuery = new SolrQuery("*:*");
       assertEquals(

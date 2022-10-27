@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.request;
 
 import java.io.File;
-import junit.framework.Assert;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
@@ -59,7 +58,7 @@ public class SolrPingTest extends EmbeddedSolrServerTestBase {
     ping.process(getSolrClient());
     ping.removeAction();
     rsp = ping.process(getSolrClient());
-    Assert.assertNotNull(rsp);
+    assertNotNull(rsp);
   }
 
   @Test(expected = SolrException.class)
@@ -75,6 +74,6 @@ public class SolrPingTest extends EmbeddedSolrServerTestBase {
     ping.setActionPing();
     rsp = ping.process(getSolrClient());
     // the above line should fail with a 503 SolrException.
-    Assert.assertNotNull(rsp);
+    assertNotNull(rsp);
   }
 }

@@ -66,7 +66,7 @@ public class V2CollectionBackupsAPIMappingTest extends V2ApiMappingTest<Collecti
     assertEquals("someRepository", v1Params.get(CoreAdminParams.BACKUP_REPOSITORY));
     assertEquals(123, v1Params.getPrimitiveInt(CoreAdminParams.BACKUP_ID));
     assertEquals(456, v1Params.getPrimitiveInt(CoreAdminParams.MAX_NUM_BACKUP_POINTS));
-    assertEquals(true, v1Params.getPrimitiveBool(CoreAdminParams.BACKUP_PURGE_UNUSED));
+    assertTrue(v1Params.getPrimitiveBool(CoreAdminParams.BACKUP_PURGE_UNUSED));
     assertEquals("requestTrackingId", v1Params.get(CommonAdminParams.ASYNC));
   }
 

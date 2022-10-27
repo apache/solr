@@ -70,7 +70,7 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
     HttpRequestBase m = getSelectMethod("GET", "q", "xyz_ignore_exception:solr", "qt", "standard");
     // We force an exception from Solr. This should emit "no-cache" HTTP headers
     HttpResponse response = getClient().execute(m);
-    assertFalse(response.getStatusLine().getStatusCode() == 200);
+    assertNotEquals(200, response.getStatusLine().getStatusCode());
     checkVetoHeaders(response, false);
   }
 

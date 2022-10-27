@@ -160,23 +160,28 @@ public class ModelStream extends TupleStream implements Expressible {
     this.cacheMillis = cacheMillis;
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.solrClientCache = context.getSolrClientCache();
     this.modelCache = context.getModelCache();
   }
 
+  @Override
   public void open() throws IOException {
     this.model = modelCache.getModel(collection, modelID, cacheMillis);
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     return l;
   }
 
+  @Override
   public void close() throws IOException {}
 
   /** Return the stream sort - ie, the order in which records are returned */
+  @Override
   public StreamComparator getStreamSort() {
     return null;
   }
@@ -192,6 +197,7 @@ public class ModelStream extends TupleStream implements Expressible {
     return explanation;
   }
 
+  @Override
   public Tuple read() throws IOException {
     Tuple tuple = null;
 

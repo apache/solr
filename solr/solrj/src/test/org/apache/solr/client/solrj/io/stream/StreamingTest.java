@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -231,7 +230,7 @@ public class StreamingTest extends SolrCloudTestCase {
       pstream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(pstream);
 
-      assert (tuples.size() == (10 * numWorkers)); // Each tuple will be double counted.
+      assertEquals(tuples.size(), (10 * numWorkers)); // Each tuple will be double counted.
     } finally {
       solrClientCache.close();
     }
@@ -859,14 +858,14 @@ public class StreamingTest extends SolrCloudTestCase {
       Double count = tuple.getDouble("count(*)");
 
       assertEquals(70, sumi.longValue());
-      assertEquals(55.0, sumf.doubleValue(), 0.01);
-      assertEquals(0.0, mini.doubleValue(), 0.01);
-      assertEquals(1.0, minf.doubleValue(), 0.01);
-      assertEquals(14.0, maxi.doubleValue(), 0.01);
-      assertEquals(10.0, maxf.doubleValue(), 0.01);
-      assertEquals(7.0, avgi.doubleValue(), .01);
-      assertEquals(5.5, avgf.doubleValue(), .001);
-      assertEquals(10, count.doubleValue(), .01);
+      assertEquals(55.0, sumf, 0.01);
+      assertEquals(0.0, mini, 0.01);
+      assertEquals(1.0, minf, 0.01);
+      assertEquals(14.0, maxi, 0.01);
+      assertEquals(10.0, maxf, 0.01);
+      assertEquals(7.0, avgi, .01);
+      assertEquals(5.5, avgf, .001);
+      assertEquals(10, count, .01);
     } finally {
       solrClientCache.close();
     }
@@ -916,7 +915,7 @@ public class StreamingTest extends SolrCloudTestCase {
 
       List<Tuple> tuples = getTuples(facetStream);
 
-      assert (tuples.size() == 3);
+      assertEquals(3, tuples.size());
 
       // Test Long and Double Sums
 
@@ -934,14 +933,14 @@ public class StreamingTest extends SolrCloudTestCase {
 
       assertEquals("hello4", bucket);
       assertEquals(15, sumi.longValue());
-      assertEquals(11.0, sumf.doubleValue(), 0.01);
-      assertEquals(4.0, mini.doubleValue(), 0.01);
-      assertEquals(4.0, minf.doubleValue(), 0.01);
-      assertEquals(11.0, maxi.doubleValue(), 0.01);
-      assertEquals(7.0, maxf.doubleValue(), 0.01);
-      assertEquals(7.5, avgi.doubleValue(), 0.01);
-      assertEquals(5.5, avgf.doubleValue(), 0.01);
-      assertEquals(2, count.doubleValue(), 0.01);
+      assertEquals(11.0, sumf, 0.01);
+      assertEquals(4.0, mini, 0.01);
+      assertEquals(4.0, minf, 0.01);
+      assertEquals(11.0, maxi, 0.01);
+      assertEquals(7.0, maxf, 0.01);
+      assertEquals(7.5, avgi, 0.01);
+      assertEquals(5.5, avgf, 0.01);
+      assertEquals(2, count, 0.01);
 
       tuple = tuples.get(1);
       bucket = tuple.getString("a_s");
@@ -956,15 +955,15 @@ public class StreamingTest extends SolrCloudTestCase {
       count = tuple.getDouble("count(*)");
 
       assertEquals("hello0", bucket);
-      assertEquals(17, sumi.doubleValue(), .01);
-      assertEquals(18, sumf.doubleValue(), .01);
-      assertEquals(0.0, mini.doubleValue(), .01);
-      assertEquals(1.0, minf.doubleValue(), .01);
-      assertEquals(14.0, maxi.doubleValue(), .01);
-      assertEquals(10.0, maxf.doubleValue(), .01);
-      assertEquals(4.25, avgi.doubleValue(), .01);
-      assertEquals(4.5, avgf.doubleValue(), .01);
-      assertEquals(4, count.doubleValue(), .01);
+      assertEquals(17, sumi, .01);
+      assertEquals(18, sumf, .01);
+      assertEquals(0.0, mini, .01);
+      assertEquals(1.0, minf, .01);
+      assertEquals(14.0, maxi, .01);
+      assertEquals(10.0, maxf, .01);
+      assertEquals(4.25, avgi, .01);
+      assertEquals(4.5, avgf, .01);
+      assertEquals(4, count, .01);
 
       tuple = tuples.get(2);
       bucket = tuple.getString("a_s");
@@ -979,15 +978,15 @@ public class StreamingTest extends SolrCloudTestCase {
       count = tuple.getDouble("count(*)");
 
       assertEquals("hello3", bucket);
-      assertEquals(38.0, sumi.doubleValue(), 0.01);
-      assertEquals(26.0, sumf.doubleValue(), 0.01);
-      assertEquals(3.0, mini.doubleValue(), 0.01);
-      assertEquals(3.0, minf.doubleValue(), 0.01);
-      assertEquals(13.0, maxi.doubleValue(), 0.01);
-      assertEquals(9.0, maxf.doubleValue(), 0.01);
-      assertEquals(9.5, avgi.doubleValue(), 0.01);
-      assertEquals(6.5, avgf.doubleValue(), 0.01);
-      assertEquals(4, count.doubleValue(), 0.01);
+      assertEquals(38.0, sumi, 0.01);
+      assertEquals(26.0, sumf, 0.01);
+      assertEquals(3.0, mini, 0.01);
+      assertEquals(3.0, minf, 0.01);
+      assertEquals(13.0, maxi, 0.01);
+      assertEquals(9.0, maxf, 0.01);
+      assertEquals(9.5, avgi, 0.01);
+      assertEquals(6.5, avgf, 0.01);
+      assertEquals(4, count, 0.01);
 
       // Reverse the Sort.
 
@@ -1015,15 +1014,15 @@ public class StreamingTest extends SolrCloudTestCase {
       count = tuple.getDouble("count(*)");
 
       assertEquals("hello3", bucket);
-      assertEquals(38, sumi.doubleValue(), 0.1);
-      assertEquals(26, sumf.doubleValue(), 0.1);
-      assertEquals(3, mini.doubleValue(), 0.1);
-      assertEquals(3, minf.doubleValue(), 0.1);
-      assertEquals(13, maxi.doubleValue(), 0.1);
-      assertEquals(9, maxf.doubleValue(), 0.1);
-      assertEquals(9.5, avgi.doubleValue(), 0.1);
-      assertEquals(6.5, avgf.doubleValue(), 0.1);
-      assertEquals(4, count.doubleValue(), 0.1);
+      assertEquals(38, sumi, 0.1);
+      assertEquals(26, sumf, 0.1);
+      assertEquals(3, mini, 0.1);
+      assertEquals(3, minf, 0.1);
+      assertEquals(13, maxi, 0.1);
+      assertEquals(9, maxf, 0.1);
+      assertEquals(9.5, avgi, 0.1);
+      assertEquals(6.5, avgf, 0.1);
+      assertEquals(4, count, 0.1);
 
       tuple = tuples.get(1);
       bucket = tuple.getString("a_s");
@@ -1038,15 +1037,15 @@ public class StreamingTest extends SolrCloudTestCase {
       count = tuple.getDouble("count(*)");
 
       assertEquals("hello0", bucket);
-      assertEquals(17, sumi.doubleValue(), 0.01);
-      assertEquals(18, sumf.doubleValue(), 0.01);
-      assertEquals(0, mini.doubleValue(), 0.01);
-      assertEquals(1, minf.doubleValue(), 0.01);
-      assertEquals(14, maxi.doubleValue(), 0.01);
-      assertEquals(10, maxf.doubleValue(), 0.01);
-      assertEquals(4.25, avgi.doubleValue(), 0.01);
-      assertEquals(4.5, avgf.doubleValue(), 0.01);
-      assertEquals(4, count.doubleValue(), 0.01);
+      assertEquals(17, sumi, 0.01);
+      assertEquals(18, sumf, 0.01);
+      assertEquals(0, mini, 0.01);
+      assertEquals(1, minf, 0.01);
+      assertEquals(14, maxi, 0.01);
+      assertEquals(10, maxf, 0.01);
+      assertEquals(4.25, avgi, 0.01);
+      assertEquals(4.5, avgf, 0.01);
+      assertEquals(4, count, 0.01);
 
       tuple = tuples.get(2);
       bucket = tuple.getString("a_s");
@@ -1062,14 +1061,14 @@ public class StreamingTest extends SolrCloudTestCase {
 
       assertEquals("hello4", bucket);
       assertEquals(15, sumi.longValue());
-      assertEquals(11, sumf.doubleValue(), 0.01);
-      assertEquals(4.0, mini.doubleValue(), 0.01);
-      assertEquals(4.0, minf.doubleValue(), 0.01);
-      assertEquals(11.0, maxi.doubleValue(), 0.01);
-      assertEquals(7.0, maxf.doubleValue(), 0.01);
-      assertEquals(7.5, avgi.doubleValue(), 0.01);
-      assertEquals(5.5, avgf.doubleValue(), 0.01);
-      assertEquals(2, count.doubleValue(), 0.01);
+      assertEquals(11, sumf, 0.01);
+      assertEquals(4.0, mini, 0.01);
+      assertEquals(4.0, minf, 0.01);
+      assertEquals(11.0, maxi, 0.01);
+      assertEquals(7.0, maxf, 0.01);
+      assertEquals(7.5, avgi, 0.01);
+      assertEquals(5.5, avgf, 0.01);
+      assertEquals(2, count, 0.01);
 
       // Test index sort
 
@@ -1097,14 +1096,14 @@ public class StreamingTest extends SolrCloudTestCase {
 
       assertEquals("hello4", bucket);
       assertEquals(15, sumi.longValue());
-      assertEquals(11, sumf.doubleValue(), 0.01);
-      assertEquals(4, mini.doubleValue(), 0.01);
-      assertEquals(4, minf.doubleValue(), 0.01);
-      assertEquals(11, maxi.doubleValue(), 0.01);
-      assertEquals(7, maxf.doubleValue(), 0.01);
-      assertEquals(7.5, avgi.doubleValue(), 0.01);
-      assertEquals(5.5, avgf.doubleValue(), 0.01);
-      assertEquals(2, count.doubleValue(), 0.01);
+      assertEquals(11, sumf, 0.01);
+      assertEquals(4, mini, 0.01);
+      assertEquals(4, minf, 0.01);
+      assertEquals(11, maxi, 0.01);
+      assertEquals(7, maxf, 0.01);
+      assertEquals(7.5, avgi, 0.01);
+      assertEquals(5.5, avgf, 0.01);
+      assertEquals(2, count, 0.01);
 
       tuple = tuples.get(1);
       bucket = tuple.getString("a_s");
@@ -1119,15 +1118,15 @@ public class StreamingTest extends SolrCloudTestCase {
       count = tuple.getDouble("count(*)");
 
       assertEquals("hello3", bucket);
-      assertEquals(38.0D, sumi.doubleValue(), 0.01);
-      assertEquals(26.0D, sumf.doubleValue(), 0.01);
-      assertEquals(3.0D, mini.doubleValue(), 0.01);
-      assertEquals(3.0D, minf.doubleValue(), 0.01);
-      assertEquals(13.0D, maxi.doubleValue(), 0.01);
-      assertEquals(9.0D, maxf.doubleValue(), 0.01);
-      assertEquals(9.5D, avgi.doubleValue(), 0.01);
-      assertEquals(6.5D, avgf.doubleValue(), 0.01);
-      assertEquals(4, count.doubleValue(), 0.01);
+      assertEquals(38.0D, sumi, 0.01);
+      assertEquals(26.0D, sumf, 0.01);
+      assertEquals(3.0D, mini, 0.01);
+      assertEquals(3.0D, minf, 0.01);
+      assertEquals(13.0D, maxi, 0.01);
+      assertEquals(9.0D, maxf, 0.01);
+      assertEquals(9.5D, avgi, 0.01);
+      assertEquals(6.5D, avgf, 0.01);
+      assertEquals(4, count, 0.01);
 
       tuple = tuples.get(2);
       bucket = tuple.getString("a_s");
@@ -1142,15 +1141,15 @@ public class StreamingTest extends SolrCloudTestCase {
       count = tuple.getDouble("count(*)");
 
       assertEquals("hello0", bucket);
-      assertEquals(17, sumi.doubleValue(), 0.01);
-      assertEquals(18, sumf.doubleValue(), 0.01);
-      assertEquals(0, mini.doubleValue(), 0.01);
-      assertEquals(1, minf.doubleValue(), 0.01);
-      assertEquals(14, maxi.doubleValue(), 0.01);
-      assertEquals(10, maxf.doubleValue(), 0.01);
-      assertEquals(4.25, avgi.doubleValue(), 0.01);
-      assertEquals(4.5, avgf.doubleValue(), 0.01);
-      assertEquals(4, count.doubleValue(), 0.01);
+      assertEquals(17, sumi, 0.01);
+      assertEquals(18, sumf, 0.01);
+      assertEquals(0, mini, 0.01);
+      assertEquals(1, minf, 0.01);
+      assertEquals(14, maxi, 0.01);
+      assertEquals(10, maxf, 0.01);
+      assertEquals(4.25, avgi, 0.01);
+      assertEquals(4.5, avgf, 0.01);
+      assertEquals(4, count, 0.01);
 
       // Test index sort
 
@@ -1176,15 +1175,15 @@ public class StreamingTest extends SolrCloudTestCase {
       count = tuple.getDouble("count(*)");
 
       assertEquals("hello0", bucket);
-      assertEquals(17, sumi.doubleValue(), 0.01);
-      assertEquals(18, sumf.doubleValue(), 0.01);
-      assertEquals(0, mini.doubleValue(), 0.01);
-      assertEquals(1, minf.doubleValue(), 0.01);
-      assertEquals(14, maxi.doubleValue(), 0.01);
-      assertEquals(10, maxf.doubleValue(), 0.01);
-      assertEquals(4.25, avgi.doubleValue(), 0.0001);
-      assertEquals(4.5, avgf.doubleValue(), 0.001);
-      assertEquals(4, count.doubleValue(), 0.01);
+      assertEquals(17, sumi, 0.01);
+      assertEquals(18, sumf, 0.01);
+      assertEquals(0, mini, 0.01);
+      assertEquals(1, minf, 0.01);
+      assertEquals(14, maxi, 0.01);
+      assertEquals(10, maxf, 0.01);
+      assertEquals(4.25, avgi, 0.0001);
+      assertEquals(4.5, avgf, 0.001);
+      assertEquals(4, count, 0.01);
 
       tuple = tuples.get(1);
       bucket = tuple.getString("a_s");
@@ -1199,15 +1198,15 @@ public class StreamingTest extends SolrCloudTestCase {
       count = tuple.getDouble("count(*)");
 
       assertEquals("hello3", bucket);
-      assertEquals(38, sumi.doubleValue(), 0.01);
-      assertEquals(26, sumf.doubleValue(), 0.01);
-      assertEquals(3, mini.doubleValue(), 0.01);
-      assertEquals(3, minf.doubleValue(), 0.01);
-      assertEquals(13, maxi.doubleValue(), 0.01);
-      assertEquals(9, maxf.doubleValue(), 0.01);
-      assertEquals(9.5, avgi.doubleValue(), 0.01);
-      assertEquals(6.5, avgf.doubleValue(), 0.01);
-      assertEquals(4, count.doubleValue(), 0.01);
+      assertEquals(38, sumi, 0.01);
+      assertEquals(26, sumf, 0.01);
+      assertEquals(3, mini, 0.01);
+      assertEquals(3, minf, 0.01);
+      assertEquals(13, maxi, 0.01);
+      assertEquals(9, maxf, 0.01);
+      assertEquals(9.5, avgi, 0.01);
+      assertEquals(6.5, avgf, 0.01);
+      assertEquals(4, count, 0.01);
 
       tuple = tuples.get(2);
       bucket = tuple.getString("a_s");
@@ -1223,14 +1222,14 @@ public class StreamingTest extends SolrCloudTestCase {
 
       assertEquals("hello4", bucket);
       assertEquals(15, sumi.longValue());
-      assertEquals(11.0, sumf.doubleValue(), 0.1);
-      assertEquals(4.0, mini.doubleValue(), 0.1);
-      assertEquals(4.0, minf.doubleValue(), 0.1);
-      assertEquals(11.0, maxi.doubleValue(), 0.1);
-      assertEquals(7.0, maxf.doubleValue(), 0.1);
-      assertEquals(7.5, avgi.doubleValue(), 0.1);
-      assertEquals(5.5, avgf.doubleValue(), 0.1);
-      assertEquals(2, count.doubleValue(), 0.1);
+      assertEquals(11.0, sumf, 0.1);
+      assertEquals(4.0, mini, 0.1);
+      assertEquals(4.0, minf, 0.1);
+      assertEquals(11.0, maxi, 0.1);
+      assertEquals(7.0, maxf, 0.1);
+      assertEquals(7.5, avgi, 0.1);
+      assertEquals(5.5, avgf, 0.1);
+      assertEquals(2, count, 0.1);
 
       sorts[0] = new FieldComparator("a_s", ComparatorOrder.ASCENDING);
 
@@ -1273,9 +1272,9 @@ public class StreamingTest extends SolrCloudTestCase {
 
   // Select and export should be identical sort orders I think.
   private void checkSort(JettySolrRunner jetty, String field, String sortDir, String[] fields)
-      throws IOException, SolrServerException {
+      throws IOException {
 
-    // Comes back after after LUCENE-7548
+    // Comes back after LUCENE-7548
     //    SolrQuery query = new SolrQuery("*:*");
     //    query.addSort(field, ("asc".equals(sortDir) ? SolrQuery.ORDER.asc :
     // SolrQuery.ORDER.desc));
@@ -1584,7 +1583,7 @@ public class StreamingTest extends SolrCloudTestCase {
       assertEquals("hello4", bucket1);
       assertEquals("b", bucket2);
       assertEquals(11, sumi.longValue());
-      assertEquals(1, count.doubleValue(), 0.1);
+      assertEquals(1, count, 0.1);
 
       tuple = tuples.get(3);
       bucket1 = tuple.getString("level1_s");
@@ -1595,7 +1594,7 @@ public class StreamingTest extends SolrCloudTestCase {
       assertEquals("hello4", bucket1);
       assertEquals("a", bucket2);
       assertEquals(4, sumi.longValue());
-      assertEquals(1, count.doubleValue(), 0.1);
+      assertEquals(1, count, 0.1);
 
       tuple = tuples.get(4);
       bucket1 = tuple.getString("level1_s");
@@ -1606,7 +1605,7 @@ public class StreamingTest extends SolrCloudTestCase {
       assertEquals("hello3", bucket1);
       assertEquals("a", bucket2);
       assertEquals(3, sumi.longValue());
-      assertEquals(1, count.doubleValue(), 0.1);
+      assertEquals(1, count, 0.1);
 
       tuple = tuples.get(5);
       bucket1 = tuple.getString("level1_s");
@@ -1617,7 +1616,7 @@ public class StreamingTest extends SolrCloudTestCase {
       assertEquals("hello0", bucket1);
       assertEquals("a", bucket2);
       assertEquals(2, sumi.longValue());
-      assertEquals(2, count.doubleValue(), 0.1);
+      assertEquals(2, count, 0.1);
 
       sorts[0] = new FieldComparator("level1_s", ComparatorOrder.DESCENDING);
       sorts[1] = new FieldComparator("level2_s", ComparatorOrder.DESCENDING);
@@ -1647,7 +1646,7 @@ public class StreamingTest extends SolrCloudTestCase {
       assertEquals("hello4", bucket1);
       assertEquals("a", bucket2);
       assertEquals(4, sumi.longValue());
-      assertEquals(1, count.doubleValue(), 0.1);
+      assertEquals(1, count, 0.1);
 
       tuple = tuples.get(2);
       bucket1 = tuple.getString("level1_s");
@@ -1658,7 +1657,7 @@ public class StreamingTest extends SolrCloudTestCase {
       assertEquals("hello3", bucket1);
       assertEquals("b", bucket2);
       assertEquals(35, sumi.longValue());
-      assertEquals(3, count.doubleValue(), 0.1);
+      assertEquals(3, count, 0.1);
 
       tuple = tuples.get(3);
       bucket1 = tuple.getString("level1_s");
@@ -1669,7 +1668,7 @@ public class StreamingTest extends SolrCloudTestCase {
       assertEquals("hello3", bucket1);
       assertEquals("a", bucket2);
       assertEquals(3, sumi.longValue());
-      assertEquals(1, count.doubleValue(), 0.1);
+      assertEquals(1, count, 0.1);
 
       tuple = tuples.get(4);
       bucket1 = tuple.getString("level1_s");
@@ -1680,7 +1679,7 @@ public class StreamingTest extends SolrCloudTestCase {
       assertEquals("hello0", bucket1);
       assertEquals("b", bucket2);
       assertEquals(15, sumi.longValue());
-      assertEquals(2, count.doubleValue(), 0.1);
+      assertEquals(2, count, 0.1);
 
       tuple = tuples.get(5);
       bucket1 = tuple.getString("level1_s");
@@ -1691,7 +1690,7 @@ public class StreamingTest extends SolrCloudTestCase {
       assertEquals("hello0", bucket1);
       assertEquals("a", bucket2);
       assertEquals(2, sumi.longValue());
-      assertEquals(2, count.doubleValue(), 0.1);
+      assertEquals(2, count, 0.1);
     } finally {
       solrClientCache.close();
     }
@@ -1738,7 +1737,7 @@ public class StreamingTest extends SolrCloudTestCase {
       rollupStream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(rollupStream);
 
-      assert (tuples.size() == 3);
+      assertEquals(3, tuples.size());
 
       // Test Long and Double Sums
 
@@ -1755,15 +1754,15 @@ public class StreamingTest extends SolrCloudTestCase {
       Double count = tuple.getDouble("count(*)");
 
       assertEquals("hello0", bucket);
-      assertEquals(17, sumi.doubleValue(), 0.001);
-      assertEquals(18, sumf.doubleValue(), 0.001);
-      assertEquals(0, mini.doubleValue(), 0.001);
-      assertEquals(1, minf.doubleValue(), 0.001);
-      assertEquals(14, maxi.doubleValue(), 0.001);
-      assertEquals(10, maxf.doubleValue(), 0.001);
-      assertEquals(4.25, avgi.doubleValue(), 0.001);
-      assertEquals(4.5, avgf.doubleValue(), 0.001);
-      assertEquals(4, count.doubleValue(), 0.001);
+      assertEquals(17, sumi, 0.001);
+      assertEquals(18, sumf, 0.001);
+      assertEquals(0, mini, 0.001);
+      assertEquals(1, minf, 0.001);
+      assertEquals(14, maxi, 0.001);
+      assertEquals(10, maxf, 0.001);
+      assertEquals(4.25, avgi, 0.001);
+      assertEquals(4.5, avgf, 0.001);
+      assertEquals(4, count, 0.001);
 
       tuple = tuples.get(1);
       bucket = tuple.getString("a_s");
@@ -1778,15 +1777,15 @@ public class StreamingTest extends SolrCloudTestCase {
       count = tuple.getDouble("count(*)");
 
       assertEquals("hello3", bucket);
-      assertEquals(38, sumi.doubleValue(), 0.001);
-      assertEquals(26, sumf.doubleValue(), 0.001);
-      assertEquals(3, mini.doubleValue(), 0.001);
-      assertEquals(3, minf.doubleValue(), 0.001);
-      assertEquals(13, maxi.doubleValue(), 0.001);
-      assertEquals(9, maxf.doubleValue(), 0.001);
-      assertEquals(9.5, avgi.doubleValue(), 0.001);
-      assertEquals(6.5, avgf.doubleValue(), 0.001);
-      assertEquals(4, count.doubleValue(), 0.001);
+      assertEquals(38, sumi, 0.001);
+      assertEquals(26, sumf, 0.001);
+      assertEquals(3, mini, 0.001);
+      assertEquals(3, minf, 0.001);
+      assertEquals(13, maxi, 0.001);
+      assertEquals(9, maxf, 0.001);
+      assertEquals(9.5, avgi, 0.001);
+      assertEquals(6.5, avgf, 0.001);
+      assertEquals(4, count, 0.001);
 
       tuple = tuples.get(2);
       bucket = tuple.getString("a_s");
@@ -1802,21 +1801,21 @@ public class StreamingTest extends SolrCloudTestCase {
 
       assertEquals("hello4", bucket);
       assertEquals(15, sumi.longValue());
-      assertEquals(11, sumf.doubleValue(), 0.01);
-      assertEquals(4, mini.doubleValue(), 0.01);
-      assertEquals(4, minf.doubleValue(), 0.01);
-      assertEquals(11, maxi.doubleValue(), 0.01);
-      assertEquals(7, maxf.doubleValue(), 0.01);
-      assertEquals(7.5, avgi.doubleValue(), 0.01);
-      assertEquals(5.5, avgf.doubleValue(), 0.01);
-      assertEquals(2, count.doubleValue(), 0.01);
+      assertEquals(11, sumf, 0.01);
+      assertEquals(4, mini, 0.01);
+      assertEquals(4, minf, 0.01);
+      assertEquals(11, maxi, 0.01);
+      assertEquals(7, maxf, 0.01);
+      assertEquals(7.5, avgi, 0.01);
+      assertEquals(5.5, avgf, 0.01);
+      assertEquals(2, count, 0.01);
 
       // Test will null metrics
       rollupStream = new RollupStream(stream, buckets, metrics);
       rollupStream.setStreamContext(streamContext);
       tuples = getTuples(rollupStream);
 
-      assert (tuples.size() == 3);
+      assertEquals(3, tuples.size());
       tuple = tuples.get(0);
       bucket = tuple.getString("a_s");
       assertEquals("hello0", bucket);
@@ -1868,15 +1867,15 @@ public class StreamingTest extends SolrCloudTestCase {
       avgf = tuple.getDouble("avg(a_f)");
       count = tuple.getDouble("count(*)");
 
-      assertEquals(14, sumi.doubleValue(), 0.01);
-      assertEquals(10, sumf.doubleValue(), 0.01);
-      assertEquals(14, mini.doubleValue(), 0.01);
-      assertEquals(10, minf.doubleValue(), 0.01);
-      assertEquals(14, maxi.doubleValue(), 0.01);
-      assertEquals(10, maxf.doubleValue(), 0.01);
-      assertEquals(14, avgi.doubleValue(), 0.01);
-      assertEquals(10, avgf.doubleValue(), 0.01);
-      assertEquals(1, count.doubleValue(), 0.01);
+      assertEquals(14, sumi, 0.01);
+      assertEquals(10, sumf, 0.01);
+      assertEquals(14, mini, 0.01);
+      assertEquals(10, minf, 0.01);
+      assertEquals(14, maxi, 0.01);
+      assertEquals(10, maxf, 0.01);
+      assertEquals(14, avgi, 0.01);
+      assertEquals(10, avgf, 0.01);
+      assertEquals(1, count, 0.01);
     } finally {
       solrClientCache.close();
     }
@@ -1940,7 +1939,7 @@ public class StreamingTest extends SolrCloudTestCase {
       count = tuples.size();
       if (count > 0) {
         Tuple t = tuples.get(0);
-        assertEquals(50000000, (long) t.getLong("id"));
+        assertEquals(50000000, t.getLong("id").longValue());
       } else {
         System.out.println("###### Waiting for checkpoint #######:" + count);
       }
@@ -2043,7 +2042,7 @@ public class StreamingTest extends SolrCloudTestCase {
       streamContext = new StreamContext();
       solrStream.setStreamContext(streamContext);
       tuples = getTuples(solrStream);
-      assert (tuples.size() == 3);
+      assertEquals(3, tuples.size());
     } finally {
       solrClientCache.close();
     }
@@ -2122,15 +2121,15 @@ public class StreamingTest extends SolrCloudTestCase {
       Double count = tuple.getDouble("count(*)");
 
       assertEquals("hello0", bucket);
-      assertEquals(17, sumi.doubleValue(), 0.001);
-      assertEquals(18, sumf.doubleValue(), 0.001);
-      assertEquals(0, mini.doubleValue(), 0.001);
-      assertEquals(1, minf.doubleValue(), 0.001);
-      assertEquals(14, maxi.doubleValue(), 0.001);
-      assertEquals(10, maxf.doubleValue(), 0.001);
-      assertEquals(4.25, avgi.doubleValue(), 0.001);
-      assertEquals(4.5, avgf.doubleValue(), 0.001);
-      assertEquals(4, count.doubleValue(), 0.001);
+      assertEquals(17, sumi, 0.001);
+      assertEquals(18, sumf, 0.001);
+      assertEquals(0, mini, 0.001);
+      assertEquals(1, minf, 0.001);
+      assertEquals(14, maxi, 0.001);
+      assertEquals(10, maxf, 0.001);
+      assertEquals(4.25, avgi, 0.001);
+      assertEquals(4.5, avgf, 0.001);
+      assertEquals(4, count, 0.001);
 
       tuple = tuples.get(1);
       bucket = tuple.getString("a_s");
@@ -2145,15 +2144,15 @@ public class StreamingTest extends SolrCloudTestCase {
       count = tuple.getDouble("count(*)");
 
       assertEquals("hello3", bucket);
-      assertEquals(38, sumi.doubleValue(), 0.001);
-      assertEquals(26, sumf.doubleValue(), 0.001);
-      assertEquals(3, mini.doubleValue(), 0.001);
-      assertEquals(3, minf.doubleValue(), 0.001);
-      assertEquals(13, maxi.doubleValue(), 0.001);
-      assertEquals(9, maxf.doubleValue(), 0.001);
-      assertEquals(9.5, avgi.doubleValue(), 0.001);
-      assertEquals(6.5, avgf.doubleValue(), 0.001);
-      assertEquals(4, count.doubleValue(), 0.001);
+      assertEquals(38, sumi, 0.001);
+      assertEquals(26, sumf, 0.001);
+      assertEquals(3, mini, 0.001);
+      assertEquals(3, minf, 0.001);
+      assertEquals(13, maxi, 0.001);
+      assertEquals(9, maxf, 0.001);
+      assertEquals(9.5, avgi, 0.001);
+      assertEquals(6.5, avgf, 0.001);
+      assertEquals(4, count, 0.001);
 
       tuple = tuples.get(2);
       bucket = tuple.getString("a_s");
@@ -2169,14 +2168,14 @@ public class StreamingTest extends SolrCloudTestCase {
 
       assertEquals("hello4", bucket);
       assertEquals(15, sumi.longValue());
-      assertEquals(11, sumf.doubleValue(), 0.001);
-      assertEquals(4, mini.doubleValue(), 0.001);
-      assertEquals(4, minf.doubleValue(), 0.001);
-      assertEquals(11, maxi.doubleValue(), 0.001);
-      assertEquals(7, maxf.doubleValue(), 0.001);
-      assertEquals(7.5, avgi.doubleValue(), 0.001);
-      assertEquals(5.5, avgf.doubleValue(), 0.001);
-      assertEquals(2, count.doubleValue(), 0.001);
+      assertEquals(11, sumf, 0.001);
+      assertEquals(4, mini, 0.001);
+      assertEquals(4, minf, 0.001);
+      assertEquals(11, maxi, 0.001);
+      assertEquals(7, maxf, 0.001);
+      assertEquals(7.5, avgi, 0.001);
+      assertEquals(5.5, avgf, 0.001);
+      assertEquals(2, count, 0.001);
     } finally {
       solrClientCache.close();
     }
@@ -2225,7 +2224,7 @@ public class StreamingTest extends SolrCloudTestCase {
       attachStreamFactory(pstream);
       pstream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(pstream);
-      assert (tuples.size() == 0);
+      assertEquals(0, tuples.size());
     } finally {
       solrClientCache.close();
     }
@@ -2270,8 +2269,8 @@ public class StreamingTest extends SolrCloudTestCase {
       assertEquals(2, longList.get(1).longValue());
 
       List<Double> doubleList = tuple.getDoubles("f_multi");
-      assertEquals(1.2, doubleList.get(0).doubleValue(), 0.001);
-      assertEquals(1.3, doubleList.get(1).doubleValue(), 0.001);
+      assertEquals(1.2, doubleList.get(0), 0.001);
+      assertEquals(1.3, doubleList.get(1), 0.001);
     } finally {
       solrClientCache.close();
     }
@@ -3075,7 +3074,7 @@ public class StreamingTest extends SolrCloudTestCase {
         t = stream.read();
       }
 
-      List<String> baseUrls = new LinkedList<>();
+      List<String> baseUrls = new ArrayList<>();
       ZkStateReader zkStateReader = cluster.getZkStateReader();
       List<String> resolved =
           zkStateReader.aliasesManager.getAliases().resolveAliases(MULTI_REPLICA_COLLECTIONORALIAS);

@@ -286,7 +286,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
   }
 
   @Contract(threading = ThreadingBehavior.IMMUTABLE)
-  private class BasicAuthUserPrincipal implements Principal, Serializable {
+  private static class BasicAuthUserPrincipal implements Principal, Serializable {
     private String username;
     private final String password;
 
@@ -312,7 +312,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
+      if (!(o instanceof BasicAuthUserPrincipal)) return false;
       BasicAuthUserPrincipal that = (BasicAuthUserPrincipal) o;
       return Objects.equals(username, that.username) && Objects.equals(password, that.password);
     }

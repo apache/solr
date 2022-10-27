@@ -37,6 +37,7 @@ public class OrEvaluator extends RecursiveBooleanEvaluator implements ManyValueW
     }
   }
 
+  @Override
   protected Checker constructChecker(Object fromValue) throws IOException {
     if (null == fromValue) {
       throw new IOException(

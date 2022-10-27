@@ -17,7 +17,7 @@
 package org.apache.solr.legacy;
 
 import java.io.IOException;
-import java.util.LinkedList;
+import java.util.ArrayDeque;
 import java.util.Objects;
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.FloatPoint;
@@ -424,11 +424,11 @@ public final class LegacyNumericRangeQuery<T extends Number> extends MultiTermQu
     if (!super.equals(o)) return false;
     if (o instanceof LegacyNumericRangeQuery) {
       final LegacyNumericRangeQuery<?> q = (LegacyNumericRangeQuery<?>) o;
-      return ((q.min == null ? min == null : q.min.equals(min))
-          && (q.max == null ? max == null : q.max.equals(max))
+      return Objects.equals(q.min, min)
+          && Objects.equals(q.max, max)
           && minInclusive == q.minInclusive
           && maxInclusive == q.maxInclusive
-          && precisionStep == q.precisionStep);
+          && precisionStep == q.precisionStep;
     }
     return false;
   }
@@ -472,7 +472,7 @@ public final class LegacyNumericRangeQuery<T extends Number> extends MultiTermQu
 
     private BytesRef currentLowerBound, currentUpperBound;
 
-    private final LinkedList<BytesRef> rangeBounds = new LinkedList<>();
+    private final ArrayDeque<BytesRef> rangeBounds = new ArrayDeque<>();
 
     NumericRangeTermsEnum(final TermsEnum tenum) {
       super(tenum);

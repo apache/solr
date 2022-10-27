@@ -625,7 +625,7 @@ public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServ
         new FacetBucket("currency", 4));
   }
 
-  private class FacetBucket {
+  private static class FacetBucket {
     private final Object val;
     private final int count;
 
@@ -645,9 +645,9 @@ public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServ
 
   private void assertHasFacetWithBucketValues(
       NestableJsonFacet response, String expectedFacetName, FacetBucket... expectedBuckets) {
-    assertTrue(
+    assertNotNull(
         "Expected response to have facet with name " + expectedFacetName,
-        response.getBucketBasedFacets(expectedFacetName) != null);
+        response.getBucketBasedFacets(expectedFacetName));
     final List<BucketJsonFacet> buckets =
         response.getBucketBasedFacets(expectedFacetName).getBuckets();
     assertEquals(expectedBuckets.length, buckets.size());
@@ -661,9 +661,9 @@ public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServ
 
   private void assertHasStatFacetWithValue(
       NestableJsonFacet response, String expectedFacetName, Double expectedStatValue) {
-    assertTrue(
+    assertNotNull(
         "Expected response to have stat facet named '" + expectedFacetName + "'",
-        response.getStatValue(expectedFacetName) != null);
+        response.getStatValue(expectedFacetName));
     assertEquals(expectedStatValue, response.getStatValue(expectedFacetName));
   }
 

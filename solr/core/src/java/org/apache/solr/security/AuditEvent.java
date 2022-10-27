@@ -401,6 +401,7 @@ public class AuditEvent {
    */
   @Deprecated
   @JsonIgnore
+  @SuppressWarnings("JdkObsolete")
   public StringBuffer getRequestUrl() {
     return new StringBuffer(baseUrl);
   }

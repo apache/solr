@@ -19,6 +19,7 @@ package org.apache.solr.cloud.api.collections;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -38,6 +39,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     schemaString = "schema15.xml"; // we need a string id
   }
 
+  @Override
   @Test
   public void test() {
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -220,7 +222,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
         ((HttpSolrClient) shardToJetty.get(SHARD1).get(0).client.getSolrClient()).getBaseURL();
     baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
 
-    try (HttpSolrClient baseServer = getHttpSolrClient(baseUrl, 15000)) {
+    try (SolrClient baseServer = getHttpSolrClient(baseUrl, 15000)) {
       return baseServer.request(request);
     }
   }

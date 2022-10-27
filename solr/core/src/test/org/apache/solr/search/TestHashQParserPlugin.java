@@ -194,10 +194,10 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
       }
     }
 
-    assert (set1.size() > 0);
-    assert (set2.size() > 0);
-    assert (set3.size() > 0);
-    assert (set1.size() + set2.size() + set3.size() == set.size());
+    assertTrue(set1.size() > 0);
+    assertTrue(set2.size() > 0);
+    assertTrue(set3.size() > 0);
+    assertTrue(set1.size() + set2.size() + set3.size() == set.size());
     assertNoOverLap(set1, set2);
     assertNoOverLap(set1, set3);
     assertNoOverLap(set2, set3);
@@ -244,9 +244,9 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
       }
     }
 
-    assert (set1.size() > 0);
-    assert (set2.size() > 0);
-    assert (set1.size() + set2.size() == set.size());
+    assertTrue(set1.size() > 0);
+    assertTrue(set2.size() > 0);
+    assertTrue(set1.size() + set2.size() == set.size());
     assertNoOverLap(set1, set2);
 
     // Test with 2 workers and compound partition Key
@@ -291,9 +291,9 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
       }
     }
 
-    assert (set1.size() > 0);
-    assert (set2.size() > 0);
-    assert (set1.size() + set2.size() == set.size());
+    assertTrue(set1.size() > 0);
+    assertTrue(set2.size() > 0);
+    assertEquals(set1.size() + set2.size(), set.size());
     assertNoOverLap(set1, set2);
   }
 

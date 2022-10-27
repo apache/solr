@@ -114,28 +114,34 @@ public class SearchFacadeStream extends TupleStream implements Expressible {
     return innerStream.toExplanation(factory);
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.innerStream.setStreamContext(context);
   }
 
   /** Opens the CloudSolrStream */
+  @Override
   public void open() throws IOException {
     innerStream.open();
   }
 
+  @Override
   public List<TupleStream> children() {
     return innerStream.children();
   }
 
   /** Closes the CloudSolrStream */
+  @Override
   public void close() throws IOException {
     innerStream.close();
   }
 
+  @Override
   public Tuple read() throws IOException {
     return innerStream.read();
   }
 
+  @Override
   public StreamComparator getStreamSort() {
     return innerStream.getStreamSort();
   }

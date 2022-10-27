@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.io.stream.eval;
 
 import java.util.HashMap;
 import java.util.Map;
-import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.AndEvaluator;
@@ -47,29 +46,29 @@ public class AndEvaluatorTest extends SolrTestCase {
     values.put("a", true);
     values.put("b", true);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(true, result);
+    assertTrue(result instanceof Boolean);
+    assertEquals(true, result);
 
     values.clear();
     values.put("a", true);
     values.put("b", false);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(false, result);
+    assertTrue(result instanceof Boolean);
+    assertEquals(false, result);
 
     values.clear();
     values.put("a", false);
     values.put("b", true);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(false, result);
+    assertTrue(result instanceof Boolean);
+    assertEquals(false, result);
 
     values.clear();
     values.put("a", false);
     values.put("b", false);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(false, result);
+    assertTrue(result instanceof Boolean);
+    assertEquals(false, result);
   }
 
   @Test
@@ -82,39 +81,39 @@ public class AndEvaluatorTest extends SolrTestCase {
     values.put("b", true);
     values.put("c", true);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(true, result);
+    assertTrue(result instanceof Boolean);
+    assertEquals(true, result);
 
     values.clear();
     values.put("a", true);
     values.put("b", true);
     values.put("c", false);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(false, result);
+    assertTrue(result instanceof Boolean);
+    assertEquals(false, result);
 
     values.clear();
     values.put("a", true);
     values.put("b", false);
     values.put("c", false);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(false, result);
+    assertTrue(result instanceof Boolean);
+    assertEquals(false, result);
 
     values.clear();
     values.put("a", false);
     values.put("b", true);
     values.put("c", false);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(false, result);
+    assertTrue(result instanceof Boolean);
+    assertEquals(false, result);
 
     values.clear();
     values.put("a", false);
     values.put("b", false);
     values.put("c", false);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(false, result);
+    assertTrue(result instanceof Boolean);
+    assertEquals(false, result);
   }
 }

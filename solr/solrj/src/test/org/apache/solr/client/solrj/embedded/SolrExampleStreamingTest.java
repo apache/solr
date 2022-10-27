@@ -86,8 +86,7 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
     }
 
     if (0 != failures.size()) {
-      assertEquals(
-          failures.size() + " Unexpected Exception, starting with...", null, failures.get(0));
+      assertNull(failures.size() + " Unexpected Exception, starting with...", failures.get(0));
     }
   }
 

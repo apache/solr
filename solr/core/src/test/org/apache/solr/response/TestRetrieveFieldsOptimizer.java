@@ -17,13 +17,11 @@
 
 package org.apache.solr.response;
 
-import static junit.framework.Assert.fail;
 import static org.apache.lucene.tests.util.LuceneTestCase.random;
 import static org.apache.solr.search.SolrReturnFields.FIELD_SOURCES.ALL_FROM_DV;
 import static org.apache.solr.search.SolrReturnFields.FIELD_SOURCES.ALL_FROM_STORED;
 import static org.apache.solr.search.SolrReturnFields.FIELD_SOURCES.MIXED_SOURCES;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.time.Instant;
@@ -61,15 +59,9 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.util.RefCounted;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 
 public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
-
-  @Rule public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
-
   @BeforeClass
   public static void initManagedSchemaCore() throws Exception {
     // This testing approach means no schema file or per-test temp solr-home!
@@ -508,11 +500,6 @@ class RetrieveField {
   final RetrieveFieldType testFieldType;
 
   RetrieveField(IndexSchema schema, String name, String type, Map<String, String> opts) {
-
-    Map<String, String> fullOpts = new HashMap<>(opts);
-    fullOpts.put("name", name);
-    fullOpts.put("type", type);
-
     this.name = name;
     this.type = type;
     this.schemaField = schema.newField(name, type, opts);
@@ -616,7 +603,7 @@ class RetrieveField {
         break;
 
       default:
-        fail("Found no case for field " + name + " type " + type);
+        SolrTestCaseJ4.fail("Found no case for field " + name + " type " + type);
         break;
     }
     // There are tricky cases with multiValued fields that are sometimes fetched from docValues that
@@ -655,18 +642,18 @@ class RetrieveField {
     switch (testFieldType.getSolrTypeClass()) {
       case "solr.TrieIntField":
       case "solr.TrieLongField":
-        Collections.sort(valsAsStrings, Comparator.comparingInt(Integer::parseInt));
+        valsAsStrings.sort(Comparator.comparingInt(Integer::parseInt));
         break;
       case "solr.IntPointField":
       case "solr.LongPointField":
-        Collections.sort(valsAsStrings, Comparator.comparingLong(Long::parseLong));
+        valsAsStrings.sort(Comparator.comparingLong(Long::parseLong));
         break;
 
       case "solr.TrieFloatField":
       case "solr.FloatPointField":
       case "solr.TrieDoubleField":
       case "solr.DoublePointField":
-        Collections.sort(valsAsStrings, Comparator.comparingDouble(Double::parseDouble));
+        valsAsStrings.sort(Comparator.comparingDouble(Double::parseDouble));
         break;
 
       case "solr.TrieDateField":
@@ -677,7 +664,7 @@ class RetrieveField {
         break;
 
       default:
-        fail("Found no case for field " + name + " type " + type);
+        SolrTestCaseJ4.fail("Found no case for field " + name + " type " + type);
         break;
     }
   }

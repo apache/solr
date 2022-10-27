@@ -418,6 +418,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
     return conf;
   }
 
+  @Override
   protected synchronized void removeDirectory(final CacheValue cacheValue) {
     FileSystem fileSystem = getCachedFileSystem(cacheValue.path);
 
@@ -656,7 +657,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
       oldIndexPaths.add(ofs.getPath());
     }
 
-    Collections.sort(oldIndexPaths, Collections.reverseOrder());
+    oldIndexPaths.sort(Collections.reverseOrder());
 
     Set<String> livePaths = getLivePaths();
 
@@ -691,6 +692,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
   }
 
   // perform an atomic rename if possible
+  @Override
   public void renameWithOverwrite(Directory dir, String fileName, String toName)
       throws IOException {
     String hdfsDirPath = getPath(dir);

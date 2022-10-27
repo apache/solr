@@ -96,22 +96,21 @@ public class MultipleFieldEqualitor implements StreamEqualitor {
     if (null == base) {
       return false;
     }
-    if (base instanceof StreamComparator) {
-      MultipleFieldComparator baseComps = (MultipleFieldComparator) base;
+    MultipleFieldComparator baseComps = (MultipleFieldComparator) base;
 
-      if (baseComps.getComps().length >= eqs.length) {
-        for (int idx = 0; idx < eqs.length; ++idx) {
-          if (!eqs[idx].isDerivedFrom(baseComps.getComps()[idx])) {
-            return false;
-          }
+    if (baseComps.getComps().length >= eqs.length) {
+      for (int idx = 0; idx < eqs.length; ++idx) {
+        if (!eqs[idx].isDerivedFrom(baseComps.getComps()[idx])) {
+          return false;
         }
-        return true;
       }
+      return true;
     }
 
     return false;
   }
 
+  @Override
   public boolean test(Tuple t1, Tuple t2) {
     for (Equalitor<Tuple> eq : eqs) {
       if (!eq.test(t1, t2)) {

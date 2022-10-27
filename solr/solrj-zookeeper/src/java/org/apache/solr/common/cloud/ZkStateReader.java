@@ -30,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -352,7 +353,7 @@ public class ZkStateReader implements SolrCloseable {
                 }
               }
             }
-            stateHasChanged.set(oldState != watch.currentState);
+            stateHasChanged.set(!Objects.equals(oldState, watch.currentState));
             return watch;
           });
 
@@ -935,6 +936,7 @@ public class ZkStateReader implements SolrCloseable {
     return this;
   }
 
+  @Override
   public void close() {
     this.closed = true;
 
@@ -1306,7 +1308,7 @@ public class ZkStateReader implements SolrCloseable {
     }
   }
 
-  private class VersionedCollectionProps {
+  private static class VersionedCollectionProps {
     int zkVersion;
     Map<String, String> props;
     long cacheUntilNs = 0;
@@ -1854,25 +1856,8 @@ public class ZkStateReader implements SolrCloseable {
     }
 
     DocCollection state = clusterState.getCollectionOrNull(collection);
-    state = updatePerReplicaState(state);
     if (stateWatcher.onStateChanged(state) == true) {
       removeDocCollectionWatcher(collection, stateWatcher);
-    }
-  }
-
-  private DocCollection updatePerReplicaState(DocCollection c) {
-    if (c == null || !c.isPerReplicaState()) return c;
-    PerReplicaStates current = c.getPerReplicaStates();
-    PerReplicaStates newPrs = PerReplicaStatesFetcher.fetch(c.getZNode(), zkClient, current);
-    if (newPrs != current) {
-      if (log.isDebugEnabled()) {
-        log.debug("update for a fresh per-replica-state {}", c.getName());
-      }
-      DocCollection modifiedColl = c.copyWith(newPrs);
-      collectionWatches.updateDocCollection(c.getName(), modifiedColl);
-      return modifiedColl;
-    } else {
-      return c;
     }
   }
 
@@ -1913,9 +1898,9 @@ public class ZkStateReader implements SolrCloseable {
 
           return matches;
         };
-    registerCollectionStateWatcher(collection, watcher);
 
     try {
+      registerCollectionStateWatcher(collection, watcher);
       // wait for the watcher predicate to return true, or time out
       if (!latch.await(wait, unit))
         throw new TimeoutException(
@@ -1966,9 +1951,9 @@ public class ZkStateReader implements SolrCloseable {
 
           return matches;
         };
-    registerDocCollectionWatcher(collection, watcher);
 
     try {
+      registerDocCollectionWatcher(collection, watcher);
       // wait for the watcher predicate to return true, or time out
       if (!latch.await(wait, unit))
         throw new TimeoutException(
@@ -2411,6 +2396,7 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   private class CacheCleaner implements Runnable {
+    @Override
     public void run() {
       while (!Thread.interrupted()) {
         try {
@@ -2438,10 +2424,12 @@ public class ZkStateReader implements SolrCloseable {
     private final String collectionName;
     private final CollectionStateWatcher delegate;
 
+    @Override
     public int hashCode() {
       return collectionName.hashCode() * delegate.hashCode();
     }
 
+    @Override
     public boolean equals(Object other) {
       if (other instanceof DocCollectionAndLiveNodesWatcherWrapper) {
         DocCollectionAndLiveNodesWatcherWrapper that =

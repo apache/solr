@@ -156,6 +156,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     return claims;
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();

@@ -112,6 +112,7 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     }
   }
 
+  @Override
   protected Map<String, LBSolrClient.Req> createRoutes(
       UpdateRequest updateRequest,
       ModifiableSolrParams routableParams,
@@ -124,6 +125,7 @@ public class CloudLegacySolrClient extends CloudSolrClient {
         : updateRequest.getRoutesToCollection(router, col, urlMap, routableParams, idField);
   }
 
+  @Override
   protected RouteException getRouteException(
       SolrException.ErrorCode serverError,
       NamedList<Throwable> exceptions,
@@ -146,6 +148,7 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     super.close();
   }
 
+  @Override
   public LBHttpSolrClient getLbClient() {
     return lbClient;
   }
@@ -154,6 +157,7 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     return myClient;
   }
 
+  @Override
   public ClusterStateProvider getClusterStateProvider() {
     return stateProvider;
   }

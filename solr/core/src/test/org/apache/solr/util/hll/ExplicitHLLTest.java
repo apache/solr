@@ -211,7 +211,7 @@ public class ExplicitHLLTest extends SolrTestCase {
     final LongHashSet internalSetA = hllA.explicitStorage;
     final LongHashSet internalSetB = hllB.explicitStorage;
 
-    assertTrue(internalSetA.equals(internalSetB));
+    assertEquals(internalSetA, internalSetB);
   }
 
   /**

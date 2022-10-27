@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -88,7 +87,7 @@ public class PairSortEvaluator extends RecursiveNumericEvaluator implements TwoV
       pairs.add(pair);
     }
 
-    Collections.sort(pairs, new PairComp());
+    pairs.sort(new PairComp());
     double[][] data = new double[2][pairs.size()];
     for (int i = 0; i < pairs.size(); i++) {
       data[0][i] = pairs.get(i)[0];
@@ -98,7 +97,8 @@ public class PairSortEvaluator extends RecursiveNumericEvaluator implements TwoV
     return new Matrix(data);
   }
 
-  private class PairComp implements Comparator<double[]> {
+  private static class PairComp implements Comparator<double[]> {
+    @Override
     public int compare(double[] a, double[] b) {
       if (a[0] > b[0]) {
         return 1;

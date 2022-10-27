@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.ReverseEvaluator;
@@ -48,8 +47,8 @@ public class ReverseEvaluatorTest extends SolrTestCase {
     List<?> result =
         ((List<?>) factory.constructEvaluator("reverse(l1)").evaluate(new Tuple(values)));
 
-    Assert.assertEquals(4.5, result.get(0));
-    Assert.assertEquals(6.7, result.get(1));
-    Assert.assertEquals(3.4, result.get(2));
+    assertEquals(4.5, result.get(0));
+    assertEquals(6.7, result.get(1));
+    assertEquals(3.4, result.get(2));
   }
 }

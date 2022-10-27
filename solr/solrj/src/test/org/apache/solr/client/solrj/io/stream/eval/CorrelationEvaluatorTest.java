@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.stream.eval;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import junit.framework.Assert;
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -47,7 +46,7 @@ public class CorrelationEvaluatorTest extends SolrTestCase {
     values.put("l1", l1);
     values.put("l2", l2);
 
-    Assert.assertEquals(
+    assertEquals(
         new PearsonsCorrelation().correlation(l1, l2),
         factory.constructEvaluator("corr(l1,l2)").evaluate(new Tuple(values)));
   }

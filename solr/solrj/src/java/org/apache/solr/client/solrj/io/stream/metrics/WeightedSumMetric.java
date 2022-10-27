@@ -17,7 +17,7 @@
 package org.apache.solr.client.solrj.io.stream.metrics;
 
 import java.io.IOException;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -76,12 +76,13 @@ public class WeightedSumMetric extends Metric {
     setIdentifier(FUNC, "(", valueCol, ", " + countCol + ", " + outputLong + ")");
   }
 
+  @Override
   public void update(Tuple tuple) {
     Object c = tuple.get(countCol);
     Object o = tuple.get(valueCol);
     if (c instanceof Number && o instanceof Number) {
       if (parts == null) {
-        parts = new LinkedList<>();
+        parts = new ArrayList<>();
       }
       Number count = (Number) c;
       Number value = (Number) o;
@@ -89,14 +90,17 @@ public class WeightedSumMetric extends Metric {
     }
   }
 
+  @Override
   public Metric newInstance() {
     return new WeightedSumMetric(valueCol, countCol, outputLong);
   }
 
+  @Override
   public String[] getColumns() {
     return new String[] {valueCol, countCol};
   }
 
+  @Override
   public Number getValue() {
     long total = sumCounts();
     double wavg = 0d;

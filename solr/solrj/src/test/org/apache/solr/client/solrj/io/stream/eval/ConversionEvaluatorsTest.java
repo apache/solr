@@ -17,12 +17,10 @@
 
 package org.apache.solr.client.solrj.io.stream.eval;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertTrue;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.ConversionEvaluator;
 import org.apache.solr.client.solrj.io.eval.RawValueEvaluator;
@@ -32,7 +30,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
 
 /** Test ConversionEvaluators */
-public class ConversionEvaluatorsTest {
+public class ConversionEvaluatorsTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;
@@ -57,7 +55,7 @@ public class ConversionEvaluatorsTest {
       evaluator = factory.constructEvaluator("convert(inches)");
       StreamContext streamContext = new StreamContext();
       evaluator.setStreamContext(streamContext);
-      assertTrue(false);
+      fail();
     } catch (IOException e) {
       assertEquals(
           "Invalid expression convert(inches) - expecting exactly 3 parameters but found 1",
@@ -70,7 +68,7 @@ public class ConversionEvaluatorsTest {
       evaluator.setStreamContext(streamContext);
       Tuple tuple = new Tuple(new HashMap<>());
       evaluator.evaluate(tuple);
-      assertTrue(false);
+      fail();
     } catch (IOException e) {
       assertTrue(
           e.getCause()

@@ -209,7 +209,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
       if (unmarshaledObj.get(i) instanceof byte[] && matchObj.get(i) instanceof byte[]) {
         byte[] b1 = (byte[]) unmarshaledObj.get(i);
         byte[] b2 = (byte[]) matchObj.get(i);
-        assertTrue(Arrays.equals(b1, b2));
+        assertArrayEquals(b1, b2);
       } else if (unmarshaledObj.get(i) instanceof SolrDocument
           && matchObj.get(i) instanceof SolrDocument) {
         assertTrue(compareSolrDocument(unmarshaledObj.get(i), matchObj.get(i)));
@@ -564,7 +564,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
 
   // common-case ascii
   static String str(Random r, int sz) {
-    StringBuffer sb = new StringBuffer(sz);
+    StringBuilder sb = new StringBuilder(sz);
     for (int i = 0; i < sz; i++) {
       sb.append('\n' + r.nextInt(128 - '\n'));
     }

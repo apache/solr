@@ -27,8 +27,8 @@ import static org.apache.solr.handler.ReplicationTestHelper.rQuery;
 import java.io.IOException;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.HealthCheckRequest;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -41,13 +41,14 @@ import org.junit.Test;
 /** Test for HealthCheckHandler in legacy mode */
 @SuppressSSL // Currently, unknown why SSL does not work with this test
 public class TestHealthCheckHandlerLegacyMode extends SolrTestCaseJ4 {
-  HttpSolrClient leaderClientHealthCheck, followerClientHealthCheck;
+  SolrClient leaderClientHealthCheck, followerClientHealthCheck;
   JettySolrRunner leaderJetty, followerJetty;
-  HttpSolrClient leaderClient, followerClient;
+  SolrClient leaderClient, followerClient;
   ReplicationTestHelper.SolrInstance leader = null, follower = null;
 
   private static final String context = "/solr";
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
@@ -240,7 +241,7 @@ public class TestHealthCheckHandlerLegacyMode extends SolrTestCaseJ4 {
     ReplicationTestHelper.pullFromTo(srcUrl, destUrl);
   }
 
-  private void assertNumFoundWithQuery(HttpSolrClient client, int nDocs) throws Exception {
+  private void assertNumFoundWithQuery(SolrClient client, int nDocs) throws Exception {
     NamedList<Object> queryRsp = rQuery(nDocs, "*:*", client);
     assertEquals(nDocs, numFound(queryRsp));
   }

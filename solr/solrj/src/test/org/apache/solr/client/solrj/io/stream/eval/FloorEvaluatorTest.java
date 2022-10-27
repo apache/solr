@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.stream.eval;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.FloorEvaluator;
@@ -47,17 +46,17 @@ public class FloorEvaluatorTest extends SolrTestCase {
     values.clear();
     values.put("a", 1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertEquals(1D, result);
+    assertEquals(1D, result);
 
     values.clear();
     values.put("a", 1.1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertEquals(1D, result);
+    assertEquals(1D, result);
 
     values.clear();
     values.put("a", -1.1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertEquals(-2D, result);
+    assertEquals(-2D, result);
   }
 
   @Test(expected = IOException.class)

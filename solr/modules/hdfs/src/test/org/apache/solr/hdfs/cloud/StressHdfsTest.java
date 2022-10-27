@@ -36,7 +36,6 @@ import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.AbstractBasicDistributedZkTestBase;
 import org.apache.solr.common.cloud.ClusterState;
@@ -96,6 +95,7 @@ public class StressHdfsTest extends AbstractBasicDistributedZkTestBase {
     testRestartIntoSafeMode = random().nextBoolean();
   }
 
+  @Override
   protected String getSolrXml() {
     return "solr.xml";
   }
@@ -186,7 +186,7 @@ public class StressHdfsTest extends AbstractBasicDistributedZkTestBase {
 
     int i = 0;
     for (SolrClient client : clients) {
-      try (HttpSolrClient c =
+      try (SolrClient c =
           getHttpSolrClient(getBaseUrl(client) + "/" + DELETE_DATA_DIR_COLLECTION, 30000)) {
         int docCnt = random().nextInt(1000) + 1;
         for (int j = 0; j < docCnt; j++) {

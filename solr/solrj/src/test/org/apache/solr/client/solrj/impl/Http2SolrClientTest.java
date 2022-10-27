@@ -189,11 +189,11 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     super.tearDown();
   }
 
-  private Http2SolrClient getHttp2SolrClient(String url, int connectionTimeOut, int socketTimeout) {
+  private Http2SolrClient.Builder getHttp2SolrClient(
+      String url, int connectionTimeOut, int socketTimeout) {
     return new Http2SolrClient.Builder(url)
         .connectionTimeout(connectionTimeOut)
-        .idleTimeout(socketTimeout)
-        .build();
+        .idleTimeout(socketTimeout);
   }
 
   private Http2SolrClient getHttp2SolrClient(String url) {
@@ -205,7 +205,8 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     SolrQuery q = new SolrQuery("*:*");
     try (Http2SolrClient client =
         getHttp2SolrClient(
-            jetty.getBaseUrl().toString() + "/slow/foo", DEFAULT_CONNECTION_TIMEOUT, 2000)) {
+                jetty.getBaseUrl().toString() + "/slow/foo", DEFAULT_CONNECTION_TIMEOUT, 2000)
+            .build()) {
       client.query(q, SolrRequest.METHOD.GET);
       fail("No exception thrown.");
     } catch (SolrServerException e) {
@@ -218,11 +219,27 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     SolrQuery q = new SolrQuery("*:*");
     try (Http2SolrClient client =
         getHttp2SolrClient(
-            jetty.getBaseUrl().toString() + "/debug/foo", DEFAULT_CONNECTION_TIMEOUT, 0)) {
+                jetty.getBaseUrl().toString() + "/debug/foo", DEFAULT_CONNECTION_TIMEOUT, 0)
+            .build()) {
       try {
         client.query(q, SolrRequest.METHOD.GET);
       } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
       }
+    }
+  }
+
+  @Test
+  public void testRequestTimeout() throws Exception {
+    SolrQuery q = new SolrQuery("*:*");
+    try (Http2SolrClient client =
+        getHttp2SolrClient(
+                jetty.getBaseUrl().toString() + "/slow/foo", DEFAULT_CONNECTION_TIMEOUT, 0)
+            .requestTimeout(500)
+            .build()) {
+      client.query(q, SolrRequest.METHOD.GET);
+      fail("No exception thrown.");
+    } catch (SolrServerException e) {
+      assertTrue(e.getMessage().contains("timeout") || e.getMessage().contains("Timeout"));
     }
   }
 
@@ -280,7 +297,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
       // agent
       assertEquals(EXPECTED_USER_AGENT, DebugServlet.headers.get("user-agent"));
       // content-type
-      assertEquals(null, DebugServlet.headers.get("content-type"));
+      assertNull(DebugServlet.headers.get("content-type"));
       // param encoding
       assertEquals(1, DebugServlet.parameters.get("a").length);
       assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);

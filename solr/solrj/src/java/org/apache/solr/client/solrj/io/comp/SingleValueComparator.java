@@ -33,6 +33,7 @@ public class SingleValueComparator implements StreamComparator {
   private static final long serialVersionUID = 1;
   private UUID comparatorNodeId = UUID.randomUUID();
 
+  @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) {
     return null;
   }
@@ -42,6 +43,7 @@ public class SingleValueComparator implements StreamComparator {
     return null;
   }
 
+  @Override
   public int compare(Tuple leftTuple, Tuple rightTuple) {
     return -1; // whatever, just keep everything in same order
   }

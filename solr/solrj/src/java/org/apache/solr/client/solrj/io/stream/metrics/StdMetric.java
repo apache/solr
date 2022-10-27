@@ -74,16 +74,20 @@ public class StdMetric extends Metric {
     setIdentifier(functionName, "(", columnName, ")");
   }
 
+  @Override
   public void update(Tuple tuple) {}
 
+  @Override
   public Metric newInstance() {
     return new MeanMetric(columnName, outputLong);
   }
 
+  @Override
   public String[] getColumns() {
     return new String[] {columnName};
   }
 
+  @Override
   public Number getValue() {
     return null;
   }

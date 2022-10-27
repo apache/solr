@@ -2181,6 +2181,11 @@ function start_solr() {
     SOLR_OPTS+=($AUTHC_OPTS)
   fi
 
+  # If there are internal options set by Solr (users should not use this variable), add them to SOLR_OPTS
+  if [ -n "$SOLR_OPTS_INTERNAL" ]; then
+    SOLR_OPTS+=($SOLR_OPTS_INTERNAL)
+  fi
+
   # If a heap dump directory is specified, enable it in SOLR_OPTS
   if [[ -z "${SOLR_HEAP_DUMP_DIR:-}" ]] && [[ "${SOLR_HEAP_DUMP:-}" == "true" ]]; then
     SOLR_HEAP_DUMP_DIR="${SOLR_LOGS_DIR}/dumps"
@@ -2225,6 +2230,7 @@ function start_solr() {
     fi
 
     if [ -n "${SOLR_DATA_HOME:-}" ]; then
+      SOLR_OPTS+=("-Dsolr.data.home=$SOLR_DATA_HOME")
       echo -e "    SOLR_DATA_HOME  = $SOLR_DATA_HOME"
     fi
     echo
@@ -2238,14 +2244,22 @@ function start_solr() {
     exit 1
   fi
 
+  # Workaround for JIT crash, see https://issues.apache.org/jira/browse/SOLR-16463
+  if [[ "$JAVA_VER_NUM" -ge "17" ]] ; then
+    SOLR_OPTS+=("-XX:CompileCommand=exclude,com.github.benmanes.caffeine.cache.BoundedLocalCache::put")
+    echo "Java $JAVA_VER_NUM detected. Enabled workaround for SOLR-16463"
+  fi
+
   SOLR_START_OPTS=('-server' "${JAVA_MEM_OPTS[@]}" "${GC_TUNE[@]}" "${GC_LOG_OPTS[@]}" "${IP_ACL_OPTS[@]}" \
     "${REMOTE_JMX_OPTS[@]}" "${CLOUD_MODE_OPTS[@]}" ${SOLR_LOG_LEVEL_OPT:-} -Dsolr.log.dir="$SOLR_LOGS_DIR" \
     "-Djetty.port=$SOLR_PORT" "-DSTOP.PORT=$stop_port" "-DSTOP.KEY=$STOP_KEY" \
     # '-OmitStackTraceInFastThrow' ensures stack traces in errors,
     # users who don't care about useful error msgs can override in SOLR_OPTS with +OmitStackTraceInFastThrow
     "${SOLR_HOST_ARG[@]}" "-Duser.timezone=$SOLR_TIMEZONE" "-XX:-OmitStackTraceInFastThrow" \
-    "-XX:OnOutOfMemoryError=$SOLR_TIP/bin/oom_solr.sh $SOLR_PORT $SOLR_LOGS_DIR" \
-    "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.data.home=${SOLR_DATA_HOME:-}" "-Dsolr.install.dir=$SOLR_TIP" \
+    # '+CrashOnOutOfMemoryError' ensures that Solr crashes whenever
+    # OOME is thrown. Program operation after OOME is unpredictable.
+    "-XX:+CrashOnOutOfMemoryError" "-XX:ErrorFile=${SOLR_LOGS_DIR}/jvm_crash_%p.log" \
+    "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.install.dir=$SOLR_TIP" \
     "-Dsolr.default.confdir=$DEFAULT_CONFDIR" "${LOG4J_CONFIG[@]}" "${SOLR_OPTS[@]}" "${SECURITY_MANAGER_OPTS[@]}" "${SOLR_ADMIN_UI}")
 
   mk_writable_dir "$SOLR_LOGS_DIR" "Logs"

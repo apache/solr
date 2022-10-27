@@ -20,9 +20,10 @@ import static org.apache.solr.common.params.CommonParams.SORT;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.LinkedList;
+import java.util.Deque;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -94,6 +95,7 @@ public class GroupOperation implements ReduceOperation {
     this.priorityQueue = new PriorityQueue<>(size, this.comp);
   }
 
+  @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
     // n
@@ -115,8 +117,9 @@ public class GroupOperation implements ReduceOperation {
         .withHelpers(new Explanation[] {streamComparator.toExplanation(factory)});
   }
 
+  @Override
   public Tuple reduce() {
-    LinkedList<Map<String, Object>> ll = new LinkedList<>();
+    Deque<Map<String, Object>> ll = new ArrayDeque<>();
     while (priorityQueue.size() > 0) {
       ll.addFirst(priorityQueue.poll().getFields());
       // This will clear priority queue and so it will be ready for the next group.
@@ -129,6 +132,7 @@ public class GroupOperation implements ReduceOperation {
     return tuple;
   }
 
+  @Override
   public void operate(Tuple tuple) {
     if (priorityQueue.size() >= size) {
       Tuple peek = priorityQueue.peek();
@@ -148,6 +152,7 @@ public class GroupOperation implements ReduceOperation {
       this.comp = comp;
     }
 
+    @Override
     public int compare(Tuple t1, Tuple t2) {
       // Couldn't this be comp.compare(t2,t1) ?
       return comp.compare(t1, t2) * (-1);

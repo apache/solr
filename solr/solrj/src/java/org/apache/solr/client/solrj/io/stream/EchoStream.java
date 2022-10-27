@@ -77,17 +77,22 @@ public class EchoStream extends TupleStream implements Expressible {
         .withExpression(toExpression(factory, false).toString());
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {}
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     return l;
   }
 
+  @Override
   public void open() throws IOException {}
 
+  @Override
   public void close() throws IOException {}
 
+  @Override
   public Tuple read() throws IOException {
 
     if (finished) {
@@ -99,10 +104,12 @@ public class EchoStream extends TupleStream implements Expressible {
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
+  @Override
   public StreamComparator getStreamSort() {
     return null;
   }
 
+  @Override
   public int getCost() {
     return 0;
   }

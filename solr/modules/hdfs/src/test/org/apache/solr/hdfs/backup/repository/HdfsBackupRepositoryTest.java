@@ -17,16 +17,29 @@
 
 package org.apache.solr.hdfs.backup.repository;
 
-import static org.junit.Assert.assertEquals;
-
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.IOException;
+import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.hdfs.HdfsDirectoryFactory;
 import org.apache.solr.hdfs.store.HdfsDirectory;
+import org.apache.solr.hdfs.util.BadHdfsThreadsFilter;
 import org.junit.Test;
 
-public class HdfsBackupRepositoryTest {
+@LuceneTestCase.SuppressCodecs({
+  "SimpleText"
+}) // Backups do checksum validation against a footer value not present in 'SimpleText'
+@ThreadLeakFilters(
+    defaultFilters = true,
+    filters = {
+      BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
+    })
+@ThreadLeakLingering(
+    linger = 1000) // Wait at least 1 second for Netty GlobalEventExecutor to shutdown
+public class HdfsBackupRepositoryTest extends SolrTestCase {
 
   @Test(expected = NullPointerException.class)
   public void testHdfsHomePropertyMissing() throws IOException {

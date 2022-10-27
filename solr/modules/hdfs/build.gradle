@@ -87,3 +87,10 @@ task copySolrCoreTestResources(type: Copy) {
 tasks.processTestResources.configure {
   dependsOn copySolrCoreTestResources
 }
+
+// Hadoop mini cluster doesn't handle reflection properly in JDK 16+
+// https://docs.gradle.org/current/userguide/upgrading_version_7.html#removes_implicit_add_opens_for_test_workers
+tasks.withType(Test).configureEach {
+  jvmArgs(["--add-opens=java.base/java.lang=ALL-UNNAMED",
+           "--add-opens=java.base/java.util=ALL-UNNAMED"])
+}

@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -61,7 +62,7 @@ public class SolrStream extends TupleStream {
   private boolean trace;
   private Map<String, String> fieldMappings;
   private transient TupleStreamParser tupleStreamParser;
-  private transient HttpSolrClient client;
+  private transient SolrClient client;
   private transient SolrClientCache cache;
   private String slice;
   private long checkpoint = -1;
@@ -89,6 +90,7 @@ public class SolrStream extends TupleStream {
     this.fieldMappings = fieldMappings;
   }
 
+  @Override
   public List<TupleStream> children() {
     return new ArrayList<>();
   }
@@ -97,6 +99,7 @@ public class SolrStream extends TupleStream {
     return baseUrl;
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.distrib = !context.isLocal();
     this.numWorkers = context.numWorkers;
@@ -110,6 +113,7 @@ public class SolrStream extends TupleStream {
   }
 
   /** Opens the stream to a single Solr instance. */
+  @Override
   public void open() throws IOException {
 
     // Reuse the same client per node vs. having one per replica
@@ -184,6 +188,7 @@ public class SolrStream extends TupleStream {
   }
 
   /** Closes the Stream to a single Solr Instance */
+  @Override
   public void close() throws IOException {
     if (closeableHttpResponse != null) {
       closeableHttpResponse.close();
@@ -194,6 +199,7 @@ public class SolrStream extends TupleStream {
   }
 
   /** Reads a Tuple from the stream. The Stream is completed when Tuple.EOF == true. */
+  @Override
   public Tuple read() throws IOException {
     try {
       Map<String, Object> fields = tupleStreamParser.next();
@@ -249,6 +255,7 @@ public class SolrStream extends TupleStream {
   }
 
   /** There is no known sort applied to a SolrStream */
+  @Override
   public StreamComparator getStreamSort() {
     return null;
   }

@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.stream.eval;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.AbsoluteValueEvaluator;
@@ -52,19 +51,19 @@ public class AbsoluteValueEvaluatorTest extends SolrTestCase {
     values.clear();
     values.put("a", 1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertEquals(1D, result);
+    assertEquals(1D, result);
 
     values.clear();
     values.put("a", 1.1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Double);
-    Assert.assertEquals(1.1D, result);
+    assertTrue(result instanceof Double);
+    assertEquals(1.1D, result);
 
     values.clear();
     values.put("a", -1.1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Double);
-    Assert.assertEquals(1.1D, result);
+    assertTrue(result instanceof Double);
+    assertEquals(1.1D, result);
   }
 
   @Test
@@ -76,21 +75,21 @@ public class AbsoluteValueEvaluatorTest extends SolrTestCase {
 
     context.getLets().put("a", 1);
     result = evaluator.evaluate(new Tuple());
-    Assert.assertEquals(1D, result);
+    assertEquals(1D, result);
 
     context.getLets().put("a", 1.1);
     result = evaluator.evaluate(new Tuple());
-    Assert.assertTrue(result instanceof Double);
-    Assert.assertEquals(1.1D, result);
+    assertTrue(result instanceof Double);
+    assertEquals(1.1D, result);
 
     context.getLets().put("a", -1.1);
     result = evaluator.evaluate(new Tuple());
-    Assert.assertTrue(result instanceof Double);
-    Assert.assertEquals(1.1D, result);
+    assertTrue(result instanceof Double);
+    assertEquals(1.1D, result);
 
     context.getLets().put("a", factory.constructEvaluator("add(4,-6,34,-56)"));
     result = evaluator.evaluate(new Tuple());
-    Assert.assertEquals(24D, result);
+    assertEquals(24D, result);
   }
 
   @Test(expected = IOException.class)

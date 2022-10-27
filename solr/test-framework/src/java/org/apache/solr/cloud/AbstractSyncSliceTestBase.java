@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -101,7 +102,7 @@ public abstract class AbstractSyncSliceTestBase extends AbstractFullDistribZkTes
     baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
 
     // we only set the connect timeout, not so timeout
-    try (HttpSolrClient baseClient = getHttpSolrClient(baseUrl, 30000)) {
+    try (SolrClient baseClient = getHttpSolrClient(baseUrl, 30000)) {
       baseClient.request(request);
     }
 
@@ -143,7 +144,7 @@ public abstract class AbstractSyncSliceTestBase extends AbstractFullDistribZkTes
     CloudJettyRunner deadJetty = leaderJetty;
 
     // let's get the latest leader
-    while (deadJetty == leaderJetty) {
+    while (deadJetty.equals(leaderJetty)) {
       updateMappingsFromZk(this.jettys, this.clients);
       leaderJetty = shardToLeaderJetty.get("shard1");
     }
