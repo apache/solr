@@ -187,7 +187,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
         } finally {
           synchronized (runners) {
             // check to see if anything else was added to the queue
-            if (runners.size() == 1 && !queue.isEmpty() && !isSchedulerShutdown()) {
+            if (runners.size() == 1 && !queue.isEmpty() && !ExecutorUtil.isShutdown(scheduler)) {
               // If there is something else to process, keep last runner alive by staying in the
               // loop.
             } else {
@@ -352,24 +352,6 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     }
   }
 
-  private boolean isSchedulerShutdown() {
-    try {
-      return scheduler.isShutdown();
-    } catch (IllegalStateException e) {
-      // this is a JSR-239 ManagedExecutorService which cannot query the lifecycle, so just return false
-      return false;
-    }
-  }
-
-  private boolean isSchedulerTerminated() {
-    try {
-      return scheduler.isTerminated();
-    } catch (IllegalStateException e) {
-      // this is a JSR-239 ManagedExecutorService which cannot query the lifecycle, so just return false
-      return false;
-    }
-  }
-
   @Override
   public NamedList<Object> request(final SolrRequest<?> request, String collection)
       throws SolrServerException, IOException {
@@ -504,7 +486,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
         int loopCount = 0;
         while (!runners.isEmpty()) {
 
-          if (isSchedulerShutdown()) break;
+          if (ExecutorUtil.isShutdown(scheduler)) break;
 
           loopCount++;
 
@@ -574,7 +556,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     long lastStallTime = -1;
     int lastQueueSize = -1;
     while (!queue.isEmpty()) {
-      if (isSchedulerTerminated()) {
+      if (ExecutorUtil.isTerminated(scheduler)) {
         log.warn(
             "The task queue still has elements but the update scheduler {} is terminated. Can't process any more tasks. Queue size: {}, Runners: {}. Current thread Interrupted? {}",
             scheduler,
