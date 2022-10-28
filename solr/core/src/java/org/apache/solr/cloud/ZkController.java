@@ -2044,7 +2044,7 @@ public class ZkController implements Closeable {
   }
 
   private void checkStateInZk(CoreDescriptor cd)
-      throws InterruptedException, NotInClusterStateException {
+      throws InterruptedException, NotInClusterStateException, InconsistentClusterStateException {
     CloudDescriptor cloudDesc = cd.getCloudDescriptor();
     String nodeName = cloudDesc.getCoreNodeName();
     if (nodeName == null) {
@@ -2057,6 +2057,7 @@ public class ZkController implements Closeable {
     }
 
     AtomicReference<String> errorMessage = new AtomicReference<>();
+    final AtomicReference<Replica> foundReplica = new AtomicReference<>();
     try {
       zkStateReader.waitForState(
           cd.getCollectionName(),
@@ -2070,6 +2071,7 @@ public class ZkController implements Closeable {
               return false;
             }
             Replica replica = slice.getReplica(coreNodeName);
+            foundReplica.set(replica);
             if (replica == null) {
               errorMessage.set(
                   "coreNodeName "
@@ -2077,6 +2079,10 @@ public class ZkController implements Closeable {
                       + " does not exist in shard "
                       + cloudDesc.getShardId()
                       + ", ignore the exception if the replica was deleted");
+              return false;
+            } else if (!replica.getNodeName().equals(getNodeName())) {
+              errorMessage.set("collection [" + replica.getCollection() + "] with coreNodeName [" + coreNodeName + "] exist in shard [" + cloudDesc.getShardId() +
+                      "], but the node name in cluster collection state [" + replica.getNodeName() + "] is different from current node [" + getNodeName() + "]");
               return false;
             }
             return true;
@@ -2090,7 +2096,11 @@ public class ZkController implements Closeable {
                 + " does not exist in shard "
                 + cloudDesc.getShardId()
                 + ", ignore the exception if the replica was deleted";
-      throw new NotInClusterStateException(ErrorCode.SERVER_ERROR, error);
+      if (foundReplica.get() == null) {
+        throw new NotInClusterStateException(ErrorCode.SERVER_ERROR, error);
+      } else {
+        throw new InconsistentClusterStateException(ErrorCode.SERVER_ERROR, error, foundReplica.get());
+      }
     }
   }
 
@@ -2903,6 +2913,21 @@ public class ZkController implements Closeable {
   public static class NotInClusterStateException extends SolrException {
     public NotInClusterStateException(ErrorCode code, String msg) {
       super(code, msg);
+    }
+  }
+
+  /**
+   * Thrown during pre-register process if the replica is found in clusterstate but is inconsistent with current node name
+   */
+  public static class InconsistentClusterStateException extends SolrException {
+    private final Replica replica;
+    public InconsistentClusterStateException(ErrorCode code, String msg, Replica replica) {
+      super(code, msg);
+      this.replica = replica;
+    }
+
+    public Replica getReplica() {
+      return replica;
     }
   }
 
