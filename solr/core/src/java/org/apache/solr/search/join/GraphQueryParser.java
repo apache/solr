@@ -34,10 +34,16 @@ public class GraphQueryParser extends QParser {
 
   @Override
   public Query parse() throws SyntaxError {
+    return parse(null);
+  }
+
+  public Query parse(Query rootNodeQuery) throws SyntaxError {
     // grab query params and defaults
     SolrParams localParams = getLocalParams();
 
-    Query rootNodeQuery = subQuery(localParams.get(QueryParsing.V), null).getQuery();
+    if (rootNodeQuery == null) {
+      rootNodeQuery = subQuery(localParams.get(QueryParsing.V), null).getQuery();
+    }
     String traversalFilterS = localParams.get("traversalFilter");
     Query traversalFilter =
         traversalFilterS == null ? null : subQuery(traversalFilterS, null).getQuery();
@@ -50,24 +56,26 @@ public class GraphQueryParser extends QParser {
     validateFields(toField);
 
     // only documents that do not have values in the edge id fields.
-    boolean onlyLeafNodes = localParams.getBool("returnOnlyLeaf", false);
+    boolean onlyLeafNodes =
+        localParams.getBool("returnOnlyLeaf", GraphQuery.ONLY_LEAF_NODES_DEFAULT);
     // choose if you want to return documents that match the initial query or not.
-    boolean returnRootNodes = localParams.getBool("returnRoot", true);
+    boolean returnRootNodes = localParams.getBool("returnRoot", GraphQuery.RETURN_ROOT_DEFAULT);
     // enable or disable the use of an automaton term for the frontier traversal.
-    int maxDepth = localParams.getInt("maxDepth", -1);
+    int maxDepth = localParams.getInt("maxDepth", GraphQuery.MAX_DEPTH_DEFAULT);
     // if true, an automaton will be compiled to issue the next graph hop
     // this avoid having a large number of boolean clauses. (and it's faster too!)
-    boolean useAutn = localParams.getBool("useAutn", false);
+    boolean useAutn = localParams.getBool("useAutn", GraphQuery.USE_AUTN_DEFAULT);
 
-    // Construct a graph query object based on parameters passed in.
-    GraphQuery gq = new GraphQuery(rootNodeQuery, fromField, toField, traversalFilter);
-    // set additional parameters that are not in the constructor.
-    gq.setMaxDepth(maxDepth);
-    gq.setOnlyLeafNodes(onlyLeafNodes);
-    gq.setReturnRoot(returnRootNodes);
-    gq.setUseAutn(useAutn);
-    // return the parsed graph query.
-    return gq;
+    // return a graph query object based on parameters passed in.
+    return new GraphQuery(
+        rootNodeQuery,
+        fromField,
+        toField,
+        traversalFilter,
+        maxDepth,
+        onlyLeafNodes,
+        returnRootNodes,
+        useAutn);
   }
 
   public void validateFields(String field) throws SyntaxError {
