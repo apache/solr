@@ -21,10 +21,13 @@ import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONT
 import static org.apache.solr.common.params.CommonParams.OMIT_HEADER;
 import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.apache.solr.common.params.CommonParams.WT;
+import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.ZK_READ_PERM;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.Operation;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import javax.inject.Inject;
@@ -37,31 +40,30 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.ZookeeperInfoHandler.FilterType;
 import org.apache.solr.handler.admin.ZookeeperInfoHandler.PageOfCollections;
 import org.apache.solr.handler.admin.ZookeeperInfoHandler.PagedCollectionSupport;
 import org.apache.solr.handler.admin.ZookeeperInfoHandler.ZKPrinter;
+import org.apache.solr.handler.configsets.ListConfigSetsAPI.ListConfigsetsResponse;
 import org.apache.solr.jersey.PermissionName;
+import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 
-@Path("/cluster/zookeeper")
+@Path("/cluster/zookeeper/")
 public class ZookeeperAPI extends JerseyResource {
 
   private final CoreContainer coreContainer;
   private final SolrQueryRequest solrQueryRequest;
+
   private final SolrQueryResponse solrQueryResponse;
 
   private PagedCollectionSupport pagingSupport;
 
-  @Inject
-  public ZookeeperAPI(
-      CoreContainer coreContainer,
-      SolrQueryRequest solrQueryRequest,
-      SolrQueryResponse solrQueryResponse) {
+ @Inject
+  public ZookeeperAPI(CoreContainer coreContainer, SolrQueryRequest solrQueryRequest, SolrQueryResponse solrQueryResponse) {
     this.coreContainer = coreContainer;
     this.solrQueryRequest = solrQueryRequest;
     this.solrQueryResponse = solrQueryResponse;
@@ -70,10 +72,12 @@ public class ZookeeperAPI extends JerseyResource {
   @GET
   @Path("/files")
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
+  @Operation(
+      summary = "List Zookeeper files.",
+      tags = {"zookeeperFiles"})
   @PermissionName(ZK_READ_PERM)
-  public NamedList<Object> listZookeeperFiles() throws Exception {
-    // final ZookeeperFilesResponse response =
-    // instantiateJerseyResponse(ZookeeperFilesResponse.class);
+  public ZookeeperFilesResponse listZookeeperFiles() throws Exception {
+    final ZookeeperFilesResponse response = instantiateJerseyResponse(ZookeeperFilesResponse.class);
     final SolrParams params = solrQueryRequest.getParams();
     Map<String, String> map = new HashMap<>(1);
     map.put(WT, "raw");
@@ -140,7 +144,13 @@ public class ZookeeperAPI extends JerseyResource {
     } finally {
       printer.close();
     }
-    solrQueryResponse.getValues().add(RawResponseWriter.CONTENT, printer);
-    return solrQueryResponse.getValues();
+    response.zookeeperFiles.put(RawResponseWriter.CONTENT, printer);
+    return response;
+  }
+
+  public static class ZookeeperFilesResponse extends SolrJerseyResponse {
+
+    @JsonProperty("zookeeperFiles")
+    public Map<String, Object> zookeeperFiles;
   }
 }

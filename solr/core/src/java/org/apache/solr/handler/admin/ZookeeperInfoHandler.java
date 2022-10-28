@@ -61,6 +61,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.ZookeeperAPI;
+import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.JSONResponseWriter;
 import org.apache.solr.response.RawResponseWriter;
@@ -430,7 +431,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     } finally {
       printer.close();
     }
-    rsp.getValues().add(RawResponseWriter.CONTENT, printer);
+    V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, zookeeperAPI.listZookeeperFiles());
   }
 
   @Override
@@ -438,6 +439,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     return true;
   }
 
+  @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
     return List.of(ZookeeperAPI.class);
   }
