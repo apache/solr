@@ -233,18 +233,18 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
 
     // Value exists
     val.setValue(-21.324F).setExists(true);
-    filler.setValue(23423.423342F).setExists(true);
+    filler.setValue(23423.424F).setExists(true);
     assertEquals(-21.324F, func.getFloat(), .00000001);
     assertTrue(func.exists());
 
     val.setExists(false);
-    filler.setValue(3124123.32F).setExists(true);
-    assertEquals(3124123.32F, func.getFloat(), .00000001);
+    filler.setValue(3124123.2F).setExists(true);
+    assertEquals(3124123.2F, func.getFloat(), .00000001);
     assertTrue(func.exists());
 
-    val.setValue(2345.345543F).setExists(true);
+    val.setValue(2345.3455F).setExists(true);
     filler.setExists(false);
-    assertEquals(2345.345543F, func.getFloat(), .00000001);
+    assertEquals(2345.3455F, func.getFloat(), .00000001);
     assertTrue(func.exists());
   }
 
@@ -554,7 +554,7 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
 
     // Values exist
     val.setValues(323.213F, -9423.5F);
-    filler.setValues(-1234.9478F, -5433.234F, -73843F, 1245144.2342F);
+    filler.setValues(-1234.9478F, -5433.234F, -73843F, 1245144.2F);
     Iterator<Float> values1 = Arrays.asList(323.213F, -9423.5F).iterator();
     func.streamFloats(
         value -> {
@@ -564,8 +564,8 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     assertFalse(values1.hasNext());
 
     val.setValues();
-    filler.setValues(-312423.2F, 12343.234823F, 23.582F, 2.23F);
-    Iterator<Float> values2 = Arrays.asList(-312423.2F, 12343.234823F, 23.582F, 2.23F).iterator();
+    filler.setValues(-312423.2F, 12343.234F, 23.582F, 2.23F);
+    Iterator<Float> values2 = Arrays.asList(-312423.2F, 12343.234F, 23.582F, 2.23F).iterator();
     func.streamFloats(
         value -> {
           assertTrue(values2.hasNext());
@@ -573,9 +573,9 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
         });
     assertFalse(values2.hasNext());
 
-    val.setValues(1423.23039F, -413543F);
+    val.setValues(1423.2303F, -413543F);
     filler.setValues();
-    Iterator<Float> values3 = Arrays.asList(1423.23039F, -413543F).iterator();
+    Iterator<Float> values3 = Arrays.asList(1423.2303F, -413543F).iterator();
     func.streamFloats(
         value -> {
           assertTrue(values3.hasNext());

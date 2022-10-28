@@ -181,7 +181,8 @@ public class TestStressIncrementalBackup extends SolrCloudTestCase {
         RequestStatusState state = backup.processAndWait(cluster.getSolrClient(), 1000);
         assertEquals(RequestStatusState.COMPLETED, state);
       } catch (InterruptedException e) {
-        e.printStackTrace();
+        Thread.currentThread().interrupt();
+        log.error("interrupted", e);
       }
     } else {
       CollectionAdminResponse rsp = backup.process(cluster.getSolrClient());

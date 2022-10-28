@@ -183,7 +183,7 @@ public class JsonRecordReader {
     }
 
     private boolean hasParentRecord() {
-      return isRecord || parent != null && parent.hasParentRecord();
+      return isRecord || (parent != null && parent.hasParentRecord());
     }
 
     private boolean isMyChildARecord() {

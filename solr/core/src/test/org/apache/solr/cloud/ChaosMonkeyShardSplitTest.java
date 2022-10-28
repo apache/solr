@@ -190,13 +190,13 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
               overseerClient.close();
               overseerClient = electNewOverseer(zkAddress);
             } catch (Exception e) {
-              // e.printStackTrace();
+              log.error("error killing overseer", e);
             }
           }
           try {
             Thread.sleep(100);
           } catch (Exception e) {
-            // e.printStackTrace();
+            log.error("error during sleep", e);
           }
         }
       } catch (Exception t) {
