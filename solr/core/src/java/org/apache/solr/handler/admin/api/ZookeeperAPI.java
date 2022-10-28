@@ -21,13 +21,11 @@ import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONT
 import static org.apache.solr.common.params.CommonParams.OMIT_HEADER;
 import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.apache.solr.common.params.CommonParams.WT;
-import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.ZK_READ_PERM;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.Operation;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import javax.inject.Inject;
@@ -45,7 +43,6 @@ import org.apache.solr.handler.admin.ZookeeperInfoHandler.FilterType;
 import org.apache.solr.handler.admin.ZookeeperInfoHandler.PageOfCollections;
 import org.apache.solr.handler.admin.ZookeeperInfoHandler.PagedCollectionSupport;
 import org.apache.solr.handler.admin.ZookeeperInfoHandler.ZKPrinter;
-import org.apache.solr.handler.configsets.ListConfigSetsAPI.ListConfigsetsResponse;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
@@ -62,8 +59,11 @@ public class ZookeeperAPI extends JerseyResource {
 
   private PagedCollectionSupport pagingSupport;
 
- @Inject
-  public ZookeeperAPI(CoreContainer coreContainer, SolrQueryRequest solrQueryRequest, SolrQueryResponse solrQueryResponse) {
+  @Inject
+  public ZookeeperAPI(
+      CoreContainer coreContainer,
+      SolrQueryRequest solrQueryRequest,
+      SolrQueryResponse solrQueryResponse) {
     this.coreContainer = coreContainer;
     this.solrQueryRequest = solrQueryRequest;
     this.solrQueryResponse = solrQueryResponse;
