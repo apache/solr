@@ -144,6 +144,7 @@ public class ZookeeperAPI extends JerseyResource {
     } finally {
       printer.close();
     }
+    response.zookeeperFiles = new HashMap<>();
     response.zookeeperFiles.put(RawResponseWriter.CONTENT, printer);
     return response;
   }
