@@ -1253,10 +1253,11 @@ if !JAVA_MAJOR_VERSION! GEQ 17  (
   echo Java %JAVA_MAJOR_VERSION% detected. Enabled workaround for SOLR-16463
 )
 
-REM Enable JDK 19 preview options for MMapDirectory V2, see https://issues.apache.org/jira/browse/SOLR-16500
+REM Added --enable-preview for JDK 19 to enable MemorySegment support in MMapDirectory. See https://issues.apache.org/jira/browse/SOLR-16500
+
 if !JAVA_MAJOR_VERSION! EQU 19  (
   set SOLR_OPTS=%SOLR_OPTS% --enable-preview
-  echo Java $JAVA_VER_NUM detected. Added --enable-preview for MMapDirectory V2. See SOLR-16500
+  echo Java $JAVA_VER_NUM detected. Added --enable-preview to enable MemorySegment support in MMapDirectory. See SOLR-16500
 )
 
 if !JAVA_MAJOR_VERSION! GEQ 9 if NOT "%JAVA_VENDOR%" == "OpenJ9" (

@@ -2250,10 +2250,10 @@ function start_solr() {
     echo "Java $JAVA_VER_NUM detected. Enabled workaround for SOLR-16463"
   fi
 
-  # Enable JDK 19 preview options for MMapDirectory V2, see https://issues.apache.org/jira/browse/SOLR-16500
+  # Added --enable-preview for JDK 19 to enable MemorySegment support in MMapDirectory, see https://issues.apache.org/jira/browse/SOLR-16500
   if [[ "$JAVA_VER_NUM" -eq "19" ]] ; then
     SOLR_OPTS+=("--enable-preview")
-    echo "Java $JAVA_VER_NUM detected. Added --enable-preview for MMapDirectory V2. See SOLR-16500"
+    echo "Java $JAVA_VER_NUM detected. Added --enable-preview to enable MemorySegment support in MMapDirectory. See SOLR-16500"
   fi
 
   SOLR_START_OPTS=('-server' "${JAVA_MEM_OPTS[@]}" "${GC_TUNE[@]}" "${GC_LOG_OPTS[@]}" "${IP_ACL_OPTS[@]}" \
