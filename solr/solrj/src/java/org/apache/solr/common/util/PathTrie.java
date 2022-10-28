@@ -17,6 +17,8 @@
 
 package org.apache.solr.common.util;
 
+import static java.util.Collections.emptyList;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -24,23 +26,19 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static java.util.Collections.emptyList;
-
 /**
- * A utility class to efficiently parse/store/lookup hierarchical paths which are templatized
- * like /collections/{collection}/shards/{shard}/{replica}
+ * A utility class to efficiently parse/store/lookup hierarchical paths which are templatized like
+ * /collections/{collection}/shards/{shard}/{replica}
  */
 public class PathTrie<T> {
   private final Set<String> reserved = new HashSet<>();
   Node root = new Node(emptyList(), null, null);
 
-  public PathTrie() {
-  }
+  public PathTrie() {}
 
   public PathTrie(Set<String> reserved) {
     this.reserved.addAll(reserved);
   }
-
 
   public void insert(String path, Map<String, String> replacements, T o) {
     List<String> parts = getPathSegments(path);
@@ -73,13 +71,14 @@ public class PathTrie<T> {
   // /a/b/c will be returned as ["a","b","c"]
   public static List<String> getPathSegments(String path) {
     if (path == null || path.isEmpty()) return emptyList();
-    List<String> parts = new ArrayList<>() {
-      @Override
-      public boolean add(String s) {
-        if (s == null || s.isEmpty()) return false;
-        return super.add(s);
-      }
-    };
+    List<String> parts =
+        new ArrayList<>() {
+          @Override
+          public boolean add(String s) {
+            if (s == null || s.isEmpty()) return false;
+            return super.add(s);
+          }
+        };
     StrUtils.splitSmart(path, '/', parts);
     return parts;
   }
@@ -98,7 +97,6 @@ public class PathTrie<T> {
       return result;
     }
     return result;
-
   }
 
   public T lookup(String path, Map<String, String> templateValues) {
@@ -114,16 +112,16 @@ public class PathTrie<T> {
   }
 
   public static String templateName(String templateStr) {
-    return templateStr.startsWith("{") && templateStr.endsWith("}") ?
-        templateStr.substring(1, templateStr.length() - 1) :
-        null;
-
+    return templateStr.startsWith("{") && templateStr.endsWith("}")
+        ? templateStr.substring(1, templateStr.length() - 1)
+        : null;
   }
 
   /**
    * Attaches the provided object to the PathTrie node
    *
-   * The default implementation overwrites any existing values, but this can be overwritten by subclasses.
+   * <p>The default implementation overwrites any existing values, but this can be overwritten by
+   * subclasses.
    */
   protected void attachValueToNode(PathTrie<T>.Node node, T o) {
     node.obj = o;
@@ -148,9 +146,13 @@ public class PathTrie<T> {
       if (path.isEmpty()) obj = o;
     }
 
-    public T getObject() { return obj; }
-    public void setObject(T o) { obj = o; }
+    public T getObject() {
+      return obj;
+    }
 
+    public void setObject(T o) {
+      obj = o;
+    }
 
     private synchronized void insert(List<String> path, T o) {
       String part = path.get(0);
@@ -178,9 +180,7 @@ public class PathTrie<T> {
       } else {
         attachValueToNode(matchedChild, o);
       }
-
     }
-
 
     void findAvailableChildren(String path, Set<String> availableSubPaths) {
       if (availableSubPaths == null) return;
@@ -198,34 +198,39 @@ public class PathTrie<T> {
       }
     }
 
-
     public T lookup(List<String> pieces, int i, Map<String, String> templateValues) {
       return lookup(pieces, i, templateValues, null);
-
     }
 
     /**
-     * @param pathSegments      pieces in the url /a/b/c has pieces as 'a' , 'b' , 'c'
-     * @param index             current index of the pieces that we are looking at in /a/b/c 0='a' and 1='b'
+     * @param pathSegments pieces in the url /a/b/c has pieces as 'a' , 'b' , 'c'
+     * @param index current index of the pieces that we are looking at in /a/b/c 0='a' and 1='b'
      * @param templateVariables The mapping of template variable to its value
      * @param availableSubPaths If not null , available sub paths will be returned in this set
      */
-    public T lookup(List<String> pathSegments, int index, Map<String, String> templateVariables, Set<String> availableSubPaths) {
+    public T lookup(
+        List<String> pathSegments,
+        int index,
+        Map<String, String> templateVariables,
+        Set<String> availableSubPaths) {
       Node node = lookupNode(pathSegments, index, templateVariables, availableSubPaths);
       return node == null ? null : node.obj;
     }
 
-    Node lookupNode(List<String> pathSegments, int index, Map<String, String> templateVariables, Set<String> availableSubPaths) {
+    Node lookupNode(
+        List<String> pathSegments,
+        int index,
+        Map<String, String> templateVariables,
+        Set<String> availableSubPaths) {
       if (templateName != null && templateVariables != null)
         templateVariables.put(templateName, pathSegments.get(index - 1));
       if (pathSegments.size() < index + 1) {
         findAvailableChildren("", availableSubPaths);
-        if (obj == null) {//this is not a leaf node
+        if (obj == null) { // this is not a leaf node
           Node n = children.get("*");
           if (n != null) {
             return n;
           }
-
         }
         return this;
       }
@@ -238,13 +243,12 @@ public class PathTrie<T> {
       if (n == null) {
         n = children.get("*");
         if (n != null) {
-          StringBuffer sb = new StringBuffer();
+          StringBuilder sb = new StringBuilder();
           for (int i = index; i < pathSegments.size(); i++) {
             sb.append("/").append(pathSegments.get(i));
           }
           if (templateVariables != null) templateVariables.put("*", sb.toString());
           return n;
-
         }
       }
       if (n == null) {
@@ -253,5 +257,4 @@ public class PathTrie<T> {
       return n.lookupNode(pathSegments, index + 1, templateVariables, availableSubPaths);
     }
   }
-
 }

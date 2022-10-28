@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,8 +32,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Solr Standalone File System ConfigSetService impl.
  *
- * <p>
- * Loads a ConfigSet defined by the core's configSet property, looking for a directory named for
+ * <p>Loads a ConfigSet defined by the core's configSet property, looking for a directory named for
  * the configSet property value underneath a base directory. If no configSet property is set, loads
  * the ConfigSet instead from the core's instance directory.
  */
@@ -50,7 +48,8 @@ public class FileSystemConfigSetService extends ConfigSetService {
   @Override
   public SolrResourceLoader createCoreResourceLoader(CoreDescriptor cd) {
     Path instanceDir = locateInstanceDir(cd);
-    SolrResourceLoader solrResourceLoader = new SolrResourceLoader(instanceDir, parentLoader.getClassLoader());
+    SolrResourceLoader solrResourceLoader =
+        new SolrResourceLoader(instanceDir, parentLoader.getClassLoader());
     return solrResourceLoader;
   }
 
@@ -61,7 +60,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
 
   @Override
   public boolean checkConfigExists(String configName) throws IOException {
-    Path solrConfigXmlFile= configSetBase.resolve(configName).resolve("solrconfig.xml");
+    Path solrConfigXmlFile = configSetBase.resolve(configName).resolve("solrconfig.xml");
     return Files.exists(solrConfigXmlFile);
   }
 
@@ -71,10 +70,12 @@ public class FileSystemConfigSetService extends ConfigSetService {
   }
 
   @Override
-  public void deleteFilesFromConfig(String configName, List<String> filesToDelete) throws IOException {
+  public void deleteFilesFromConfig(String configName, List<String> filesToDelete)
+      throws IOException {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public void copyConfig(String fromConfig, String toConfig) throws IOException {
     throw new UnsupportedOperationException();
   }
@@ -85,7 +86,9 @@ public class FileSystemConfigSetService extends ConfigSetService {
   }
 
   @Override
-  public void uploadFileToConfig(String configName, String fileName, byte[] data, boolean overwriteOnExists) throws IOException {
+  public void uploadFileToConfig(
+      String configName, String fileName, byte[] data, boolean overwriteOnExists)
+      throws IOException {
     throw new UnsupportedOperationException();
   }
 
@@ -107,9 +110,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
   @Override
   public List<String> listConfigs() throws IOException {
     try (Stream<Path> configs = Files.list(configSetBase)) {
-      return configs.map(Path::getFileName)
-              .map(Path::toString)
-              .collect(Collectors.toList());
+      return configs.map(Path::getFileName).map(Path::toString).collect(Collectors.toList());
     }
   }
 
@@ -128,13 +129,15 @@ public class FileSystemConfigSetService extends ConfigSetService {
     if (configSet == null) return cd.getInstanceDir();
     Path configSetDirectory = configSetBase.resolve(configSet);
     if (!Files.isDirectory(configSetDirectory))
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-              "Could not load configuration from directory " + configSetDirectory);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Could not load configuration from directory " + configSetDirectory);
     return configSetDirectory;
   }
 
   @Override
-  protected Long getCurrentSchemaModificationVersion(String configSet, SolrConfig solrConfig, String schemaFileName) {
+  protected Long getCurrentSchemaModificationVersion(
+      String configSet, SolrConfig solrConfig, String schemaFileName) throws IOException {
     Path schemaFile = solrConfig.getResourceLoader().getConfigPath().resolve(schemaFileName);
     try {
       return Files.getLastModifiedTime(schemaFile).toMillis();

@@ -21,23 +21,26 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * This class represents the result of a group command.
- * This can be the result of the following parameter:
+ * This class represents the result of a group command. This can be the result of the following
+ * parameter:
+ *
  * <ul>
- *   <li> group.field
- *   <li> group.func
- *   <li> group.query
+ *   <li>group.field
+ *   <li>group.func
+ *   <li>group.query
  * </ul>
  *
  * An instance of this class contains:
+ *
  * <ul>
- *   <li> The name of this command. This can be the field, function or query grouped by.
- *   <li> The total number of documents that have matched.
- *   <li> The total number of groups that have matched.
- *   <li> The groups to be displayed. Depending on the start and rows parameter.
+ *   <li>The name of this command. This can be the field, function or query grouped by.
+ *   <li>The total number of documents that have matched.
+ *   <li>The total number of groups that have matched.
+ *   <li>The groups to be displayed. Depending on the start and rows parameter.
  * </ul>
  *
- * In case of <code>group.query</code> only one group is present and ngroups is always <code>null</code>.
+ * In case of <code>group.query</code> only one group is present and ngroups is always <code>null
+ * </code>.
  *
  * @since solr 3.4
  */
@@ -51,7 +54,7 @@ public class GroupCommand implements Serializable {
   /**
    * Creates a GroupCommand instance
    *
-   * @param name    The name of this command
+   * @param name The name of this command
    * @param matches The total number of documents found for this command
    */
   public GroupCommand(String name, int matches) {
@@ -63,7 +66,7 @@ public class GroupCommand implements Serializable {
   /**
    * Creates a GroupCommand instance.
    *
-   * @param name    The name of this command
+   * @param name The name of this command
    * @param matches The total number of documents found for this command
    * @param nGroups The total number of groups found for this command.
    */
@@ -92,8 +95,8 @@ public class GroupCommand implements Serializable {
   }
 
   /**
-   * Returns the groups to be displayed.
-   * The number of groups returned depend on the <code>start</code> and <code>rows</code> parameters.
+   * Returns the groups to be displayed. The number of groups returned depend on the <code>start
+   * </code> and <code>rows</code> parameters.
    *
    * @return the groups to be displayed.
    */
@@ -111,14 +114,13 @@ public class GroupCommand implements Serializable {
   }
 
   /**
-   * Returns the total number of groups found for this command.
-   * Returns <code>null</code> if the <code>group.ngroups</code> parameter is unset or <code>false</code> or
-   * if this is a group command query (parameter = <code>group.query</code>).
+   * Returns the total number of groups found for this command. Returns <code>null</code> if the
+   * <code>group.ngroups</code> parameter is unset or <code>false</code> or if this is a group
+   * command query (parameter = <code>group.query</code>).
    *
    * @return the total number of groups found for this command.
    */
   public Integer getNGroups() {
     return _ngroups;
   }
-
 }

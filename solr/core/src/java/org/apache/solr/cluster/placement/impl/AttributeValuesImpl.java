@@ -17,17 +17,14 @@
 
 package org.apache.solr.cluster.placement.impl;
 
-import org.apache.solr.cluster.placement.AttributeValues;
+import java.util.Map;
+import java.util.Optional;
 import org.apache.solr.cluster.Node;
+import org.apache.solr.cluster.placement.AttributeValues;
 import org.apache.solr.cluster.placement.CollectionMetrics;
 import org.apache.solr.cluster.placement.NodeMetric;
 
-import java.util.Map;
-import java.util.Optional;
-
-/**
- * Implementation of {@link AttributeValues} used by {@link AttributeFetcherImpl}.
- */
+/** Implementation of {@link AttributeValues} used by {@link AttributeFetcherImpl}. */
 public class AttributeValuesImpl implements AttributeValues {
   // sysprop (or sysenv) name / node -> value
   final Map<String, Map<Node, String>> systemSnitchToNodeToValue;
@@ -36,9 +33,10 @@ public class AttributeValuesImpl implements AttributeValues {
   // collection / shard / replica / metricName -> value
   final Map<String, CollectionMetrics> collectionMetrics;
 
-  public AttributeValuesImpl(Map<String, Map<Node, String>> systemSnitchToNodeToValue,
-                             Map<NodeMetric<?>, Map<Node, Object>> metricSnitchToNodeToValue,
-                             Map<String, CollectionMetrics> collectionMetrics) {
+  public AttributeValuesImpl(
+      Map<String, Map<Node, String>> systemSnitchToNodeToValue,
+      Map<NodeMetric<?>, Map<Node, Object>> metricSnitchToNodeToValue,
+      Map<String, CollectionMetrics> collectionMetrics) {
     this.systemSnitchToNodeToValue = systemSnitchToNodeToValue;
     this.metricSnitchToNodeToValue = metricSnitchToNodeToValue;
     this.collectionMetrics = collectionMetrics;
@@ -46,7 +44,8 @@ public class AttributeValuesImpl implements AttributeValues {
 
   @Override
   public Optional<String> getSystemProperty(Node node, String name) {
-    Map<Node, String> nodeToValue = systemSnitchToNodeToValue.get(AttributeFetcherImpl.getSystemPropertySnitchTag(name));
+    Map<Node, String> nodeToValue =
+        systemSnitchToNodeToValue.get(AttributeFetcherImpl.getSystemPropertySnitchTag(name));
     if (nodeToValue == null) {
       return Optional.empty();
     }

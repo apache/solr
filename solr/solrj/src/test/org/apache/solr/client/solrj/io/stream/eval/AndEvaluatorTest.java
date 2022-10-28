@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.io.stream.eval;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.AndEvaluator;
@@ -26,98 +25,95 @@ import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
 
-import junit.framework.Assert;
-
 public class AndEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;
-  
+
   public AndEvaluatorTest() {
     super();
-    
-    factory = new StreamFactory()
-      .withFunctionName("and", AndEvaluator.class);
-    values = new HashMap<String,Object>();
+
+    factory = new StreamFactory().withFunctionName("and", AndEvaluator.class);
+    values = new HashMap<>();
   }
-    
+
   @Test
-  public void andTwoBooleans() throws Exception{
+  public void andTwoBooleans() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("and(a,b)");
     Object result;
-    
+
     values.clear();
     values.put("a", true);
     values.put("b", true);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(true, result);
-    
+    assertTrue(result instanceof Boolean);
+    assertEquals(true, result);
+
     values.clear();
     values.put("a", true);
     values.put("b", false);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(false, result);
-    
+    assertTrue(result instanceof Boolean);
+    assertEquals(false, result);
+
     values.clear();
     values.put("a", false);
     values.put("b", true);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(false, result);
-    
+    assertTrue(result instanceof Boolean);
+    assertEquals(false, result);
+
     values.clear();
     values.put("a", false);
     values.put("b", false);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(false, result);
+    assertTrue(result instanceof Boolean);
+    assertEquals(false, result);
   }
-  
+
   @Test
-  public void andWithSubAndsBooleans() throws Exception{
+  public void andWithSubAndsBooleans() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("and(a,and(b,c))");
     Object result;
-    
+
     values.clear();
     values.put("a", true);
     values.put("b", true);
     values.put("c", true);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(true, result);
+    assertTrue(result instanceof Boolean);
+    assertEquals(true, result);
 
     values.clear();
     values.put("a", true);
     values.put("b", true);
     values.put("c", false);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(false, result);
-    
+    assertTrue(result instanceof Boolean);
+    assertEquals(false, result);
+
     values.clear();
     values.put("a", true);
     values.put("b", false);
     values.put("c", false);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(false, result);
-    
+    assertTrue(result instanceof Boolean);
+    assertEquals(false, result);
+
     values.clear();
     values.put("a", false);
     values.put("b", true);
     values.put("c", false);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(false, result);
-    
+    assertTrue(result instanceof Boolean);
+    assertEquals(false, result);
+
     values.clear();
     values.put("a", false);
     values.put("b", false);
     values.put("c", false);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(false, result);
+    assertTrue(result instanceof Boolean);
+    assertEquals(false, result);
   }
 }

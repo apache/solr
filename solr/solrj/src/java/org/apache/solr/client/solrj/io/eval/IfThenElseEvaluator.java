@@ -18,31 +18,45 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.Locale;
-
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class IfThenElseEvaluator extends RecursiveObjectEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
-  
-  public IfThenElseEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+
+  public IfThenElseEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
-    
-    if(3 != containedEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting three values but found %d",expression, containedEvaluators.size()));
+
+    if (3 != containedEvaluators.size()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting three values but found %d",
+              expression,
+              containedEvaluators.size()));
     }
   }
 
   @Override
   public Object doWork(Object... values) throws IOException {
-    if(3 != values.length){
-      throw new IOException(String.format(Locale.ROOT,"%s(...) only works with 3 values but %d were provided", constructingFactory.getFunctionName(getClass()), values.length));
+    if (3 != values.length) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "%s(...) only works with 3 values but %d were provided",
+              constructingFactory.getFunctionName(getClass()),
+              values.length));
     }
-    
-    if(!(values[0] instanceof Boolean)){
-      throw new IOException(String.format(Locale.ROOT,"$s(...) only works with a boolean as the first parameter but found %s",values[0].getClass().getSimpleName()));
+
+    if (!(values[0] instanceof Boolean)) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "$s(...) only works with a boolean as the first parameter but found %s",
+              values[0].getClass().getSimpleName()));
     }
-    
-    return (boolean)values[0] ? values[1] : values[2];
+
+    return (boolean) values[0] ? values[1] : values[2];
   }
 }

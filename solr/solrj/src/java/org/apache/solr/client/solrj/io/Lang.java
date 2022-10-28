@@ -16,27 +16,319 @@
  */
 package org.apache.solr.client.solrj.io;
 
-import org.apache.solr.client.solrj.io.eval.*;
+import java.io.IOException;
+import java.util.List;
+import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
+import org.apache.solr.client.solrj.io.comp.FieldComparator;
+import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
+import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.eval.AbsoluteValueEvaluator;
+import org.apache.solr.client.solrj.io.eval.AddEvaluator;
+import org.apache.solr.client.solrj.io.eval.AkimaEvaluator;
+import org.apache.solr.client.solrj.io.eval.AndEvaluator;
+import org.apache.solr.client.solrj.io.eval.AnovaEvaluator;
+import org.apache.solr.client.solrj.io.eval.AppendEvaluator;
+import org.apache.solr.client.solrj.io.eval.ArcCosineEvaluator;
+import org.apache.solr.client.solrj.io.eval.ArcSineEvaluator;
+import org.apache.solr.client.solrj.io.eval.ArcTangentEvaluator;
+import org.apache.solr.client.solrj.io.eval.ArrayEvaluator;
+import org.apache.solr.client.solrj.io.eval.AscEvaluator;
+import org.apache.solr.client.solrj.io.eval.BetaDistributionEvaluator;
+import org.apache.solr.client.solrj.io.eval.BicubicSplineEvaluator;
+import org.apache.solr.client.solrj.io.eval.BinomialCoefficientEvaluator;
+import org.apache.solr.client.solrj.io.eval.BinomialDistributionEvaluator;
+import org.apache.solr.client.solrj.io.eval.CanberraEvaluator;
+import org.apache.solr.client.solrj.io.eval.CeilingEvaluator;
+import org.apache.solr.client.solrj.io.eval.ChebyshevEvaluator;
+import org.apache.solr.client.solrj.io.eval.ChiSquareDataSetEvaluator;
+import org.apache.solr.client.solrj.io.eval.CoalesceEvaluator;
+import org.apache.solr.client.solrj.io.eval.ColumnAtEvaluator;
+import org.apache.solr.client.solrj.io.eval.ColumnCountEvaluator;
+import org.apache.solr.client.solrj.io.eval.ColumnEvaluator;
+import org.apache.solr.client.solrj.io.eval.ConcatEvaluator;
+import org.apache.solr.client.solrj.io.eval.ConstantDistributionEvaluator;
+import org.apache.solr.client.solrj.io.eval.ConversionEvaluator;
+import org.apache.solr.client.solrj.io.eval.ConvexHullEvaluator;
+import org.apache.solr.client.solrj.io.eval.ConvolutionEvaluator;
+import org.apache.solr.client.solrj.io.eval.CopyOfEvaluator;
+import org.apache.solr.client.solrj.io.eval.CopyOfRangeEvaluator;
+import org.apache.solr.client.solrj.io.eval.CorrelationEvaluator;
+import org.apache.solr.client.solrj.io.eval.CorrelationSignificanceEvaluator;
+import org.apache.solr.client.solrj.io.eval.CosineDistanceEvaluator;
+import org.apache.solr.client.solrj.io.eval.CosineEvaluator;
+import org.apache.solr.client.solrj.io.eval.CosineSimilarityEvaluator;
+import org.apache.solr.client.solrj.io.eval.CovarianceEvaluator;
+import org.apache.solr.client.solrj.io.eval.CubedRootEvaluator;
+import org.apache.solr.client.solrj.io.eval.CumulativeProbabilityEvaluator;
+import org.apache.solr.client.solrj.io.eval.DateEvaluator;
+import org.apache.solr.client.solrj.io.eval.DbscanEvaluator;
+import org.apache.solr.client.solrj.io.eval.DensityEvaluator;
+import org.apache.solr.client.solrj.io.eval.DerivativeEvaluator;
+import org.apache.solr.client.solrj.io.eval.DescribeEvaluator;
+import org.apache.solr.client.solrj.io.eval.DistanceEvaluator;
+import org.apache.solr.client.solrj.io.eval.DivideEvaluator;
+import org.apache.solr.client.solrj.io.eval.DotProductEvaluator;
+import org.apache.solr.client.solrj.io.eval.DoubleEvaluator;
+import org.apache.solr.client.solrj.io.eval.EBEAddEvaluator;
+import org.apache.solr.client.solrj.io.eval.EBEDivideEvaluator;
+import org.apache.solr.client.solrj.io.eval.EBEMultiplyEvaluator;
+import org.apache.solr.client.solrj.io.eval.EBESubtractEvaluator;
+import org.apache.solr.client.solrj.io.eval.EarthMoversEvaluator;
+import org.apache.solr.client.solrj.io.eval.EmpiricalDistributionEvaluator;
+import org.apache.solr.client.solrj.io.eval.EnclosingDiskEvaluator;
+import org.apache.solr.client.solrj.io.eval.EnumeratedDistributionEvaluator;
+import org.apache.solr.client.solrj.io.eval.EqualToEvaluator;
+import org.apache.solr.client.solrj.io.eval.EuclideanEvaluator;
+import org.apache.solr.client.solrj.io.eval.ExclusiveOrEvaluator;
+import org.apache.solr.client.solrj.io.eval.ExponentialMovingAverageEvaluator;
+import org.apache.solr.client.solrj.io.eval.FFTEvaluator;
+import org.apache.solr.client.solrj.io.eval.FactorialEvaluator;
+import org.apache.solr.client.solrj.io.eval.FeatureSelectEvaluator;
+import org.apache.solr.client.solrj.io.eval.FindDelayEvaluator;
+import org.apache.solr.client.solrj.io.eval.FloorEvaluator;
+import org.apache.solr.client.solrj.io.eval.FrequencyTableEvaluator;
+import org.apache.solr.client.solrj.io.eval.FuzzyKmeansEvaluator;
+import org.apache.solr.client.solrj.io.eval.GTestDataSetEvaluator;
+import org.apache.solr.client.solrj.io.eval.GammaDistributionEvaluator;
+import org.apache.solr.client.solrj.io.eval.GaussFitEvaluator;
+import org.apache.solr.client.solrj.io.eval.GeometricDistributionEvaluator;
+import org.apache.solr.client.solrj.io.eval.GetAmplitudeEvaluator;
+import org.apache.solr.client.solrj.io.eval.GetAngularFrequencyEvaluator;
+import org.apache.solr.client.solrj.io.eval.GetAreaEvaluator;
+import org.apache.solr.client.solrj.io.eval.GetAttributeEvaluator;
+import org.apache.solr.client.solrj.io.eval.GetAttributesEvaluator;
+import org.apache.solr.client.solrj.io.eval.GetBaryCenterEvaluator;
+import org.apache.solr.client.solrj.io.eval.GetBoundarySizeEvaluator;
+import org.apache.solr.client.solrj.io.eval.GetCacheEvaluator;
+import org.apache.solr.client.solrj.io.eval.GetCenterEvaluator;
+import org.apache.solr.client.solrj.io.eval.GetCentroidsEvaluator;
+import org.apache.solr.client.solrj.io.eval.GetClusterEvaluator;
+import org.apache.solr.client.solrj.io.eval.GetColumnLabelsEvaluator;
+import org.apache.solr.client.solrj.io.eval.GetMembershipMatrixEvaluator;
+import org.apache.solr.client.solrj.io.eval.GetPhaseEvaluator;
+import org.apache.solr.client.solrj.io.eval.GetRadiusEvaluator;
+import org.apache.solr.client.solrj.io.eval.GetRowLabelsEvaluator;
+import org.apache.solr.client.solrj.io.eval.GetSupportPointsEvaluator;
+import org.apache.solr.client.solrj.io.eval.GetValueEvaluator;
+import org.apache.solr.client.solrj.io.eval.GetVerticesEvaluator;
+import org.apache.solr.client.solrj.io.eval.GrandSumEvaluator;
+import org.apache.solr.client.solrj.io.eval.GreaterThanEqualToEvaluator;
+import org.apache.solr.client.solrj.io.eval.GreaterThanEvaluator;
+import org.apache.solr.client.solrj.io.eval.HarmonicFitEvaluator;
+import org.apache.solr.client.solrj.io.eval.HistogramEvaluator;
+import org.apache.solr.client.solrj.io.eval.HyperbolicCosineEvaluator;
+import org.apache.solr.client.solrj.io.eval.HyperbolicSineEvaluator;
+import org.apache.solr.client.solrj.io.eval.HyperbolicTangentEvaluator;
+import org.apache.solr.client.solrj.io.eval.IFFTEvaluator;
+import org.apache.solr.client.solrj.io.eval.IfThenElseEvaluator;
+import org.apache.solr.client.solrj.io.eval.IndexOfEvaluator;
+import org.apache.solr.client.solrj.io.eval.IntegrateEvaluator;
+import org.apache.solr.client.solrj.io.eval.IsNullEvaluator;
+import org.apache.solr.client.solrj.io.eval.KmeansEvaluator;
+import org.apache.solr.client.solrj.io.eval.KnnEvaluator;
+import org.apache.solr.client.solrj.io.eval.KnnRegressionEvaluator;
+import org.apache.solr.client.solrj.io.eval.KolmogorovSmirnovEvaluator;
+import org.apache.solr.client.solrj.io.eval.L1NormEvaluator;
+import org.apache.solr.client.solrj.io.eval.LInfNormEvaluator;
+import org.apache.solr.client.solrj.io.eval.LatLonVectorsEvaluator;
+import org.apache.solr.client.solrj.io.eval.LeftShiftEvaluator;
+import org.apache.solr.client.solrj.io.eval.LengthEvaluator;
+import org.apache.solr.client.solrj.io.eval.LerpEvaluator;
+import org.apache.solr.client.solrj.io.eval.LessThanEqualToEvaluator;
+import org.apache.solr.client.solrj.io.eval.LessThanEvaluator;
+import org.apache.solr.client.solrj.io.eval.ListCacheEvaluator;
+import org.apache.solr.client.solrj.io.eval.LoessEvaluator;
+import org.apache.solr.client.solrj.io.eval.Log10Evaluator;
+import org.apache.solr.client.solrj.io.eval.LogNormalDistributionEvaluator;
+import org.apache.solr.client.solrj.io.eval.LongEvaluator;
+import org.apache.solr.client.solrj.io.eval.LowerEvaluator;
+import org.apache.solr.client.solrj.io.eval.ManhattanEvaluator;
+import org.apache.solr.client.solrj.io.eval.MannWhitneyUEvaluator;
+import org.apache.solr.client.solrj.io.eval.MarkovChainEvaluator;
+import org.apache.solr.client.solrj.io.eval.MatchesEvaluator;
+import org.apache.solr.client.solrj.io.eval.MatrixEvaluator;
+import org.apache.solr.client.solrj.io.eval.MatrixMultiplyEvaluator;
+import org.apache.solr.client.solrj.io.eval.MeanDifferenceEvaluator;
+import org.apache.solr.client.solrj.io.eval.MeanEvaluator;
+import org.apache.solr.client.solrj.io.eval.MemsetEvaluator;
+import org.apache.solr.client.solrj.io.eval.MinMaxScaleEvaluator;
+import org.apache.solr.client.solrj.io.eval.ModeEvaluator;
+import org.apache.solr.client.solrj.io.eval.ModuloEvaluator;
+import org.apache.solr.client.solrj.io.eval.MonteCarloEvaluator;
+import org.apache.solr.client.solrj.io.eval.MovingAverageEvaluator;
+import org.apache.solr.client.solrj.io.eval.MovingMADEvaluator;
+import org.apache.solr.client.solrj.io.eval.MovingMedianEvaluator;
+import org.apache.solr.client.solrj.io.eval.MultiKmeansEvaluator;
+import org.apache.solr.client.solrj.io.eval.MultiVariateNormalDistributionEvaluator;
+import org.apache.solr.client.solrj.io.eval.MultiplyEvaluator;
+import org.apache.solr.client.solrj.io.eval.NaturalEvaluator;
+import org.apache.solr.client.solrj.io.eval.NaturalLogEvaluator;
+import org.apache.solr.client.solrj.io.eval.NormEvaluator;
+import org.apache.solr.client.solrj.io.eval.NormalDistributionEvaluator;
+import org.apache.solr.client.solrj.io.eval.NormalizeEvaluator;
+import org.apache.solr.client.solrj.io.eval.NormalizeSumEvaluator;
+import org.apache.solr.client.solrj.io.eval.NotEvaluator;
+import org.apache.solr.client.solrj.io.eval.NotNullEvaluator;
+import org.apache.solr.client.solrj.io.eval.OLSRegressionEvaluator;
+import org.apache.solr.client.solrj.io.eval.OnesEvaluator;
+import org.apache.solr.client.solrj.io.eval.OrEvaluator;
+import org.apache.solr.client.solrj.io.eval.OscillateEvaluator;
+import org.apache.solr.client.solrj.io.eval.OutliersEvaluator;
+import org.apache.solr.client.solrj.io.eval.PairSortEvaluator;
+import org.apache.solr.client.solrj.io.eval.PairedTTestEvaluator;
+import org.apache.solr.client.solrj.io.eval.PercentileEvaluator;
+import org.apache.solr.client.solrj.io.eval.PivotEvaluator;
+import org.apache.solr.client.solrj.io.eval.PoissonDistributionEvaluator;
+import org.apache.solr.client.solrj.io.eval.PolyFitEvaluator;
+import org.apache.solr.client.solrj.io.eval.PowerEvaluator;
+import org.apache.solr.client.solrj.io.eval.PrecisionEvaluator;
+import org.apache.solr.client.solrj.io.eval.PredictEvaluator;
+import org.apache.solr.client.solrj.io.eval.PrimesEvaluator;
+import org.apache.solr.client.solrj.io.eval.ProbabilityEvaluator;
+import org.apache.solr.client.solrj.io.eval.ProjectToBorderEvaluator;
+import org.apache.solr.client.solrj.io.eval.PutCacheEvaluator;
+import org.apache.solr.client.solrj.io.eval.RankEvaluator;
+import org.apache.solr.client.solrj.io.eval.RawValueEvaluator;
+import org.apache.solr.client.solrj.io.eval.RecNumEvaluator;
+import org.apache.solr.client.solrj.io.eval.RecipEvaluator;
+import org.apache.solr.client.solrj.io.eval.RegressionEvaluator;
+import org.apache.solr.client.solrj.io.eval.RemoveCacheEvaluator;
+import org.apache.solr.client.solrj.io.eval.RepeatEvaluator;
+import org.apache.solr.client.solrj.io.eval.ReverseEvaluator;
+import org.apache.solr.client.solrj.io.eval.RightShiftEvaluator;
+import org.apache.solr.client.solrj.io.eval.RoundEvaluator;
+import org.apache.solr.client.solrj.io.eval.RowAtEvaluator;
+import org.apache.solr.client.solrj.io.eval.RowCountEvaluator;
+import org.apache.solr.client.solrj.io.eval.SampleEvaluator;
+import org.apache.solr.client.solrj.io.eval.ScalarAddEvaluator;
+import org.apache.solr.client.solrj.io.eval.ScalarDivideEvaluator;
+import org.apache.solr.client.solrj.io.eval.ScalarMultiplyEvaluator;
+import org.apache.solr.client.solrj.io.eval.ScalarSubtractEvaluator;
+import org.apache.solr.client.solrj.io.eval.ScaleEvaluator;
+import org.apache.solr.client.solrj.io.eval.SequenceEvaluator;
+import org.apache.solr.client.solrj.io.eval.SetColumnLabelsEvaluator;
+import org.apache.solr.client.solrj.io.eval.SetRowLabelsEvaluator;
+import org.apache.solr.client.solrj.io.eval.SetValueEvaluator;
+import org.apache.solr.client.solrj.io.eval.SineEvaluator;
+import org.apache.solr.client.solrj.io.eval.SplineEvaluator;
+import org.apache.solr.client.solrj.io.eval.SplitEvaluator;
+import org.apache.solr.client.solrj.io.eval.SquareRootEvaluator;
+import org.apache.solr.client.solrj.io.eval.StandardDeviationEvaluator;
+import org.apache.solr.client.solrj.io.eval.SubtractEvaluator;
+import org.apache.solr.client.solrj.io.eval.SumColumnsEvaluator;
+import org.apache.solr.client.solrj.io.eval.SumDifferenceEvaluator;
+import org.apache.solr.client.solrj.io.eval.SumRowsEvaluator;
+import org.apache.solr.client.solrj.io.eval.SumSqEvaluator;
+import org.apache.solr.client.solrj.io.eval.TTestEvaluator;
+import org.apache.solr.client.solrj.io.eval.TangentEvaluator;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorDay;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorDayOfQuarter;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorDayOfYear;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorEpoch;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorHour;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorMinute;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorMonth;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorQuarter;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorSecond;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorWeek;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorYear;
+import org.apache.solr.client.solrj.io.eval.TermVectorsEvaluator;
+import org.apache.solr.client.solrj.io.eval.TimeDifferencingEvaluator;
+import org.apache.solr.client.solrj.io.eval.TopFeaturesEvaluator;
+import org.apache.solr.client.solrj.io.eval.TransposeEvaluator;
+import org.apache.solr.client.solrj.io.eval.TriangularDistributionEvaluator;
+import org.apache.solr.client.solrj.io.eval.TrimEvaluator;
+import org.apache.solr.client.solrj.io.eval.TruncEvaluator;
+import org.apache.solr.client.solrj.io.eval.UniformDistributionEvaluator;
+import org.apache.solr.client.solrj.io.eval.UniformIntegerDistributionEvaluator;
+import org.apache.solr.client.solrj.io.eval.UnitEvaluator;
+import org.apache.solr.client.solrj.io.eval.UpperEvaluator;
+import org.apache.solr.client.solrj.io.eval.UuidEvaluator;
+import org.apache.solr.client.solrj.io.eval.ValueAtEvaluator;
+import org.apache.solr.client.solrj.io.eval.VarianceEvaluator;
+import org.apache.solr.client.solrj.io.eval.WeibullDistributionEvaluator;
+import org.apache.solr.client.solrj.io.eval.ZerosEvaluator;
+import org.apache.solr.client.solrj.io.eval.ZipFDistributionEvaluator;
 import org.apache.solr.client.solrj.io.graph.GatherNodesStream;
 import org.apache.solr.client.solrj.io.graph.ShortestPathStream;
 import org.apache.solr.client.solrj.io.ops.DistinctOperation;
 import org.apache.solr.client.solrj.io.ops.GroupOperation;
 import org.apache.solr.client.solrj.io.ops.ReplaceOperation;
-import org.apache.solr.client.solrj.io.stream.*;
-import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.apache.solr.client.solrj.io.stream.metrics.*;
-import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
-import org.apache.solr.client.solrj.io.comp.FieldComparator;
-import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
-import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.ops.ReplaceWithFieldOperation;
+import org.apache.solr.client.solrj.io.ops.ReplaceWithValueOperation;
+import org.apache.solr.client.solrj.io.stream.CalculatorStream;
+import org.apache.solr.client.solrj.io.stream.CartesianProductStream;
+import org.apache.solr.client.solrj.io.stream.CellStream;
+import org.apache.solr.client.solrj.io.stream.CommitStream;
+import org.apache.solr.client.solrj.io.stream.ComplementStream;
+import org.apache.solr.client.solrj.io.stream.CsvStream;
+import org.apache.solr.client.solrj.io.stream.DaemonStream;
+import org.apache.solr.client.solrj.io.stream.DeleteStream;
+import org.apache.solr.client.solrj.io.stream.DrillStream;
+import org.apache.solr.client.solrj.io.stream.EchoStream;
+import org.apache.solr.client.solrj.io.stream.EvalStream;
+import org.apache.solr.client.solrj.io.stream.ExecutorStream;
+import org.apache.solr.client.solrj.io.stream.Facet2DStream;
+import org.apache.solr.client.solrj.io.stream.FacetStream;
+import org.apache.solr.client.solrj.io.stream.FeaturesSelectionStream;
+import org.apache.solr.client.solrj.io.stream.FetchStream;
+import org.apache.solr.client.solrj.io.stream.GetStream;
+import org.apache.solr.client.solrj.io.stream.HashJoinStream;
+import org.apache.solr.client.solrj.io.stream.HashRollupStream;
+import org.apache.solr.client.solrj.io.stream.HavingStream;
+import org.apache.solr.client.solrj.io.stream.InnerJoinStream;
+import org.apache.solr.client.solrj.io.stream.IntersectStream;
+import org.apache.solr.client.solrj.io.stream.KnnStream;
+import org.apache.solr.client.solrj.io.stream.LeftOuterJoinStream;
+import org.apache.solr.client.solrj.io.stream.LetStream;
+import org.apache.solr.client.solrj.io.stream.ListStream;
+import org.apache.solr.client.solrj.io.stream.MergeStream;
+import org.apache.solr.client.solrj.io.stream.ModelStream;
+import org.apache.solr.client.solrj.io.stream.NoOpStream;
+import org.apache.solr.client.solrj.io.stream.NullStream;
+import org.apache.solr.client.solrj.io.stream.OuterHashJoinStream;
+import org.apache.solr.client.solrj.io.stream.ParallelListStream;
+import org.apache.solr.client.solrj.io.stream.ParallelStream;
+import org.apache.solr.client.solrj.io.stream.PlotStream;
+import org.apache.solr.client.solrj.io.stream.PriorityStream;
+import org.apache.solr.client.solrj.io.stream.RandomFacadeStream;
+import org.apache.solr.client.solrj.io.stream.RankStream;
+import org.apache.solr.client.solrj.io.stream.ReducerStream;
+import org.apache.solr.client.solrj.io.stream.RollupStream;
+import org.apache.solr.client.solrj.io.stream.ScoreNodesStream;
+import org.apache.solr.client.solrj.io.stream.SearchFacadeStream;
+import org.apache.solr.client.solrj.io.stream.SelectStream;
+import org.apache.solr.client.solrj.io.stream.ShuffleStream;
+import org.apache.solr.client.solrj.io.stream.SignificantTermsStream;
+import org.apache.solr.client.solrj.io.stream.SortStream;
+import org.apache.solr.client.solrj.io.stream.SqlStream;
+import org.apache.solr.client.solrj.io.stream.StatsStream;
+import org.apache.solr.client.solrj.io.stream.StreamContext;
+import org.apache.solr.client.solrj.io.stream.TextLogitStream;
+import org.apache.solr.client.solrj.io.stream.TimeSeriesStream;
+import org.apache.solr.client.solrj.io.stream.TopicStream;
+import org.apache.solr.client.solrj.io.stream.TsvStream;
+import org.apache.solr.client.solrj.io.stream.TupStream;
+import org.apache.solr.client.solrj.io.stream.TupleStream;
+import org.apache.solr.client.solrj.io.stream.UniqueStream;
+import org.apache.solr.client.solrj.io.stream.UpdateStream;
+import org.apache.solr.client.solrj.io.stream.ZplotStream;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
+import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.client.solrj.io.stream.metrics.CountDistinctMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.PercentileMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.StdMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
 import org.apache.solr.common.params.CommonParams;
-import java.io.IOException;
-import java.util.List;
+
 public class Lang {
 
   public static void register(StreamFactory streamFactory) {
@@ -47,14 +339,12 @@ public class Lang {
         .withFunctionName("facet2D", Facet2DStream.class)
         .withFunctionName("update", UpdateStream.class)
         .withFunctionName("delete", DeleteStream.class)
-        .withFunctionName("jdbc", JDBCStream.class)
         .withFunctionName("topic", TopicStream.class)
         .withFunctionName("commit", CommitStream.class)
         .withFunctionName("random", RandomFacadeStream.class)
         .withFunctionName("knnSearch", KnnStream.class)
 
-
-            // decorator streams
+        // decorator streams
         .withFunctionName("merge", MergeStream.class)
         .withFunctionName("unique", UniqueStream.class)
         .withFunctionName("top", RankStream.class)
@@ -115,18 +405,20 @@ public class Lang {
         .withFunctionName("count", CountMetric.class)
         .withFunctionName("countDist", CountDistinctMetric.class)
 
-            // tuple manipulation operations
+        // tuple manipulation operations
         .withFunctionName("replace", ReplaceOperation.class)
+        .withFunctionName("withValue", ReplaceWithValueOperation.class)
+        .withFunctionName("withField", ReplaceWithFieldOperation.class)
 
-            // stream reduction operations
+        // stream reduction operations
         .withFunctionName("group", GroupOperation.class)
         .withFunctionName("distinct", DistinctOperation.class)
         .withFunctionName("having", HavingStream.class)
 
-            // Stream Evaluators
+        // Stream Evaluators
         .withFunctionName("val", RawValueEvaluator.class)
 
-            // New Evaluators
+        // New Evaluators
         .withFunctionName("anova", AnovaEvaluator.class)
         .withFunctionName("array", ArrayEvaluator.class)
         .withFunctionName("col", ColumnEvaluator.class)
@@ -217,7 +509,8 @@ public class Lang {
         .withFunctionName("spline", SplineEvaluator.class)
         .withFunctionName("ttest", TTestEvaluator.class)
         .withFunctionName("pairedTtest", PairedTTestEvaluator.class)
-        .withFunctionName("multiVariateNormalDistribution", MultiVariateNormalDistributionEvaluator.class)
+        .withFunctionName(
+            "multiVariateNormalDistribution", MultiVariateNormalDistributionEvaluator.class)
         .withFunctionName("integral", IntegrateEvaluator.class)
         .withFunctionName("density", DensityEvaluator.class)
         .withFunctionName("mannWhitney", MannWhitneyUEvaluator.class)
@@ -328,20 +621,22 @@ public class Lang {
         .withFunctionName("not", NotEvaluator.class)
         .withFunctionName("or", OrEvaluator.class)
 
-            // Date Time Evaluators
+        // Date Time Evaluators
         .withFunctionName(TemporalEvaluatorYear.FUNCTION_NAME, TemporalEvaluatorYear.class)
         .withFunctionName(TemporalEvaluatorMonth.FUNCTION_NAME, TemporalEvaluatorMonth.class)
         .withFunctionName(TemporalEvaluatorDay.FUNCTION_NAME, TemporalEvaluatorDay.class)
-        .withFunctionName(TemporalEvaluatorDayOfYear.FUNCTION_NAME, TemporalEvaluatorDayOfYear.class)
+        .withFunctionName(
+            TemporalEvaluatorDayOfYear.FUNCTION_NAME, TemporalEvaluatorDayOfYear.class)
         .withFunctionName(TemporalEvaluatorHour.FUNCTION_NAME, TemporalEvaluatorHour.class)
         .withFunctionName(TemporalEvaluatorMinute.FUNCTION_NAME, TemporalEvaluatorMinute.class)
         .withFunctionName(TemporalEvaluatorSecond.FUNCTION_NAME, TemporalEvaluatorSecond.class)
         .withFunctionName(TemporalEvaluatorEpoch.FUNCTION_NAME, TemporalEvaluatorEpoch.class)
         .withFunctionName(TemporalEvaluatorWeek.FUNCTION_NAME, TemporalEvaluatorWeek.class)
         .withFunctionName(TemporalEvaluatorQuarter.FUNCTION_NAME, TemporalEvaluatorQuarter.class)
-        .withFunctionName(TemporalEvaluatorDayOfQuarter.FUNCTION_NAME, TemporalEvaluatorDayOfQuarter.class)
+        .withFunctionName(
+            TemporalEvaluatorDayOfQuarter.FUNCTION_NAME, TemporalEvaluatorDayOfQuarter.class)
 
-            // Number Stream Evaluators
+        // Number Stream Evaluators
         .withFunctionName("abs", AbsoluteValueEvaluator.class)
         .withFunctionName("add", AddEvaluator.class)
         .withFunctionName("div", DivideEvaluator.class)
@@ -368,17 +663,15 @@ public class Lang {
         .withFunctionName("coalesce", CoalesceEvaluator.class)
         .withFunctionName("uuid", UuidEvaluator.class)
 
-            // Conditional Stream Evaluators
+        // Conditional Stream Evaluators
         .withFunctionName("if", IfThenElseEvaluator.class)
         .withFunctionName("convert", ConversionEvaluator.class);
   }
-
 
   public static class LocalInputStream extends TupleStream implements Expressible {
 
     private StreamComparator streamComparator;
     private String sort;
-
 
     public LocalInputStream(StreamExpression expression, StreamFactory factory) throws IOException {
       this.streamComparator = parseComp(factory.getDefaultSort());
@@ -386,7 +679,7 @@ public class Lang {
 
     @Override
     public void setStreamContext(StreamContext context) {
-      sort = (String)context.get(CommonParams.SORT);
+      sort = (String) context.get(CommonParams.SORT);
     }
 
     @Override
@@ -398,10 +691,11 @@ public class Lang {
 
       String[] sorts = sort.split(",");
       StreamComparator[] comps = new StreamComparator[sorts.length];
-      for(int i=0; i<sorts.length; i++) {
+      for (int i = 0; i < sorts.length; i++) {
         String s = sorts[i];
 
-        String[] spec = s.trim().split("\\s+"); //This should take into account spaces in the sort spec.
+        String[] spec =
+            s.trim().split("\\s+"); // This should take into account spaces in the sort spec.
 
         if (spec.length != 2) {
           throw new IOException("Invalid sort spec:" + s);
@@ -410,10 +704,15 @@ public class Lang {
         String fieldName = spec[0].trim();
         String order = spec[1].trim();
 
-        comps[i] = new FieldComparator(fieldName, order.equalsIgnoreCase("asc") ? ComparatorOrder.ASCENDING : ComparatorOrder.DESCENDING);
+        comps[i] =
+            new FieldComparator(
+                fieldName,
+                order.equalsIgnoreCase("asc")
+                    ? ComparatorOrder.ASCENDING
+                    : ComparatorOrder.DESCENDING);
       }
 
-      if(comps.length > 1) {
+      if (comps.length > 1) {
         return new MultipleFieldComparator(comps);
       } else {
         return comps[0];
@@ -426,9 +725,7 @@ public class Lang {
     }
 
     @Override
-    public void close() throws IOException {
-
-    }
+    public void close() throws IOException {}
 
     @Override
     public Tuple read() throws IOException {
@@ -455,6 +752,4 @@ public class Lang {
           .withExpression("--non-expressible--");
     }
   }
-
-
 }

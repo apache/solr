@@ -126,6 +126,13 @@ solrAdminServices.factory('System',
       "postCsv": {headers: {'Content-type': 'application/csv'}, method: "POST", params: {handler: '@handler'}}
     });
   }])
+.factory('ParamSet',
+  ['$resource', function($resource) {
+    return $resource(':core/config/params/:name', {core: '@core', wt:'json', _:Date.now()}, {
+      "submit": {headers: {'Content-type': 'application/json'}, method: "POST"},
+      "get": {headers: {'Content-type': 'application/json'}, method: "GET"}
+    });
+  }])
 .service('FileUpload', function ($http) {
     this.upload = function(params, file, success, error){
         var url = "" + params.core + "/" + params.handler + "?";
@@ -182,6 +189,8 @@ solrAdminServices.factory('System',
   ['$resource', function($resource) {
     return $resource(':core/admin/ping', {wt:'json', core: '@core', ts:Date.now(), _:Date.now()}, {
      "ping": {},
+     "enable": {params:{action:"enable"}, headers: {doNotIntercept: "true"}},
+     "disable": {params:{action:"disable"}, headers: {doNotIntercept: "true"}},
      "status": {params:{action:"status"}, headers: {doNotIntercept: "true"}
     }});
   }])

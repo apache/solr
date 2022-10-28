@@ -24,9 +24,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class SuggesterTest extends SolrTestCaseJ4 {
-  /**
-   * Expected URI at which the given suggester will live.
-   */
+  /** Expected URI at which the given suggester will live. */
   protected String requestUri = "/suggest";
 
   // TODO: fix this test to not require FSDirectory
@@ -36,9 +34,9 @@ public class SuggesterTest extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     savedFactory = System.getProperty("solr.DirectoryFactory");
     System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
-    initCore("solrconfig-spellchecker.xml","schema-spellchecker.xml");
+    initCore("solrconfig-spellchecker.xml", "schema-spellchecker.xml");
   }
-  
+
   @AfterClass
   public static void afterClass() {
     if (savedFactory == null) {
@@ -49,29 +47,38 @@ public class SuggesterTest extends SolrTestCaseJ4 {
   }
 
   public static void addDocs() {
-    assertU(adoc("id", "1",
-                 "text", "acceptable accidentally accommodate acquire"
-               ));
-    assertU(adoc("id", "2",
-                 "text", "believe bellwether accommodate acquire"
-               ));
-    assertU(adoc("id", "3",
-                "text", "cemetery changeable conscientious consensus acquire bellwether"
-               ));
+    assertU(
+        adoc(
+            "id", "1",
+            "text", "acceptable accidentally accommodate acquire"));
+    assertU(
+        adoc(
+            "id", "2",
+            "text", "believe bellwether accommodate acquire"));
+    assertU(
+        adoc("id", "3", "text", "cemetery changeable conscientious consensus acquire bellwether"));
   }
-  
+
   @Test
-  public void testSuggestions() throws Exception {
+  public void testSuggestions() {
     addDocs();
     assertU(commit()); // configured to do a rebuild on commit
 
-    assertQ(req("qt", requestUri, "q", "ac", SpellingParams.SPELLCHECK_COUNT, "2", SpellingParams.SPELLCHECK_ONLY_MORE_POPULAR, "true"),
+    assertQ(
+        req(
+            "qt",
+            requestUri,
+            "q",
+            "ac",
+            SpellingParams.SPELLCHECK_COUNT,
+            "2",
+            SpellingParams.SPELLCHECK_ONLY_MORE_POPULAR,
+            "true"),
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='ac']/int[@name='numFound'][.='2']",
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='ac']/arr[@name='suggestion']/str[1][.='acquire']",
-        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='ac']/arr[@name='suggestion']/str[2][.='accommodate']"
-    );
+        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='ac']/arr[@name='suggestion']/str[2][.='accommodate']");
   }
-  
+
   @Test
   public void testReload() throws Exception {
     addDocs();
@@ -80,35 +87,59 @@ public class SuggesterTest extends SolrTestCaseJ4 {
     h.reload();
     // wait until the new searcher is registered
     waitForWarming();
-    
-    assertQ(req("qt", requestUri, "q", "ac", SpellingParams.SPELLCHECK_COUNT, "2", SpellingParams.SPELLCHECK_ONLY_MORE_POPULAR, "true"),
-            "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='ac']/int[@name='numFound'][.='2']",
-            "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='ac']/arr[@name='suggestion']/str[1][.='acquire']",
-            "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='ac']/arr[@name='suggestion']/str[2][.='accommodate']"
-        );
+
+    assertQ(
+        req(
+            "qt",
+            requestUri,
+            "q",
+            "ac",
+            SpellingParams.SPELLCHECK_COUNT,
+            "2",
+            SpellingParams.SPELLCHECK_ONLY_MORE_POPULAR,
+            "true"),
+        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='ac']/int[@name='numFound'][.='2']",
+        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='ac']/arr[@name='suggestion']/str[1][.='acquire']",
+        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='ac']/arr[@name='suggestion']/str[2][.='accommodate']");
   }
-  
+
   @Test
-  public void testRebuild() throws Exception {
+  public void testRebuild() {
     addDocs();
     assertU(commit());
-    assertQ(req("qt", requestUri, "q", "ac", SpellingParams.SPELLCHECK_COUNT, "2", SpellingParams.SPELLCHECK_ONLY_MORE_POPULAR, "true"),
-      "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='ac']/int[@name='numFound'][.='2']");
-    assertU(adoc("id", "4",
-        "text", "actually"
-       ));
+    assertQ(
+        req(
+            "qt",
+            requestUri,
+            "q",
+            "ac",
+            SpellingParams.SPELLCHECK_COUNT,
+            "2",
+            SpellingParams.SPELLCHECK_ONLY_MORE_POPULAR,
+            "true"),
+        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='ac']/int[@name='numFound'][.='2']");
+    assertU(adoc("id", "4", "text", "actually"));
     assertU(commit());
-    assertQ(req("qt", requestUri, "q", "ac", SpellingParams.SPELLCHECK_COUNT, "2", SpellingParams.SPELLCHECK_ONLY_MORE_POPULAR, "true"),
-      "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='ac']/int[@name='numFound'][.='2']");
+    assertQ(
+        req(
+            "qt",
+            requestUri,
+            "q",
+            "ac",
+            SpellingParams.SPELLCHECK_COUNT,
+            "2",
+            SpellingParams.SPELLCHECK_ONLY_MORE_POPULAR,
+            "true"),
+        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='ac']/int[@name='numFound'][.='2']");
   }
-  
+
   // SOLR-2726
-  public void testAnalyzer() throws Exception {
+  public void testAnalyzer() {
     Suggester suggester = new Suggester();
     NamedList<Object> params = new NamedList<>();
     params.add("field", "test_field");
     params.add("lookupImpl", "org.apache.solr.spelling.suggest.tst.TSTLookupFactory");
     suggester.init(params, h.getCore());
-    assertTrue(suggester.getQueryAnalyzer() != null);
+    assertNotNull(suggester.getQueryAnalyzer());
   }
 }

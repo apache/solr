@@ -19,7 +19,8 @@ package org.apache.solr.cluster.events;
 import java.util.Map;
 
 /**
- * Event generated when {@link org.apache.solr.common.cloud.ZkStateReader#CLUSTER_PROPS} is modified.
+ * Event generated when {@link org.apache.solr.common.cloud.ZkStateReader#CLUSTER_PROPS} is
+ * modified.
  */
 public interface ClusterPropertiesChangedEvent extends ClusterEvent {
 
@@ -29,5 +30,4 @@ public interface ClusterPropertiesChangedEvent extends ClusterEvent {
   }
 
   Map<String, Object> getNewClusterProperties();
-
 }

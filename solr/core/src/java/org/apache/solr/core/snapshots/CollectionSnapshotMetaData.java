@@ -30,9 +30,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.noggit.JSONWriter;
 
-/**
- * This class defines the meta-data about a collection level snapshot
- */
+/** This class defines the meta-data about a collection level snapshot */
 public class CollectionSnapshotMetaData implements JSONWriter.Writable {
   public static class CoreSnapshotMetaData implements JSONWriter.Writable {
     private final String coreName;
@@ -42,7 +40,13 @@ public class CollectionSnapshotMetaData implements JSONWriter.Writable {
     private final String shardId;
     private final Collection<String> files;
 
-    public CoreSnapshotMetaData(String coreName, String indexDirPath, long generationNumber, String shardId, boolean leader, Collection<String> files) {
+    public CoreSnapshotMetaData(
+        String coreName,
+        String indexDirPath,
+        long generationNumber,
+        String shardId,
+        boolean leader,
+        Collection<String> files) {
       this.coreName = coreName;
       this.indexDirPath = indexDirPath;
       this.generationNumber = generationNumber;
@@ -53,12 +57,12 @@ public class CollectionSnapshotMetaData implements JSONWriter.Writable {
 
     @SuppressWarnings({"unchecked"})
     public CoreSnapshotMetaData(NamedList<?> resp) {
-      this.coreName = (String)resp.get(CoreAdminParams.CORE);
-      this.indexDirPath = (String)resp.get(SolrSnapshotManager.INDEX_DIR_PATH);
-      this.generationNumber = (Long)resp.get(SolrSnapshotManager.GENERATION_NUM);
-      this.shardId = (String)resp.get(SolrSnapshotManager.SHARD_ID);
-      this.leader = (Boolean)resp.get(SolrSnapshotManager.LEADER);
-      this.files = (Collection<String>)resp.get(SolrSnapshotManager.FILE_LIST);
+      this.coreName = (String) resp.get(CoreAdminParams.CORE);
+      this.indexDirPath = (String) resp.get(SolrSnapshotManager.INDEX_DIR_PATH);
+      this.generationNumber = (Long) resp.get(SolrSnapshotManager.GENERATION_NUM);
+      this.shardId = (String) resp.get(SolrSnapshotManager.SHARD_ID);
+      this.leader = (Boolean) resp.get(SolrSnapshotManager.LEADER);
+      this.files = (Collection<String>) resp.get(SolrSnapshotManager.FILE_LIST);
     }
 
     public String getCoreName() {
@@ -87,7 +91,7 @@ public class CollectionSnapshotMetaData implements JSONWriter.Writable {
 
     @Override
     public void write(JSONWriter arg0) {
-      LinkedHashMap<String, Object> info = new LinkedHashMap<String, Object>();
+      LinkedHashMap<String, Object> info = new LinkedHashMap<>();
       info.put(CoreAdminParams.CORE, getCoreName());
       info.put(SolrSnapshotManager.INDEX_DIR_PATH, getIndexDirPath());
       info.put(SolrSnapshotManager.GENERATION_NUM, getGenerationNumber());
@@ -110,7 +114,9 @@ public class CollectionSnapshotMetaData implements JSONWriter.Writable {
   }
 
   public static enum SnapshotStatus {
-    Successful, InProgress, Failed;
+    Successful,
+    InProgress,
+    Failed;
   }
 
   private final String name;
@@ -119,10 +125,15 @@ public class CollectionSnapshotMetaData implements JSONWriter.Writable {
   private final List<CoreSnapshotMetaData> replicaSnapshots;
 
   public CollectionSnapshotMetaData(String name) {
-    this(name, SnapshotStatus.InProgress, new Date(), Collections.<CoreSnapshotMetaData>emptyList());
+    this(
+        name, SnapshotStatus.InProgress, new Date(), Collections.<CoreSnapshotMetaData>emptyList());
   }
 
-  public CollectionSnapshotMetaData(String name, SnapshotStatus status, Date creationTime, List<CoreSnapshotMetaData> replicaSnapshots) {
+  public CollectionSnapshotMetaData(
+      String name,
+      SnapshotStatus status,
+      Date creationTime,
+      List<CoreSnapshotMetaData> replicaSnapshots) {
     this.name = name;
     this.status = status;
     this.creationDate = creationTime;
@@ -131,42 +142,46 @@ public class CollectionSnapshotMetaData implements JSONWriter.Writable {
 
   @SuppressWarnings("unchecked")
   public CollectionSnapshotMetaData(Map<String, Object> data) {
-    this.name = (String)data.get(CoreAdminParams.NAME);
-    this.status = SnapshotStatus.valueOf((String)data.get(SolrSnapshotManager.SNAPSHOT_STATUS));
-    this.creationDate = new Date((Long)data.get(SolrSnapshotManager.CREATION_DATE));
+    this.name = (String) data.get(CoreAdminParams.NAME);
+    this.status = SnapshotStatus.valueOf((String) data.get(SolrSnapshotManager.SNAPSHOT_STATUS));
+    this.creationDate = new Date((Long) data.get(SolrSnapshotManager.CREATION_DATE));
     this.replicaSnapshots = new ArrayList<>();
 
     List<Object> r = (List<Object>) data.get(SolrSnapshotManager.SNAPSHOT_REPLICAS);
     for (Object x : r) {
-      Map<String, Object> info = (Map<String, Object>)x;
-      String coreName = (String)info.get(CoreAdminParams.CORE);
-      String indexDirPath = (String)info.get(SolrSnapshotManager.INDEX_DIR_PATH);
+      Map<String, Object> info = (Map<String, Object>) x;
+      String coreName = (String) info.get(CoreAdminParams.CORE);
+      String indexDirPath = (String) info.get(SolrSnapshotManager.INDEX_DIR_PATH);
       long generationNumber = (Long) info.get(SolrSnapshotManager.GENERATION_NUM);
-      String shardId = (String)info.get(SolrSnapshotManager.SHARD_ID);
+      String shardId = (String) info.get(SolrSnapshotManager.SHARD_ID);
       boolean leader = (Boolean) info.get(SolrSnapshotManager.LEADER);
-      Collection<String> files = (Collection<String>)info.get(SolrSnapshotManager.FILE_LIST);
-      replicaSnapshots.add(new CoreSnapshotMetaData(coreName, indexDirPath, generationNumber, shardId, leader, files));
+      Collection<String> files = (Collection<String>) info.get(SolrSnapshotManager.FILE_LIST);
+      replicaSnapshots.add(
+          new CoreSnapshotMetaData(
+              coreName, indexDirPath, generationNumber, shardId, leader, files));
     }
   }
 
   public CollectionSnapshotMetaData(NamedList<?> data) {
-    this.name = (String)data.get(CoreAdminParams.NAME);
-    String statusStr = (String)data.get(SolrSnapshotManager.SNAPSHOT_STATUS);
-    this.creationDate = new Date((Long)data.get(SolrSnapshotManager.CREATION_DATE));
+    this.name = (String) data.get(CoreAdminParams.NAME);
+    String statusStr = (String) data.get(SolrSnapshotManager.SNAPSHOT_STATUS);
+    this.creationDate = new Date((Long) data.get(SolrSnapshotManager.CREATION_DATE));
     this.status = SnapshotStatus.valueOf(statusStr);
     this.replicaSnapshots = new ArrayList<>();
 
     NamedList<?> r = (NamedList<?>) data.get(SolrSnapshotManager.SNAPSHOT_REPLICAS);
-    for (Map.Entry<String,?> x : r) {
-      NamedList<?> info = (NamedList<?>)x.getValue();
-      String coreName = (String)info.get(CoreAdminParams.CORE);
-      String indexDirPath = (String)info.get(SolrSnapshotManager.INDEX_DIR_PATH);
+    for (Map.Entry<String, ?> x : r) {
+      NamedList<?> info = (NamedList<?>) x.getValue();
+      String coreName = (String) info.get(CoreAdminParams.CORE);
+      String indexDirPath = (String) info.get(SolrSnapshotManager.INDEX_DIR_PATH);
       long generationNumber = (Long) info.get(SolrSnapshotManager.GENERATION_NUM);
-      String shardId = (String)info.get(SolrSnapshotManager.SHARD_ID);
+      String shardId = (String) info.get(SolrSnapshotManager.SHARD_ID);
       boolean leader = (Boolean) info.get(SolrSnapshotManager.LEADER);
       @SuppressWarnings("unchecked")
-      Collection<String> files = (Collection<String>)info.get(SolrSnapshotManager.FILE_LIST);
-      replicaSnapshots.add(new CoreSnapshotMetaData(coreName, indexDirPath, generationNumber, shardId, leader, files));
+      Collection<String> files = (Collection<String>) info.get(SolrSnapshotManager.FILE_LIST);
+      replicaSnapshots.add(
+          new CoreSnapshotMetaData(
+              coreName, indexDirPath, generationNumber, shardId, leader, files));
     }
   }
 
@@ -229,7 +244,7 @@ public class CollectionSnapshotMetaData implements JSONWriter.Writable {
     result.add(SolrSnapshotManager.SNAPSHOT_STATUS, this.status.toString());
     result.add(SolrSnapshotManager.CREATION_DATE, this.getCreationDate().getTime());
 
-    NamedList<NamedList<Object>> replicas = new NamedList<NamedList<Object>>();
+    NamedList<NamedList<Object>> replicas = new NamedList<>();
     for (CoreSnapshotMetaData x : replicaSnapshots) {
       replicas.add(x.getCoreName(), x.toNamedList());
     }

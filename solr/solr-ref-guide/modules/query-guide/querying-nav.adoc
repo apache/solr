@@ -1,0 +1,102 @@
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+.Query Guide
+
+* xref:query-syntax-and-parsers.adoc[]
+** xref:common-query-parameters.adoc[]
+** xref:standard-query-parser.adoc[]
+** xref:dismax-query-parser.adoc[]
+** xref:edismax-query-parser.adoc[]
+** xref:function-queries.adoc[]
+** xref:local-params.adoc[]
+** xref:json-request-api.adoc[]
+*** xref:json-query-dsl.adoc[]
+** xref:searching-nested-documents.adoc[]
+** xref:block-join-query-parser.adoc[]
+** xref:join-query-parser.adoc[]
+** xref:spatial-search.adoc[]
+** xref:dense-vector-search.adoc[]
+** xref:other-parsers.adoc[]
+** xref:sql-query.adoc[]
+*** xref:jdbc-dbvisualizer.adoc[]
+*** xref:jdbc-squirrel.adoc[]
+*** xref:jdbc-zeppelin.adoc[]
+*** xref:jdbc-python-jython.adoc[]
+*** xref:jdbc-r.adoc[]
+** xref:query-screen.adoc[]
+** xref:sql-screen.adoc[]
+
+* Enhancing Queries
+** xref:spell-checking.adoc[]
+** xref:suggester.adoc[]
+** xref:morelikethis.adoc[]
+** xref:query-re-ranking.adoc[]
+** xref:learning-to-rank.adoc[]
+** xref:tagger-handler.adoc[]
+** xref:analytics.adoc[]
+*** xref:analytics-expression-sources.adoc[]
+*** xref:analytics-mapping-functions.adoc[]
+*** xref:analytics-reduction-functions.adoc[]
+** xref:terms-component.adoc[]
+** xref:term-vector-component.adoc[]
+** xref:stats-component.adoc[]
+
+* Controlling Results
+** xref:faceting.adoc[]
+** xref:json-facet-api.adoc[]
+*** xref:json-faceting-domain-changes.adoc[]
+** xref:collapse-and-expand-results.adoc[]
+** xref:result-grouping.adoc[]
+** xref:result-clustering.adoc[]
+** xref:highlighting.adoc[]
+** xref:query-elevation-component.adoc[]
+** xref:document-transformers.adoc[]
+** xref:response-writers.adoc[]
+** xref:exporting-result-sets.adoc[]
+** xref:pagination-of-results.adoc[]
+
+* xref:streaming-expressions.adoc[]
+** xref:stream-source-reference.adoc[]
+** xref:stream-decorator-reference.adoc[]
+** xref:stream-evaluator-reference.adoc[]
+** xref:math-expressions.adoc[]
+*** xref:visualization.adoc[]
+*** xref:math-start.adoc[]
+*** xref:loading.adoc[]
+*** xref:search-sample.adoc[]
+*** xref:transform.adoc[]
+*** xref:scalar-math.adoc[]
+*** xref:vector-math.adoc[]
+*** xref:variables.adoc[]
+*** xref:matrix-math.adoc[]
+*** xref:term-vectors.adoc[]
+*** xref:probability-distributions.adoc[]
+*** xref:statistics.adoc[]
+*** xref:regression.adoc[]
+*** xref:curve-fitting.adoc[]
+*** xref:time-series.adoc[]
+*** xref:numerical-analysis.adoc[]
+*** xref:dsp.adoc[]
+*** xref:simulations.adoc[]
+*** xref:machine-learning.adoc[]
+*** xref:graph.adoc[]
+*** xref:computational-geometry.adoc[]
+*** xref:logs.adoc[]
+** xref:graph-traversal.adoc[]
+** xref:stream-api.adoc[]
+** xref:stream-screen.adoc[]

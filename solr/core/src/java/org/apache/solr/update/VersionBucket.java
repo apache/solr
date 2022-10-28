@@ -23,10 +23,12 @@ import java.util.concurrent.TimeUnit;
 // TODO: store the highest possible in the index on a commit (but how to not block adds?)
 // TODO: could also store highest possible in the transaction log after a commit.
 // Or on a new index, just scan "version" for the max?
-/** @lucene.internal */
 /**
- * The default implementation which uses the intrinsic object monitor.
- * It uses less memory but ignores the <code>lockTimeoutMs</code>.
+ * @lucene.internal
+ */
+/**
+ * The default implementation which uses the intrinsic object monitor. It uses less memory but
+ * ignores the <code>lockTimeoutMs</code>.
  */
 public class VersionBucket {
   public long highest;
@@ -36,26 +38,22 @@ public class VersionBucket {
       highest = Math.max(highest, Math.abs(val));
     }
   }
-  
+
   @FunctionalInterface
   public interface CheckedFunction<T, R> {
-     R apply() throws IOException;
+    R apply() throws IOException;
   }
-  
-  /**
-   * This will run the function with the intrinsic object monitor.
-   */
-  public <T, R> R runWithLock(int lockTimeoutMs, CheckedFunction<T, R> function) throws IOException {
+
+  /** This will run the function with the intrinsic object monitor. */
+  public <T, R> R runWithLock(int lockTimeoutMs, CheckedFunction<T, R> function)
+      throws IOException {
     synchronized (this) {
       return function.apply();
     }
   }
 
-  /**
-   * Nothing to do for the intrinsic object monitor.
-   */
-  public void unlock() {
-  }
+  /** Nothing to do for the intrinsic object monitor. */
+  public void unlock() {}
 
   public void signalAll() {
     notifyAll();

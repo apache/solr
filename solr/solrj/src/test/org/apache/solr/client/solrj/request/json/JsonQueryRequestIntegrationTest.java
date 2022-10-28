@@ -19,12 +19,9 @@ package org.apache.solr.client.solrj.request.json;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
@@ -39,9 +36,7 @@ import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/**
- * Integration tests for {@link JsonQueryRequest}
- */
+/** Integration tests for {@link JsonQueryRequest} */
 public class JsonQueryRequestIntegrationTest extends SolrCloudTestCase {
 
   private static final String COLLECTION_NAME = "books";
@@ -58,10 +53,8 @@ public class JsonQueryRequestIntegrationTest extends SolrCloudTestCase {
         .addConfig(CONFIG_NAME, new File(ExternalPaths.TECHPRODUCTS_CONFIGSET).toPath())
         .configure();
 
-    final List<String> solrUrls = new ArrayList<>();
-    solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl().toString());
-
-    CollectionAdminRequest.createCollection(COLLECTION_NAME, CONFIG_NAME, 1, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(COLLECTION_NAME, CONFIG_NAME, 1, 1)
+        .process(cluster.getSolrClient());
 
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
     up.setParam("collection", COLLECTION_NAME);
@@ -83,8 +76,7 @@ public class JsonQueryRequestIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testCanRunSimpleQueries() throws Exception {
-    final JsonQueryRequest simpleQuery = new JsonQueryRequest()
-        .setQuery("*:*");
+    final JsonQueryRequest simpleQuery = new JsonQueryRequest().setQuery("*:*");
     QueryResponse queryResponse = simpleQuery.process(cluster.getSolrClient(), COLLECTION_NAME);
     assertEquals(0, queryResponse.getStatus());
     assertEquals(NUM_BOOKS_TOTAL, queryResponse.getResults().getNumFound());
@@ -92,25 +84,23 @@ public class JsonQueryRequestIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testQueriesCanUseLocalParamsSyntax() throws Exception {
-    final JsonQueryRequest simpleQuery = new JsonQueryRequest()
-        .setQuery("{!lucene df=genre_s v='scifi'}");
+    final JsonQueryRequest simpleQuery =
+        new JsonQueryRequest().setQuery("{!lucene df=genre_s v='scifi'}");
     QueryResponse queryResponse = simpleQuery.process(cluster.getSolrClient(), COLLECTION_NAME);
     assertEquals(0, queryResponse.getStatus());
     assertEquals(NUM_SCIFI_BOOKS, queryResponse.getResults().getNumFound());
   }
 
-
   @Test
   public void testQueriesCanUseExpandedSyntax() throws Exception {
-    //Construct a tree representing the JSON: {lucene: {df:'genre_s', 'query': 'scifi'}}
+    // Construct a tree representing the JSON: {lucene: {df:'genre_s', 'query': 'scifi'}}
     final Map<String, Object> queryMap = new HashMap<>();
     final Map<String, Object> luceneQueryParamMap = new HashMap<>();
     queryMap.put("lucene", luceneQueryParamMap);
     luceneQueryParamMap.put("df", "genre_s");
     luceneQueryParamMap.put("query", "scifi");
 
-    final JsonQueryRequest simpleQuery = new JsonQueryRequest()
-        .setQuery(queryMap);
+    final JsonQueryRequest simpleQuery = new JsonQueryRequest().setQuery(queryMap);
     QueryResponse queryResponse = simpleQuery.process(cluster.getSolrClient(), COLLECTION_NAME);
     assertEquals(0, queryResponse.getStatus());
     assertEquals(NUM_SCIFI_BOOKS, queryResponse.getResults().getNumFound());
@@ -118,18 +108,21 @@ public class JsonQueryRequestIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testQueriesCanBeRepresentedUsingMapWriters() throws Exception {
-    final MapWriter queryWriter = new MapWriter() {
-      @Override
-      public void writeMap(EntryWriter ew) throws IOException {
-        ew.put("lucene", (MapWriter) queryParamWriter -> {
-          queryParamWriter.put("df", "genre_s");
-          queryParamWriter.put("query", "scifi");
-        });
-      }
-    };
+    final MapWriter queryWriter =
+        new MapWriter() {
+          @Override
+          public void writeMap(EntryWriter ew) throws IOException {
+            ew.put(
+                "lucene",
+                (MapWriter)
+                    queryParamWriter -> {
+                      queryParamWriter.put("df", "genre_s");
+                      queryParamWriter.put("query", "scifi");
+                    });
+          }
+        };
 
-    final JsonQueryRequest simpleQuery = new JsonQueryRequest()
-        .setQuery(queryWriter);
+    final JsonQueryRequest simpleQuery = new JsonQueryRequest().setQuery(queryWriter);
     QueryResponse queryResponse = simpleQuery.process(cluster.getSolrClient(), COLLECTION_NAME);
     assertEquals(0, queryResponse.getStatus());
     assertEquals(NUM_SCIFI_BOOKS, queryResponse.getResults().getNumFound());
@@ -143,18 +136,17 @@ public class JsonQueryRequestIntegrationTest extends SolrCloudTestCase {
     clausesJsonMap.put("must", "genre_s:scifi");
     clausesJsonMap.put("must_not", "series_t:Ender");
 
-    final JsonQueryRequest simpleQuery = new JsonQueryRequest()
-        .setQuery(queryJsonMap);
+    final JsonQueryRequest simpleQuery = new JsonQueryRequest().setQuery(queryJsonMap);
     QueryResponse queryResponse = simpleQuery.process(cluster.getSolrClient(), COLLECTION_NAME);
     assertEquals(0, queryResponse.getStatus());
-    assertEquals(1, queryResponse.getResults().getNumFound()); // 2 scifi books, only 1 is NOT "Ender's Game"
+    assertEquals(
+        1, queryResponse.getResults().getNumFound()); // 2 scifi books, only 1 is NOT "Ender's Game"
   }
 
   @Test
   public void testFiltersCanBeAddedToQueries() throws Exception {
-    final JsonQueryRequest simpleQuery = new JsonQueryRequest()
-        .setQuery("*:*")
-        .withFilter("inStock:true");
+    final JsonQueryRequest simpleQuery =
+        new JsonQueryRequest().setQuery("*:*").withFilter("inStock:true");
     QueryResponse queryResponse = simpleQuery.process(cluster.getSolrClient(), COLLECTION_NAME);
     assertEquals(0, queryResponse.getStatus());
     assertEquals(NUM_IN_STOCK, queryResponse.getResults().getNumFound());
@@ -162,9 +154,8 @@ public class JsonQueryRequestIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testFiltersCanUseLocalParamsSyntax() throws Exception {
-    final JsonQueryRequest simpleQuery = new JsonQueryRequest()
-        .setQuery("*:*")
-        .withFilter("{!lucene df=inStock v='true'}");
+    final JsonQueryRequest simpleQuery =
+        new JsonQueryRequest().setQuery("*:*").withFilter("{!lucene df=inStock v='true'}");
     QueryResponse queryResponse = simpleQuery.process(cluster.getSolrClient(), COLLECTION_NAME);
     assertEquals(0, queryResponse.getStatus());
     assertEquals(NUM_IN_STOCK, queryResponse.getResults().getNumFound());
@@ -178,9 +169,8 @@ public class JsonQueryRequestIntegrationTest extends SolrCloudTestCase {
     luceneQueryParamsMap.put("df", "genre_s");
     luceneQueryParamsMap.put("query", "scifi");
 
-    final JsonQueryRequest simpleQuery = new JsonQueryRequest()
-        .setQuery("*:*")
-        .withFilter(filterJsonMap);
+    final JsonQueryRequest simpleQuery =
+        new JsonQueryRequest().setQuery("*:*").withFilter(filterJsonMap);
     QueryResponse queryResponse = simpleQuery.process(cluster.getSolrClient(), COLLECTION_NAME);
     assertEquals(0, queryResponse.getStatus());
     assertEquals(NUM_SCIFI_BOOKS, queryResponse.getResults().getNumFound());
@@ -188,10 +178,11 @@ public class JsonQueryRequestIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testMultipleFiltersCanBeUsed() throws Exception {
-    final JsonQueryRequest simpleQuery = new JsonQueryRequest()
-        .setQuery("*:*")
-        .withFilter("sequence_i:1") // 7 books are the first of a series
-        .withFilter("inStock:true");// but only 5 are in stock
+    final JsonQueryRequest simpleQuery =
+        new JsonQueryRequest()
+            .setQuery("*:*")
+            .withFilter("sequence_i:1") // 7 books are the first of a series
+            .withFilter("inStock:true"); // but only 5 are in stock
     QueryResponse queryResponse = simpleQuery.process(cluster.getSolrClient(), COLLECTION_NAME);
     assertEquals(0, queryResponse.getStatus());
     assertEquals(NUM_IN_STOCK_AND_FIRST_IN_SERIES, queryResponse.getResults().getNumFound());
@@ -199,9 +190,8 @@ public class JsonQueryRequestIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void canSpecifyFieldsToBeReturned() throws Exception {
-    final JsonQueryRequest simpleQuery = new JsonQueryRequest()
-        .setQuery("*:*")
-        .returnFields("id", "name");
+    final JsonQueryRequest simpleQuery =
+        new JsonQueryRequest().setQuery("*:*").returnFields("id", "name");
     QueryResponse queryResponse = simpleQuery.process(cluster.getSolrClient(), COLLECTION_NAME);
     assertEquals(0, queryResponse.getStatus());
     final SolrDocumentList docs = queryResponse.getResults();
@@ -216,9 +206,7 @@ public class JsonQueryRequestIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testObeysResultLimit() throws Exception {
-    final JsonQueryRequest simpleQuery = new JsonQueryRequest()
-        .setQuery("*:*")
-        .setLimit(5);
+    final JsonQueryRequest simpleQuery = new JsonQueryRequest().setQuery("*:*").setLimit(5);
     QueryResponse queryResponse = simpleQuery.process(cluster.getSolrClient(), COLLECTION_NAME);
     assertEquals(0, queryResponse.getStatus());
     assertEquals(NUM_BOOKS_TOTAL, queryResponse.getResults().getNumFound());
@@ -227,9 +215,8 @@ public class JsonQueryRequestIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testAcceptsTraditionalQueryParamNamesInParamsBlock() throws Exception {
-    final JsonQueryRequest simpleQuery = new JsonQueryRequest()
-        .withParam("q", "*:*")
-        .withParam("rows", 4);
+    final JsonQueryRequest simpleQuery =
+        new JsonQueryRequest().withParam("q", "*:*").withParam("rows", 4);
     QueryResponse queryResponse = simpleQuery.process(cluster.getSolrClient(), COLLECTION_NAME);
 
     assertEquals(0, queryResponse.getStatus());
@@ -239,18 +226,18 @@ public class JsonQueryRequestIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testReturnsResultsStartingAtOffset() throws Exception {
-    final JsonQueryRequest originalDocsQuery = new JsonQueryRequest()
-        .setQuery("*:*");
-    QueryResponse originalDocsResponse = originalDocsQuery.process(cluster.getSolrClient(), COLLECTION_NAME);
+    final JsonQueryRequest originalDocsQuery = new JsonQueryRequest().setQuery("*:*");
+    QueryResponse originalDocsResponse =
+        originalDocsQuery.process(cluster.getSolrClient(), COLLECTION_NAME);
     assertEquals(0, originalDocsResponse.getStatus());
     assertEquals(NUM_BOOKS_TOTAL, originalDocsResponse.getResults().size());
     final SolrDocumentList originalDocs = originalDocsResponse.getResults();
 
     final int offset = 2;
-    final JsonQueryRequest offsetDocsQuery = new JsonQueryRequest()
-        .setQuery("*:*")
-        .setOffset(offset);
-    QueryResponse offsetDocsResponse = offsetDocsQuery.process(cluster.getSolrClient(), COLLECTION_NAME);
+    final JsonQueryRequest offsetDocsQuery =
+        new JsonQueryRequest().setQuery("*:*").setOffset(offset);
+    QueryResponse offsetDocsResponse =
+        offsetDocsQuery.process(cluster.getSolrClient(), COLLECTION_NAME);
     assertEquals(0, offsetDocsResponse.getStatus());
     assertEquals(NUM_BOOKS_TOTAL - offset, offsetDocsResponse.getResults().size());
     final SolrDocumentList offsetDocs = offsetDocsResponse.getResults();
@@ -265,9 +252,8 @@ public class JsonQueryRequestIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testReturnsReturnsResultsWithSpecifiedSort() throws Exception {
-    final JsonQueryRequest simpleQuery = new JsonQueryRequest()
-        .setQuery("*:*")
-        .setSort("price desc");
+    final JsonQueryRequest simpleQuery =
+        new JsonQueryRequest().setQuery("*:*").setSort("price desc");
     QueryResponse queryResponse = simpleQuery.process(cluster.getSolrClient(), COLLECTION_NAME);
 
     assertEquals(0, queryResponse.getStatus());
@@ -275,8 +261,9 @@ public class JsonQueryRequestIntegrationTest extends SolrCloudTestCase {
     final SolrDocumentList docs = queryResponse.getResults();
     for (int i = 0; i < docs.size() - 1; i++) {
       final float pricierDocPrice = (Float) docs.get(i).getFieldValue("price");
-      final float cheaperDocPrice = (Float) docs.get(i+1).getFieldValue("price");
-      assertTrue("Expected doc at index " + i + " doc to be more expensive than doc at " + (i+1),
+      final float cheaperDocPrice = (Float) docs.get(i + 1).getFieldValue("price");
+      assertTrue(
+          "Expected doc at index " + i + " doc to be more expensive than doc at " + (i + 1),
           pricierDocPrice >= cheaperDocPrice);
     }
   }
@@ -285,8 +272,7 @@ public class JsonQueryRequestIntegrationTest extends SolrCloudTestCase {
   public void testCombinesJsonParamsWithUriParams() throws Exception {
     final ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("fq", "inStock:true");
-    final JsonQueryRequest simpleQuery = new JsonQueryRequest(params)
-        .setQuery("*:*");
+    final JsonQueryRequest simpleQuery = new JsonQueryRequest(params).setQuery("*:*");
     QueryResponse queryResponse = simpleQuery.process(cluster.getSolrClient(), COLLECTION_NAME);
     assertEquals(0, queryResponse.getStatus());
     assertEquals(NUM_IN_STOCK, queryResponse.getResults().getNumFound());
@@ -297,8 +283,7 @@ public class JsonQueryRequestIntegrationTest extends SolrCloudTestCase {
     final ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("FIELD", "inStock");
     params.set("VALUE", "true");
-    final JsonQueryRequest simpleQuery = new JsonQueryRequest(params)
-        .setQuery("${FIELD}:${VALUE}");
+    final JsonQueryRequest simpleQuery = new JsonQueryRequest(params).setQuery("${FIELD}:${VALUE}");
     QueryResponse queryResponse = simpleQuery.process(cluster.getSolrClient(), COLLECTION_NAME);
     assertEquals(0, queryResponse.getStatus());
     assertEquals(NUM_IN_STOCK, queryResponse.getResults().getNumFound());

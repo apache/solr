@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -47,10 +46,17 @@ public class CellStream extends TupleStream implements Expressible {
 
   public CellStream(StreamExpression expression, StreamFactory factory) throws IOException {
     String name = factory.getValueOperand(expression, 0);
-    List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
+    List<StreamExpression> streamExpressions =
+        factory.getExpressionOperandsRepresentingTypes(
+            expression, Expressible.class, TupleStream.class);
 
-    if(streamExpressions.size() != 1){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting 1 stream but found %d",expression, streamExpressions.size()));
+    if (streamExpressions.size() != 1) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting 1 stream but found %d",
+              expression,
+              streamExpressions.size()));
     }
 
     TupleStream tupleStream = factory.constructStream(streamExpressions.get(0));
@@ -67,16 +73,17 @@ public class CellStream extends TupleStream implements Expressible {
   }
 
   @Override
-  public StreamExpression toExpression(StreamFactory factory) throws IOException{
+  public StreamExpression toExpression(StreamFactory factory) throws IOException {
     return toExpression(factory, true);
   }
 
-  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams) throws IOException {
+  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams)
+      throws IOException {
     // function name
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
     expression.addParameter(name);
-    if(includeStreams) {
-      expression.addParameter(((Expressible)stream).toExpression(factory));
+    if (includeStreams) {
+      expression.addParameter(((Expressible) stream).toExpression(factory));
     }
     return expression;
   }
@@ -94,19 +101,22 @@ public class CellStream extends TupleStream implements Expressible {
     return explanation;
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.stream.setStreamContext(context);
   }
 
+  @Override
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList<TupleStream>();
+    List<TupleStream> l = new ArrayList<>();
     l.add(stream);
 
     return l;
   }
 
+  @Override
   public Tuple read() throws IOException {
-    if(tuple.EOF) {
+    if (tuple.EOF) {
       return tuple;
     } else {
       Tuple t = tuple;
@@ -115,16 +125,17 @@ public class CellStream extends TupleStream implements Expressible {
     }
   }
 
-  public void close() throws IOException {
-  }
+  @Override
+  public void close() throws IOException {}
 
+  @Override
   public void open() throws IOException {
     try {
       stream.open();
       List<Tuple> list = new ArrayList<>();
-      while(true) {
+      while (true) {
         Tuple tuple = stream.read();
-        if(tuple.EOF) {
+        if (tuple.EOF) {
           EOFTuple = tuple;
           break;
         } else {
@@ -140,13 +151,13 @@ public class CellStream extends TupleStream implements Expressible {
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
-  public StreamComparator getStreamSort(){
+  @Override
+  public StreamComparator getStreamSort() {
     return null;
   }
 
+  @Override
   public int getCost() {
     return 0;
   }
-
-
 }

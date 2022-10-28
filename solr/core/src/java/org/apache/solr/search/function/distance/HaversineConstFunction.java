@@ -15,27 +15,25 @@
  * limitations under the License.
  */
 package org.apache.solr.search.function.distance;
-import org.locationtech.spatial4j.distance.DistanceUtils;
+
+import static org.locationtech.spatial4j.distance.DistanceUtils.DEGREES_TO_RADIANS;
+
+import java.io.IOException;
+import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.queries.function.valuesource.VectorValueSource;
 import org.apache.lucene.search.IndexSearcher;
+import org.locationtech.spatial4j.distance.DistanceUtils;
 
-import java.io.IOException;
-import java.util.Map;
-
-import static org.locationtech.spatial4j.distance.DistanceUtils.DEGREES_TO_RADIANS;
-
-/**
- * Haversine function with one point constant
- */
+/** Haversine function with one point constant */
 public class HaversineConstFunction extends ValueSource {
 
   private final double latCenter;
   private final double lonCenter;
-  private final VectorValueSource p2;  // lat+lon, just saved for display/debugging
+  private final VectorValueSource p2; // lat+lon, just saved for display/debugging
   private final ValueSource latSource;
   private final ValueSource lonSource;
 
@@ -56,8 +54,8 @@ public class HaversineConstFunction extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map<Object, Object> context,
-                                  LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+      throws IOException {
     final FunctionValues latVals = latSource.getValues(context, readerContext);
     final FunctionValues lonVals = lonSource.getValues(context, readerContext);
     final double latCenterRad = this.latCenter * DEGREES_TO_RADIANS;
@@ -73,13 +71,22 @@ public class HaversineConstFunction extends ValueSource {
         double diffY = lonCenterRad - lonRad;
         double hsinX = Math.sin(diffX * 0.5);
         double hsinY = Math.sin(diffY * 0.5);
-        double h = hsinX * hsinX +
-                (latCenterRad_cos * Math.cos(latRad) * hsinY * hsinY);
+        double h = hsinX * hsinX + (latCenterRad_cos * Math.cos(latRad) * hsinY * hsinY);
         return (EARTH_MEAN_DIAMETER * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h)));
       }
+
       @Override
       public String toString(int doc) throws IOException {
-        return name() + '(' + latVals.toString(doc) + ',' + lonVals.toString(doc) + ',' + latCenter + ',' + lonCenter + ')';
+        return name()
+            + '('
+            + latVals.toString(doc)
+            + ','
+            + lonVals.toString(doc)
+            + ','
+            + latCenter
+            + ','
+            + lonCenter
+            + ')';
       }
     };
   }
@@ -97,7 +104,6 @@ public class HaversineConstFunction extends ValueSource {
     return this.latCenter == other.latCenter
         && this.lonCenter == other.lonCenter
         && this.p2.equals(other.p2);
-
   }
 
   @Override
@@ -115,5 +121,4 @@ public class HaversineConstFunction extends ValueSource {
   public String description() {
     return name() + '(' + p2 + ',' + latCenter + ',' + lonCenter + ')';
   }
-
 }

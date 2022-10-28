@@ -17,16 +17,15 @@
 
 package org.apache.solr.cloud;
 
-import org.apache.lucene.util.LuceneTestCase;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import org.apache.solr.SolrTestCaseJ4;
 
-@LuceneTestCase.Slow
 @SolrTestCaseJ4.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@ThreadLeakLingering(linger = 10)
 public class HttpPartitionWithTlogReplicasTest extends HttpPartitionTest {
 
   @Override
   protected boolean useTlogReplicas() {
     return true;
   }
-
 }

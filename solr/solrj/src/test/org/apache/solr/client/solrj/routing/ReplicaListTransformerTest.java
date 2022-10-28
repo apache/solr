@@ -17,14 +17,12 @@
 package org.apache.solr.client.solrj.routing;
 
 import java.lang.invoke.MethodHandles;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -33,7 +31,6 @@ import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.Test;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,23 +42,21 @@ public class ReplicaListTransformerTest extends SolrTestCase {
 
     private final String regex;
 
-    public ToyMatchingReplicaListTransformer(String regex)
-    {
+    public ToyMatchingReplicaListTransformer(String regex) {
       this.regex = regex;
     }
 
-    public <T> void transform(List<T> choices)
-    {
+    @Override
+    public <T> void transform(List<T> choices) {
       log.info("regex transform input: {}", choices);
       Iterator<?> it = choices.iterator();
       while (it.hasNext()) {
         Object choice = it.next();
         final String url;
         if (choice instanceof String) {
-          url = (String)choice;
-        }
-        else if (choice instanceof Replica) {
-          url = ((Replica)choice).getCoreUrl();
+          url = (String) choice;
+        } else if (choice instanceof Replica) {
+          url = ((Replica) choice).getCoreUrl();
         } else {
           url = null;
         }
@@ -72,22 +67,6 @@ public class ReplicaListTransformerTest extends SolrTestCase {
         }
       }
     }
-
-  }
-
-  // A transformer that makes no transformation
-  private static class ToyNoOpReplicaListTransformer implements ReplicaListTransformer {
-
-    public ToyNoOpReplicaListTransformer()
-    {
-    }
-
-    public <T> void transform(List<T> choices)
-    {
-      // no-op
-      log.info("No-Op transform ignoring input: {}", choices);
-    }
-
   }
 
   @Test
@@ -102,57 +81,60 @@ public class ReplicaListTransformerTest extends SolrTestCase {
 
     } else {
       log.info("Using conditional Transfomer");
-      transformer = new HttpShardHandlerFactory() {
+      transformer =
+          new HttpShardHandlerFactory() {
 
-        @Override
-        protected ReplicaListTransformer getReplicaListTransformer(final SolrQueryRequest req)
-        {
-          final SolrParams params = req.getParams();
+            @Override
+            protected ReplicaListTransformer getReplicaListTransformer(final SolrQueryRequest req) {
+              final SolrParams params = req.getParams();
 
-          if (params.getBool("toyNoTransform", false)) {
-            return new ToyNoOpReplicaListTransformer();
-          }
+              if (params.getBool("toyNoTransform", false)) {
+                return NoOpReplicaListTransformer.INSTANCE;
+              }
 
-          final String regex = params.get("toyRegEx");
-          if (regex != null) {
-            return new ToyMatchingReplicaListTransformer(regex);
-          }
+              final String regex = params.get("toyRegEx");
+              if (regex != null) {
+                return new ToyMatchingReplicaListTransformer(regex);
+              }
 
-          return super.getReplicaListTransformer(req);
-        }
-
-      }.getReplicaListTransformer(
-          new LocalSolrQueryRequest(null,
-              new ModifiableSolrParams().add("toyRegEx", regex)));
+              return super.getReplicaListTransformer(req);
+            }
+          }.getReplicaListTransformer(
+              new LocalSolrQueryRequest(null, new ModifiableSolrParams().add("toyRegEx", regex)));
     }
 
     final List<Replica> inputs = new ArrayList<>();
     final List<Replica> expectedTransformed = new ArrayList<>();
 
     final List<String> urls = createRandomUrls();
-    for (int ii=0; ii<urls.size(); ++ii) {
+    for (int ii = 0; ii < urls.size(); ++ii) {
 
-      final String name = "replica"+(ii+1);
+      final String name = "replica" + (ii + 1);
       final String url = urls.get(ii);
-      final Map<String,Object> propMap = new HashMap<String,Object>();
+      final Map<String, Object> propMap = new HashMap<>();
       propMap.put("base_url", url);
       propMap.put("core", "test_core");
       propMap.put("node_name", "test_node:80_");
       propMap.put("type", "NRT");
       // a skeleton replica, good enough for this test's purposes
-      final Replica replica = new Replica(name, propMap,"c1","s1");
+      final Replica replica = new Replica(name, propMap, "c1", "s1");
 
       inputs.add(replica);
       final String coreUrl = replica.getCoreUrl();
       if (coreUrl.matches(regex)) {
-        log.info("adding replica=[{}] to expected due to core url ({}) regex match on {} ",
-                 replica, coreUrl, regex);
+        log.info(
+            "adding replica=[{}] to expected due to core url ({}) regex match on {} ",
+            replica,
+            coreUrl,
+            regex);
         expectedTransformed.add(replica);
       } else {
-        log.info("NOT expecting replica=[{}] due to core url ({}) regex mismatch ({})",
-                 replica, coreUrl, regex);
+        log.info(
+            "NOT expecting replica=[{}] due to core url ({}) regex mismatch ({})",
+            replica,
+            coreUrl,
+            regex);
       }
-      
     }
 
     final List<Replica> actualTransformed = new ArrayList<>(inputs);
@@ -163,11 +145,11 @@ public class ReplicaListTransformerTest extends SolrTestCase {
 
   private final List<String> createRandomUrls() throws Exception {
     final List<String> urls = new ArrayList<>();
-    maybeAddUrl(urls, "a"+random().nextDouble());
-    maybeAddUrl(urls, "bb"+random().nextFloat());
-    maybeAddUrl(urls, "ccc"+random().nextGaussian());
-    maybeAddUrl(urls, "dddd"+random().nextInt());
-    maybeAddUrl(urls, "eeeee"+random().nextLong());
+    maybeAddUrl(urls, "a" + random().nextDouble());
+    maybeAddUrl(urls, "bb" + random().nextFloat());
+    maybeAddUrl(urls, "ccc" + random().nextGaussian());
+    maybeAddUrl(urls, "dddd" + random().nextInt());
+    maybeAddUrl(urls, "eeeee" + random().nextLong());
     Collections.shuffle(urls, random());
     return urls;
   }
@@ -177,5 +159,4 @@ public class ReplicaListTransformerTest extends SolrTestCase {
       urls.add(url);
     }
   }
-
 }

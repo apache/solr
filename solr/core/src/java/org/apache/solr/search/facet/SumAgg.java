@@ -19,7 +19,6 @@ package org.apache.solr.search.facet;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Date;
-
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.BytesRef;
@@ -34,14 +33,16 @@ public class SumAgg extends SimpleAggValueSource {
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots)
+      throws IOException {
     ValueSource vs = getArg();
 
     if (vs instanceof FieldNameValueSource) {
-      String field = ((FieldNameValueSource)vs).getFieldName();
+      String field = ((FieldNameValueSource) vs).getFieldName();
       SchemaField sf = fcontext.qcontext.searcher().getSchema().getField(field);
       if (sf.getType().getNumberType() == null) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
             name() + " aggregation not supported for " + sf.getType().getTypeName());
       }
       if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {
@@ -52,7 +53,8 @@ public class SumAgg extends SimpleAggValueSource {
           return new SumSortedSetAcc(fcontext, sf, numSlots);
         }
         if (sf.getType().isPointField()) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
               name() + " aggregation not supported for PointField w/o docValues");
         }
         return new SumUnInvertedFieldAcc(fcontext, sf, numSlots);
@@ -72,30 +74,31 @@ public class SumAgg extends SimpleAggValueSource {
 
     @Override
     public void merge(Object facetResult, Context mcontext) {
-      val += ((Number)facetResult).doubleValue();
+      val += ((Number) facetResult).doubleValue();
     }
 
+    @Override
     protected double getDouble() {
       return val;
     }
   }
 
-  class SumSortedNumericAcc extends DocValuesAcc.DoubleSortedNumericDVAcc {
+  static class SumSortedNumericAcc extends DocValuesAcc.DoubleSortedNumericDVAcc {
 
-    public SumSortedNumericAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public SumSortedNumericAcc(FacetContext fcontext, SchemaField sf, int numSlots)
+        throws IOException {
       super(fcontext, sf, numSlots, 0);
     }
 
     @Override
     protected void collectValues(int doc, int slot) throws IOException {
       for (int i = 0, count = values.docValueCount(); i < count; i++) {
-        result[slot]+=getDouble(values.nextValue());
+        result[slot] += getDouble(values.nextValue());
       }
     }
-
   }
 
-  class SumSortedSetAcc extends DocValuesAcc.DoubleSortedSetDVAcc {
+  static class SumSortedSetAcc extends DocValuesAcc.DoubleSortedSetDVAcc {
 
     public SumSortedSetAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots, 0);
@@ -107,15 +110,16 @@ public class SumAgg extends SimpleAggValueSource {
       while ((ord = values.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
         BytesRef term = values.lookupOrd(ord);
         Object obj = sf.getType().toObject(sf, term);
-        double val = obj instanceof Date? ((Date)obj).getTime(): ((Number)obj).doubleValue();
+        double val = obj instanceof Date ? ((Date) obj).getTime() : ((Number) obj).doubleValue();
         result[slot] += val;
       }
     }
   }
 
-  class SumUnInvertedFieldAcc extends UnInvertedFieldAcc.DoubleUnInvertedFieldAcc {
+  static class SumUnInvertedFieldAcc extends UnInvertedFieldAcc.DoubleUnInvertedFieldAcc {
 
-    public SumUnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public SumUnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots)
+        throws IOException {
       super(fcontext, sf, numSlots, 0);
     }
 
@@ -124,7 +128,7 @@ public class SumAgg extends SimpleAggValueSource {
       try {
         BytesRef term = docToTerm.lookupOrd(termNum);
         Object obj = sf.getType().toObject(sf, term);
-        double val = obj instanceof Date? ((Date)obj).getTime(): ((Number)obj).doubleValue();
+        double val = obj instanceof Date ? ((Date) obj).getTime() : ((Number) obj).doubleValue();
         result[currentSlot] += val;
       } catch (IOException e) {
         // find a better way to do it
@@ -133,4 +137,3 @@ public class SumAgg extends SimpleAggValueSource {
     }
   }
 }
-

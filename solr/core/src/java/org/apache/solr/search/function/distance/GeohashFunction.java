@@ -15,23 +15,22 @@
  * limitations under the License.
  */
 package org.apache.solr.search.function.distance;
+
+import java.io.IOException;
+import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.locationtech.spatial4j.io.GeohashUtils;
 
-import java.util.Map;
-import java.io.IOException;
-
-
 /**
  * Takes in a latitude and longitude ValueSource and produces a GeoHash.
- * <p>
- * Ex: geohash(lat, lon)
  *
- * <p>
- * Note, there is no reciprocal function for this.
- **/
+ * <p>Ex: geohash(lat, lon)
+ *
+ * <p>Note, there is no reciprocal function for this.
+ */
+@Deprecated
 public class GeohashFunction extends ValueSource {
   protected ValueSource lat, lon;
 
@@ -45,10 +44,10 @@ public class GeohashFunction extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+      throws IOException {
     final FunctionValues latDV = lat.getValues(context, readerContext);
     final FunctionValues lonDV = lon.getValues(context, readerContext);
-
 
     return new FunctionValues() {
 
@@ -88,7 +87,7 @@ public class GeohashFunction extends ValueSource {
     return result;
   }
 
-  @Override  
+  @Override
   public String description() {
     StringBuilder sb = new StringBuilder();
     sb.append(name()).append('(');

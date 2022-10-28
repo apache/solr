@@ -25,8 +25,8 @@ import org.apache.lucene.util.ArrayUtil;
  */
 final class SortQueue {
 
-  protected int size = 0;
-  protected final int maxSize;
+  private int size = 0;
+  final int maxSize;
   private final SortDoc[] heap;
   private final SortDoc proto;
   private SortDoc[] cache;
@@ -48,7 +48,8 @@ final class SortQueue {
         // one will actually insert this many objects into
         // the PQ:
         // Throw exception to prevent confusing OOME:
-        throw new IllegalArgumentException("maxSize must be <= " + ArrayUtil.MAX_ARRAY_LENGTH + "; got: " + maxSize);
+        throw new IllegalArgumentException(
+            "maxSize must be <= " + ArrayUtil.MAX_ARRAY_LENGTH + "; got: " + maxSize);
       } else {
         // NOTE: we add +1 because all access to heap is
         // 1-based not 0-based.  heap[0] is unused.
@@ -63,7 +64,7 @@ final class SortQueue {
     return t1.lessThan(t2);
   }
 
-  protected void populate() {
+  private void populate() {
     cache = new SortDoc[heap.length];
     for (int i = 1; i < heap.length; i++) {
       cache[i] = heap[i] = proto.copy();
@@ -71,9 +72,9 @@ final class SortQueue {
     size = maxSize;
   }
 
-  protected void reset() {
+  void reset() {
     if (cache != null) {
-      System.arraycopy(cache, 1, heap, 1, heap.length-1);
+      System.arraycopy(cache, 1, heap, 1, heap.length - 1);
       size = maxSize;
     } else {
       populate();
@@ -82,8 +83,8 @@ final class SortQueue {
 
   // ==================
   /**
-   * Adds an Object to a PriorityQueue in log(size) time. If one tries to add
-   * more objects than maxSize from initialize an
+   * Adds an Object to a PriorityQueue in log(size) time. If one tries to add more objects than
+   * maxSize from initialize an
    *
    * @return the new 'top' element in the queue.
    */
@@ -102,15 +103,14 @@ final class SortQueue {
     return heap[1];
   }
 
-  /** Removes and returns the least element of the PriorityQueue in log(size)
-   time. */
+  /** Removes and returns the least element of the PriorityQueue in log(size) time. */
   public final SortDoc pop() {
     if (size > 0) {
-      SortDoc result = heap[1];       // save first value
-      heap[1] = heap[size];     // move last to first
-      heap[size] = null;        // permit GC of objects
+      SortDoc result = heap[1]; // save first value
+      heap[1] = heap[size]; // move last to first
+      heap[size] = null; // permit GC of objects
       size--;
-      downHeap();               // adjust heap
+      downHeap(); // adjust heap
       return result;
     } else {
       return null;
@@ -118,8 +118,8 @@ final class SortQueue {
   }
 
   /**
-   * Should be called when the Object at top changes values. Still log(n) worst
-   * case, but it's at least twice as fast to
+   * Should be called when the Object at top changes values. Still log(n) worst case, but it's at
+   * least twice as fast to
    *
    * <pre class="prettyprint">
    * pq.top().change();
@@ -156,26 +156,26 @@ final class SortQueue {
 
   private final void upHeap() {
     int i = size;
-    SortDoc node = heap[i];          // save bottom node
+    SortDoc node = heap[i]; // save bottom node
     int j = i >>> 1;
     while (j > 0 && lessThan(node, heap[j])) {
-      heap[i] = heap[j];       // shift parents down
+      heap[i] = heap[j]; // shift parents down
       i = j;
       j = j >>> 1;
     }
-    heap[i] = node;            // install saved node
+    heap[i] = node; // install saved node
   }
 
   private final void downHeap() {
     int i = 1;
-    SortDoc node = heap[i];          // save top node
-    int j = i << 1;            // find smaller child
+    SortDoc node = heap[i]; // save top node
+    int j = i << 1; // find smaller child
     int k = j + 1;
     if (k <= size && lessThan(heap[k], heap[j])) {
       j = k;
     }
     while (j <= size && lessThan(heap[j], node)) {
-      heap[i] = heap[j];       // shift up child
+      heap[i] = heap[j]; // shift up child
       i = j;
       j = i << 1;
       k = j + 1;
@@ -183,7 +183,6 @@ final class SortQueue {
         j = k;
       }
     }
-    heap[i] = node;            // install saved node
+    heap[i] = node; // install saved node
   }
-
 }

@@ -6,6 +6,7 @@ build/
 
 # IntelliJ IDEA
 /.idea/
+.run
 **/*.iml
 **/*.ipr
 **/*.iws
@@ -22,6 +23,9 @@ out/
 
 .editorconfig
 
+# syncthing
+.stignore
+
 # macOS
 .DS_Store
 
@@ -31,3 +35,10 @@ __pycache__
 
 # Emacs backup
 *~
+
+# Ignore lucene included build
+lucene/
+
+# Ignore gradle wrapper
+gradle/wrapper/gradle-wrapper.jar
+.gradletasknamecache

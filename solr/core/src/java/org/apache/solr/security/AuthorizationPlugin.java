@@ -19,10 +19,7 @@ package org.apache.solr.security;
 import java.io.Closeable;
 import java.util.Map;
 
-/**
- * Authorization interface that needs to be implemented to write an authorization
- * plugin.
- */
+/** Authorization interface that needs to be implemented to write an authorization plugin. */
 public interface AuthorizationPlugin extends Closeable {
   AuthorizationResponse authorize(AuthorizationContext context);
 

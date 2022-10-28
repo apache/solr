@@ -16,12 +16,11 @@
  */
 package org.apache.solr.client.solrj.io.eval;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
-import java.util.ArrayList;
-
-import java.util.Iterator;
 
 public class Matrix implements Iterable<List<Double>>, Attributes {
 
@@ -35,14 +34,17 @@ public class Matrix implements Iterable<List<Double>>, Attributes {
     this.data = data;
   }
 
-  public Map<?,?> getAttributes() {
+  @Override
+  public Map<?, ?> getAttributes() {
     return this.attributes;
   }
 
+  @Override
   public void setAttribute(String key, Object value) {
     this.attributes.put(key, value);
   }
 
+  @Override
   public Object getAttribute(String key) {
     return this.attributes.get(key);
   }
@@ -75,6 +77,7 @@ public class Matrix implements Iterable<List<Double>>, Attributes {
     return data[0].length;
   }
 
+  @Override
   public Iterator<List<Double>> iterator() {
     return new MatrixIterator(data);
   }
@@ -88,16 +91,18 @@ public class Matrix implements Iterable<List<Double>>, Attributes {
       d = data;
     }
 
+    @Override
     public List<Double> next() {
       double[] row = d[index++];
       List<Double> list = new ArrayList<>();
-      for(double value : row) {
+      for (double value : row) {
         list.add(value);
       }
 
       return list;
     }
 
+    @Override
     public boolean hasNext() {
       return index < d.length;
     }

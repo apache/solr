@@ -23,24 +23,29 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.util.Utils;
 import org.junit.Test;
 
+@SolrTestCaseJ4.SuppressSSL // not useful / needed for this test
 public class ShufflingReplicaListTransformerTest extends SolrTestCase {
 
-  private final ShufflingReplicaListTransformer transformer = new ShufflingReplicaListTransformer(random());
+  private final ShufflingReplicaListTransformer transformer =
+      new ShufflingReplicaListTransformer(random());
 
   @Test
   public void testTransformReplicas() throws Exception {
     final List<Replica> replicas = new ArrayList<>();
     int counter = 0;
     for (final String url : createRandomUrls()) {
+      String nodeName = "node" + counter + ":8983_";
       Map<String, Object> propMap = new HashMap<>();
       propMap.put("core", "core" + counter);
       propMap.put("type", "NRT");
-      propMap.put("node_name", "node" + counter + ":8983_");
+      propMap.put("node_name", nodeName);
+      propMap.put("base_url", Utils.getBaseUrlForNodeName(nodeName, "http"));
       counter++;
       replicas.add(new Replica(url, propMap, "c1", "s1"));
     }
@@ -60,16 +65,16 @@ public class ShufflingReplicaListTransformerTest extends SolrTestCase {
     final Set<TYPE> inputSet = new HashSet<>(inputs);
     final Set<TYPE> transformedSet = new HashSet<>(transformedInputs);
 
-    assertTrue(inputSet.equals(transformedSet));
+    assertEquals(inputSet, transformedSet);
   }
 
   private final List<String> createRandomUrls() throws Exception {
     final List<String> urls = new ArrayList<>();
-    maybeAddUrl(urls, "a"+random().nextDouble());
-    maybeAddUrl(urls, "bb"+random().nextFloat());
-    maybeAddUrl(urls, "ccc"+random().nextGaussian());
-    maybeAddUrl(urls, "dddd"+random().nextInt());
-    maybeAddUrl(urls, "eeeee"+random().nextLong());
+    maybeAddUrl(urls, "a" + random().nextDouble());
+    maybeAddUrl(urls, "bb" + random().nextFloat());
+    maybeAddUrl(urls, "ccc" + random().nextGaussian());
+    maybeAddUrl(urls, "dddd" + random().nextInt());
+    maybeAddUrl(urls, "eeeee" + random().nextLong());
     Collections.shuffle(urls, random());
     return urls;
   }
@@ -79,5 +84,4 @@ public class ShufflingReplicaListTransformerTest extends SolrTestCase {
       urls.add(url + "_");
     }
   }
-
 }

@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.HashMap;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -42,15 +41,18 @@ public class BlobRepositoryCloudTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(1)  // only sharing *within* a node
+    configureCluster(1) // only sharing *within* a node
         .addConfig("configname", TEST_PATH.resolve("resource-sharing"))
         .configure();
-//    Thread.sleep(2000);
-    HashMap<String, String> params = new HashMap<>();
+    //    Thread.sleep(2000);
     CollectionAdminRequest.createCollection(CollectionAdminParams.SYSTEM_COLL, null, 1, 1)
         .process(cluster.getSolrClient());
-    // test component will fail if it cant' find a blob with this data by this name
-    TestBlobHandler.postData(cluster.getSolrClient(), findLiveNodeURI(), "testResource", ByteBuffer.wrap("foo,bar\nbaz,bam".getBytes(StandardCharsets.UTF_8)));
+    // test component will fail if it can't find a blob with this data by this name
+    TestBlobHandler.postData(
+        cluster.getSolrClient(),
+        findLiveNodeURI(),
+        "testResource",
+        ByteBuffer.wrap("foo,bar\nbaz,bam".getBytes(StandardCharsets.UTF_8)));
     //    Thread.sleep(2000);
     // if these don't load we probably failed to post the blob above
     CollectionAdminRequest.createCollection("col1", "configname", 1, 1)
@@ -70,19 +72,19 @@ public class BlobRepositoryCloudTest extends SolrCloudTestCase {
     solrClient.add("col2", document);
     solrClient.commit("col2");
     Thread.sleep(2000);
-
   }
 
   @Test
   public void test() throws Exception {
-    // This test relies on the installation of ResourceSharingTestComponent which has 2 useful properties:
-    // 1. it will fail to initialize if it doesn't find a 2 line CSV like foo,bar\nbaz,bam thus validating
-    //    that we are properly pulling data from the blob store
-    // 2. It replaces any q for a query request to /select with "text:<name>" where <name> is the name
-    //    of the last collection to run a query. It does this by caching a shared resource of type
-    //    ResourceSharingTestComponent.TestObject, and the following sequence is proof that either
-    //    collection can tell if it was (or was not) the last collection to issue a query by 
-    //    consulting the shared object
+    // This test relies on the installation of ResourceSharingTestComponent which has 2 useful
+    // properties:
+    // 1. it will fail to initialize if it doesn't find a 2 line CSV like foo,bar\nbaz,bam thus
+    // validating that we are properly pulling data from the blob store
+    // 2. It replaces any q for a query request to /select with "text:<name>" where <name> is
+    // the name of the last collection to run a query. It does this by caching a shared resource of
+    // type ResourceSharingTestComponent.TestObject, and the following sequence is proof that either
+    // collection can tell if it was (or was not) the last collection to issue a query by consulting
+    // the shared object
     assertLastQueryNotToCollection("col1");
     assertLastQueryNotToCollection("col2");
     assertLastQueryNotToCollection("col1");
@@ -93,24 +95,33 @@ public class BlobRepositoryCloudTest extends SolrCloudTestCase {
 
   // TODO: move this up to parent class?
   private static String findLiveNodeURI() {
-    ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
-    return zkStateReader.getBaseUrlForNodeName(zkStateReader.getClusterState().getCollection(".system").getSlices().iterator().next().getLeader().getNodeName());
+    ZkStateReader zkStateReader = cluster.getZkStateReader();
+    return zkStateReader.getBaseUrlForNodeName(
+        zkStateReader
+            .getClusterState()
+            .getCollection(".system")
+            .getSlices()
+            .iterator()
+            .next()
+            .getLeader()
+            .getNodeName());
   }
 
-  private void assertLastQueryToCollection(String collection) throws SolrServerException, IOException {
+  private void assertLastQueryToCollection(String collection)
+      throws SolrServerException, IOException {
     assertEquals(1, getSolrDocuments(collection).size());
   }
 
-  private void assertLastQueryNotToCollection(String collection) throws SolrServerException, IOException {
+  private void assertLastQueryNotToCollection(String collection)
+      throws SolrServerException, IOException {
     assertEquals(0, getSolrDocuments(collection).size());
   }
 
-  private SolrDocumentList getSolrDocuments(String collection) throws SolrServerException, IOException {
+  private SolrDocumentList getSolrDocuments(String collection)
+      throws SolrServerException, IOException {
     SolrQuery query = new SolrQuery("*:*");
     CloudSolrClient client = cluster.getSolrClient();
     QueryResponse resp1 = client.query(collection, query);
     return resp1.getResults();
   }
-
-
 }

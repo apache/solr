@@ -15,17 +15,15 @@
  * limitations under the License.
  */
 package org.apache.solr.client.solrj.response;
+
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
-/**
- * Encapsulates responses from the Suggester Component
- */
+/** Encapsulates responses from the Suggester Component */
 public class SuggesterResponse {
 
   private static final String SUGGESTIONS_NODE_NAME = "suggestions";
@@ -36,15 +34,16 @@ public class SuggesterResponse {
   private final Map<String, List<Suggestion>> suggestionsPerDictionary = new LinkedHashMap<>();
 
   public SuggesterResponse(NamedList<NamedList<Object>> suggestInfo) {
-    for (int i = 0 ; i < suggestInfo.size(); i++) {
+    for (int i = 0; i < suggestInfo.size(); i++) {
       final String outerName = suggestInfo.getName(i);
       final NamedList<Object> outerValue = suggestInfo.getVal(i);
 
       SimpleOrderedMap<?> suggestionsNode = (SimpleOrderedMap<?>) outerValue.getVal(0);
-      List<Suggestion> suggestionList = new LinkedList<>();
+      List<Suggestion> suggestionList = new ArrayList<>();
       if (suggestionsNode != null) {
         @SuppressWarnings("unchecked")
-        List<SimpleOrderedMap<?>> suggestionListToParse = (List<SimpleOrderedMap<?>>) suggestionsNode.get(SUGGESTIONS_NODE_NAME);
+        List<SimpleOrderedMap<?>> suggestionListToParse =
+            (List<SimpleOrderedMap<?>>) suggestionsNode.get(SUGGESTIONS_NODE_NAME);
         for (SimpleOrderedMap<?> suggestion : suggestionListToParse) {
           String term = (String) suggestion.get(TERM_NODE_NAME);
           long weight = (long) suggestion.get(WEIGHT_NODE_NAME);
@@ -68,8 +67,9 @@ public class SuggesterResponse {
   }
 
   /**
-   * This getter is lazily initialized and returns a simplified map dictionary : List of suggested terms
-   * This is useful for simple use cases when you simply need the suggested terms and no weight or payload
+   * This getter is lazily initialized and returns a simplified map dictionary : List of suggested
+   * terms This is useful for simple use cases when you simply need the suggested terms and no
+   * weight or payload
    *
    * @return a Map dictionary name : List of suggested terms
    */
@@ -77,7 +77,7 @@ public class SuggesterResponse {
     Map<String, List<String>> suggestedTermsPerDictionary = new LinkedHashMap<>();
     for (Map.Entry<String, List<Suggestion>> entry : suggestionsPerDictionary.entrySet()) {
       List<Suggestion> suggestions = entry.getValue();
-      List<String> suggestionTerms = new LinkedList<String>();
+      List<String> suggestionTerms = new ArrayList<>();
       for (Suggestion s : suggestions) {
         suggestionTerms.add(s.getTerm());
       }

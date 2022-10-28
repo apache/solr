@@ -19,30 +19,26 @@ package org.apache.solr.core.backup;
 
 import java.util.Objects;
 
-/**
- * Represents checksum information for an index file being backed up.
- */
+/** Represents checksum information for an index file being backed up. */
 public class Checksum {
-    public final long checksum;
-    public final long size;
+  public final long checksum;
+  public final long size;
 
-    public Checksum(long checksum, long size) {
-        this.checksum = checksum;
-        this.size = size;
-    }
+  public Checksum(long checksum, long size) {
+    this.checksum = checksum;
+    this.size = size;
+  }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Checksum checksum = (Checksum) o;
-        return size == checksum.size &&
-                this.checksum == checksum.checksum;
-    }
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof Checksum)) return false;
+    Checksum checksum = (Checksum) o;
+    return size == checksum.size && this.checksum == checksum.checksum;
+  }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(checksum, size);
-    }
-
+  @Override
+  public int hashCode() {
+    return Objects.hash(checksum, size);
+  }
 }

@@ -16,12 +16,11 @@
  */
 package org.apache.solr.search.stats;
 
+import java.util.Iterator;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.junit.Ignore;
-
-import java.util.Iterator;
 
 @Ignore("Abstract calls should not executed as test")
 public abstract class TestBaseStatsCache extends TestDefaultStatsCache {
@@ -34,11 +33,12 @@ public abstract class TestBaseStatsCache extends TestDefaultStatsCache {
     System.setProperty("solr.statsCache", getStatsCacheClassName());
   }
 
+  @Override
   public void distribTearDown() throws Exception {
     super.distribTearDown();
     System.clearProperty("solr.statsCache");
   }
-  
+
   // in this case, as the number of shards increases, per-shard scores should
   // remain identical
   @Override
@@ -52,9 +52,9 @@ public abstract class TestBaseStatsCache extends TestDefaultStatsCache {
     System.out.println(shardRsp);
     SolrDocumentList shardList = shardRsp.getResults();
     SolrDocumentList controlList = controlRsp.getResults();
-    
+
     assertEquals(controlList.size(), shardList.size());
-    
+
     assertEquals(controlList.getNumFound(), shardList.getNumFound());
     Iterator<SolrDocument> it = controlList.iterator();
     Iterator<SolrDocument> it2 = shardList.iterator();
@@ -64,5 +64,4 @@ public abstract class TestBaseStatsCache extends TestDefaultStatsCache {
       assertEquals(controlDoc.getFieldValue("score"), shardDoc.getFieldValue("score"));
     }
   }
-
 }

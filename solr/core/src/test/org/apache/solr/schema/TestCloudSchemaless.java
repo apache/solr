@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
-
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -37,17 +36,18 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Tests a schemaless collection configuration with SolrCloud
- */
+/** Tests a schemaless collection configuration with SolrCloud */
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-// See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
+// See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows
+// machines occasionally
 public class TestCloudSchemaless extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final String SUCCESS_XPATH = "/response/lst[@name='responseHeader']/int[@name='status'][.='0']";
+  private static final String SUCCESS_XPATH =
+      "/response/lst[@name='responseHeader']/int[@name='status'][.='0']";
 
+  @Override
   @After
-  public void teardDown() throws Exception {
+  public void tearDown() throws Exception {
     super.tearDown();
     closeRestTestHarnesses();
   }
@@ -63,8 +63,8 @@ public class TestCloudSchemaless extends AbstractFullDistribZkTestBase {
   }
 
   @Override
-  public SortedMap<ServletHolder,String> getExtraServlets() {
-    final SortedMap<ServletHolder,String> extraServlets = new TreeMap<>();
+  public SortedMap<ServletHolder, String> getExtraServlets() {
+    final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
     return extraServlets;
   }
 
@@ -75,7 +75,7 @@ public class TestCloudSchemaless extends AbstractFullDistribZkTestBase {
     for (int i = 0; i < numberOfDocs; ++i) {
       String newFieldName = "newTestFieldInt" + i;
       expectedAddFields[1 + i] =
-        "/response/arr[@name='fields']/lst/str[@name='name'][.='" + newFieldName + "']";
+          "/response/arr[@name='fields']/lst/str[@name='name'][.='" + newFieldName + "']";
     }
     return expectedAddFields;
   }
@@ -89,16 +89,17 @@ public class TestCloudSchemaless extends AbstractFullDistribZkTestBase {
     // First, add a bunch of documents in a single update with the same new field.
     // This tests that the replicas properly handle schema additions.
 
-    int slices =  getCommonCloudSolrClient().getZkStateReader().getClusterState()
-      .getCollection("collection1").getActiveSlices().size();
+    getCommonCloudSolrClient();
+    int slices =
+        cloudClient.getClusterState().getCollection("collection1").getActiveSlices().size();
     int trials = 50;
     // generate enough docs so that we can expect at least a doc per slice
-    int numDocsPerTrial = (int)(slices * (Math.log(slices) + 1));
+    int numDocsPerTrial = (int) (slices * (Math.log(slices) + 1));
     SolrClient randomClient = clients.get(random().nextInt(clients.size()));
     int docNumber = 0;
     for (int i = 0; i < trials; ++i) {
       List<SolrInputDocument> docs = new ArrayList<>();
-      for (int j =0; j < numDocsPerTrial; ++j) {
+      for (int j = 0; j < numDocsPerTrial; ++j) {
         SolrInputDocument doc = new SolrInputDocument();
         doc.addField("id", Long.toHexString(Double.doubleToLongBits(random().nextDouble())));
         doc.addField("newTestFieldInt" + docNumber++, "123");
@@ -110,22 +111,29 @@ public class TestCloudSchemaless extends AbstractFullDistribZkTestBase {
     }
     randomClient.commit();
 
-    String [] expectedFields = getExpectedFieldResponses(docNumber);
+    String[] expectedFields = getExpectedFieldResponses(docNumber);
     // Check that all the fields were added
-    forAllRestTestHarnesses(client -> {
-      try {
-        String request = "/schema/fields?wt=xml";
-        String response = client.query(request);
-        String result = BaseTestHarness.validateXPath(response, expectedFields);
-        if (result != null) {
-          String msg = "QUERY FAILED: xpath=" + result + "  request=" + request + "  response=" + response;
-          log.error(msg);
-          fail(msg);
-        }
-      } catch (Exception ex) {
-        fail("Caught exception: "+ex);
-      }
-    });
+    forAllRestTestHarnesses(
+        client -> {
+          try {
+            String request = "/schema/fields?wt=xml";
+            String response = client.query(request);
+            String result = BaseTestHarness.validateXPath(response, expectedFields);
+            if (result != null) {
+              String msg =
+                  "QUERY FAILED: xpath="
+                      + result
+                      + "  request="
+                      + request
+                      + "  response="
+                      + response;
+              log.error(msg);
+              fail(msg);
+            }
+          } catch (Exception ex) {
+            fail("Caught exception: " + ex);
+          }
+        });
 
     // Now, let's ensure that writing the same field with two different types fails
     int failTrials = 50;
@@ -139,19 +147,26 @@ public class TestCloudSchemaless extends AbstractFullDistribZkTestBase {
       dateDoc.addField("longOrDateField" + i, "1995-12-31T23:59:59Z");
 
       // randomize the order of the docs
-      List<SolrInputDocument> docs = random().nextBoolean()? Arrays.asList(intDoc, dateDoc): Arrays.asList(dateDoc, intDoc);
+      List<SolrInputDocument> docs =
+          random().nextBoolean() ? Arrays.asList(intDoc, dateDoc) : Arrays.asList(dateDoc, intDoc);
 
-      SolrException ex = expectThrows(SolrException.class,  () -> {
-        randomClient.add(docs);
-        randomClient.commit();
-      });
+      SolrException ex =
+          expectThrows(
+              SolrException.class,
+              () -> {
+                randomClient.add(docs);
+                randomClient.commit();
+              });
       assertEquals(ErrorCode.BAD_REQUEST, ErrorCode.getErrorCode(ex.code()));
 
-      ex = expectThrows(SolrException.class,  () -> {
-        CloudSolrClient cloudSolrClient = getCommonCloudSolrClient();
-        cloudSolrClient.add(docs);
-        cloudSolrClient.commit();
-      });
+      ex =
+          expectThrows(
+              SolrException.class,
+              () -> {
+                CloudSolrClient cloudSolrClient = getCommonCloudSolrClient();
+                cloudSolrClient.add(docs);
+                cloudSolrClient.commit();
+              });
       assertEquals(ErrorCode.BAD_REQUEST, ErrorCode.getErrorCode(ex.code()));
     }
   }

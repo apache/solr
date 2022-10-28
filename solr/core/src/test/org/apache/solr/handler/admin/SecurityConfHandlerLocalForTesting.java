@@ -18,21 +18,20 @@
 package org.apache.solr.handler.admin;
 
 import java.io.IOException;
-
 import org.apache.solr.core.CoreContainer;
 
-/**
- * Wrapper for use in tests
- */
+/** Wrapper for use in tests */
 public class SecurityConfHandlerLocalForTesting extends SecurityConfHandlerLocal {
   public SecurityConfHandlerLocalForTesting(CoreContainer coreContainer) {
     super(coreContainer);
   }
 
+  @Override
   public boolean persistConf(SecurityConfig securityConfig) throws IOException {
     return super.persistConf(securityConfig);
   }
-  
+
+  @Override
   public void securityConfEdited() {
     super.securityConfEdited();
   }

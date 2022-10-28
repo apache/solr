@@ -16,21 +16,17 @@
  */
 package org.apache.solr;
 
+import com.carrotsearch.randomizedtesting.ThreadFilter;
+import java.lang.Thread.State;
 import org.apache.lucene.search.TimeLimitingCollector.TimerThread;
 
-import com.carrotsearch.randomizedtesting.ThreadFilter;
-
-
-/**
- * This ignores those threads in Solr for which there is no way to
- * clean up after a suite.
- */
+/** This ignores those threads in Solr for which there is no way to clean up after a suite. */
 public class SolrIgnoredThreadsFilter implements ThreadFilter {
   @Override
   public boolean reject(Thread t) {
     /*
      * IMPORTANT! IMPORTANT!
-     * 
+     *
      * Any threads added here should have ABSOLUTELY NO SIDE EFFECTS
      * (should be stateless). This includes no references to cores or other
      * test-dependent information.
@@ -40,31 +36,52 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
     if (threadName.equals(TimerThread.THREAD_NAME)) {
       return true;
     }
-    
+
     // due to netty - will stop on it's own
     if (threadName.startsWith("globalEventExecutor")) {
       return true;
     }
-    
+
     // HttpClient Connection evictor threads can take a moment to wake and shutdown
     if (threadName.startsWith("Connection evictor")) {
       return true;
     }
-    
+
     // These is a java pool for the collection stream api
     if (threadName.startsWith("ForkJoinPool.")) {
       return true;
     }
-    
+
     if (threadName.startsWith("Image Fetcher")) {
       return true;
     }
-    
+
     if (threadName.startsWith("Log4j2-TF-2-AsyncLoggerConfig")) {
       return true;
     }
-    
 
-    return false;
+    if (threadName.startsWith("SessionTracker")) {
+      return true;
+    }
+
+    if (threadName.startsWith("zkConnectionManagerCallback")
+        && t.getState() == State.TIMED_WAITING) {
+      return true;
+    }
+
+    if (threadName.startsWith("DaemonStream")) {
+      return true;
+    }
+
+    if (threadName.startsWith("async-check-index-")) {
+      return true;
+    }
+
+    // ZOOKEEPER-4608, yes it's spelled with 3 n's
+    if (threadName.equals("ConnnectionExpirer")) {
+      return true;
+    }
+
+    return threadName.startsWith("closeThreadPool");
   }
 }

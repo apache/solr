@@ -16,48 +16,52 @@
  */
 package org.apache.solr;
 
-import org.apache.solr.schema.SchemaField;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
 
-import org.junit.Before;
+import org.apache.solr.schema.SchemaField;
 import org.junit.After;
+import org.junit.Before;
 
-/**
- * Tests that cursor requests fail unless the IndexSchema defines a uniqueKey.
- */
+/** Tests that cursor requests fail unless the IndexSchema defines a uniqueKey. */
 public class TestCursorMarkWithoutUniqueKey extends SolrTestCaseJ4 {
 
-  public final static String TEST_SOLRCONFIG_NAME = "solrconfig-minimal.xml";
-  public final static String TEST_SCHEMAXML_NAME = "schema-minimal.xml";
+  public static final String TEST_SOLRCONFIG_NAME = "solrconfig-minimal.xml";
+  public static final String TEST_SCHEMAXML_NAME = "schema-minimal.xml";
 
   @Before
   public void beforeSetupCore() throws Exception {
-    System.setProperty("solr.test.useFilterForSortedQuery", Boolean.toString(random().nextBoolean()));
-    System.setProperty("solr.test.useFilterForSortedQuery", Boolean.toString(random().nextBoolean()));
+    System.setProperty(
+        "solr.test.useFilterForSortedQuery", Boolean.toString(random().nextBoolean()));
+    System.setProperty(
+        "solr.test.useFilterForSortedQuery", Boolean.toString(random().nextBoolean()));
     initCore(TEST_SOLRCONFIG_NAME, TEST_SCHEMAXML_NAME);
     SchemaField uniqueKeyField = h.getCore().getLatestSchema().getUniqueKeyField();
-    assertNull("This test requires that the schema not have a uniquekey field -- someone violated that in " + TEST_SCHEMAXML_NAME, uniqueKeyField);
+    assertNull(
+        "This test requires that the schema not have a uniquekey field -- someone violated that in "
+            + TEST_SCHEMAXML_NAME,
+        uniqueKeyField);
   }
 
   @After
-  public void afterDestroyCore() throws Exception {
+  public void afterDestroyCore() {
     deleteCore();
   }
-  
 
-  public void test() throws Exception {
+  public void test() {
 
     assertU(adoc("fld", "val"));
     assertU(commit());
 
     try {
-      ignoreException("Cursor functionality is not available unless the IndexSchema defines a uniqueKey field");
-      expectThrows(RuntimeException.class,
+      ignoreException(
+          "Cursor functionality is not available unless the IndexSchema defines a uniqueKey field");
+      expectThrows(
+          RuntimeException.class,
           "No exception when querying with a cursorMark with no uniqueKey defined.",
-          () -> assertQ(req("q", "*:*", "sort", "fld desc", "cursorMark", CURSOR_MARK_START))
-      );
+          () -> assertQ(req("q", "*:*", "sort", "fld desc", "cursorMark", CURSOR_MARK_START)));
     } finally {
-      unIgnoreException("Cursor functionality is not available unless the IndexSchema defines a uniqueKey field");
+      unIgnoreException(
+          "Cursor functionality is not available unless the IndexSchema defines a uniqueKey field");
     }
   }
 }

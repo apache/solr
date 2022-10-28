@@ -289,6 +289,7 @@ limitations under the License.
 .sub-menu .stream a { background-image: url( ../../img/ico/node.png ); }
 .sub-menu .analysis a { background-image: url( ../../img/ico/funnel.png ); }
 .sub-menu .documents a { background-image: url( ../../img/ico/documents-stack.png ); }
+.sub-menu .paramsets a { background-image: url( ../../img/ico/paramset.png ); }
 .sub-menu .files a { background-image: url( ../../img/ico/folder.png ); }
 .sub-menu .schema a { background-image: url( ../../img/ico/book-open-text.png ); }
 .sub-menu .replication a { background-image: url( ../../img/ico/node.png ); }

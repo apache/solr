@@ -17,10 +17,11 @@
 
 package org.apache.solr.servlet;
 
-import java.io.IOException;
-import java.util.Map;
+import static org.apache.solr.core.RateLimiterConfig.RL_CONFIG_KEY;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.util.Map;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.beans.RateLimiterPayload;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -31,10 +32,9 @@ import org.apache.solr.util.SolrJacksonAnnotationInspector;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 
-import static org.apache.solr.core.RateLimiterConfig.RL_CONFIG_KEY;
-
-/** Implementation of RequestRateLimiter specific to query request types. Most of the actual work is delegated
- *  to the parent class but specific configurations and parsing are handled by this class.
+/**
+ * Implementation of RequestRateLimiter specific to query request types. Most of the actual work is
+ * delegated to the parent class but specific configurations and parsing are handled by this class.
  */
 public class QueryRateLimiter extends RequestRateLimiter {
   private static final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
@@ -47,7 +47,7 @@ public class QueryRateLimiter extends RequestRateLimiter {
     RateLimiterConfig rateLimiterConfig = getRateLimiterConfig();
     byte[] configInput = Utils.toJSON(properties.get(RL_CONFIG_KEY));
 
-    if (configInput == null) {
+    if (configInput == null || configInput.length == 0) {
       return;
     }
 
@@ -65,12 +65,16 @@ public class QueryRateLimiter extends RequestRateLimiter {
         return new RateLimiterConfig(SolrRequest.SolrRequestType.QUERY);
       }
 
-      RateLimiterConfig rateLimiterConfig = new RateLimiterConfig(SolrRequest.SolrRequestType.QUERY);
-      Map<String, Object> clusterPropsJson = (Map<String, Object>) Utils.fromJSON(zkClient.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true));
+      RateLimiterConfig rateLimiterConfig =
+          new RateLimiterConfig(SolrRequest.SolrRequestType.QUERY);
+      Map<String, Object> clusterPropsJson =
+          (Map<String, Object>)
+              Utils.fromJSON(zkClient.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true));
       byte[] configInput = Utils.toJSON(clusterPropsJson.get(RL_CONFIG_KEY));
 
       if (configInput.length == 0) {
-        // No Rate Limiter configuration defined in clusterprops.json. Return default configuration values
+        // No Rate Limiter configuration defined in clusterprops.json. Return default configuration
+        // values
         return rateLimiterConfig;
       }
 
@@ -82,13 +86,15 @@ public class QueryRateLimiter extends RequestRateLimiter {
     } catch (KeeperException.NoNodeException e) {
       return new RateLimiterConfig(SolrRequest.SolrRequestType.QUERY);
     } catch (KeeperException | InterruptedException e) {
-      throw new RuntimeException("Error reading cluster property", SolrZkClient.checkInterrupted(e));
+      throw new RuntimeException(
+          "Error reading cluster property", SolrZkClient.checkInterrupted(e));
     } catch (IOException e) {
       throw new RuntimeException("Encountered an IOException " + e.getMessage());
     }
   }
 
-  private static void constructQueryRateLimiterConfigInternal(RateLimiterPayload rateLimiterMeta, RateLimiterConfig rateLimiterConfig) {
+  private static void constructQueryRateLimiterConfigInternal(
+      RateLimiterPayload rateLimiterMeta, RateLimiterConfig rateLimiterConfig) {
 
     if (rateLimiterMeta == null) {
       // No Rate limiter configuration defined in clusterprops.json
@@ -112,7 +118,8 @@ public class QueryRateLimiter extends RequestRateLimiter {
     }
 
     if (rateLimiterMeta.slotAcquisitionTimeoutInMS != null) {
-      rateLimiterConfig.waitForSlotAcquisition = rateLimiterMeta.slotAcquisitionTimeoutInMS.longValue();
+      rateLimiterConfig.waitForSlotAcquisition =
+          rateLimiterMeta.slotAcquisitionTimeoutInMS.longValue();
     }
   }
 }

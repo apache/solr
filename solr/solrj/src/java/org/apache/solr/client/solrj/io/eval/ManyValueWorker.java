@@ -20,6 +20,6 @@ import java.io.IOException;
 
 public interface ManyValueWorker extends ValueWorker {
 
-  Object doWork(Object ... values) throws IOException;
-  
+  @Override
+  Object doWork(Object... values) throws IOException;
 }

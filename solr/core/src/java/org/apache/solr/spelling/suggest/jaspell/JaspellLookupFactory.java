@@ -17,19 +17,14 @@
 package org.apache.solr.spelling.suggest.jaspell;
 
 import java.lang.invoke.MethodHandles;
-
 import org.apache.lucene.search.suggest.Lookup;
-import org.apache.lucene.search.suggest.jaspell.JaspellLookup;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.spelling.suggest.LookupFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Factory for {@link JaspellLookup}
- * <b>Note:</b> This Suggester is not very RAM efficient.
- */
+/** Factory for {@link JaspellLookup} <b>Note:</b> This Suggester is not very RAM efficient. */
 public class JaspellLookupFactory extends LookupFactory {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String FILENAME = "jaspell.dat";

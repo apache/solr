@@ -16,14 +16,12 @@
  */
 package org.apache.solr.cloud;
 
+import java.lang.invoke.MethodHandles;
+import java.util.Map;
 import javax.servlet.FilterChain;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.lang.invoke.MethodHandles;
-import java.util.Map;
-
 import org.apache.http.HttpRequestInterceptor;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -38,16 +36,13 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Test of the MiniSolrCloudCluster functionality with authentication enabled.
- */
-@LuceneTestCase.Slow
+/** Test of the MiniSolrCloudCluster functionality with authentication enabled. */
 public class TestAuthenticationFramework extends SolrCloudTestCase {
-  
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final int numShards = 2;
   private static final int numReplicas = 2;
-  private static final int nodeCount = numShards*numReplicas;
+  private static final int nodeCount = numShards * numReplicas;
   private static final String configName = "solrCloudCollectionConfig";
   private static final String collectionName = "testcollection";
 
@@ -60,13 +55,15 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
     configureCluster(nodeCount).addConfig(configName, configset("cloud-minimal")).configure();
     super.setUp();
   }
-  
-  private void setupAuthenticationPlugin() throws Exception {
-    System.setProperty("authenticationPlugin", "org.apache.solr.cloud.TestAuthenticationFramework$MockAuthenticationPlugin");
+
+  private void setupAuthenticationPlugin() {
+    System.setProperty(
+        "authenticationPlugin",
+        "org.apache.solr.cloud.TestAuthenticationFramework$MockAuthenticationPlugin");
     MockAuthenticationPlugin.expectedUsername = null;
     MockAuthenticationPlugin.expectedPassword = null;
   }
-  
+
   @Test
   public void testBasics() throws Exception {
     collectionCreateSearchDeleteTwice();
@@ -76,8 +73,10 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
 
     // Should fail with 401
     try {
-      BaseHttpSolrClient.RemoteSolrException e = expectThrows(BaseHttpSolrClient.RemoteSolrException.class,
-          this::collectionCreateSearchDeleteTwice);
+      BaseHttpSolrClient.RemoteSolrException e =
+          expectThrows(
+              BaseHttpSolrClient.RemoteSolrException.class,
+              this::collectionCreateSearchDeleteTwice);
       assertTrue("Should've returned a 401 error", e.getMessage().contains("Error 401"));
     } finally {
       MockAuthenticationPlugin.expectedUsername = null;
@@ -92,62 +91,64 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
     super.tearDown();
   }
 
-  private void createCollection(String collectionName)
-      throws Exception {
-    if (random().nextBoolean()) {  // process asynchronously
+  private void createCollection(String collectionName) throws Exception {
+    if (random().nextBoolean()) { // process asynchronously
       CollectionAdminRequest.createCollection(collectionName, configName, numShards, numReplicas)
           .processAndWait(cluster.getSolrClient(), 90);
       cluster.waitForActiveCollection(collectionName, numShards, numShards * numReplicas);
-    }
-    else {
+    } else {
       CollectionAdminRequest.createCollection(collectionName, configName, numShards, numReplicas)
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(collectionName, numShards, numShards * numReplicas);
     }
-
   }
 
   public void collectionCreateSearchDeleteTwice() throws Exception {
     final CloudSolrClient client = cluster.getSolrClient();
 
-    for (int i = 0 ; i < 2 ; ++i) {
+    for (int i = 0; i < 2; ++i) {
       // create collection
       createCollection(collectionName);
 
       // check that there's no left-over state
-      assertEquals(0, client.query(collectionName, new SolrQuery("*:*")).getResults().getNumFound());
+      assertEquals(
+          0, client.query(collectionName, new SolrQuery("*:*")).getResults().getNumFound());
 
       // modify/query collection
-      Thread.sleep(100); // not everyone is up to date just because we waited to make sure one was - pause a moment
+      // not everyone is up-to-date just because we waited to make sure one was - pause a moment
+      Thread.sleep(100);
       new UpdateRequest().add("id", "1").commit(client, collectionName);
       QueryResponse rsp = client.query(collectionName, new SolrQuery("*:*"));
       assertEquals(1, rsp.getResults().getNumFound());
 
       // delete the collection
-     cluster.deleteAllCollections();
+      cluster.deleteAllCollections();
     }
   }
 
-  public static class MockAuthenticationPlugin extends AuthenticationPlugin implements HttpClientBuilderPlugin {
+  public static class MockAuthenticationPlugin extends AuthenticationPlugin
+      implements HttpClientBuilderPlugin {
     public static String expectedUsername;
     public static String expectedPassword;
     private HttpRequestInterceptor interceptor;
-    @Override
-    public void init(Map<String,Object> pluginConfig) {}
 
     @Override
-    public boolean doAuthenticate(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+    public void init(Map<String, Object> pluginConfig) {}
+
+    @Override
+    public boolean doAuthenticate(
+        HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
         throws Exception {
       if (expectedUsername == null) {
         filterChain.doFilter(request, response);
         return true;
       }
-      HttpServletRequest httpRequest = request;
-      String username = httpRequest.getHeader("username");
-      String password = httpRequest.getHeader("password");
-      
+      String username = request.getHeader("username");
+      String password = request.getHeader("password");
+
       log.info("Username: {}, password: {}", username, password);
-      if(MockAuthenticationPlugin.expectedUsername.equals(username) && MockAuthenticationPlugin.expectedPassword.equals(password)) {
+      if (MockAuthenticationPlugin.expectedUsername.equals(username)
+          && MockAuthenticationPlugin.expectedPassword.equals(password)) {
         filterChain.doFilter(request, response);
         return true;
       } else {
@@ -158,10 +159,11 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
 
     @Override
     public SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder httpClientBuilder) {
-      interceptor = (req, rsp) -> {
-        req.addHeader("username", requestUsername);
-        req.addHeader("password", requestPassword);
-      };
+      interceptor =
+          (req, rsp) -> {
+            req.addHeader("username", requestUsername);
+            req.addHeader("password", requestPassword);
+          };
 
       HttpClientUtil.addRequestInterceptor(interceptor);
       return httpClientBuilder;
@@ -171,6 +173,5 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
     public void close() {
       HttpClientUtil.removeRequestInterceptor(interceptor);
     }
-    
   }
 }
