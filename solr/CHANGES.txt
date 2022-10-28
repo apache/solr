@@ -35,6 +35,8 @@ New Features
 
 * SOLR-16435: Add Request timeout to Http2SolrClient (Tomás Fernández Löbbe)
 
+* SOLR-16500: Added --enable-preview for JDK 19 to enable MemorySegment support in MMapDirectory (Kevin Risden)
+
 Improvements
 ---------------------
 
