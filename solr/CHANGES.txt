@@ -62,6 +62,9 @@ Improvements
 
 * SOLR-13626: Document the SystemInfoHandler in the Ref Guide.  (Tony Cook via Eric Pugh)
 
+* SOLR-16497 Allow for finer grained locking of access to SolrCores to reduce lock contention
+  (Dennis Berger, Torsten Bøgh Köster, Marco Petris)
+
 Optimizations
 ---------------------
 (No changes)
