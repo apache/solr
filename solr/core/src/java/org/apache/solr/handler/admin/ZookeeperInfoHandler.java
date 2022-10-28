@@ -29,6 +29,7 @@ import java.lang.invoke.MethodHandles;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
@@ -41,6 +42,7 @@ import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.api.JerseyResource;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -58,6 +60,7 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.admin.api.ZookeeperAPI;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.JSONResponseWriter;
 import org.apache.solr.response.RawResponseWriter;
@@ -116,14 +119,14 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
   }
 
   /** Enumeration of ways to filter collections on the graph panel. */
-  static enum FilterType {
+  public static enum FilterType {
     none,
     name,
     status
   }
 
   /** Holds state of a single page of collections requested from the cloud panel. */
-  static final class PageOfCollections {
+  public static final class PageOfCollections {
     List<String> selected;
     int numFound = 0; // total number of matches (across all pages)
     int start = 0;
@@ -131,7 +134,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     FilterType filterType;
     String filter;
 
-    PageOfCollections(int start, int rows, FilterType filterType, String filter) {
+    public PageOfCollections(int start, int rows, FilterType filterType, String filter) {
       this.start = start;
       this.rows = rows;
       this.filterType = filterType;
@@ -259,7 +262,8 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
    * data, this object watches the /collections znode, which will change if a collection is added or
    * removed.
    */
-  static final class PagedCollectionSupport implements Watcher, Comparator<String>, OnReconnect {
+  public static final class PagedCollectionSupport
+      implements Watcher, Comparator<String>, OnReconnect {
 
     // this is the full merged list of collections from ZooKeeper
     private List<String> cachedCollections;
@@ -358,6 +362,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
   @Override
   @SuppressWarnings({"unchecked"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    final ZookeeperAPI zookeeperAPI = new ZookeeperAPI(cores, req, rsp);
     final SolrParams params = req.getParams();
     Map<String, String> map = new HashMap<>(1);
     map.put(WT, "raw");
@@ -428,17 +433,26 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     rsp.getValues().add(RawResponseWriter.CONTENT, printer);
   }
 
+  @Override
+  public Boolean registerV2() {
+    return true;
+  }
+
+  public Collection<Class<? extends JerseyResource>> getJerseyResources() {
+    return List.of(ZookeeperAPI.class);
+  }
+
   // --------------------------------------------------------------------------------------
   //
   // --------------------------------------------------------------------------------------
 
-  static class ZKPrinter implements ContentStream {
+  public static class ZKPrinter implements ContentStream {
     static boolean FULLPATH_DEFAULT = false;
 
     boolean indent = true;
     boolean fullpath = FULLPATH_DEFAULT;
-    boolean detail = false;
-    boolean dump = false;
+    public boolean detail = false;
+    public boolean dump = false;
 
     String keeperAddr; // the address we're connected to
 
@@ -446,8 +460,8 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     final Writer out = new OutputStreamWriter(baos, StandardCharsets.UTF_8);
     SolrZkClient zkClient;
 
-    PageOfCollections page;
-    PagedCollectionSupport pagingSupport;
+    public PageOfCollections page;
+    public PagedCollectionSupport pagingSupport;
     ZkController zkController;
 
     public ZKPrinter(ZkController controller) throws IOException {
@@ -465,7 +479,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     }
 
     // main entry point for printing from path
-    void print(String path) throws IOException {
+    public void print(String path) throws IOException {
       if (zkClient == null) {
         return;
       }
@@ -514,7 +528,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
 
     // main entry point for printing collections
     @SuppressWarnings("unchecked")
-    void printPaginatedCollections() throws IOException {
+    public void printPaginatedCollections() throws IOException {
       SortedMap<String, Object> collectionStates;
       try {
         // support paging of the collections graph view (in case there are many collections)
