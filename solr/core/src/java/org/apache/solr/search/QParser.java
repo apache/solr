@@ -184,8 +184,8 @@ public abstract class QParser {
    */
   // TODO never return null; standardize the semantics
   public Query getQuery() throws SyntaxError {
-    if (query == null) {
-      query = parse();
+    if (this.query == null) {
+      this.query = parse();
 
       if (localParams != null) {
         String cacheStr = localParams.get(CommonParams.CACHE);
@@ -199,14 +199,14 @@ public abstract class QParser {
         }
 
         Integer cost = localParams.getInt(CommonParams.COST);
-        extendedQuery(cache, cost);
+        this.query = getWrappedQuery(this.query, cache, cost);
       }
     }
-    return query;
+    return this.query;
   }
 
-  // sets "query" to new wrapped query setting cache and cost
-  private void extendedQuery(Boolean cache, Integer cost) {
+  // get new wrapped query setting cache and cost
+  private Query getWrappedQuery(Query query, Boolean cache, Integer cost) {
     if (cache == null && query instanceof ExtendedQuery) {
       cache = ((ExtendedQuery) query).getCache();
     } else if (cache == null) {
@@ -218,7 +218,7 @@ public abstract class QParser {
     } else if (cost == null) {
       cost = ExtendedQueryBase.DEFAULT_COST;
     }
-    query = new WrappedQuery(query, cache, cost);
+    return new WrappedQuery(query, cache, cost);
   }
 
   private void checkRecurse() throws SyntaxError {
