@@ -37,6 +37,11 @@ public final class WrappedQuery extends ExtendedQueryBase {
     this.q = q;
   }
 
+  public WrappedQuery(Query q, boolean cache, int cost) {
+    super(cache, cost);
+    this.q = q;
+  }
+
   public Query getWrappedQuery() {
     return q;
   }

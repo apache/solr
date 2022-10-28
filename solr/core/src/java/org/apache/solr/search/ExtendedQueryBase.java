@@ -19,8 +19,8 @@ package org.apache.solr.search;
 import org.apache.lucene.search.Query;
 
 public abstract class ExtendedQueryBase extends Query implements ExtendedQuery {
-  private static final boolean DEFAULT_CACHE = true;
-  private static final int DEFAULT_COST = 0;
+  public static final boolean DEFAULT_CACHE = true;
+  public static final int DEFAULT_COST = 0;
 
   private final boolean cache;
   private final int cost;

@@ -189,32 +189,36 @@ public abstract class QParser {
 
       if (localParams != null) {
         String cacheStr = localParams.get(CommonParams.CACHE);
+        Boolean cache = null;
         if (cacheStr != null) {
           if (CommonParams.FALSE.equals(cacheStr)) {
-            extendedQuery().setCache(false);
+            cache = false;
           } else if (CommonParams.TRUE.equals(cacheStr)) {
-            extendedQuery().setCache(true);
+            cache = true;
           }
         }
 
-        int cost = localParams.getInt(CommonParams.COST, Integer.MIN_VALUE);
-        if (cost != Integer.MIN_VALUE) {
-          extendedQuery().setCost(cost);
-        }
+        Integer cost = localParams.getInt(CommonParams.COST);
+        extendedQuery(cache, cost);
       }
     }
     return query;
   }
 
-  // returns an extended query (and sets "query" to a new wrapped query if necessary)
-  private ExtendedQuery extendedQuery() {
-    if (query instanceof ExtendedQuery) {
-      return (ExtendedQuery) query;
-    } else {
-      WrappedQuery wq = new WrappedQuery(query);
-      query = wq;
-      return wq;
+  // sets "query" to new wrapped query setting cache and cost
+  private void extendedQuery(Boolean cache, Integer cost) {
+    if (cache == null && query instanceof ExtendedQuery) {
+      cache = ((ExtendedQuery) query).getCache();
+    } else if (cache == null) {
+      cache = ExtendedQueryBase.DEFAULT_CACHE;
     }
+
+    if (cost == null && query instanceof ExtendedQuery) {
+      cost = ((ExtendedQuery) query).getCost();
+    } else if (cost == null) {
+      cost = ExtendedQueryBase.DEFAULT_COST;
+    }
+    query = new WrappedQuery(query, cache, cost);
   }
 
   private void checkRecurse() throws SyntaxError {
