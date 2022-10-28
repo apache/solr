@@ -108,7 +108,7 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
               vals[i] = Integer.parseInt(splitVals[i]);
             }
             Arrays.sort(vals);
-            setQ = PointSetQuery.newSetQuery(sf.getName(), vals);
+            setQ = PointSetQuery.newSetQuery(sf.getName(), maxDocFreq, vals);
           } else if (sf.getType().getNumberType() == NumberType.LONG
               || sf.getType().getNumberType() == NumberType.DATE) {
             long[] vals = new long[splitVals.length];
@@ -116,24 +116,23 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
               vals[i] = Long.parseLong(splitVals[i]);
             }
             Arrays.sort(vals);
-            setQ = PointSetQuery.newSetQuery(sf.getName(), vals);
+            setQ = PointSetQuery.newSetQuery(sf.getName(), maxDocFreq, vals);
           } else if (sf.getType().getNumberType() == NumberType.FLOAT) {
             float[] vals = new float[splitVals.length];
             for (int i = 0; i < vals.length; i++) {
               vals[i] = Float.parseFloat(splitVals[i]);
             }
             Arrays.sort(vals);
-            setQ = PointSetQuery.newSetQuery(sf.getName(), vals);
+            setQ = PointSetQuery.newSetQuery(sf.getName(), maxDocFreq, vals);
           } else if (sf.getType().getNumberType() == NumberType.DOUBLE) {
             double[] vals = new double[splitVals.length];
             for (int i = 0; i < vals.length; i++) {
               vals[i] = Double.parseDouble(splitVals[i]);
             }
             Arrays.sort(vals);
-            setQ = PointSetQuery.newSetQuery(sf.getName(), vals);
+            setQ = PointSetQuery.newSetQuery(sf.getName(), maxDocFreq, vals);
           }
 
-          setQ.setMaxDocFreq(maxDocFreq);
           return setQ;
         }
 
@@ -324,8 +323,6 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
 
 /** Modified version of {@code PointInSetQuery} to support {@code maxDocFreq}. */
 abstract class PointSetQuery extends Query implements DocSetProducer, Accountable {
-  // TODO SOLR-16509 make all fields final
-
   protected static final long BASE_RAM_BYTES =
       RamUsageEstimator.shallowSizeOfInstance(PointSetQuery.class);
 
@@ -335,7 +332,7 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
   final String field;
   final int bytesPerDim;
   final int numDims;
-  int maxDocFreq = Integer.MAX_VALUE;
+  final int maxDocFreq;
   final long ramBytesUsed; // cache
 
   /** Iterator of encoded point values. */
@@ -345,11 +342,7 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
     public abstract BytesRef next();
   }
 
-  public void setMaxDocFreq(int maxDocFreq) {
-    this.maxDocFreq = maxDocFreq;
-  }
-
-  public static PointSetQuery newSetQuery(String field, float... sortedValues) {
+  public static PointSetQuery newSetQuery(String field, int maxDocFreq, float... sortedValues) {
 
     final BytesRef encoded = new BytesRef(new byte[Float.BYTES]);
 
@@ -371,7 +364,8 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
               return encoded;
             }
           }
-        }) {
+        },
+        maxDocFreq) {
       @Override
       protected String toString(byte[] value) {
         assert value.length == Float.BYTES;
@@ -380,7 +374,7 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
     };
   }
 
-  public static PointSetQuery newSetQuery(String field, long... sortedValues) {
+  public static PointSetQuery newSetQuery(String field, int maxDocFreq, long... sortedValues) {
     final BytesRef encoded = new BytesRef(new byte[Long.BYTES]);
 
     return new PointSetQuery(
@@ -401,7 +395,8 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
               return encoded;
             }
           }
-        }) {
+        },
+        maxDocFreq) {
       @Override
       protected String toString(byte[] value) {
         assert value.length == Long.BYTES;
@@ -410,7 +405,7 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
     };
   }
 
-  public static PointSetQuery newSetQuery(String field, int... sortedValues) {
+  public static PointSetQuery newSetQuery(String field, int maxDocFreq, int... sortedValues) {
     final BytesRef encoded = new BytesRef(new byte[Integer.BYTES]);
 
     return new PointSetQuery(
@@ -431,7 +426,8 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
               return encoded;
             }
           }
-        }) {
+        },
+        maxDocFreq) {
       @Override
       protected String toString(byte[] value) {
         assert value.length == Integer.BYTES;
@@ -440,7 +436,7 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
     };
   }
 
-  public static PointSetQuery newSetQuery(String field, double... values) {
+  public static PointSetQuery newSetQuery(String field, int maxDocFreq, double... values) {
 
     // Don't unexpectedly change the user's incoming values array:
     double[] sortedValues = values.clone();
@@ -466,7 +462,8 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
               return encoded;
             }
           }
-        }) {
+        },
+        maxDocFreq) {
       @Override
       protected String toString(byte[] value) {
         assert value.length == Double.BYTES;
@@ -475,10 +472,11 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
     };
   }
 
-  public PointSetQuery(String field, int numDims, int bytesPerDim, Stream packedPoints) {
+  public PointSetQuery(String field, int numDims, int bytesPerDim, Stream packedPoints, int maxDocFreq) {
     this.field = field;
     this.bytesPerDim = bytesPerDim;
     this.numDims = numDims;
+    this.maxDocFreq = maxDocFreq;
 
     // In the 1D case this works well (the more points, the more common prefixes they share,
     // typically), but in the > 1 D case, where we are only looking at the first dimension's prefix

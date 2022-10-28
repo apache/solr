@@ -290,17 +290,17 @@ public class CollapsingQParserPlugin extends QParserPlugin {
   }
 
   public static class CollapsingPostFilter extends ExtendedQueryBase implements PostFilter {
-    // TODO SOLR-16509 make all fields final
-
     private final String collapseField;
     private final GroupHeadSelector groupHeadSelector;
     private final SortSpec sortSpec; // may be null, parsed at most once from groupHeadSelector
-    public String hint;
-    private boolean needsScores = true;
-    private boolean needsScores4Collapsing = false;
+    private final boolean needsScores;
+    private final boolean needsScores4Collapsing;
     private final NullPolicy nullPolicy;
-    private Set<BytesRef> boosted; // ordered by "priority"
     private final int size;
+
+    // TODO SOLR-16509 make all fields final
+    public String hint;
+    private Set<BytesRef> boosted; // ordered by "priority"
 
     public String getField() {
       return this.collapseField;
