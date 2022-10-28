@@ -73,9 +73,8 @@ public class CrossCollectionJoinQuery extends Query {
   protected final long timestamp;
   protected final int ttl;
 
-  // TODO SOLR-16509 make all fields final
-  protected SolrParams otherParams;
-  protected String otherParamsString;
+  protected final SolrParams otherParams;
+  protected final String otherParamsString;
 
   public CrossCollectionJoinQuery(
       String query,
@@ -103,6 +102,8 @@ public class CrossCollectionJoinQuery extends Query {
     // SolrParams doesn't implement equals(), so use this string to compare them
     if (otherParams != null) {
       this.otherParamsString = otherParams.toString();
+    } else {
+      this.otherParamsString = null;
     }
   }
 
