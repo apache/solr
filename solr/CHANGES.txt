@@ -107,6 +107,8 @@ Other Changes
 
 * SOLR-16467: Upgrade semver4j to 2.2.0 to fix failures with some locales (Kevin Risden)
 
+* SOLR-15582: Remove deprecated APIs in solrj Tuple class. (Christine Poerschke)
+
 ==================  9.1.0 ==================
 
 New Features
