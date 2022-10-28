@@ -239,7 +239,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     TestInjection.wrongIndexFingerprint = "true:100";
     // now lets restart the old node
     log.info("Starting old node 1");
-    cluster.startJettySolrRunner(oldNode);
+    cluster.startJettySolrRunner(oldNode, true);
     waitForState("", collectionName, clusterShape(1, 2));
     // invoke statewatcher explicitly to avoid race condition where the assert happens before the
     // state watcher is invoked by ZkStateReader
@@ -266,7 +266,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     TestInjection.failIndexFingerprintRequests = "true:100";
     // now lets restart the old node again
     log.info("Starting old node 2");
-    cluster.startJettySolrRunner(oldNode);
+    cluster.startJettySolrRunner(oldNode, true);
     waitForState("", collectionName, clusterShape(1, 2));
     // invoke statewatcher explicitly to avoid race condition when the assert happens before the
     // state watcher is invoked by ZkStateReader

@@ -582,7 +582,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
       executorService.submit(
           () -> {
             try {
-              cluster.startJettySolrRunner(jettys.get(finalIdx));
+              cluster.startJettySolrRunner(jettys.get(finalIdx), true);
             } catch (Exception e) {
               throw new RuntimeException(e);
             }

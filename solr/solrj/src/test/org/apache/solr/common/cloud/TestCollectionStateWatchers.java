@@ -325,10 +325,10 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
         cluster.stopJettySolrRunner(random().nextInt(cluster.getJettySolrRunners().size()));
 
     // now start them both back up
-    cluster.startJettySolrRunner(node1);
+    cluster.startJettySolrRunner(node1, true);
     assertTrue(
         "CollectionStateWatcher not called", firstCall.await(MAX_WAIT_TIMEOUT, TimeUnit.SECONDS));
-    cluster.startJettySolrRunner(node2);
+    cluster.startJettySolrRunner(node2, true);
 
     Boolean result = future.get();
     assertTrue("Did not see a fully active cluster", result);

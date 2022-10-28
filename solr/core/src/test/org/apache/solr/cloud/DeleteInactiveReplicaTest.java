@@ -92,7 +92,7 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
           return c.getReplica(replica.getCoreName()) == null;
         });
 
-    cluster.startJettySolrRunner(jetty);
+    cluster.startJettySolrRunner(jetty, true);
     log.info("restarted jetty");
     TimeOut timeOut = new TimeOut(60, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     timeOut.waitFor(

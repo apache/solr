@@ -288,7 +288,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
     for (Integer ii : restartIndicesList) {
       final JettySolrRunner jetty = jettys.get(ii);
       if (!jetty.isRunning()) {
-        cluster.startJettySolrRunner(jetty);
+        cluster.startJettySolrRunner(jetty, true);
         assertTrue(jetty.isRunning());
       }
     }
