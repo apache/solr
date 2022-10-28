@@ -75,7 +75,6 @@ dependencies {
   testRuntimeOnly("org.apache.logging.log4j:log4j-slf4j-impl", {
     exclude group: "org.apache.logging.log4j", module: "log4j-api"
   })
-  testRuntimeOnly "org.hsqldb:hsqldb" // runtime because via JDBC reflection
   testImplementation 'org.apache.commons:commons-lang3'
   testImplementation 'com.google.guava:guava'
   testImplementation 'io.dropwizard.metrics:metrics-core'
