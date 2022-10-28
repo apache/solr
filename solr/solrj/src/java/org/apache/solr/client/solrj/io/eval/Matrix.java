@@ -16,15 +16,13 @@
  */
 package org.apache.solr.client.solrj.io.eval;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
-import java.util.ArrayList;
 
-import java.util.Iterator;
-
-@SuppressWarnings({"rawtypes"})
-public class Matrix implements Iterable, Attributes {
+public class Matrix implements Iterable<List<Double>>, Attributes {
 
   private double[][] data;
   private List<String> columnLabels;
@@ -36,15 +34,17 @@ public class Matrix implements Iterable, Attributes {
     this.data = data;
   }
 
-  @SuppressWarnings({"rawtypes"})
-  public Map getAttributes() {
+  @Override
+  public Map<?, ?> getAttributes() {
     return this.attributes;
   }
 
+  @Override
   public void setAttribute(String key, Object value) {
     this.attributes.put(key, value);
   }
 
+  @Override
   public Object getAttribute(String key) {
     return this.attributes.get(key);
   }
@@ -77,13 +77,12 @@ public class Matrix implements Iterable, Attributes {
     return data[0].length;
   }
 
-  @SuppressWarnings({"rawtypes"})
-  public Iterator iterator() {
+  @Override
+  public Iterator<List<Double>> iterator() {
     return new MatrixIterator(data);
   }
 
-  @SuppressWarnings({"rawtypes"})
-  private static class MatrixIterator implements Iterator {
+  private static class MatrixIterator implements Iterator<List<Double>> {
 
     private double[][] d;
     private int index;
@@ -92,17 +91,18 @@ public class Matrix implements Iterable, Attributes {
       d = data;
     }
 
-    @SuppressWarnings({"unchecked"})
-    public Object next() {
+    @Override
+    public List<Double> next() {
       double[] row = d[index++];
-      List list = new ArrayList();
-      for(double value : row) {
+      List<Double> list = new ArrayList<>();
+      for (double value : row) {
         list.add(value);
       }
 
       return list;
     }
 
+    @Override
     public boolean hasNext() {
       return index < d.length;
     }

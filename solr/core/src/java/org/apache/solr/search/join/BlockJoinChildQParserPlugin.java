@@ -20,16 +20,13 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
 
-/**
- * Usage: {!child of="PARENT:true"}PARENT_PRICE:10
- *
- **/
+/** Usage: {!child of="PARENT:true"}PARENT_PRICE:10 */
 public class BlockJoinChildQParserPlugin extends BlockJoinParentQParserPlugin {
   public static final String NAME = "child";
 
   @Override
-  protected QParser createBJQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  protected QParser createBJQParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new BlockJoinChildQParser(qstr, localParams, params, req);
   }
 }
-

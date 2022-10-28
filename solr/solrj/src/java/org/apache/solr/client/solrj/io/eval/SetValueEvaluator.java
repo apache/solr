@@ -17,32 +17,35 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-
 import java.util.Locale;
-
+import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.apache.solr.client.solrj.io.Tuple;
 
 public class SetValueEvaluator extends RecursiveObjectEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
 
-  public SetValueEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public SetValueEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
 
-    if(3 != containedEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting exactly 3 values but found %d",expression,containedEvaluators.size()));
+    if (3 != containedEvaluators.size()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting exactly 3 values but found %d",
+              expression,
+              containedEvaluators.size()));
     }
   }
 
   @Override
   public Object doWork(Object... values) throws IOException {
-    if(values[0] instanceof Tuple) {
-      Tuple tuple = (Tuple)values[0];
-      String key = (String)values[1];
+    if (values[0] instanceof Tuple) {
+      Tuple tuple = (Tuple) values[0];
+      String key = (String) values[1];
       Object value = values[2];
-      if(value instanceof String) {
-        value = ((String)value).replace("\"", "");
+      if (value instanceof String) {
+        value = ((String) value).replace("\"", "");
       }
       key = key.replace("\"", "");
       Tuple newTuple = tuple.clone();

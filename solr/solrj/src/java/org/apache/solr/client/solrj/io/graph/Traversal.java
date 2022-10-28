@@ -17,8 +17,13 @@
 
 package org.apache.solr.client.solrj.io.graph;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.apache.solr.client.solrj.io.Tuple;
-import java.util.*;
 
 public class Traversal {
 
@@ -47,10 +52,10 @@ public class Traversal {
   }
 
   public boolean visited(String nodeId, String ancestorId, Tuple tuple) {
-    for(Map<String, Node> level : graph) {
+    for (Map<String, Node> level : graph) {
       Node node = level.get(nodeId);
-      if(node != null) {
-        node.add(depth+"^"+ancestorId, tuple);
+      if (node != null) {
+        node.add(depth + "^" + ancestorId, tuple);
         return true;
       }
     }
@@ -90,7 +95,6 @@ public class Traversal {
     LEAVES;
   }
 
-  @SuppressWarnings({"unchecked"})
   public Iterator<Tuple> iterator() {
     return new TraversalIterator(this, scatter);
   }

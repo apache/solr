@@ -24,7 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
+import java.util.Objects;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
@@ -38,13 +38,11 @@ import org.apache.solr.search.SolrReturnFields;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/** Test some aspects of JSON/python writer output (very incomplete)
- *
- */
+/** Test some aspects of JSON/python writer output (very incomplete) */
 public class JSONWriterTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml","schema.xml");
+    initCore("solrconfig.xml", "schema.xml");
   }
 
   private void jsonEq(String expected, String received) {
@@ -52,10 +50,10 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
     received = received.trim();
     assertEquals(expected, received);
   }
-  
+
   @Test
   public void testTypes() throws IOException {
-    SolrQueryRequest req = req("q", "dummy", "indent","off");
+    SolrQueryRequest req = req("q", "dummy", "indent", "off");
     SolrQueryResponse rsp = new SolrQueryResponse();
     QueryResponseWriter w = new PythonResponseWriter();
 
@@ -80,65 +78,68 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
 
   @Test
   public void testJSON() throws IOException {
-    final String[] namedListStyles = new String[] {
-        JsonTextWriter.JSON_NL_FLAT,
-        JsonTextWriter.JSON_NL_MAP,
-        JsonTextWriter.JSON_NL_ARROFARR,
-        JsonTextWriter.JSON_NL_ARROFMAP,
-        JsonTextWriter.JSON_NL_ARROFNTV,
-    };
+    final String[] namedListStyles =
+        new String[] {
+          JsonTextWriter.JSON_NL_FLAT,
+          JsonTextWriter.JSON_NL_MAP,
+          JsonTextWriter.JSON_NL_ARROFARR,
+          JsonTextWriter.JSON_NL_ARROFMAP,
+          JsonTextWriter.JSON_NL_ARROFNTV,
+        };
     for (final String namedListStyle : namedListStyles) {
       implTestJSON(namedListStyle);
     }
     assertEquals(JSONWriter.JSON_NL_STYLE_COUNT, namedListStyles.length);
   }
 
-  @SuppressWarnings({"unchecked"})
   private void implTestJSON(final String namedListStyle) throws IOException {
-    SolrQueryRequest req = req("wt","json","json.nl",namedListStyle, "indent", "off");
+    SolrQueryRequest req = req("wt", "json", "json.nl", namedListStyle, "indent", "off");
     SolrQueryResponse rsp = new SolrQueryResponse();
     JSONResponseWriter w = new JSONResponseWriter();
 
     StringWriter buf = new StringWriter();
-    @SuppressWarnings({"rawtypes"})
-    NamedList nl = new NamedList();
-    nl.add("data1", "he\u2028llo\u2029!");       // make sure that 2028 and 2029 are both escaped (they are illegal in javascript)
+    NamedList<Object> nl = new NamedList<>();
+    // make sure that 2028 and 2029 are both escaped (they are illegal in javascript)
+    nl.add("data1", "he\u2028llo\u2029!");
     nl.add(null, 42);
     nl.add(null, null);
     rsp.add("nl", nl);
 
-    rsp.add("byte", Byte.valueOf((byte)-3));
-    rsp.add("short", Short.valueOf((short)-4));
+    rsp.add("byte", (byte) -3);
+    rsp.add("short", (short) -4);
     rsp.add("bytes", "abc".getBytes(StandardCharsets.UTF_8));
 
     w.write(buf, req, rsp);
 
     final String expectedNLjson;
-    if (namedListStyle == JSONWriter.JSON_NL_FLAT) {
+    if (Objects.equals(namedListStyle, JSONWriter.JSON_NL_FLAT)) {
       expectedNLjson = "\"nl\":[\"data1\",\"he\\u2028llo\\u2029!\",null,42,null,null]";
-    } else if (namedListStyle == JSONWriter.JSON_NL_MAP) {
+    } else if (Objects.equals(namedListStyle, JSONWriter.JSON_NL_MAP)) {
       expectedNLjson = "\"nl\":{\"data1\":\"he\\u2028llo\\u2029!\",\"\":42,\"\":null}";
-    } else if (namedListStyle == JSONWriter.JSON_NL_ARROFARR) {
+    } else if (Objects.equals(namedListStyle, JSONWriter.JSON_NL_ARROFARR)) {
       expectedNLjson = "\"nl\":[[\"data1\",\"he\\u2028llo\\u2029!\"],[null,42],[null,null]]";
-    } else if (namedListStyle == JSONWriter.JSON_NL_ARROFMAP) {
+    } else if (Objects.equals(namedListStyle, JSONWriter.JSON_NL_ARROFMAP)) {
       expectedNLjson = "\"nl\":[{\"data1\":\"he\\u2028llo\\u2029!\"},42,null]";
-    } else if (namedListStyle == JSONWriter.JSON_NL_ARROFNTV) {
-      expectedNLjson = "\"nl\":[{\"name\":\"data1\",\"type\":\"str\",\"value\":\"he\\u2028llo\\u2029!\"}," +
-          "{\"name\":null,\"type\":\"int\",\"value\":42}," +
-          "{\"name\":null,\"type\":\"null\",\"value\":null}]";
+    } else if (Objects.equals(namedListStyle, JSONWriter.JSON_NL_ARROFNTV)) {
+      expectedNLjson =
+          "\"nl\":[{\"name\":\"data1\",\"type\":\"str\",\"value\":\"he\\u2028llo\\u2029!\"},"
+              + "{\"name\":null,\"type\":\"int\",\"value\":42},"
+              + "{\"name\":null,\"type\":\"null\",\"value\":null}]";
     } else {
       expectedNLjson = null;
-      fail("unexpected namedListStyle="+namedListStyle);
+      fail("unexpected namedListStyle=" + namedListStyle);
     }
 
-    jsonEq("{"+expectedNLjson+",\"byte\":-3,\"short\":-4,\"bytes\":\"YWJj\"}", buf.toString());
+    jsonEq("{" + expectedNLjson + ",\"byte\":-3,\"short\":-4,\"bytes\":\"YWJj\"}", buf.toString());
     req.close();
   }
 
   @Test
   public void testJSONSolrDocument() throws Exception {
-    SolrQueryRequest req = req(CommonParams.WT,"json",
-                               CommonParams.FL,"id,score,_children_,path");
+    SolrQueryRequest req =
+        req(
+            CommonParams.WT, "json",
+            CommonParams.FL, "id,score,_children_,path");
     SolrQueryResponse rsp = new SolrQueryResponse();
     JSONResponseWriter w = new JSONResponseWriter();
 
@@ -174,17 +175,17 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
 
     w.write(buf, req, rsp);
     String result = buf.toString();
-    assertFalse("response contains unexpected fields: " + result, 
-                result.contains("hello") || 
-                result.contains("\"subject\"") || 
-                result.contains("\"title\""));
-    assertTrue("response doesn't contain expected fields: " + result, 
-               result.contains("\"id\"") &&
-               result.contains("\"score\"") && result.contains("_children_"));
+    assertFalse(
+        "response contains unexpected fields: " + result,
+        result.contains("hello") || result.contains("\"subject\"") || result.contains("\"title\""));
+    assertTrue(
+        "response doesn't contain expected fields: " + result,
+        result.contains("\"id\"") && result.contains("\"score\"") && result.contains("_children_"));
 
-    String expectedResult = "{'response':{'numFound':1,'start':0,'maxScore':0.7, 'numFoundExact':true,'docs':[{'id':'1', 'score':'0.7'," +
-        " '_children_':{'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'2', 'score':'0.4', 'path':['a>b', 'a>b>c']}] }}] }}";
-    String error = JSONTestUtil.match(result, "=="+expectedResult);
+    String expectedResult =
+        "{'response':{'numFound':1,'start':0,'maxScore':0.7, 'numFoundExact':true,'docs':[{'id':'1', 'score':'0.7',"
+            + " '_children_':{'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'2', 'score':'0.4', 'path':['a>b', 'a>b>c']}] }}] }}";
+    String error = JSONTestUtil.match(result, "==" + expectedResult);
     assertNull("response validation failed with error: " + error, error);
 
     req.close();
@@ -193,33 +194,37 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
   @Test
   public void testArrntvWriterOverridesAllWrites() {
     // List rather than Set because two not-overridden methods could share name but not signature
-    final List<String> methodsExpectedNotOverriden = new ArrayList<>(14);
-    methodsExpectedNotOverriden.add("writeResponse");
-    methodsExpectedNotOverriden.add("writeKey");
-    methodsExpectedNotOverriden.add("writeNamedListAsMapMangled");
-    methodsExpectedNotOverriden.add("writeNamedListAsMapWithDups");
-    methodsExpectedNotOverriden.add("writeNamedListAsArrMap");
-    methodsExpectedNotOverriden.add("writeNamedListAsArrArr");
-    methodsExpectedNotOverriden.add("writeNamedListAsFlat");
-    methodsExpectedNotOverriden.add("writeEndDocumentList");
-    methodsExpectedNotOverriden.add("writeMapOpener");
-    methodsExpectedNotOverriden.add("writeMapSeparator");
-    methodsExpectedNotOverriden.add("writeMapCloser");
-    methodsExpectedNotOverriden.add("public default void org.apache.solr.common.util.JsonTextWriter.writeArray(java.lang.String,java.util.List) throws java.io.IOException");
-    methodsExpectedNotOverriden.add("writeArrayOpener");
-    methodsExpectedNotOverriden.add("writeArraySeparator");
-    methodsExpectedNotOverriden.add("writeArrayCloser");
-    methodsExpectedNotOverriden.add("public default void org.apache.solr.common.util.JsonTextWriter.writeMap(org.apache.solr.common.MapWriter) throws java.io.IOException");
-    methodsExpectedNotOverriden.add("public default void org.apache.solr.common.util.JsonTextWriter.writeIterator(org.apache.solr.common.IteratorWriter) throws java.io.IOException");
-    methodsExpectedNotOverriden.add("public default void org.apache.solr.common.util.JsonTextWriter.writeJsonIter(java.util.Iterator) throws java.io.IOException");
+    final List<String> methodsExpectedNotOverridden = new ArrayList<>(14);
+    methodsExpectedNotOverridden.add("writeResponse");
+    methodsExpectedNotOverridden.add("writeKey");
+    methodsExpectedNotOverridden.add("writeNamedListAsMapMangled");
+    methodsExpectedNotOverridden.add("writeNamedListAsMapWithDups");
+    methodsExpectedNotOverridden.add("writeNamedListAsArrMap");
+    methodsExpectedNotOverridden.add("writeNamedListAsArrArr");
+    methodsExpectedNotOverridden.add("writeNamedListAsFlat");
+    methodsExpectedNotOverridden.add("writeEndDocumentList");
+    methodsExpectedNotOverridden.add("writeMapOpener");
+    methodsExpectedNotOverridden.add("writeMapSeparator");
+    methodsExpectedNotOverridden.add("writeMapCloser");
+    methodsExpectedNotOverridden.add(
+        "public default void org.apache.solr.common.util.JsonTextWriter.writeArray(java.lang.String,java.util.List,boolean) throws java.io.IOException");
+    methodsExpectedNotOverridden.add("writeArrayOpener");
+    methodsExpectedNotOverridden.add("writeArraySeparator");
+    methodsExpectedNotOverridden.add("writeArrayCloser");
+    methodsExpectedNotOverridden.add(
+        "public default void org.apache.solr.common.util.JsonTextWriter.writeMap(org.apache.solr.common.MapWriter) throws java.io.IOException");
+    methodsExpectedNotOverridden.add(
+        "public default void org.apache.solr.common.util.JsonTextWriter.writeIterator(org.apache.solr.common.IteratorWriter) throws java.io.IOException");
+    methodsExpectedNotOverridden.add(
+        "public default void org.apache.solr.common.util.JsonTextWriter.writeJsonIter(java.util.Iterator,boolean) throws java.io.IOException");
 
     final Class<?> subClass = JSONResponseWriter.ArrayOfNameTypeValueJSONWriter.class;
     final Class<?> superClass = subClass.getSuperclass();
 
     List<Method> allSuperClassMethods = new ArrayList<>();
     for (Method method : superClass.getDeclaredMethods()) allSuperClassMethods.add(method);
-    for (Method method : JsonTextWriter.class.getDeclaredMethods()) allSuperClassMethods.add(method);
-
+    for (Method method : JsonTextWriter.class.getDeclaredMethods())
+      allSuperClassMethods.add(method);
 
     for (final Method superClassMethod : allSuperClassMethods) {
       final String methodName = superClassMethod.getName();
@@ -231,29 +236,35 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
       if (Modifier.isStatic(modifiers)) continue;
       if (Modifier.isPrivate(modifiers)) continue;
 
-      final boolean expectOverriden = !methodsExpectedNotOverriden.contains(methodName)
-          && !methodsExpectedNotOverriden.contains(methodFullName);
+      final boolean expectOverridden =
+          !methodsExpectedNotOverridden.contains(methodName)
+              && !methodsExpectedNotOverridden.contains(methodFullName);
 
       try {
         final Method subClassMethod = getDeclaredMethodInClasses(superClassMethod, subClass);
-        if (expectOverriden) {
-          assertEquals("getReturnType() difference",
+        if (expectOverridden) {
+          assertEquals(
+              "getReturnType() difference",
               superClassMethod.getReturnType(),
               subClassMethod.getReturnType());
         } else {
           fail(subClass + " must not override '" + superClassMethod + "'");
         }
       } catch (NoSuchMethodException e) {
-        if (expectOverriden) {
+        if (expectOverridden) {
           fail(subClass + " needs to override '" + superClassMethod + "'");
         } else {
-          assertTrue(methodName+" not found in remaining "+methodsExpectedNotOverriden, methodsExpectedNotOverriden.remove(methodName)|| methodsExpectedNotOverriden.remove(methodFullName));
+          assertTrue(
+              methodName + " not found in remaining " + methodsExpectedNotOverridden,
+              methodsExpectedNotOverridden.remove(methodName)
+                  || methodsExpectedNotOverridden.remove(methodFullName));
         }
       }
     }
 
-    assertTrue("methodsExpected NotOverriden but NotFound instead: "+methodsExpectedNotOverriden,
-        methodsExpectedNotOverriden.isEmpty());
+    assertTrue(
+        "methodsExpected NotOverridden but NotFound instead: " + methodsExpectedNotOverridden,
+        methodsExpectedNotOverridden.isEmpty());
   }
 
   @Test
@@ -266,30 +277,31 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
       // only own private method of its own
       if (subClassMethod.getName().equals("ifNeededWriteTypeAndValueKey")) continue;
       try {
-        final Method superClassMethod = getDeclaredMethodInClasses( subClassMethod,superClass, JsonTextWriter.class);
+        final Method superClassMethod =
+            getDeclaredMethodInClasses(subClassMethod, superClass, JsonTextWriter.class);
 
-          assertEquals("getReturnType() difference",
-              subClassMethod.getReturnType(),
-              superClassMethod.getReturnType());
+        assertEquals(
+            "getReturnType() difference",
+            subClassMethod.getReturnType(),
+            superClassMethod.getReturnType());
       } catch (NoSuchMethodException e) {
-          fail(subClass + " should not have '" + subClassMethod + "' method of its own");
+        fail(subClass + " should not have '" + subClassMethod + "' method of its own");
       }
     }
   }
 
-  private Method getDeclaredMethodInClasses(Method subClassMethod, Class<?>... classes) throws NoSuchMethodException {
+  private Method getDeclaredMethodInClasses(Method subClassMethod, Class<?>... classes)
+      throws NoSuchMethodException {
     for (int i = 0; i < classes.length; i++) {
       Class<?> klass = classes[i];
       try {
         return klass.getDeclaredMethod(
-            subClassMethod.getName(),
-            subClassMethod.getParameterTypes());
+            subClassMethod.getName(), subClassMethod.getParameterTypes());
       } catch (NoSuchMethodException e) {
-        if(i==classes.length-1) throw e;
+        if (i == classes.length - 1) throw e;
       }
     }
-    throw new  NoSuchMethodException(subClassMethod.toString());
-
+    throw new NoSuchMethodException(subClassMethod.toString());
   }
 
   @Test
@@ -302,5 +314,4 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
     assertEquals("arrntv", JSONWriter.JSON_NL_ARROFNTV);
     assertEquals("json.wrf", JSONWriter.JSON_WRAPPER_FUNCTION);
   }
-
 }

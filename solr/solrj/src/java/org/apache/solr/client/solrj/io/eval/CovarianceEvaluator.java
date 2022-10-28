@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.List;
-
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.stat.correlation.Covariance;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
@@ -26,37 +25,39 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class CovarianceEvaluator extends RecursiveObjectEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
-  
-  public CovarianceEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+
+  public CovarianceEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
-  public Object doWork(Object ... values) throws IOException{
+  public Object doWork(Object... values) throws IOException {
 
-    if(values.length == 2) {
+    if (values.length == 2) {
       Object first = values[0];
       Object second = values[1];
       Covariance covariance = new Covariance();
 
       return covariance.covariance(
-          ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
-          ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
-      );
-    } else if(values.length == 1) {
+          ((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
+          ((List<?>) second)
+              .stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray());
+    } else if (values.length == 1) {
       Matrix matrix = (Matrix) values[0];
       double[][] data = matrix.getData();
       Covariance covariance = new Covariance(data, true);
       RealMatrix coMatrix = covariance.getCovarianceMatrix();
       double[][] coData = coMatrix.getData();
       Matrix realMatrix = new Matrix(coData);
-      List<String> labels = CorrelationEvaluator.getColumnLabels(matrix.getColumnLabels(), coData.length);
+      List<String> labels =
+          CorrelationEvaluator.getColumnLabels(matrix.getColumnLabels(), coData.length);
       realMatrix.setColumnLabels(labels);
       realMatrix.setRowLabels(labels);
       return realMatrix;
     } else {
-      throw new IOException("The cov function expects either two numeric arrays or a matrix as parameters.");
+      throw new IOException(
+          "The cov function expects either two numeric arrays or a matrix as parameters.");
     }
   }
 }

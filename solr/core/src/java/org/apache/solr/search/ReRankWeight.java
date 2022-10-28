@@ -17,7 +17,6 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FilterWeight;
@@ -26,23 +25,23 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Rescorer;
 import org.apache.lucene.search.Weight;
 
-/**
- * A {@code Weight} used by reranking queries.
- */
+/** A {@code Weight} used by reranking queries. */
 public class ReRankWeight extends FilterWeight {
 
-  final private IndexSearcher searcher;
-  final private Rescorer reRankQueryRescorer;
+  private final IndexSearcher searcher;
+  private final Rescorer reRankQueryRescorer;
 
-  public ReRankWeight(Query mainQuery, Rescorer reRankQueryRescorer, IndexSearcher searcher, Weight mainWeight) throws IOException {
+  public ReRankWeight(
+      Query mainQuery, Rescorer reRankQueryRescorer, IndexSearcher searcher, Weight mainWeight)
+      throws IOException {
     super(mainQuery, mainWeight);
     this.searcher = searcher;
     this.reRankQueryRescorer = reRankQueryRescorer;
   }
 
+  @Override
   public Explanation explain(LeafReaderContext context, int doc) throws IOException {
     final Explanation mainExplain = in.explain(context, doc);
-    return reRankQueryRescorer.explain(searcher, mainExplain, context.docBase+doc);
+    return reRankQueryRescorer.explain(searcher, mainExplain, context.docBase + doc);
   }
-
 }

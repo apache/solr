@@ -22,28 +22,26 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * This is a simple test to make sure the unique key is not required 
- * when it is specified as 'false' 
- * 
- * It needs its own file so it can load a special schema file
+ * This is a simple test to make sure the unique key is not required when it is specified as 'false'
+ *
+ * <p>It needs its own file so it can load a special schema file
  */
 public class NotRequiredUniqueKeyTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    System.setProperty("enable.update.log", "false"); // usecase doesn't work with updateLog
-    initCore("solrconfig.xml","schema-not-required-unique-key.xml");
+    System.setProperty("enable.update.log", "false"); // use case doesn't work with updateLog
+    initCore("solrconfig.xml", "schema-not-required-unique-key.xml");
   }
 
   @Test
-  public void testSchemaLoading() 
-  {
+  public void testSchemaLoading() {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getLatestSchema();
     SchemaField uniqueKey = schema.getUniqueKeyField();
-    
-    assertFalse( uniqueKey.isRequired() );
-    
-    assertFalse( schema.getRequiredFields().contains( uniqueKey ) );
+
+    assertFalse(uniqueKey.isRequired());
+
+    assertFalse(schema.getRequiredFields().contains(uniqueKey));
   }
 }

@@ -16,13 +16,12 @@
  */
 package org.apache.solr.core;
 
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.Map;
-
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
-import com.google.common.collect.ImmutableMap;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -35,9 +34,7 @@ import org.junit.rules.TestRule;
 
 public class TestConfigSetProperties extends SolrTestCaseJ4 {
 
-  @Rule
-  public TestRule testRule = RuleChain.outerRule(new SystemPropertiesRestoreRule());
-  
+  @Rule public TestRule testRule = RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   @Test
   public void testNoConfigSetPropertiesFile() throws Exception {
@@ -45,41 +42,43 @@ public class TestConfigSetProperties extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testEmptyConfigSetProperties() throws Exception {
-    SolrException thrown = expectThrows(SolrException.class, () -> {
-      createConfigSetProps("");
-    });
+  public void testEmptyConfigSetProperties() {
+    SolrException thrown =
+        expectThrows(
+            SolrException.class,
+            () -> {
+              createConfigSetProps("");
+            });
     assertEquals(ErrorCode.SERVER_ERROR.code, thrown.code());
   }
 
   @Test
-  public void testConfigSetPropertiesNotMap() throws Exception {
-    SolrException thrown = expectThrows(SolrException.class, () -> {
-      createConfigSetProps(Utils.toJSONString(new String[] {"test"}));
-    });
+  public void testConfigSetPropertiesNotMap() {
+    SolrException thrown =
+        expectThrows(
+            SolrException.class,
+            () -> {
+              createConfigSetProps(Utils.toJSONString(new String[] {"test"}));
+            });
     assertEquals(ErrorCode.SERVER_ERROR.code, thrown.code());
   }
 
   @Test
   public void testEmptyMap() throws Exception {
-    @SuppressWarnings({"rawtypes"})
-    NamedList list = createConfigSetProps(Utils.toJSONString(ImmutableMap.of()));
+    NamedList<?> list = createConfigSetProps(Utils.toJSONString(Collections.emptyMap()));
     assertEquals(0, list.size());
   }
 
   @Test
   public void testMultipleProps() throws Exception {
-    @SuppressWarnings({"rawtypes"})
-    Map map = ImmutableMap.of("immutable", "true", "someOtherProp", "true");
-    @SuppressWarnings({"rawtypes"})
-    NamedList list = createConfigSetProps(Utils.toJSONString(map));
+    Map<String, String> map = Map.of("immutable", "true", "someOtherProp", "true");
+    NamedList<?> list = createConfigSetProps(Utils.toJSONString(map));
     assertEquals(2, list.size());
     assertEquals("true", list.get("immutable"));
     assertEquals("true", list.get("someOtherProp"));
   }
 
-  @SuppressWarnings({"rawtypes"})
-  private NamedList createConfigSetProps(String props) throws Exception {
+  private NamedList<Object> createConfigSetProps(String props) throws Exception {
     Path testDirectory = createTempDir();
     String filename = "configsetprops.json";
     if (props != null) {

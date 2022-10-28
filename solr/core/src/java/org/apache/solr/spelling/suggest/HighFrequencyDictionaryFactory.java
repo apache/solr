@@ -22,31 +22,28 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.spelling.SolrSpellChecker;
 
-/**
- * Factory for {@link HighFrequencyDictionary}
- */
+/** Factory for {@link HighFrequencyDictionary} */
 public class HighFrequencyDictionaryFactory extends DictionaryFactory {
-    /**
-   * Minimum frequency of terms to consider when building the dictionary.
-   */
+  /** Minimum frequency of terms to consider when building the dictionary. */
   public static final String THRESHOLD_TOKEN_FREQUENCY = "threshold";
 
   @Override
   public Dictionary create(SolrCore core, SolrIndexSearcher searcher) {
-    if(params == null) {
+    if (params == null) {
       // should not happen; implies setParams was not called
       throw new IllegalStateException("Value of params not set");
     }
-    String field = (String)params.get(SolrSpellChecker.FIELD);
-    
+    String field = (String) params.get(SolrSpellChecker.FIELD);
+
     if (field == null) {
       throw new IllegalArgumentException(SolrSpellChecker.FIELD + " is a mandatory parameter");
     }
-    
-    float threshold = params.get(THRESHOLD_TOKEN_FREQUENCY) == null ? 0.0f
-        : (Float)params.get(THRESHOLD_TOKEN_FREQUENCY);
-    
+
+    float threshold =
+        params.get(THRESHOLD_TOKEN_FREQUENCY) == null
+            ? 0.0f
+            : (Float) params.get(THRESHOLD_TOKEN_FREQUENCY);
+
     return new HighFrequencyDictionary(searcher.getIndexReader(), field, threshold);
   }
-  
 }

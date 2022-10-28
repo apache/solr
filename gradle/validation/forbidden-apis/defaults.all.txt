@@ -22,6 +22,22 @@ java.util.concurrent.Executors#newScheduledThreadPool(int)
 java.util.concurrent.Executors#defaultThreadFactory()
 java.util.concurrent.Executors#privilegedThreadFactory()
 
+@defaultMessage Spawns threads without MDC logging context; use ExecutorUtil.newMDCAwareFixedThreadPool instead
+java.util.concurrent.Executors#newFixedThreadPool(int,java.util.concurrent.ThreadFactory)
+
+@defaultMessage Spawns threads without MDC logging context; use ExecutorUtil.newMDCAwareSingleThreadExecutor instead
+java.util.concurrent.Executors#newSingleThreadExecutor(java.util.concurrent.ThreadFactory)
+
+@defaultMessage Spawns threads without MDC logging context; use ExecutorUtil.newMDCAwareCachedThreadPool instead
+java.util.concurrent.Executors#newCachedThreadPool(java.util.concurrent.ThreadFactory)
+
+@defaultMessage Use ExecutorUtil.MDCAwareThreadPoolExecutor instead of ThreadPoolExecutor
+java.util.concurrent.ThreadPoolExecutor#<init>(**)
+
+@defaultMessage Must specify an explicit executor to run async tasks so that we have named threads
+java.util.concurrent.CompletableFuture#runAsync(java.lang.Runnable)
+java.util.concurrent.CompletableFuture#supplyAsync(java.util.function.Supplier)
+
 @defaultMessage Properties files should be read/written with Reader/Writer, using UTF-8 charset. This allows reading older files with unicode escapes, too.
 java.util.Properties#load(java.io.InputStream)
 java.util.Properties#save(java.io.OutputStream,java.lang.String)
@@ -42,22 +58,14 @@ java.util.Locale#forLanguageTag(java.lang.String) @ use new Locale.Builder().set
 java.util.Locale#toString() @ use Locale#toLanguageTag() for a standardized BCP47 locale name
 
 @defaultMessage Constructors for wrapper classes of Java primitives should be avoided in favor of the public static methods available or autoboxing
-java.lang.Integer#<init>(int)
-java.lang.Integer#<init>(java.lang.String)
-java.lang.Byte#<init>(byte)
-java.lang.Byte#<init>(java.lang.String)
-java.lang.Short#<init>(short)
-java.lang.Short#<init>(java.lang.String)
-java.lang.Long#<init>(long)
-java.lang.Long#<init>(java.lang.String)
-java.lang.Boolean#<init>(boolean)
-java.lang.Boolean#<init>(java.lang.String)
-java.lang.Character#<init>(char)
-java.lang.Float#<init>(float)
-java.lang.Float#<init>(double)
-java.lang.Float#<init>(java.lang.String)
-java.lang.Double#<init>(double)
-java.lang.Double#<init>(java.lang.String)
+java.lang.Integer#<init>(**)
+java.lang.Byte#<init>(**)
+java.lang.Short#<init>(**)
+java.lang.Long#<init>(**)
+java.lang.Boolean#<init>(**)
+java.lang.Character#<init>(**)
+java.lang.Float#<init>(**)
+java.lang.Double#<init>(**)
 
 @defaultMessage Java deserialization is unsafe when the data is untrusted. The java developer is powerless: no checks or casts help, exploitation can happen in places such as clinit or finalize!
 java.io.ObjectInputStream
@@ -66,3 +74,12 @@ java.io.ObjectOutputStream
 @defaultMessage Don't set a dictionary on a Deflater using a method that takes an offset or ByteBuffer (JDK-8252739)
 java.util.zip.Deflater#setDictionary(byte[],int,int)
 java.util.zip.Deflater#setDictionary(java.nio.ByteBuffer)
+
+@defaultMessage Use RTimer/TimeOut/System.nanoTime for time comparisons, and `new Date()` output/debugging/stats of timestamps. If for some miscellaneous reason, you absolutely need to use this, use a SuppressForbidden.
+java.lang.System#currentTimeMillis()
+
+@defaultMessage Use slf4j classes instead
+java.util.logging.**
+
+@defaultMessage Use List.sort(Comparator) instead of Collections.sort(List, Comparator) please.
+java.util.Collections#sort(java.util.List, java.util.Comparator)

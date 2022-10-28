@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.io.SolrClientCache;
@@ -46,9 +45,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Report low-level details of collection.
- */
+/** Report low-level details of collection. */
 public class ColStatus {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -60,9 +57,12 @@ public class ColStatus {
   public static final String FIELD_INFO_PROP = SegmentsInfoRequestHandler.FIELD_INFO_PARAM;
   public static final String SIZE_INFO_PROP = SegmentsInfoRequestHandler.SIZE_INFO_PARAM;
   public static final String RAW_SIZE_PROP = SegmentsInfoRequestHandler.RAW_SIZE_PARAM;
-  public static final String RAW_SIZE_SUMMARY_PROP = SegmentsInfoRequestHandler.RAW_SIZE_SUMMARY_PARAM;
-  public static final String RAW_SIZE_DETAILS_PROP = SegmentsInfoRequestHandler.RAW_SIZE_DETAILS_PARAM;
-  public static final String RAW_SIZE_SAMPLING_PERCENT_PROP = SegmentsInfoRequestHandler.RAW_SIZE_SAMPLING_PERCENT_PARAM;
+  public static final String RAW_SIZE_SUMMARY_PROP =
+      SegmentsInfoRequestHandler.RAW_SIZE_SUMMARY_PARAM;
+  public static final String RAW_SIZE_DETAILS_PROP =
+      SegmentsInfoRequestHandler.RAW_SIZE_DETAILS_PARAM;
+  public static final String RAW_SIZE_SAMPLING_PERCENT_PROP =
+      SegmentsInfoRequestHandler.RAW_SIZE_SAMPLING_PERCENT_PARAM;
   public static final String SEGMENTS_PROP = "segments";
 
   public ColStatus(SolrClientCache solrClientCache, ClusterState clusterState, ZkNodeProps props) {
@@ -76,7 +76,7 @@ public class ColStatus {
     Collection<String> collections;
     String col = props.getStr(ZkStateReader.COLLECTION_PROP);
     if (col == null) {
-      collections = new HashSet<>(clusterState.getCollectionsMap().keySet());
+      collections = new HashSet<>(clusterState.getCollectionStates().keySet());
     } else {
       collections = Collections.singleton(col);
     }
@@ -88,7 +88,8 @@ public class ColStatus {
     boolean withRawSizeSummary = props.getBool(RAW_SIZE_SUMMARY_PROP, false);
     boolean withRawSizeDetails = props.getBool(RAW_SIZE_DETAILS_PROP, false);
     Object samplingPercentVal = props.get(RAW_SIZE_SAMPLING_PERCENT_PROP);
-    Float samplingPercent = samplingPercentVal != null ? Float.parseFloat(String.valueOf(samplingPercentVal)) : null;
+    Float samplingPercent =
+        samplingPercentVal != null ? Float.parseFloat(String.valueOf(samplingPercentVal)) : null;
     if (withRawSizeSummary || withRawSizeDetails) {
       withRawSizeInfo = true;
     }
@@ -123,7 +124,7 @@ public class ColStatus {
         int recoveryFailedReplicas = 0;
         for (Replica r : s.getReplicas()) {
           // replica may still be marked as ACTIVE even though its node is no longer live
-          if (! r.isActive(clusterState.getLiveNodes())) {
+          if (!r.isActive(clusterState.getLiveNodes())) {
             downReplicas++;
             continue;
           }
@@ -148,7 +149,9 @@ public class ColStatus {
         replicaMap.add("recovering", recoveringReplicas);
         replicaMap.add("recovery_failed", recoveryFailedReplicas);
         sliceMap.add("state", s.getState().toString());
-        sliceMap.add("range", s.getRange().toString());
+        if (s.getRange() != null) {
+          sliceMap.add("range", s.getRange().toString());
+        }
         Map<String, RoutingRule> rules = s.getRoutingRules();
         if (rules != null && !rules.isEmpty()) {
           sliceMap.add("routingRules", rules);
@@ -169,6 +172,9 @@ public class ColStatus {
           continue;
         }
         String url = ZkCoreNodeProps.getCoreUrl(leader);
+        if (url == null) {
+          continue;
+        }
         try (SolrClient client = solrClientCache.getHttpSolrClient(url)) {
           ModifiableSolrParams params = new ModifiableSolrParams();
           params.add(CommonParams.QT, "/admin/segments");
@@ -185,20 +191,21 @@ public class ColStatus {
           NamedList<Object> rsp = client.request(req);
           rsp.remove("responseHeader");
           leaderMap.add("segInfos", rsp);
-          NamedList<Object> segs = (NamedList<Object>)rsp.get("segments");
+          NamedList<?> segs = (NamedList<?>) rsp.get("segments");
           if (segs != null) {
-            for (Map.Entry<String, Object> entry : segs) {
-              NamedList<Object> fields = (NamedList<Object>)((NamedList<Object>)entry.getValue()).get("fields");
+            for (Map.Entry<String, ?> entry : segs) {
+              NamedList<Object> fields =
+                  (NamedList<Object>) ((NamedList<Object>) entry.getValue()).get("fields");
               if (fields != null) {
                 for (Map.Entry<String, Object> fEntry : fields) {
-                  Object nc = ((NamedList<Object>)fEntry.getValue()).get("nonCompliant");
+                  Object nc = ((NamedList<Object>) fEntry.getValue()).get("nonCompliant");
                   if (nc != null) {
                     nonCompliant.add(fEntry.getKey());
                   }
                 }
               }
               if (!withFieldInfo) {
-                ((NamedList<Object>)entry.getValue()).remove("fields");
+                ((NamedList<Object>) entry.getValue()).remove("fields");
               }
             }
           }

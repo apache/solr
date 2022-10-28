@@ -17,19 +17,11 @@
 
 package org.apache.solr.cloud;
 
-import java.util.Map;
-
+import java.util.Collections;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.Utils;
-import org.apache.zookeeper.KeeperException;
+import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.common.params.CommonParams.COLLECTIONS_HANDLER_PATH;
 
 public class OverseerModifyCollectionTest extends SolrCloudTestCase {
 
@@ -49,33 +41,28 @@ public class OverseerModifyCollectionTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collName, "conf1", 1, 2)
         .process(cluster.getSolrClient());
 
-    // TODO create a modifyCollection() method on CollectionAdminRequest
-    ModifiableSolrParams p1 = new ModifiableSolrParams();
-    p1.add("collection", collName);
-    p1.add("action", "MODIFYCOLLECTION");
-    p1.add("collection.configName", "conf2");
-    cluster.getSolrClient().request(new GenericSolrRequest(POST, COLLECTIONS_HANDLER_PATH, p1));
+    // Modify configSet
+    RequestStatusState requestStatusState =
+        CollectionAdminRequest.modifyCollection(
+                collName, Collections.singletonMap("collection.configName", "conf2"))
+            .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+    assertEquals(requestStatusState, RequestStatusState.COMPLETED);
 
-    assertEquals("conf2", getConfigNameFromZk(collName));
-    
-    //Try an invalid config name
-    ModifiableSolrParams p2 = new ModifiableSolrParams();
-    p2.add("collection", collName);
-    p2.add("action", "MODIFYCOLLECTION");
-    p2.add("collection.configName", "notARealConfigName");
-    Exception e = expectThrows(Exception.class, () -> {
-      cluster.getSolrClient().request(new GenericSolrRequest(POST, COLLECTIONS_HANDLER_PATH, p2));
-    });
+    String configName =
+        cluster.getSolrClient().getClusterStateProvider().getCollection(collName).getConfigName();
+    assertEquals("conf2", configName);
+
+    // Try an invalid config name
+    Exception e =
+        expectThrows(
+            Exception.class,
+            () -> {
+              CollectionAdminRequest.modifyCollection(
+                      collName,
+                      Collections.singletonMap("collection.configName", "notARealConfigName"))
+                  .process(cluster.getSolrClient());
+            });
 
     assertTrue(e.getMessage(), e.getMessage().contains("Can not find the specified config set"));
-
   }
-  
-  private String getConfigNameFromZk(String collName) throws KeeperException, InterruptedException {
-    byte[] b = zkClient().getData(ZkStateReader.getCollectionPathRoot(collName), null, null, false);
-    @SuppressWarnings({"rawtypes"})
-    Map confData = (Map) Utils.fromJSON(b);
-    return (String) confData.get(ZkController.CONFIGNAME_PROP); 
-  }
-
 }

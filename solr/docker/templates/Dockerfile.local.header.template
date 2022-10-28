@@ -1,0 +1,45 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#-#
+#-# This template is used as the header of "local" Apache Solr Dockerfiles.
+#-#
+#-# #######################################################################
+#-#
+# This file can be used to build an (unofficial) Docker image of Apache Solr.
+#
+# The primary purpose of this file, is for use by Solr developers, with a java/gradle development env, who
+# wish to build customized -- or "patched" docker images of Solr.  For this type of usecase, this file
+# will be used automatically by gradle to build docker images from your local src.
+#   Example:
+#     ./gradlew dockerBuild
+#
+# For most Solr users, using this Dockerfile is not recommended: pre-built docker images of Solr are 
+# available at https://hub.docker.com/_/solr -- however this file can be used to build docker images from
+# a Solr release artifact -- either from a remote TGZ file, or from an TGZ artifact you have downloaded
+# locally.
+#    Example:
+#      docker build -f solr-X.Y.Z/docker/Dockerfile https://www.apache.org/dyn/closer.lua/solr/X.Y.Z/solr-X.Y.Z.tgz
+#    Example:
+#      docker build -f solr-X.Y.Z/docker/Dockerfile - < solr-X.Y.Z.tgz
+
+
+ARG BASE_IMAGE=_REPLACE_BASE_IMAGE_
+
+FROM $BASE_IMAGE
+
+COPY / /opt/
+
+ARG SOLR_VERSION="_REPLACE_SOLR_VERSION_"

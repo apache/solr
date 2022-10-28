@@ -16,32 +16,40 @@
  */
 package org.apache.solr.client.solrj.beans;
 
-import org.apache.solr.common.SolrDocumentList;
+import java.lang.reflect.AccessibleObject;
+import java.lang.reflect.Array;
+import java.lang.reflect.GenericArrayType;
+import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.nio.ByteBuffer;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.SuppressForbidden;
 
-import java.lang.reflect.*;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
-import java.util.*;
-import java.util.regex.Pattern;
-import java.util.concurrent.ConcurrentHashMap;
-import java.nio.ByteBuffer;
-
 /**
  * A class to map objects to and from solr documents.
- *
  *
  * @since solr 1.3
  */
 public class DocumentObjectBinder {
 
-  @SuppressWarnings({"rawtypes"})
-  private final Map<Class, List<DocField>> infocache = new ConcurrentHashMap<>();
+  private final Map<Class<?>, List<DocField>> infocache = new ConcurrentHashMap<>();
 
-  public DocumentObjectBinder() {
-  }
+  public DocumentObjectBinder() {}
 
   public <T> List<T> getBeans(Class<T> clazz, SolrDocumentList solrDocList) {
     List<DocField> fields = getDocFields(clazz);
@@ -81,9 +89,9 @@ public class DocumentObjectBinder {
 
     SolrInputDocument doc = new SolrInputDocument();
     for (DocField field : fields) {
-      if (field.dynamicFieldNamePatternMatcher != null &&
-          field.get(obj) != null &&
-          field.isContainedInMap) {
+      if (field.dynamicFieldNamePatternMatcher != null
+          && field.get(obj) != null
+          && field.isContainedInMap) {
         @SuppressWarnings({"unchecked"})
         Map<String, Object> mapValue = (Map<String, Object>) field.get(obj);
 
@@ -105,8 +113,7 @@ public class DocumentObjectBinder {
     Object val = field.get(obj);
     if (val == null) return;
     if (val instanceof Collection) {
-      @SuppressWarnings({"rawtypes"})
-      Collection collection = (Collection) val;
+      Collection<?> collection = (Collection<?>) val;
       for (Object o : collection) {
         SolrInputDocument child = toSolrInputDocument(o);
         doc.addChildDocument(child);
@@ -119,10 +126,10 @@ public class DocumentObjectBinder {
     }
   }
 
-  private List<DocField> getDocFields(@SuppressWarnings({"rawtypes"})Class clazz) {
+  private List<DocField> getDocFields(Class<?> clazz) {
     List<DocField> fields = infocache.get(clazz);
     if (fields == null) {
-      synchronized(infocache) {
+      synchronized (infocache) {
         infocache.put(clazz, fields = collectInfo(clazz));
       }
     }
@@ -130,10 +137,9 @@ public class DocumentObjectBinder {
   }
 
   @SuppressForbidden(reason = "Needs access to possibly private @Field annotated fields/methods")
-  private List<DocField> collectInfo(@SuppressWarnings({"rawtypes"})Class clazz) {
+  private List<DocField> collectInfo(Class<?> clazz) {
     List<DocField> fields = new ArrayList<>();
-    @SuppressWarnings({"rawtypes"})
-    Class superClazz = clazz;
+    Class<?> superClazz = clazz;
     List<AccessibleObject> members = new ArrayList<>();
 
     while (superClazz != null && superClazz != Object.class) {
@@ -144,11 +150,17 @@ public class DocumentObjectBinder {
     boolean childFieldFound = false;
     for (AccessibleObject member : members) {
       if (member.isAnnotationPresent(Field.class)) {
-        AccessController.doPrivileged((PrivilegedAction<Void>) () -> { member.setAccessible(true); return null; });
+        AccessController.doPrivileged(
+            (PrivilegedAction<Void>)
+                () -> {
+                  member.setAccessible(true);
+                  return null;
+                });
         DocField df = new DocField(member);
         if (df.child != null) {
           if (childFieldFound)
-            throw new BindingException(clazz.getName() + " cannot have more than one Field with child=true");
+            throw new BindingException(
+                clazz.getName() + " cannot have more than one Field with child=true");
           childFieldFound = true;
         }
         fields.add(df);
@@ -163,8 +175,7 @@ public class DocumentObjectBinder {
     private java.lang.reflect.Field field;
     private Method setter;
     private Method getter;
-    @SuppressWarnings({"rawtypes"})
-    private Class type;
+    private Class<?> type;
     private boolean isArray;
     private boolean isList;
     private List<DocField> child;
@@ -200,7 +211,7 @@ public class DocumentObjectBinder {
               gname = "is" + setter.getName().substring(3);
               try {
                 getter = setter.getDeclaringClass().getMethod(gname, (Class[]) null);
-              } catch(Exception ex2) {
+              } catch (Exception ex2) {
                 // no getter -- don't worry about it...
               }
             }
@@ -221,11 +232,13 @@ public class DocumentObjectBinder {
             name = setter.getName();
           }
         }
-      } else if (annotation.value().indexOf('*') >= 0) { //dynamic fields are annotated as @Field("categories_*")
-        //if the field was annotated as a dynamic field, convert the name into a pattern
-        //the wildcard (*) is supposed to be either a prefix or a suffix, hence the use of replaceFirst
+      } else if (annotation.value().indexOf('*') >= 0) {
+        // dynamic fields are annotated as @Field("categories_*")
+        // if the field was annotated as a dynamic field, convert the name into a pattern
+        // the wildcard (*) is supposed to be either a prefix or a suffix, hence the use of
+        // replaceFirst
         name = annotation.value().replaceFirst("\\*", "\\.*");
-        dynamicFieldNamePatternMatcher = Pattern.compile("^"+name+"$");
+        dynamicFieldNamePatternMatcher = Pattern.compile("^" + name + "$");
       } else {
         name = annotation.value();
       }
@@ -235,11 +248,14 @@ public class DocumentObjectBinder {
       if (field != null) {
         type = field.getType();
       } else {
-        @SuppressWarnings({"rawtypes"})
-        Class[] params = setter.getParameterTypes();
+        Class<?>[] params = setter.getParameterTypes();
         if (params.length != 1) {
-          throw new BindingException("Invalid setter method (" + setter +
-              "). A setter must have one and only one parameter but we found " + params.length + " parameters.");
+          throw new BindingException(
+              "Invalid setter method ("
+                  + setter
+                  + "). A setter must have one and only one parameter but we found "
+                  + params.length
+                  + " parameters.");
         }
         type = params[0];
       }
@@ -252,7 +268,7 @@ public class DocumentObjectBinder {
           type = Object.class;
         }
       } else if (type == byte[].class) {
-        //no op
+        // no op
       } else if (type.isArray()) {
         isArray = true;
         if (annotation.child()) {
@@ -260,40 +276,49 @@ public class DocumentObjectBinder {
         } else {
           type = type.getComponentType();
         }
-      } else if (type == Map.class || type == HashMap.class) { //corresponding to the support for dynamicFields
-        if (annotation.child()) throw new BindingException("Map should is not a valid type for a child document");
+      } else if (type == Map.class
+          || type == HashMap.class) { // corresponding to the support for dynamicFields
+        if (annotation.child())
+          throw new BindingException("Map should is not a valid type for a child document");
         isContainedInMap = true;
-        //assigned a default type
+        // assigned a default type
         type = Object.class;
         if (field != null) {
           if (field.getGenericType() instanceof ParameterizedType) {
-            //check what are the generic values
+            // check what are the generic values
             ParameterizedType parameterizedType = (ParameterizedType) field.getGenericType();
             Type[] types = parameterizedType.getActualTypeArguments();
             if (types != null && types.length == 2 && types[0] == String.class) {
-              //the key should always be String
-              //Raw and primitive types
+              // the key should always be String
+              // Raw and primitive types
               if (types[1] instanceof Class) {
-                //the value could be multivalued then it is a List, Collection, ArrayList
-                if (types[1] == Collection.class || types[1] == List.class || types[1] == ArrayList.class) {
+                // the value could be multivalued then it is a List, Collection, ArrayList
+                if (types[1] == Collection.class
+                    || types[1] == List.class
+                    || types[1] == ArrayList.class) {
                   type = Object.class;
                   isList = true;
                 } else {
-                  //else assume it is a primitive and put in the source type itself
+                  // else assume it is a primitive and put in the source type itself
                   type = (Class) types[1];
                 }
-              } else if (types[1] instanceof ParameterizedType) { //Of all the Parameterized types, only List is supported
+              } else if (types[1]
+                  instanceof
+                  ParameterizedType) { // Of all the Parameterized types, only List is supported
                 Type rawType = ((ParameterizedType) types[1]).getRawType();
-                if (rawType == Collection.class || rawType == List.class || rawType == ArrayList.class) {
+                if (rawType == Collection.class
+                    || rawType == List.class
+                    || rawType == ArrayList.class) {
                   type = Object.class;
                   isList = true;
                 }
-              } else if (types[1] instanceof GenericArrayType) { //Array types
+              } else if (types[1] instanceof GenericArrayType) { // Array types
                 type = (Class) ((GenericArrayType) types[1]).getGenericComponentType();
                 isArray = true;
-              } else { //Throw an Exception if types are not known
-                throw new BindingException("Allowed type for values of mapping a dynamicField are : " +
-                    "Object, Object[] and List");
+              } else { // Throw an Exception if types are not known
+                throw new BindingException(
+                    "Allowed type for values of mapping a dynamicField are : "
+                        + "Object, Object[] and List");
               }
             }
           }
@@ -307,37 +332,37 @@ public class DocumentObjectBinder {
 
     private void populateChild(Type typ) {
       if (typ == null) {
-        throw new RuntimeException("no type information available for" + (field == null ? setter : field));
+        throw new RuntimeException(
+            "no type information available for" + (field == null ? setter : field));
       }
-      if (typ.getClass() == Class.class) {//of type class
+      if (typ.getClass() == Class.class) { // of type class
         type = (Class) typ;
       } else if (typ instanceof ParameterizedType) {
         try {
           type = Class.forName(((ParameterizedType) typ).getActualTypeArguments()[0].getTypeName());
         } catch (ClassNotFoundException e) {
-          throw new BindingException("Invalid type information available for" + (field == null ? setter : field));
+          throw new BindingException(
+              "Invalid type information available for" + (field == null ? setter : field));
         }
       } else {
-        throw new BindingException("Invalid type information available for" + (field == null ? setter : field));
-
+        throw new BindingException(
+            "Invalid type information available for" + (field == null ? setter : field));
       }
       child = getDocFields(type);
     }
 
     /**
-     * Called by the {@link #inject} method to read the value(s) for a field
-     * This method supports reading of all "matching" fieldName's in the <code>SolrDocument</code>
-     *
-     * Returns <code>SolrDocument.getFieldValue</code> for regular fields,
-     * and <code>Map<String, List<Object>></code> for a dynamic field. The key is all matching fieldName's.
+     * Called by the {@link #inject} method to read the value(s) for a field This method supports
+     * reading of all "matching" fieldName's in the {@link SolrDocument} Returns {@link
+     * SolrDocument#getFieldValue} for regular fields, and {@code Map<String, List<Object>>} for a
+     * dynamic field. The key is all matching fieldName's.
      */
-    @SuppressWarnings({"unchecked", "rawtypes"})
     private Object getFieldValue(SolrDocument solrDocument) {
       if (child != null) {
         List<SolrDocument> children = solrDocument.getChildDocuments();
         if (children == null || children.isEmpty()) return null;
         if (isList) {
-          ArrayList list = new ArrayList(children.size());
+          ArrayList<Object> list = new ArrayList<>(children.size());
           for (SolrDocument c : children) {
             list.add(getBean(type, child, c));
           }
@@ -355,7 +380,7 @@ public class DocumentObjectBinder {
       }
       Object fieldValue = solrDocument.getFieldValue(name);
       if (fieldValue != null) {
-        //this is not a dynamic field. so return the value
+        // this is not a dynamic field. so return the value
         return fieldValue;
       }
 
@@ -363,13 +388,13 @@ public class DocumentObjectBinder {
         return null;
       }
 
-      //reading dynamic field values
+      // reading dynamic field values
       Map<String, Object> allValuesMap = null;
-      List allValuesList = null;
+      List<Object> allValuesList = null;
       if (isContainedInMap) {
         allValuesMap = new HashMap<>();
       } else {
-        allValuesList = new ArrayList();
+        allValuesList = new ArrayList<>();
       }
 
       for (String field : solrDocument.getFieldNames()) {
@@ -382,7 +407,7 @@ public class DocumentObjectBinder {
           if (isContainedInMap) {
             if (isList) {
               if (!(val instanceof List)) {
-                List al = new ArrayList();
+                List<Object> al = new ArrayList<>();
                 al.add(val);
                 val = al;
               }
@@ -398,7 +423,7 @@ public class DocumentObjectBinder {
             allValuesMap.put(field, val);
           } else {
             if (val instanceof Collection) {
-              allValuesList.addAll((Collection) val);
+              allValuesList.addAll((Collection<?>) val);
             } else {
               allValuesList.add(val);
             }
@@ -412,40 +437,37 @@ public class DocumentObjectBinder {
       }
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     <T> void inject(T obj, SolrDocument sdoc) {
       Object val = getFieldValue(sdoc);
-      if(val == null) {
+      if (val == null) {
         return;
       }
 
       if (isArray && !isContainedInMap) {
-        List list;
+        List<?> list;
         if (val.getClass().isArray()) {
           set(obj, val);
           return;
         } else if (val instanceof List) {
-          list = (List) val;
+          list = (List<?>) val;
         } else {
-          list = new ArrayList();
-          list.add(val);
+          list = Collections.singletonList(val);
         }
         set(obj, list.toArray((Object[]) Array.newInstance(type, list.size())));
       } else if (isList && !isContainedInMap) {
         if (!(val instanceof List)) {
-          List list = new ArrayList();
+          List<Object> list = new ArrayList<>();
           list.add(val);
-          val =  list;
+          val = list;
         }
         set(obj, val);
       } else if (isContainedInMap) {
         if (val instanceof Map) {
-          set(obj,  val);
+          set(obj, val);
         }
       } else {
         set(obj, val);
       }
-
     }
 
     private void set(Object obj, Object v) {
@@ -458,9 +480,9 @@ public class DocumentObjectBinder {
         } else if (setter != null) {
           setter.invoke(obj, v);
         }
-      }
-      catch (Exception e) {
-        throw new BindingException("Exception while setting value : " + v + " on " + (field != null ? field : setter), e);
+      } catch (Exception e) {
+        throw new BindingException(
+            "Exception while setting value : " + v + " on " + (field != null ? field : setter), e);
       }
     }
 
@@ -472,7 +494,10 @@ public class DocumentObjectBinder {
           throw new BindingException("Exception while getting value: " + field, e);
         }
       } else if (getter == null) {
-        throw new BindingException("Missing getter for field: " + name + " -- You can only call the 'get' for fields that have a field of 'get' method");
+        throw new BindingException(
+            "Missing getter for field: "
+                + name
+                + " -- You can only call the 'get' for fields that have a field of 'get' method");
       }
 
       try {
@@ -482,5 +507,6 @@ public class DocumentObjectBinder {
       }
     }
   }
+
   public static final String DEFAULT = "#default";
 }

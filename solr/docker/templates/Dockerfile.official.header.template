@@ -1,0 +1,90 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#-#
+#-# This template is used as the header of "official" Apache Solr Dockerfiles.
+#-#
+#-# #######################################################################
+#-#
+
+FROM _REPLACE_BASE_IMAGE_
+
+# TODO: remove things that exist solely for downstream specialization since Dockerfile.local now exists for that
+
+ARG SOLR_VERSION="_REPLACE_SOLR_VERSION_"
+ARG SOLR_SHA512="_REPLACE_SOLR_TGZ_SHA_"
+ARG SOLR_KEYS="_REPLACE_RELEASE_MANAGER_GPG_FINGERPRINT_"
+
+# If specified, this will override SOLR_DOWNLOAD_SERVER and all ASF mirrors. Typically used downstream for custom builds
+ARG SOLR_DOWNLOAD_URL
+# TODO: That comment isn't strictly true, if SOLR_DOWNLOAD_URL fails, other mirrors will be attempted
+# TODO: see patch in SOLR-15250 for some example ideas on fixing this to be more strict
+
+# Override the default solr download location with a prefered mirror, e.g.:
+#   docker build -t mine --build-arg SOLR_DOWNLOAD_SERVER=https://downloads.apache.org/solr/solr .
+ARG SOLR_DOWNLOAD_SERVER
+
+# These should never be overridden except for the purposes of testing the Dockerfile before release
+ARG SOLR_CLOSER_URL="http://www.apache.org/dyn/closer.lua?action=download&filename=/solr/solr/$SOLR_VERSION/solr-$SOLR_VERSION.tgz"
+ARG SOLR_DIST_URL="https://www.apache.org/dist/solr/solr/$SOLR_VERSION/solr-$SOLR_VERSION.tgz"
+ARG SOLR_ARCHIVE_URL="https://archive.apache.org/dist/solr/solr/$SOLR_VERSION/solr-$SOLR_VERSION.tgz"
+
+RUN set -ex; \
+  apt-get update; \
+  apt-get -y install wget gpg dirmngr; \
+  rm -rf /var/lib/apt/lists/*; \
+  export GNUPGHOME="/tmp/gnupg_home"; \
+  mkdir -p "$GNUPGHOME"; \
+  chmod 700 "$GNUPGHOME"; \
+  echo "disable-ipv6" >> "$GNUPGHOME/dirmngr.conf"; \
+  if [ -n "$SOLR_KEYS" ]; then \
+    # Install all Solr GPG Keys to start
+    wget -nv "https://downloads.apache.org/solr/KEYS" -O- | \
+      gpg --batch --import --key-origin 'url,https://downloads.apache.org/solr/KEYS'; \
+    # Save just the release key
+    release_keys="$(gpg --batch --export -a ${SOLR_KEYS})"; \
+    rm -rf "$GNUPGHOME"/*; \
+    echo "${release_keys}" | gpg --batch --import; \
+  fi; \
+  MAX_REDIRECTS=3; \
+  if [ -n "$SOLR_DOWNLOAD_URL" ]; then \
+    # If a custom URL is defined, we download from non-ASF mirror URL and allow more redirects and skip GPG step
+    # This takes effect only if the SOLR_DOWNLOAD_URL build-arg is specified, typically in downstream Dockerfiles
+    MAX_REDIRECTS=4; \
+    SKIP_GPG_CHECK=true; \
+  elif [ -n "$SOLR_DOWNLOAD_SERVER" ]; then \
+    SOLR_DOWNLOAD_URL="$SOLR_DOWNLOAD_SERVER/$SOLR_VERSION/solr-$SOLR_VERSION.tgz"; \
+  fi; \
+  for url in $SOLR_DOWNLOAD_URL $SOLR_CLOSER_URL $SOLR_DIST_URL $SOLR_ARCHIVE_URL; do \
+    if [ -f "/opt/solr-$SOLR_VERSION.tgz" ]; then break; fi; \
+    echo "downloading $url"; \
+    if wget -t 10 --max-redirect $MAX_REDIRECTS --retry-connrefused -nv "$url" -O "/opt/solr-$SOLR_VERSION.tgz"; then break; else rm -f "/opt/solr-$SOLR_VERSION.tgz"; fi; \
+  done; \
+  if [ ! -f "/opt/solr-$SOLR_VERSION.tgz" ]; then echo "failed all download attempts for solr-$SOLR_VERSION.tgz"; exit 1; fi; \
+  if [ -z "$SKIP_GPG_CHECK" ]; then \
+    echo "downloading $SOLR_ARCHIVE_URL.asc"; \
+    wget -nv "$SOLR_ARCHIVE_URL.asc" -O "/opt/solr-$SOLR_VERSION.tgz.asc"; \
+    echo "$SOLR_SHA512 */opt/solr-$SOLR_VERSION.tgz" | sha512sum -c -; \
+    (>&2 ls -l "/opt/solr-$SOLR_VERSION.tgz" "/opt/solr-$SOLR_VERSION.tgz.asc"); \
+    gpg --batch --verify "/opt/solr-$SOLR_VERSION.tgz.asc" "/opt/solr-$SOLR_VERSION.tgz"; \
+  else \
+    echo "Skipping GPG validation due to non-Apache build"; \
+  fi; \
+  { command -v gpgconf; gpgconf --kill all || :; }; \
+  rm -r "$GNUPGHOME"; \
+  tar -C /opt --extract --preserve-permissions --file "/opt/solr-$SOLR_VERSION.tgz"; \
+  rm "/opt/solr-$SOLR_VERSION.tgz"*; \
+  apt-get -y remove gpg dirmngr && apt-get -y autoremove;
+

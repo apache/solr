@@ -16,49 +16,49 @@
  */
 package org.apache.solr.handler.admin;
 
-import java.io.IOException;
-import java.util.Enumeration;
+import static org.apache.solr.common.params.CommonParams.NAME;
 
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Enumeration;
+import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.api.Api;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.admin.api.NodePropertiesAPI;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.util.RedactionUtils;
 
-import static org.apache.solr.common.params.CommonParams.NAME;
-
 /**
- *
  * @since solr 1.2
  */
-public class PropertiesRequestHandler extends RequestHandlerBase
-{
+public class PropertiesRequestHandler extends RequestHandlerBase {
 
   public static final String REDACT_STRING = RedactionUtils.getRedactString();
 
   @Override
-  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException 
-  {
+  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     NamedList<String> props = new SimpleOrderedMap<>();
     String name = req.getParams().get(NAME);
-    if( name != null ) {
+    if (name != null) {
       String property = getSecuredPropertyValue(name);
-      props.add( name, property);
-    }
-    else {
+      props.add(name, property);
+    } else {
       Enumeration<?> enumeration = System.getProperties().propertyNames();
-      while(enumeration.hasMoreElements()){
+      while (enumeration.hasMoreElements()) {
         name = (String) enumeration.nextElement();
         props.add(name, getSecuredPropertyValue(name));
       }
     }
-    rsp.add( "system.properties", props );
+    rsp.add("system.properties", props);
     rsp.setHttpCaching(false);
   }
 
   private String getSecuredPropertyValue(String name) {
-    if(RedactionUtils.isSystemPropertySensitive(name)){
+    if (RedactionUtils.isSystemPropertySensitive(name)) {
       return REDACT_STRING;
     }
     return System.getProperty(name);
@@ -74,5 +74,20 @@ public class PropertiesRequestHandler extends RequestHandlerBase
   @Override
   public Category getCategory() {
     return Category.ADMIN;
+  }
+
+  @Override
+  public Collection<Api> getApis() {
+    return AnnotatedApi.getApis(new NodePropertiesAPI(this));
+  }
+
+  @Override
+  public Boolean registerV2() {
+    return Boolean.TRUE;
+  }
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    return Name.CONFIG_READ_PERM;
   }
 }

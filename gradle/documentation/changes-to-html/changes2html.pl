@@ -25,7 +25,7 @@ use strict;
 use warnings;
 
 my $jira_url_prefix = 'http://issues.apache.org/jira/browse/';
-my $github_pull_request_prefix = 'https://github.com/apache/lucene-solr/pull/';
+my $github_pull_request_prefix = 'https://github.com/apache/solr/pull/';
 my $month_regex = &setup_month_regex;
 my %month_nums = &setup_month_nums;
 my %lucene_bugzilla_jira_map = &setup_lucene_bugzilla_jira_map;
@@ -575,6 +575,9 @@ for my $rel (@releases) {
       $item =~ s{((?:(?:(?:github|gh)\s+)?pull\s+request\s*(?:\#?\s*)?|gh-)(\d+))}
                 {<a href="${github_pull_request_prefix}$2">$1</a>}gi;
       # Link "LUCENE_CHANGES.txt" to Lucene's same-release Changes.html
+      # TODO: We can no longer rely on this since Solr may have a different Lucene version
+      # But it will still work for pre-9.0 changes, and from 9.0 we can instead provide
+      # full links.
       if ($product eq 'SOLR') {
         $item =~ s[(LUCENE_CHANGES.txt)]
                   [<a href="${lucene_javadoc_url}changes/Changes.html">$1</a>]g;

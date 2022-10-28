@@ -128,16 +128,21 @@ limitations under the License.
   margin-top: 0;
 }
 
-#content #query #form fieldset .fieldset
+#content #query #form fieldset:not(.optional) .fieldset
 {
   border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 5px;
+  padding-bottom: 10px;
+}
+#content #query #form fieldset.optional .fieldset{
   margin-bottom: 5px;
   padding-bottom: 10px;
 }
 
 #content #query #form .optional
 {
-  border: 0;
+  border-top-width: 0;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 #content #query #form .optional legend
@@ -159,4 +164,13 @@ limitations under the License.
 
 #content #query #result #response
 {
+}
+
+#content #query #form label a.help
+{
+    background-image: url( ../../img/ico/question-white.png );
+    background-position: 0 50%;
+    color: #4D4D4D;
+    padding-left: 21px;
+    margin-left: 5px;
 }

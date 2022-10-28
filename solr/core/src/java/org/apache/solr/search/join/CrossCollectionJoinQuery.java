@@ -22,14 +22,12 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
-import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -61,7 +59,6 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.DocSetUtil;
-import org.apache.solr.search.Filter;
 import org.apache.solr.search.SolrIndexSearcher;
 
 public class CrossCollectionJoinQuery extends Query {
@@ -80,9 +77,16 @@ public class CrossCollectionJoinQuery extends Query {
   protected SolrParams otherParams;
   protected String otherParamsString;
 
-  public CrossCollectionJoinQuery(String query, String zkHost, String solrUrl,
-                                  String collection, String fromField, String toField,
-                                  boolean routedByJoinKey, int ttl, SolrParams otherParams) {
+  public CrossCollectionJoinQuery(
+      String query,
+      String zkHost,
+      String solrUrl,
+      String collection,
+      String fromField,
+      String toField,
+      boolean routedByJoinKey,
+      int ttl,
+      SolrParams otherParams) {
 
     this.query = query;
     this.zkHost = zkHost;
@@ -104,10 +108,11 @@ public class CrossCollectionJoinQuery extends Query {
 
   private interface JoinKeyCollector {
     void collect(Object value) throws IOException;
+
     DocSet getDocSet() throws IOException;
   }
 
-  private class TermsJoinKeyCollector implements JoinKeyCollector {
+  private static class TermsJoinKeyCollector implements JoinKeyCollector {
 
     FieldType fieldType;
     SolrIndexSearcher searcher;
@@ -118,7 +123,8 @@ public class CrossCollectionJoinQuery extends Query {
 
     FixedBitSet bitSet;
 
-    public TermsJoinKeyCollector(FieldType fieldType, Terms terms, SolrIndexSearcher searcher) throws IOException {
+    public TermsJoinKeyCollector(FieldType fieldType, Terms terms, SolrIndexSearcher searcher)
+        throws IOException {
       this.fieldType = fieldType;
       this.searcher = searcher;
 
@@ -178,9 +184,10 @@ public class CrossCollectionJoinQuery extends Query {
 
     private SolrIndexSearcher searcher;
     private ScoreMode scoreMode;
-    private Filter filter;
+    private DocSet docs;
 
-    public CrossCollectionJoinQueryWeight(SolrIndexSearcher searcher, ScoreMode scoreMode, float score) {
+    public CrossCollectionJoinQueryWeight(
+        SolrIndexSearcher searcher, ScoreMode scoreMode, float score) {
       super(CrossCollectionJoinQuery.this, score);
       this.scoreMode = scoreMode;
       this.searcher = searcher;
@@ -188,9 +195,14 @@ public class CrossCollectionJoinQuery extends Query {
 
     private String createHashRangeFq() {
       if (routedByJoinKey) {
-        ClusterState clusterState = searcher.getCore().getCoreContainer().getZkController().getClusterState();
+        ClusterState clusterState =
+            searcher.getCore().getCoreContainer().getZkController().getClusterState();
         CloudDescriptor desc = searcher.getCore().getCoreDescriptor().getCloudDescriptor();
-        Slice slice = clusterState.getCollection(desc.getCollectionName()).getSlicesMap().get(desc.getShardId());
+        Slice slice =
+            clusterState
+                .getCollection(desc.getCollectionName())
+                .getSlicesMap()
+                .get(desc.getShardId());
         DocRouter.Range range = slice.getRange();
 
         // In CompositeIdRouter, the routing prefix only affects the top 16 bits
@@ -232,26 +244,29 @@ public class CrossCollectionJoinQuery extends Query {
     }
 
     private TupleStream createSolrStream() {
-      StreamExpression searchExpr = new StreamExpression("search")
+      StreamExpression searchExpr =
+          new StreamExpression("search")
               .withParameter(collection)
               .withParameter(new StreamExpressionNamedParameter(CommonParams.Q, query));
       String fq = createHashRangeFq();
       if (fq != null) {
         searchExpr.withParameter(new StreamExpressionNamedParameter(CommonParams.FQ, fq));
       }
-      searchExpr.withParameter(new StreamExpressionNamedParameter(CommonParams.FL, fromField))
-              .withParameter(new StreamExpressionNamedParameter(CommonParams.SORT, fromField + " asc"))
-              .withParameter(new StreamExpressionNamedParameter(CommonParams.QT, "/export"));
+      searchExpr
+          .withParameter(new StreamExpressionNamedParameter(CommonParams.FL, fromField))
+          .withParameter(new StreamExpressionNamedParameter(CommonParams.SORT, fromField + " asc"))
+          .withParameter(new StreamExpressionNamedParameter(CommonParams.QT, "/export"));
 
-      for (Map.Entry<String,String[]> entry : otherParams) {
+      for (Map.Entry<String, String[]> entry : otherParams) {
         for (String value : entry.getValue()) {
           searchExpr.withParameter(new StreamExpressionNamedParameter(entry.getKey(), value));
         }
       }
 
       StreamExpression uniqueExpr = new StreamExpression("unique");
-      uniqueExpr.withParameter(searchExpr)
-              .withParameter(new StreamExpressionNamedParameter("over", fromField));
+      uniqueExpr
+          .withParameter(searchExpr)
+          .withParameter(new StreamExpressionNamedParameter("over", fromField));
 
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("expr", uniqueExpr.toString());
@@ -294,7 +309,9 @@ public class CrossCollectionJoinQuery extends Query {
           }
 
           Object value = tuple.get(fromField);
-          collector.collect(value);
+          if (null != value) {
+            collector.collect(value);
+          }
         }
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -307,15 +324,11 @@ public class CrossCollectionJoinQuery extends Query {
 
     @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
-      if (filter == null) {
-        filter = getDocSet().getTopFilter();
+      if (docs == null) {
+        docs = getDocSet();
       }
 
-      DocIdSet readerSet = filter.getDocIdSet(context, null);
-      if (readerSet == null) {
-        return null;
-      }
-      DocIdSetIterator readerSetIterator = readerSet.iterator();
+      DocIdSetIterator readerSetIterator = docs.iterator(context);
       if (readerSetIterator == null) {
         return null;
       }
@@ -329,7 +342,8 @@ public class CrossCollectionJoinQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     return new CrossCollectionJoinQueryWeight((SolrIndexSearcher) searcher, scoreMode, boost);
   }
 
@@ -356,25 +370,32 @@ public class CrossCollectionJoinQuery extends Query {
 
   @Override
   public boolean equals(Object other) {
-    return sameClassAs(other) &&
-            equalsTo(getClass().cast(other));
+    return sameClassAs(other) && equalsTo(getClass().cast(other));
   }
 
   private boolean equalsTo(CrossCollectionJoinQuery other) {
-    return Objects.equals(query, other.query) &&
-            Objects.equals(zkHost, other.zkHost) &&
-            Objects.equals(solrUrl, other.solrUrl) &&
-            Objects.equals(collection, other.collection) &&
-            Objects.equals(fromField, other.fromField) &&
-            Objects.equals(toField, other.toField) &&
-            Objects.equals(routedByJoinKey, other.routedByJoinKey) &&
-            Objects.equals(otherParamsString, other.otherParamsString) &&
-            TimeUnit.SECONDS.convert(Math.abs(timestamp - other.timestamp), TimeUnit.NANOSECONDS) < Math.min(ttl, other.ttl);
+    return Objects.equals(query, other.query)
+        && Objects.equals(zkHost, other.zkHost)
+        && Objects.equals(solrUrl, other.solrUrl)
+        && Objects.equals(collection, other.collection)
+        && Objects.equals(fromField, other.fromField)
+        && Objects.equals(toField, other.toField)
+        && routedByJoinKey == other.routedByJoinKey
+        && Objects.equals(otherParamsString, other.otherParamsString)
+        && TimeUnit.SECONDS.convert(Math.abs(timestamp - other.timestamp), TimeUnit.NANOSECONDS)
+            < Math.min(ttl, other.ttl);
   }
 
   @Override
   public String toString(String field) {
-    return String.format(Locale.ROOT, "{!xcjf collection=%s from=%s to=%s routed=%b ttl=%d}%s",
-            collection, fromField, toField, routedByJoinKey, ttl, query.toString());
+    return String.format(
+        Locale.ROOT,
+        "{!xcjf collection=%s from=%s to=%s routed=%b ttl=%d}%s",
+        collection,
+        fromField,
+        toField,
+        routedByJoinKey,
+        ttl,
+        query.toString());
   }
 }

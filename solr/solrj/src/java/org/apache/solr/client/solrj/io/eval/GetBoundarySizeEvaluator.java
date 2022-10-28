@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.Locale;
-
 import org.apache.commons.math3.geometry.euclidean.twod.hull.ConvexHull2D;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -27,16 +26,22 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 public class GetBoundarySizeEvaluator extends RecursiveObjectEvaluator implements OneValueWorker {
   private static final long serialVersionUID = 1;
 
-  public GetBoundarySizeEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+  public GetBoundarySizeEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
   }
 
   @Override
   public Object doWork(Object value) throws IOException {
-    if(!(value instanceof ConvexHull2D)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for value, expecting a ConvexHull2D",toExpression(constructingFactory), value.getClass().getSimpleName()));
+    if (!(value instanceof ConvexHull2D)) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - found type %s for value, expecting a ConvexHull2D",
+              toExpression(constructingFactory),
+              value.getClass().getSimpleName()));
     } else {
-      ConvexHull2D convexHull2D = (ConvexHull2D)value;
+      ConvexHull2D convexHull2D = (ConvexHull2D) value;
       return convexHull2D.createRegion().getBoundarySize();
     }
   }

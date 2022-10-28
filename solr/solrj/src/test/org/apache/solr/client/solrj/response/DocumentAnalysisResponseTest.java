@@ -16,42 +16,42 @@
  */
 package org.apache.solr.client.solrj.response;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * A test for the {@link DocumentAnalysisResponse} class.
- *
  *
  * @since solr 1.4
  */
 public class DocumentAnalysisResponseTest extends SolrTestCase {
 
   /**
-   * Tests the {@link DocumentAnalysisResponse#setResponse(org.apache.solr.common.util.NamedList)} method
+   * Tests the {@link DocumentAnalysisResponse#setResponse(org.apache.solr.common.util.NamedList)}
+   * method
    */
   @Test
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testSetResponse() throws Exception {
 
-    // the parsing of the analysis phases is already tested in the AnalysisResponseBaseTest. So we can just fake
-    // the phases list here and use it.
+    // the parsing of the analysis phases is already tested in the AnalysisResponseBaseTest. So we
+    // can just fake the phases list here and use it.
     final List<AnalysisResponseBase.AnalysisPhase> phases = new ArrayList<>(1);
-    AnalysisResponseBase.AnalysisPhase expectedPhase = new AnalysisResponseBase.AnalysisPhase("Tokenizer");
+    AnalysisResponseBase.AnalysisPhase expectedPhase =
+        new AnalysisResponseBase.AnalysisPhase("Tokenizer");
     phases.add(expectedPhase);
 
-    NamedList responseNL = buildResponse();
-    DocumentAnalysisResponse response = new DocumentAnalysisResponse() {
+    NamedList<Object> responseNL = buildResponse();
+    DocumentAnalysisResponse response =
+        new DocumentAnalysisResponse() {
 
-      @Override
-      protected List<AnalysisPhase> buildPhases(NamedList<Object> phaseNL) {
-        return phases;
-      }
-    };
+          @Override
+          protected List<AnalysisPhase> buildPhases(NamedList<Object> phaseNL) {
+            return phases;
+          }
+        };
 
     response.setResponse(responseNL);
 
@@ -95,17 +95,16 @@ public class DocumentAnalysisResponseTest extends SolrTestCase {
     assertSame(expectedPhase, phase);
   }
 
-  //================================================ Helper Methods ==================================================
+  // ===== Helper Methods =====
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  private NamedList buildResponse() {
+  private NamedList<Object> buildResponse() {
 
-    NamedList response = new NamedList();
+    NamedList<Object> response = new NamedList<>();
 
-    NamedList responseHeader = new NamedList();
+    NamedList<Object> responseHeader = new NamedList<>();
     response.add("responseHeader", responseHeader);
 
-    NamedList params = new NamedList();
+    NamedList<String> params = new NamedList<>();
     responseHeader.add("params", params);
     params.add("analysis.showmatch", "true");
     params.add("analysis.query", "the query");
@@ -113,39 +112,39 @@ public class DocumentAnalysisResponseTest extends SolrTestCase {
     responseHeader.add("status", 0);
     responseHeader.add("QTime", 105);
 
-    NamedList analysis = new NamedList();
+    NamedList<Object> analysis = new NamedList<>();
     response.add("analysis", analysis);
 
-    NamedList doc1 = new NamedList();
+    NamedList<Object> doc1 = new NamedList<>();
 
     analysis.add("1", doc1);
-    NamedList id = new NamedList();
+    NamedList<Object> id = new NamedList<>();
     doc1.add("id", id);
-    NamedList query = new NamedList();
+    NamedList<Object> query = new NamedList<>();
     id.add("query", query);
-    NamedList index = new NamedList();
+    NamedList<Object> index = new NamedList<>();
     id.add("index", index);
-    NamedList idValue = new NamedList();
+    NamedList<?> idValue = new NamedList<>();
     index.add("1", idValue);
 
-    NamedList name = new NamedList();
+    NamedList<Object> name = new NamedList<>();
     doc1.add("name", name);
-    query = new NamedList();
+    query = new NamedList<>();
     name.add("query", query);
-    index = new NamedList();
+    index = new NamedList<>();
     name.add("index", index);
-    NamedList nameValue1 = new NamedList();
+    NamedList<?> nameValue1 = new NamedList<>();
     index.add("name value 1", nameValue1);
-    NamedList nameValue2 = new NamedList();
+    NamedList<?> nameValue2 = new NamedList<>();
     index.add("name value 2", nameValue2);
 
-    NamedList text = new NamedList();
+    NamedList<Object> text = new NamedList<>();
     doc1.add("text", text);
-    query = new NamedList();
+    query = new NamedList<>();
     text.add("query", query);
-    index = new NamedList();
+    index = new NamedList<>();
     text.add("index", index);
-    NamedList textValue = new NamedList();
+    NamedList<?> textValue = new NamedList<>();
     index.add("text value", textValue);
 
     return response;

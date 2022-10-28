@@ -26,7 +26,6 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Properties;
 import java.util.logging.Logger;
-
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.solr.common.util.SuppressForbidden;
@@ -34,9 +33,8 @@ import org.apache.solr.common.util.SuppressForbidden;
 /**
  * Get a Connection with with a url and properties.
  *
- * jdbc:solr://zkhost:port?collection=collection&amp;aggregationMode=map_reduce
- **/
-
+ * <p>jdbc:solr://zkhost:port?collection=collection&amp;aggregationMode=map_reduce
+ */
 public class DriverImpl implements Driver {
 
   static {
@@ -47,8 +45,9 @@ public class DriverImpl implements Driver {
     }
   }
 
+  @Override
   public Connection connect(String url, Properties props) throws SQLException {
-    if(!acceptsURL(url)) {
+    if (!acceptsURL(url)) {
       return null;
     }
 
@@ -57,7 +56,8 @@ public class DriverImpl implements Driver {
     loadParams(uri, props);
 
     if (!props.containsKey("collection")) {
-      throw new SQLException("The connection url has no connection properties. At a mininum the collection must be specified.");
+      throw new SQLException(
+          "The connection url has no connection properties. At a minimum the collection must be specified.");
     }
     String collection = (String) props.remove("collection");
 
@@ -77,29 +77,33 @@ public class DriverImpl implements Driver {
     return connect(url, new Properties());
   }
 
+  @Override
   public int getMajorVersion() {
     return 1;
   }
 
+  @Override
   public int getMinorVersion() {
     return 0;
   }
 
+  @Override
   public boolean acceptsURL(String url) {
     return url != null && url.startsWith("jdbc:solr");
   }
 
+  @Override
   public boolean jdbcCompliant() {
     return false;
   }
 
-
-  @SuppressForbidden(reason="Required by jdbc")
-
+  @Override
+  @SuppressForbidden(reason = "Required by jdbc")
   public Logger getParentLogger() {
     return null;
   }
 
+  @Override
   public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) {
     return null;
   }

@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocumentList;
@@ -37,9 +36,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- *
- */
+/** */
 public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -51,12 +48,19 @@ public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
 
-    String solrXml = FileUtils.readFileToString(Paths.get(home.toString(), "solr-slf4jreporter.xml").toFile(), "UTF-8");
+    String solrXml =
+        FileUtils.readFileToString(
+            Paths.get(home.toString(), "solr-slf4jreporter.xml").toFile(), "UTF-8");
     NodeConfig cfg = SolrXmlConfig.fromString(home, solrXml);
-    CoreContainer cc = createCoreContainer(cfg, new TestHarness.TestCoresLocator
-                                           (DEFAULT_TEST_CORENAME, initAndGetDataDir().getAbsolutePath(),
-                                            "solrconfig.xml", "schema.xml"));
-                                           
+    CoreContainer cc =
+        createCoreContainer(
+            cfg,
+            new TestHarness.TestCoresLocator(
+                DEFAULT_TEST_CORENAME,
+                initAndGetDataDir().getAbsolutePath(),
+                "solrconfig.xml",
+                "schema.xml"));
+
     h.coreName = DEFAULT_TEST_CORENAME;
     SolrMetricManager metricManager = cc.getMetricManager();
     Map<String, SolrMetricReporter> reporters = metricManager.getReporters("solr.node");
@@ -69,8 +73,7 @@ public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
     assertTrue(reporter2 instanceof SolrSlf4jReporter);
 
     LogWatcherConfig watcherCfg = new LogWatcherConfig(true, null, null, 100);
-    @SuppressWarnings({"rawtypes"})
-    LogWatcher watcher = LogWatcher.newRegisteredLogWatcher(watcherCfg, null);
+    LogWatcher<?> watcher = LogWatcher.newRegisteredLogWatcher(watcherCfg, null);
     watcher.setThreshold("INFO");
 
     watcher.reset();
@@ -79,7 +82,8 @@ public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
     do {
       Thread.sleep(1000);
       cnt--;
-      active = ((SolrSlf4jReporter)reporter1).isActive() && ((SolrSlf4jReporter)reporter2).isActive();
+      active =
+          ((SolrSlf4jReporter) reporter1).isActive() && ((SolrSlf4jReporter) reporter2).isActive();
     } while (!active && cnt > 0);
     if (!active) {
       fail("One or more reporters didn't become active in 20 seconds");
@@ -90,18 +94,18 @@ public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
     // dot-separated names are treated like class names and collapsed
     // in regular log output, but here we get the full name
     if (history.stream().filter(d -> "solr.node".equals(d.getFirstValue("logger"))).count() == 0) {
-      fail("No 'solr.node' logs in: " + history.toString());
+      fail("No 'solr.node' logs in: " + history);
     }
     if (history.stream().filter(d -> "foobar".equals(d.getFirstValue("logger"))).count() == 0) {
-      fail("No 'foobar' logs in: " + history.toString());
+      fail("No 'foobar' logs in: " + history);
     }
-    if (history.stream().filter(d -> "x:collection1".equals(d.getFirstValue("core"))).count() == 0) {
-      fail("No 'solr.core' or MDC context in logs: " + history.toString());
+    if (history.stream().filter(d -> "collection1".equals(d.getFirstValue("core"))).count() == 0) {
+      fail("No 'solr.core' or MDC context in logs: " + history);
     }
   }
 
-  private static void ensureLoggingConfiguredAppropriately() throws Exception {
-    if (! log.isInfoEnabled()) {
+  private static void ensureLoggingConfiguredAppropriately() {
+    if (!log.isInfoEnabled()) {
       fail("Test requires that log-level is at-least INFO, but INFO is disabled");
     }
   }

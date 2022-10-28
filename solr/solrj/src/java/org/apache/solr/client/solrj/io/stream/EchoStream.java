@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.stream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -47,23 +46,24 @@ public class EchoStream extends TupleStream implements Expressible {
     this.echo = echo.replace("\\\"", "\"");
   }
 
-  private String stripQuotes(String s){
-    if(s.startsWith("\"")) {
-      return s.substring(1, s.length()-1);
+  private String stripQuotes(String s) {
+    if (s.startsWith("\"")) {
+      return s.substring(1, s.length() - 1);
     } else {
       return s;
     }
   }
 
   @Override
-  public StreamExpression toExpression(StreamFactory factory) throws IOException{
+  public StreamExpression toExpression(StreamFactory factory) throws IOException {
     return toExpression(factory, true);
   }
 
-  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams) throws IOException {
+  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams)
+      throws IOException {
     // function name
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
-    expression.addParameter("\""+echo.replace("\"", "\\\"")+"\"");
+    expression.addParameter("\"" + echo.replace("\"", "\\\"") + "\"");
     return expression;
   }
 
@@ -77,24 +77,25 @@ public class EchoStream extends TupleStream implements Expressible {
         .withExpression(toExpression(factory, false).toString());
   }
 
-  public void setStreamContext(StreamContext context) {
-  }
+  @Override
+  public void setStreamContext(StreamContext context) {}
 
+  @Override
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList<TupleStream>();
+    List<TupleStream> l = new ArrayList<>();
     return l;
   }
 
-  public void open() throws IOException {
+  @Override
+  public void open() throws IOException {}
 
-  }
+  @Override
+  public void close() throws IOException {}
 
-  public void close() throws IOException {
-  }
-
+  @Override
   public Tuple read() throws IOException {
 
-    if(finished) {
+    if (finished) {
       return Tuple.EOF();
     } else {
       finished = true;
@@ -103,13 +104,13 @@ public class EchoStream extends TupleStream implements Expressible {
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
-  public StreamComparator getStreamSort(){
+  @Override
+  public StreamComparator getStreamSort() {
     return null;
   }
 
+  @Override
   public int getCost() {
     return 0;
   }
-
-
 }

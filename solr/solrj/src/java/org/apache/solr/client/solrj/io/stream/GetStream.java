@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -56,11 +55,12 @@ public class GetStream extends TupleStream implements Expressible {
   }
 
   @Override
-  public StreamExpression toExpression(StreamFactory factory) throws IOException{
+  public StreamExpression toExpression(StreamFactory factory) throws IOException {
     return toExpression(factory, true);
   }
 
-  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams) throws IOException {
+  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams)
+      throws IOException {
     // function name
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
     expression.addParameter(name);
@@ -78,15 +78,18 @@ public class GetStream extends TupleStream implements Expressible {
     return explanation;
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.streamContext = context;
   }
 
+  @Override
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList<>();
+    List<TupleStream> l = new ArrayList<>();
     return l;
   }
 
+  @Override
   public Tuple read() throws IOException {
     if (tupleIterator.hasNext()) {
       Tuple t = tupleIterator.next();
@@ -96,26 +99,27 @@ public class GetStream extends TupleStream implements Expressible {
     }
   }
 
-  public void close() throws IOException {
-  }
+  @Override
+  public void close() throws IOException {}
 
-  @SuppressWarnings({"unchecked"})
+  @Override
   public void open() throws IOException {
     Map<String, Object> lets = streamContext.getLets();
     Object o = lets.get(name);
-    @SuppressWarnings({"rawtypes"})
-    List l = null;
-    if(o instanceof List) {
-      l = (List)o;
+    if (o instanceof List) {
+      @SuppressWarnings("unchecked")
+      List<Tuple> l = (List<Tuple>) o;
       tupleIterator = l.iterator();
     }
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
-  public StreamComparator getStreamSort(){
+  @Override
+  public StreamComparator getStreamSort() {
     return null;
   }
 
+  @Override
   public int getCost() {
     return 0;
   }

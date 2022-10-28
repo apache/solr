@@ -17,14 +17,18 @@
 
 package org.apache.solr;
 
-import java.lang.invoke.MethodHandles;
-import java.io.File;
-import java.util.regex.Pattern;
+import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsBoolean;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.QuickPatchThreadsFilter;
-import org.apache.lucene.util.VerifyTestClassNamingConvention;
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import java.io.File;
+import java.lang.invoke.MethodHandles;
+import java.util.regex.Pattern;
+import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
+import org.apache.lucene.tests.util.VerifyTestClassNamingConvention;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
@@ -38,118 +42,136 @@ import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
-
-import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsBoolean;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-
 /**
- * All Solr test cases should derive from this class eventually. This is originally a result of async logging, see:
- * SOLR-12055 and associated. To enable async logging, we must gracefully shut down logging. Many Solr tests subclass
- * LuceneTestCase.
+ * All Solr test cases should derive from this class eventually. This is originally a result of
+ * async logging, see: SOLR-12055 and associated. To enable async logging, we must gracefully shut
+ * down logging. Many Solr tests subclass LuceneTestCase.
  *
- * Rather than add the cruft from SolrTestCaseJ4 to all the Solr tests that currently subclass LuceneTestCase,
- * we'll add the shutdown to this class and subclass it.
+ * <p>Rather than add the cruft from SolrTestCaseJ4 to all the Solr tests that currently subclass
+ * LuceneTestCase, we'll add the shutdown to this class and subclass it.
  *
- * Other changes that should affect every Solr test case may go here if they don't require the added capabilities in
- * SolrTestCaseJ4.
+ * <p>Other changes that should affect every Solr test case may go here if they don't require the
+ * added capabilities in SolrTestCaseJ4.
  */
 
-  // ThreadLeakFilters are not additive. Any subclass that requires filters
-  // other than these must redefine these as well.
-@ThreadLeakFilters(defaultFilters = true, filters = {
-        SolrIgnoredThreadsFilter.class,
-        QuickPatchThreadsFilter.class
-})
-@ThreadLeakLingering(linger = 10000)
+// ThreadLeakFilters are not additive. Any subclass that requires filters
+// other than these must redefine these as well.
+@ThreadLeakFilters(
+    defaultFilters = true,
+    filters = {SolrIgnoredThreadsFilter.class, QuickPatchThreadsFilter.class})
+// The ThreadLeakLingering is set to 1s to allow ThreadPools to finish
+// joining on termination. Ideally this should only be 10-100ms, but
+// on slow machines it could take up to 1s. See discussion on SOLR-15660
+// and SOLR-16187 regarding why this is necessary.
+@ThreadLeakLingering(linger = 1000)
 public class SolrTestCase extends LuceneTestCase {
 
-  /**
-   * <b>DO NOT REMOVE THIS LOGGER</b>
-   * <p>
-   * For reasons that aren't 100% obvious, the existence of this logger is neccessary to ensure
-   * that the logging framework is properly initialized (even if concrete subclasses do not 
-   * themselves initialize any loggers) so that the async logger threads can be properly shutdown
-   * on completion of the test suite
-   * </p>
-   * @see <a href="https://issues.apache.org/jira/browse/SOLR-14247">SOLR-14247</a>
-   * @see #shutdownLogger
-   */
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final Pattern NAMING_CONVENTION_TEST_SUFFIX = Pattern.compile("(.+\\.)([^.]+)(Test)");
+  private static final Pattern NAMING_CONVENTION_TEST_SUFFIX =
+      Pattern.compile("(.+\\.)([^.]+)(Test)");
 
-  private static final Pattern NAMING_CONVENTION_TEST_PREFIX = Pattern.compile("(.+\\.)(Test)([^.]+)");
+  private static final Pattern NAMING_CONVENTION_TEST_PREFIX =
+      Pattern.compile("(.+\\.)(Test)([^.]+)");
 
   @ClassRule
-  public static TestRule solrClassRules = 
-    RuleChain.outerRule(new SystemPropertiesRestoreRule())
-             .around(
-                 new VerifyTestClassNamingConvention(
-                     "org.apache.solr.analytics", NAMING_CONVENTION_TEST_SUFFIX))
-             .around(
-                 new VerifyTestClassNamingConvention(
-                     "org.apache.solr.ltr", NAMING_CONVENTION_TEST_PREFIX))
-             .around(new RevertDefaultThreadHandlerRule());
+  public static TestRule solrClassRules =
+      RuleChain.outerRule(new SystemPropertiesRestoreRule())
+          .around(
+              new VerifyTestClassNamingConvention(
+                  "org.apache.solr.analytics", NAMING_CONVENTION_TEST_SUFFIX))
+          .around(
+              new VerifyTestClassNamingConvention(
+                  "org.apache.solr.ltr", NAMING_CONVENTION_TEST_PREFIX))
+          .around(new RevertDefaultThreadHandlerRule());
 
   /**
-   * Sets the <code>solr.default.confdir</code> system property to the value of 
-   * {@link ExternalPaths#DEFAULT_CONFIGSET} if and only if the system property is not already set, 
-   * and the <code>DEFAULT_CONFIGSET</code> exists and is a readable directory.
-   * <p>
-   * Logs INFO/WARNing messages as appropriate based on these 2 conditions.
-   * </p>
+   * Sets the <code>solr.default.confdir</code> system property to the value of {@link
+   * ExternalPaths#DEFAULT_CONFIGSET} if and only if the system property is not already set, and the
+   * <code>DEFAULT_CONFIGSET</code> exists and is a readable directory.
+   *
+   * <p>Logs INFO/WARNing messages as appropriate based on these 2 conditions.
+   *
    * @see SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE
    */
   @BeforeClass
-  public static void setDefaultConfigDirSysPropIfNotSet() {
-    final String existingValue = System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE);
+  public static void beforeSolrTestCase() {
+    final String existingValue =
+        System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE);
     if (null != existingValue) {
-      log.info("Test env includes configset dir system property '{}'='{}'", SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE, existingValue);
+      log.info(
+          "Test env includes configset dir system property '{}'='{}'",
+          SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE,
+          existingValue);
       return;
     }
     final File extPath = new File(ExternalPaths.DEFAULT_CONFIGSET);
-    if (extPath.canRead(/* implies exists() */) && extPath.isDirectory()) {
-      log.info("Setting '{}' system property to test-framework derived value of '{}'",
-               SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE, ExternalPaths.DEFAULT_CONFIGSET);
+    if (extPath.canRead(/* implies exists() */ ) && extPath.isDirectory()) {
+      log.info(
+          "Setting '{}' system property to test-framework derived value of '{}'",
+          SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE,
+          ExternalPaths.DEFAULT_CONFIGSET);
       assert null == existingValue;
-      System.setProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE, ExternalPaths.DEFAULT_CONFIGSET);
+      System.setProperty(
+          SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE, ExternalPaths.DEFAULT_CONFIGSET);
     } else {
-      log.warn("System property '{}' is not already set, but test-framework derived value ('{}') either " +
-               "does not exist or is not a readable directory, you may need to set the property yourself " +
-               "for tests to run properly",
-               SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE, ExternalPaths.DEFAULT_CONFIGSET);
+      log.warn(
+          "System property '{}' is not already set, but test-framework derived value ('{}') either "
+              + "does not exist or is not a readable directory, you may need to set the property yourself "
+              + "for tests to run properly",
+          SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE,
+          ExternalPaths.DEFAULT_CONFIGSET);
+    }
+
+    // set solr.install.dir needed by some test configs outside of the test sandbox (!)
+    if (ExternalPaths.SOURCE_HOME != null) {
+      System.setProperty("solr.install.dir", ExternalPaths.SOURCE_HOME);
+    }
+
+    if (!TEST_NIGHTLY) {
+      System.setProperty("zookeeper.nio.numSelectorThreads", "2");
+      System.setProperty("zookeeper.nio.numWorkerThreads", "3");
+      System.setProperty("zookeeper.commitProcessor.numWorkerThreads", "2");
+      System.setProperty("zookeeper.forceSync", "no");
+      System.setProperty("zookeeper.nio.shutdownTimeout", "100");
     }
   }
-  
-  /** 
-   * Special hook for sanity checking if any tests trigger failures when an
-   * Assumption failure occures in a {@link BeforeClass} method
+
+  /**
+   * Special hook for sanity checking if any tests trigger failures when an Assumption failure
+   * occures in a {@link BeforeClass} method
+   *
    * @lucene.internal
    */
   @BeforeClass
   public static void checkSyspropForceBeforeClassAssumptionFailure() {
     // ant test -Dargs="-Dtests.force.assumption.failure.beforeclass=true"
     final String PROP = "tests.force.assumption.failure.beforeclass";
-    assumeFalse(PROP + " == true",
-                systemPropertyAsBoolean(PROP, false));
+    assumeFalse(PROP + " == true", systemPropertyAsBoolean(PROP, false));
   }
-  
-  /** 
-   * Special hook for sanity checking if any tests trigger failures when an
-   * Assumption failure occures in a {@link Before} method
+
+  /**
+   * Special hook for sanity checking if any tests trigger failures when an Assumption failure
+   * occures in a {@link Before} method
+   *
    * @lucene.internal
    */
   @Before
   public void checkSyspropForceBeforeAssumptionFailure() {
     // ant test -Dargs="-Dtests.force.assumption.failure.before=true"
     final String PROP = "tests.force.assumption.failure.before";
-    assumeFalse(PROP + " == true",
-                systemPropertyAsBoolean(PROP, false));
+    assumeFalse(PROP + " == true", systemPropertyAsBoolean(PROP, false));
   }
-  
+
   @AfterClass
-  public static void shutdownLogger() throws Exception {
+  public static void afterSolrTestCase() throws Exception {
+    if (suiteFailureMarker.wasSuccessful()) {
+      // if the tests passed, make sure everything was closed / released
+      String orr = ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty();
+      assertNull(orr, orr);
+    } else {
+      ObjectReleaseTracker.tryClose();
+    }
     StartupLoggingUtils.shutdown();
   }
 }

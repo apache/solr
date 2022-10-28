@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.io.stream.metrics;
 
 import java.io.IOException;
 import java.util.Locale;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
@@ -26,52 +25,70 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class CountDistinctMetric extends Metric {
 
-    private String columnName;
+  public static final String COUNT_DISTINCT = "countDist";
+  public static final String APPROX_COUNT_DISTINCT = "hll";
 
-    public CountDistinctMetric(String columnName){
-        init("countDist", columnName);
+  private String columnName;
+
+  public CountDistinctMetric(String columnName) {
+    this(columnName, false);
+  }
+
+  public CountDistinctMetric(String columnName, boolean isApproximate) {
+    init(isApproximate ? APPROX_COUNT_DISTINCT : COUNT_DISTINCT, columnName);
+  }
+
+  public CountDistinctMetric(StreamExpression expression, StreamFactory factory)
+      throws IOException {
+    // grab all parameters out
+    String functionName = expression.getFunctionName();
+    String columnName = factory.getValueOperand(expression, 0);
+
+    // validate expression contains only what we want.
+    if (null == columnName) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expected %s(columnName)",
+              expression,
+              functionName));
     }
 
-    public CountDistinctMetric(StreamExpression expression, StreamFactory factory) throws IOException{
-        // grab all parameters out
-        String functionName = expression.getFunctionName();
-        String columnName = factory.getValueOperand(expression, 0);
+    init(functionName, columnName);
+  }
 
+  private void init(String functionName, String columnName) {
+    this.columnName = columnName;
+    this.outputLong = true;
+    setFunctionName(functionName);
+    setIdentifier(functionName, "(", columnName, ")");
+  }
 
-        // validate expression contains only what we want.
-        if(null == columnName){
-            throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expected %s(columnName)", expression, functionName));
-        }
+  @Override
+  public void update(Tuple tuple) {
+    // Nop for now
+  }
 
-        init(functionName, columnName);
-    }
+  @Override
+  public Metric newInstance() {
+    return new CountDistinctMetric(columnName);
+  }
 
-    private void init(String functionName, String columnName){
-        this.columnName = columnName;
-        this.outputLong = true;
-        setFunctionName(functionName);
-        setIdentifier(functionName, "(", columnName, ")");
-    }
+  @Override
+  public String[] getColumns() {
+    return new String[] {columnName};
+  }
 
-    public void update(Tuple tuple) {
-        //Nop for now
-    }
+  @Override
+  public Number getValue() {
+    // No op for now
+    return null;
+  }
 
-    public Metric newInstance() {
-        return new MeanMetric(columnName, outputLong);
-    }
-
-    public String[] getColumns() {
-        return new String[]{columnName};
-    }
-
-    public Number getValue() {
-       //No op for now
-       return null;
-    }
-
-    @Override
-    public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
-        return new StreamExpression(getFunctionName()).withParameter(columnName).withParameter(Boolean.toString(outputLong));
-    }
+  @Override
+  public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
+    return new StreamExpression(getFunctionName())
+        .withParameter(columnName)
+        .withParameter(Boolean.toString(outputLong));
+  }
 }

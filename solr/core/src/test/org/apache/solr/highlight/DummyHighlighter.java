@@ -22,17 +22,13 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.DocList;
 
-import java.io.IOException;
-
 public class DummyHighlighter extends SolrHighlighter {
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public NamedList<Object> doHighlighting(DocList docs, Query query,
-      SolrQueryRequest req, String[] defaultFields) throws IOException {
-    NamedList fragments = new SimpleOrderedMap();
+  public NamedList<Object> doHighlighting(
+      DocList docs, Query query, SolrQueryRequest req, String[] defaultFields) {
+    NamedList<Object> fragments = new SimpleOrderedMap<>();
     fragments.add("dummy", "thing1");
     return fragments;
   }
-
 }

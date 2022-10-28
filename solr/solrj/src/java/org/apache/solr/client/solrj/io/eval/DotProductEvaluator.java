@@ -19,41 +19,61 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
-
-import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.linear.ArrayRealVector;
-
+import org.apache.commons.math3.linear.RealVector;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class DotProductEvaluator extends RecursiveNumericEvaluator implements TwoValueWorker {
   protected static final long serialVersionUID = 1L;
 
-  public DotProductEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public DotProductEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
   }
 
   @Override
-  public Object doWork(Object first, Object second) throws IOException{
-    if(null == first){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the first value",toExpression(constructingFactory)));
+  public Object doWork(Object first, Object second) throws IOException {
+    if (null == first) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - null found for the first value",
+              toExpression(constructingFactory)));
     }
-    if(null == second){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the second value",toExpression(constructingFactory)));
+    if (null == second) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - null found for the second value",
+              toExpression(constructingFactory)));
     }
-    if(!(first instanceof List<?>)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the first value, expecting a list of numbers",toExpression(constructingFactory), first.getClass().getSimpleName()));
+    if (!(first instanceof List<?>)) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - found type %s for the first value, expecting a list of numbers",
+              toExpression(constructingFactory),
+              first.getClass().getSimpleName()));
     }
-    if(!(second instanceof List<?>)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the second value, expecting a list of numbers",toExpression(constructingFactory), first.getClass().getSimpleName()));
+    if (!(second instanceof List<?>)) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - found type %s for the second value, expecting a list of numbers",
+              toExpression(constructingFactory),
+              first.getClass().getSimpleName()));
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    RealVector v = new ArrayRealVector(((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray());
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    RealVector v2 = new ArrayRealVector(((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray());
+    RealVector v =
+        new ArrayRealVector(
+            ((List<?>) first)
+                .stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray());
+    RealVector v2 =
+        new ArrayRealVector(
+            ((List<?>) second)
+                .stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray());
 
     return v.dotProduct(v2);
-
   }
 }

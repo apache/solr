@@ -28,44 +28,46 @@ public class IndexSchemaRuntimeFieldTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml","schema.xml");
+    initCore("solrconfig.xml", "schema.xml");
   }
 
   @Test
   public void testRuntimeFieldCreation() {
     // any field manipulation needs to happen when you know the core will not
-    // be accepting any requests.  Typically this is done within the inform()
+    // be accepting any requests.  Typically, this is done within the inform()
     // method.  Since this is a single threaded test, we can change the fields
     // willi-nilly
 
     SolrCore core = h.getCore();
     IndexSchema schema = core.getLatestSchema();
     final String fieldName = "runtimefield";
-    SchemaField sf = new SchemaField( fieldName, schema.getFieldTypes().get( "string" ) );
-    schema.getFields().put( fieldName, sf );
+    SchemaField sf = new SchemaField(fieldName, schema.getFieldTypes().get("string"));
+    schema.getFields().put(fieldName, sf);
 
     // also register a new copy field (from our new field)
-    schema.registerCopyField( fieldName, "dynamic_runtime" );
+    schema.registerCopyField(fieldName, "dynamic_runtime");
     schema.refreshAnalyzers();
 
     assertU(adoc("id", "10", "title", "test", fieldName, "aaa"));
     assertU(commit());
 
-    SolrQuery query = new SolrQuery( fieldName+":aaa" );
-    query.set( "indent", "true" );
-    SolrQueryRequest req = new LocalSolrQueryRequest( core, query );
+    SolrQuery query = new SolrQuery(fieldName + ":aaa");
+    query.set("indent", "true");
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, query);
 
-    assertQ("Make sure they got in", req
-            ,"//*[@numFound='1']"
-            ,"//result/doc[1]/str[@name='id'][.='10']"
-            );
+    assertQ(
+        "Make sure they got in",
+        req,
+        "//*[@numFound='1']",
+        "//result/doc[1]/str[@name='id'][.='10']");
 
     // Check to see if our copy field made it out safely
-    query.setQuery( "dynamic_runtime:aaa" );
-    assertQ("Make sure they got in", req
-            ,"//*[@numFound='1']"
-            ,"//result/doc[1]/str[@name='id'][.='10']"
-            );
+    query.setQuery("dynamic_runtime:aaa");
+    assertQ(
+        "Make sure they got in",
+        req,
+        "//*[@numFound='1']",
+        "//result/doc[1]/str[@name='id'][.='10']");
     clearIndex();
   }
 }

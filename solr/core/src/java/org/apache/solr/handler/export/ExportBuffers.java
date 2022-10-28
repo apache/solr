@@ -20,28 +20,25 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
-import java.util.concurrent.BrokenBarrierException;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.handler.export.ExportWriter.MergeIterator;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Helper class implementing a "double buffering" producer / consumer.
- */
+/** Helper class implementing a "double buffering" producer / consumer. */
 class ExportBuffers {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -65,21 +62,30 @@ class ExportBuffers {
   LongAdder outputCounter = new LongAdder();
   volatile boolean shutDown = false;
 
-  ExportBuffers(ExportWriter exportWriter, List<LeafReaderContext> leaves, SolrIndexSearcher searcher,
-                OutputStream os, IteratorWriter.ItemWriter rawWriter, Sort sort, int queueSize, int totalHits,
-                FixedBitSet[] sets) throws IOException {
+  ExportBuffers(
+      ExportWriter exportWriter,
+      List<LeafReaderContext> leaves,
+      SolrIndexSearcher searcher,
+      OutputStream os,
+      IteratorWriter.ItemWriter rawWriter,
+      Sort sort,
+      int queueSize,
+      int totalHits,
+      FixedBitSet[] sets)
+      throws IOException {
     this.exportWriter = exportWriter;
     this.leaves = leaves;
     this.os = os;
     this.rawWriter = rawWriter;
-    this.writer = new IteratorWriter.ItemWriter() {
-      @Override
-      public IteratorWriter.ItemWriter add(Object o) throws IOException {
-        rawWriter.add(o);
-        outputCounter.increment();
-        return this;
-      }
-    };
+    this.writer =
+        new IteratorWriter.ItemWriter() {
+          @Override
+          public IteratorWriter.ItemWriter add(Object o) throws IOException {
+            rawWriter.add(o);
+            outputCounter.increment();
+            return this;
+          }
+        };
 
     this.bufferOne = new Buffer(queueSize);
     this.bufferTwo = new Buffer(queueSize);
@@ -93,56 +99,59 @@ class ExportBuffers {
     bufferOne.initialize(writerSortDoc);
     bufferTwo.initialize(writerSortDoc);
     barrier = new CyclicBarrier(2, () -> swapBuffers());
-    filler = () -> {
-      try {
-        // log.debug("--- filler start {}", Thread.currentThread());
-        Buffer buffer = getFillBuffer();
-        long lastOutputCounter = 0;
-        for (int count = 0; count < totalHits; ) {
-          // log.debug("--- filler fillOutDocs in {}", fillBuffer);
-          exportWriter.fillOutDocs(mergeIterator, buffer);
-          count += (buffer.outDocsIndex + 1);
-          // log.debug("--- filler count={}, exchange buffer from {}", count, buffer);
+    filler =
+        () -> {
           try {
-            long startBufferWait = System.nanoTime();
-            exchangeBuffers();
-            long endBufferWait = System.nanoTime();
-            if(log.isDebugEnabled()) {
-              log.debug("Waited for writer thread:{}", Long.toString(((endBufferWait - startBufferWait) / 1000000)));
+            // log.debug("--- filler start {}", Thread.currentThread());
+            Buffer buffer = getFillBuffer();
+            long lastOutputCounter = 0;
+            for (int count = 0; count < totalHits; ) {
+              // log.debug("--- filler fillOutDocs in {}", fillBuffer);
+              exportWriter.fillOutDocs(mergeIterator, buffer);
+              count += (buffer.outDocsIndex + 1);
+              // log.debug("--- filler count={}, exchange buffer from {}", count, buffer);
+              try {
+                long startBufferWait = System.nanoTime();
+                exchangeBuffers();
+                long endBufferWait = System.nanoTime();
+                if (log.isDebugEnabled()) {
+                  log.debug(
+                      "Waited for writer thread:{}",
+                      Long.toString(((endBufferWait - startBufferWait) / 1000000)));
+                }
+              } finally {
+
+              }
+
+              buffer = getFillBuffer();
+              if (outputCounter.longValue() > lastOutputCounter) {
+                lastOutputCounter = outputCounter.longValue();
+                flushOutput();
+              }
             }
-          } finally {
+            buffer.outDocsIndex = Buffer.NO_MORE_DOCS;
+            try {
+              exchangeBuffers();
+            } finally {
 
+            }
+            buffer = getFillBuffer();
+            // log.debug("--- filler final got buffer {}", buffer);
+          } catch (Throwable e) {
+            if (!(e instanceof InterruptedException) && !(e instanceof BrokenBarrierException)) {
+              /*
+              Don't log the interrupt or BrokenBarrierException as it creates noise during early client disconnects and
+              doesn't log anything particularly useful in other situations.
+               */
+              log.error("filler", e);
+            }
+            error(e);
+            if (e instanceof InterruptedException) {
+              Thread.currentThread().interrupt();
+            }
+            shutdownNow();
           }
-
-          buffer = getFillBuffer();
-          if (outputCounter.longValue() > lastOutputCounter) {
-            lastOutputCounter = outputCounter.longValue();
-            flushOutput();
-          }
-        }
-        buffer.outDocsIndex = Buffer.NO_MORE_DOCS;
-        try {
-          exchangeBuffers();
-        } finally {
-
-        }
-        buffer = getFillBuffer();
-        // log.debug("--- filler final got buffer {}", buffer);
-      } catch (Throwable e) {
-        if(!(e instanceof InterruptedException) && !(e instanceof BrokenBarrierException)) {
-          /*
-          Don't log the interrupt or BrokenBarrierException as it creates noise during early client disconnects and
-          doesn't log anything particularly useful in other situations.
-           */
-          log.error("filler", e);
-        }
-        error(e);
-        if (e instanceof InterruptedException) {
-          Thread.currentThread().interrupt();
-        }
-        shutdownNow();
-      }
-    };
+        };
   }
 
   public void exchangeBuffers() throws Exception {
@@ -161,14 +170,14 @@ class ExportBuffers {
   }
 
   private void swapBuffers() {
-    //log.debug("--- swap buffers");
+    // log.debug("--- swap buffers");
     Buffer one = fillBuffer;
     fillBuffer = outputBuffer;
     outputBuffer = one;
   }
 
   private void flushOutput() throws IOException {
-    //os.flush();
+    // os.flush();
   }
 
   // initial output buffer
@@ -205,24 +214,25 @@ class ExportBuffers {
    * @throws IOException on errors
    */
   public void run(Callable<Boolean> writer) throws IOException {
-    service = ExecutorUtil.newMDCAwareFixedThreadPool(1, new SolrNamedThreadFactory("ExportBuffers"));
+    service =
+        ExecutorUtil.newMDCAwareFixedThreadPool(1, new SolrNamedThreadFactory("ExportBuffers"));
     try {
       CompletableFuture.runAsync(filler, service);
       writer.call();
 
       // alternatively we could run the writer in a separate thread:
-//        CompletableFuture<Void> allDone = CompletableFuture.allOf(
-//            CompletableFuture.runAsync(filler, service),
-//            CompletableFuture.runAsync(() -> {
-//              try {
-//                writer.call();
-//              } catch (Exception e) {
-//                log.error("writer", e);
-//                shutdownNow();
-//              }
-//            }, service)
-//        );
-//        allDone.join();
+      //        CompletableFuture<Void> allDone = CompletableFuture.allOf(
+      //            CompletableFuture.runAsync(filler, service),
+      //            CompletableFuture.runAsync(() -> {
+      //              try {
+      //                writer.call();
+      //              } catch (Exception e) {
+      //                log.error("writer", e);
+      //                shutdownNow();
+      //              }
+      //            }, service)
+      //        );
+      //        allDone.join();
       log.debug("-- finished.");
     } catch (Throwable e) {
       Throwable ex = e;
@@ -235,11 +245,11 @@ class ExportBuffers {
         }
         ex = ex.getCause();
       }
-      if(!ignore) {
+      if (!ignore) {
         /*
-         Ignore Broken pipes. Broken pipes occur normally when using the export handler for
-         merge joins when the join is complete before both sides of the join are fully read.
-         */
+        Ignore Broken pipes. Broken pipes occur normally when using the export handler for
+        merge joins when the join is complete before both sides of the join are fully read.
+        */
         log.error("Exception running filler / writer", e);
       }
       error(e);
@@ -250,9 +260,7 @@ class ExportBuffers {
     }
   }
 
-  /**
-   * Buffer used for transporting documents from the filler to the writer thread.
-   */
+  /** Buffer used for transporting documents from the filler to the writer thread. */
   static final class Buffer {
     static final int EMPTY = -1;
     static final int NO_MORE_DOCS = -2;
@@ -273,9 +281,12 @@ class ExportBuffers {
 
     @Override
     public String toString() {
-      return "Buffer@" + Integer.toHexString(hashCode()) + "{" +
-          "outDocsIndex=" + outDocsIndex +
-          '}';
+      return "Buffer@"
+          + Integer.toHexString(hashCode())
+          + "{"
+          + "outDocsIndex="
+          + outDocsIndex
+          + '}';
     }
   }
 }

@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-
 import org.apache.commons.math3.util.MathArrays;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -28,33 +27,53 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 public class EBEMultiplyEvaluator extends RecursiveNumericEvaluator implements TwoValueWorker {
   protected static final long serialVersionUID = 1L;
 
-  public EBEMultiplyEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public EBEMultiplyEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
-  public Object doWork(Object first, Object second) throws IOException{
-    if(null == first){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the first value",toExpression(constructingFactory)));
+  public Object doWork(Object first, Object second) throws IOException {
+    if (null == first) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - null found for the first value",
+              toExpression(constructingFactory)));
     }
-    if(null == second){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the second value",toExpression(constructingFactory)));
+    if (null == second) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - null found for the second value",
+              toExpression(constructingFactory)));
     }
-    if(!(first instanceof List<?>)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the first value, expecting a list of numbers",toExpression(constructingFactory), first.getClass().getSimpleName()));
+    if (!(first instanceof List<?>)) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - found type %s for the first value, expecting a list of numbers",
+              toExpression(constructingFactory),
+              first.getClass().getSimpleName()));
     }
-    if(!(second instanceof List<?>)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the second value, expecting a list of numbers",toExpression(constructingFactory), first.getClass().getSimpleName()));
+    if (!(second instanceof List<?>)) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - found type %s for the second value, expecting a list of numbers",
+              toExpression(constructingFactory),
+              first.getClass().getSimpleName()));
     }
 
-    double[] result =  MathArrays.ebeMultiply(
-        ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
-        ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
-    );
+    double[] result =
+        MathArrays.ebeMultiply(
+            ((List<?>) first)
+                .stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
+            ((List<?>) second)
+                .stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray());
 
     List<Number> numbers = new ArrayList<>();
-    for(double d : result) {
+    for (double d : result) {
       numbers.add(d);
     }
 

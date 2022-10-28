@@ -16,20 +16,19 @@
  */
 package org.apache.solr.search.facet;
 
-import org.apache.solr.common.params.FacetParams;
-import org.apache.solr.search.SyntaxError;
-
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.common.params.FacetParams;
+import org.apache.solr.search.SyntaxError;
 
 class FacetRangeParser extends FacetParser<FacetRange> {
-  @SuppressWarnings({"rawtypes"})
-  public FacetRangeParser(FacetParser parent, String key) {
+  public FacetRangeParser(FacetParser<?> parent, String key) {
     super(parent, key);
     facet = new FacetRange();
   }
 
+  @Override
   public FacetRange parse(Object arg) throws SyntaxError {
     parseCommonParams(arg);
 
@@ -57,13 +56,13 @@ class FacetRangeParser extends FacetParser<FacetRange> {
     if (list != null) {
       includeList = list.toArray(new String[list.size()]);
     }
-    facet.include = FacetParams.FacetRangeInclude.parseParam( includeList );
+    facet.include = FacetParams.FacetRangeInclude.parseParam(includeList);
     facet.others = EnumSet.noneOf(FacetParams.FacetRangeOther.class);
 
     List<String> other = getStringList(m, "other", false);
     if (other != null) {
       for (String otherStr : other) {
-        facet.others.add( FacetParams.FacetRangeOther.get(otherStr) );
+        facet.others.add(FacetParams.FacetRangeOther.get(otherStr));
       }
     }
 
@@ -72,5 +71,4 @@ class FacetRangeParser extends FacetParser<FacetRange> {
 
     return facet;
   }
-
 }

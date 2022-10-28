@@ -1,4 +1,3 @@
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -23,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.IntPoint;
@@ -69,23 +67,25 @@ import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
 
 /**
- *  The GraphTermsQuery builds a disjunction query from a list of terms. The terms are first filtered by the maxDocFreq parameter.
- *  This allows graph traversals to skip traversing high frequency nodes which is often desirable from a performance standpoint.
+ * The GraphTermsQuery builds a disjunction query from a list of terms. The terms are first filtered
+ * by the maxDocFreq parameter. This allows graph traversals to skip traversing high frequency nodes
+ * which is often desirable from a performance standpoint.
  *
- *   Syntax: {!graphTerms f=field maxDocFreq=10000}term1,term2,term3
+ * <p>Syntax: {!graphTerms f=field maxDocFreq=10000}term1,term2,term3
  */
 public class GraphTermsQParserPlugin extends QParserPlugin {
   public static final String NAME = "graphTerms";
 
   @Override
-  public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  public QParser createParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new QParser(qstr, localParams, params, req) {
       @Override
       public Query parse() throws SyntaxError {
         String fname = localParams.get(QueryParsing.F);
         FieldType ft = req.getSchema().getFieldTypeNoEx(fname);
         int maxDocFreq = localParams.getInt("maxDocFreq", Integer.MAX_VALUE);
-        String qstr = localParams.get(QueryParsing.V);//never null
+        String qstr = localParams.get(QueryParsing.V); // never null
 
         if (qstr.length() == 0) {
           return new MatchNoDocsQuery();
@@ -104,28 +104,29 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
           PointSetQuery setQ = null;
           if (sf.getType().getNumberType() == NumberType.INTEGER) {
             int[] vals = new int[splitVals.length];
-            for (int i=0; i<vals.length; i++) {
+            for (int i = 0; i < vals.length; i++) {
               vals[i] = Integer.parseInt(splitVals[i]);
             }
             Arrays.sort(vals);
             setQ = PointSetQuery.newSetQuery(sf.getName(), vals);
-          } else if (sf.getType().getNumberType() == NumberType.LONG || sf.getType().getNumberType() == NumberType.DATE) {
+          } else if (sf.getType().getNumberType() == NumberType.LONG
+              || sf.getType().getNumberType() == NumberType.DATE) {
             long[] vals = new long[splitVals.length];
-            for (int i=0; i<vals.length; i++) {
+            for (int i = 0; i < vals.length; i++) {
               vals[i] = Long.parseLong(splitVals[i]);
             }
             Arrays.sort(vals);
             setQ = PointSetQuery.newSetQuery(sf.getName(), vals);
           } else if (sf.getType().getNumberType() == NumberType.FLOAT) {
             float[] vals = new float[splitVals.length];
-            for (int i=0; i<vals.length; i++) {
+            for (int i = 0; i < vals.length; i++) {
               vals[i] = Float.parseFloat(splitVals[i]);
             }
             Arrays.sort(vals);
             setQ = PointSetQuery.newSetQuery(sf.getName(), vals);
           } else if (sf.getType().getNumberType() == NumberType.DOUBLE) {
             double[] vals = new double[splitVals.length];
-            for (int i=0; i<vals.length; i++) {
+            for (int i = 0; i < vals.length; i++) {
               vals[i] = Double.parseDouble(splitVals[i]);
             }
             Arrays.sort(vals);
@@ -155,7 +156,9 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
     };
   }
 
-  private class GraphTermsQuery extends Query implements ExtendedQuery {
+  /** Similar to {@code TermsQuery} but adds a {@code maxDocFreq}. */
+  private static class GraphTermsQuery extends Query implements ExtendedQuery {
+    // Not a post filter. This will typically be used as the main query.
 
     private Term[] queryTerms;
     private String field;
@@ -169,7 +172,7 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
       this.id = new Object();
     }
 
-    //Just for cloning
+    // Just for cloning
     private GraphTermsQuery(String field, Term[] terms, int maxDocFreq, Object id) {
       this.field = field;
       this.queryTerms = terms;
@@ -177,49 +180,44 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
       this.id = id;
     }
 
+    @Override
     public boolean getCache() {
       return false;
     }
 
-    public boolean getCacheSep() {
-      return false;
-    }
-
-    public void setCacheSep(boolean sep) {
-
-    }
-
+    @Override
     public void setCache(boolean cache) {
-
+      // TODO support user choice
     }
 
+    @Override
     public int getCost() {
-      return 1; // Not a post filter. The GraphTermsQuery will typically be used as the main query.
+      // 0 is the default and keeping it avoids a needless wrapper for TwoPhaseIterator matchCost.
+      return 0;
     }
 
-    public void setCost(int cost) {
-
-    }
+    @Override
+    public void setCost(int cost) {}
 
     @Override
     public Query rewrite(IndexReader reader) throws IOException {
       return this;
     }
 
+    @Override
     public int hashCode() {
       return 31 * classHash() + id.hashCode();
     }
 
+    @Override
     public boolean equals(Object other) {
-      return sameClassAs(other) &&
-             id == ((GraphTermsQuery) other).id;
+      return sameClassAs(other) && id == ((GraphTermsQuery) other).id;
     }
 
+    @Override
     public GraphTermsQuery clone() {
-      GraphTermsQuery clone = new GraphTermsQuery(this.field,
-                                                  this.queryTerms,
-                                                  this.maxDocFreq,
-                                                  this.id);
+      GraphTermsQuery clone =
+          new GraphTermsQuery(this.field, this.queryTerms, this.maxDocFreq, this.id);
       return clone;
     }
 
@@ -234,7 +232,8 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+        throws IOException {
 
       List<TermStates> finalContexts = new ArrayList<>();
       List<Term> finalTerms = new ArrayList<>();
@@ -242,9 +241,9 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
         List<LeafReaderContext> contexts = searcher.getTopReaderContext().leaves();
         TermStates[] termStates = new TermStates[this.queryTerms.length];
         collectTermStates(searcher.getIndexReader(), contexts, termStates, this.queryTerms);
-        for(int i=0; i<termStates.length; i++) {
+        for (int i = 0; i < termStates.length; i++) {
           TermStates ts = termStates[i];
-          if(ts != null && ts.docFreq() <= this.maxDocFreq) {
+          if (ts != null && ts.docFreq() <= this.maxDocFreq) {
             finalContexts.add(ts);
             finalTerms.add(queryTerms[i]);
           }
@@ -260,13 +259,13 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
           if (terms == null) {
             return null;
           }
-          TermsEnum  termsEnum = terms.iterator();
+          TermsEnum termsEnum = terms.iterator();
           PostingsEnum docs = null;
           DocIdSetBuilder builder = new DocIdSetBuilder(reader.maxDoc(), terms);
-          for (int i=0; i<finalContexts.size(); i++) {
+          for (int i = 0; i < finalContexts.size(); i++) {
             TermStates ts = finalContexts.get(i);
             TermState termState = ts.get(context);
-            if(termState != null) {
+            if (termState != null) {
               Term term = finalTerms.get(i);
               termsEnum.seekExact(term.bytes(), ts.get(context));
               docs = termsEnum.postings(docs, PostingsEnum.NONE);
@@ -282,14 +281,15 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
         public boolean isCacheable(LeafReaderContext ctx) {
           return true;
         }
-
       };
     }
 
-    private void collectTermStates(IndexReader reader,
-                                   List<LeafReaderContext> leaves,
-                                   TermStates[] contextArray,
-                                   Term[] queryTerms) throws IOException {
+    private void collectTermStates(
+        IndexReader reader,
+        List<LeafReaderContext> leaves,
+        TermStates[] contextArray,
+        Term[] queryTerms)
+        throws IOException {
       TermsEnum termsEnum = null;
       for (LeafReaderContext context : leaves) {
 
@@ -309,12 +309,19 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
 
           if (termsEnum.seekExact(term.bytes())) {
             if (termStates == null) {
-              contextArray[i] = new TermStates(reader.getContext(),
-                  termsEnum.termState(), context.ord, termsEnum.docFreq(),
-                  termsEnum.totalTermFreq());
+              contextArray[i] =
+                  new TermStates(
+                      reader.getContext(),
+                      termsEnum.termState(),
+                      context.ord,
+                      termsEnum.docFreq(),
+                      termsEnum.totalTermFreq());
             } else {
-              termStates.register(termsEnum.termState(), context.ord,
-                  termsEnum.docFreq(), termsEnum.totalTermFreq());
+              termStates.register(
+                  termsEnum.termState(),
+                  context.ord,
+                  termsEnum.docFreq(),
+                  termsEnum.totalTermFreq());
             }
           }
         }
@@ -323,11 +330,10 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
   }
 }
 
-
-
-// modified version of PointInSetQuery
+/** Modified version of {@code PointInSetQuery} to support {@code maxDocFreq}. */
 abstract class PointSetQuery extends Query implements DocSetProducer, Accountable {
-  protected static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(PointSetQuery.class);
+  protected static final long BASE_RAM_BYTES =
+      RamUsageEstimator.shallowSizeOfInstance(PointSetQuery.class);
 
   // A little bit overkill for us, since all of our "terms" are always in the same field:
   final PrefixCodedTerms sortedPackedPoints;
@@ -338,14 +344,12 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
   int maxDocFreq = Integer.MAX_VALUE;
   final long ramBytesUsed; // cache
 
-  /**
-   * Iterator of encoded point values.
-   */
+  /** Iterator of encoded point values. */
   // TODO: if we want to stream, maybe we should use jdk stream class?
-  public static abstract class Stream implements BytesRefIterator {
+  public abstract static class Stream implements BytesRefIterator {
     @Override
     public abstract BytesRef next();
-  };
+  }
 
   public void setMaxDocFreq(int maxDocFreq) {
     this.maxDocFreq = maxDocFreq;
@@ -355,7 +359,10 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
 
     final BytesRef encoded = new BytesRef(new byte[Float.BYTES]);
 
-    return new PointSetQuery(field, 1, Float.BYTES,
+    return new PointSetQuery(
+        field,
+        1,
+        Float.BYTES,
         new PointSetQuery.Stream() {
 
           int upto;
@@ -382,7 +389,10 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
   public static PointSetQuery newSetQuery(String field, long... sortedValues) {
     final BytesRef encoded = new BytesRef(new byte[Long.BYTES]);
 
-    return new PointSetQuery(field, 1, Long.BYTES,
+    return new PointSetQuery(
+        field,
+        1,
+        Long.BYTES,
         new PointSetQuery.Stream() {
 
           int upto;
@@ -409,7 +419,10 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
   public static PointSetQuery newSetQuery(String field, int... sortedValues) {
     final BytesRef encoded = new BytesRef(new byte[Integer.BYTES]);
 
-    return new PointSetQuery(field, 1, Integer.BYTES,
+    return new PointSetQuery(
+        field,
+        1,
+        Integer.BYTES,
         new PointSetQuery.Stream() {
 
           int upto;
@@ -441,7 +454,10 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
 
     final BytesRef encoded = new BytesRef(new byte[Double.BYTES]);
 
-    return new PointSetQuery(field, 1, Double.BYTES,
+    return new PointSetQuery(
+        field,
+        1,
+        Double.BYTES,
         new PointSetQuery.Stream() {
 
           int upto;
@@ -470,14 +486,25 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
     this.bytesPerDim = bytesPerDim;
     this.numDims = numDims;
 
-    // In the 1D case this works well (the more points, the more common prefixes they share, typically), but in
-    // the > 1 D case, where we are only looking at the first dimension's prefix bytes, it can at worst not hurt:
+    // In the 1D case this works well (the more points, the more common prefixes they share,
+    // typically), but in the > 1 D case, where we are only looking at the first dimension's prefix
+    // bytes, it can at worst not hurt:
     PrefixCodedTerms.Builder builder = new PrefixCodedTerms.Builder();
     BytesRefBuilder previous = null;
     BytesRef current;
     while ((current = packedPoints.next()) != null) {
       if (current.length != numDims * bytesPerDim) {
-        throw new IllegalArgumentException("packed point length should be " + (numDims * bytesPerDim) + " but got " + current.length + "; field=\"" + field + "\" numDims=" + numDims + " bytesPerDim=" + bytesPerDim);
+        throw new IllegalArgumentException(
+            "packed point length should be "
+                + (numDims * bytesPerDim)
+                + " but got "
+                + current.length
+                + "; field=\""
+                + field
+                + "\" numDims="
+                + numDims
+                + " bytesPerDim="
+                + bytesPerDim);
       }
       if (previous == null) {
         previous = new BytesRefBuilder();
@@ -486,7 +513,8 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
         if (cmp == 0) {
           continue; // deduplicate
         } else if (cmp > 0) {
-          throw new IllegalArgumentException("values are out of order: saw " + previous + " before " + current);
+          throw new IllegalArgumentException(
+              "values are out of order: saw " + previous + " before " + current);
         }
       }
       builder.add(field, current);
@@ -494,8 +522,7 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
     }
     sortedPackedPoints = builder.finish();
     sortedPackedPointsHashCode = sortedPackedPoints.hashCode();
-    ramBytesUsed = BASE_RAM_BYTES +
-        RamUsageEstimator.sizeOfObject(sortedPackedPoints);
+    ramBytesUsed = BASE_RAM_BYTES + RamUsageEstimator.sizeOfObject(sortedPackedPoints);
   }
 
   private FixedBitSet getLiveDocs(IndexSearcher searcher) throws IOException {
@@ -505,7 +532,7 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
     if (searcher instanceof SolrIndexSearcher) {
       return ((SolrIndexSearcher) searcher).getLiveDocSet().getBits();
     } else { // could happen in Delete-by-query situation
-      //smallSetSize==0 thus will always produce a BitDocSet (FixedBitSet)
+      // smallSetSize==0 thus will always produce a BitDocSet (FixedBitSet)
       DocSetCollector docSetCollector = new DocSetCollector(0, searcher.getIndexReader().maxDoc());
       searcher.search(new MatchAllDocsQuery(), docSetCollector);
       return ((BitDocSet) docSetCollector.getDocSet()).getBits();
@@ -525,9 +552,10 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
   public DocSet getDocSet(IndexSearcher searcher) throws IOException {
     IndexReaderContext top = ReaderUtil.getTopLevelContext(searcher.getTopReaderContext());
     List<LeafReaderContext> segs = top.leaves();
-    DocSetBuilder builder = new DocSetBuilder(top.reader().maxDoc(), Math.min(64,(top.reader().maxDoc()>>>10)+4));
+    DocSetBuilder builder =
+        new DocSetBuilder(top.reader().maxDoc(), Math.min(64, (top.reader().maxDoc() >>> 10) + 4));
     PointValues[] segPoints = new PointValues[segs.size()];
-    for (int i=0; i<segPoints.length; i++) {
+    for (int i = 0; i < segPoints.length; i++) {
       segPoints[i] = segs.get(i).reader().getPointValues(field);
     }
 
@@ -535,9 +563,10 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
 
     PointSetQuery.CutoffPointVisitor visitor = new PointSetQuery.CutoffPointVisitor(maxCollect);
     PrefixCodedTerms.TermIterator iterator = sortedPackedPoints.iterator();
-    outer: for (BytesRef point = iterator.next(); point != null; point = iterator.next()) {
+    outer:
+    for (BytesRef point = iterator.next(); point != null; point = iterator.next()) {
       visitor.setPoint(point);
-      for (int i=0; i<segs.size(); i++) {
+      for (int i = 0; i < segs.size(); i++) {
         if (segPoints[i] == null) continue;
         visitor.setBase(segs.get(i).docBase);
         segPoints[i].intersect(visitor);
@@ -547,8 +576,8 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
       }
       int collected = visitor.getCount();
       int[] ids = visitor.getGlobalIds();
-      for (int i=0; i<collected; i++) {
-        builder.add( ids[i] );
+      for (int i = 0; i < collected; i++) {
+        builder.add(ids[i]);
       }
     }
 
@@ -557,25 +586,20 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
     return set;
   }
 
-
   @Override
-  public final Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public final Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     return new ConstantScoreWeight(this, boost) {
-      Filter filter;
+      DocSet docs;
 
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
-        if (filter == null) {
-          DocSet set = getDocSet(searcher);
-          filter = set.getTopFilter();
+        if (docs == null) {
+          docs = getDocSet(searcher);
         }
 
         // Although this set only includes live docs, other filters can be pushed down to queries.
-        DocIdSet readerSet = filter.getDocIdSet(context, null);
-        if (readerSet == null) {
-          return null;
-        }
-        DocIdSetIterator readerSetIterator = readerSet.iterator();
+        DocIdSetIterator readerSetIterator = docs.iterator(context);
         if (readerSetIterator == null) {
           return null;
         }
@@ -588,7 +612,6 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
       }
     };
   }
-
 
   /** Cutoff point visitor that collects a maximum number of points before stopping. */
   private class CutoffPointVisitor implements PointValues.IntersectVisitor {
@@ -609,9 +632,13 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
       count++;
     }
 
-    public int getCount() { return count; }
+    public int getCount() {
+      return count;
+    }
 
-    public int[] getGlobalIds() { return ids; }
+    public int[] getGlobalIds() {
+      return ids;
+    }
 
     public void setPoint(BytesRef point) {
       // we verified this up front in query's ctor:
@@ -625,8 +652,7 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
     }
 
     @Override
-    public void grow(int count) {
-    }
+    public void grow(int count) {}
 
     @Override
     public void visit(int docID) {
@@ -645,15 +671,29 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
 
       boolean crosses = false;
 
-      for(int dim=0;dim<numDims;dim++) {
-        int offset = dim*bytesPerDim;
+      for (int dim = 0; dim < numDims; dim++) {
+        int offset = dim * bytesPerDim;
 
-        int cmpMin = Arrays.compareUnsigned(minPackedValue, offset, offset + bytesPerDim, pointBytes, offset, offset + bytesPerDim);
+        int cmpMin =
+            Arrays.compareUnsigned(
+                minPackedValue,
+                offset,
+                offset + bytesPerDim,
+                pointBytes,
+                offset,
+                offset + bytesPerDim);
         if (cmpMin > 0) {
           return PointValues.Relation.CELL_OUTSIDE_QUERY;
         }
 
-        int cmpMax = Arrays.compareUnsigned(maxPackedValue, offset, offset + bytesPerDim, pointBytes, offset, offset + bytesPerDim);
+        int cmpMax =
+            Arrays.compareUnsigned(
+                maxPackedValue,
+                offset,
+                offset + bytesPerDim,
+                pointBytes,
+                offset,
+                offset + bytesPerDim);
         if (cmpMax < 0) {
           return PointValues.Relation.CELL_OUTSIDE_QUERY;
         }
@@ -666,8 +706,8 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
       if (crosses) {
         return PointValues.Relation.CELL_CROSSES_QUERY;
       } else {
-        // NOTE: we only hit this if we are on a cell whose min and max values are exactly equal to our point,
-        // which can easily happen if many docs share this one value
+        // NOTE: we only hit this if we are on a cell whose min and max values are exactly equal to
+        // our point, which can easily happen if many docs share this one value
         return PointValues.Relation.CELL_INSIDE_QUERY;
       }
     }
@@ -698,17 +738,16 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
 
   @Override
   public final boolean equals(Object other) {
-    return sameClassAs(other) &&
-        equalsTo(getClass().cast(other));
+    return sameClassAs(other) && equalsTo(getClass().cast(other));
   }
 
   private boolean equalsTo(PointSetQuery other) {
-    return other.field.equals(field) &&
-        other.numDims == numDims &&
-        other.bytesPerDim == bytesPerDim &&
-        other.sortedPackedPointsHashCode == sortedPackedPointsHashCode &&
-        other.sortedPackedPoints.equals(sortedPackedPoints) &&
-        other.maxDocFreq == maxDocFreq;
+    return other.field.equals(field)
+        && other.numDims == numDims
+        && other.bytesPerDim == bytesPerDim
+        && other.sortedPackedPointsHashCode == sortedPackedPointsHashCode
+        && other.sortedPackedPoints.equals(sortedPackedPoints)
+        && other.maxDocFreq == maxDocFreq;
   }
 
   @Override

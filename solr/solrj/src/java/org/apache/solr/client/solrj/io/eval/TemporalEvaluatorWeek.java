@@ -20,19 +20,17 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.time.temporal.IsoFields;
 import java.time.temporal.TemporalAccessor;
-
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-/**
- * Provides a day stream evaluator
- */
+/** Provides a day stream evaluator */
 public class TemporalEvaluatorWeek extends RecursiveTemporalEvaluator {
   protected static final long serialVersionUID = 1L;
-  
+
   public static final String FUNCTION_NAME = "week";
 
-  public TemporalEvaluatorWeek(StreamExpression expression, StreamFactory factory) throws IOException {
+  public TemporalEvaluatorWeek(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory, FUNCTION_NAME);
   }
 
@@ -40,5 +38,4 @@ public class TemporalEvaluatorWeek extends RecursiveTemporalEvaluator {
   protected Object getDatePart(TemporalAccessor value) {
     return value.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR);
   }
-
 }

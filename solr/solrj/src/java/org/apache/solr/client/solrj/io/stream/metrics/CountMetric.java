@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 package org.apache.solr.client.solrj.io.stream.metrics;
+
 import java.io.IOException;
 import java.util.Locale;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
@@ -36,28 +36,31 @@ public class CountMetric extends Metric {
     init("count", columnName);
   }
 
-  public CountMetric(StreamExpression expression, StreamFactory factory) throws IOException{
+  public CountMetric(StreamExpression expression, StreamFactory factory) throws IOException {
     // grab all parameters out
     String functionName = expression.getFunctionName();
     String columnName = factory.getValueOperand(expression, 0);
 
-    if(1 != expression.getParameters().size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - unknown operands found", expression));
+    if (1 != expression.getParameters().size()) {
+      throw new IOException(
+          String.format(Locale.ROOT, "Invalid expression %s - unknown operands found", expression));
     }
 
     init(functionName, columnName);
   }
 
+  @Override
   public String[] getColumns() {
-    if(isAllColumns()) {
+    if (isAllColumns()) {
       return new String[0];
     }
-    return new String[]{columnName};
+    return new String[] {columnName};
   }
 
-  private void init(String functionName, String columnName){
+  private void init(String functionName, String columnName) {
     this.columnName = columnName;
     this.isAllColumns = "*".equals(this.columnName);
+    this.outputLong = true;
     setFunctionName(functionName);
     setIdentifier(functionName, "(", columnName, ")");
   }
@@ -66,16 +69,19 @@ public class CountMetric extends Metric {
     return isAllColumns;
   }
 
+  @Override
   public void update(Tuple tuple) {
-    if(isAllColumns() || tuple.get(columnName) != null) {
+    if (isAllColumns() || tuple.get(columnName) != null) {
       ++count;
     }
   }
 
+  @Override
   public Long getValue() {
     return count;
   }
 
+  @Override
   public Metric newInstance() {
     return new CountMetric(columnName);
   }

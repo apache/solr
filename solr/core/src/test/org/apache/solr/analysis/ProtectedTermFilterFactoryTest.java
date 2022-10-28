@@ -19,10 +19,9 @@ package org.apache.solr.analysis;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.ProtectedTermFilterFactory;
+import org.apache.lucene.tests.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrResourceLoader;
@@ -32,14 +31,15 @@ public class ProtectedTermFilterFactoryTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml","schema-protected-term.xml");
+    initCore("solrconfig.xml", "schema-protected-term.xml");
   }
 
   public void testBasic() throws Exception {
     String text = "Wuthering FooBar distant goldeN ABC compote";
-    Map<String,String> args = new HashMap<>();
+    Map<String, String> args = new HashMap<>();
     args.put("ignoreCase", "true");
-    args.put("protected", "protected-1.txt,protected-2.txt");  // Protected: foobar, jaxfopbuz, golden, compote
+    // Protected: foobar, jaxfopbuz, golden, compote
+    args.put("protected", "protected-1.txt,protected-2.txt");
     args.put("wrappedFilters", "lowercase");
 
     ResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"));
@@ -47,38 +47,44 @@ public class ProtectedTermFilterFactoryTest extends SolrTestCaseJ4 {
     factory.inform(loader);
 
     TokenStream ts = factory.create(whitespaceMockTokenizer(text));
-    BaseTokenStreamTestCase.assertTokenStreamContents(ts,
-        new String[] { "wuthering", "FooBar", "distant", "goldeN", "abc", "compote" });
+    BaseTokenStreamTestCase.assertTokenStreamContents(
+        ts, new String[] {"wuthering", "FooBar", "distant", "goldeN", "abc", "compote"});
   }
 
   public void testTwoWrappedFilters() {
-    // Index-time: Filters: truncate:4 & lowercase.  Protected (ignoreCase:true): foobar, jaxfopbuz, golden, compote
+    // Index-time: Filters: truncate:4 & lowercase.  Protected (ignoreCase:true): foobar, jaxfopbuz,
+    // golden, compote
     // Query-time: No filters
     assertU(adoc("id", "1", "prefix4_lower", "Wuthering FooBar distant goldeN ABC compote"));
     assertU(commit());
 
-    assertQ(req("prefix4_lower:(+wuth +FooBar +dist +goldeN +abc +compote)")
-        , "//result[@numFound=1]"
-    );
+    assertQ(
+        req("prefix4_lower:(+wuth +FooBar +dist +goldeN +abc +compote)"), "//result[@numFound=1]");
   }
 
   public void testDuplicateFilters() {
-    // Index-time: Filters: truncate:3 & reversestring & truncate:2.  Protected (ignoreCase:true): foobar, jaxfopbuz, golden, compote
+    // Index-time: Filters: truncate:3 & reversestring & truncate:2.  Protected (ignoreCase:true):
+    // foobar, jaxfopbuz, golden, compote
     // Query-time: No filters
-    assertU(adoc("id", "1",
-        "prefix3_rev_prefix2",            "Wuthering FooBar distant goldeN ABC compote",
-        "prefix3_rev_prefix2_mixed_IDs",  "Wuthering FooBar distant goldeN ABC compote",
-        "prefix3_rev_prefix2_mixed_case", "Wuthering FooBar distant goldeN ABC compote"));
+    assertU(
+        adoc(
+            "id",
+            "1",
+            "prefix3_rev_prefix2",
+            "Wuthering FooBar distant goldeN ABC compote",
+            "prefix3_rev_prefix2_mixed_IDs",
+            "Wuthering FooBar distant goldeN ABC compote",
+            "prefix3_rev_prefix2_mixed_case",
+            "Wuthering FooBar distant goldeN ABC compote"));
     assertU(commit());
 
-    assertQ(req("prefix3_rev_prefix2:(+tu +FooBar +si +goldeN +CB +compote)")
-        , "//result[@numFound=1]"
-    );
-    assertQ(req("prefix3_rev_prefix2_mixed_IDs:(+tu +FooBar +si +goldeN +CB +compote)")
-        , "//result[@numFound=1]"
-    );
-    assertQ(req("prefix3_rev_prefix2_mixed_case:(+tu +FooBar +si +goldeN +CB +compote)")
-        , "//result[@numFound=1]"
-    );
+    assertQ(
+        req("prefix3_rev_prefix2:(+tu +FooBar +si +goldeN +CB +compote)"), "//result[@numFound=1]");
+    assertQ(
+        req("prefix3_rev_prefix2_mixed_IDs:(+tu +FooBar +si +goldeN +CB +compote)"),
+        "//result[@numFound=1]");
+    assertQ(
+        req("prefix3_rev_prefix2_mixed_case:(+tu +FooBar +si +goldeN +CB +compote)"),
+        "//result[@numFound=1]");
   }
 }

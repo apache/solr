@@ -16,56 +16,54 @@
  */
 package org.apache.solr.search;
 
+import java.util.Random;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import java.util.Random;
 
 public class TestReload extends TestRTGBase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
     // useFactory(null);   // force FS directory
-    initCore("solrconfig-tlog.xml","schema15.xml");
+    initCore("solrconfig-tlog.xml", "schema15.xml");
   }
 
   @Test
   public void testGetRealtimeReload() throws Exception {
     clearIndex();
     assertU(commit());
-    long version = addAndGetVersion(sdoc("id","1") , null);
+    long version = addAndGetVersion(sdoc("id", "1"), null);
 
-    assertU(commit("softCommit","true"));   // should cause a RTG searcher to be opened
+    assertU(commit("softCommit", "true")); // should cause a RTG searcher to be opened
 
-    assertJQ(req("qt","/get","id","1", "fl", "id,_version_")
-        ,"=={'doc':{'id':'1','_version_':" + version + "}}"
-    );
+    assertJQ(
+        req("qt", "/get", "id", "1", "fl", "id,_version_"),
+        "=={'doc':{'id':'1','_version_':" + version + "}}");
 
     h.reload();
 
-    assertJQ(req("qt","/get","id","1", "fl", "id,_version_")
-        ,"=={'doc':{'id':'1','_version_':" + version + "}}"
-    );
+    assertJQ(
+        req("qt", "/get", "id", "1", "fl", "id,_version_"),
+        "=={'doc':{'id':'1','_version_':" + version + "}}");
 
-    assertU(commit("softCommit","true"));   // open a normal (caching) NRT searcher
+    assertU(commit("softCommit", "true")); // open a normal (caching) NRT searcher
 
-    assertJQ(req("q","id:1")
-        ,"/response/numFound==1"
-    );
-
+    assertJQ(req("q", "id:1"), "/response/numFound==1");
 
     Random rand = random();
     int iter = atLeast(20);
 
-    for (int i=0; i<iter; i++) {
+    for (int i = 0; i < iter; i++) {
       if (rand.nextBoolean()) {
         // System.out.println("!!! add");
-        version = addAndGetVersion(sdoc("id","1") , null);
+        version = addAndGetVersion(sdoc("id", "1"), null);
       }
 
       if (rand.nextBoolean()) {
         if (rand.nextBoolean()) {
           // System.out.println("!!! flush");
-          assertU(commit("openSearcher","false"));   // should cause a RTG searcher to be opened as well
+          assertU(
+              commit("openSearcher", "false")); // should cause a RTG searcher to be opened as well
         } else {
           boolean softCommit = rand.nextBoolean();
           System.out.println("!!! softCommit" + softCommit);
@@ -76,17 +74,15 @@ public class TestReload extends TestRTGBase {
       if (rand.nextBoolean()) {
         // RTG should always be able to see the last version
         // System.out.println("!!! rtg");
-        assertJQ(req("qt","/get","id","1", "fl", "id,_version_")
-            ,"=={'doc':{'id':'1','_version_':" + version + "}}"
-        );
+        assertJQ(
+            req("qt", "/get", "id", "1", "fl", "id,_version_"),
+            "=={'doc':{'id':'1','_version_':" + version + "}}");
       }
 
       if (rand.nextBoolean()) {
         // a normal search should always find 1 doc
         // System.out.println("!!! q");
-        assertJQ(req("q","id:1")
-            ,"/response/numFound==1"
-        );
+        assertJQ(req("q", "id:1"), "/response/numFound==1");
       }
 
       if (rand.nextBoolean()) {
@@ -97,5 +93,4 @@ public class TestReload extends TestRTGBase {
 
     // test framework should ensure that all searchers opened have been closed.
   }
-
 }

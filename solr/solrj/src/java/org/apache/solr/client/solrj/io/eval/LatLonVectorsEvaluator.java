@@ -18,44 +18,44 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.ArrayList;
-
+import java.util.List;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 /**
- * The LatLonVectorsEvaluator maps to the latlonVectors Math Expression. The latlonVectors expression
- * takes a list of Tuples that contain a lat,lon point field and a named parameter called field
- * as input. The field parameter specifies which field to parse the lat,lon vectors from in the Tuples.
+ * The LatLonVectorsEvaluator maps to the latlonVectors Math Expression. The latlonVectors
+ * expression takes a list of Tuples that contain a lat,lon point field and a named parameter called
+ * field as input. The field parameter specifies which field to parse the lat,lon vectors from in
+ * the Tuples.
  *
- * The latlonVectors function returns a matrix of lat,lon vectors. Each row in the matrix
+ * <p>The latlonVectors function returns a matrix of lat,lon vectors. Each row in the matrix
  * contains a single lat,lon pair.
- *
- **/
-
+ */
 public class LatLonVectorsEvaluator extends RecursiveObjectEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
 
   private String field;
 
-  public LatLonVectorsEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+  public LatLonVectorsEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
 
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
 
     for (StreamExpressionNamedParameter namedParam : namedParams) {
-      if(namedParam.getName().equals("field")) {
+      if (namedParam.getName().equals("field")) {
         this.field = namedParam.getParameter().toString();
       } else {
         throw new IOException("Unexpected named parameter:" + namedParam.getName());
       }
     }
 
-    if(field == null) {
-      throw new IOException("The named parameter \"field\" must be set for the latlonVectors function.");
+    if (field == null) {
+      throw new IOException(
+          "The named parameter \"field\" must be set for the latlonVectors function.");
     }
   }
 
@@ -63,16 +63,17 @@ public class LatLonVectorsEvaluator extends RecursiveObjectEvaluator implements 
   public Object doWork(Object... objects) throws IOException {
 
     if (objects.length == 1) {
-      //Just docs
-      if(!(objects[0] instanceof List)) {
-        throw new IOException("The latlonVectors function expects a list of Tuples as a parameter.");
+      // Just docs
+      if (!(objects[0] instanceof List)) {
+        throw new IOException(
+            "The latlonVectors function expects a list of Tuples as a parameter.");
       } else {
-        @SuppressWarnings({"rawtypes"})
-        List list = (List)objects[0];
-        if(list.size() > 0) {
+        List<?> list = (List<?>) objects[0];
+        if (list.size() > 0) {
           Object o = list.get(0);
-          if(!(o instanceof Tuple)) {
-            throw new IOException("The latlonVectors function expects a list of Tuples as a parameter.");
+          if (!(o instanceof Tuple)) {
+            throw new IOException(
+                "The latlonVectors function expects a list of Tuples as a parameter.");
           }
         } else {
           throw new IOException("Empty list was passed as a parameter to termVectors function.");
@@ -89,11 +90,11 @@ public class LatLonVectorsEvaluator extends RecursiveObjectEvaluator implements 
 
       List<String> rowLabels = new ArrayList<>();
 
-      for(int i=0; i< tuples.size(); i++) {
+      for (int i = 0; i < tuples.size(); i++) {
         Tuple tuple = tuples.get(i);
         String value = tuple.getString(field);
         String[] latLong = null;
-        if(value.contains(",")) {
+        if (value.contains(",")) {
           latLong = value.split(",");
         } else {
           latLong = value.split(" ");
@@ -101,7 +102,7 @@ public class LatLonVectorsEvaluator extends RecursiveObjectEvaluator implements 
 
         locationVectors[i][0] = Double.parseDouble(latLong[0].trim());
         locationVectors[i][1] = Double.parseDouble(latLong[1].trim());
-        if(tuple.get("id") != null) {
+        if (tuple.get("id") != null) {
           rowLabels.add(tuple.get("id").toString());
         }
       }

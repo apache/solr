@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.core;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -24,8 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Locale;
-
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
@@ -39,22 +39,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Directory provider which mimics original Solr 
- * {@link org.apache.lucene.store.FSDirectory} based behavior.
- * 
- * File based DirectoryFactory implementations generally extend
- * this class.
- * 
+ * Directory provider which mimics original Solr {@link org.apache.lucene.store.FSDirectory} based
+ * behavior.
+ *
+ * <p>File based DirectoryFactory implementations generally extend this class.
  */
 public class StandardDirectoryFactory extends CachingDirectoryFactory {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
-  protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException {
+  protected Directory create(String path, LockFactory lockFactory, DirContext dirContext)
+      throws IOException {
     return FSDirectory.open(Path.of(path), lockFactory);
   }
-  
+
   @Override
   protected LockFactory createLockFactory(String rawLockType) throws IOException {
     if (null == rawLockType) {
@@ -72,53 +71,53 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
       case DirectoryFactory.LOCK_TYPE_NONE:
         return NoLockFactory.INSTANCE;
       default:
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Unrecognized lockType: " + rawLockType);
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR, "Unrecognized lockType: " + rawLockType);
     }
   }
-  
+
   @Override
   public String normalize(String path) throws IOException {
     return super.normalize(new File(path).getCanonicalPath());
   }
 
+  @Override
   public boolean isPersistent() {
     return true;
   }
-  
+
   @Override
-  protected void removeDirectory(CacheValue cacheValue) throws IOException {
-    File dirFile = new File(cacheValue.path);
-    FileUtils.deleteDirectory(dirFile);
+  protected synchronized void removeDirectory(CacheValue cacheValue) throws IOException {
+    Path dirPath = Path.of(cacheValue.path);
+    PathUtils.deleteDirectory(dirPath);
   }
-  
+
   /**
    * Override for more efficient moves.
-   * 
-   * Intended for use with replication - use
-   * carefully - some Directory wrappers will
-   * cache files for example.
-   * 
-   * You should first {@link Directory#sync(java.util.Collection)} any file that will be 
-   * moved or avoid cached files through settings.
-   * 
-   * @throws IOException
-   *           If there is a low-level I/O error.
+   *
+   * <p>Intended for use with replication - use carefully - some Directory wrappers will cache files
+   * for example.
+   *
+   * <p>You should first {@link Directory#sync(java.util.Collection)} any file that will be moved or
+   * avoid cached files through settings.
+   *
+   * @throws IOException If there is a low-level I/O error.
    */
   @Override
   public void move(Directory fromDir, Directory toDir, String fileName, IOContext ioContext)
       throws IOException {
-    
+
     Directory baseFromDir = getBaseDir(fromDir);
     Directory baseToDir = getBaseDir(toDir);
-    
+
     if (baseFromDir instanceof FSDirectory && baseToDir instanceof FSDirectory) {
-  
+
       Path path1 = ((FSDirectory) baseFromDir).getDirectory().toAbsolutePath();
       Path path2 = ((FSDirectory) baseToDir).getDirectory().toAbsolutePath();
-      
+
       try {
-        Files.move(path1.resolve(fileName), path2.resolve(fileName), StandardCopyOption.ATOMIC_MOVE);
+        Files.move(
+            path1.resolve(fileName), path2.resolve(fileName), StandardCopyOption.ATOMIC_MOVE);
       } catch (AtomicMoveNotSupportedException e) {
         Files.move(path1.resolve(fileName), path2.resolve(fileName));
       }
@@ -129,21 +128,26 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
   }
 
   // perform an atomic rename if possible
-  public void renameWithOverwrite(Directory dir, String fileName, String toName) throws IOException {
+  @Override
+  public void renameWithOverwrite(Directory dir, String fileName, String toName)
+      throws IOException {
     Directory baseDir = getBaseDir(dir);
     if (baseDir instanceof FSDirectory) {
       Path path = ((FSDirectory) baseDir).getDirectory().toAbsolutePath();
       try {
-        Files.move(path.resolve(fileName),
-            path.resolve(toName), StandardCopyOption.ATOMIC_MOVE,
+        Files.move(
+            path.resolve(fileName),
+            path.resolve(toName),
+            StandardCopyOption.ATOMIC_MOVE,
             StandardCopyOption.REPLACE_EXISTING);
       } catch (AtomicMoveNotSupportedException e) {
-        Files.move(FileSystems.getDefault().getPath(path.toString(), fileName),
-            FileSystems.getDefault().getPath(path.toString(), toName), StandardCopyOption.REPLACE_EXISTING);
+        Files.move(
+            FileSystems.getDefault().getPath(path.toString(), fileName),
+            FileSystems.getDefault().getPath(path.toString(), toName),
+            StandardCopyOption.REPLACE_EXISTING);
       }
     } else {
       super.renameWithOverwrite(dir, fileName, toName);
     }
   }
-
 }

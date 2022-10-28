@@ -16,25 +16,20 @@
  */
 package org.apache.solr.update.processor;
 
-import java.util.Date;
-import java.util.UUID;
-import java.util.Arrays;
 import java.io.IOException;
-
+import java.util.Date;
+import java.util.List;
+import java.util.UUID;
 import org.apache.solr.SolrTestCaseJ4;
-
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
-
-import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
-
 import org.apache.solr.update.AddUpdateCommand;
-
 import org.junit.BeforeClass;
 
 public class DefaultValueUpdateProcessorTest extends SolrTestCaseJ4 {
@@ -50,47 +45,42 @@ public class DefaultValueUpdateProcessorTest extends SolrTestCaseJ4 {
     Date now = new Date();
 
     // get all defaults
-    d = processAdd("default-values",
-                   doc(f("id", "1111"),
-                       f("name", "Existing", "Values")));
-    
+    d = processAdd("default-values", doc(f("id", "1111"), f("name", "Existing", "Values")));
+
     assertNotNull(d);
-    
+
     assertEquals("X", d.getFieldValue("processor_default_s"));
     assertEquals(42, d.getFieldValue("processor_default_i"));
     assertNotNull(d.getFieldValue("uuid"));
     assertNotNull(UUID.fromString(d.getFieldValue("uuid").toString()));
     assertNotNull(d.getFieldValue("timestamp"));
-    assertTrue("timestamp not a date: " + 
-               d.getFieldValue("timestamp").getClass(), 
-               d.getFieldValue("timestamp") instanceof Date);
-    assertEquals(Arrays.asList("Existing","Values"), 
-                   d.getFieldValues("name"));
-    
+    assertTrue(
+        "timestamp not a date: " + d.getFieldValue("timestamp").getClass(),
+        d.getFieldValue("timestamp") instanceof Date);
+    assertEquals(List.of("Existing", "Values"), List.copyOf(d.getFieldValues("name")));
+
     // defaults already specified
-    d = processAdd("default-values",
-                   doc(f("id", "1111"),
-                       f("timestamp", now),
-                       f("uuid", "550e8400-e29b-41d4-a716-446655440000"),
-                       f("processor_default_s", "I HAVE A VALUE"),
-                       f("processor_default_i", 12345),
-                       f("name", "Existing", "Values")));
-    
+    d =
+        processAdd(
+            "default-values",
+            doc(
+                f("id", "1111"),
+                f("timestamp", now),
+                f("uuid", "550e8400-e29b-41d4-a716-446655440000"),
+                f("processor_default_s", "I HAVE A VALUE"),
+                f("processor_default_i", 12345),
+                f("name", "Existing", "Values")));
+
     assertNotNull(d);
-    
+
     assertEquals("I HAVE A VALUE", d.getFieldValue("processor_default_s"));
     assertEquals(12345, d.getFieldValue("processor_default_i"));
-    assertEquals("550e8400-e29b-41d4-a716-446655440000",
-                 d.getFieldValue("uuid"));
-    assertEquals(now, d.getFieldValue("timestamp"));
-    assertEquals(Arrays.asList("Existing","Values"), 
-                 d.getFieldValues("name"));
+    assertEquals("550e8400-e29b-41d4-a716-446655440000", d.getFieldValue("uuid"));
+    assertEquals(now.toInstant(), ((Date) d.getFieldValue("timestamp")).toInstant());
+    assertEquals(List.of("Existing", "Values"), List.copyOf(d.getFieldValues("name")));
   }
 
-
-  /** 
-   * Convenience method for building up SolrInputDocuments
-   */
+  /** Convenience method for building up SolrInputDocuments */
   SolrInputDocument doc(SolrInputField... fields) {
     SolrInputDocument d = new SolrInputDocument();
     for (SolrInputField f : fields) {
@@ -99,9 +89,7 @@ public class DefaultValueUpdateProcessorTest extends SolrTestCaseJ4 {
     return d;
   }
 
-  /** 
-   * Convenience method for building up SolrInputFields
-   */
+  /** Convenience method for building up SolrInputFields */
   SolrInputField field(String name, Object... values) {
     SolrInputField f = new SolrInputField(name);
     for (Object v : values) {
@@ -110,22 +98,17 @@ public class DefaultValueUpdateProcessorTest extends SolrTestCaseJ4 {
     return f;
   }
 
-  /** 
-   * Convenience method for building up SolrInputFields with default boost
-   */
+  /** Convenience method for building up SolrInputFields with default boost */
   SolrInputField f(String name, Object... values) {
     return field(name, values);
   }
 
-
   /**
-   * Runs a document through the specified chain, and returns the final 
-   * document used when the chain is completed (NOTE: some chains may 
-   * modify the document in place
+   * Runs a document through the specified chain, and returns the final document used when the chain
+   * is completed (NOTE: some chains may modify the document in place
    */
-  SolrInputDocument processAdd(final String chain, 
-                               final SolrInputDocument docIn) 
-    throws IOException {
+  SolrInputDocument processAdd(final String chain, final SolrInputDocument docIn)
+      throws IOException {
 
     SolrCore core = h.getCore();
     UpdateRequestProcessorChain pc = core.getUpdateProcessingChain(chain);
@@ -133,10 +116,9 @@ public class DefaultValueUpdateProcessorTest extends SolrTestCaseJ4 {
 
     SolrQueryResponse rsp = new SolrQueryResponse();
 
-    SolrQueryRequest req = new LocalSolrQueryRequest
-      (core, new ModifiableSolrParams());
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
     try {
-      SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req,rsp));
+      SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
       AddUpdateCommand cmd = new AddUpdateCommand(req);
       cmd.solrDoc = docIn;
 

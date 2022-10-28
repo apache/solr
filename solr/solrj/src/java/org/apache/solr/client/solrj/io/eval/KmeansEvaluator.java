@@ -19,15 +19,13 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
-
-
 import org.apache.commons.math3.ml.clustering.CentroidCluster;
-import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.commons.math3.ml.clustering.Clusterable;
 import org.apache.commons.math3.ml.clustering.KMeansPlusPlusClusterer;
+import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -37,58 +35,54 @@ public class KmeansEvaluator extends RecursiveObjectEvaluator implements TwoValu
 
   private int maxIterations = 1000;
 
-  public KmeansEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public KmeansEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
 
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
 
-    for(StreamExpressionNamedParameter namedParam : namedParams){
-      if(namedParam.getName().equals("maxIterations")) {
+    for (StreamExpressionNamedParameter namedParam : namedParams) {
+      if (namedParam.getName().equals("maxIterations")) {
         this.maxIterations = Integer.parseInt(namedParam.getParameter().toString().trim());
       } else {
-        throw new IOException("Unexpected named parameter:"+namedParam.getName());
+        throw new IOException("Unexpected named parameter:" + namedParam.getName());
       }
     }
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public Object doWork(Object value1, Object value2) throws IOException {
 
     Matrix matrix = null;
     int k = 0;
 
-    if(value1 instanceof Matrix) {
-      matrix = (Matrix)value1;
+    if (value1 instanceof Matrix) {
+      matrix = (Matrix) value1;
     } else {
       throw new IOException("The first parameter for kmeans should be the observation matrix.");
     }
 
-    if(value2 instanceof Number) {
-      k = ((Number)value2).intValue();
+    if (value2 instanceof Number) {
+      k = ((Number) value2).intValue();
     } else {
       throw new IOException("The second parameter for kmeans should be k.");
     }
 
-
-    @SuppressWarnings({"rawtypes"})
-    KMeansPlusPlusClusterer<ClusterPoint> kmeans = new KMeansPlusPlusClusterer(k, maxIterations);
+    KMeansPlusPlusClusterer<ClusterPoint> kmeans = new KMeansPlusPlusClusterer<>(k, maxIterations);
     List<ClusterPoint> points = new ArrayList<>();
     double[][] data = matrix.getData();
 
     List<String> ids = matrix.getRowLabels();
 
-    for(int i=0; i<data.length; i++) {
+    for (int i = 0; i < data.length; i++) {
       double[] vec = data[i];
-      if(ids != null) {
+      if (ids != null) {
         points.add(new ClusterPoint(ids.get(i), vec));
       } else {
         points.add(new ClusterPoint(Integer.toString(i), vec));
       }
     }
 
-    @SuppressWarnings({"rawtypes"})
-    Map fields = new HashMap();
+    Map<String, Object> fields = new HashMap<>();
 
     fields.put("k", k);
     fields.put("distance", "euclidean");
@@ -107,6 +101,7 @@ public class KmeansEvaluator extends RecursiveObjectEvaluator implements TwoValu
       this.point = point;
     }
 
+    @Override
     public double[] getPoint() {
       return this.point;
     }
@@ -122,18 +117,20 @@ public class KmeansEvaluator extends RecursiveObjectEvaluator implements TwoValu
     private List<CentroidCluster<ClusterPoint>> clusters;
     private Matrix membershipMatrix;
 
-    public ClusterTuple(@SuppressWarnings({"rawtypes"})Map fields,
-                        List<CentroidCluster<ClusterPoint>> clusters,
-                        List<String> columnLabels) {
+    public ClusterTuple(
+        Map<String, ?> fields,
+        List<CentroidCluster<ClusterPoint>> clusters,
+        List<String> columnLabels) {
       super(fields);
       this.clusters = clusters;
       this.columnLabels = columnLabels;
     }
 
-    public ClusterTuple(@SuppressWarnings({"rawtypes"})Map fields,
-                        List<CentroidCluster<ClusterPoint>> clusters,
-                        List<String> columnLabels,
-                        Matrix membershipMatrix) {
+    public ClusterTuple(
+        Map<String, ?> fields,
+        List<CentroidCluster<ClusterPoint>> clusters,
+        List<String> columnLabels,
+        Matrix membershipMatrix) {
       super(fields);
       this.clusters = clusters;
       this.columnLabels = columnLabels;
@@ -153,4 +150,3 @@ public class KmeansEvaluator extends RecursiveObjectEvaluator implements TwoValu
     }
   }
 }
-

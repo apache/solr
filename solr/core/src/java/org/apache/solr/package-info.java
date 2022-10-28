@@ -14,9 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * Commonly reused classes and interfaces (deprecated package, do not add new classes)
- */
-package org.apache.solr;
 
+/** Commonly reused classes and interfaces (deprecated package, do not add new classes) */
+package org.apache.solr;

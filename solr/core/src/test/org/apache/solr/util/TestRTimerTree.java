@@ -22,25 +22,31 @@ import org.apache.solr.common.util.NamedList;
 public class TestRTimerTree extends SolrTestCase {
 
   private static class MockTimerImpl implements RTimer.TimerImpl {
-    static private long systemTime;
-    static public void incrementSystemTime(long ms) {
+    private static long systemTime;
+
+    public static void incrementSystemTime(long ms) {
       systemTime += ms;
     }
 
     private long start;
+
+    @Override
     public void start() {
       start = systemTime;
     }
+
+    @Override
     public double elapsed() {
       return systemTime - start;
     }
   }
 
-  private class MockRTimerTree extends RTimerTree {
+  private static class MockRTimerTree extends RTimerTree {
     @Override
     protected TimerImpl newTimerImpl() {
       return new MockTimerImpl();
     }
+
     @Override
     protected RTimerTree newTimer() {
       return new MockRTimerTree();
@@ -75,15 +81,12 @@ public class TestRTimerTree extends SolrTestCase {
     assertEquals(120, (int) subt.getTime());
     assertEquals(220, (int) rt.getTime());
 
-    @SuppressWarnings({"rawtypes"})
-    NamedList nl = rt.asNamedList();
+    NamedList<Object> nl = rt.asNamedList();
     assertEquals(220, ((Double) nl.get("time")).intValue());
-    @SuppressWarnings({"rawtypes"})
-    NamedList sub1nl = (NamedList) nl.get("sub1");
+    NamedList<?> sub1nl = (NamedList<?>) nl.get("sub1");
     assertNotNull(sub1nl);
     assertEquals(120, ((Double) sub1nl.get("time")).intValue());
-    @SuppressWarnings({"rawtypes"})
-    NamedList sub11nl = (NamedList) sub1nl.get("sub1.1");
+    NamedList<?> sub11nl = (NamedList<?>) sub1nl.get("sub1.1");
     assertNotNull(sub11nl);
     assertEquals(20, ((Double) sub11nl.get("time")).intValue());
   }

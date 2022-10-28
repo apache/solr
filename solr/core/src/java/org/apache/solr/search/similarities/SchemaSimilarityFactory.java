@@ -19,8 +19,6 @@ package org.apache.solr.search.similarities;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.misc.search.similarity.LegacyBM25Similarity;
-import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
@@ -30,23 +28,20 @@ import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
 /**
- * <p>
- * <code>SimilarityFactory</code> that returns a global {@link PerFieldSimilarityWrapper}
- * that delegates to the field type, if it's configured.  For field types that
- * do not have a <code>Similarity</code> explicitly configured, the global <code>Similarity</code> 
- * will use per fieldtype defaults -- either based on an explicitly configured 
- * <code>defaultSimFromFieldType</code> a sensible default depending on the {@link Version} 
- * matching configured:
- * </p>
+ * <code>SimilarityFactory</code> that returns a global {@link PerFieldSimilarityWrapper} that
+ * delegates to the field type, if it's configured. For field types that do not have a <code>
+ * Similarity</code> explicitly configured, the global <code>Similarity</code> will use per
+ * fieldtype defaults -- either based on an explicitly configured <code>defaultSimFromFieldType
+ * </code> a sensible default:
+ *
  * <ul>
- *  <li><code>luceneMatchVersion &lt; 8.0</code> = {@link LegacyBM25Similarity}</li>
- *  <li><code>luceneMatchVersion &gt;= 8.0</code> = {@link BM25Similarity}</li>
+ *   <li><code>luceneMatchVersion &gt;= 8.0</code> = {@link BM25Similarity}
  * </ul>
- * <p>
- * The <code>defaultSimFromFieldType</code> option accepts the name of any fieldtype, and uses 
+ *
+ * <p>The <code>defaultSimFromFieldType</code> option accepts the name of any fieldtype, and uses
  * whatever <code>Similarity</code> is explicitly configured for that fieldType as the default for
- * all other field types.  For example:
- * </p>
+ * all other field types. For example:
+ *
  * <pre class="prettyprint">
  *   &lt;similarity class="solr.SchemaSimilarityFactory" &gt;
  *     &lt;str name="defaultSimFromFieldType"&gt;type-using-custom-dfr&lt;/str&gt;
@@ -62,37 +57,33 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  *     &lt;/similarity&gt;
  *   &lt;/fieldType&gt;
  * </pre>
- * <p>
- * In the example above, any fieldtypes that do not define their own <code>&lt;/similarity/&gt;</code> 
- * will use the <code>Similarity</code> configured for the <code>type-using-custom-dfr</code>.
- * </p>
- * 
- * <p>
- * <b>NOTE:</b> Users should be aware that even when this factory uses a single default 
- * <code>Similarity</code> for some or all fields in a Query, the behavior can be inconsistent 
- * with the behavior of explicitly configuring that same <code>Similarity</code> globally, because 
- * of differences in how some multi-field / multi-clause behavior is defined in 
- * <code>PerFieldSimilarityWrapper</code>.
- * </p>
+ *
+ * <p>In the example above, any fieldtypes that do not define their own <code>&lt;/similarity/&gt;
+ * </code> will use the <code>Similarity</code> configured for the <code>type-using-custom-dfr
+ * </code>.
+ *
+ * <p><b>NOTE:</b> Users should be aware that even when this factory uses a single default <code>
+ * Similarity</code> for some or all fields in a Query, the behavior can be inconsistent with the
+ * behavior of explicitly configuring that same <code>Similarity</code> globally, because of
+ * differences in how some multi-field / multi-clause behavior is defined in <code>
+ * PerFieldSimilarityWrapper</code>.
  *
  * @see FieldType#getSimilarity
  */
 public class SchemaSimilarityFactory extends SimilarityFactory implements SolrCoreAware {
 
   private static final String INIT_OPT = "defaultSimFromFieldType";
-  
+
   private String defaultSimFromFieldType; // set by init, if null use sensible implicit default
-  
+
   private volatile SolrCore core; // set by inform(SolrCore)
   private volatile Similarity similarity; // lazy instantiated
-  private Version coreVersion = Version.LATEST;
 
   @Override
   public void inform(SolrCore core) {
     this.core = core;
-    this.coreVersion = this.core.getSolrConfig().luceneMatchVersion;
   }
-  
+
   @Override
   public void init(SolrParams args) {
     defaultSimFromFieldType = args.get(INIT_OPT, null);
@@ -102,39 +93,44 @@ public class SchemaSimilarityFactory extends SimilarityFactory implements SolrCo
   @Override
   public Similarity getSimilarity() {
     if (null == core) {
-      throw new IllegalStateException("SchemaSimilarityFactory can not be used until SolrCoreAware.inform has been called");
+      throw new IllegalStateException(
+          "SchemaSimilarityFactory can not be used until SolrCoreAware.inform has been called");
     }
     if (null == similarity) {
       // Need to instantiate lazily, can't do this in inform(SolrCore) because of chicken/egg
       // circular initialization hell with core.getLatestSchema() to lookup defaultSimFromFieldType
-      
+
       Similarity defaultSim = null;
       if (null == defaultSimFromFieldType) {
         // nothing configured, choose a sensible implicit default...
-        defaultSim = coreVersion.onOrAfter(Version.LUCENE_8_0_0) ? 
-            new BM25Similarity() :
-            new LegacyBM25Similarity();
+        defaultSim = new BM25Similarity();
       } else {
         FieldType defSimFT = core.getLatestSchema().getFieldTypeByName(defaultSimFromFieldType);
         if (null == defSimFT) {
-          throw new SolrException(ErrorCode.SERVER_ERROR,
-                                  "SchemaSimilarityFactory configured with " + INIT_OPT + "='" +
-                                  defaultSimFromFieldType + "' but that <fieldType> does not exist");
-                                  
+          throw new SolrException(
+              ErrorCode.SERVER_ERROR,
+              "SchemaSimilarityFactory configured with "
+                  + INIT_OPT
+                  + "='"
+                  + defaultSimFromFieldType
+                  + "' but that <fieldType> does not exist");
         }
         defaultSim = defSimFT.getSimilarity();
         if (null == defaultSim) {
-          throw new SolrException(ErrorCode.SERVER_ERROR,
-                                  "SchemaSimilarityFactory configured with " + INIT_OPT + "='" + 
-                                  defaultSimFromFieldType +
-                                  "' but that <fieldType> does not define a <similarity>");
+          throw new SolrException(
+              ErrorCode.SERVER_ERROR,
+              "SchemaSimilarityFactory configured with "
+                  + INIT_OPT
+                  + "='"
+                  + defaultSimFromFieldType
+                  + "' but that <fieldType> does not define a <similarity>");
         }
       }
       similarity = new SchemaSimilarity(defaultSim);
     }
     return similarity;
   }
-  
+
   private class SchemaSimilarity extends PerFieldSimilarityWrapper {
     private Similarity defaultSimilarity;
 

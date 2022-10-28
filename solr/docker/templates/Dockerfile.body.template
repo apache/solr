@@ -1,0 +1,83 @@
+#-# Licensed to the Apache Software Foundation (ASF) under one or more
+#-# contributor license agreements.  See the NOTICE file distributed with
+#-# this work for additional information regarding copyright ownership.
+#-# The ASF licenses this file to You under the Apache License, Version 2.0
+#-# (the "License"); you may not use this file except in compliance with
+#-# the License.  You may obtain a copy of the License at
+#-#
+#-#     http://www.apache.org/licenses/LICENSE-2.0
+#-#
+#-# Unless required by applicable law or agreed to in writing, software
+#-# distributed under the License is distributed on an "AS IS" BASIS,
+#-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#-# See the License for the specific language governing permissions and
+#-# limitations under the License.
+
+#-#
+#-# This template is used as the primary body of both "local" and "official" Apache Solr Dockerfiles.
+#-# It contains everything that should be "common" between both files.
+#-#
+#-# ! ! ! NO VARIABLES OR CONDITIONAL LOGIC SHOULD BE NEEDED OR USED IN THIS TEMPLATE ! ! !
+#-# (It exists as a 'template' solely so that this comment can exist)
+#-#
+#-# The pre-reqs for this file (which must be satisfied for any "header" pre-pended to it are that 
+#-# '/opt/solr-X.Y.Z' exists (ie: COPY'ed from the build context and/or a downloaded and unpacked solr.tgz)
+#-#
+#-#
+#-#
+
+LABEL org.opencontainers.image.title="Apache Solr"
+LABEL org.opencontainers.image.description="Apache Solr is the popular, blazing-fast, open source search platform built on Apache Lucene."
+LABEL org.opencontainers.image.authors="The Apache Solr Project"
+LABEL org.opencontainers.image.url="https://solr.apache.org"
+LABEL org.opencontainers.image.source="https://github.com/apache/solr"
+LABEL org.opencontainers.image.documentation="https://solr.apache.org/guide/"
+LABEL org.opencontainers.image.version="${SOLR_VERSION}"
+LABEL org.opencontainers.image.licenses="Apache-2.0"
+
+ENV SOLR_USER="solr" \
+    SOLR_UID="8983" \
+    SOLR_GROUP="solr" \
+    SOLR_GID="8983" \
+    PATH="/opt/solr/bin:/opt/solr/docker/scripts:/opt/solr/prometheus-exporter/bin:$PATH" \
+    SOLR_INCLUDE=/etc/default/solr.in.sh \
+    SOLR_HOME=/var/solr/data \
+    SOLR_PID_DIR=/var/solr \
+    SOLR_LOGS_DIR=/var/solr/logs \
+    LOG4J_PROPS=/var/solr/log4j2.xml \
+    SOLR_SERVER_DIR="/opt/solr-${SOLR_VERSION}/server" \
+    SOLR_JETTY_HOST="0.0.0.0"
+
+RUN set -ex; \
+  groupadd -r --gid "$SOLR_GID" "$SOLR_GROUP"; \
+  useradd -r --uid "$SOLR_UID" --gid "$SOLR_GID" "$SOLR_USER"
+
+# add symlink to /opt/solr, remove what we don't want.
+# Remove the Dockerfile because it might not represent the dockerfile that was used to generate the image.
+RUN set -ex; \
+  (cd /opt; ln -s solr-*/ solr); \
+  rm -Rf /opt/solr/docs /opt/solr/docker/Dockerfile;
+
+RUN set -ex; \
+  mkdir -p /opt/solr/server/solr/lib /docker-entrypoint-initdb.d; \
+  cp /opt/solr/bin/solr.in.sh /etc/default/solr.in.sh; \
+  mv /opt/solr/bin/solr.in.sh /opt/solr/bin/solr.in.sh.orig; \
+  mv /opt/solr/bin/solr.in.cmd /opt/solr/bin/solr.in.cmd.orig; \
+  chmod 0664 /etc/default/solr.in.sh; \
+  mkdir -p -m0770 /var/solr; \
+  chown -R "$SOLR_USER:0" /var/solr; \
+  ln -s /opt/solr/modules /opt/solr/contrib; \
+  ln -s /opt/solr/prometheus-exporter /opt/solr/modules/prometheus-exporter;
+
+RUN set -ex; \
+    apt-get update; \
+    apt-get -y install acl lsof procps wget netcat gosu tini jattach; \
+    rm -rf /var/lib/apt/lists/*;
+
+VOLUME /var/solr
+EXPOSE 8983
+WORKDIR /opt/solr
+USER $SOLR_UID
+
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["solr-foreground"]
