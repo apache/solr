@@ -92,7 +92,7 @@ if %ERRORLEVEL% equ 0 goto mainEnd
 
 :fail
 @rem https://github.com/apache/lucene/pull/819
-echo Error: Something went wrong. Make sure you're using Java 11 - 18.
+echo Error: Something went wrong. Make sure you're using Java 11 - 19.
 
 rem Set variable GRADLE_EXIT_CONSOLE if you need the _script_ return code instead of
 rem the _cmd.exe /c_ return code!
