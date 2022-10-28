@@ -66,7 +66,8 @@ class JoinQuery extends Query {
     this(fromField, toField, coreName, subQuery, 0);
   }
 
-  public JoinQuery(String fromField, String toField, String coreName, Query subQuery, long fromCoreOpenTime) {
+  public JoinQuery(
+      String fromField, String toField, String coreName, Query subQuery, long fromCoreOpenTime) {
     assert null != fromField;
     assert null != toField;
     assert null != subQuery;

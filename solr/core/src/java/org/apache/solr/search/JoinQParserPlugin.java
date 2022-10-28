@@ -65,7 +65,12 @@ public class JoinQParserPlugin extends QParserPlugin {
       @Override
       Query makeFilter(QParser qparser, JoinQParserPlugin plugin) throws SyntaxError {
         final JoinParams jParams = parseJoin(qparser);
-        return new JoinQuery(jParams.fromField, jParams.toField, jParams.fromCore, jParams.fromQuery, jParams.fromCoreOpenTime);
+        return new JoinQuery(
+            jParams.fromField,
+            jParams.toField,
+            jParams.fromCore,
+            jParams.fromQuery,
+            jParams.fromCoreOpenTime);
       }
 
       @Override
@@ -101,10 +106,15 @@ public class JoinQParserPlugin extends QParserPlugin {
 
       private JoinQuery createTopLevelJoin(JoinParams jParams) {
         if (isSelfJoin(jParams)) {
-          return new TopLevelJoinQuery.SelfJoin(jParams.fromField, jParams.fromQuery, jParams.fromCoreOpenTime);
+          return new TopLevelJoinQuery.SelfJoin(
+              jParams.fromField, jParams.fromQuery, jParams.fromCoreOpenTime);
         }
         return new TopLevelJoinQuery(
-            jParams.fromField, jParams.toField, jParams.fromCore, jParams.fromQuery, jParams.fromCoreOpenTime);
+            jParams.fromField,
+            jParams.toField,
+            jParams.fromCore,
+            jParams.fromQuery,
+            jParams.fromCoreOpenTime);
       }
 
       private boolean isSelfJoin(JoinParams jparams) {

@@ -472,7 +472,8 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
     };
   }
 
-  public PointSetQuery(String field, int numDims, int bytesPerDim, Stream packedPoints, int maxDocFreq) {
+  public PointSetQuery(
+      String field, int numDims, int bytesPerDim, Stream packedPoints, int maxDocFreq) {
     this.field = field;
     this.bytesPerDim = bytesPerDim;
     this.numDims = numDims;

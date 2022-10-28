@@ -584,7 +584,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       } else if (rangeQuery instanceof ExtendedQuery) {
         rangeQ = new WrappedQuery(rangeQuery, false, ((ExtendedQuery) rangeQuery).getCost());
       } else {
-        rangeQ = new WrappedQuery(rangeQuery ,false);
+        rangeQ = new WrappedQuery(rangeQuery, false);
       }
     }
     // TODO: specialize count only

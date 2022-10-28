@@ -53,7 +53,8 @@ public class TopLevelJoinQuery extends JoinQuery {
     super(fromField, toField, coreName, subQuery);
   }
 
-  public TopLevelJoinQuery(String fromField, String toField, String coreName, Query subQuery, long fromCoreOpenTime) {
+  public TopLevelJoinQuery(
+      String fromField, String toField, String coreName, Query subQuery, long fromCoreOpenTime) {
     super(fromField, toField, coreName, subQuery, fromCoreOpenTime);
   }
 
