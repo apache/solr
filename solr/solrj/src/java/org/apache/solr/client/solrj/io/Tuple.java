@@ -47,17 +47,11 @@ public class Tuple implements Cloneable, MapWriter {
    */
   public boolean EXCEPTION;
 
-  /**
-   * Tuple fields.
-   */
+  /** Tuple fields. */
   private Map<String, Object> fields = new HashMap<>(2);
-  /**
-   * External serializable field names.
-   */
+  /** External serializable field names. */
   private List<String> fieldNames;
-  /**
-   * Mapping of external field names to internal tuple field names.
-   */
+  /** Mapping of external field names to internal tuple field names. */
   private Map<String, String> fieldLabels;
 
   public Tuple() {
