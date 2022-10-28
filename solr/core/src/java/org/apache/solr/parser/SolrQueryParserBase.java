@@ -181,6 +181,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
 
   // internal: A simple raw fielded query
   public static class RawQuery extends Query {
+    // TODO SOLR-16509 make all fields final
     final SchemaField sfield;
     private final List<String> externalVals;
 

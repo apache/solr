@@ -62,7 +62,6 @@ import org.apache.solr.search.DocSetUtil;
 import org.apache.solr.search.SolrIndexSearcher;
 
 public class CrossCollectionJoinQuery extends Query {
-
   protected final String query;
   protected final String zkHost;
   protected final String solrUrl;
@@ -74,6 +73,7 @@ public class CrossCollectionJoinQuery extends Query {
   protected final long timestamp;
   protected final int ttl;
 
+  // TODO SOLR-16509 make all fields final
   protected SolrParams otherParams;
   protected String otherParamsString;
 

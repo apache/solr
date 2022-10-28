@@ -59,6 +59,7 @@ import org.apache.solr.search.SolrIndexSearcher;
  * @lucene.experimental
  */
 public class GraphQuery extends Query {
+  // TODO SOLR-16509 make all fields final
 
   /** The inital node matching query */
   private Query q;

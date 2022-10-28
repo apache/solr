@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import org.apache.lucene.search.Query;
 
 public abstract class ExtendedQueryBase extends Query implements ExtendedQuery {
+  // TODO SOLR-16509 make all fields final
   private int cost;
   private boolean cache = true;
 

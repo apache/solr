@@ -51,6 +51,7 @@ import org.slf4j.LoggerFactory;
 
 /** The ranking query that is run, reranking results using the LTRScoringModel algorithm */
 public class LTRScoringQuery extends Query implements Accountable {
+  // TODO SOLR-16509 make all fields final
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

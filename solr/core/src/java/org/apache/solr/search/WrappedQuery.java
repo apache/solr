@@ -26,7 +26,7 @@ import org.apache.lucene.search.Weight;
 
 /** A simple query that wraps another query and implements ExtendedQuery. */
 public final class WrappedQuery extends ExtendedQueryBase {
-  private Query q;
+  private final Query q;
 
   public WrappedQuery(Query q) {
     this.q = q;
@@ -34,10 +34,6 @@ public final class WrappedQuery extends ExtendedQueryBase {
 
   public Query getWrappedQuery() {
     return q;
-  }
-
-  public void setWrappedQuery(Query q) {
-    this.q = q;
   }
 
   @Override

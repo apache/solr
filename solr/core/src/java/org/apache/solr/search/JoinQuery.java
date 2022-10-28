@@ -55,13 +55,15 @@ import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
 
 class JoinQuery extends Query {
+  // TODO SOLR-16509 make all fields final
+
   String fromField;
   String toField;
   // TODO: name is missleading here compared to JoinQParserPlugin usage - here it must be a core
   // name
-  String fromIndex;
-  Query q;
-  long fromCoreOpenTime;
+  final String fromIndex;
+  final Query q;
+  final long fromCoreOpenTime;
 
   public JoinQuery(String fromField, String toField, String coreName, Query subQuery) {
     assert null != fromField;

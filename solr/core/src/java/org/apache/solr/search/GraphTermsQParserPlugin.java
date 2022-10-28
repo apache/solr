@@ -160,10 +160,10 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
   private static class GraphTermsQuery extends Query implements ExtendedQuery {
     // Not a post filter. This will typically be used as the main query.
 
-    private Term[] queryTerms;
-    private String field;
-    private int maxDocFreq;
-    private Object id;
+    private final Term[] queryTerms;
+    private final String field;
+    private final int maxDocFreq;
+    private final Object id;
 
     public GraphTermsQuery(String field, Term[] terms, int maxDocFreq) {
       this.maxDocFreq = maxDocFreq;
@@ -332,6 +332,8 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
 
 /** Modified version of {@code PointInSetQuery} to support {@code maxDocFreq}. */
 abstract class PointSetQuery extends Query implements DocSetProducer, Accountable {
+  // TODO SOLR-16509 make all fields final
+
   protected static final long BASE_RAM_BYTES =
       RamUsageEstimator.shallowSizeOfInstance(PointSetQuery.class);
 
