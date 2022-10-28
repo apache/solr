@@ -74,7 +74,8 @@ public class StatsField {
    * @lucene.internal
    * @lucene.experimental
    */
-  public static enum Stat {
+  @SuppressWarnings("ImmutableEnumChecker")
+  public enum Stat {
     min(true),
     max(true),
     missing(true),

@@ -19,10 +19,14 @@ package org.noggit;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.lang.invoke.MethodHandles;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestJSONParser extends SolrTestCaseJ4 {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // these are to aid in debugging if an unexpected error occurs
   static int parserType;
@@ -277,12 +281,11 @@ public class TestJSONParser extends SolrTestCaseJ4 {
         }
       } catch (IOException ex) {
         // shouldn't happen
-        System.out.println(ret); // use ret
+        log.error(String.valueOf(ret)); // use ret
       } catch (JSONParser.ParseException ex) {
         // OK
       } catch (Throwable ex) {
-        ex.printStackTrace();
-        System.out.println(lastParser());
+        log.error(lastParser(), ex);
         throw new RuntimeException(ex);
       }
     }

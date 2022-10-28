@@ -338,7 +338,7 @@ public class CompositeIdRouter extends HashBasedRouter {
       int upperBound;
 
       if (triLevel) {
-        lowerBound = hashes[0] & masks[0] | hashes[1] & masks[1];
+        lowerBound = (hashes[0] & masks[0]) | (hashes[1] & masks[1]);
         upperBound = lowerBound | masks[2];
       } else {
         lowerBound = hashes[0] & masks[0];
