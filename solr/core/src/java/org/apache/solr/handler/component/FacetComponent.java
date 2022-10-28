@@ -1497,7 +1497,7 @@ public class FacetComponent extends SearchComponent {
 
       // the largest possible missing term is (initialMincount - 1) if we received
       // less than the number requested.
-      if (numRequested < 0 || numRequested != 0 && numReceived < numRequested) {
+      if (numRequested < 0 || (numRequested != 0 && numReceived < numRequested)) {
         last = Math.max(0, initialMincount - 1);
       }
 

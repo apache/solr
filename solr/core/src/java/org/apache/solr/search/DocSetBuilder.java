@@ -132,7 +132,7 @@ public final class DocSetBuilder {
 
   public void grow(int numDocs) {
     if (bitSet == null) {
-      final long newLength = pos + numDocs;
+      final long newLength = (long) pos + numDocs;
       if (newLength < threshold) {
         growBuffer((int) newLength);
       } else {

@@ -2250,7 +2250,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     @SuppressWarnings({"unchecked"})
     List<Number> array4 = (List<Number>) tuples.get(0).get("c");
     assertEquals(array4.size(), 3);
-    assertEquals(array4.get(0).doubleValue(), 16.666666666666666, 0.0001);
+    assertEquals(array4.get(0).doubleValue(), 16.666666666666664, 0.0001);
     assertEquals(array4.get(1).doubleValue(), 33.33333333333333, 0.00001);
     assertEquals(array4.get(2).doubleValue(), 50, 0.0001);
   }
@@ -3725,7 +3725,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     Number mean = (Number) tuples.get(0).get("b");
     assertEquals(mean.doubleValue(), 3.3800151591412964, 0.0);
     Number mean1 = (Number) tuples.get(0).get("d");
-    assertEquals(mean1.doubleValue(), 4.3800151591412964, 0.0);
+    assertEquals(mean1.doubleValue(), 4.380015159141297, 0.0);
     @SuppressWarnings({"unchecked"})
     List<Number> vals = (List<Number>) tuples.get(0).get("f");
     assertEquals(vals.size(), 3);

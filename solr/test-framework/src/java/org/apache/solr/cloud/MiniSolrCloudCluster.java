@@ -1026,7 +1026,7 @@ public class MiniSolrCloudCluster {
 
     private final int nodeCount;
     private final Path baseDir;
-    private String solrxml = DEFAULT_CLOUD_SOLR_XML;
+    private String solrXml = DEFAULT_CLOUD_SOLR_XML;
     private JettyConfig.Builder jettyConfigBuilder;
     private Optional<String> securityJson = Optional.empty();
 
@@ -1063,14 +1063,14 @@ public class MiniSolrCloudCluster {
 
     /** Use the provided string as solr.xml content */
     public Builder withSolrXml(String solrXml) {
-      this.solrxml = solrXml;
+      this.solrXml = solrXml;
       return this;
     }
 
     /** Read solr.xml from the provided path */
     public Builder withSolrXml(Path solrXml) {
       try {
-        this.solrxml = new String(Files.readAllBytes(solrXml), Charset.defaultCharset());
+        this.solrXml = new String(Files.readAllBytes(solrXml), Charset.defaultCharset());
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -1235,7 +1235,7 @@ public class MiniSolrCloudCluster {
           new MiniSolrCloudCluster(
               nodeCount,
               baseDir,
-              solrxml,
+              solrXml,
               jettyConfig,
               null,
               securityJson,

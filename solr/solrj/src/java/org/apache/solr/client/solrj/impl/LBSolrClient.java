@@ -664,7 +664,7 @@ public abstract class LBSolrClient extends SolrClient {
       }
 
       if (wrapper.standard == false
-          || justFailed != null && justFailed.containsKey(wrapper.getBaseUrl())) continue;
+          || (justFailed != null && justFailed.containsKey(wrapper.getBaseUrl()))) continue;
       try {
         ++numServersTried;
         request.setBasePath(wrapper.baseUrl);

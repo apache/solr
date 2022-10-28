@@ -344,8 +344,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
           fail("This backup should be failed");
         }
       } catch (Exception e) {
-        // expected
-        e.printStackTrace();
+        log.error("expected", e);
       }
     }
   }
@@ -507,7 +506,8 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
           RequestStatusState state = backup.processAndWait(cluster.getSolrClient(), 1000);
           assertEquals(RequestStatusState.COMPLETED, state);
         } catch (InterruptedException e) {
-          e.printStackTrace();
+          Thread.currentThread().interrupt();
+          log.error("interrupted", e);
         }
         numBackup++;
       } else {
