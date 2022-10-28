@@ -58,8 +58,7 @@ public class AnalyticsTestQParserPlugin extends QParserPlugin {
   }
 
   static class TestAnalyticsQuery extends AnalyticsQuery {
-
-    private int base;
+    private final int base;
 
     public TestAnalyticsQuery(int base, MergeStrategy mergeStrategy) {
       super(mergeStrategy);

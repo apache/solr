@@ -32,13 +32,11 @@ import org.apache.solr.search.function.ValueSourceRangeFilter;
 
 // This class works as either an ExtendedQuery, or as a PostFilter using a collector
 public class FunctionRangeQuery extends ExtendedQueryBase implements PostFilter {
-
   final ValueSourceRangeFilter rangeFilt;
 
   public FunctionRangeQuery(ValueSourceRangeFilter filter) {
-    super();
+    super(100); // default behavior should be PostFiltering
     this.rangeFilt = filter;
-    super.setCost(100); // default behavior should be PostFiltering
   }
 
   @Override

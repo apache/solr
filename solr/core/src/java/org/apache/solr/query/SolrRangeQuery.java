@@ -67,9 +67,9 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
   private final String field;
   private final BytesRef lower;
   private final BytesRef upper;
-  private byte flags;
-  private static byte FLAG_INC_LOWER = 0x01;
-  private static byte FLAG_INC_UPPER = 0x02;
+  private final byte flags;
+  private static final byte FLAG_INC_LOWER = 0x01;
+  private static final byte FLAG_INC_UPPER = 0x02;
 
   public SolrRangeQuery(
       String field, BytesRef lower, BytesRef upper, boolean includeLower, boolean includeUpper) {

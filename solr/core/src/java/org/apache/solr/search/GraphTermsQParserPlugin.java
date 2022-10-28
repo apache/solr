@@ -186,18 +186,10 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void setCache(boolean cache) {
-      // TODO support user choice
-    }
-
-    @Override
     public int getCost() {
       // 0 is the default and keeping it avoids a needless wrapper for TwoPhaseIterator matchCost.
       return 0;
     }
-
-    @Override
-    public void setCost(int cost) {}
 
     @Override
     public Query rewrite(IndexReader reader) throws IOException {
