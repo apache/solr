@@ -611,7 +611,8 @@ public class MiniSolrCloudCluster {
    * @return the started node
    * @throws Exception on error
    */
-  public JettySolrRunner startJettySolrRunner(JettySolrRunner jetty, boolean reusePort) throws Exception {
+  public JettySolrRunner startJettySolrRunner(JettySolrRunner jetty, boolean reusePort)
+      throws Exception {
     jetty.start(reusePort);
     if (!jettys.contains(jetty)) jettys.add(jetty);
     return jetty;
