@@ -37,11 +37,6 @@ New Features
 
 * SOLR-16500: Added --enable-preview for JDK 19 to enable MemorySegment support in MMapDirectory (Kevin Risden)
 
-Bug Fixes
----------------------
-
-* SOLR-16155: DocumentBuilder should not include field values in error messages (janhoy)
-
 Improvements
 ---------------------
 
@@ -92,6 +87,8 @@ Bug Fixes
 * SOLR-16274: HEAD request for managed resource returns 500 Server Error (Kevin Risden)
 
 * SOLR-16502: Multiple CopyField should not limit to first maxChars (Fredrik Rodland, Kevin Risden)
+
+* SOLR-16155: DocumentBuilder should not include field values in error messages (janhoy)
 
 Build
 ---------------------
