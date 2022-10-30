@@ -237,6 +237,7 @@ set -- \
         "-Dorg.gradle.appname=$APP_BASE_NAME" \
         -classpath "$CLASSPATH" \
         org.gradle.wrapper.GradleWrapperMain \
+        $GRADLE_DAEMON_CTRL  \
         "$@"
 
 # Stop when "xargs" is not available.

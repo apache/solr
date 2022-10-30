@@ -78,7 +78,6 @@ set GRADLE_WRAPPER_JAR=%APP_HOME%\gradle\wrapper\gradle-wrapper.jar
 IF %ERRORLEVEL% NEQ 0 goto fail
 
 @rem Setup the command line
-
 set CLASSPATH=%APP_HOME%\gradle\wrapper\gradle-wrapper.jar
 
 @rem Don't fork a daemon mode on initial run that generates local defaults.
