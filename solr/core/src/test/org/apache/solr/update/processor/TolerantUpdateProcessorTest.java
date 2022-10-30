@@ -228,8 +228,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
     assertTrue(
         e.getMessage(),
         e.getMessage()
-            .contains(
-                "ERROR: [doc=1] Error adding field 'weight' msg=For input string: \"b\""));
+            .contains("ERROR: [doc=1] Error adding field 'weight' msg=For input string: \"b\""));
     // the first good documents made it to the index
     assertU(commit());
     assertQ(req("q", "*:*"), "//result[@numFound='6']");
@@ -260,8 +259,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
                     "tolerant-chain-max-errors-10", smallBatch, requestParams, "1"));
     assertTrue(
         e.getMessage()
-            .contains(
-                "ERROR: [doc=1] Error adding field 'weight' msg=For input string: \"b\""));
+            .contains("ERROR: [doc=1] Error adding field 'weight' msg=For input string: \"b\""));
 
     // the first good documents made it to the index
     assertU(commit());
