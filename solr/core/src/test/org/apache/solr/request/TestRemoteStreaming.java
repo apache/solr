@@ -32,7 +32,6 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -76,7 +75,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
 
   @Test
   public void testStreamUrl() throws Exception {
-    String streamUrl = getUrlFrom((HttpSolrClient) getSolrClient()) + "/select?q=*:*&fl=id&wt=csv";
+    String streamUrl = getUrlFrom(getSolrClient()) + "/select?q=*:*&fl=id&wt=csv";
 
     String getUrl =
         getUrlFrom(getSolrClient())
@@ -114,7 +113,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
   /** Compose an url that if you get it, it will delete all the data. */
   private String makeDeleteAllUrl() throws UnsupportedEncodingException {
     String deleteQuery = "<delete><query>*:*</query></delete>";
-    return getUrlFrom((HttpSolrClient) getSolrClient())
+    return getUrlFrom(getSolrClient())
         + "/update?commit=true&stream.body="
         + URLEncoder.encode(deleteQuery, "UTF-8");
   }
