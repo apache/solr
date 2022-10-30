@@ -41,6 +41,7 @@ public class DistinctOperation implements ReduceOperation {
 
   private void init() {}
 
+  @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
     return expression;
@@ -55,6 +56,7 @@ public class DistinctOperation implements ReduceOperation {
         .withExpression(toExpression(factory).toString());
   }
 
+  @Override
   public Tuple reduce() {
     // Return the tuple after setting current to null. This will ensure the next call to
     // operate stores that tuple
@@ -64,6 +66,7 @@ public class DistinctOperation implements ReduceOperation {
     return toReturn;
   }
 
+  @Override
   public void operate(Tuple tuple) {
     // we only care about the first one seen. Drop all but the first
     if (null == current) {

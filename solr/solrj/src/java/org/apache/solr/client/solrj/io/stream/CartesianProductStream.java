@@ -17,10 +17,11 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -52,7 +53,7 @@ public class CartesianProductStream extends TupleStream implements Expressible {
   private StreamComparator orderBy;
 
   // Used to contain the sorted queue of generated tuples
-  private LinkedList<Tuple> generatedTuples;
+  private Deque<Tuple> generatedTuples;
 
   public CartesianProductStream(StreamExpression expression, StreamFactory factory)
       throws IOException {
@@ -223,6 +224,7 @@ public class CartesianProductStream extends TupleStream implements Expressible {
     return explanation;
   }
 
+  @Override
   public Tuple read() throws IOException {
     if (generatedTuples.isEmpty()) {
       Tuple tuple = stream.read();
@@ -238,7 +240,7 @@ public class CartesianProductStream extends TupleStream implements Expressible {
     return generatedTuples.pop();
   }
 
-  private LinkedList<Tuple> generateTupleList(Tuple original) throws IOException {
+  private Deque<Tuple> generateTupleList(Tuple original) throws IOException {
     Map<String, Object> evaluatedValues = new HashMap<>();
 
     for (NamedEvaluator evaluator : evaluators) {
@@ -270,7 +272,7 @@ public class CartesianProductStream extends TupleStream implements Expressible {
       generatedTupleList.sort(orderBy);
     }
 
-    return new LinkedList<>(generatedTupleList);
+    return new ArrayDeque<>(generatedTupleList);
   }
 
   private boolean iterate(
@@ -297,6 +299,7 @@ public class CartesianProductStream extends TupleStream implements Expressible {
   }
 
   /** Return the incoming sort + the sort applied to the generated tuples */
+  @Override
   public StreamComparator getStreamSort() {
     if (null != orderBy) {
       return stream.getStreamSort().append(orderBy);
@@ -304,6 +307,7 @@ public class CartesianProductStream extends TupleStream implements Expressible {
     return stream.getStreamSort();
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.stream.setStreamContext(context);
     for (NamedEvaluator evaluator : evaluators) {
@@ -311,27 +315,31 @@ public class CartesianProductStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     l.add(stream);
     return l;
   }
 
+  @Override
   public void open() throws IOException {
     stream.open();
-    generatedTuples = new LinkedList<>();
+    generatedTuples = new ArrayDeque<>();
   }
 
+  @Override
   public void close() throws IOException {
     stream.close();
     generatedTuples.clear();
   }
 
+  @Override
   public int getCost() {
     return 0;
   }
 
-  class NamedEvaluator {
+  static class NamedEvaluator {
     private String name;
     private StreamEvaluator evaluator;
 

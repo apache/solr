@@ -140,6 +140,7 @@ public final class ErrorLogMuter implements Closeable, AutoCloseable {
     return rootFilter.getCount();
   }
 
+  @Override
   public void close() {
     if (!closed.getAndSet(true)) { // Don't muck with log4j if we accidently get a double close
       CTX.getConfiguration().getRootLogger().removeFilter(rootFilter);
@@ -186,6 +187,7 @@ public final class ErrorLogMuter implements Closeable, AutoCloseable {
       this.predicate = predicate;
     }
 
+    @Override
     public int getCount() {
       return count.get();
     }
@@ -221,24 +223,29 @@ public final class ErrorLogMuter implements Closeable, AutoCloseable {
       return getOnMatch();
     }
 
+    @Override
     public Result filter(Logger logger, Level level, Marker marker, String msg, Object... params) {
       return doFilter(level, msg, null);
     }
 
+    @Override
     public Result filter(Logger logger, Level level, Marker marker, String msg, Object p0) {
       return doFilter(level, msg, null);
     }
 
+    @Override
     public Result filter(
         Logger logger, Level level, Marker marker, String msg, Object p0, Object p1) {
       return doFilter(level, msg, null);
     }
 
+    @Override
     public Result filter(
         Logger logger, Level level, Marker marker, String msg, Object p0, Object p1, Object p2) {
       return doFilter(level, msg, null);
     }
 
+    @Override
     public Result filter(
         Logger logger,
         Level level,
@@ -251,6 +258,7 @@ public final class ErrorLogMuter implements Closeable, AutoCloseable {
       return doFilter(level, msg, null);
     }
 
+    @Override
     public Result filter(
         Logger logger,
         Level level,
@@ -264,6 +272,7 @@ public final class ErrorLogMuter implements Closeable, AutoCloseable {
       return doFilter(level, msg, null);
     }
 
+    @Override
     public Result filter(
         Logger logger,
         Level level,
@@ -278,6 +287,7 @@ public final class ErrorLogMuter implements Closeable, AutoCloseable {
       return doFilter(level, msg, null);
     }
 
+    @Override
     public Result filter(
         Logger logger,
         Level level,
@@ -293,6 +303,7 @@ public final class ErrorLogMuter implements Closeable, AutoCloseable {
       return doFilter(level, msg, null);
     }
 
+    @Override
     public Result filter(
         Logger logger,
         Level level,
@@ -309,6 +320,7 @@ public final class ErrorLogMuter implements Closeable, AutoCloseable {
       return doFilter(level, msg, null);
     }
 
+    @Override
     public Result filter(
         Logger logger,
         Level level,
@@ -326,6 +338,7 @@ public final class ErrorLogMuter implements Closeable, AutoCloseable {
       return doFilter(level, msg, null);
     }
 
+    @Override
     public Result filter(
         Logger logger,
         Level level,
@@ -344,14 +357,17 @@ public final class ErrorLogMuter implements Closeable, AutoCloseable {
       return doFilter(level, msg, null);
     }
 
+    @Override
     public Result filter(Logger logger, Level level, Marker marker, Object msg, Throwable t) {
       return doFilter(level, null == msg ? null : msg.toString(), t);
     }
 
+    @Override
     public Result filter(Logger logger, Level level, Marker marker, Message msg, Throwable t) {
       return doFilter(level, msg.getFormattedMessage(), t);
     }
 
+    @Override
     public Result filter(LogEvent event) {
       // NOTE: For our usage, we're not worried about needing to filter LogEvents rom remote JVMs
       // with ThrowableProxy

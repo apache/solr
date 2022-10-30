@@ -83,11 +83,14 @@ public class FunctionQParser extends QParser {
   }
 
   @Override
+  @SuppressWarnings("ErroneousBitwiseExpression")
   public Query parse() throws SyntaxError {
     ValueSource vs = null;
     List<ValueSource> lst = null;
 
     for (; ; ) {
+      // @SuppressWarnings("ErroneousBitwiseExpression") is needed since
+      // FLAG_DEFAULT & ~FLAG_CONSUME_DELIMITER == 0
       ValueSource valsource = parseValueSource(FLAG_DEFAULT & ~FLAG_CONSUME_DELIMITER);
       sp.eatws();
       if (!parseMultipleSources) {
@@ -334,7 +337,10 @@ public class FunctionQParser extends QParser {
    *
    * @param doConsumeDelimiter whether to consume a delimiter following the ValueSource
    */
+  @SuppressWarnings("ErroneousBitwiseExpression")
   protected ValueSource parseValueSource(boolean doConsumeDelimiter) throws SyntaxError {
+    // @SuppressWarnings("ErroneousBitwiseExpression") is needed since
+    // FLAG_DEFAULT & ~FLAG_CONSUME_DELIMITER == 0
     return parseValueSource(
         doConsumeDelimiter
             ? (FLAG_DEFAULT | FLAG_CONSUME_DELIMITER)
@@ -345,7 +351,7 @@ public class FunctionQParser extends QParser {
     ValueSource valueSource;
 
     int ch = sp.peek();
-    if (ch >= '0' && ch <= '9' || ch == '.' || ch == '+' || ch == '-') {
+    if ((ch >= '0' && ch <= '9') || ch == '.' || ch == '+' || ch == '-') {
       Number num = sp.getNumber();
       if (num instanceof Long) {
         valueSource = new ValueSourceParser.LongConstValueSource(num.longValue());

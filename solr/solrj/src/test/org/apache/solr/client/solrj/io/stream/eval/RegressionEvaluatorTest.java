@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.stream.eval;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import junit.framework.Assert;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -35,7 +34,7 @@ public class RegressionEvaluatorTest extends SolrTestCase {
   public RegressionEvaluatorTest() {
     super();
     factory = new StreamFactory().withFunctionName("regress", RegressionEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @Test
@@ -54,6 +53,6 @@ public class RegressionEvaluatorTest extends SolrTestCase {
     regression.addData(l1[1], l2[1]);
     regression.addData(l1[2], l2[2]);
 
-    Assert.assertEquals(result.getDouble("slope"), regression.getSlope());
+    assertEquals(result.getDouble("slope"), regression.getSlope(), 0.01);
   }
 }

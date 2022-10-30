@@ -235,7 +235,7 @@ public class CompositeIdRouter extends HashBasedRouter {
     // With default bits==16, one would need to create more than 4000 shards before this
     // becomes false by default.
     int mask = 0x0000ffff;
-    boolean round = rangeStep >= (1 << bits) * 16;
+    boolean round = rangeStep >= (1L << bits) * 16;
 
     while (end < max) {
       targetEnd = targetStart + rangeStep;
@@ -338,7 +338,7 @@ public class CompositeIdRouter extends HashBasedRouter {
       int upperBound;
 
       if (triLevel) {
-        lowerBound = hashes[0] & masks[0] | hashes[1] & masks[1];
+        lowerBound = (hashes[0] & masks[0]) | (hashes[1] & masks[1]);
         upperBound = lowerBound | masks[2];
       } else {
         lowerBound = hashes[0] & masks[0];

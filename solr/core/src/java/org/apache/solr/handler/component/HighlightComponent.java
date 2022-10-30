@@ -16,15 +16,13 @@
  */
 package org.apache.solr.handler.component;
 
-import static java.util.stream.Collectors.toMap;
-
 import com.google.common.base.MoreObjects;
 import java.io.IOException;
 import java.lang.reflect.Array;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
@@ -43,6 +41,7 @@ import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.SolrPluginUtils;
+import org.apache.solr.util.SolrResponseUtil;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
@@ -60,9 +59,9 @@ public class HighlightComponent extends SearchComponent
     ORIGINAL("original");
 
     private static final Map<String, HighlightMethod> METHODS =
-        Collections.unmodifiableMap(
-            Stream.of(values())
-                .collect(toMap(HighlightMethod::getMethodName, Function.identity())));
+        Stream.of(values())
+            .collect(
+                Collectors.toUnmodifiableMap(HighlightMethod::getMethodName, Function.identity()));
 
     private final String methodName;
 
@@ -224,7 +223,12 @@ public class HighlightComponent extends SearchComponent
             // this should only happen when using shards.tolerant=true
             continue;
           }
-          Object hl = srsp.getSolrResponse().getResponse().get(highlightingResponseField);
+          Object hl =
+              SolrResponseUtil.getSubsectionFromShardResponse(
+                  rb, srsp, highlightingResponseField, false);
+          if (hl == null) {
+            continue;
+          }
           addHighlights(objArr, hl, rb.resultIds);
         }
       }

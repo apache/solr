@@ -35,9 +35,9 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.ClassificationEvaluation;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -52,11 +52,9 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
@@ -160,7 +158,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
               expression));
     }
 
-    Map<String, String> params = new HashMap<String, String>();
+    Map<String, String> params = new HashMap<>();
     for (StreamExpressionNamedParameter namedParam : namedParams) {
       if (!namedParam.getName().equals("zkHost")) {
         params.put(namedParam.getName(), namedParam.getParameter().toString().trim());
@@ -355,6 +353,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
     this.iteration = iteration;
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.cache = context.getSolrClientCache();
     this.streamContext = context;
@@ -362,6 +361,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
   }
 
   /** Opens the CloudSolrStream */
+  @Override
   public void open() throws IOException {
     if (cache == null) {
       isCloseCache = true;
@@ -375,6 +375,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
         ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("TextLogitSolrStream"));
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     l.add(termsStream);
@@ -383,12 +384,9 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
   protected List<String> getShardUrls() throws IOException {
     try {
-      ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
+      Slice[] slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);
 
-      Slice[] slices = CloudSolrStream.getSlices(this.collection, zkStateReader, false);
-
-      ClusterState clusterState = zkStateReader.getClusterState();
-      Set<String> liveNodes = clusterState.getLiveNodes();
+      Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
 
       List<String> baseUrls = new ArrayList<>();
       for (Slice slice : slices) {
@@ -437,6 +435,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
     return futures;
   }
 
+  @Override
   public void close() throws IOException {
     if (isCloseCache && cache != null) {
       cache.close();
@@ -449,6 +448,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
+  @Override
   public StreamComparator getStreamSort() {
     return null;
   }
@@ -485,6 +485,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public Tuple read() throws IOException {
     try {
 
@@ -499,7 +500,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
             throw new IOException(
                 String.format(
                     Locale.ROOT,
-                    "invalid expression %s - the number of weights must be %d, found %d",
+                    "invalid expression - the number of weights must be %d, found %d",
                     terms.size() + 1,
                     weights.size()));
           }
@@ -675,9 +676,10 @@ public class TextLogitStream extends TupleStream implements Expressible {
       this.paramsMap = paramsMap;
     }
 
+    @Override
     public Tuple call() throws Exception {
       ModifiableSolrParams params = new ModifiableSolrParams();
-      HttpSolrClient solrClient = cache.getHttpSolrClient(baseUrl);
+      SolrClient solrClient = cache.getHttpSolrClient(baseUrl);
 
       params.add(DISTRIB, "false");
       params.add("fq", "{!tlogit}");

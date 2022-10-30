@@ -42,7 +42,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.UpdateParams;
-import org.junit.Assert;
+import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -92,7 +92,7 @@ public class TestInPlaceUpdateWithRouteField extends SolrCloudTestCase {
     Long initialVersion = (Long) solrDocument.get("_version_");
     Integer luceneDocId = (Integer) solrDocument.get("[docid]");
     String shardName = (String) solrDocument.get("shardName");
-    Assert.assertThat(solrDocument.get("inplace_updatable_int"), is(id));
+    MatcherAssert.assertThat(solrDocument.get("inplace_updatable_int"), is(id));
 
     int newDocValue = TestUtil.nextInt(random(), 1, 2 * NUMBER_OF_DOCS - 1);
     SolrInputDocument sdoc =
@@ -117,12 +117,12 @@ public class TestInPlaceUpdateWithRouteField extends SolrCloudTestCase {
     updateRequest.commit(cluster.getSolrClient(), COLLECTION);
     solrDocument = queryDoc(id);
     Long newVersion = (Long) solrDocument.get("_version_");
-    Assert.assertTrue(
+    assertTrue(
         "Version of updated document must be greater than original one",
         newVersion > initialVersion);
-    Assert.assertThat(
+    MatcherAssert.assertThat(
         "Doc value must be updated", solrDocument.get("inplace_updatable_int"), is(newDocValue));
-    Assert.assertThat(
+    MatcherAssert.assertThat(
         "Lucene doc id should not be changed for In-Place Updates.",
         solrDocument.get("[docid]"),
         is(luceneDocId));
@@ -147,7 +147,8 @@ public class TestInPlaceUpdateWithRouteField extends SolrCloudTestCase {
               r.process(cluster.getSolrClient(), COLLECTION);
             });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    assertThat(e.getMessage(), containsString("Unable to update doc in-place: " + id));
+    MatcherAssert.assertThat(
+        e.getMessage(), containsString("Unable to update doc in-place: " + id));
   }
 
   private void checkWrongCommandFailure(SolrInputDocument sdoc)
@@ -156,7 +157,7 @@ public class TestInPlaceUpdateWithRouteField extends SolrCloudTestCase {
       new UpdateRequest().add(sdoc).process(cluster.getSolrClient(), COLLECTION);
       fail("expect an exception for wrong update command");
     } catch (SolrException ex) {
-      assertThat("expecting 400 in " + ex.getMessage(), ex.code(), is(400));
+      MatcherAssert.assertThat("expecting 400 in " + ex.getMessage(), ex.code(), is(400));
     }
   }
 
@@ -181,7 +182,7 @@ public class TestInPlaceUpdateWithRouteField extends SolrCloudTestCase {
             COLLECTION);
     QueryResponse response = cluster.getSolrClient().query(COLLECTION, query);
     SolrDocumentList result = (SolrDocumentList) response.getResponse().get("response");
-    Assert.assertThat(result.getNumFound(), is(1L));
+    MatcherAssert.assertThat(result.getNumFound(), is(1L));
     return result.get(0);
   }
 }

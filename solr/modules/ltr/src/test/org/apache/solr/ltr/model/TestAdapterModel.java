@@ -134,6 +134,7 @@ public class TestAdapterModel extends TestRerankBase {
       }
     }
 
+    @Override
     public void init(SolrResourceLoader solrResourceLoader) throws ModelException {
       super.init(solrResourceLoader);
       try (InputStream is = solrResourceLoader.openResource(answerFileName);

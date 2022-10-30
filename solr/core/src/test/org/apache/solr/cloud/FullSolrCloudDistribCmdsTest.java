@@ -34,7 +34,6 @@ import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
@@ -45,6 +44,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Replica.ReplicaStateProps;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
@@ -425,14 +425,14 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
           // No point in this test if these aren't true...
           assertNotNull(
               "Sanity check: leaderProps isn't a leader?: " + leaderProps.toString(),
-              leaderProps.getStr(Slice.LEADER));
+              leaderProps.getStr(ReplicaStateProps.LEADER));
           assertTrue(
               "Sanity check: leaderProps isn't using the proxy port?: " + leaderProps,
               leaderProps.getCoreUrl().contains("" + proxy.getListenPort()));
         }
 
         // create client to send our updates to...
-        try (HttpSolrClient indexClient = getHttpSolrClient(indexingUrl)) {
+        try (SolrClient indexClient = getHttpSolrClient(indexingUrl)) {
 
           // Sanity check: we should be able to send a bunch of updates that work right now...
           for (int i = 0; i < 100; i++) {
@@ -751,11 +751,11 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
       final Slice slice = entry.getValue();
       log.info("Checking: {} -> {}", shardName, slice);
       final Replica leader = entry.getValue().getLeader();
-      try (HttpSolrClient leaderClient = getHttpSolrClient(leader.getCoreUrl())) {
+      try (SolrClient leaderClient = getHttpSolrClient(leader.getCoreUrl())) {
         final SolrDocumentList leaderResults = leaderClient.query(perReplicaParams).getResults();
         log.debug("Shard {}: Leader results: {}", shardName, leaderResults);
         for (Replica replica : slice) {
-          try (HttpSolrClient replicaClient = getHttpSolrClient(replica.getCoreUrl())) {
+          try (SolrClient replicaClient = getHttpSolrClient(replica.getCoreUrl())) {
             final SolrDocumentList replicaResults =
                 replicaClient.query(perReplicaParams).getResults();
             if (log.isDebugEnabled()) {

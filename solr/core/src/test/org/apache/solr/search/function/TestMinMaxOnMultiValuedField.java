@@ -634,7 +634,7 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
       @SuppressWarnings({"rawtypes"}) final Comparable... vals) {
     clearIndex();
 
-    assert 0 < vals.length;
+    assertTrue(0 < vals.length);
     @SuppressWarnings({"rawtypes"})
     Comparable min = vals[0];
     @SuppressWarnings({"rawtypes"})
@@ -958,7 +958,7 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
         sf.sortMissingFirst() || sf.sortMissingLast());
 
     // make a copy we can re-order later
-    final List<Object> vals = new ArrayList<Object>(sortedValues.length);
+    final List<Object> vals = new ArrayList<>(sortedValues.length);
     Collections.addAll(vals, sortedValues);
 
     String minFunc = "field(" + f + ",min)";

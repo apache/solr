@@ -27,7 +27,7 @@ public class TestMacroExpander extends SolrTestCase {
 
   @Test
   public void testExamples() {
-    final Map<String, String[]> testParams = new HashMap<String, String[]>();
+    final Map<String, String[]> testParams = new HashMap<>();
     final MacroExpander me;
     // example behavior unaffected by absence or value of failOnMissingParams
     if (random().nextBoolean()) {
@@ -73,7 +73,7 @@ public class TestMacroExpander extends SolrTestCase {
 
   @Test
   public void testOnMissingParams() {
-    final Map<String, String[]> testParams = new HashMap<String, String[]>();
+    final Map<String, String[]> testParams = new HashMap<>();
     final MacroExpander meSkipOnMissingParams = new MacroExpander(testParams);
     final MacroExpander meFailOnMissingParams = new MacroExpander(testParams, true);
 
@@ -108,7 +108,7 @@ public class TestMacroExpander extends SolrTestCase {
         "q=popularity:[ " + expandedLow + " TO " + expandedHigh + " ]",
         meSkipOnMissingParams.expand(testQuery));
     if (testParams.size() < 2) { // at least one of the two parameters missing
-      assertEquals(null, meFailOnMissingParams.expand(testQuery));
+      assertNull(meFailOnMissingParams.expand(testQuery));
     }
   }
 

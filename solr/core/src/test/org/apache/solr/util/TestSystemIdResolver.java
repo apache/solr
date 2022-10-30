@@ -28,6 +28,7 @@ import org.xml.sax.InputSource;
 
 public class TestSystemIdResolver extends SolrTestCaseJ4 {
 
+  @Override
   public void tearDown() throws Exception {
     System.clearProperty(SolrResourceLoader.SOLR_ALLOW_UNSAFE_RESOURCELOADING_PARAM);
     super.tearDown();

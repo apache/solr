@@ -19,6 +19,7 @@ package org.apache.solr.search.function;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -133,9 +134,9 @@ public abstract class MultiStringFunction extends ValueSource {
 
   @Override
   public boolean equals(Object o) {
-    if (getClass() != o.getClass()) return false;
+    if (!(o instanceof MultiStringFunction)) return false;
     MultiStringFunction other = (MultiStringFunction) o;
-    return this.name().equals(other.name()) && Arrays.equals(this.sources, other.sources);
+    return Objects.equals(this.name(), other.name()) && Arrays.equals(this.sources, other.sources);
   }
 
   @Override

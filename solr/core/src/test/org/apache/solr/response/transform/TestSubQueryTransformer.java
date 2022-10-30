@@ -661,7 +661,7 @@ public class TestSubQueryTransformer extends SolrTestCaseJ4 {
         for (int deptNum : new int[] {0, deptMultiplier - 1}) {
           SolrDocument deptDoc = subDoc.get(deptNum);
           Object expectedDept = (subResult.equals("depts") ? engText : engId);
-          assertTrue("" + expectedDept + " equals to " + deptDoc, expectedDept.equals(deptDoc));
+          assertEquals("" + expectedDept + " equals to " + deptDoc, expectedDept, deptDoc);
         }
       }
     }

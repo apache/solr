@@ -179,6 +179,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
   }
 
+  @Override
   public void write(OutputStream os) throws IOException {
     try {
       _write(os);
@@ -804,7 +805,9 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         int docId;
         while ((docId = it.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
           this.sortDoc.setValues(docId);
-          if (top.lessThan(this.sortDoc)) {
+          // Always set the top doc if previously not set, otherwise
+          // set the top if the sortDoc is greater than current
+          if (top.lessThan(this.sortDoc) || top.docId == -1) {
             top.setValues(this.sortDoc);
             top = queue.updateTop();
           }
@@ -829,10 +832,12 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   }
 
   public static class IgnoreException extends IOException {
+    @Override
     public void printStackTrace(PrintWriter pw) {
       pw.print("Early Client Disconnect");
     }
 
+    @Override
     public String getMessage() {
       return "Early Client Disconnect";
     }

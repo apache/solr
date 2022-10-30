@@ -40,6 +40,7 @@ allprojects { prj ->
   ]
   configurations.matching { it.name in configNames }.all {
     exclude group: 'log4j', module: 'log4j' // use SLF4j
+    exclude group: "ch.qos.logback" // use SLF4j
     exclude group: 'commons-logging', module: 'commons-logging' // use SLF4j
     exclude group: 'com.google.code.findbugs', module: 'jsr305' // Uses GPL license
     exclude group: 'com.google.code.findbugs', module: 'annotations' // Use Spotbugs Annotations as replacement

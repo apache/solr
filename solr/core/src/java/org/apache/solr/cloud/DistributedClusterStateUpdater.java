@@ -31,13 +31,14 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.DE
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MODIFYCOLLECTION;
 
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.CollectionMutator;
@@ -51,6 +52,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.PerReplicaStates;
+import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -478,7 +480,7 @@ public class DistributedClusterStateUpdater {
           firstAttempt = false;
 
           // The parent node of the per replica state nodes happens to be the node of state.json.
-          String prsParentNode = ZkStateReader.getCollectionPath(updater.getCollectionName());
+          String prsParentNode = DocCollection.getCollectionPath(updater.getCollectionName());
 
           for (PerReplicaStatesOps prso : allStatesOps) {
             prso.persist(prsParentNode, zkStateReader.getZkClient());
@@ -504,7 +506,7 @@ public class DistributedClusterStateUpdater {
             // Fetch the per replica states updates done previously or skip fetching if we already
             // have them
             fetchedPerReplicaStates =
-                PerReplicaStates.fetch(
+                PerReplicaStatesFetcher.fetch(
                     docCollection.getZNode(), zkStateReader.getZkClient(), fetchedPerReplicaStates);
             // Transpose the per replica states into the cluster state
             updatedState =
@@ -545,7 +547,7 @@ public class DistributedClusterStateUpdater {
       // call will fail if the underlying cluster state update cannot be done, and that's a
       // desirable thing).
       throw new KeeperException.BadVersionException(
-          ZkStateReader.getCollectionPath(updater.getCollectionName()));
+          DocCollection.getCollectionPath(updater.getCollectionName()));
     }
 
     /**
@@ -572,7 +574,7 @@ public class DistributedClusterStateUpdater {
      */
     private void doStateDotJsonCasUpdate(ClusterState updatedState)
         throws KeeperException, InterruptedException {
-      String jsonPath = ZkStateReader.getCollectionPath(updater.getCollectionName());
+      String jsonPath = DocCollection.getCollectionPath(updater.getCollectionName());
 
       // Collection delete
       if (!updatedState.hasCollection(updater.getCollectionName())) {
@@ -619,7 +621,7 @@ public class DistributedClusterStateUpdater {
      * fresh data is ok, a second attempt will be made)
      */
     private ClusterState fetchStateForCollection() throws KeeperException, InterruptedException {
-      String collectionStatePath = ZkStateReader.getCollectionPath(updater.getCollectionName());
+      String collectionStatePath = DocCollection.getCollectionPath(updater.getCollectionName());
       Stat stat = new Stat();
       byte[] data = zkStateReader.getZkClient().getData(collectionStatePath, null, stat, true);
 
@@ -627,7 +629,7 @@ public class DistributedClusterStateUpdater {
       // old ZK location.
       // TODO in Solr 10 remove that factory method
       ClusterState clusterState =
-          ClusterState.createFromJsonSupportingLegacyConfigName(
+          ZkClientClusterStateProvider.createFromJsonSupportingLegacyConfigName(
               stat.getVersion(),
               data,
               Collections.emptySet(),
@@ -682,7 +684,7 @@ public class DistributedClusterStateUpdater {
         log.error(err);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, err);
       }
-      mutations = new LinkedList<>();
+      mutations = new ArrayList<>();
       this.collectionName = collectionName;
       this.isCollectionCreation = isCollectionCreation;
     }
@@ -805,7 +807,7 @@ public class DistributedClusterStateUpdater {
       @Override
       public void computeUpdates(ClusterState clusterState, SolrZkClient client) {
         boolean hasJsonUpdates = false;
-        List<PerReplicaStatesOps> perReplicaStateOps = new LinkedList<>();
+        List<PerReplicaStatesOps> perReplicaStateOps = new ArrayList<>();
         for (Pair<MutatingCommand, ZkNodeProps> mutation : mutations) {
           MutatingCommand mutatingCommand = mutation.first();
           ZkNodeProps message = mutation.second();

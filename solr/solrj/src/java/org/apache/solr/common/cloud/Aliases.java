@@ -25,7 +25,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
-import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -67,7 +66,7 @@ public class Aliases {
    * Construct aliases directly with this information -- caller should not retain. Any deeply nested
    * collections are assumed to already be unmodifiable.
    */
-  private Aliases(
+  Aliases(
       Map<String, List<String>> collectionAliases,
       Map<String, Map<String, String>> collectionAliasProperties,
       int zNodeVersion) {
@@ -311,7 +310,7 @@ public class Aliases {
    * based on the parameters.
    *
    * <p>Note that the state in zookeeper is unaffected by this method and the change must still be
-   * persisted via {@link
+   * persisted via {@code
    * ZkStateReader.AliasesManager#applyModificationAndExportToZk(UnaryOperator)}
    *
    * @param alias the alias to update, must not be null
@@ -320,7 +319,7 @@ public class Aliases {
    */
   public Aliases cloneWithCollectionAlias(String alias, String collections) {
     if (alias == null) {
-      throw new NullPointerException("Alias name cannot be null");
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Alias name cannot be null");
     }
     Map<String, Map<String, String>> newColProperties;
     Map<String, List<String>> newColAliases =
@@ -352,7 +351,7 @@ public class Aliases {
    * lists. Renaming routed aliases is not supported.
    *
    * <p>Note that the state in zookeeper is unaffected by this method and the change must still be
-   * persisted via {@link
+   * persisted via {@code
    * ZkStateReader.AliasesManager#applyModificationAndExportToZk(UnaryOperator)}
    *
    * @param before previous alias name, must not be null
@@ -365,7 +364,7 @@ public class Aliases {
    */
   public Aliases cloneWithRename(String before, String after) throws SolrException {
     if (before == null) {
-      throw new NullPointerException("'before' and 'after' cannot be null");
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'before' cannot be null");
     }
     if (after == null) {
       return cloneWithCollectionAlias(before, after);
@@ -412,7 +411,7 @@ public class Aliases {
       }
     }
     if (level1 == null) { // create an alias that points to the collection
-      newColAliases.put(before, Collections.singletonList(after));
+      newColAliases.put(after, Collections.singletonList(before));
     }
     return new Aliases(newColAliases, newColProperties, zNodeVersion);
   }
@@ -422,7 +421,7 @@ public class Aliases {
    * instance with the same data as the current one but with a modification based on the parameters.
    *
    * <p>Note that the state in zookeeper is unaffected by this method and the change must still be
-   * persisted via {@link
+   * persisted via {@code
    * ZkStateReader.AliasesManager#applyModificationAndExportToZk(UnaryOperator)}
    *
    * @param alias the alias to update
@@ -442,7 +441,7 @@ public class Aliases {
    * parameters.
    *
    * <p>Note that the state in zookeeper is unaffected by this method and the change must still be
-   * persisted via {@link
+   * persisted via {@code
    * ZkStateReader.AliasesManager#applyModificationAndExportToZk(UnaryOperator)}
    *
    * @param alias the alias to update

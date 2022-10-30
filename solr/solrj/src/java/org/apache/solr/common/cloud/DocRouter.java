@@ -16,8 +16,6 @@
  */
 package org.apache.solr.common.cloud;
 
-import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -29,6 +27,7 @@ import java.util.Map;
 import org.apache.solr.cluster.api.HashRange;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.noggit.JSONWriter;
@@ -52,7 +51,7 @@ public abstract class DocRouter {
   public String getRouteField(DocCollection coll) {
     if (coll == null) return null;
     @SuppressWarnings({"rawtypes"})
-    Map m = (Map) coll.get(DOC_ROUTER);
+    Map m = (Map) coll.get(CollectionStateProps.DOC_ROUTER);
     if (m == null) return null;
     return (String) m.get("field");
   }
@@ -110,6 +109,7 @@ public abstract class DocRouter {
       return max;
     }
 
+    @Override
     public boolean includes(int hash) {
       return hash >= min && hash <= max;
     }
@@ -136,7 +136,7 @@ public abstract class DocRouter {
 
     @Override
     public boolean equals(Object obj) {
-      if (obj.getClass() != getClass()) return false;
+      if (!(obj instanceof Range)) return false;
       Range other = (Range) obj;
       return this.min == other.min && this.max == other.max;
     }

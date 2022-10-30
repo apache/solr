@@ -122,6 +122,7 @@ public class MemsetEvaluator extends RecursiveEvaluator {
     super(expression, factory, ignoredNamedParameters);
   }
 
+  @Override
   public void setStreamContext(StreamContext streamContext) {
     this.streamContext = streamContext;
   }

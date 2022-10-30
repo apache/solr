@@ -19,6 +19,7 @@ package org.apache.solr.search;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Objects;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.misc.document.LazyDocument;
@@ -116,7 +117,7 @@ public class LargeFieldTest extends SolrTestCaseJ4 {
 
   private void assertLazyNotLoaded(Document d, String fieldName) {
     IndexableField field = d.getField(fieldName);
-    if (fieldName == BIG_FIELD) {
+    if (Objects.equals(fieldName, BIG_FIELD)) {
       assertTrue(field instanceof SolrDocumentFetcher.LargeLazyField);
       assertFalse(((SolrDocumentFetcher.LargeLazyField) field).hasBeenLoaded());
     } else {
@@ -127,7 +128,7 @@ public class LargeFieldTest extends SolrTestCaseJ4 {
 
   private void assertLazyLoaded(Document d, String fieldName) {
     IndexableField field = d.getField(fieldName);
-    if (fieldName == BIG_FIELD) {
+    if (Objects.equals(fieldName, BIG_FIELD)) {
       assertTrue(field instanceof SolrDocumentFetcher.LargeLazyField);
       assertTrue(((SolrDocumentFetcher.LargeLazyField) field).hasBeenLoaded());
     } else {

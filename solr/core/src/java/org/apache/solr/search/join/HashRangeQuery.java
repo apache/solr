@@ -143,8 +143,8 @@ public class HashRangeQuery extends Query {
     final int prime = 31;
     int result = classHash();
     result = prime * result + Objects.hashCode(field);
-    result = prime * result + Objects.hashCode(lower);
-    result = prime * result + Objects.hashCode(upper);
+    result = prime * result + Integer.hashCode(lower);
+    result = prime * result + Integer.hashCode(upper);
     return result;
   }
 }

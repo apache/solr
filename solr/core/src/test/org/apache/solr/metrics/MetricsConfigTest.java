@@ -16,7 +16,6 @@
  */
 package org.apache.solr.metrics;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import com.codahale.metrics.Clock;
 import com.codahale.metrics.ExponentiallyDecayingReservoir;
 import com.codahale.metrics.Reservoir;
@@ -28,15 +27,10 @@ import java.util.Properties;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrXmlConfig;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 
 /** */
 public class MetricsConfigTest extends SolrTestCaseJ4 {
-  @Rule public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
-
   @Test
   public void testDefaults() {
     NodeConfig cfg = loadNodeConfig("solr-metricsconfig.xml");
@@ -91,7 +85,7 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
     MockMeterSupplier mockMeterSupplier = ((MockMeterSupplier) mgr.getMeterSupplier());
     assertEquals("bar", mockMeterSupplier.foo);
     MockTimerSupplier mockTimerSupplier = ((MockTimerSupplier) mgr.getTimerSupplier());
-    assertEquals(true, mockTimerSupplier.boolParam);
+    assertTrue(mockTimerSupplier.boolParam);
     assertEquals("strParam", mockTimerSupplier.strParam);
     assertEquals(-100, mockTimerSupplier.intParam);
 
@@ -118,7 +112,7 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
     NodeConfig cfg = loadNodeConfig("solr-metricsconfig1.xml");
     SolrMetricManager mgr =
         new SolrMetricManager(cfg.getSolrResourceLoader(), cfg.getMetricsConfig());
-    assertEquals("nullNumber", null, mgr.nullNumber());
+    assertNull("nullNumber", mgr.nullNumber());
     assertEquals("notANumber", -1, mgr.notANumber());
     assertEquals("nullNumber", "", mgr.nullString());
     assertTrue("nullObject", mgr.nullObject() instanceof Map);

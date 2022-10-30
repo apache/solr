@@ -122,7 +122,7 @@ public class SelectStream extends TupleStream implements Expressible {
 
     stream = factory.constructStream(streamExpressions.get(0));
 
-    selectedFields = new HashMap<String, String>();
+    selectedFields = new HashMap<>();
     selectedEvaluators = new LinkedHashMap<>();
     for (StreamExpressionParameter parameter : selectAsFieldsExpressions) {
       StreamExpressionValue selectField = (StreamExpressionValue) parameter;
@@ -256,6 +256,7 @@ public class SelectStream extends TupleStream implements Expressible {
     return explanation;
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.streamContext = context;
     this.stream.setStreamContext(context);
@@ -266,20 +267,24 @@ public class SelectStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     l.add(stream);
     return l;
   }
 
+  @Override
   public void open() throws IOException {
     stream.open();
   }
 
+  @Override
   public void close() throws IOException {
     stream.close();
   }
 
+  @Override
   public Tuple read() throws IOException {
     Tuple original = stream.read();
 
@@ -325,11 +330,13 @@ public class SelectStream extends TupleStream implements Expressible {
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
+  @Override
   public StreamComparator getStreamSort() {
     // apply aliasing to comparator
     return stream.getStreamSort().copyAliased(selectedFields);
   }
 
+  @Override
   public int getCost() {
     return 0;
   }

@@ -218,17 +218,20 @@ public class FetchStream extends TupleStream implements Expressible {
         .withExpression(toExpression(factory, false).toString());
   }
 
+  @Override
   public void setStreamContext(StreamContext streamContext) {
     this.streamContext = streamContext;
     this.stream.setStreamContext(streamContext);
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     l.add(stream);
     return l;
   }
 
+  @Override
   public void open() throws IOException {
     tuples = Collections.emptyIterator();
     stream.open();
@@ -303,10 +306,12 @@ public class FetchStream extends TupleStream implements Expressible {
     this.tuples = batch.iterator();
   }
 
+  @Override
   public void close() throws IOException {
     stream.close();
   }
 
+  @Override
   public Tuple read() throws IOException {
     if (!tuples.hasNext()) {
       fetchBatch();
@@ -315,16 +320,18 @@ public class FetchStream extends TupleStream implements Expressible {
     return tuples.next();
   }
 
+  @Override
   public StreamComparator getStreamSort() {
     return stream.getStreamSort();
   }
 
+  @Override
   public int getCost() {
     return 0;
   }
 
   private String appendFields() {
-    StringBuffer buf = new StringBuffer();
+    StringBuilder buf = new StringBuilder();
     if (appendKey) {
       buf.append(",");
       buf.append(rightKey);

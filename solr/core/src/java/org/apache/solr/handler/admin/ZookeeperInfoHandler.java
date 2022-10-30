@@ -29,7 +29,6 @@ import java.lang.invoke.MethodHandles;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
@@ -47,9 +46,10 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.Slice.SliceStateProps;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.MapSolrParams;
@@ -190,11 +190,12 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       boolean hasDownedShard = false; // means one or more shards is down
       boolean replicaInRecovery = false;
 
-      Map<String, Object> shards = (Map<String, Object>) collectionState.get(DocCollection.SHARDS);
+      Map<String, Object> shards =
+          (Map<String, Object>) collectionState.get(CollectionStateProps.SHARDS);
       for (Object o : shards.values()) {
         boolean hasActive = false;
         Map<String, Object> shard = (Map<String, Object>) o;
-        Map<String, Object> replicas = (Map<String, Object>) shard.get(Slice.REPLICAS);
+        Map<String, Object> replicas = (Map<String, Object>) shard.get(SliceStateProps.REPLICAS);
         for (Object value : replicas.values()) {
           Map<String, Object> replicaState = (Map<String, Object>) value;
           Replica.State coreState =
@@ -247,6 +248,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
           + (filter != null ? filter : "");
     }
 
+    @Override
     public String toString() {
       return getPagingHeader();
     }
@@ -285,7 +287,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
         if (fromZk != null) cachedCollections.addAll(fromZk);
 
         // sort the final merged set of collections
-        Collections.sort(cachedCollections, this);
+        cachedCollections.sort(this);
       }
 
       return cachedCollections;

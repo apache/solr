@@ -78,6 +78,7 @@ abstract class GraphEdgeCollector extends SimpleCollector implements Collector {
     return numHits;
   }
 
+  @Override
   public void collect(int segDoc) throws IOException {
     int doc = segDoc + base;
     if (skipSet != null && skipSet.exists(doc)) {
@@ -189,7 +190,7 @@ abstract class GraphEdgeCollector extends SimpleCollector implements Collector {
     /** Build an automaton to represent the frontier query */
     private Automaton buildAutomaton(BytesRefHash termBytesHash) {
       // need top pass a sorted set of terms to the autn builder (maybe a better way to avoid this?)
-      final TreeSet<BytesRef> terms = new TreeSet<BytesRef>();
+      final TreeSet<BytesRef> terms = new TreeSet<>();
       for (int i = 0; i < termBytesHash.size(); i++) {
         BytesRef ref = new BytesRef();
         termBytesHash.get(i, ref);

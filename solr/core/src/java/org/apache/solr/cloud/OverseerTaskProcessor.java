@@ -158,7 +158,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     this.runningZKTasks = ConcurrentHashMap.newKeySet();
     this.runningTasks = ConcurrentHashMap.newKeySet();
     this.completedTasks = new ConcurrentHashMap<>();
-    thisNode = Utils.getMDCNode();
+    thisNode = MDCLoggingContext.getNodeName();
 
     overseerTaskProcessorMetricsContext = solrMetricsContext.getChildContext(this);
     overseerTaskProcessorMetricsContext.gauge(
@@ -417,6 +417,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     }
   }
 
+  @Override
   public void close() {
     isClosed = true;
     overseerTaskProcessorMetricsContext.unregister();
@@ -547,6 +548,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
       response = null;
     }
 
+    @Override
     public void run() {
       String statsName = messageHandler.getTimerName(operation);
       final Timer.Context timerContext = stats.time(statsName);

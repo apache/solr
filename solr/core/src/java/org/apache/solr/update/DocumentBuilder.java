@@ -17,8 +17,8 @@
 package org.apache.solr.update;
 
 import com.google.common.collect.Sets;
+import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import org.apache.lucene.document.Document;
@@ -41,6 +41,7 @@ public class DocumentBuilder {
   // accessible only for tests
   static int MIN_LENGTH_TO_MOVE_LAST =
       Integer.getInteger("solr.docBuilder.minLengthToMoveLast", 4 * 1024); // internal setting
+  static int MAX_VALUES_AS_STRING_LENGTH = 256;
 
   /**
    * Add a field value to a given document.
@@ -161,6 +162,14 @@ public class DocumentBuilder {
           && !sfield.multiValued()
           && field.getValueCount() > 1
           && !(sfield.getType() instanceof DenseVectorField)) {
+
+        // Ensure we do not flood the logs with extremely long values
+        String fieldValue = field.getValue().toString();
+        if (fieldValue.length() > MAX_VALUES_AS_STRING_LENGTH) {
+          assert fieldValue.endsWith("]");
+          fieldValue = fieldValue.substring(0, MAX_VALUES_AS_STRING_LENGTH - 4) + "...]";
+        }
+
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
             "ERROR: "
@@ -168,7 +177,7 @@ public class DocumentBuilder {
                 + "multiple values encountered for non multiValued field "
                 + sfield.getName()
                 + ": "
-                + field.getValue());
+                + fieldValue);
       }
 
       List<CopyField> copyFields = schema.getCopyFieldsList(name);
@@ -297,7 +306,7 @@ public class DocumentBuilder {
   }
 
   private static boolean addCopyFields(
-      Object originalFieldValue,
+      final Object originalFieldValue,
       FieldType originalFieldType,
       List<CopyField> copyFields,
       boolean forInPlaceUpdate,
@@ -327,16 +336,17 @@ public class DocumentBuilder {
                 + ": "
                 + originalFieldValue);
       }
+      Object fieldValue = originalFieldValue;
       // Perhaps trim the length of a copy field
       if (originalFieldValue instanceof CharSequence && cf.getMaxChars() > 0) {
-        originalFieldValue = cf.getLimitedValue(originalFieldValue.toString());
+        fieldValue = cf.getLimitedValue(originalFieldValue.toString());
       }
 
       // TODO ban copyField populating uniqueKeyField; too problematic to support
       addField(
           out,
           destinationField,
-          originalFieldValue,
+          fieldValue,
           destinationField.getName().equals(uniqueKeyFieldName) ? false : forInPlaceUpdate);
       // record the field as having a originalFieldValue
       usedFields.add(destinationField.getName());
@@ -403,7 +413,7 @@ public class DocumentBuilder {
     if (!largestIsLast
         && largestField != null
         && largestFieldLen > MIN_LENGTH_TO_MOVE_LAST) { // only bother if the value isn't tiny
-      LinkedList<IndexableField> addToEnd = new LinkedList<>();
+      List<IndexableField> addToEnd = new ArrayList<>();
       Iterator<IndexableField> iterator = doc.iterator();
       while (iterator.hasNext()) {
         IndexableField field = iterator.next();

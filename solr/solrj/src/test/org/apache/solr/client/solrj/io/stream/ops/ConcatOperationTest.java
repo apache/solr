@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.io.stream.ops;
 
 import java.util.HashMap;
 import java.util.Map;
-import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.ops.ConcatOperation;
@@ -52,11 +51,11 @@ public class ConcatOperationTest extends SolrTestCase {
     tuple = new Tuple(values);
     operation.operate(tuple);
 
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals("bar", tuple.get("fieldA"));
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals("bar", tuple.get("fieldA"));
 
-    Assert.assertNotNull(tuple.get("fieldAConcat"));
-    Assert.assertEquals("bar", tuple.get("fieldAConcat"));
+    assertNotNull(tuple.get("fieldAConcat"));
+    assertEquals("bar", tuple.get("fieldAConcat"));
   }
 
   @Test
@@ -71,28 +70,28 @@ public class ConcatOperationTest extends SolrTestCase {
     tuple = new Tuple(values);
     operation.operate(tuple);
 
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals("bar", tuple.get("fieldA"));
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals("bar", tuple.get("fieldA"));
 
-    Assert.assertNotNull(tuple.get("fieldB"));
-    Assert.assertEquals("baz", tuple.get("fieldB"));
+    assertNotNull(tuple.get("fieldB"));
+    assertEquals("baz", tuple.get("fieldB"));
 
-    Assert.assertNotNull(tuple.get("fieldABConcat"));
-    Assert.assertEquals("bar-baz", tuple.get("fieldABConcat"));
+    assertNotNull(tuple.get("fieldABConcat"));
+    assertEquals("bar-baz", tuple.get("fieldABConcat"));
 
     // do the same in oposite order
     operation = new ConcatOperation(new String[] {"fieldB", "fieldA"}, "fieldABConcat", "-");
     tuple = new Tuple(values);
     operation.operate(tuple);
 
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals("bar", tuple.get("fieldA"));
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals("bar", tuple.get("fieldA"));
 
-    Assert.assertNotNull(tuple.get("fieldB"));
-    Assert.assertEquals("baz", tuple.get("fieldB"));
+    assertNotNull(tuple.get("fieldB"));
+    assertEquals("baz", tuple.get("fieldB"));
 
-    Assert.assertNotNull(tuple.get("fieldABConcat"));
-    Assert.assertEquals("baz-bar", tuple.get("fieldABConcat"));
+    assertNotNull(tuple.get("fieldABConcat"));
+    assertEquals("baz-bar", tuple.get("fieldABConcat"));
   }
 
   @Test
@@ -109,34 +108,34 @@ public class ConcatOperationTest extends SolrTestCase {
     tuple = new Tuple(values);
     operation.operate(tuple);
 
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals("bar", tuple.get("fieldA"));
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals("bar", tuple.get("fieldA"));
 
-    Assert.assertNotNull(tuple.get("fieldB"));
-    Assert.assertEquals("baz", tuple.get("fieldB"));
+    assertNotNull(tuple.get("fieldB"));
+    assertEquals("baz", tuple.get("fieldB"));
 
-    Assert.assertNotNull(tuple.get("fieldC"));
-    Assert.assertEquals("bab", tuple.get("fieldC"));
+    assertNotNull(tuple.get("fieldC"));
+    assertEquals("bab", tuple.get("fieldC"));
 
-    Assert.assertNotNull(tuple.get("fieldD"));
-    Assert.assertEquals("bat", tuple.get("fieldD"));
+    assertNotNull(tuple.get("fieldD"));
+    assertEquals("bat", tuple.get("fieldD"));
 
-    Assert.assertNotNull(tuple.get("fieldABConcat"));
-    Assert.assertEquals("bar-baz", tuple.get("fieldABConcat"));
+    assertNotNull(tuple.get("fieldABConcat"));
+    assertEquals("bar-baz", tuple.get("fieldABConcat"));
 
     // do the same in oposite order
     operation = new ConcatOperation(new String[] {"fieldB", "fieldA"}, "fieldABConcat", "-");
     tuple = new Tuple(values);
     operation.operate(tuple);
 
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals("bar", tuple.get("fieldA"));
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals("bar", tuple.get("fieldA"));
 
-    Assert.assertNotNull(tuple.get("fieldB"));
-    Assert.assertEquals("baz", tuple.get("fieldB"));
+    assertNotNull(tuple.get("fieldB"));
+    assertEquals("baz", tuple.get("fieldB"));
 
-    Assert.assertNotNull(tuple.get("fieldABConcat"));
-    Assert.assertEquals("baz-bar", tuple.get("fieldABConcat"));
+    assertNotNull(tuple.get("fieldABConcat"));
+    assertEquals("baz-bar", tuple.get("fieldABConcat"));
   }
 
   @Test
@@ -150,13 +149,13 @@ public class ConcatOperationTest extends SolrTestCase {
     tuple = new Tuple(values);
     operation.operate(tuple);
 
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals("bar", tuple.get("fieldA"));
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals("bar", tuple.get("fieldA"));
 
-    Assert.assertNull(tuple.get("fieldB"));
+    assertNull(tuple.get("fieldB"));
 
-    Assert.assertNotNull(tuple.get("fieldABConcat"));
-    Assert.assertEquals("bar-null", tuple.get("fieldABConcat"));
+    assertNotNull(tuple.get("fieldABConcat"));
+    assertEquals("bar-null", tuple.get("fieldABConcat"));
   }
 
   ///////////////////////////
@@ -176,11 +175,11 @@ public class ConcatOperationTest extends SolrTestCase {
     tuple = new Tuple(values);
     operation.operate(tuple);
 
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals("bar", tuple.get("fieldA"));
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals("bar", tuple.get("fieldA"));
 
-    Assert.assertNotNull(tuple.get("fieldAConcat"));
-    Assert.assertEquals("bar", tuple.get("fieldAConcat"));
+    assertNotNull(tuple.get("fieldAConcat"));
+    assertEquals("bar", tuple.get("fieldAConcat"));
   }
 
   @Test
@@ -199,14 +198,14 @@ public class ConcatOperationTest extends SolrTestCase {
     tuple = new Tuple(values);
     operation.operate(tuple);
 
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals("bar", tuple.get("fieldA"));
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals("bar", tuple.get("fieldA"));
 
-    Assert.assertNotNull(tuple.get("fieldB"));
-    Assert.assertEquals("baz", tuple.get("fieldB"));
+    assertNotNull(tuple.get("fieldB"));
+    assertEquals("baz", tuple.get("fieldB"));
 
-    Assert.assertNotNull(tuple.get("fieldABConcat"));
-    Assert.assertEquals("bar-baz", tuple.get("fieldABConcat"));
+    assertNotNull(tuple.get("fieldABConcat"));
+    assertEquals("bar-baz", tuple.get("fieldABConcat"));
 
     // do the same in oposite order
     operation =
@@ -217,14 +216,14 @@ public class ConcatOperationTest extends SolrTestCase {
     tuple = new Tuple(values);
     operation.operate(tuple);
 
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals("bar", tuple.get("fieldA"));
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals("bar", tuple.get("fieldA"));
 
-    Assert.assertNotNull(tuple.get("fieldB"));
-    Assert.assertEquals("baz", tuple.get("fieldB"));
+    assertNotNull(tuple.get("fieldB"));
+    assertEquals("baz", tuple.get("fieldB"));
 
-    Assert.assertNotNull(tuple.get("fieldABConcat"));
-    Assert.assertEquals("baz-bar", tuple.get("fieldABConcat"));
+    assertNotNull(tuple.get("fieldABConcat"));
+    assertEquals("baz-bar", tuple.get("fieldABConcat"));
   }
 
   @Test
@@ -245,20 +244,20 @@ public class ConcatOperationTest extends SolrTestCase {
     tuple = new Tuple(values);
     operation.operate(tuple);
 
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals("bar", tuple.get("fieldA"));
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals("bar", tuple.get("fieldA"));
 
-    Assert.assertNotNull(tuple.get("fieldB"));
-    Assert.assertEquals("baz", tuple.get("fieldB"));
+    assertNotNull(tuple.get("fieldB"));
+    assertEquals("baz", tuple.get("fieldB"));
 
-    Assert.assertNotNull(tuple.get("fieldC"));
-    Assert.assertEquals("bab", tuple.get("fieldC"));
+    assertNotNull(tuple.get("fieldC"));
+    assertEquals("bab", tuple.get("fieldC"));
 
-    Assert.assertNotNull(tuple.get("fieldD"));
-    Assert.assertEquals("bat", tuple.get("fieldD"));
+    assertNotNull(tuple.get("fieldD"));
+    assertEquals("bat", tuple.get("fieldD"));
 
-    Assert.assertNotNull(tuple.get("fieldABConcat"));
-    Assert.assertEquals("bar-baz", tuple.get("fieldABConcat"));
+    assertNotNull(tuple.get("fieldABConcat"));
+    assertEquals("bar-baz", tuple.get("fieldABConcat"));
 
     // do the same in oposite order
     operation =
@@ -269,14 +268,14 @@ public class ConcatOperationTest extends SolrTestCase {
     tuple = new Tuple(values);
     operation.operate(tuple);
 
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals("bar", tuple.get("fieldA"));
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals("bar", tuple.get("fieldA"));
 
-    Assert.assertNotNull(tuple.get("fieldB"));
-    Assert.assertEquals("baz", tuple.get("fieldB"));
+    assertNotNull(tuple.get("fieldB"));
+    assertEquals("baz", tuple.get("fieldB"));
 
-    Assert.assertNotNull(tuple.get("fieldABConcat"));
-    Assert.assertEquals("baz-bar", tuple.get("fieldABConcat"));
+    assertNotNull(tuple.get("fieldABConcat"));
+    assertEquals("baz-bar", tuple.get("fieldABConcat"));
   }
 
   @Test
@@ -294,12 +293,12 @@ public class ConcatOperationTest extends SolrTestCase {
     tuple = new Tuple(values);
     operation.operate(tuple);
 
-    Assert.assertNotNull(tuple.get("fieldA"));
-    Assert.assertEquals("bar", tuple.get("fieldA"));
+    assertNotNull(tuple.get("fieldA"));
+    assertEquals("bar", tuple.get("fieldA"));
 
-    Assert.assertNull(tuple.get("fieldB"));
+    assertNull(tuple.get("fieldB"));
 
-    Assert.assertNotNull(tuple.get("fieldABConcat"));
-    Assert.assertEquals("bar-null", tuple.get("fieldABConcat"));
+    assertNotNull(tuple.get("fieldABConcat"));
+    assertEquals("bar-null", tuple.get("fieldABConcat"));
   }
 }

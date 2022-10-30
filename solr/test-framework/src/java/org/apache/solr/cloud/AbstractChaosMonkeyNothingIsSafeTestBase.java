@@ -72,10 +72,12 @@ public abstract class AbstractChaosMonkeyNothingIsSafeTestBase
 
   private final boolean runFullThrottle;
 
+  @Override
   public String[] getFieldNames() {
     return fieldNames;
   }
 
+  @Override
   public RandVal[] getRandValues() {
     return randVals;
   }
@@ -313,7 +315,7 @@ public abstract class AbstractChaosMonkeyNothingIsSafeTestBase
   }
 
   private Set<String> getAddFails(List<StoppableIndexingThread> threads) {
-    Set<String> addFails = new HashSet<String>();
+    Set<String> addFails = new HashSet<>();
     for (StoppableIndexingThread thread : threads) {
       addFails.addAll(thread.getAddFails());
     }
@@ -321,7 +323,7 @@ public abstract class AbstractChaosMonkeyNothingIsSafeTestBase
   }
 
   private Set<String> getDeleteFails(List<StoppableIndexingThread> threads) {
-    Set<String> deleteFails = new HashSet<String>();
+    Set<String> deleteFails = new HashSet<>();
     for (StoppableIndexingThread thread : threads) {
       deleteFails.addAll(thread.getDeleteFails());
     }

@@ -49,8 +49,10 @@ import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.cloud.api.collections.SplitShardCmd;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
@@ -190,6 +192,9 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
     }
     if (kerberosEnabled) {
       initKerberos();
+    }
+    if (StringUtils.isEmpty(System.getProperty(SplitShardCmd.SHARDSPLIT_CHECKDISKSPACE_ENABLED))) {
+      System.setProperty(SplitShardCmd.SHARDSPLIT_CHECKDISKSPACE_ENABLED, "false");
     }
   }
 
@@ -413,6 +418,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
     return conf;
   }
 
+  @Override
   protected synchronized void removeDirectory(final CacheValue cacheValue) {
     FileSystem fileSystem = getCachedFileSystem(cacheValue.path);
 
@@ -651,7 +657,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
       oldIndexPaths.add(ofs.getPath());
     }
 
-    Collections.sort(oldIndexPaths, Collections.reverseOrder());
+    oldIndexPaths.sort(Collections.reverseOrder());
 
     Set<String> livePaths = getLivePaths();
 
@@ -686,6 +692,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
   }
 
   // perform an atomic rename if possible
+  @Override
   public void renameWithOverwrite(Directory dir, String fileName, String toName)
       throws IOException {
     String hdfsDirPath = getPath(dir);

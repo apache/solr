@@ -232,19 +232,19 @@ public class TestUninvertingReader extends SolrTestCase {
     final LegacyFieldType NO_TRIE_TYPE = new LegacyFieldType(LegacyIntField.TYPE_NOT_STORED);
     NO_TRIE_TYPE.setNumericPrecisionStep(Integer.MAX_VALUE);
 
-    final Map<String, Type> UNINVERT_MAP = new LinkedHashMap<String, Type>();
+    final Map<String, Type> UNINVERT_MAP = new LinkedHashMap<>();
     UNINVERT_MAP.put("notrie_single", Type.SORTED_SET_INTEGER);
     UNINVERT_MAP.put("notrie_multi", Type.SORTED_SET_INTEGER);
     UNINVERT_MAP.put("trie_single", Type.SORTED_SET_INTEGER);
     UNINVERT_MAP.put("trie_multi", Type.SORTED_SET_INTEGER);
-    final Set<String> MULTI_VALUES = new LinkedHashSet<String>();
+    final Set<String> MULTI_VALUES = new LinkedHashSet<>();
     MULTI_VALUES.add("trie_multi");
     MULTI_VALUES.add("notrie_multi");
 
     final int NUM_DOCS = TestUtil.nextInt(random(), 200, 1500);
     final int MIN = TestUtil.nextInt(random(), 10, 100);
     final int MAX = MIN + TestUtil.nextInt(random(), 10, 100);
-    final long EXPECTED_VALSET_SIZE = 1 + MAX - MIN;
+    final long EXPECTED_VALSET_SIZE = 1L + MAX - MIN;
 
     { // (at least) one doc should have every value, so that at least one segment has every value
       final Document doc = new Document();
@@ -331,7 +331,7 @@ public class TestUninvertingReader extends SolrTestCase {
     final IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
     iw.close();
 
-    final Map<String, Type> UNINVERT_MAP = new LinkedHashMap<String, Type>();
+    final Map<String, Type> UNINVERT_MAP = new LinkedHashMap<>();
     for (Type t : EnumSet.allOf(Type.class)) {
       UNINVERT_MAP.put(t.name(), t);
     }

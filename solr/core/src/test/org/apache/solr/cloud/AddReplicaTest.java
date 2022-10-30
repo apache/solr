@@ -42,6 +42,7 @@ public class AddReplicaTest extends SolrCloudTestCase {
         .configure();
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();

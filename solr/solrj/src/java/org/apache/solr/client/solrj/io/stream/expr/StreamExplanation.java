@@ -52,16 +52,17 @@ public class StreamExplanation extends Explanation {
 
   public void addChild(Explanation child) {
     if (null == children) {
-      children = new ArrayList<Explanation>(1);
+      children = new ArrayList<>(1);
     }
     children.add(child);
   }
 
+  @Override
   public Map<String, Object> toMap(Map<String, Object> map) {
     map = super.toMap(map);
 
     if (null != children && 0 != children.size()) {
-      List<Map<String, Object>> childrenMaps = new ArrayList<Map<String, Object>>();
+      List<Map<String, Object>> childrenMaps = new ArrayList<>();
       for (Explanation child : children) {
         childrenMaps.add(child.toMap(new LinkedHashMap<>()));
       }

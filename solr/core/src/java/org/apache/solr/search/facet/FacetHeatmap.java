@@ -109,6 +109,7 @@ public class FacetHeatmap extends FacetRequest {
       super(parent, key);
     }
 
+    @Override
     public FacetHeatmap parse(Object argsObj) {
       assert facet == null;
 
@@ -402,7 +403,7 @@ public class FacetHeatmap extends FacetRequest {
   static List<List<Integer>> asInts2D(final int columns, final int rows, final int[] counts) {
     // Returns a view versus returning a copy. This saves memory.
     // The data is oriented naturally for human/developer viewing: one row at a time top-down
-    return new AbstractList<List<Integer>>() {
+    return new AbstractList<>() {
       @Override
       public List<Integer> get(final int rowIdx) {
         // top-down remember; the heatmap.counts is bottom up check if all zeroes and return null if
@@ -419,7 +420,7 @@ public class FacetHeatmap extends FacetRequest {
           return null;
         }
 
-        return new AbstractList<Integer>() {
+        return new AbstractList<>() {
           @Override
           public Integer get(int columnIdx) {
             return counts[columnIdx * rows + y];

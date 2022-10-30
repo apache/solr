@@ -28,6 +28,7 @@ import org.apache.solr.search.QParser;
  */
 public class IntPointPrefixActsAsRangeQueryFieldType extends IntPointField {
 
+  @Override
   public Query getPrefixQuery(QParser parser, SchemaField sf, String termStr) {
     return getRangeQuery(parser, sf, termStr, Integer.MAX_VALUE + "", true, false);
   }

@@ -53,6 +53,7 @@ public class FieldEqualitor implements StreamEqualitor {
     this.rightFieldName = rightFieldName;
   }
 
+  @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) {
     StringBuilder sb = new StringBuilder();
 
@@ -74,6 +75,7 @@ public class FieldEqualitor implements StreamEqualitor {
         .withExpression(toExpression(factory).toString());
   }
 
+  @Override
   @SuppressWarnings({"unchecked"})
   public boolean test(Tuple leftTuple, Tuple rightTuple) {
 

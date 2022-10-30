@@ -69,14 +69,14 @@ public class BitSetPerf {
     FixedBitSet obs = new FixedBitSet(bitSetSize);
     randomSets(bitSetSize, numBitsSet, bs, obs);
 
-    int ret = 0;
+    long ret = 0;
 
     final RTimer timer = new RTimer();
 
     if ("union".equals(test)) {
       for (int it = 0; it < iter; it++) {
         for (int i = 0; i < numSets; i++) {
-          if (impl == "open") {
+          if (impl.equals("open")) {
             FixedBitSet other = osets[i];
             obs.or(other);
           } else {
@@ -90,7 +90,7 @@ public class BitSetPerf {
     if ("cardinality".equals(test)) {
       for (int it = 0; it < iter; it++) {
         for (int i = 0; i < numSets; i++) {
-          if (impl == "open") {
+          if (impl.equals("open")) {
             ret += osets[i].cardinality();
           } else {
             ret += sets[i].cardinality();
@@ -102,7 +102,7 @@ public class BitSetPerf {
     if ("get".equals(test)) {
       for (int it = 0; it < iter; it++) {
         for (int i = 0; i < numSets; i++) {
-          if (impl == "open") {
+          if (impl.equals("open")) {
             FixedBitSet oset = osets[i];
             for (int k = 0; k < bitSetSize; k++) if (oset.get(k)) ret++;
           } else {
@@ -116,7 +116,7 @@ public class BitSetPerf {
     if ("icount".equals(test)) {
       for (int it = 0; it < iter; it++) {
         for (int i = 0; i < numSets - 1; i++) {
-          if (impl == "open") {
+          if (impl.equals("open")) {
             FixedBitSet a = osets[i];
             FixedBitSet b = osets[i + 1];
             ret += FixedBitSet.intersectionCount(a, b);
@@ -134,7 +134,7 @@ public class BitSetPerf {
     if ("clone".equals(test)) {
       for (int it = 0; it < iter; it++) {
         for (int i = 0; i < numSets; i++) {
-          if (impl == "open") {
+          if (impl.equals("open")) {
             osets[i] = osets[i].clone();
           } else {
             sets[i] = (BitSet) sets[i].clone();
@@ -146,7 +146,7 @@ public class BitSetPerf {
     if ("nextSetBit".equals(test)) {
       for (int it = 0; it < iter; it++) {
         for (int i = 0; i < numSets; i++) {
-          if (impl == "open") {
+          if (impl.equals("open")) {
             final FixedBitSet set = osets[i];
             for (int next = set.nextSetBit(0);
                 next != DocIdSetIterator.NO_MORE_DOCS;
@@ -166,7 +166,7 @@ public class BitSetPerf {
     if ("iterator".equals(test)) {
       for (int it = 0; it < iter; it++) {
         for (int i = 0; i < numSets; i++) {
-          if (impl == "open") {
+          if (impl.equals("open")) {
             final FixedBitSet set = osets[i];
             final BitSetIterator iterator = new BitSetIterator(set, 0);
             for (int next = iterator.nextDoc(); next >= 0; next = iterator.nextDoc()) {

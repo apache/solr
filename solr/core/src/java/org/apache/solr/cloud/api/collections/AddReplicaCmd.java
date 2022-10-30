@@ -254,7 +254,6 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
       boolean skipCreateReplicaInClusterState,
       CreateReplica createReplica)
       throws InterruptedException, KeeperException {
-    ZkStateReader zkStateReader = ccc.getZkStateReader();
     if (!skipCreateReplicaInClusterState) {
       ZkNodeProps props =
           new ZkNodeProps(
@@ -271,7 +270,7 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
               ZkStateReader.NODE_NAME_PROP,
               createReplica.node,
               ZkStateReader.BASE_URL_PROP,
-              zkStateReader.getBaseUrlForNodeName(createReplica.node),
+              ccc.getZkStateReader().getBaseUrlForNodeName(createReplica.node),
               ZkStateReader.REPLICA_TYPE,
               createReplica.replicaType.name());
       if (createReplica.coreNodeName != null) {
@@ -286,7 +285,7 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
                 ccc.getZkStateReader());
       } else {
         try {
-          ccc.offerStateUpdate(Utils.toJSON(props));
+          ccc.offerStateUpdate(props);
         } catch (Exception e) {
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR, "Exception updating Overseer state queue", e);

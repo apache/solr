@@ -38,10 +38,12 @@ public class NotEvaluator extends RecursiveBooleanEvaluator implements OneValueW
     }
   }
 
+  @Override
   protected Checker constructChecker(Object value) throws IOException {
     return null;
   }
 
+  @Override
   public Object doWork(Object... values) throws IOException {
     if (1 != values.length) {
       throw new IOException(
@@ -51,6 +53,7 @@ public class NotEvaluator extends RecursiveBooleanEvaluator implements OneValueW
     return doWork(values[0]);
   }
 
+  @Override
   public Object doWork(Object value) {
     if (null == value) {
       return null;

@@ -41,6 +41,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocCollectionWatcher;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.PerReplicaStates;
+import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -87,12 +88,14 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
   private TestFixture fixture = null;
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
     fixture = setupTestFixture(getTestName());
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     if (fixture != null) {
@@ -259,7 +262,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
     DocCollection collection = ref.get();
     PerReplicaStates prs =
-        PerReplicaStates.fetch(
+        PerReplicaStatesFetcher.fetch(
             collection.getZNode(), fixture.zkClient, collection.getPerReplicaStates());
     PerReplicaStatesOps.addReplica("r1", Replica.State.DOWN, false, prs)
         .persist(collection.getZNode(), fixture.zkClient);
@@ -318,7 +321,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     // re-add PRS
     collection = ref.get();
     prs =
-        PerReplicaStates.fetch(
+        PerReplicaStatesFetcher.fetch(
             collection.getZNode(), fixture.zkClient, collection.getPerReplicaStates());
     PerReplicaStatesOps.addReplica("r1", Replica.State.DOWN, false, prs)
         .persist(collection.getZNode(), fixture.zkClient);

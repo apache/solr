@@ -59,7 +59,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
   private static final int WAIT_TIME = TEST_NIGHTLY ? 60 : 30;
 
   @BeforeClass
-  private static void createMiniSolrCloudCluster() throws Exception {
+  public static void createMiniSolrCloudCluster() throws Exception {
 
     // we only need 1 node, and we don't care about any configs or collections
     // we're going to fake all the live_nodes changes we want to fake.
@@ -72,7 +72,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
   }
 
   @AfterClass
-  private static void afterClass() throws Exception {
+  public static void afterClass() throws Exception {
     if (null != CLOUD_CLIENT) {
       CLOUD_CLIENT.close();
       CLOUD_CLIENT = null;
@@ -244,6 +244,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
       this.client = newSolrZkClient();
     }
     /** returns the number of nodes actually added w/o error */
+    @Override
     public Integer call() {
       running = true;
       // NOTE: test includes 'running'

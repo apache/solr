@@ -47,7 +47,6 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.ClusterAPI;
 import org.apache.solr.handler.CollectionsAPI;
-import org.apache.solr.handler.api.ApiRegistrar;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -85,8 +84,9 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
       final CollectionsAPI collectionsAPI = new CollectionsAPI(collectionsHandler);
       apiBag.registerObject(new CollectionsAPI(collectionsHandler));
       apiBag.registerObject(collectionsAPI.collectionsCommands);
-      ApiRegistrar.registerCollectionApis(apiBag, collectionsHandler);
-      ApiRegistrar.registerShardApis(apiBag, collectionsHandler);
+      for (Api api : collectionsHandler.getApis()) {
+        apiBag.register(api);
+      }
 
       ClusterAPI clusterAPI = new ClusterAPI(collectionsHandler, null);
       apiBag.registerObject(clusterAPI);
@@ -198,13 +198,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     //        "{add-replica:{shard: shard1, node: 'localhost_8978' , type:'foo' }}", null,
     //        "Value of enum must be one of"
     //    );
-
-    compareOutput(
-        apiBag,
-        "/collections/collName",
-        POST,
-        "{add-replica-property : {name:propA , value: VALA, shard: shard1, replica:replica1}}",
-        "{collection: collName, shard: shard1, replica : replica1 , property : propA , operation : addreplicaprop, property.value : 'VALA'}");
 
     compareOutput(
         apiBag,

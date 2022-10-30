@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -180,7 +181,10 @@ public class ShuffleStream extends CloudSolrStream implements Expressible {
       ModifiableSolrParams mParams = new ModifiableSolrParams(params);
       child.setExpression(
           mParams.getMap().entrySet().stream()
-              .map(e -> String.format(Locale.ROOT, "%s=%s", e.getKey(), e.getValue()))
+              .map(
+                  e ->
+                      String.format(
+                          Locale.ROOT, "%s=%s", e.getKey(), Arrays.toString(e.getValue())))
               .collect(Collectors.joining(",")));
     }
     explanation.addChild(child);
@@ -188,6 +192,7 @@ public class ShuffleStream extends CloudSolrStream implements Expressible {
     return explanation;
   }
 
+  @Override
   public ModifiableSolrParams adjustParams(ModifiableSolrParams mParams) {
     mParams.set(CommonParams.QT, "/export");
     return mParams;

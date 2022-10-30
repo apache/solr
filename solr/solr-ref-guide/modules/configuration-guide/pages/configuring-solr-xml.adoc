@@ -50,6 +50,7 @@ The default `solr.xml` file is found in `$SOLR_TIP/server/solr/solr.xml` and loo
     <int name="distribUpdateConnTimeout">${distribUpdateConnTimeout:60000}</int>
     <str name="zkCredentialsProvider">${zkCredentialsProvider:org.apache.solr.common.cloud.DefaultZkCredentialsProvider}</str>
     <str name="zkACLProvider">${zkACLProvider:org.apache.solr.common.cloud.DefaultZkACLProvider}</str>
+    <str name="zkCredentialsInjector">${zkCredentialsInjector:org.apache.solr.common.cloud.DefaultZkCredentialsInjector}</str>
     <bool name="distributedClusterStateUpdates">${distributedClusterStateUpdates:false}</bool>
     <bool name="distributedCollectionConfigSetExecution">${distributedCollectionConfigSetExecution:false}</bool>
 
@@ -403,7 +404,7 @@ In SolrCloud mode, the URL of the ZooKeeper host that Solr should use for cluste
 If `true`, node names are not based on the address of the node, but on a generic name that identifies the core.
 When a different machine takes over serving that core things will be much easier to understand.
 
-`zkCredentialsProvider` & `zkACLProvider`::
+`zkCredentialsProvider`, `zkACLProvider` & `zkCredentialsInjector`::
 +
 [%autowidth,frame=none]
 |===

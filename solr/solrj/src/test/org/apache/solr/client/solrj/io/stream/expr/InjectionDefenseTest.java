@@ -17,12 +17,10 @@
 
 package org.apache.solr.client.solrj.io.stream.expr;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
+import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
-public class InjectionDefenseTest {
+public class InjectionDefenseTest extends SolrTestCase {
 
   private static final String EXPLOITABLE =
       "let(a=search(foo,q=\"time_dt:[?$? TO ?$?]\",fl=\"id,time_dt\",sort=\"time_dt asc\"))";

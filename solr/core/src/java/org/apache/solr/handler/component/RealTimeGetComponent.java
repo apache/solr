@@ -630,21 +630,6 @@ public class RealTimeGetComponent extends SearchComponent {
 
   public static SolrInputDocument DELETED = new SolrInputDocument();
 
-  @Deprecated // need Resolution
-  public static SolrInputDocument getInputDocumentFromTlog(
-      SolrCore core,
-      BytesRef idBytes,
-      AtomicLong versionReturned,
-      Set<String> onlyTheseNonStoredDVs,
-      boolean resolveFullDocument) {
-    return getInputDocumentFromTlog(
-        core,
-        idBytes,
-        versionReturned,
-        onlyTheseNonStoredDVs,
-        resolveFullDocument ? Resolution.DOC : Resolution.PARTIAL);
-  }
-
   /**
    * Specialized to pick out a child doc from a nested doc from the TLog.
    *
@@ -745,12 +730,6 @@ public class RealTimeGetComponent extends SearchComponent {
     }
 
     return null;
-  }
-
-  @Deprecated // easy to use wrong
-  public static SolrInputDocument getInputDocument(
-      SolrCore core, BytesRef idBytes, Resolution lookupStrategy) throws IOException {
-    return getInputDocument(core, idBytes, idBytes, null, null, lookupStrategy);
   }
 
   /**
@@ -1393,7 +1372,7 @@ public class RealTimeGetComponent extends SearchComponent {
       versionAvailable = recentUpdates.getVersions(ulog.getNumRecordsToKeep());
     }
     // sort versions
-    Collections.sort(versionAvailable, PeerSync.absComparator);
+    versionAvailable.sort(PeerSync.absComparator);
 
     // This can be done with single pass over both ranges and versionsAvailable, that would require
     // merging ranges. We currently use Set to ensure there are no duplicates.
@@ -1502,14 +1481,17 @@ public class RealTimeGetComponent extends SearchComponent {
     /**
      * @returns null
      */
+    @Override
     public DocList getDocList() {
       return null;
     }
 
+    @Override
     public ReturnFields getReturnFields() {
       return this.returnFields;
     }
 
+    @Override
     public SolrIndexSearcher getSearcher() {
       return this.searcher;
     }
@@ -1517,10 +1499,12 @@ public class RealTimeGetComponent extends SearchComponent {
     /**
      * @returns null
      */
+    @Override
     public Query getQuery() {
       return null;
     }
 
+    @Override
     public SolrQueryRequest getRequest() {
       return this.req;
     }
@@ -1528,6 +1512,7 @@ public class RealTimeGetComponent extends SearchComponent {
     /**
      * @returns null
      */
+    @Override
     public Iterator<SolrDocument> getProcessedDocuments() {
       return null;
     }

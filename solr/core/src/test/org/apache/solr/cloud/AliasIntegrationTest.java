@@ -33,6 +33,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.apache.lucene.util.IOUtils;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -41,7 +42,6 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -907,12 +907,12 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
       // HttpSolrClient
       JettySolrRunner jetty = cluster.getRandomJetty(random());
       if (random().nextBoolean()) {
-        try (HttpSolrClient client =
+        try (SolrClient client =
             getHttpSolrClient(jetty.getBaseUrl().toString() + "/" + collectionList)) {
           responseConsumer.accept(client.query(null, solrQuery));
         }
       } else {
-        try (HttpSolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString())) {
+        try (SolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString())) {
           responseConsumer.accept(client.query(collectionList, solrQuery));
         }
       }

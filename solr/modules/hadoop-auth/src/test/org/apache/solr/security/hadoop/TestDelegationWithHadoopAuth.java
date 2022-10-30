@@ -79,8 +79,8 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
     }
   }
 
-  private String getDelegationToken(
-      final String renewer, final String user, HttpSolrClient solrClient) throws Exception {
+  private String getDelegationToken(final String renewer, final String user, SolrClient solrClient)
+      throws Exception {
     DelegationTokenRequest.Get get =
         new DelegationTokenRequest.Get(renewer) {
           @Override
@@ -95,7 +95,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
   }
 
   private long renewDelegationToken(
-      final String token, final int expectedStatusCode, final String user, HttpSolrClient client)
+      final String token, final int expectedStatusCode, final String user, SolrClient client)
       throws Exception {
     DelegationTokenRequest.Renew renew =
         new DelegationTokenRequest.Renew(token) {
@@ -123,7 +123,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
     }
   }
 
-  private void cancelDelegationToken(String token, int expectedStatusCode, HttpSolrClient client)
+  private void cancelDelegationToken(String token, int expectedStatusCode, SolrClient client)
       throws Exception {
     DelegationTokenRequest.Cancel cancel = new DelegationTokenRequest.Cancel(token);
     try {

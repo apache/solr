@@ -100,17 +100,20 @@ public class EvalStream extends TupleStream implements Expressible {
         .withExpression(toExpression(factory, false).toString());
   }
 
+  @Override
   public void setStreamContext(StreamContext streamContext) {
     this.streamContext = streamContext;
     this.stream.setStreamContext(streamContext);
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     l.add(stream);
     return l;
   }
 
+  @Override
   public void open() throws IOException {
     try {
       stream.open();
@@ -129,18 +132,22 @@ public class EvalStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public void close() throws IOException {
     evalStream.close();
   }
 
+  @Override
   public Tuple read() throws IOException {
     return evalStream.read();
   }
 
+  @Override
   public StreamComparator getStreamSort() {
     return stream.getStreamSort();
   }
 
+  @Override
   public int getCost() {
     return 0;
   }

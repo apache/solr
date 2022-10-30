@@ -223,7 +223,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
           CollectionAdminRequest.restoreCollection(backupCollectionName, backupName)
               .setLocation(backupLocation)
               .setRepositoryName(BACKUP_REPO_NAME)
-              .processAndWait(cluster.getSolrClient(), 20);
+              .processAndWait(cluster.getSolrClient(), 30);
       assertEquals(RequestStatusState.COMPLETED, result);
     }
     assertEquals(firstBatchNumDocs, getNumDocsInCollection(backupCollectionName));
@@ -344,8 +344,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
           fail("This backup should be failed");
         }
       } catch (Exception e) {
-        // expected
-        e.printStackTrace();
+        log.error("expected", e);
       }
     }
   }
@@ -366,10 +365,10 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
             .get();
     try (FileInputStream fis = new FileInputStream(fileGetCorrupted)) {
       byte[] contents = fis.readAllBytes();
-      contents[contents.length - CodecUtil.footerLength() - 1] += 1;
-      contents[contents.length - CodecUtil.footerLength() - 2] += 1;
-      contents[contents.length - CodecUtil.footerLength() - 3] += 1;
-      contents[contents.length - CodecUtil.footerLength() - 4] += 1;
+      for (int i = 1; i < 5; i++) {
+        byte key = (byte) (contents.length - CodecUtil.footerLength() - i);
+        contents[key] = (byte) (contents[key] + 1);
+      }
       try (FileOutputStream fos = new FileOutputStream(fileGetCorrupted)) {
         fos.write(contents);
       }
@@ -507,7 +506,8 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
           RequestStatusState state = backup.processAndWait(cluster.getSolrClient(), 1000);
           assertEquals(RequestStatusState.COMPLETED, state);
         } catch (InterruptedException e) {
-          e.printStackTrace();
+          Thread.currentThread().interrupt();
+          log.error("interrupted", e);
         }
         numBackup++;
       } else {
