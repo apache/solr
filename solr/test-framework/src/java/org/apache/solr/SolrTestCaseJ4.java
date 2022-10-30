@@ -3244,14 +3244,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
   }
 
-  public static SolrClient getClientFrom(SolrClient solrClient) {
-    if (solrClient instanceof HttpSolrClient) {
-      return ((HttpSolrClient) solrClient).getBaseURL();
-    } else {
-      return null;
-    }
-  }
-
   private static final Map<Class<?>, String> private_RANDOMIZED_NUMERIC_FIELDTYPES =
       new HashMap<>();
 
