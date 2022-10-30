@@ -38,6 +38,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.ZookeeperInfoHandler.FilterType;
 import org.apache.solr.handler.admin.ZookeeperInfoHandler.PageOfCollections;
@@ -144,14 +145,14 @@ public class ZookeeperAPI extends JerseyResource {
     } finally {
       printer.close();
     }
-    response.zookeeperFiles = new HashMap<>();
-    response.zookeeperFiles.put(RawResponseWriter.CONTENT, printer);
+
+    response.zookeeperFiles.add(RawResponseWriter.CONTENT, printer);
     return response;
   }
 
   public static class ZookeeperFilesResponse extends SolrJerseyResponse {
 
     @JsonProperty("zookeeperFiles")
-    public Map<String, Object> zookeeperFiles;
+    public NamedList<Object> zookeeperFiles = new NamedList<>();
   }
 }
