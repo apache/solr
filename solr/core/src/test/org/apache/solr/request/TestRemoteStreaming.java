@@ -76,16 +76,14 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
 
   @Test
   public void testStreamUrl() throws Exception {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
-    String streamUrl = client.getBaseURL() + "/select?q=*:*&fl=id&wt=csv";
+    String streamUrl = getUrlFrom((HttpSolrClient) getSolrClient()) + "/select?q=*:*&fl=id&wt=csv";
 
     String getUrl =
-        client.getBaseURL()
+        getUrlFrom(getSolrClient())
             + "/debug/dump?wt=xml&stream.url="
             + URLEncoder.encode(streamUrl, "UTF-8");
     String content = getUrlForString(getUrl);
     assertTrue(content.contains("1234"));
-    // System.out.println(content);
   }
 
   private String getUrlForString(String getUrl) throws IOException {
@@ -115,9 +113,8 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
 
   /** Compose an url that if you get it, it will delete all the data. */
   private String makeDeleteAllUrl() throws UnsupportedEncodingException {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
     String deleteQuery = "<delete><query>*:*</query></delete>";
-    return client.getBaseURL()
+    return getUrlFrom((HttpSolrClient) getSolrClient())
         + "/update?commit=true&stream.body="
         + URLEncoder.encode(deleteQuery, "UTF-8");
   }
