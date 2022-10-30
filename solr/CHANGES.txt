@@ -29,8 +29,6 @@ Other Changes
   Previously, the modules would come transitively.
   (David Smiley)
 
-* SOLR-15718: Remove backcompat feature solr.useUnsafeOverseerResponse (janhoy)
-
 ==================  9.2.0 ==================
 New Features
 ---------------------
@@ -110,6 +108,8 @@ Other Changes
 * SOLR-16443: Upgrade Jackson bom to 2.13.4.20221013 (Kevin Risden)
 
 * SOLR-16467: Upgrade semver4j to 2.2.0 to fix failures with some locales (Kevin Risden)
+
+* SOLR-15718: Remove backcompat feature solr.useUnsafeOverseerResponse (janhoy)
 
 ==================  9.1.0 ==================
 
