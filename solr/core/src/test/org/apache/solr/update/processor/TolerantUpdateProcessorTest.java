@@ -229,7 +229,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
         e.getMessage(),
         e.getMessage()
             .contains(
-                "ERROR: [doc=1] Error adding field 'weight'='b' msg=For input string: \"b\""));
+                "ERROR: [doc=1] Error adding field 'weight' msg=For input string: \"b\""));
     // the first good documents made it to the index
     assertU(commit());
     assertQ(req("q", "*:*"), "//result[@numFound='6']");
@@ -261,7 +261,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
     assertTrue(
         e.getMessage()
             .contains(
-                "ERROR: [doc=1] Error adding field 'weight'='b' msg=For input string: \"b\""));
+                "ERROR: [doc=1] Error adding field 'weight' msg=For input string: \"b\""));
 
     // the first good documents made it to the index
     assertU(commit());

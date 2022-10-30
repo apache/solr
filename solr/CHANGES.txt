@@ -37,6 +37,11 @@ New Features
 
 * SOLR-16500: Added --enable-preview for JDK 19 to enable MemorySegment support in MMapDirectory (Kevin Risden)
 
+Bug Fixes
+---------------------
+
+* SOLR-16155: DocumentBuilder should not include field values in error messages (janhoy)
+
 Improvements
 ---------------------
 

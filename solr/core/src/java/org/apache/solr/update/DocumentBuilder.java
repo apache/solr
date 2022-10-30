@@ -175,9 +175,7 @@ public class DocumentBuilder {
             "ERROR: "
                 + getID(doc, schema)
                 + "multiple values encountered for non multiValued field "
-                + sfield.getName()
-                + ": "
-                + fieldValue);
+                + sfield.getName());
       }
 
       List<CopyField> copyFields = schema.getCopyFieldsList(name);
@@ -240,8 +238,6 @@ public class DocumentBuilder {
                 + getID(doc, schema)
                 + "Error adding field '"
                 + field.getName()
-                + "'='"
-                + field.getValue()
                 + "' msg="
                 + ex.getMessage(),
             ex);
@@ -252,8 +248,6 @@ public class DocumentBuilder {
                 + getID(doc, schema)
                 + "Error adding field '"
                 + field.getName()
-                + "'='"
-                + field.getValue()
                 + "' msg="
                 + ex.getMessage(),
             ex);
@@ -332,9 +326,7 @@ public class DocumentBuilder {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
             "Multiple values encountered for non multiValued copy field "
-                + destinationField.getName()
-                + ": "
-                + originalFieldValue);
+                + destinationField.getName());
       }
       Object fieldValue = originalFieldValue;
       // Perhaps trim the length of a copy field
