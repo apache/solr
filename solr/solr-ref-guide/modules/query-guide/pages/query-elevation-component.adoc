@@ -234,5 +234,9 @@ http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&elevateIds=IW-02,
 
 === The fq Parameter with Elevation
 
-Query elevation respects the standard filter query (`fq`) parameter.
+By default, query elevation respects the standard filter query (`fq`) parameter.
 That is, if the query contains the `fq` parameter, all results will be within that filter even if `elevate.xml` adds other documents to the result set.
+
+If you want elevated documents to be included in the result set whether or not they match the provided filter queries, you can supply the request parameter `elevateFilteredDocs=true` (the default is `false`).
+This option modifies the filter queries to include the elevated documents.
+This option may have a performance impact when filter caching is enabled and the modified filters are not found in the cache.
