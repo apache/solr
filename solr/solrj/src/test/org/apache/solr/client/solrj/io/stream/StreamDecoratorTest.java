@@ -4336,6 +4336,17 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     updateRequest.add(id, String.valueOf(3), "text_s", "a b e e f");
     updateRequest.commit(cluster.getSolrClient(), "uknownCollection");
 
+    expr =
+        "classify("
+            +
+            // use cacheMillis=0 to prevent cached results. it doesn't matter on the first run,
+            // but we want to ensure that when we re-use this expression later after
+            // training another model, we'll still get accurate results.
+            "model(modelCollection, id=\"model\", cacheMillis=0),"
+            + "topic(checkpointCollection, uknownCollection, q=\"*:*\", fl=\"text_s, id\", id=\"1000000\"),"
+            + "field=\"text_s\","
+            + "analyzerField=\"tv_text\")";
+    paramsLoc.set("expr", expr);
     classifyStream = new SolrStream(url, paramsLoc);
     idToLabel = getIdToLabel(classifyStream, "probability_d");
     assertEquals(idToLabel.size(), 2);
