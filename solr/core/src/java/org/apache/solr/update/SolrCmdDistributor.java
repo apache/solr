@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
@@ -96,6 +97,7 @@ public class SolrCmdDistributor implements Closeable {
     }
   }
 
+  @Override
   public void close() {
     clients.shutdown();
   }
@@ -431,6 +433,7 @@ public class SolrCmdDistributor implements Closeable {
       return isRetry && retries < node.getMaxRetries();
     }
 
+    @Override
     public String toString() {
       StringBuilder sb = new StringBuilder();
       sb.append("SolrCmdDistributor$Req: cmd=").append(cmd.toString());
@@ -507,6 +510,7 @@ public class SolrCmdDistributor implements Closeable {
      */
     public Req req;
 
+    @Override
     public String toString() {
       StringBuilder sb = new StringBuilder();
       sb.append("SolrCmdDistributor$Error: statusCode=").append(statusCode);
@@ -557,10 +561,12 @@ public class SolrCmdDistributor implements Closeable {
       this.maxRetries = maxRetries;
     }
 
+    @Override
     public String getCollection() {
       return collection;
     }
 
+    @Override
     public String getShardId() {
       return shardId;
     }
@@ -633,24 +639,13 @@ public class SolrCmdDistributor implements Closeable {
     @Override
     public boolean equals(Object obj) {
       if (this == obj) return true;
-      if (obj == null) return false;
-      if (getClass() != obj.getClass()) return false;
+      if (!(obj instanceof StdNode)) return false;
       StdNode other = (StdNode) obj;
-      if (this.retry != other.retry) return false;
-      if (this.maxRetries != other.maxRetries) return false;
-      String baseUrl = nodeProps.getBaseUrl();
-      String coreName = nodeProps.getCoreName();
-      String url = nodeProps.getCoreUrl();
-      if (baseUrl == null) {
-        if (other.nodeProps.getBaseUrl() != null) return false;
-      } else if (!baseUrl.equals(other.nodeProps.getBaseUrl())) return false;
-      if (coreName == null) {
-        if (other.nodeProps.getCoreName() != null) return false;
-      } else if (!coreName.equals(other.nodeProps.getCoreName())) return false;
-      if (url == null) {
-        if (other.nodeProps.getCoreUrl() != null) return false;
-      } else if (!url.equals(other.nodeProps.getCoreUrl())) return false;
-      return true;
+      return (this.retry == other.retry)
+          && (this.maxRetries == other.maxRetries)
+          && Objects.equals(this.nodeProps.getBaseUrl(), other.nodeProps.getBaseUrl())
+          && Objects.equals(this.nodeProps.getCoreName(), other.nodeProps.getCoreName())
+          && Objects.equals(this.nodeProps.getCoreUrl(), other.nodeProps.getCoreUrl());
     }
 
     @Override
@@ -727,13 +722,9 @@ public class SolrCmdDistributor implements Closeable {
     public boolean equals(Object obj) {
       if (this == obj) return true;
       if (!super.equals(obj)) return false;
-      if (getClass() != obj.getClass()) return false;
+      if (!(obj instanceof ForwardNode)) return false;
       ForwardNode other = (ForwardNode) obj;
-      if (nodeProps.getCoreUrl() == null) {
-        if (other.nodeProps.getCoreUrl() != null) return false;
-      } else if (!nodeProps.getCoreUrl().equals(other.nodeProps.getCoreUrl())) return false;
-
-      return true;
+      return Objects.equals(nodeProps.getCoreUrl(), other.nodeProps.getCoreUrl());
     }
   }
 

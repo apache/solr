@@ -30,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -352,7 +353,7 @@ public class ZkStateReader implements SolrCloseable {
                 }
               }
             }
-            stateHasChanged.set(oldState != watch.currentState);
+            stateHasChanged.set(!Objects.equals(oldState, watch.currentState));
             return watch;
           });
 
@@ -935,6 +936,7 @@ public class ZkStateReader implements SolrCloseable {
     return this;
   }
 
+  @Override
   public void close() {
     this.closed = true;
 
@@ -1306,7 +1308,7 @@ public class ZkStateReader implements SolrCloseable {
     }
   }
 
-  private class VersionedCollectionProps {
+  private static class VersionedCollectionProps {
     int zkVersion;
     Map<String, String> props;
     long cacheUntilNs = 0;
@@ -2394,6 +2396,7 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   private class CacheCleaner implements Runnable {
+    @Override
     public void run() {
       while (!Thread.interrupted()) {
         try {
@@ -2421,10 +2424,12 @@ public class ZkStateReader implements SolrCloseable {
     private final String collectionName;
     private final CollectionStateWatcher delegate;
 
+    @Override
     public int hashCode() {
       return collectionName.hashCode() * delegate.hashCode();
     }
 
+    @Override
     public boolean equals(Object other) {
       if (other instanceof DocCollectionAndLiveNodesWatcherWrapper) {
         DocCollectionAndLiveNodesWatcherWrapper that =

@@ -160,7 +160,7 @@ public class SliceMutator {
           ZkCoreNodeProps.getCoreUrl(
               replica.getBaseUrl(), replica.getStr(ZkStateReader.CORE_NAME_PROP));
 
-      if (replica == oldLeader && !coreURL.equals(leaderUrl)) {
+      if (replica.equals(oldLeader) && !coreURL.equals(leaderUrl)) {
         replica = ReplicaMutator.unsetLeader(replica);
       } else if (coreURL.equals(leaderUrl)) {
         newLeader = replica = ReplicaMutator.setLeader(replica);

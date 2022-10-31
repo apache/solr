@@ -123,6 +123,7 @@ public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
 
     public abstract ConfigSetAdminRequest<?, ?> createRequest();
 
+    @Override
     public void run() {
       final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
       final SolrClient solrClient = getHttpSolrClient(baseUrl);

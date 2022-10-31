@@ -487,7 +487,7 @@ public class ZkTestServer {
     try (SolrZkClient client = new SolrZkClient(getZkHost(), 10000)) {
       client.makePath(path, null, CreateMode.PERSISTENT, null, false, true, 0);
     } catch (InterruptedException | KeeperException e) {
-      e.printStackTrace();
+      log.error("Error checking path {}", path, e);
       throw new IOException("Error checking path " + path, SolrZkClient.checkInterrupted(e));
     }
   }

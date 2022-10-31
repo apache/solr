@@ -98,24 +98,29 @@ public class RecordCountStream extends TupleStream implements Expressible, Seria
         .withExpression(toExpression(factory, false).toString());
   }
 
+  @Override
   public void close() throws IOException {
     this.stream.close();
   }
 
+  @Override
   public void open() throws IOException {
     this.stream.open();
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     l.add(stream);
     return l;
   }
 
+  @Override
   public void setStreamContext(StreamContext streamContext) {
     stream.setStreamContext(streamContext);
   }
 
+  @Override
   public Tuple read() throws IOException {
     Tuple t = stream.read();
     if (t.EOF) {

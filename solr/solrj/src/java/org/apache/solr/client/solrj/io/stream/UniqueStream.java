@@ -154,36 +154,43 @@ public class UniqueStream extends TupleStream implements Expressible {
         .withHelper(originalEqualitor.toExplanation(factory));
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.originalStream.setStreamContext(context);
     this.reducerStream.setStreamContext(context);
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     l.add(originalStream);
     return l;
   }
 
+  @Override
   public void open() throws IOException {
     reducerStream.open();
     // opens originalStream as well
   }
 
+  @Override
   public void close() throws IOException {
     reducerStream.close();
     // closes originalStream as well
   }
 
+  @Override
   public Tuple read() throws IOException {
     return reducerStream.read();
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
+  @Override
   public StreamComparator getStreamSort() {
     return reducerStream.getStreamSort();
   }
 
+  @Override
   public int getCost() {
     return 0;
   }

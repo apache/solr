@@ -61,6 +61,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
   SolrClient leaderClient, followerClient;
   ReplicationTestHelper.SolrInstance leader = null, follower = null;
 
+  @Override
   @Before
   public void setUp() throws Exception {
     originalDiskSpaceprovider = IndexFetcher.usableDiskSpaceProvider;

@@ -97,14 +97,14 @@ public class QueryUtils {
       BoostQuery bq = (BoostQuery) q;
       Query subQ = bq.getQuery();
       Query absSubQ = getAbs(subQ);
-      if (absSubQ == subQ) return q;
+      if (absSubQ.equals(subQ)) return q;
       return new BoostQuery(absSubQ, bq.getBoost());
     }
 
     if (q instanceof WrappedQuery) {
       Query subQ = ((WrappedQuery) q).getWrappedQuery();
       Query absSubQ = getAbs(subQ);
-      if (absSubQ == subQ) return q;
+      if (absSubQ.equals(subQ)) return q;
       return new WrappedQuery(absSubQ);
     }
 

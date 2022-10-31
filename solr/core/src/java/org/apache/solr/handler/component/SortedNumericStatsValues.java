@@ -58,6 +58,8 @@ public class SortedNumericStatsValues implements StatsValues {
   private Number toCorrectType(long value) {
     switch (numberType) {
       case INTEGER:
+        return (int) value;
+      case DATE:
       case LONG:
         return value;
       case FLOAT:

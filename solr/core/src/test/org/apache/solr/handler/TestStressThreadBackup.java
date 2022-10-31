@@ -139,6 +139,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
            * Override default backup impl to hit ReplicationHandler, and then poll that same handler
            * until success
            */
+          @Override
           public void makeBackup(final String backupName, final String snapName) throws Exception {
             final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
             ModifiableSolrParams p =
@@ -170,6 +171,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
     // possible to create a lot of index churn w/ segment merging
     final Thread heavyCommitting =
         new Thread() {
+          @Override
           public void run() {
             try {
               int docIdCounter = 0;

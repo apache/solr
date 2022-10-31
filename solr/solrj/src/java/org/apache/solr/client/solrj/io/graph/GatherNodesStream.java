@@ -470,6 +470,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     return explanation;
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.traversal = (Traversal) context.get("traversal");
     if (traversal == null) {
@@ -498,12 +499,14 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     l.add(tupleStream);
     return l;
   }
 
+  @Override
   public void open() throws IOException {
     tupleStream.open();
   }
@@ -517,6 +520,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       this.nodes = nodes;
     }
 
+    @Override
     public List<Tuple> call() {
 
       Set<String> flSet = new HashSet<>();
@@ -687,10 +691,12 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public void close() throws IOException {
     tupleStream.close();
   }
 
+  @Override
   public Tuple read() throws IOException {
 
     if (out == null) {
@@ -840,6 +846,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public int getCost() {
     return 0;
   }
@@ -858,22 +865,28 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       this.ids = ids;
     }
 
+    @Override
     public void open() {
       this.it = ids.iterator();
     }
 
+    @Override
     public void close() {}
 
+    @Override
     public StreamComparator getStreamSort() {
       return null;
     }
 
+    @Override
     public List<TupleStream> children() {
       return new ArrayList<>();
     }
 
+    @Override
     public void setStreamContext(StreamContext context) {}
 
+    @Override
     public Tuple read() {
       if (it.hasNext()) {
         return new Tuple("node", it.next());
@@ -882,6 +895,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       }
     }
 
+    @Override
     public String toString() {
       StringBuilder builder = new StringBuilder();
       boolean comma = false;

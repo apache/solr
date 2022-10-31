@@ -91,6 +91,7 @@ public class V2HttpCall extends HttpSolrCall {
     super(solrDispatchFilter, cc, request, response, retry);
   }
 
+  @Override
   @SuppressForbidden(
       reason =
           "Set the thread contextClassLoader for all 3rd party dependencies that we cannot control")

@@ -70,7 +70,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     STANDARD
   };
 
-  private AtomicInteger id = new AtomicInteger();
+  private final AtomicInteger uniqueId = new AtomicInteger();
 
   @BeforeClass
   public static void beforeClass() {
@@ -175,7 +175,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       nodes.add(new StdNode(new ZkCoreNodeProps(nodeProps)));
 
       // add one doc to controlClient
-      cmd.solrDoc = sdoc("id", id.incrementAndGet());
+      cmd.solrDoc = sdoc("id", uniqueId.incrementAndGet());
       params = new ModifiableSolrParams();
 
       cmdDistrib.distribAdd(cmd, nodes, params);
@@ -201,12 +201,12 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     int id2;
     // add another 2 docs to control and 3 to client
     try (SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(updateShardHandler)) {
-      cmd.solrDoc = sdoc("id", id.incrementAndGet());
+      cmd.solrDoc = sdoc("id", uniqueId.incrementAndGet());
       params = new ModifiableSolrParams();
       params.set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
       cmdDistrib.distribAdd(cmd, nodes, params);
 
-      id2 = id.incrementAndGet();
+      id2 = uniqueId.incrementAndGet();
       AddUpdateCommand cmd2 = new AddUpdateCommand(null);
       cmd2.solrDoc = sdoc("id", id2);
 
@@ -215,7 +215,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       cmdDistrib.distribAdd(cmd2, nodes, params);
 
       AddUpdateCommand cmd3 = new AddUpdateCommand(null);
-      cmd3.solrDoc = sdoc("id", id.incrementAndGet());
+      cmd3.solrDoc = sdoc("id", uniqueId.incrementAndGet());
 
       params = new ModifiableSolrParams();
       params.set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
@@ -290,7 +290,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
           nodes.add(new StdNode(new ZkCoreNodeProps(nodeProps)));
         }
         AddUpdateCommand c = new AddUpdateCommand(null);
-        c.solrDoc = sdoc("id", id.incrementAndGet());
+        c.solrDoc = sdoc("id", uniqueId.incrementAndGet());
         if (nodes.size() > 0) {
           params = new ModifiableSolrParams();
           cmdDistrib.distribAdd(c, nodes, params);
@@ -408,7 +408,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
 
       for (int i = 0; i < 5; i++) {
         AddUpdateCommand cmd = new AddUpdateCommand(null);
-        int currentId = id.incrementAndGet();
+        int currentId = uniqueId.incrementAndGet();
         cmd.solrDoc = sdoc("id", currentId);
         ModifiableSolrParams params = new ModifiableSolrParams();
         cmdDistrib.distribAdd(cmd, nodes, params);
@@ -483,7 +483,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       }
 
       AddUpdateCommand cmd = new AddUpdateCommand(null);
-      cmd.solrDoc = sdoc("id", id.incrementAndGet());
+      cmd.solrDoc = sdoc("id", uniqueId.incrementAndGet());
       ModifiableSolrParams params = new ModifiableSolrParams();
       RollupRequestReplicationTracker rollupReqTracker = new RollupRequestReplicationTracker();
       LeaderRequestReplicationTracker leaderReqTracker =
@@ -539,7 +539,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       nodes.add(retryNode);
 
       AddUpdateCommand cmd = new AddUpdateCommand(null);
-      cmd.solrDoc = sdoc("id", id.incrementAndGet());
+      cmd.solrDoc = sdoc("id", uniqueId.incrementAndGet());
       ModifiableSolrParams params = new ModifiableSolrParams();
 
       cmdDistrib.distribAdd(cmd, nodes, params);
@@ -665,7 +665,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       nodes.add(retryNode);
 
       AddUpdateCommand cmd = new AddUpdateCommand(null);
-      cmd.solrDoc = sdoc("id", id.incrementAndGet());
+      cmd.solrDoc = sdoc("id", uniqueId.incrementAndGet());
       ModifiableSolrParams params = new ModifiableSolrParams();
 
       CommitUpdateCommand ccmd = new CommitUpdateCommand(null, false);
@@ -723,7 +723,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       nodes.add(retryNode);
 
       AddUpdateCommand cmd = new AddUpdateCommand(null);
-      cmd.solrDoc = sdoc("id", id.incrementAndGet());
+      cmd.solrDoc = sdoc("id", uniqueId.incrementAndGet());
       ModifiableSolrParams params = new ModifiableSolrParams();
 
       CommitUpdateCommand ccmd = new CommitUpdateCommand(null, false);
@@ -773,7 +773,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       nodes.add(retryNode);
 
       AddUpdateCommand cmd = new AddUpdateCommand(null);
-      cmd.solrDoc = sdoc("id", id.incrementAndGet());
+      cmd.solrDoc = sdoc("id", uniqueId.incrementAndGet());
       ModifiableSolrParams params = new ModifiableSolrParams();
 
       CommitUpdateCommand ccmd = new CommitUpdateCommand(null, false);
@@ -821,7 +821,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       nodes.add(retryNode);
 
       AddUpdateCommand cmd = new AddUpdateCommand(null);
-      cmd.solrDoc = sdoc("id", id.incrementAndGet());
+      cmd.solrDoc = sdoc("id", uniqueId.incrementAndGet());
       ModifiableSolrParams params = new ModifiableSolrParams();
 
       cmdDistrib.distribAdd(cmd, nodes, params);
@@ -862,7 +862,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       nodes.add(retryNode);
 
       AddUpdateCommand cmd = new AddUpdateCommand(null);
-      cmd.solrDoc = sdoc("id", id.incrementAndGet());
+      cmd.solrDoc = sdoc("id", uniqueId.incrementAndGet());
       ModifiableSolrParams params = new ModifiableSolrParams();
 
       cmdDistrib.distribAdd(cmd, nodes, params);
@@ -936,7 +936,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
           nodes.add(node);
         }
         AddUpdateCommand c = new AddUpdateCommand(null);
-        c.solrDoc = sdoc("id", id.incrementAndGet());
+        c.solrDoc = sdoc("id", uniqueId.incrementAndGet());
         if (nodes.size() > 0) {
           params = new ModifiableSolrParams();
           cmdDistrib.distribAdd(c, nodes, params, false);

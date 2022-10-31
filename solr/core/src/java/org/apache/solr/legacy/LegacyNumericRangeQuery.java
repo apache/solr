@@ -424,23 +424,23 @@ public final class LegacyNumericRangeQuery<T extends Number> extends MultiTermQu
     if (!super.equals(o)) return false;
     if (o instanceof LegacyNumericRangeQuery) {
       final LegacyNumericRangeQuery<?> q = (LegacyNumericRangeQuery<?>) o;
-      return ((q.min == null ? min == null : q.min.equals(min))
-          && (q.max == null ? max == null : q.max.equals(max))
+      return Objects.equals(q.min, min)
+          && Objects.equals(q.max, max)
           && minInclusive == q.minInclusive
           && maxInclusive == q.maxInclusive
-          && precisionStep == q.precisionStep);
+          && precisionStep == q.precisionStep;
     }
     return false;
   }
 
   @Override
-  public final int hashCode() {
+  public int hashCode() {
     int hash = super.hashCode();
     hash = 31 * hash + precisionStep;
     hash = 31 * hash + Objects.hashCode(min);
     hash = 31 * hash + Objects.hashCode(max);
-    hash = 31 * hash + Objects.hashCode(minInclusive);
-    hash = 31 * hash + Objects.hashCode(maxInclusive);
+    hash = 31 * hash + Boolean.hashCode(minInclusive);
+    hash = 31 * hash + Boolean.hashCode(maxInclusive);
     return hash;
   }
 

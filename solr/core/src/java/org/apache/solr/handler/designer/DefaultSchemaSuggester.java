@@ -385,6 +385,7 @@ public class DefaultSchemaSuggester implements SchemaSuggester {
     return true;
   }
 
+  @Override
   public boolean isMultiValued(String name, List<SolrInputDocument> docs) {
     Map<String, List<Object>> transposed = transposeDocs(docs);
     List<Object> sampleValues = transposed.get(name);

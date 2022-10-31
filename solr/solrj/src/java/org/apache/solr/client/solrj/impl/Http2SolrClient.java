@@ -257,6 +257,7 @@ public class Http2SolrClient extends SolrClient {
     return httpClient;
   }
 
+  @Override
   public void close() {
     // we wait for async requests, so far devs don't want to give sugar for this
     asyncTracker.waitForComplete();
@@ -1029,8 +1030,8 @@ public class Http2SolrClient extends SolrClient {
       return this;
     }
 
-    public Builder connectionTimeout(int connectionTimeOut) {
-      this.connectionTimeout = connectionTimeOut;
+    public Builder connectionTimeout(int connectionTimeout) {
+      this.connectionTimeout = connectionTimeout;
       return this;
     }
 

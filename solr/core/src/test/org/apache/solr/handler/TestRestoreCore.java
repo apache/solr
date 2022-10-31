@@ -76,6 +76,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
     }
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();

@@ -25,6 +25,7 @@ import javax.xml.xpath.XPathExpressionException;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -104,6 +105,20 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
 
   public String adminQuery(String request) throws IOException {
     return getResponse(new HttpGet(getAdminURL() + request));
+  }
+
+  /**
+   * Processes a HEAD request using a URL path (with no context path) + optional query params and
+   * returns the response content.
+   *
+   * @param request The URL path and optional query params
+   * @return The response to the HEAD request
+   */
+  public String head(String request) throws IOException {
+    HttpHead httpHead = new HttpHead(getBaseURL() + request);
+    return httpClient
+        .execute(httpHead, HttpClientUtil.createNewHttpClientRequestContext())
+        .toString();
   }
 
   /**

@@ -398,8 +398,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     // Request counts increase from expected nodes should aggregate to 1000, while there should be
     // no increase in unexpected nodes.
-    int increaseFromExpectedUrls = 0;
-    int increaseFromUnexpectedUrls = 0;
+    long increaseFromExpectedUrls = 0;
+    long increaseFromUnexpectedUrls = 0;
     Map<String, Long> numRequestsToUnexpectedUrls = Maps.newHashMap();
     for (Slice slice : col.getSlices()) {
       for (Replica replica : slice.getReplicas()) {

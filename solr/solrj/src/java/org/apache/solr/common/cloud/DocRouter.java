@@ -109,6 +109,7 @@ public abstract class DocRouter {
       return max;
     }
 
+    @Override
     public boolean includes(int hash) {
       return hash >= min && hash <= max;
     }
@@ -135,7 +136,7 @@ public abstract class DocRouter {
 
     @Override
     public boolean equals(Object obj) {
-      if (obj.getClass() != getClass()) return false;
+      if (!(obj instanceof Range)) return false;
       Range other = (Range) obj;
       return this.min == other.min && this.max == other.max;
     }

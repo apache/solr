@@ -64,18 +64,22 @@ public class CountDistinctMetric extends Metric {
     setIdentifier(functionName, "(", columnName, ")");
   }
 
+  @Override
   public void update(Tuple tuple) {
     // Nop for now
   }
 
+  @Override
   public Metric newInstance() {
     return new CountDistinctMetric(columnName);
   }
 
+  @Override
   public String[] getColumns() {
     return new String[] {columnName};
   }
 
+  @Override
   public Number getValue() {
     // No op for now
     return null;

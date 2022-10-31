@@ -181,11 +181,12 @@ public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase
     // query("qt", "/terms",  "terms.fl", "foo_date_p", "terms.ttf", "true");
   }
 
+  @Override
   protected QueryResponse query(Object... q) throws Exception {
     if (Stream.of(q).noneMatch(s -> s.equals("terms.list"))) {
       // SOLR-9243 doesn't support max/min count
       for (int i = 0; i < q.length; i += 2) {
-        if (q[i].equals("terms.sort") && q[i + 1].equals("index") || rarely()) {
+        if ((q[i].equals("terms.sort") && q[i + 1].equals("index")) || rarely()) {
           List<Object> params = new ArrayList<>(Arrays.asList(q));
           if (usually()) {
             params.add("terms.mincount");

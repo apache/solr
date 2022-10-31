@@ -61,6 +61,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     useFactory("solr.StandardDirectoryFactory");
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();

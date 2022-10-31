@@ -74,6 +74,7 @@ public class MeanMetric extends Metric {
     setIdentifier(functionName, "(", columnName, ")");
   }
 
+  @Override
   public void update(Tuple tuple) {
     ++count;
     Object o = tuple.get(columnName);
@@ -92,14 +93,17 @@ public class MeanMetric extends Metric {
     }
   }
 
+  @Override
   public Metric newInstance() {
     return new MeanMetric(columnName, outputLong);
   }
 
+  @Override
   public String[] getColumns() {
     return new String[] {columnName};
   }
 
+  @Override
   public Number getValue() {
     double dcount = (double) count;
     if (longSum == 0) {

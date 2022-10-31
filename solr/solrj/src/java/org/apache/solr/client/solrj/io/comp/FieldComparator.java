@@ -73,6 +73,7 @@ public class FieldComparator implements StreamComparator {
     return !leftFieldName.equals(rightFieldName);
   }
 
+  @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) {
     StringBuilder sb = new StringBuilder();
 
@@ -151,6 +152,7 @@ public class FieldComparator implements StreamComparator {
     }
   }
 
+  @Override
   public int compare(Tuple leftTuple, Tuple rightTuple) {
     return comparator.compare(leftTuple, rightTuple);
   }
@@ -192,7 +194,7 @@ public class FieldComparator implements StreamComparator {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (!(o instanceof FieldComparator)) return false;
     FieldComparator that = (FieldComparator) o;
     // comparator is based on the other fields so is not needed in this compare
     return leftFieldName.equals(that.leftFieldName)

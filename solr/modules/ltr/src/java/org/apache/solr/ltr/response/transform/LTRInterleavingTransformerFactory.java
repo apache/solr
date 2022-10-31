@@ -42,7 +42,7 @@ public class LTRInterleavingTransformerFactory extends TransformerFactory {
     return new InterleavingTransformer(name, req);
   }
 
-  class InterleavingTransformer extends DocTransformer {
+  static class InterleavingTransformer extends DocTransformer {
 
     private final String name;
     private final SolrQueryRequest req;

@@ -96,6 +96,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     useFactory(null);
   }
 
+  @Override
   @Test
   @Nightly
   public void test() throws Exception {

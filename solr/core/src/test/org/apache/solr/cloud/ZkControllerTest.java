@@ -409,7 +409,6 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
   private static class MockCoreContainer extends CoreContainer {
     UpdateShardHandler updateShardHandler =
         new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
-    SolrMetricManager metricManager;
 
     public MockCoreContainer() {
       super(SolrXmlConfig.fromString(TEST_PATH(), "<solr/>"));

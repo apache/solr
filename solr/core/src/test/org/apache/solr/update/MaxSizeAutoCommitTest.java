@@ -90,6 +90,7 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
     updateRequestHandler.init(null);
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     if (null != monitor) {

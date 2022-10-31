@@ -58,6 +58,7 @@ public abstract class RecursiveTemporalEvaluator extends RecursiveEvaluator
 
   protected abstract Object getDatePart(TemporalAccessor value);
 
+  @Override
   public Object normalizeInputType(Object value) throws StreamEvaluatorException {
     if (null == value) {
       return value;
@@ -107,6 +108,7 @@ public abstract class RecursiveTemporalEvaluator extends RecursiveEvaluator
                 String.valueOf(value))));
   }
 
+  @Override
   public Object doWork(Object value) {
     if (null == value) {
       return null;

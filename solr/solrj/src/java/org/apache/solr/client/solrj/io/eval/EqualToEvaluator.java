@@ -38,6 +38,7 @@ public class EqualToEvaluator extends RecursiveBooleanEvaluator implements ManyV
     }
   }
 
+  @Override
   protected Checker constructChecker(Object fromValue) throws IOException {
     if (null == fromValue) {
       return new NullChecker() {

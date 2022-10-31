@@ -46,6 +46,7 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
     super();
   }
 
+  @Override
   @Test
   public void test() throws Exception {
     waitForThingsToLevelOut(30, TimeUnit.SECONDS);

@@ -49,6 +49,7 @@ public class CountMetric extends Metric {
     init(functionName, columnName);
   }
 
+  @Override
   public String[] getColumns() {
     if (isAllColumns()) {
       return new String[0];
@@ -68,16 +69,19 @@ public class CountMetric extends Metric {
     return isAllColumns;
   }
 
+  @Override
   public void update(Tuple tuple) {
     if (isAllColumns() || tuple.get(columnName) != null) {
       ++count;
     }
   }
 
+  @Override
   public Long getValue() {
     return count;
   }
 
+  @Override
   public Metric newInstance() {
     return new CountMetric(columnName);
   }

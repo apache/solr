@@ -780,6 +780,7 @@ public class SolrZkClient implements Closeable {
     out.println(sb.toString());
   }
 
+  @Override
   public void close() {
     if (isClosed) return; // it's okay if we over close - same as solrcore
     isClosed = true;
