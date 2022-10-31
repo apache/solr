@@ -91,7 +91,7 @@ import org.slf4j.LoggerFactory;
  *
  * @since 1.4
  */
-@Nightly
+//@Nightly
 @SuppressSSL // Currently, unknown why SSL does not work with this test
 public class TestReplicationHandler extends SolrTestCaseJ4 {
 
@@ -260,7 +260,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     return res;
   }
 
-  private NamedList<Object> reloadCore(SolrClient s, String core) throws Exception {
+  private NamedList<Object> reloadCore(JettySolrRunner s, String core) throws Exception {
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", "reload");
@@ -275,8 +275,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     }
   }
 
-  private SolrClient adminClient(SolrClient client) {
-    String adminUrl = getUrlFrom((client)).replace("/collection1", "");
+  private SolrClient adminClient(JettySolrRunner client) {
+    String adminUrl = client.getBaseUrl().toString().replace("/collection1", "");
     return getHttpSolrClient(adminUrl);
   }
 
@@ -1018,10 +1018,10 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         assertEquals(totalDocs, leaderQueryResult.getNumFound());
 
         // index fetch
-        Date followerCoreStart = watchCoreStartAt(followerClient, null);
+        Date followerCoreStart = watchCoreStartAt(followerJetty, null);
         pullFromTo(leaderJetty, followerJetty);
         if (confCoreReload) {
-          watchCoreStartAt(followerClient, followerCoreStart);
+          watchCoreStartAt(followerJetty, followerCoreStart);
         }
 
         // get docs from follower and check if number is equal to leader
@@ -1352,7 +1352,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     Object version = getIndexVersion(leaderClient).get("indexversion");
 
-    reloadCore(leaderClient, "collection1");
+    reloadCore(leaderJetty, "collection1");
 
     assertEquals(version, getIndexVersion(leaderClient).get("indexversion"));
 
@@ -1432,7 +1432,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     rQuery(0, "*:*", followerClient); // sanity check w/retry
 
     // record collection1's start time on follower
-    final Date followerStartTime = watchCoreStartAt(followerClient, null);
+    final Date followerStartTime = watchCoreStartAt(followerJetty, null);
 
     // add a doc with new field and commit on leader to trigger index fetch from follower.
     index(leaderClient, "id", "2000", "name", "name = " + 2000, "newname", "n2000");
@@ -1440,7 +1440,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     rQuery(1, "newname:n2000", leaderClient); // sanity check
 
     // wait for follower to reload core by watching updated startTime
-    watchCoreStartAt(followerClient, followerStartTime);
+    watchCoreStartAt(followerJetty, followerStartTime);
 
     NamedList<Object> leaderQueryRsp2 = rQuery(1, "id:2000", leaderClient);
     SolrDocumentList leaderQueryResult2 = (SolrDocumentList) leaderQueryRsp2.get("response");
@@ -1789,7 +1789,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
    * @return the startTime value of collection
    */
   @SuppressWarnings("unchecked")
-  private Date watchCoreStartAt(SolrClient client, final Date min)
+  private Date watchCoreStartAt(JettySolrRunner client, final Date min)
       throws InterruptedException, IOException, SolrServerException {
     final long sleepInterval = 200;
     long timeSlept = 0;
