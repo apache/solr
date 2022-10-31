@@ -346,6 +346,7 @@ public class Lang {
 
         // decorator streams
         .withFunctionName("merge", MergeStream.class)
+        .withFunctionName("map", MapStream.class)
         .withFunctionName("unique", UniqueStream.class)
         .withFunctionName("top", RankStream.class)
         .withFunctionName("group", GroupOperation.class)
