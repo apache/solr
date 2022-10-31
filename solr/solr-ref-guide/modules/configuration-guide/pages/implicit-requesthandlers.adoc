@@ -124,7 +124,7 @@ Segments:: Return info on last commit generation Lucene index segments.
 
 System Info:: Return server statistics and settings.
 +
-*Documentation*: <<system-info-handler.adoc#system-info-handler,System Info Handler>>
+*Documentation*: xref:system-info-handler.adoc[]
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
