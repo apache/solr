@@ -29,10 +29,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -213,15 +213,18 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
     return explanation;
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.context = context;
     cache = context.getSolrClientCache();
   }
 
+  @Override
   public List<TupleStream> children() {
     return new ArrayList<>();
   }
 
+  @Override
   public void open() throws IOException {
 
     @SuppressWarnings({"unchecked"})
@@ -261,7 +264,7 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
       }
     } else {
       List<String> shards = shardsMap.get(collection);
-      HttpSolrClient client = cache.getHttpSolrClient(shards.get(0));
+      SolrClient client = cache.getHttpSolrClient(shards.get(0));
 
       if (shards.size() > 1) {
         String shardsParam = getShardString(shards);
@@ -290,8 +293,10 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
     return builder.toString();
   }
 
+  @Override
   public void close() throws IOException {}
 
+  @Override
   public Tuple read() throws IOException {
     if (parallelizedStream != null) {
       return parallelizedStream.read();
@@ -383,6 +388,7 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
     }
   }
 
+  @Override
   public int getCost() {
     return 0;
   }

@@ -33,6 +33,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.apache.lucene.util.IOUtils;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -41,7 +42,6 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -164,7 +164,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     assertTrue(meta.containsKey("foobar"));
     assertEquals("bazbam", meta.get("foobar"));
 
-    // removal of non existent key should succeed.
+    // removal of non-existent key should succeed.
     aliasesManager.applyModificationAndExportToZk(
         a2 -> a2.cloneWithCollectionAliasProperties("meta1", "foo", null));
 
@@ -312,16 +312,16 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     final SolrCloudManager cloudManager =
         cluster.getRandomJetty(random()).getCoreContainer().getZkController().getSolrCloudManager();
 
-    // allthough the purpose of this test is to verify that the ClusterStateProvider API
+    // although the purpose of this test is to verify that the ClusterStateProvider API
     // works as a "black box" for inspecting alias information, we'll be doing some "grey box"
     // introspection of the underlying ZKNodeVersion to first verify that alias updates have
-    // propogated to our randomly selected node before making assertions against the
+    // propagated to our randomly selected node before making assertions against the
     // ClusterStateProvider API...
     //
     // establish a baseline version for future waitForAliasesUpdate calls
     int lastVersion = waitForAliasesUpdate(-1, cloudManager.getClusterStateProvider());
 
-    // create the alias and wait for it to propogate
+    // create the alias and wait for it to propagate
     createColectionsAndAlias(aliasName);
     lastVersion = waitForAliasesUpdate(-1, cloudManager.getClusterStateProvider());
 
@@ -373,7 +373,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
 
   /**
    * Does a "grey box" assertion that the ClusterStateProvider is a ZkClientClusterStateProvider and
-   * then waits for it's underlying ZkStateReader to see the updated aliases, returning the current
+   * then waits for its underlying ZkStateReader to see the updated aliases, returning the current
    * ZNodeVersion for the aliases
    */
   private int waitForAliasesUpdate(int lastVersion, ClusterStateProvider stateProvider)
@@ -410,7 +410,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   }
 
   private void checkFooAndBarMeta(String aliasName, ZkStateReader zkStateReader) throws Exception {
-    zkStateReader.aliasesManager.update(); // ensure our view is up to date
+    zkStateReader.aliasesManager.update(); // ensure our view is up-to-date
     Map<String, String> meta = zkStateReader.getAliases().getCollectionAliasProperties(aliasName);
     assertNotNull(meta);
     assertTrue(meta.containsKey("foo"));
@@ -546,13 +546,13 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
             .processAndWait(cluster.getSolrClient(), 60);
     assertEquals("Should have failed to delete collection: ", delResp, RequestStatusState.FAILED);
 
-    // assure ourselves that the old colletion is, indeed, still there.
+    // assure ourselves that the old collection is, indeed, still there.
     assertNotNull(
         "collection_old should exist!",
         cluster.getSolrClient().getClusterState().getCollectionOrNull("collection_old"));
 
     // Now we should still succeed using the alias collection_old which points to collection_new
-    // aliase: collection_old -> collection_new, collection_old_reserve -> collection_old ->
+    // alias: collection_old -> collection_new, collection_old_reserve -> collection_old ->
     // collection_new
     // collections: collection_old, collection_new
     res = cluster.getSolrClient().query("collection_old", new SolrQuery("*:*"));
@@ -907,12 +907,12 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
       // HttpSolrClient
       JettySolrRunner jetty = cluster.getRandomJetty(random());
       if (random().nextBoolean()) {
-        try (HttpSolrClient client =
+        try (SolrClient client =
             getHttpSolrClient(jetty.getBaseUrl().toString() + "/" + collectionList)) {
           responseConsumer.accept(client.query(null, solrQuery));
         }
       } else {
-        try (HttpSolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString())) {
+        try (SolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString())) {
           responseConsumer.accept(client.query(collectionList, solrQuery));
         }
       }

@@ -42,9 +42,11 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.PeerSync.MissedUpdatesRequest;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
+import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@SuppressWarnings("JdkObsolete")
 public class PeerSyncTest extends BaseDistributedSearchTestCase {
   protected static int numVersions = 100; // number of versions to use when syncing
   protected static final String FROM_LEADER = DistribPhase.FROMLEADER.toString();
@@ -86,7 +88,6 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
 
     SolrClient client0 = clients.get(0);
     SolrClient client1 = clients.get(1);
-    SolrClient client2 = clients.get(2);
 
     int v = 0;
     add(client0, seenLeader, sdoc("id", "1", "_version_", ++v));
@@ -190,7 +191,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     // Test that handling reorders work when applying docs retrieved from peer
     //
 
-    // this should cause us to retrieve the delete (but not the following add)
+    // this should cause us to retrieve the delete operation (but not the following add)
     // the reorder in application shouldn't affect anything
     add(client0, seenLeader, sdoc("id", "3000", "_version_", 3001));
     add(client1, seenLeader, sdoc("id", "3000", "_version_", 3001));
@@ -238,11 +239,11 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
       System.clearProperty("solr.disableFingerprint");
     }
 
-    // lets add the missing document and verify that order doesn't matter
+    // let's add the missing document and verify that order doesn't matter
     add(client1, seenLeader, sdoc("id", Integer.toString(v), "_version_", v));
     assertSync(client1, numVersions, true, shardsArr[0]);
 
-    // lets do some overwrites to ensure that repeated updates and maxDoc don't matter
+    // let's do some overwrites to ensure that repeated updates and maxDoc don't matter
     for (int i = 0; i < 10; i++) {
       // add individually instead of in batch to create more writes
       add(client0, seenLeader, sdoc("id", Integer.toString(v + i + 1), "_version_", v + i + 1));
@@ -251,7 +252,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
 
     validateDocs(docsAdded, client0, client1);
 
-    // lets add some in-place updates
+    // let's add some in-place updates
     add(
         client0,
         seenLeader,
@@ -348,7 +349,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
               add(client0, inPlaceParams, sdoc("id", 6000, "val_i_dvo", 6003, "_version_", 5007));
             });
     assertEquals(ex.toString(), SolrException.ErrorCode.SERVER_ERROR.code, ex.code());
-    assertThat(ex.getMessage(), containsString("Can't find document with id=6000"));
+    MatcherAssert.assertThat(ex.getMessage(), containsString("Can't find document with id=6000"));
 
     // Reordered DBQ with Child-nodes (SOLR-10114)
     docsAdded.clear();
@@ -395,7 +396,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     // sync should fail since there's not enough overlap to give us confidence
     assertSync(client1, numVersions, false, shardsArr[0]);
 
-    // add some of the docs that were missing... just enough to give enough overlap
+    // add some docs that were missing... just enough to give enough overlap
     int toAdd2 = (int) (numVersions * .25);
     for (int i = 0; i < toAdd2; i++) {
       add(client1, seenLeader, sdoc("id", Integer.toString(i + 11), "_version_", v + i + 1));
@@ -463,7 +464,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
               otherVersions, completeList, ourUpdates, ourLowThreshold);
       // no updates requested since other has nothing
       assertEquals(0L, mur.totalRequestedUpdates);
-      assertEquals(null, mur.versionsAndRanges);
+      assertNull(mur.versionsAndRanges);
     }
   }
 
@@ -478,7 +479,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
               otherVersions, completeList, ourUpdates, ourLowThreshold);
       // no updates requested since us and other have the same versions
       assertEquals(0L, mur.totalRequestedUpdates);
-      assertEquals(null, mur.versionsAndRanges);
+      assertNull(mur.versionsAndRanges);
     }
   }
 
@@ -501,18 +502,18 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
         /*
          * request one update for the missing one, because
          * the missing one is the highest (i.e. latest) or because
-         * it's not the highest/latest but we need a complete list
+         * it's not the highest/latest, but we need a complete list
          */
         assertEquals(1L, mur.totalRequestedUpdates);
         assertEquals(missing + "..." + missing, mur.versionsAndRanges);
       } else {
         /*
-         * request no updates because we already have the highest/latest and
+         * request no updates because we already have the highest/latest, and
          * we don't need a complete list i.e. missing earlier-than-latest is okay
          */
         assertTrue(missing < ourLowThreshold);
         assertEquals(0L, mur.totalRequestedUpdates);
-        assertEquals(null, mur.versionsAndRanges);
+        assertNull(mur.versionsAndRanges);
       }
     }
   }
@@ -548,7 +549,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
            */
           assertTrue(missing < ourLowThreshold);
           assertEquals(0L, mur.totalRequestedUpdates);
-          assertEquals(null, mur.versionsAndRanges);
+          assertNull(mur.versionsAndRanges);
         }
       }
     }
@@ -583,7 +584,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
         } else {
           // request no updates because ???
           assertEquals(0L, mur.totalRequestedUpdates);
-          assertEquals(null, mur.versionsAndRanges);
+          assertNull(mur.versionsAndRanges);
         }
       }
       {
@@ -598,7 +599,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
         } else {
           // request no updates because ???
           assertEquals(0L, mur.totalRequestedUpdates);
-          assertEquals(null, mur.versionsAndRanges);
+          assertNull(mur.versionsAndRanges);
         }
       }
       {
@@ -613,7 +614,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
         } else {
           // request no updates since we don't need a complete list ...
           assertEquals(0L, mur.totalRequestedUpdates);
-          assertEquals(null, mur.versionsAndRanges);
+          assertNull(mur.versionsAndRanges);
           // ... and all the missing versions are older/lower than our 'low' threshold
           for (Long version : otherVersions) {
             if (!ourUpdates.contains(version)) {
@@ -656,7 +657,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
         } else {
           // request no updates because ???
           assertEquals(0L, mur.totalRequestedUpdates);
-          assertEquals(null, mur.versionsAndRanges);
+          assertNull(mur.versionsAndRanges);
         }
       }
       {
@@ -671,7 +672,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
         } else {
           // request no updates since we don't need a complete list ...
           assertEquals(0L, mur.totalRequestedUpdates);
-          assertEquals(null, mur.versionsAndRanges);
+          assertNull(mur.versionsAndRanges);
           // ... and all the missing versions are older/lower than our 'low' threshold
           for (Long version : otherVersions) {
             if (!ourUpdates.contains(version)) {

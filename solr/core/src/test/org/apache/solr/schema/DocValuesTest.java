@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.lucene.index.DocValuesType;
@@ -62,6 +63,7 @@ public class DocValuesTest extends SolrTestCaseJ4 {
     }
   }
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     assertU(delQ("*:*"));
@@ -766,7 +768,7 @@ public class DocValuesTest extends SolrTestCaseJ4 {
    * that are not inverted (indexed "forward" only)
    */
   @Test
-  public void testDocValuesMatch() throws Exception {
+  public void testDocValuesMatch() {
     assertU(
         adoc(
             "id",
@@ -994,7 +996,7 @@ public class DocValuesTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testFloatAndDoubleRangeQueryRandom() throws Exception {
+  public void testFloatAndDoubleRangeQueryRandom() {
 
     String fieldName[] = new String[] {"floatdv", "doubledv"};
 
@@ -1108,12 +1110,12 @@ public class DocValuesTest extends SolrTestCaseJ4 {
           long minSortable = toSortableLong.get(i).apply(minVal);
           long maxSortable = toSortableLong.get(i).apply(maxVal);
 
-          if ((minInclusive && minSortable <= valSortable
-                  || !minInclusive && minSortable < valSortable
-                  || (min.equals("*") && val == negativeInfinity[i]))
-              && (maxInclusive && maxSortable >= valSortable
-                  || !maxInclusive && maxSortable > valSortable
-                  || (max.equals("*") && val == positiveInfinity[i]))) {
+          if (((minInclusive && minSortable <= valSortable)
+                  || (!minInclusive && minSortable < valSortable)
+                  || (min.equals("*") && Objects.equals(val, negativeInfinity[i])))
+              && ((maxInclusive && maxSortable >= valSortable)
+                  || (!maxInclusive && maxSortable > valSortable)
+                  || (max.equals("*") && Objects.equals(val, positiveInfinity[i])))) {
             counter++;
             tests.add("//result/doc[" + counter + "]/str[@name='id'][.=" + (k + 1) + "]");
             tests.add("//result/doc[" + counter + "]/float[@name='score'][.=1.0]");
@@ -1147,7 +1149,7 @@ public class DocValuesTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testFloatAndDoubleRangeQuery() throws Exception {
+  public void testFloatAndDoubleRangeQuery() {
     String fieldName[] = new String[] {"floatdv", "doubledv"};
     String largestNegative[] =
         new String[] {

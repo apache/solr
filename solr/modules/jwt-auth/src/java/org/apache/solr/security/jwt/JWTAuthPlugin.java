@@ -34,6 +34,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -59,10 +60,10 @@ import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.admin.api.ModifyJWTAuthPluginConfigAPI;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.ConfigEditablePlugin;
 import org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode;
+import org.apache.solr.security.jwt.api.ModifyJWTAuthPluginConfigAPI;
 import org.apache.solr.util.CryptoKeys;
 import org.eclipse.jetty.client.api.Request;
 import org.jose4j.jwa.AlgorithmConstraints;
@@ -599,11 +600,45 @@ public class JWTAuthPlugin extends AuthenticationPlugin
               // Pull roles from separate claim, either as whitespace separated list or as JSON
               // array
               Object rolesObj = jwtClaims.getClaimValue(rolesClaim);
+              if (rolesObj == null && rolesClaim.indexOf('.') > 0) {
+                // support map resolution of nested values
+                String[] nestedKeys = rolesClaim.split("\\.");
+                rolesObj = jwtClaims.getClaimValue(nestedKeys[0]);
+                for (int i = 1; i < nestedKeys.length; i++) {
+                  if (rolesObj instanceof Map) {
+                    String key = nestedKeys[i];
+                    rolesObj = ((Map<?, ?>) rolesObj).get(key);
+                  }
+                }
+              }
+
               if (rolesObj != null) {
                 if (rolesObj instanceof String) {
                   finalRoles.addAll(Arrays.asList(((String) rolesObj).split("\\s+")));
                 } else if (rolesObj instanceof List) {
-                  finalRoles.addAll(jwtClaims.getStringListClaimValue(rolesClaim));
+                  ((List<?>) rolesObj)
+                      .forEach(
+                          entry -> {
+                            if (entry instanceof String) {
+                              finalRoles.add((String) entry);
+                            } else {
+                              throw new SolrException(
+                                  SolrException.ErrorCode.BAD_REQUEST,
+                                  String.format(
+                                      Locale.ROOT,
+                                      "Could not parse roles from JWT claim %s; expected array of strings, got array with a value of type %s",
+                                      rolesClaim,
+                                      entry.getClass().getSimpleName()));
+                            }
+                          });
+                } else {
+                  throw new SolrException(
+                      SolrException.ErrorCode.BAD_REQUEST,
+                      String.format(
+                          Locale.ROOT,
+                          "Could not parse roles from JWT claim %s; got %s",
+                          rolesClaim,
+                          rolesObj.getClass().getSimpleName()));
                 }
               }
             }

@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -38,13 +37,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** */
 @Ignore("Abstract classes should not be executed as tests")
 public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected int numNodes = 2;
   protected String configset = "cloud-dynamic";
@@ -188,7 +184,7 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
                         break;
                       case "statsCacheImpl":
                         assertTrue(
-                            "incorreect cache impl, expected"
+                            "incorrect cache impl, expected"
                                 + getImplementationName()
                                 + " but was "
                                 + value,

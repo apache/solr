@@ -120,6 +120,7 @@ public class CollectionsRepairEventListenerTest extends SolrCloudTestCase {
     repairListener.start();
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
@@ -151,7 +152,6 @@ public class CollectionsRepairEventListenerTest extends SolrCloudTestCase {
       nonOverseerJetty = jetty;
       break;
     }
-    String nodeName = nonOverseerJetty.getNodeName();
     cluster.stopJettySolrRunner(nonOverseerJetty);
     cluster.waitForJettyToStop(nonOverseerJetty);
     eventsListener.waitForExpectedEvent(10);

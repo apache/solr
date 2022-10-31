@@ -18,7 +18,13 @@
 package org.apache.solr.cluster.placement.plugins;
 
 import java.lang.invoke.MethodHandles;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -29,8 +35,14 @@ import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
 import org.apache.solr.cluster.Shard;
 import org.apache.solr.cluster.SolrCollection;
-import org.apache.solr.cluster.placement.*;
+import org.apache.solr.cluster.placement.AttributeValues;
 import org.apache.solr.cluster.placement.Builders;
+import org.apache.solr.cluster.placement.DeleteReplicasRequest;
+import org.apache.solr.cluster.placement.PlacementContext;
+import org.apache.solr.cluster.placement.PlacementException;
+import org.apache.solr.cluster.placement.PlacementPlan;
+import org.apache.solr.cluster.placement.PlacementPlugin;
+import org.apache.solr.cluster.placement.ReplicaPlacement;
 import org.apache.solr.cluster.placement.impl.ModificationRequestImpl;
 import org.apache.solr.cluster.placement.impl.PlacementRequestImpl;
 import org.apache.solr.common.util.Pair;
@@ -76,18 +88,18 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
   }
 
   /**
-   * When this test places a replica for a new collection, it should pick the node with less cores.
+   * When this test places a replica for a new collection, it should pick the node with fewer cores.
    *
    * <p>
    *
-   * <p>When it places a replica for an existing collection, it should pick the node with less cores
-   * that doesn't already have a replica for the shard.
+   * <p>When it places a replica for an existing collection, it should pick the node with fewer
+   * cores that doesn't already have a replica for the shard.
    */
   private void testBasicPlacementInternal(boolean hasExistingCollection) throws Exception {
     String collectionName = "basicCollection";
 
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(2);
-    LinkedList<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
+    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
     nodeBuilders.get(0).setCoreCount(1).setFreeDiskGB((double) (PRIORITIZED_FREE_DISK_GB + 1));
     nodeBuilders.get(1).setCoreCount(10).setFreeDiskGB((double) (PRIORITIZED_FREE_DISK_GB + 1));
 
@@ -135,7 +147,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
 
     // Cluster nodes and their attributes
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(8);
-    LinkedList<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
+    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
     for (int i = 0; i < nodeBuilders.size(); i++) {
       if (i == LOW_SPACE_NODE_INDEX) {
         nodeBuilders
@@ -220,7 +232,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
 
     // Cluster nodes and their attributes
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(5);
-    LinkedList<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
+    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
     int coresOnNode = 10;
     for (Builders.NodeBuilder nodeBuilder : nodeBuilders) {
       nodeBuilder.setCoreCount(coresOnNode).setFreeDiskGB((double) (PRIORITIZED_FREE_DISK_GB + 1));
@@ -276,7 +288,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     final int AZ2_TLOGPULL = 7;
 
     final int AZ3_NRT_LOWCORES = 4;
-    final int AZ3_NRT_HIGHCORES = 6;
+    // final int AZ3_NRT_HIGHCORES = 6;
     final int AZ3_TLOGPULL = 8;
 
     final String AZ1 = "AZ1";
@@ -292,10 +304,10 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
 
     // Cluster nodes and their attributes.
     // 3 AZ's with three nodes each, 2 of which can only take NRT, one that can take TLOG or PULL
-    // One of the NRT has less cores than the other
+    // One of the NRT has fewer cores than the other
     // The TLOG/PULL replica on AZ1 doesn't have much free disk space
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(9);
-    LinkedList<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
+    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
     for (int i = 0; i < 9; i++) {
       final String az;
       final int numcores;
@@ -356,10 +368,10 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     PlacementPlan pp =
         plugin.computePlacement(placementRequest, clusterBuilder.buildPlacementContext());
     // Shard 1: The NRT's should go to the med cores node on AZ2 and low core on az3 (even though a
-    // low core node can take the replica in az1, there's already an NRT replica there and we want
+    // low core node can take the replica in az1, there's already an NRT replica there, and we want
     // spreading across AZ's), the TLOG to the TLOG node on AZ2 (because the tlog node on AZ1 has
     // low free disk)
-    // Shard 2: The NRT's should go to AZ1 and AZ3 lowcores because AZ2 has more cores (and there's
+    // Shard 2: The NRT's should go to AZ1 and AZ3 low cores because AZ2 has more cores (and there's
     // not NRT in any AZ for this shard). The TLOG should go to AZ3 because AZ1 TLOG node has low
     // free disk. Each expected placement is represented as a string "shard replica-type node"
     Set<String> expectedPlacements =
@@ -399,7 +411,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
 
     // Count cores == node index, and AZ's are: AZ0, AZ0, AZ0, AZ1, AZ1, AZ1, AZ2, AZ2, AZ2.
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(9);
-    LinkedList<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
+    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
     for (int i = 0; i < 9; i++) {
       nodeBuilders
           .get(i)
@@ -459,7 +471,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
 
     // Cluster nodes and their attributes
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(3);
-    LinkedList<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
+    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
     int coreCount = 0;
     for (Builders.NodeBuilder nodeBuilder : nodeBuilders) {
       nodeBuilder.setCoreCount(coreCount++).setFreeDiskGB((double) (PRIORITIZED_FREE_DISK_GB + 1));
@@ -493,12 +505,12 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
         plugin.computePlacement(placementRequest, clusterBuilder.buildPlacementContext());
 
     // Each expected placement is represented as a string "shard replica-type node"
-    // Node 0 has less cores than node 1 (0 vs 1) so the placement should go there.
+    // Node 0 has fewer cores than node 1 (0 vs 1) so the placement should go there.
     Set<String> expectedPlacements = Set.of("1 PULL 0");
     verifyPlacements(expectedPlacements, pp, collectionBuilder.getShardBuilders(), liveNodes);
 
     // If we placed instead a replica for shard 2 (starting with the same initial cluster state, not
-    // including the first placement above), it should go too to node 0 since it has less cores...
+    // including the first placement above), it should go too to node 0 since it has fewer cores...
     Iterator<Shard> it = solrCollection.iterator();
     it.next(); // skip first shard to do placement for the second one...
     placementRequest =
@@ -793,7 +805,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
     assertEquals(4, pp.getReplicaPlacements().size());
     for (ReplicaPlacement rp : pp.getReplicaPlacements()) {
-      assertFalse("should not put any replicas on " + smallNode, rp.getNode().equals(smallNode));
+      assertNotEquals("should not put any replicas on " + smallNode, rp.getNode(), smallNode);
     }
   }
 
@@ -903,7 +915,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     try {
       plugin.verifyAllowedModification(deleteReplicasRequest, placementContext);
     } catch (PlacementException pe) {
-      fail("should have succeeded: " + pe.toString());
+      fail("should have succeeded: " + pe);
     }
 
     secondaryCollection
@@ -931,7 +943,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
   @Test
   public void testNodeType() throws Exception {
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(9);
-    LinkedList<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
+    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
     for (int i = 0; i < 9; i++) {
       nodeBuilders.get(i).setSysprop(AffinityPlacementConfig.NODE_TYPE_SYSPROP, "type_" + (i % 3));
     }
@@ -953,7 +965,6 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
 
     PlacementContext placementContext = clusterBuilder.buildPlacementContext();
     Map<String, Set<String>> nodeNamesByType = new HashMap<>();
-    Cluster cluster = placementContext.getCluster();
     AttributeValues attributeValues =
         placementContext
             .getAttributeFetcher()
@@ -980,7 +991,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     assertEquals("expected 3 placements: " + pp, 3, pp.getReplicaPlacements().size());
     Set<String> type0nodes = nodeNamesByType.get("type_0");
     Set<String> type1nodes = nodeNamesByType.get("type_1");
-    Set<String> type2nodes = nodeNamesByType.get("type_2");
+    // Set<String> type2nodes = nodeNamesByType.get("type_2");
 
     for (ReplicaPlacement p : pp.getReplicaPlacements()) {
       assertTrue(type0nodes.contains(p.getNode().getName()));
@@ -1055,7 +1066,6 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Slow
   public void testScalability() throws Exception {
     // for non-nightly we scale a bit, but retain test speed - for nightly test speed can be 2+
     // minutes
@@ -1077,8 +1087,10 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     runTestScalability(numNodes, 100, nrtReplicas, tlogReplicas, pullReplicas);
     runTestScalability(numNodes, 200, nrtReplicas, tlogReplicas, pullReplicas);
     runTestScalability(numNodes, 500, nrtReplicas, tlogReplicas, pullReplicas);
-    runTestScalability(numNodes, 1000, nrtReplicas, tlogReplicas, pullReplicas);
-    runTestScalability(numNodes, 2000, nrtReplicas, tlogReplicas, pullReplicas);
+    if (TEST_NIGHTLY) {
+      runTestScalability(numNodes, 1000, nrtReplicas, tlogReplicas, pullReplicas);
+      runTestScalability(numNodes, 2000, nrtReplicas, tlogReplicas, pullReplicas);
+    }
 
     log.info("==== numReplicas ====");
     runTestScalability(numNodes, numShards, TEST_NIGHTLY ? 100 : 10, 0, 0);
@@ -1095,7 +1107,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
 
     Builders.ClusterBuilder clusterBuilder =
         Builders.newClusterBuilder().initializeLiveNodes(numNodes);
-    LinkedList<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
+    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
     for (int i = 0; i < numNodes; i++) {
       nodeBuilders.get(i).setCoreCount(0).setFreeDiskGB((double) numNodes);
     }

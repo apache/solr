@@ -47,7 +47,7 @@ public class StreamExpressionValue implements StreamExpressionParameter {
 
   @Override
   public boolean equals(Object other) {
-    if (other.getClass() != StreamExpressionValue.class) {
+    if (!(other instanceof StreamExpressionValue)) {
       return false;
     }
 

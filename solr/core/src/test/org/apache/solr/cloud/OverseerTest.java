@@ -47,7 +47,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
@@ -107,7 +106,6 @@ import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Slow
 @SolrTestCaseJ4.SuppressSSL
 public class OverseerTest extends SolrTestCaseJ4 {
 
@@ -142,7 +140,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     private List<Overseer> overseers;
 
     public MockZKController(String zkAddress, String nodeName, List<Overseer> overseers)
-        throws InterruptedException, TimeoutException, IOException, KeeperException {
+        throws InterruptedException, IOException, KeeperException {
       this.overseers = overseers;
       this.nodeName = nodeName;
       zkClient = new SolrZkClient(zkAddress, TIMEOUT);
@@ -189,7 +187,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
      * OverseerTest#createCollection(String, int)}.
      */
     public void createCollection(String collection, int numShards) throws Exception {
-      // Create collection znode before having ClusterStateUpdater create state.json below it or it
+      // Create collection znode before having ClusterStateUpdater create state.json below, or it
       // will fail.
       zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection, true);
 
@@ -341,10 +339,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
       }
       return null;
     }
-
-    public ZkStateReader getZkReader() {
-      return zkStateReader;
-    }
   }
 
   @BeforeClass
@@ -363,6 +357,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     initCore();
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     testDone = false;
@@ -385,6 +380,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     server = null;
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     testDone = true;
@@ -447,7 +443,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
    * obtained.
    */
   private void createCollection(String collection, int numShards) throws Exception {
-    // Create collection znode before having ClusterStateUpdater create state.json below it or it
+    // Create collection znode before having ClusterStateUpdater create state.json below, or it
     // will fail.
     zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection, true);
 
@@ -914,8 +910,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       mockController.createCollection(COLLECTION, 1);
 
-      ZkController zkController = createMockZkController(server.getZkAddress(), zkClient, reader);
-
       mockController.publishState(
           COLLECTION,
           core,
@@ -983,9 +977,9 @@ public class OverseerTest extends SolrTestCaseJ4 {
       assertTrue(
           COLLECTION + " should remain after removal of the last core",
           reader.getClusterState().hasCollection(COLLECTION));
-      assertTrue(
+      assertNull(
           core_node + " should be gone after publishing the null state",
-          null == reader.getClusterState().getCollection(COLLECTION).getReplica(core_node));
+          reader.getClusterState().getCollection(COLLECTION).getReplica(core_node));
     } finally {
       close(mockController);
       close(overseerClient);
@@ -1093,13 +1087,13 @@ public class OverseerTest extends SolrTestCaseJ4 {
               overseerClient.close();
               overseerClient = electNewOverseer(zkAddress);
             } catch (Throwable e) {
-              // e.printStackTrace();
+              log.error("error killing overseer", e);
             }
           }
           try {
             Thread.sleep(100);
           } catch (Throwable e) {
-            // e.printStackTrace();
+            log.error("error during sleep", e);
           }
         }
       } catch (Throwable t) {
@@ -1158,8 +1152,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
         Thread.sleep(50);
       }
 
-      assertTrue(showQpeek(workQueue), workQueue.peek() == null);
-      assertTrue(showQpeek(q), q.peek() == null);
+      assertNull(showQpeek(workQueue), workQueue.peek());
+      assertNull(showQpeek(q), q.peek());
     } finally {
       close(overseerClient);
       close(reader);
@@ -1191,7 +1185,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       ZkController.createClusterZkNodes(zkClient);
 
       killer = new OverseerRestarter(server.getZkAddress());
-      killerThread = new Thread(killer);
+      killerThread = new Thread(killer, "OverseerRestarter");
       killerThread.start();
 
       reader = new ZkStateReader(zkClient);
@@ -1235,7 +1229,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
             q.offer(Utils.toJSON(m));
             break;
           } catch (SolrException | KeeperException | AlreadyClosedException e) {
-            e.printStackTrace();
+            log.error("error updating state", e);
           }
         }
 
@@ -1253,7 +1247,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
                 getOpenOverseer());
             break;
           } catch (SolrException | KeeperException | AlreadyClosedException e) {
-            e.printStackTrace();
+            log.error("error publishing state", e);
           }
         }
 
@@ -1278,7 +1272,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
                 getOpenOverseer());
             break;
           } catch (SolrException | AlreadyClosedException e) {
-            e.printStackTrace();
+            log.error("error publishing state", e);
           }
         }
 
@@ -1298,7 +1292,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
                 getOpenOverseer());
             break;
           } catch (SolrException | AlreadyClosedException e) {
-            e.printStackTrace();
+            log.error("error publishing state", e);
           }
         }
 
@@ -1318,7 +1312,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
                 getOpenOverseer());
             break;
           } catch (SolrException | AlreadyClosedException e) {
-            e.printStackTrace();
+            log.error("error publishing state", e);
           }
         }
 
@@ -1383,8 +1377,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
       overseerClient = electNewOverseer(server.getZkAddress());
 
       mockController.createCollection(COLLECTION, 1);
-
-      ZkController zkController = createMockZkController(server.getZkAddress(), zkClient, reader);
 
       mockController.publishState(
           COLLECTION,
@@ -1887,6 +1879,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
           new SolrZkClient(server.getZkAddress(), AbstractZkTestCase.TIMEOUT);
       doAnswer(
               new Answer<Void>() {
+                @Override
                 public Void answer(InvocationOnMock invocation) {
                   newZkClient.close();
                   return null;
@@ -1935,14 +1928,11 @@ public class OverseerTest extends SolrTestCaseJ4 {
     when(zkController.getLeaderProps(anyString(), anyString(), anyInt())).thenCallRealMethod();
     when(zkController.getLeaderProps(anyString(), anyString(), anyInt(), anyBoolean()))
         .thenCallRealMethod();
-    doReturn(getCloudDataProvider(zkAddress, zkClient, reader))
-        .when(zkController)
-        .getSolrCloudManager();
+    doReturn(getCloudDataProvider(zkAddress, zkClient)).when(zkController).getSolrCloudManager();
     return zkController;
   }
 
-  private SolrCloudManager getCloudDataProvider(
-      String zkAddress, SolrZkClient zkClient, ZkStateReader reader) {
+  private SolrCloudManager getCloudDataProvider(String zkAddress, SolrZkClient zkClient) {
     var client =
         new CloudLegacySolrClient.Builder(Collections.singletonList(zkAddress), Optional.empty())
             .withSocketTimeout(30000)

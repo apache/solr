@@ -172,7 +172,7 @@ public class SplitHandlerTest extends SolrTestCaseJ4 {
     assertEquals(12, results.iterator().next().max);
     verifyContiguous(results, curr);
 
-    // don't freak out if we encounter some ranges outside of the current defined shard range
+    // don't freak out if we encounter some ranges outside the current defined shard range
     // this can happen since document routing can be overridden.
     curr = new DocRouter.Range(-100, 101);
     counts = new ArrayList<>();

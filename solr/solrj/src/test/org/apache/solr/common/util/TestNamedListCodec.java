@@ -154,21 +154,21 @@ public class TestNamedListCodec extends SolrTestCase {
     try (JavaBinCodec jbc = new JavaBinCodec();
         ByteArrayInputStream bais = new ByteArrayInputStream(arr)) {
       NamedList<?> result = (NamedList<?>) jbc.unmarshal(bais);
-      assertTrue("result is null and it shouldn't be", result != null);
+      assertNotNull("result is null and it shouldn't be", result);
       List<?> keys = (List<?>) result.get("keys");
-      assertTrue("keys is null and it shouldn't be", keys != null);
-      assertTrue("keys Size: " + keys.size() + " is not: " + 3, keys.size() == 3);
+      assertNotNull("keys is null and it shouldn't be", keys);
+      assertEquals("keys Size: " + keys.size() + " is not: " + 3, 3, keys.size());
       String less = (String) result.get("more");
-      assertTrue("less is null and it shouldn't be", less != null);
-      assertTrue(less + " is not equal to " + "less", less.equals("less") == true);
+      assertNotNull("less is null and it shouldn't be", less);
+      assertEquals(less + " is not equal to " + "less", "less", less);
       List<?> values = (List<?>) result.get("values");
-      assertTrue("values is null and it shouldn't be", values != null);
-      assertTrue("values Size: " + values.size() + " is not: " + 3, values.size() == 3);
+      assertNotNull("values is null and it shouldn't be", values);
+      assertEquals("values Size: " + values.size() + " is not: " + 3, 3, values.size());
       String theEnd = (String) result.get("finally");
-      assertTrue("theEnd is null and it shouldn't be", theEnd != null);
-      assertTrue(theEnd + " is not equal to " + "the end", theEnd.equals("the end") == true);
+      assertNotNull("theEnd is null and it shouldn't be", theEnd);
+      assertEquals(theEnd + " is not equal to " + "the end", "the end", theEnd);
     } catch (ClassCastException e) {
-      assertTrue("Received a CCE and we shouldn't have", false);
+      fail("Received a CCE and we shouldn't have");
     }
   }
 

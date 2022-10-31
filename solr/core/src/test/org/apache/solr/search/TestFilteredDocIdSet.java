@@ -19,8 +19,6 @@ package org.apache.solr.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
-import junit.framework.Assert;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -94,17 +92,16 @@ public class TestFilteredDocIdSet extends SolrTestCase {
     ArrayList<Integer> list = new ArrayList<>();
     int doc = iter.advance(3);
     if (doc != DocIdSetIterator.NO_MORE_DOCS) {
-      list.add(Integer.valueOf(doc));
+      list.add(doc);
       while ((doc = iter.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-        list.add(Integer.valueOf(doc));
+        list.add(doc);
       }
     }
 
     int[] docs = new int[list.size()];
     int c = 0;
-    Iterator<Integer> intIter = list.iterator();
-    while (intIter.hasNext()) {
-      docs[c++] = intIter.next().intValue();
+    for (Integer integer : list) {
+      docs[c++] = integer.intValue();
     }
     int[] answer = new int[] {4, 6, 8};
     boolean same = Arrays.equals(answer, docs);
@@ -128,7 +125,7 @@ public class TestFilteredDocIdSet extends SolrTestCase {
 
     // First verify the document is searchable.
     IndexSearcher searcher = newSearcher(reader);
-    Assert.assertEquals(1, searcher.search(new MatchAllDocsQuery(), 10).totalHits.value);
+    assertEquals(1, searcher.search(new MatchAllDocsQuery(), 10).totalHits.value);
 
     // Now search w/ a Query which returns a null Scorer
     DocSetQuery f = new DocSetQuery(DocSet.empty());
@@ -138,7 +135,7 @@ public class TestFilteredDocIdSet extends SolrTestCase {
             .add(new MatchAllDocsQuery(), Occur.MUST)
             .add(f, Occur.FILTER)
             .build();
-    Assert.assertEquals(0, searcher.search(filtered, 10).totalHits.value);
+    assertEquals(0, searcher.search(filtered, 10).totalHits.value);
     reader.close();
     dir.close();
   }
@@ -154,7 +151,7 @@ public class TestFilteredDocIdSet extends SolrTestCase {
 
     // First verify the document is searchable.
     IndexSearcher searcher = newSearcher(reader);
-    Assert.assertEquals(1, searcher.search(new MatchAllDocsQuery(), 10).totalHits.value);
+    assertEquals(1, searcher.search(new MatchAllDocsQuery(), 10).totalHits.value);
 
     // Now search w/ a Query which returns a null Scorer
     Query f =
@@ -204,7 +201,7 @@ public class TestFilteredDocIdSet extends SolrTestCase {
             .add(new MatchAllDocsQuery(), Occur.MUST)
             .add(f, Occur.FILTER)
             .build();
-    Assert.assertEquals(0, searcher.search(filtered, 10).totalHits.value);
+    assertEquals(0, searcher.search(filtered, 10).totalHits.value);
     reader.close();
     dir.close();
   }

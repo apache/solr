@@ -30,12 +30,10 @@ import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
 import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.tests.util.LuceneTestCase;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -73,7 +71,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Nightly
-@Slow
 @SuppressSSL
 @ThreadLeakFilters(
     defaultFilters = true,
@@ -90,15 +87,6 @@ public class SharedFileSystemAutoReplicaFailoverTest extends AbstractFullDistrib
 
   private static final boolean DEBUG = true;
   private static MiniDFSCluster dfsCluster;
-
-  ThreadPoolExecutor executor =
-      new ExecutorUtil.MDCAwareThreadPoolExecutor(
-          0,
-          Integer.MAX_VALUE,
-          5,
-          TimeUnit.SECONDS,
-          new SynchronousQueue<Runnable>(),
-          new SolrNamedThreadFactory("testExecutor"));
 
   CompletionService<Object> completionService;
   Set<Future<Object>> pending;
@@ -137,11 +125,20 @@ public class SharedFileSystemAutoReplicaFailoverTest extends AbstractFullDistrib
     useJettyDataDir = false;
   }
 
+  @Override
   protected String getSolrXml() {
     return "solr.xml";
   }
 
   public SharedFileSystemAutoReplicaFailoverTest() {
+    executor =
+        new ExecutorUtil.MDCAwareThreadPoolExecutor(
+            0,
+            Integer.MAX_VALUE,
+            5,
+            TimeUnit.SECONDS,
+            new SynchronousQueue<>(),
+            new SolrNamedThreadFactory("testExecutor"));
     completionService = new ExecutorCompletionService<>(executor);
     pending = new HashSet<>();
   }

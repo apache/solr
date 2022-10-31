@@ -40,7 +40,6 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -73,8 +72,8 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
 
   /** A basic client for operations at the cloud level, default collection will be set */
   private static CloudSolrClient CLOUD_CLIENT;
-  /** one HttpSolrClient for each server */
-  private static List<HttpSolrClient> NODE_CLIENTS;
+  /** one SolrClient for each server */
+  private static List<SolrClient> NODE_CLIENTS;
 
   @BeforeClass
   public static void createMiniSolrCloudCluster() throws Exception {
@@ -109,11 +108,11 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
     cluster.waitForActiveCollection(COLLECTION_NAME, numShards, numShards * repFactor);
 
     if (NODE_CLIENTS != null) {
-      for (HttpSolrClient client : NODE_CLIENTS) {
+      for (SolrClient client : NODE_CLIENTS) {
         client.close();
       }
     }
-    NODE_CLIENTS = new ArrayList<HttpSolrClient>(numServers);
+    NODE_CLIENTS = new ArrayList<SolrClient>(numServers);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       URL jettyURL = jetty.getBaseUrl();
@@ -123,7 +122,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
   }
 
   @Before
-  private void deleteAllDocs() throws Exception {
+  public void deleteAllDocs() throws Exception {
     assertEquals(
         0, update(params("commit", "true")).deleteByQuery("*:*").process(CLOUD_CLIENT).getStatus());
     assertEquals("index should be empty", 0L, countDocs(CLOUD_CLIENT));
@@ -132,7 +131,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
   @AfterClass
   public static void afterClass() throws IOException {
     if (NODE_CLIENTS != null) {
-      for (HttpSolrClient client : NODE_CLIENTS) {
+      for (SolrClient client : NODE_CLIENTS) {
         client.close();
       }
     }
@@ -160,13 +159,13 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
       final int numCmds = TestUtil.nextInt(random(), 1, 20);
       final List<ExpectedErr> expectedErrors = new ArrayList<ExpectedErr>(numCmds);
       int expectedErrorsCount = 0;
-      // it's ambigious/confusing which order mixed DELQ + ADD  (or ADD and DELI for the same ID)
+      // it's ambiguous/confusing which order mixed DELQ + ADD  (or ADD and DELI for the same ID)
       // in the same request wll be processed by various clients, so we keep things simple
-      // and ensure that no single doc Id is affected by more then one command in the same request
+      // and ensure that no single doc id is affected by more than one command in the same request
       final BitSet docsAffectedThisRequest = new BitSet(maxDocId + 1);
       for (int cmdIter = 0; cmdIter < numCmds; cmdIter++) {
         if ((maxDocId / 2) < docsAffectedThisRequest.cardinality()) {
-          // we're already mucking with more then half the docs in the index
+          // we're already mucking with more than half the docs in the index
           break;
         }
 
@@ -220,12 +219,12 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
             final String q;
             if (causeError) {
               // even though our DBQ is gibberish that's going to fail, record a docId as affected
-              // so that we don't generate the same random DBQ and get redundent errors
+              // so that we don't generate the same random DBQ and get redundant errors
               // (problematic because of how DUP forwarded DBQs have to have their errors deduped by
               // TUP)
               final int id_i = randomUnsetBit(random(), docsAffectedThisRequest, maxDocId);
               docsAffectedThisRequest.set(id_i);
-              q = "foo_i:[" + id_i + " TO ....giberish";
+              q = "foo_i:[" + id_i + " TO ....gibberish";
               expectedErrors.add(delQErr(q));
             } else {
               // ensure our DBQ is only over a range of docs not already affected
@@ -242,15 +241,16 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
                       (hiBound < 0) ? maxDocId : hiBound - 1);
 
               if (lo != hi) {
-                assert lo < hi : "lo=" + lo + " hi=" + hi;
+                assertTrue("lo=" + lo + " hi=" + hi, lo < hi);
                 // NOTE: clear & set are exclusive of hi, so we use "}" in range query accordingly
                 q = "id_i:[" + lo + " TO " + hi + "}";
                 expectedDocIds.clear(lo, hi);
                 docsAffectedThisRequest.set(lo, hi);
               } else {
                 // edge case: special case DBQ of one doc
-                assert (lo == rangeAxis && hi == rangeAxis)
-                    : "lo=" + lo + " axis=" + rangeAxis + " hi=" + hi;
+                assertTrue(
+                    "lo=" + lo + " axis=" + rangeAxis + " hi=" + hi,
+                    lo == rangeAxis && hi == rangeAxis);
                 q = "id_i:[" + lo + " TO " + lo + "]"; // have to be inclusive of both ends
                 expectedDocIds.clear(lo);
                 docsAffectedThisRequest.set(lo);
@@ -262,9 +262,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
         }
       }
       assertEquals(
-          "expected error count sanity check: " + req.toString(),
-          expectedErrorsCount,
-          expectedErrors.size());
+          "expected error count check: " + req, expectedErrorsCount, expectedErrors.size());
 
       final SolrClient client =
           random().nextBoolean()
@@ -273,7 +271,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
 
       final UpdateResponse rsp = req.process(client);
       assertUpdateTolerantErrors(
-          client.toString() + " => " + expectedErrors.toString(),
+          client.toString() + " => " + expectedErrors,
           rsp,
           expectedErrors.toArray(new ExpectedErr[expectedErrors.size()]));
 
@@ -322,9 +320,10 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
     final int max = atLeast(100);
     BitSet bits = new BitSet(max + 1);
     for (int i = 0; i <= max; i++) {
-      assertFalse(
+      assertNotEquals(
           "how is bitset already full? iter=" + i + " card=" + bits.cardinality() + "/max=" + max,
-          bits.cardinality() == max + 1);
+          bits.cardinality(),
+          max + 1);
       final int nextBit = randomUnsetBit(random(), bits, max);
       assertTrue("nextBit shouldn't be negative yet: " + nextBit, 0 <= nextBit);
       assertTrue("nextBit can't exceed max: " + nextBit, nextBit <= max);
@@ -352,7 +351,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
    * Given a BitSet, returns a random bit that is currently false, or -1 if all bits are true. NOTE:
    * this method is not fair.
    */
-  public static final int randomUnsetBit(Random r, BitSet bits, final int max) {
+  public static int randomUnsetBit(Random r, BitSet bits, final int max) {
     // NOTE: don't forget, BitSet will grow automatically if not careful
     if (bits.cardinality() == max + 1) {
       return -1;
@@ -363,7 +362,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
       final int hi = bits.nextClearBit(candidate);
       if (lo < 0 && max < hi) {
         fail(
-            "how the hell did we not short circut out? card="
+            "how the hell did we not short circuit out? card="
                 + bits.cardinality()
                 + "/size="
                 + bits.size());
@@ -378,15 +377,14 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
   }
 
   /** returns the numFound from a *:* query */
-  public static final long countDocs(SolrClient c) throws Exception {
+  public static long countDocs(SolrClient c) throws Exception {
     return c.query(params("q", "*:*", "rows", "0")).getResults().getNumFound();
   }
 
   /**
    * uses a Cursor to iterate over every doc in the index, recording the 'id_i' value in a BitSet
    */
-  private static final BitSet allDocs(final SolrClient c, final int maxDocIdExpected)
-      throws Exception {
+  private static BitSet allDocs(final SolrClient c, final int maxDocIdExpected) throws Exception {
     BitSet docs = new BitSet(maxDocIdExpected + 1);
     String cursorMark = CURSOR_MARK_START;
     int docsOnThisPage = Integer.MAX_VALUE;
@@ -407,7 +405,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
       docsOnThisPage = 0;
       for (SolrDocument doc : rsp.getResults()) {
         docsOnThisPage++;
-        int id_i = ((Integer) doc.get("id_i")).intValue();
+        int id_i = (Integer) doc.get("id_i");
         assertTrue(
             "found id_i bigger then expected " + maxDocIdExpected + ": " + id_i,
             id_i <= maxDocIdExpected);

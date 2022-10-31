@@ -109,7 +109,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
       }
       assertEquals(br != null, rnum < size);
       if (rnum < size) {
-        assertEquals(rnum, (int) te.ord());
+        assertEquals(rnum, te.ord());
         assertEquals(s, te.term().utf8ToString());
       }
     }
@@ -129,7 +129,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
         te.seekExact((long) rnum);
         BytesRef br = te.term();
         assertNotNull(br);
-        assertEquals(rnum, (int) te.ord());
+        assertEquals(rnum, te.ord());
         assertEquals(s, te.term().utf8ToString());
       }
     }
@@ -151,7 +151,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
   public void testFacets() {
     StringBuilder sb = new StringBuilder();
 
-    // go over 4096 to test some of the buffer resizing
+    // go over 4096 to test some buffer resizing
     for (int i = 0; i < 5000; i++) {
       sb.append(t(i));
       sb.append(' ');
@@ -231,7 +231,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
   public void testRegularBig() {
     StringBuilder sb = new StringBuilder();
 
-    // go over 4096 to test some of the buffer resizing
+    // go over 4096 to test some buffer resizing
     int nTerms = 7;
     for (int i = 0; i < nTerms; i++) {
       sb.append(t(i));
@@ -815,7 +815,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
         random().nextBoolean() ? new String[] {} : new String[] {"facet.method", "uif"};
 
     // All I really care about here is the chance to fire off a bunch of threads to the
-    // UnIninvertedField.get method to insure that we get into/out of the lock. Again, it's not
+    // UnInvertedField.get method to ensure that we get into/out of the lock. Again, it's not
     // entirely deterministic, but it might catch bad stuff occasionally...
     assertQ(
         "check threading, more threads than fields",

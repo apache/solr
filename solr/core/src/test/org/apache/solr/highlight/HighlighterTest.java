@@ -52,7 +52,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
       "a long days night this should be a piece of text which is is is is is is is is is is is is is is is is is is is "
           + "is is is is is isis is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is "
           + "is is is is is is is is is is is is is "
-          + "is is is is is is is is is is is is is is is is is is is is sufficiently lengthly to produce multiple fragments which are not concatenated "
+          + "is is is is is is is is is is is is is is is is is is is is sufficiently lengthily to produce multiple fragments which are not concatenated "
           + "at all--we want two disjoint long fragments.";
 
   @BeforeClass
@@ -902,13 +902,13 @@ public class HighlighterTest extends SolrTestCaseJ4 {
     // SOLR-5127
     args.put("hl.fl", (random().nextBoolean() ? "foo_*,bar_*" : "bar_*,foo_*"));
     // hl.fl ordering need not be preserved in output
-    final Set<String> highlightedSetExpected = new HashSet<String>();
+    final Set<String> highlightedSetExpected = new HashSet<>();
     highlightedSetExpected.add("foo_s");
     highlightedSetExpected.add("bar_s");
     try (var localRequest = req(args, "q", "test")) {
       highlighter = getHighlighter();
       final Set<String> highlightedSetActual =
-          new HashSet<String>(
+          new HashSet<>(
               Arrays.asList(highlighter.getHighlightFields(null, localRequest, new String[] {})));
       assertEquals(highlightedSetExpected, highlightedSetActual);
     }

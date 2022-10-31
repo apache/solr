@@ -55,7 +55,7 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
 
     // sanity check our test...
     assertTrue(
-        "Effectiveness of tets depends on SchemaSimilarityFactory being SolrCoreAware "
+        "Effectiveness of tests depends on SchemaSimilarityFactory being SolrCoreAware, "
             + "something changed in the impl and now major portions of this test are useless",
         SolrCoreAware.class.isAssignableFrom(simfac2));
 
@@ -133,7 +133,7 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
 
       assertSimilarity(changed, simfac2);
       // sanity check our sanity check
-      assertFalse("test is broken: both simfacs are the same", simfac1.equals(simfac2));
+      assertNotEquals("test is broken: both simfacs are the same", simfac1, simfac2);
 
       addDoc(changed, "id", "1", "text", "some stuff without which");
       addDoc(changed, "id", "5", "text", "some stuff without which");

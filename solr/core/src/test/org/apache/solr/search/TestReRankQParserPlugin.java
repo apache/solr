@@ -372,7 +372,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[3]/str[@name='id'][.='6']",
         "//result/doc[4]/str[@name='id'][.='5']",
         "//result/doc[5]/str[@name='id'][.='3']",
-        "//result/doc[6]/str[@name='id'][.='2']" // Not in reRankeDocs
+        "//result/doc[6]/str[@name='id'][.='2']" // Not in reRankDocs
         );
 
     // Test Elevation with start beyond the rerank docs
@@ -428,7 +428,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
 
     assertQ(req(params), "*[count(//doc)=0]");
 
-    // Pass in reRankDocs lower then the length being collected.
+    // Pass in reRankDocs lower than the length being collected.
     params = new ModifiableSolrParams();
     params.add(
         "rq",
@@ -623,7 +623,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     stats = metrics.getValue();
     long inserts2 = (Long) stats.get("inserts");
     // Last query was NOT added to the cache
-    assertTrue(inserts1 == inserts2);
+    assertEquals(inserts1, inserts2);
 
     // Test range query embedded in larger query
     params = new ModifiableSolrParams();
@@ -636,9 +636,9 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
             + "=$rqq "
             + ReRankQParserPlugin.RERANK_DOCS
             + "=6}");
-    // function query for predictible scores (relative to id) independent of similarity
+    // function query for predictable scores (relative to id) independent of similarity
     params.add("q", "{!func}id_i");
-    // constant score for each clause (unique per doc) for predictible scores independent of
+    // constant score for each clause (unique per doc) for predictable scores independent of
     // similarity
     // NOTE: biased in favor of doc id == 2
     params.add("rqq", "id:1^=10 id:2^=40 id:3^=30 id:4^=40 id:5^=50 id:6^=60");
@@ -731,7 +731,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     assertU(delQ("*:*"));
     assertU(commit());
 
-    // Test the scenario that where we rank more documents then we return.
+    // Test the scenario that where we rank more documents than we return.
 
     String[] doc = {
       "id", "1", "term_s", "YYYY", "group_s", "group1", "test_ti", "5", "test_tl", "10", "test_tf",
@@ -894,7 +894,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
                 + ReRankQParserPlugin.RERANK_QUERY
                 + " parameter is not specified",
             () -> h.query(req(params)));
-    assertTrue(se.code() == SolrException.ErrorCode.BAD_REQUEST.code);
+    assertEquals(se.code(), SolrException.ErrorCode.BAD_REQUEST.code);
     unIgnoreException("reRankQuery parameter is mandatory");
   }
 
@@ -912,13 +912,13 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     assertU(commit());
 
     final String preferredDocId;
-    final String lessPreferrredDocId;
+    final String lessPreferredDocId;
     if (random().nextBoolean()) {
       preferredDocId = "1";
-      lessPreferrredDocId = "2";
+      lessPreferredDocId = "2";
     } else {
       preferredDocId = "2";
-      lessPreferrredDocId = "1";
+      lessPreferredDocId = "1";
     }
 
     for (final String defType :
@@ -941,7 +941,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
           req(params),
           "*[count(//doc)=2]",
           "//result/doc[1]/str[@name='id'][.='" + preferredDocId + "']",
-          "//result/doc[2]/str[@name='id'][.='" + lessPreferrredDocId + "']");
+          "//result/doc[2]/str[@name='id'][.='" + lessPreferredDocId + "']");
     }
   }
 

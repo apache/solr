@@ -16,6 +16,8 @@
  */
 package org.apache.solr.common.cloud;
 
+import static org.apache.solr.common.util.Utils.STANDARDOBJBUILDER;
+
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
@@ -28,23 +30,31 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
+import org.apache.solr.common.cloud.Replica.ReplicaStateProps;
 import org.apache.solr.common.util.Utils;
-import org.apache.zookeeper.KeeperException;
+import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
+import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Immutable state of the cloud. Normally you can get the state by using {@link
+ * Immutable state of the cloud. Normally you can get the state by using {@code
  * ZkStateReader#getClusterState()}.
  *
  * @lucene.experimental
  */
 public class ClusterState implements JSONWriter.Writable {
+
+  /** Cluster Prop that is http or https. */
+  public static final String URL_SCHEME = "urlScheme";
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map<String, CollectionRef> collectionStates, immutableCollectionStates;
@@ -73,7 +83,7 @@ public class ClusterState implements JSONWriter.Writable {
     this.liveNodes = new HashSet<>(liveNodes.size());
     this.liveNodes.addAll(liveNodes);
     this.collectionStates = new LinkedHashMap<>(collectionStates);
-    this.immutableCollectionStates = Collections.unmodifiableMap(collectionStates);
+    this.immutableCollectionStates = Collections.unmodifiableMap(this.collectionStates);
   }
 
   /**
@@ -84,13 +94,13 @@ public class ClusterState implements JSONWriter.Writable {
    * @return the updated cluster state which preserves the current live nodes
    */
   public ClusterState copyWith(String collectionName, DocCollection collection) {
-    ClusterState result = new ClusterState(new LinkedHashMap<>(collectionStates), liveNodes);
+    LinkedHashMap<String, CollectionRef> collections = new LinkedHashMap<>(collectionStates);
     if (collection == null) {
-      result.collectionStates.remove(collectionName);
+      collections.remove(collectionName);
     } else {
-      result.collectionStates.put(collectionName, new CollectionRef(collection));
+      collections.put(collectionName, new CollectionRef(collection));
     }
-    return result;
+    return new ClusterState(collections, liveNodes);
   }
 
   /**
@@ -182,8 +192,8 @@ public class ClusterState implements JSONWriter.Writable {
       for (Slice slice : coll.getSlices()) {
         for (Replica replica : slice.getReplicas()) {
           // TODO: for really large clusters, we could 'index' on this
-          String rnodeName = replica.getStr(ZkStateReader.NODE_NAME_PROP);
-          String rcore = replica.getStr(ZkStateReader.CORE_NAME_PROP);
+          String rnodeName = replica.getStr(ReplicaStateProps.NODE_NAME);
+          String rcore = replica.getStr(ReplicaStateProps.CORE_NAME);
           if (nodeName.equals(rnodeName) && coreName.equals(rcore)) {
             return slice.getName();
           }
@@ -222,51 +232,8 @@ public class ClusterState implements JSONWriter.Writable {
       return new ClusterState(liveNodes, Collections.<String, DocCollection>emptyMap());
     }
     @SuppressWarnings({"unchecked"})
-    Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(bytes);
-    return createFromCollectionMap(version, stateMap, liveNodes);
-  }
-
-  /**
-   * Create a ClusterState from Json. This method supports legacy configName location
-   *
-   * @param bytes a byte array of a Json representation of a mapping from collection name to the
-   *     Json representation of a {@link DocCollection} as written by {@link #write(JSONWriter)}. It
-   *     can represent one or more collections.
-   * @param liveNodes list of live nodes
-   * @param coll collection name
-   * @param zkClient ZK client
-   * @return the ClusterState
-   */
-  @SuppressWarnings({"unchecked"})
-  @Deprecated
-  public static ClusterState createFromJsonSupportingLegacyConfigName(
-      int version, byte[] bytes, Set<String> liveNodes, String coll, SolrZkClient zkClient) {
-    if (bytes == null || bytes.length == 0) {
-      return new ClusterState(liveNodes, Collections.emptyMap());
-    }
-    Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(bytes);
-    Map<String, Object> props = (Map<String, Object>) stateMap.get(coll);
-    if (props != null) {
-      if (!props.containsKey(ZkStateReader.CONFIGNAME_PROP)) {
-        try {
-          // read configName from collections/collection node
-          String path = ZkStateReader.COLLECTIONS_ZKNODE + "/" + coll;
-          byte[] data = zkClient.getData(path, null, null, true);
-          if (data != null && data.length > 0) {
-            ZkNodeProps configProp = ZkNodeProps.load(data);
-            String configName = configProp.getStr(ZkStateReader.CONFIGNAME_PROP);
-            if (configName != null) {
-              props.put(ZkStateReader.CONFIGNAME_PROP, configName);
-              stateMap.put(coll, props);
-            } else {
-              log.warn("configName is null, not found on {}", path);
-            }
-          }
-        } catch (KeeperException | InterruptedException e) {
-          // do nothing
-        }
-      }
-    }
+    Map<String, Object> stateMap =
+        (Map<String, Object>) Utils.fromJSON(bytes, 0, bytes.length, STR_INTERNER_OBJ_BUILDER);
     return createFromCollectionMap(version, stateMap, liveNodes);
   }
 
@@ -290,7 +257,7 @@ public class ClusterState implements JSONWriter.Writable {
     Map<String, Object> props;
     Map<String, Slice> slices;
 
-    if (Boolean.parseBoolean(String.valueOf(objs.get(DocCollection.PER_REPLICA_STATE)))) {
+    if (Boolean.parseBoolean(String.valueOf(objs.get(CollectionStateProps.PER_REPLICA_STATE)))) {
       if (log.isDebugEnabled()) {
         log.debug("a collection {} has per-replica state", name);
       }
@@ -299,7 +266,7 @@ public class ClusterState implements JSONWriter.Writable {
       if (rsp instanceof StatesProvider) ((StatesProvider) rsp).isPerReplicaState = true;
     }
     @SuppressWarnings({"unchecked"})
-    Map<String, Object> sliceObjs = (Map<String, Object>) objs.get(DocCollection.SHARDS);
+    Map<String, Object> sliceObjs = (Map<String, Object>) objs.get(CollectionStateProps.SHARDS);
     if (sliceObjs == null) {
       // legacy format from 4.0... there was no separate "shards" level to contain the collection
       // shards.
@@ -308,10 +275,10 @@ public class ClusterState implements JSONWriter.Writable {
     } else {
       slices = Slice.loadAllFromMap(name, sliceObjs);
       props = new HashMap<>(objs);
-      objs.remove(DocCollection.SHARDS);
+      objs.remove(CollectionStateProps.SHARDS);
     }
 
-    Object routerObj = props.get(DocCollection.DOC_ROUTER);
+    Object routerObj = props.get(CollectionStateProps.DOC_ROUTER);
     DocRouter router;
     if (routerObj == null) {
       router = DocRouter.DEFAULT;
@@ -350,8 +317,7 @@ public class ClusterState implements JSONWriter.Writable {
   @Override
   public boolean equals(Object obj) {
     if (this == obj) return true;
-    if (obj == null) return false;
-    if (getClass() != obj.getClass()) return false;
+    if (!(obj instanceof ClusterState)) return false;
     ClusterState other = (ClusterState) obj;
     if (liveNodes == null) {
       return other.liveNodes == null;
@@ -400,7 +366,8 @@ public class ClusterState implements JSONWriter.Writable {
               consumer.accept(collection);
             }
           } catch (SolrException e) {
-            if (e.getCause() instanceof KeeperException.NoNodeException) {
+            if (e.getCause() != null
+                && e.getCause().getClass().getName().endsWith("NoNodeException")) {
               // don't do anything. This collection does not exist
             } else {
               throw e;
@@ -514,5 +481,13 @@ public class ClusterState implements JSONWriter.Writable {
       if (perReplicaStates == null) perReplicaStates = replicaStatesSupplier.get();
       return perReplicaStates;
     }
+  }
+
+  private static volatile Function<JSONParser, ObjectBuilder> STR_INTERNER_OBJ_BUILDER =
+      STANDARDOBJBUILDER;
+
+  public static void setStrInternerParser(Function<JSONParser, ObjectBuilder> fun) {
+    if (fun == null) return;
+    STR_INTERNER_OBJ_BUILDER = fun;
   }
 }

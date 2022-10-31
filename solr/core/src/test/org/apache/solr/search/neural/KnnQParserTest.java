@@ -98,7 +98,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
   }
 
   @After
-  public void cleanUp() throws Exception {
+  public void cleanUp() {
     clearIndex();
     deleteCore();
   }
@@ -288,8 +288,23 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
         "//result/doc[10]/str[@name='id'][.='8']");
   }
 
+  public void knnQueryUsedInFilter_shouldFilterResultsBeforeTheQueryExecution() {
+    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+    assertQ(
+        req(
+            CommonParams.Q,
+            "id:(3 4 9 2)",
+            "fq",
+            "{!knn f=vector topK=4}" + vectorToSearch,
+            "fl",
+            "id"),
+        "//result[@numFound='2']",
+        "//result/doc[1]/str[@name='id'][.='2']",
+        "//result/doc[2]/str[@name='id'][.='4']");
+  }
+
   @Test
-  public void knnQueryWithFilterQuery_shouldIntersectResults() {
+  public void knnQueryWithFilterQuery_shouldPerformKnnSearchInPreFilteredResults() {
     String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
 
     assertQ(
@@ -304,14 +319,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
         "//result/doc[1]/str[@name='id'][.='1']",
         "//result/doc[2]/str[@name='id'][.='2']",
         "//result/doc[3]/str[@name='id'][.='7']");
-    /*
-     * This behavior is counter-intuitive.
-     * You would expect the query to apply to only the results filtered by the filter query.
-     * So you ideally would like to see the following ranked list as a result: [4,2,3,9].
-     * To get this please use the knn query parser as a reranker, example in a following test.
-     * This is how filter queries work(it's just intersection of the bitsets coming from each query and filter query):
-     * Ranked List from q=[1,4,2,10] <intersects> Set from fq={3,4,9,2} = [4,2]
-     * */
+
     assertQ(
         req(
             CommonParams.Q,
@@ -320,26 +328,29 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
             "id:(3 4 9 2)",
             "fl",
             "id"),
-        "//result[@numFound='2']",
+        "//result[@numFound='4']",
         "//result/doc[1]/str[@name='id'][.='4']",
-        "//result/doc[2]/str[@name='id'][.='2']");
-    /* The ranking is now different as default solr score is used for the main query */
-    assertQ(
-        req(
-            CommonParams.Q,
-            "id:(3 4 9 2)",
-            "fq",
-            "{!knn f=vector topK=4}" + vectorToSearch,
-            "fl",
-            "id"),
-        "//result[@numFound='2']",
-        "//result/doc[1]/str[@name='id'][.='2']",
-        "//result/doc[2]/str[@name='id'][.='4']");
+        "//result/doc[2]/str[@name='id'][.='2']",
+        "//result/doc[3]/str[@name='id'][.='3']",
+        "//result/doc[4]/str[@name='id'][.='9']");
   }
 
-  /*
-   * See {@link org.apache.solr.search.ReRankQParserPlugin.ReRankQueryRescorer.combine} for more details.
-   * */
+  @Test
+  public void knnQueryWithNegativeFilterQuery_shouldPerformKnnSearchInPreFilteredResults() {
+    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+    assertQ(
+        req(CommonParams.Q, "{!knn f=vector topK=4}" + vectorToSearch, "fq", "-id:4", "fl", "id"),
+        "//result[@numFound='4']",
+        "//result/doc[1]/str[@name='id'][.='1']",
+        "//result/doc[2]/str[@name='id'][.='2']",
+        "//result/doc[3]/str[@name='id'][.='10']",
+        "//result/doc[4]/str[@name='id'][.='3']");
+  }
+
+  /**
+   * See {@link org.apache.solr.search.ReRankQParserPlugin.ReRankQueryRescorer#combine(float,
+   * boolean, float)}} for more details.
+   */
   @Test
   public void knnQueryAsRerank_shouldAddSimilarityFunctionScore() {
     String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";

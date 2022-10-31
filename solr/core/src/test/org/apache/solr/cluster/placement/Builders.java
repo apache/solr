@@ -17,8 +17,18 @@
 
 package org.apache.solr.cluster.placement;
 
-import java.util.*;
-import org.apache.solr.cluster.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import org.apache.solr.cluster.Cluster;
+import org.apache.solr.cluster.Node;
+import org.apache.solr.cluster.Replica;
+import org.apache.solr.cluster.Shard;
+import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.impl.AttributeFetcherImpl;
 import org.apache.solr.cluster.placement.impl.AttributeValuesImpl;
 import org.apache.solr.cluster.placement.impl.CollectionMetricsBuilder;
@@ -44,12 +54,12 @@ public class Builders {
 
   public static class ClusterBuilder {
     /** {@link NodeBuilder} for the live nodes of the cluster. */
-    private LinkedList<NodeBuilder> nodeBuilders = new LinkedList<>();
+    private List<NodeBuilder> nodeBuilders = new ArrayList<>();
 
-    private LinkedList<CollectionBuilder> collectionBuilders = new LinkedList<>();
+    private final List<CollectionBuilder> collectionBuilders = new ArrayList<>();
 
     public ClusterBuilder initializeLiveNodes(int countNodes) {
-      nodeBuilders = new LinkedList<>();
+      nodeBuilders = new ArrayList<>();
       for (int n = 0; n < countNodes; n++) {
         // Default name, can be changed
         NodeBuilder nodeBuilder = new NodeBuilder().setNodeName("node_" + n);
@@ -61,7 +71,7 @@ public class Builders {
       return this;
     }
 
-    public LinkedList<NodeBuilder> getLiveNodeBuilders() {
+    public List<NodeBuilder> getLiveNodeBuilders() {
       return nodeBuilders;
     }
 
@@ -77,7 +87,7 @@ public class Builders {
     }
 
     public List<Node> buildLiveNodes() {
-      List<Node> liveNodes = new LinkedList<>();
+      List<Node> liveNodes = new ArrayList<>();
       for (NodeBuilder nodeBuilder : nodeBuilders) {
         liveNodes.add(nodeBuilder.build());
       }
@@ -197,7 +207,7 @@ public class Builders {
 
   public static class CollectionBuilder {
     private final String collectionName;
-    private LinkedList<ShardBuilder> shardBuilders = new LinkedList<>();
+    private List<ShardBuilder> shardBuilders = new ArrayList<>();
     private Map<String, String> customProperties = new HashMap<>();
     int replicaNumber = 0; // global replica numbering for the collection
     private CollectionMetricsBuilder collectionMetricsBuilder = new CollectionMetricsBuilder();
@@ -219,7 +229,7 @@ public class Builders {
      * @return The internal shards data structure to allow test code to modify the replica
      *     distribution to nodes.
      */
-    public LinkedList<ShardBuilder> getShardBuilders() {
+    public List<ShardBuilder> getShardBuilders() {
       return shardBuilders;
     }
 
@@ -256,25 +266,25 @@ public class Builders {
      */
     public CollectionBuilder customCollectionSetup(
         List<List<String>> shardsReplicas, List<NodeBuilder> liveNodes) {
-      shardBuilders = new LinkedList<>();
+      shardBuilders = new ArrayList<>();
       int shardNumber = 1; // Shard numbering starts at 1
       for (List<String> replicasOnNodes : shardsReplicas) {
         String shardName = buildShardName(shardNumber++);
-        LinkedList<ReplicaBuilder> replicas = new LinkedList<>();
+        List<ReplicaBuilder> replicas = new ArrayList<>();
         ReplicaBuilder leader = null;
 
         for (String replicaNode : replicasOnNodes) {
           // replicaNode is like "TLOG 2" meaning a TLOG replica should be placed on node 2
-          String[] splited = replicaNode.split("\\s+");
-          Assert.assertEquals(2, splited.length);
-          Replica.ReplicaType type = Replica.ReplicaType.valueOf(splited[0]);
+          String[] split = replicaNode.split("\\s+");
+          Assert.assertEquals(2, split.length);
+          Replica.ReplicaType type = Replica.ReplicaType.valueOf(split[0]);
           final NodeBuilder node;
-          int nodeIndex = Integer.parseInt(splited[1]);
+          int nodeIndex = Integer.parseInt(split[1]);
           if (nodeIndex < liveNodes.size()) {
             node = liveNodes.get(nodeIndex);
           } else {
-            // The collection can have replicas on non live nodes. Let's create such a node here
-            // (that is not known to the cluster). There could be many non live nodes in the
+            // The collection can have replicas on non-live nodes. Let's create such a node here
+            // (that is not known to the cluster). There could be many non-live nodes in the
             // collection configuration, they will all reference new instances such as below of a
             // node unknown to cluster, but all will have the same name (so will be equal if
             // tested).
@@ -309,7 +319,7 @@ public class Builders {
 
     /**
      * Initializes shard and replica builders for the collection based on passed parameters.
-     * Replicas are assigned round robin to the nodes. The shard leader is the first NRT replica of
+     * Replicas are assigned round-robin to the nodes. The shard leader is the first NRT replica of
      * each shard (or first TLOG is no NRT). Shard and replica configuration can be modified
      * afterwards, the returned builder hierarchy is a convenient starting point.
      *
@@ -331,7 +341,7 @@ public class Builders {
 
     /**
      * Initializes shard and replica builders for the collection based on passed parameters.
-     * Replicas are assigned round robin to the nodes. The shard leader is the first NRT replica of
+     * Replicas are assigned round-robin to the nodes. The shard leader is the first NRT replica of
      * each shard (or first TLOG is no NRT). Shard and replica configuration can be modified
      * afterwards, the returned builder hierarchy is a convenient starting point.
      *
@@ -351,7 +361,7 @@ public class Builders {
         List<Integer> initialSizeGBPerShard) {
       Iterator<NodeBuilder> nodeIterator = nodes.iterator();
 
-      shardBuilders = new LinkedList<>();
+      shardBuilders = new ArrayList<>();
       if (initialSizeGBPerShard != null && initialSizeGBPerShard.size() != countShards) {
         throw new RuntimeException(
             "list of shard sizes must be the same length as the countShards!");
@@ -363,7 +373,7 @@ public class Builders {
         CollectionMetricsBuilder.ShardMetricsBuilder shardMetricsBuilder =
             new CollectionMetricsBuilder.ShardMetricsBuilder(shardName);
 
-        LinkedList<ReplicaBuilder> replicas = new LinkedList<>();
+        List<ReplicaBuilder> replicas = new ArrayList<>();
         ReplicaBuilder leader = null;
         CollectionMetricsBuilder.ReplicaMetricsBuilder leaderMetrics = null;
 
@@ -456,7 +466,7 @@ public class Builders {
 
   public static class ShardBuilder {
     private String shardName;
-    private LinkedList<ReplicaBuilder> replicaBuilders = new LinkedList<>();
+    private List<ReplicaBuilder> replicaBuilders = new ArrayList<>();
     private ReplicaBuilder leaderReplicaBuilder;
 
     public ShardBuilder setShardName(String shardName) {
@@ -468,11 +478,11 @@ public class Builders {
       return shardName;
     }
 
-    public LinkedList<ReplicaBuilder> getReplicaBuilders() {
+    public List<ReplicaBuilder> getReplicaBuilders() {
       return replicaBuilders;
     }
 
-    public ShardBuilder setReplicaBuilders(LinkedList<ReplicaBuilder> replicaBuilders) {
+    public ShardBuilder setReplicaBuilders(List<ReplicaBuilder> replicaBuilders) {
       this.replicaBuilders = replicaBuilders;
       return this;
     }

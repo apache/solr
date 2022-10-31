@@ -27,8 +27,10 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -199,8 +201,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected TransactionLog prevTlog;
   protected TransactionLog prevTlogOnPrecommit;
   // list of recent logs, newest first
-  protected final Deque<TransactionLog> logs = new LinkedList<>();
-  protected LinkedList<TransactionLog> newestLogsOnStartup = new LinkedList<>();
+  protected final Deque<TransactionLog> logs = new ArrayDeque<>();
+  protected Deque<TransactionLog> newestLogsOnStartup = new ArrayDeque<>();
   protected int numOldRecords; // number of records in the recent logs
 
   protected Map<BytesRef, LogPtr> map = new HashMap<>();
@@ -241,6 +243,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     }
   }
 
+  @SuppressWarnings("JdkObsolete")
   protected LinkedList<DBQ> deleteByQueries = new LinkedList<>();
 
   // Needs to be String because hdfs.Path is incompatible with nio.Path
@@ -984,7 +987,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             entry
                 + " should've been either ADD or UPDATE_INPLACE update"
                 + ", while looking for id="
-                + new String(id.bytes, Charset.forName("UTF-8")));
+                + new String(id.bytes, StandardCharsets.UTF_8));
       }
       // if this is an ADD (i.e. full document update), stop here
       if ((flags & UpdateLog.ADD) == UpdateLog.ADD) {
@@ -1699,7 +1702,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   public RecentUpdates getRecentUpdates() {
     Deque<TransactionLog> logList;
     synchronized (this) {
-      logList = new LinkedList<>(logs);
+      logList = new ArrayDeque<>(logs);
       for (TransactionLog log : logList) {
         log.incref();
       }
@@ -1844,7 +1847,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     boolean inSortedOrder;
 
     public LogReplayer(List<TransactionLog> translogs, boolean activeLog) {
-      this.translogs = new LinkedList<>();
+      this.translogs = new ArrayDeque<>();
       this.translogs.addAll(translogs);
       this.activeLog = activeLog;
     }

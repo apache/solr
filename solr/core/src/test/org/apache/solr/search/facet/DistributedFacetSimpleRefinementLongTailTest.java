@@ -26,7 +26,7 @@ import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 
 /**
- * A test the demonstrates some of the expected behavior fo "long tail" terms when using <code>
+ * A test that demonstrates some expected behavior for "long tail" terms when using <code>
  * refine:simple</code>
  *
  * <p><b>NOTE:</b> This test ignores the control collection (in single node mode, there is no need
@@ -240,7 +240,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
 
       // this will be short the "+1" fo the doc added to shard2...
       NamedList bucket = foo_buckets.get(5);
-      assertTrue(bucket.toString(), bucket.get("val").equals("bbb0")); // 'tail' is missed
+      assertEquals(bucket.toString(), "bbb0", bucket.get("val")); // 'tail' is missed
       assertEquals(
           bucket.toString(),
           100L,
@@ -248,7 +248,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
     }
 
     // even if we enable refinement, we still won't find the long 'tail' ...
-    // regardless of wether we use either the default overrequest, or disable overrequesting...
+    // regardless of whether we use either the default overrequest, or disable overrequesting...
     for (String over : Arrays.asList("", "overrequest:0,")) {
       List<NamedList> foo_buckets =
           (List<NamedList>)
@@ -281,7 +281,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
       }
       // ...but it should have correctly asked shard2 to refine bbb0
       NamedList bucket = foo_buckets.get(5);
-      assertTrue(bucket.toString(), bucket.get("val").equals("bbb0"));
+      assertEquals(bucket.toString(), "bbb0", bucket.get("val"));
       assertEquals(bucket.toString(), 101L, bucket.get("count"));
       // ...and the status under bbb0 should be correct to include the refinement
       assertEquals(ALL_STATS.size() + 3, bucket.size()); // val,count,facet

@@ -276,7 +276,7 @@ public class TestRealTimeGet extends TestRTGBase {
     assertU(adoc("id", "14"));
     assertU(adoc("id", "15"));
 
-    // id list, with some in index and some not, first id from index. Also test mutiple fq params.
+    // id list, with some in index and some not, first id from index. Also test multiple fq params.
     assertJQ(
         req(
             "qt",
@@ -341,7 +341,7 @@ public class TestRealTimeGet extends TestRTGBase {
     // test version is there from rtg
     assertJQ(req("qt", "/get", "id", "1"), "=={'doc':{'id':'1','_version_':" + version + "}}");
 
-    // simulate reordering: test that a version less than that does not take affect
+    // simulate reordering: test that a version less than that does not take effect
     updateJ(
         jsonAdd(sdoc("id", "1", "_version_", Long.toString(version - 1))),
         params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
@@ -361,7 +361,7 @@ public class TestRealTimeGet extends TestRTGBase {
     // make sure reordering detection also works after a commit
     assertU(commit());
 
-    // simulate reordering: test that a version less than that does not take affect
+    // simulate reordering: test that a version less than that does not take effect
     updateJ(
         jsonAdd(sdoc("id", "1", "_version_", Long.toString(version - 1))),
         params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
@@ -369,7 +369,8 @@ public class TestRealTimeGet extends TestRTGBase {
     // test that version hasn't changed
     assertJQ(req("qt", "/get", "id", "1"), "=={'doc':{'id':'1','_version_':" + version + "}}");
 
-    // simulate reordering: test that a delete w/ version less than that does not take affect
+    // simulate reordering: test that a delete operation w/ version less than that does not take
+    // effect
     updateJ(
         jsonDelId("1"),
         params(DISTRIB_UPDATE_PARAM, FROM_LEADER, "_version_", Long.toString(version - 1)));
@@ -383,7 +384,7 @@ public class TestRealTimeGet extends TestRTGBase {
         jsonDelId("1"),
         params(DISTRIB_UPDATE_PARAM, FROM_LEADER, "_version_", Long.toString(version)));
 
-    // make sure a reordered add doesn't take affect.
+    // make sure a reordered add doesn't take effect.
     updateJ(
         jsonAdd(sdoc("id", "1", "_version_", Long.toString(version - 1))),
         params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
@@ -391,10 +392,10 @@ public class TestRealTimeGet extends TestRTGBase {
     // test that it's still deleted
     assertJQ(req("qt", "/get", "id", "1"), "=={'doc':null}");
 
-    // test that we can remember the version of a delete after a commit
+    // test that we can remember the version of a delete operation after a commit
     assertU(commit());
 
-    // make sure a reordered add doesn't take affect.
+    // make sure a reordered add doesn't take effect.
     long version2 = deleteByQueryAndGetVersion("id:2", null);
 
     // test that it's still deleted
@@ -485,7 +486,7 @@ public class TestRealTimeGet extends TestRTGBase {
     // deletes
     //
 
-    // try a delete with version on the request
+    // try a delete operation with version on the request
     se =
         expectThrows(
             SolrException.class,
@@ -493,7 +494,7 @@ public class TestRealTimeGet extends TestRTGBase {
             () -> deleteAndGetVersion("1", params("_version_", Long.toString(version - 1))));
     assertEquals("version should cause a conflict", 409, se.code());
 
-    // try a delete with a negative version
+    // try a delete operation with a negative version
     se =
         expectThrows(
             SolrException.class,
@@ -501,7 +502,7 @@ public class TestRealTimeGet extends TestRTGBase {
             () -> deleteAndGetVersion("1", params("_version_", Long.toString(-version))));
     assertEquals("version should cause a conflict", 409, se.code());
 
-    // try a delete with a greater version
+    // try a delete operation with a greater version
     se =
         expectThrows(
             SolrException.class,
@@ -511,7 +512,7 @@ public class TestRealTimeGet extends TestRTGBase {
                     "1", params("_version_", Long.toString(version + random().nextInt(1000) + 1))));
     assertEquals("version should cause a conflict", 409, se.code());
 
-    // try a delete of a document that doesn't exist, specifying a specific version
+    // try a delete operation of a document that doesn't exist, specifying a specific version
     se =
         expectThrows(
             SolrException.class,
@@ -520,7 +521,7 @@ public class TestRealTimeGet extends TestRTGBase {
                 deleteAndGetVersion("I_do_not_exist", params("_version_", Long.toString(version))));
     assertEquals("version should cause a conflict", 409, se.code());
 
-    // try a delete of a document that doesn't exist, specifying that it should not
+    // try a delete operation of a document that doesn't exist, specifying that it should not
     version2 = deleteAndGetVersion("I_do_not_exist", params("_version_", Long.toString(-1)));
     assertTrue(version2 < 0);
 
@@ -901,7 +902,8 @@ public class TestRealTimeGet extends TestRTGBase {
                   @SuppressWarnings({"rawtypes"})
                   List doclist = (List) (((Map) rsp.get("response")).get("docs"));
                   if (doclist.size() == 0) {
-                    // there's no info we can get back with a delete, so not much we can check
+                    // there's no info we can get back with a delete operation, so not much we can
+                    // check
                     // without further synchronization. This is also correct when filteredOut==true
                   } else {
                     assertEquals(1, doclist.size());
@@ -912,7 +914,7 @@ public class TestRealTimeGet extends TestRTGBase {
                         || (foundVer == info.version
                             && foundVal != info.val)) { // if the version matches, the val must
                       verbose("ERROR, id=", id, "found=", response, "model", info);
-                      assertTrue(false);
+                      fail();
                     }
                   }
                 }

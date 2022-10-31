@@ -24,6 +24,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 
 public class MockSolrSource {
 
+  @SuppressWarnings("DirectInvocationOnMock")
   public static ZkController makeSimpleMock(
       Overseer overseer, ZkStateReader reader, SolrZkClient zkClient) {
     ZkController zkControllerMock = mock(ZkController.class);

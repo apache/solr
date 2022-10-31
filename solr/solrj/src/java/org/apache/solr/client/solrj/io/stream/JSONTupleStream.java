@@ -89,6 +89,7 @@ public class JSONTupleStream implements TupleStreamParser {
     return (Map<String, Object>) o;
   }
 
+  @Override
   public void close() throws IOException {
     reader.close();
   }

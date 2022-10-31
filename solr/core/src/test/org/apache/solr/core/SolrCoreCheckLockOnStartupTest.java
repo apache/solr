@@ -91,7 +91,6 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
       System.setProperty("solr.tests.lockType", DirectoryFactory.LOCK_TYPE_NATIVE);
       // opening a new core on the same index
       initCore("solrconfig-basic.xml", "schema.xml");
-      CoreContainer cc = h.getCoreContainer();
       if (checkForCoreInitException(LockObtainFailedException.class)) return;
       fail("Expected " + LockObtainFailedException.class.getSimpleName());
     } finally {

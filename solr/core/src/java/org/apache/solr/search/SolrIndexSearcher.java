@@ -30,6 +30,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -50,9 +51,35 @@ import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.CollectionStatistics;
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.FieldDoc;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.LeafCollector;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.MultiCollector;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorable;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.SimpleCollector;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortField.Type;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermStatistics;
+import org.apache.lucene.search.TimeLimitingCollector;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopDocsCollector;
+import org.apache.lucene.search.TopFieldCollector;
+import org.apache.lucene.search.TopFieldDocs;
+import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.search.TotalHitCountCollector;
+import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.TotalHits.Relation;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
@@ -497,7 +524,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   @Override
   public final DirectoryReader getIndexReader() {
-    assert reader == super.getIndexReader();
+    assert Objects.equals(reader, super.getIndexReader());
     return reader;
   }
 
@@ -1165,7 +1192,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       Query posQuery = QueryUtils.getAbs(q);
       sets[end] = getPositiveDocSet(posQuery);
       // Negative query if absolute value different from original
-      if (q == posQuery) {
+      if (Objects.equals(q, posQuery)) {
         neg[end] = false;
         // keep track of the smallest positive set.
         // This optimization is only worth it if size() is cached, which it would
@@ -1235,7 +1262,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     // Set pf.postFilter
     if (postFilters != null) {
-      Collections.sort(postFilters, sortByCost);
+      postFilters.sort(sortByCost);
       for (int i = postFilters.size() - 1; i >= 0; i--) {
         DelegatingCollector prev = pf.postFilter;
         pf.postFilter = postFilters.get(i).getFilterCollector(this);
@@ -1375,7 +1402,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // Get the absolute value (positive version) of this query. If we
     // get back the same reference, we know it's positive.
     Query absQ = QueryUtils.getAbs(query);
-    boolean positive = absQ == query;
+    boolean positive = Objects.equals(absQ, query);
 
     DocSet absAnswer = getAndCacheDocSet(absQ);
 
@@ -1952,7 +1979,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
       TopDocs topDocs = topCollector.topDocs(0, len);
       if (cmd.getSort() != null
-          && cmd.getQuery() instanceof RankQuery == false
+          && !(cmd.getQuery() instanceof RankQuery)
           && (cmd.getFlags() & GET_SCORES) != 0) {
         TopFieldCollector.populateScores(topDocs.scoreDocs, this, query);
       }
@@ -2296,7 +2323,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       // Negative query if absolute value different from original
       Query absQ = QueryUtils.getAbs(a);
       DocSet positiveA = getPositiveDocSet(absQ);
-      return a == absQ ? b.intersectionSize(positiveA) : b.andNotSize(positiveA);
+      return Objects.equals(a, absQ) ? b.intersectionSize(positiveA) : b.andNotSize(positiveA);
     } else {
       // If there isn't a cache, then do a single filtered query
       TotalHitCountCollector collector = new TotalHitCountCollector();
@@ -2342,11 +2369,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     DocSet positiveB = getPositiveDocSet(absB);
 
     // Negative query if absolute value different from original
-    if (a == absA) {
-      if (b == absB) return positiveA.intersectionSize(positiveB);
+    if (Objects.equals(a, absA)) {
+      if (Objects.equals(b, absB)) return positiveA.intersectionSize(positiveB);
       return positiveA.andNotSize(positiveB);
     }
-    if (b == absB) return positiveB.andNotSize(positiveA);
+    if (Objects.equals(b, absB)) return positiveB.andNotSize(positiveA);
 
     // if both negative, we need to create a temp DocSet since we
     // don't have a counting method that takes three.

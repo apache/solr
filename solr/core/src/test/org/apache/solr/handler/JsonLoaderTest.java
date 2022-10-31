@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.UnaryOperator;
@@ -163,7 +162,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testInvalidJsonProducesBadRequestSolrException() throws Exception {
+  public void testInvalidJsonProducesBadRequestSolrException() {
     SolrQueryResponse rsp = new SolrQueryResponse();
     BufferingRequestProcessor p = new BufferingRequestProcessor(null);
     JsonLoader loader = new JsonLoader();
@@ -213,7 +212,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
 
     // list
     checkFieldValueOrdering((pre + "'f':[45,67,89]" + post).replace('\'', '"'));
-    // dup fieldname keys
+    // duplicate field name keys
     checkFieldValueOrdering((pre + "'f':45,'f':67,'f':89" + post).replace('\'', '"'));
   }
 
@@ -395,7 +394,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     SolrQueryRequest req;
     SolrQueryResponse rsp;
     BufferingRequestProcessor p;
-    JsonLoader loader; // multichild test case
+    JsonLoader loader; // multiple children test case
     final boolean array = random().nextBoolean();
     StringBuilder b = new StringBuilder();
     if (array) {
@@ -453,7 +452,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
   }
 
   private static void assertOnlyValue(String expected, SolrInputDocument doc, String field) {
-    assertEquals(Collections.singletonList(expected), doc.getFieldValues(field));
+    assertEquals(List.of(expected), List.copyOf(doc.getFieldValues(field)));
   }
 
   public void testAtomicUpdateFieldValue() throws Exception {
@@ -468,7 +467,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
 
     AddUpdateCommand add = p.addCommands.get(0);
     assertEquals(add.commitWithin, -1);
-    assertEquals(add.overwrite, true);
+    assertTrue(add.overwrite);
     assertEquals("SolrInputDocument(fields: [id=1, val_s={add=foo}])", add.solrDoc.toString());
 
     req.close();
@@ -639,7 +638,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testAddBigIntegerValueToTrieField() throws Exception {
+  public void testAddBigIntegerValueToTrieField() {
     // Adding a BigInteger to a long field should fail
     // BigInteger.longValue() returns only the low-order 64 bits.
 
@@ -685,7 +684,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
         "/response/docs/[0]=={'big_decimal_tf':[1.0E38]}");
   }
 
-  // The delete syntax was both extended for simplification in 4.0
+  // The delete operation syntax was extended for simplification in 4.0
   @Test
   public void testDeleteSyntax() throws Exception {
     String str =
@@ -707,47 +706,47 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertEquals(9, p.deleteCommands.size());
     DeleteUpdateCommand delete = p.deleteCommands.get(0);
     assertEquals(delete.id, "10");
-    assertEquals(delete.query, null);
+    assertNull(delete.query);
     assertEquals(delete.commitWithin, -1);
 
     delete = p.deleteCommands.get(1);
     assertEquals(delete.id, "20");
-    assertEquals(delete.query, null);
+    assertNull(delete.query);
     assertEquals(delete.commitWithin, -1);
 
     delete = p.deleteCommands.get(2);
     assertEquals(delete.id, "30");
-    assertEquals(delete.query, null);
+    assertNull(delete.query);
     assertEquals(delete.commitWithin, -1);
 
     delete = p.deleteCommands.get(3);
     assertEquals(delete.id, "40");
-    assertEquals(delete.query, null);
+    assertNull(delete.query);
     assertEquals(delete.commitWithin, -1);
 
     delete = p.deleteCommands.get(4);
     assertEquals(delete.id, "50");
-    assertEquals(delete.query, null);
+    assertNull(delete.query);
     assertEquals(delete.getVersion(), 12345L);
 
     delete = p.deleteCommands.get(5);
     assertEquals(delete.id, "60");
-    assertEquals(delete.query, null);
+    assertNull(delete.query);
     assertEquals(delete.getVersion(), 67890L);
 
     delete = p.deleteCommands.get(6);
     assertEquals(delete.id, "70");
-    assertEquals(delete.query, null);
+    assertNull(delete.query);
     assertEquals(delete.getVersion(), 77777L);
 
     delete = p.deleteCommands.get(7);
-    assertEquals(delete.id, null);
+    assertNull(delete.id);
     assertEquals(delete.query, "id:80");
     assertEquals(delete.getVersion(), 88888L);
 
     delete = p.deleteCommands.get(8);
     assertEquals(delete.id, "90");
-    assertEquals(delete.query, null);
+    assertNull(delete.query);
     assertEquals(delete.getRoute(), "shard1");
     assertEquals(delete.getVersion(), 88888L);
 
@@ -816,7 +815,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
   @Test
   public void testChildDocWithoutId() throws Exception {
     final String json = DUP_KEYS_ANON_CHILD_DOCS_JSON.replace("\"id\": \"3\",\n", "");
-    assert !json.equals(DUP_KEYS_ANON_CHILD_DOCS_JSON);
+    assertFalse(json.equals(DUP_KEYS_ANON_CHILD_DOCS_JSON));
     checkTwoAnonymousChildDocs(json, false);
   }
 

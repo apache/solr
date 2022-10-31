@@ -17,8 +17,8 @@
 package org.apache.solr.handler;
 
 import java.io.StringReader;
+import java.util.ArrayDeque;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.Objects;
 import java.util.Queue;
 import javax.xml.stream.XMLInputFactory;
@@ -40,19 +40,16 @@ import org.junit.Test;
 /** Tests the UpdateRequestHandler support for XML updates. */
 public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
   private static XMLInputFactory inputFactory;
-  protected static UpdateRequestHandler handler;
 
   @BeforeClass
   public static void beforeTests() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
-    handler = new UpdateRequestHandler();
     inputFactory = XMLInputFactory.newInstance();
   }
 
   @AfterClass
   public static void afterTests() {
     inputFactory = null;
-    handler = null;
   }
 
   @Test
@@ -102,7 +99,7 @@ public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
 
     AddUpdateCommand add = p.addCommands.get(0);
     assertEquals(100, add.commitWithin);
-    assertEquals(false, add.overwrite);
+    assertFalse(add.overwrite);
     req.close();
   }
 
@@ -216,7 +213,7 @@ public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
 
   private static class MockUpdateRequestProcessor extends UpdateRequestProcessor {
 
-    private Queue<DeleteUpdateCommand> deleteCommands = new LinkedList<>();
+    private final Queue<DeleteUpdateCommand> deleteCommands = new ArrayDeque<>();
 
     public MockUpdateRequestProcessor(UpdateRequestProcessor next) {
       super(next);

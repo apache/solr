@@ -29,7 +29,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.FlattenGraphFilterFactory; // javadocs
+import org.apache.lucene.analysis.core.FlattenGraphFilterFactory;
 import org.apache.lucene.analysis.synonym.SynonymFilterFactory;
 import org.apache.lucene.analysis.synonym.SynonymMap;
 import org.apache.lucene.util.CharsRef;
@@ -94,6 +94,7 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
       return synMappings;
     }
 
+    @Override
     public String toString() {
       return mappings.toString();
     }
@@ -354,7 +355,7 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
    * Custom SynonymMap.Parser implementation that provides synonym mappings from the managed JSON in
    * this class during SynonymMap building.
    */
-  private class ManagedSynonymParser extends SynonymMap.Parser {
+  private static class ManagedSynonymParser extends SynonymMap.Parser {
 
     SynonymManager synonymManager;
 
@@ -401,6 +402,7 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
     return "/schema/analysis/synonyms/" + handle;
   }
 
+  @Override
   protected Class<? extends ManagedResource> getManagedResourceImplClass() {
     return SynonymManager.class;
   }

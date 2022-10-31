@@ -47,7 +47,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     query.add("rq", "{!ltr reRankDocs=100}");
 
     final String res = restTestHarness.query("/query" + query.toQueryString());
-    assert (res.contains("Must provide one or two models in the request"));
+    assertTrue(res.contains("Must provide one or two models in the request"));
   }
 
   @Test
@@ -61,7 +61,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     query.add("rq", "{!ltr model=-1 reRankDocs=100}");
 
     final String res = restTestHarness.query("/query" + query.toQueryString());
-    assert (res.contains("cannot find model"));
+    assertTrue(res.contains("cannot find model"));
   }
 
   @Test
@@ -75,7 +75,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     query.add("rq", "{!ltr model=\"\" reRankDocs=100}");
 
     final String res = restTestHarness.query("/query" + query.toQueryString());
-    assert (res.contains("the model 0 is empty"));
+    assertTrue(res.contains("the model 0 is empty"));
   }
 
   @Test
@@ -89,7 +89,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     query.add("rq", "{!ltr model=6029760550880411648 reRankDocs=-1}");
 
     final String res = restTestHarness.query("/query" + query.toQueryString());
-    assert (res.contains("Must rerank at least 1 document"));
+    assertTrue(res.contains("Must rerank at least 1 document"));
   }
 
   @Test

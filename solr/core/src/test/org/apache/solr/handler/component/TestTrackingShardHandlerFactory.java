@@ -61,7 +61,7 @@ public class TestTrackingShardHandlerFactory extends AbstractFullDistribZkTestBa
     for (JettySolrRunner runner : runners) {
       CoreContainer container = runner.getCoreContainer();
       ShardHandlerFactory factory = container.getShardHandlerFactory();
-      assert factory instanceof TrackingShardHandlerFactory;
+      assertTrue(factory instanceof TrackingShardHandlerFactory);
       @SuppressWarnings("resource")
       TrackingShardHandlerFactory trackingShardHandlerFactory =
           (TrackingShardHandlerFactory) factory;
@@ -130,7 +130,7 @@ public class TestTrackingShardHandlerFactory extends AbstractFullDistribZkTestBa
     for (JettySolrRunner runner : runners) {
       CoreContainer container = runner.getCoreContainer();
       ShardHandlerFactory factory = container.getShardHandlerFactory();
-      assert factory instanceof TrackingShardHandlerFactory;
+      assertTrue(factory instanceof TrackingShardHandlerFactory);
       @SuppressWarnings("resource")
       TrackingShardHandlerFactory trackingShardHandlerFactory =
           (TrackingShardHandlerFactory) factory;

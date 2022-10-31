@@ -555,14 +555,14 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
       throws Exception {
     final int expectNumFound =
         lastDocId - numDocsDeletedOrFailed; // lastDocId is effectively # generated docs
-    int totalNumFound = 0;
+    long totalNumFound = 0;
 
     final List<String> cols =
         new CollectionAdminRequest.ListAliases()
             .process(solrClient)
             .getAliasesAsLists()
             .get(getSaferTestName());
-    assert !cols.isEmpty();
+    assertFalse(cols.isEmpty());
 
     for (String category : categories) {
       List<String> cats =
@@ -581,7 +581,7 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
           String colTmp = col;
           // special case for tests... all of which have no more than one TRA dimension
           // This won't work if we decide to write a test with 2 time dimensions.
-          // (but that's an odd case so we'll wait)
+          // (but that's an odd case, so we'll wait)
           int traIndex = colTmp.indexOf(TRA) + TRA.length();
           while (colTmp.lastIndexOf("__") > traIndex) {
             colTmp = colTmp.substring(0, colTmp.lastIndexOf("__"));
@@ -622,7 +622,7 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
       throws SolrServerException, IOException {
     try {
       final UpdateResponse resp = solrClient.add(getAlias(), newDoc(category, timestamp));
-      // if we have a TolerantUpdateProcessor then we see it there)
+      // if we have a TolerantUpdateProcessor then we see it there
       final Object errors = resp.getResponseHeader().get("errors"); // Tolerant URP
       assertTrue(errors != null && errors.toString().contains(errorMsg));
     } catch (SolrException e) {

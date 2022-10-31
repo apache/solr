@@ -16,7 +16,10 @@
  */
 package org.apache.solr.common;
 
-import static org.apache.solr.common.ConfigNode.Helpers.*;
+import static org.apache.solr.common.ConfigNode.Helpers._bool;
+import static org.apache.solr.common.ConfigNode.Helpers._double;
+import static org.apache.solr.common.ConfigNode.Helpers._int;
+import static org.apache.solr.common.ConfigNode.Helpers._txt;
 
 import java.util.ArrayList;
 import java.util.Arrays;

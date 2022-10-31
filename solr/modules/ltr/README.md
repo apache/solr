@@ -25,4 +25,4 @@ deploy that model to Solr and use it to rerank your top X search results.
 # Getting Started With Solr Learning To Rank
 
 For information on how to get started with Solr LTR please see:
- * [Solr Reference Guide's section on Learning To Rank](https://solr.apache.org/guide/learning-to-rank.html)
+ * [Solr Reference Guide's section on Learning To Rank](https://solr.apache.org/guide/solr/latest/query-guide/learning-to-rank.html)

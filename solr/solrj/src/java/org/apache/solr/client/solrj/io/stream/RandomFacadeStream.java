@@ -56,7 +56,7 @@ public class RandomFacadeStream extends TupleStream implements Expressible {
     }
 
     // pull out known named params
-    Map<String, String> params = new HashMap<String, String>();
+    Map<String, String> params = new HashMap<>();
     for (StreamExpressionNamedParameter namedParam : namedParams) {
       if (!namedParam.getName().equals("zkHost")
           && !namedParam.getName().equals("buckets")
@@ -135,26 +135,32 @@ public class RandomFacadeStream extends TupleStream implements Expressible {
     return innerStream.toExplanation(factory);
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.innerStream.setStreamContext(context);
   }
 
+  @Override
   public List<TupleStream> children() {
     return innerStream.children();
   }
 
+  @Override
   public void open() throws IOException {
     innerStream.open();
   }
 
+  @Override
   public void close() throws IOException {
     innerStream.close();
   }
 
+  @Override
   public Tuple read() throws IOException {
     return innerStream.read();
   }
 
+  @Override
   public int getCost() {
     return 0;
   }

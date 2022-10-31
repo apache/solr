@@ -43,6 +43,7 @@ public class JWTIssuerConfigTest extends SolrTestCase {
   private Map<String, Object> testIssuerConfigMap;
   private String testIssuerJson;
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
@@ -68,6 +69,7 @@ public class JWTIssuerConfigTest extends SolrTestCase {
             + "  \"authorizationEndpoint\":\"https://issuer/authz\"}";
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     super.tearDown();

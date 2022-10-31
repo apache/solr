@@ -23,6 +23,7 @@ public interface TwoValueWorker extends ValueWorker {
 
   Object doWork(Object value1, Object value2) throws IOException;
 
+  @Override
   default Object doWork(Object... values) throws IOException {
     if (2 != values.length) {
       throw new IOException(

@@ -84,7 +84,7 @@ public class TestFiltering extends SolrTestCaseJ4 {
         if (live == null) {
           live = searcher.getLiveDocSet();
         }
-        assertTrue(set == live);
+        assertSame(set, live);
 
         QueryCommand cmd = new QueryCommand();
         cmd.setQuery(QParser.getParser(qstr, null, req).getQuery());
@@ -93,14 +93,14 @@ public class TestFiltering extends SolrTestCaseJ4 {
         QueryResult res = new QueryResult();
         searcher.search(res, cmd);
         set = res.getDocSet();
-        assertTrue(set == live);
+        assertSame(set, live);
 
         cmd.setQuery(QParser.getParser(qstr + " OR id:0", null, req).getQuery());
         cmd.setFilterList(QParser.getParser(qstr + " OR id:1", null, req).getQuery());
         res = new QueryResult();
         searcher.search(res, cmd);
         set = res.getDocSet();
-        assertTrue(set == live);
+        assertSame(set, live);
       }
 
     } finally {
@@ -358,7 +358,7 @@ public class TestFiltering extends SolrTestCaseJ4 {
     return ret;
   }
 
-  String makeRandomQuery(Model model, boolean mainQuery, boolean facetQuery) {
+  String makeRandomQuery(Model model, boolean facetQuery) {
 
     boolean cache = random().nextBoolean();
     int cost = cache ? 0 : random().nextBoolean() ? random().nextInt(200) : 0;
@@ -399,7 +399,7 @@ public class TestFiltering extends SolrTestCaseJ4 {
           }
         }
       } else {
-        // negative frange.. make it relatively small
+        // negative frange... make it relatively small
         l = random().nextInt(model.indexSize);
         u = Math.max(model.indexSize - 1, l + random().nextInt(Math.max(model.indexSize / 10, 2)));
 
@@ -493,18 +493,18 @@ public class TestFiltering extends SolrTestCaseJ4 {
       // sanity check
       assertJQ(req("q", "*:*"), "/response/numFound==" + model.indexSize);
 
-      int totalMatches = 0;
+      long totalMatches = 0;
       int nonZeros = 0;
       for (int qiter = 0; qiter < queryIter; qiter++) {
         model.clear();
         List<String> params = new ArrayList<>();
         params.add("q");
-        params.add(makeRandomQuery(model, true, false));
+        params.add(makeRandomQuery(model, false));
 
         int nFilters = random().nextInt(5);
         for (int i = 0; i < nFilters; i++) {
           params.add("fq");
-          params.add(makeRandomQuery(model, false, false));
+          params.add(makeRandomQuery(model, false));
         }
 
         boolean facet = random().nextBoolean();
@@ -517,7 +517,7 @@ public class TestFiltering extends SolrTestCaseJ4 {
           params.add("facet.query");
           params.add("{!key=multiSelect ex=t}*:*");
 
-          String facetQuery = makeRandomQuery(model, false, true);
+          String facetQuery = makeRandomQuery(model, true);
           if (facetQuery.startsWith("{!")) {
             facetQuery = "{!key=facetQuery " + facetQuery.substring(2);
           } else {

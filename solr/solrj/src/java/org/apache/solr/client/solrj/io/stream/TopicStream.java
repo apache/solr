@@ -24,6 +24,7 @@ import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -38,8 +39,8 @@ import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
@@ -54,11 +55,9 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -276,7 +275,10 @@ public class TopicStream extends CloudSolrStream implements Expressible {
       ModifiableSolrParams mParams = new ModifiableSolrParams(params);
       child.setExpression(
           mParams.getMap().entrySet().stream()
-              .map(e -> String.format(Locale.ROOT, "%s=%s", e.getKey(), e.getValue()))
+              .map(
+                  e ->
+                      String.format(
+                          Locale.ROOT, "%s=%s", e.getKey(), Arrays.toString(e.getValue())))
               .collect(Collectors.joining(",")));
       explanation.addChild(child);
     }
@@ -284,7 +286,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
     {
       // child 2 is a place where we store and read checkpoint info from
       StreamExplanation child = new StreamExplanation(getStreamNodeId() + "-checkpoint");
-      child.setFunctionName(String.format(Locale.ROOT, "solr (checkpoint store)"));
+      child.setFunctionName("solr (checkpoint store)");
       child.setImplementingClass("Solr/Lucene");
       child.setExpressionType(ExpressionType.DATASTORE);
       child.setExpression(
@@ -300,11 +302,13 @@ public class TopicStream extends CloudSolrStream implements Expressible {
     return explanation;
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     return l;
   }
 
+  @Override
   public void open() throws IOException {
     this.tuples = new TreeSet<>();
     this.solrStreams = new ArrayList<>();
@@ -318,7 +322,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
     if (streamContext.getSolrClientCache() != null) {
       cloudSolrClient = streamContext.getSolrClientCache().getCloudSolrClient(zkHost);
     } else {
-      final List<String> hosts = new ArrayList<String>();
+      final List<String> hosts = new ArrayList<>();
       hosts.add(zkHost);
       cloudSolrClient = new CloudLegacySolrClient.Builder(hosts, Optional.empty()).build();
       this.cloudSolrClient.connect();
@@ -362,6 +366,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
     }
   }
 
+  @Override
   public void close() throws IOException {
     try {
 
@@ -385,6 +390,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
     }
   }
 
+  @Override
   public Tuple read() throws IOException {
     Tuple tuple = _read();
 
@@ -414,18 +420,15 @@ public class TopicStream extends CloudSolrStream implements Expressible {
     return tuple;
   }
 
+  @Override
   public int getCost() {
     return 0;
   }
 
   private void getCheckpoints() throws IOException {
     this.checkpoints = new HashMap<>();
-    ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
-
-    Slice[] slices = CloudSolrStream.getSlices(this.collection, zkStateReader, false);
-
-    ClusterState clusterState = zkStateReader.getClusterState();
-    Set<String> liveNodes = clusterState.getLiveNodes();
+    Slice[] slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);
+    Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
 
     for (Slice slice : slices) {
       String sliceName = slice.getName();
@@ -501,11 +504,9 @@ public class TopicStream extends CloudSolrStream implements Expressible {
   }
 
   private void getPersistedCheckpoints() throws IOException {
-    ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
-    Slice[] slices = CloudSolrStream.getSlices(checkpointCollection, zkStateReader, false);
+    Slice[] slices = CloudSolrStream.getSlices(checkpointCollection, cloudSolrClient, false);
 
-    ClusterState clusterState = zkStateReader.getClusterState();
-    Set<String> liveNodes = clusterState.getLiveNodes();
+    Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
 
     OUTER:
     for (Slice slice : slices) {
@@ -513,10 +514,10 @@ public class TopicStream extends CloudSolrStream implements Expressible {
       for (Replica replica : replicas) {
         if (replica.getState() == Replica.State.ACTIVE
             && liveNodes.contains(replica.getNodeName())) {
-          HttpSolrClient httpClient =
+          SolrClient solrClient =
               streamContext.getSolrClientCache().getHttpSolrClient(replica.getCoreUrl());
           try {
-            SolrDocument doc = httpClient.getById(id);
+            SolrDocument doc = solrClient.getById(id);
             if (doc != null) {
               @SuppressWarnings({"unchecked"})
               List<String> checkpoints = (List<String>) doc.getFieldValue("checkpoint_ss");
@@ -534,10 +535,10 @@ public class TopicStream extends CloudSolrStream implements Expressible {
     }
   }
 
+  @Override
   protected void constructStreams() throws IOException {
     try {
-      ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
-      Slice[] slices = CloudSolrStream.getSlices(this.collection, zkStateReader, false);
+      Slice[] slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);
 
       ModifiableSolrParams mParams = new ModifiableSolrParams(params);
       mParams.set(DISTRIB, "false"); // We are the aggregator.
@@ -550,8 +551,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
 
       Random random = new Random();
 
-      ClusterState clusterState = zkStateReader.getClusterState();
-      Set<String> liveNodes = clusterState.getLiveNodes();
+      Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
 
       for (Slice slice : slices) {
         ModifiableSolrParams localParams = new ModifiableSolrParams(mParams);

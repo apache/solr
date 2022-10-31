@@ -16,7 +16,13 @@
  */
 package org.apache.solr.security.jwt;
 
-import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.*;
+import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.AUTZ_HEADER_PROBLEM;
+import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.CLAIM_MISMATCH;
+import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.JWT_VALIDATION_EXCEPTION;
+import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.NO_AUTZ_HEADER;
+import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.PASS_THROUGH;
+import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.PRINCIPAL_MISSING;
+import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.SCOPE_MISSING;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -136,9 +142,21 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     List<String> roles = Arrays.asList("group-one", "other-group", "group-three");
     claims.setStringListClaim(
         "roles", roles); // multi-valued claims work too and will end up as a JSON array
+
+    // Keycloak Style resource_access roles
+    HashMap<String, Object> solrMap = new HashMap<>();
+    solrMap.put("roles", Arrays.asList("user", "admin"));
+    HashMap<String, Object> resourceAccess = new HashMap<>();
+    resourceAccess.put("solr", solrMap);
+    claims.setClaim("resource_access", resourceAccess);
+
+    // Special claim with dots in key, should still be addressable non-nested
+    claims.setClaim("roles.with.dot", Arrays.asList("user", "admin"));
+
     return claims;
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
@@ -369,7 +387,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
     assertTrue(resp.getErrorMessage(), resp.isAuthenticated());
 
-    // When 'rolesClaim' is defined in config, then roles from that claim are used instead of claims
+    // When 'rolesClaim' is defined in config, then roles from that claim are used instead of scopes
     Principal principal = resp.getPrincipal();
     assertTrue(principal instanceof VerifiedUserRoles);
     Set<String> roles = ((VerifiedUserRoles) principal).getVerifiedRoles();
@@ -377,6 +395,37 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     assertTrue(roles.contains("group-one"));
     assertTrue(roles.contains("other-group"));
     assertTrue(roles.contains("group-three"));
+  }
+
+  @Test
+  public void rolesWithDotInKey() {
+    // Special case where a claim key contains dots without being nested
+    testConfig.put("rolesClaim", "roles.with.dot");
+    plugin.init(testConfig);
+    JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
+    assertTrue(resp.getErrorMessage(), resp.isAuthenticated());
+    Principal principal = resp.getPrincipal();
+    assertTrue(principal instanceof VerifiedUserRoles);
+    Set<String> roles = ((VerifiedUserRoles) principal).getVerifiedRoles();
+    assertEquals(2, roles.size());
+    assertTrue(roles.contains("user"));
+    assertTrue(roles.contains("admin"));
+  }
+
+  @Test
+  public void nestedRoles() {
+    testConfig.put("rolesClaim", "resource_access.solr.roles");
+    plugin.init(testConfig);
+    JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
+    assertTrue(resp.getErrorMessage(), resp.isAuthenticated());
+
+    // When 'rolesClaim' is defined in config, then roles from that claim are used instead of claims
+    Principal principal = resp.getPrincipal();
+    assertTrue(principal instanceof VerifiedUserRoles);
+    Set<String> roles = ((VerifiedUserRoles) principal).getVerifiedRoles();
+    assertEquals(2, roles.size());
+    assertTrue(roles.contains("user"));
+    assertTrue(roles.contains("admin"));
   }
 
   @Test

@@ -42,10 +42,12 @@ public class ExceptionStream extends TupleStream {
     this.stream = stream;
   }
 
+  @Override
   public List<TupleStream> children() {
     return null;
   }
 
+  @Override
   public void open() {
     try {
       stream.open();
@@ -54,6 +56,7 @@ public class ExceptionStream extends TupleStream {
     }
   }
 
+  @Override
   public Tuple read() {
     if (openException != null) {
       // There was an exception during the open.
@@ -79,14 +82,17 @@ public class ExceptionStream extends TupleStream {
         .withExpression("non-expressible");
   }
 
+  @Override
   public StreamComparator getStreamSort() {
     return this.stream.getStreamSort();
   }
 
+  @Override
   public void close() throws IOException {
     stream.close();
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.stream.setStreamContext(context);
   }

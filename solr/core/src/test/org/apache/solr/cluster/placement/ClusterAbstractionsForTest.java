@@ -17,9 +17,17 @@
 
 package org.apache.solr.cluster.placement;
 
-import java.util.*;
-import java.util.stream.Collectors;
-import org.apache.solr.cluster.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import org.apache.solr.cluster.Cluster;
+import org.apache.solr.cluster.Node;
+import org.apache.solr.cluster.Replica;
+import org.apache.solr.cluster.Shard;
+import org.apache.solr.cluster.SolrCollection;
 
 /**
  * Cluster abstractions independent of any internal SolrCloud abstractions to use in tests (of
@@ -65,11 +73,6 @@ class ClusterAbstractionsForTest {
   static class NodeImpl implements Node {
     public final String nodeName;
 
-    /** Transforms a collection of node names into a set of {@link Node} instances. */
-    static Set<Node> getNodes(Collection<String> nodeNames) {
-      return nodeNames.stream().map(NodeImpl::new).collect(Collectors.toSet());
-    }
-
     NodeImpl(String nodeName) {
       this.nodeName = nodeName;
     }
@@ -90,20 +93,15 @@ class ClusterAbstractionsForTest {
      * comparing node names given that new instances of {@link Node} are created with names equal to
      * existing instances (See {@link Builders.NodeBuilder#build()}).
      */
+    @Override
     public boolean equals(Object obj) {
-      if (obj == null) {
-        return false;
-      }
-      if (obj == this) {
-        return true;
-      }
-      if (obj.getClass() != getClass()) {
-        return false;
-      }
+      if (obj == this) return true;
+      if (!(obj instanceof NodeImpl)) return false;
       NodeImpl other = (NodeImpl) obj;
       return Objects.equals(this.nodeName, other.nodeName);
     }
 
+    @Override
     public int hashCode() {
       return Objects.hashCode(nodeName);
     }
@@ -217,16 +215,10 @@ class ClusterAbstractionsForTest {
       return shardState;
     }
 
+    @Override
     public boolean equals(Object obj) {
-      if (obj == null) {
-        return false;
-      }
-      if (obj == this) {
-        return true;
-      }
-      if (obj.getClass() != getClass()) {
-        return false;
-      }
+      if (obj == this) return true;
+      if (!(obj instanceof ShardImpl)) return false;
       ShardImpl other = (ShardImpl) obj;
       return Objects.equals(this.shardName, other.shardName)
           && Objects.equals(this.collection, other.collection)
@@ -235,6 +227,7 @@ class ClusterAbstractionsForTest {
           && Objects.equals(this.leader, other.leader);
     }
 
+    @Override
     public int hashCode() {
       return Objects.hash(shardName, collection, shardState);
     }
@@ -293,16 +286,10 @@ class ClusterAbstractionsForTest {
       return node;
     }
 
+    @Override
     public boolean equals(Object obj) {
-      if (obj == null) {
-        return false;
-      }
-      if (obj == this) {
-        return true;
-      }
-      if (obj.getClass() != getClass()) {
-        return false;
-      }
+      if (obj == this) return true;
+      if (!(obj instanceof ReplicaImpl)) return false;
       ReplicaImpl other = (ReplicaImpl) obj;
       return Objects.equals(this.replicaName, other.replicaName)
           && Objects.equals(this.coreName, other.coreName)
@@ -312,6 +299,7 @@ class ClusterAbstractionsForTest {
           && Objects.equals(this.node, other.node);
     }
 
+    @Override
     public int hashCode() {
       return Objects.hash(replicaName, coreName, shard, replicaType, replicaState, node);
     }

@@ -34,6 +34,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.search.CollapsingQParserPlugin.GroupHeadSelector;
 import org.apache.solr.search.CollapsingQParserPlugin.GroupHeadSelectorType;
+import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -334,8 +335,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
 
     List<Integer> boostedResults = new ArrayList<>();
 
-    for (int i = 0; i < resultsArray.length; i++) {
-      int result = resultsArray[i];
+    for (int result : resultsArray) {
       if (mergeBoost.boost(result)) {
         boostedResults.add(result);
       }
@@ -343,8 +343,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
 
     List<Integer> controlResults = new ArrayList<>();
 
-    for (int i = 0; i < resultsArray.length; i++) {
-      int result = resultsArray[i];
+    for (int result : resultsArray) {
       if (Arrays.binarySearch(boostedArray, result) > -1) {
         controlResults.add(result);
       }
@@ -355,24 +354,24 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
         if (!boostedResults.get(i).equals(controlResults.get(i))) {
           throw new Exception(
               "boosted results do not match control results, boostedResults size:"
-                  + boostedResults.toString()
+                  + boostedResults
                   + ", controlResults size:"
-                  + controlResults.toString());
+                  + controlResults);
         }
       }
     } else {
       throw new Exception(
           "boosted results do not match control results, boostedResults size:"
-              + boostedResults.toString()
+              + boostedResults
               + ", controlResults size:"
-              + controlResults.toString());
+              + controlResults);
     }
   }
 
   @Test
   public void testDoubleCollapse() {
-    testDoubleCollapse("group_s", "");
-    testDoubleCollapse("group_i", "");
+    testDoubleCollapse("group_s");
+    testDoubleCollapse("group_i");
   }
 
   /*
@@ -381,7 +380,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
    * the by finally method of the first collapse. This specific test is meant to confirm that any feature
    * that causes searches to not visit each segment (such as early query termination) doesn't break collapse.
    */
-  private void testDoubleCollapse(String group, String hint) {
+  private void testDoubleCollapse(String group) {
     String[] doc = {
       "id", "1", "term_s", "YYYY", group, "1", "test_i", "5", "test_l", "10", "test_f", "2000"
     };
@@ -421,8 +420,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("q", "id:(1 2 5)");
-    params.add("fq", "{!collapse cost=200 field=term_s " + hint + "}");
-    params.add("fq", "{!collapse cost=400 field=" + group + "" + hint + "}");
+    params.add("fq", "{!collapse cost=200 field=term_s }");
+    params.add("fq", "{!collapse cost=400 field=" + group + "}");
 
     params.add("defType", "edismax");
     params.add("bf", "field(test_i)");
@@ -431,8 +430,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
 
     params = new ModifiableSolrParams();
     params.add("q", "id:(1 2 5)");
-    params.add("fq", "{!collapse cost=200 max=test_i field=term_s " + hint + "}");
-    params.add("fq", "{!collapse cost=400 max=test_i field=" + group + "" + hint + "}");
+    params.add("fq", "{!collapse cost=200 max=test_i field=term_s }");
+    params.add("fq", "{!collapse cost=400 max=test_i field=" + group + "}");
 
     params.add("defType", "edismax");
     params.add("bf", "field(test_i)");
@@ -660,7 +659,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[3]/str[@name='id'][.='2']",
         "//result/doc[4]/str[@name='id'][.='6']");
 
-    // Non trivial sort local param for picking group head
+    // Non-trivial sort local param for picking group head
     params = new ModifiableSolrParams();
     params.add("q", "*:*");
     params.add(
@@ -972,7 +971,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
                           "id")));
             });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
-    assertThat(ex.getMessage(), containsString("Can not use collapse with Grouping enabled"));
+    MatcherAssert.assertThat(
+        ex.getMessage(), containsString("Can not use collapse with Grouping enabled"));
 
     // delete the elevated docs, confirm collapsing still works
     assertU(delI("1"));
@@ -1139,21 +1139,21 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     s = GroupHeadSelector.build(params("max", "foo_s"));
     assertEquals(GroupHeadSelectorType.MAX, s.type);
     assertEquals("foo_s", s.selectorText);
-    assertFalse(s.equals(GroupHeadSelector.build(params("min", "foo_s", "other", "stuff"))));
+    assertNotEquals(s, GroupHeadSelector.build(params("min", "foo_s", "other", "stuff")));
 
     s = GroupHeadSelector.build(params());
     assertEquals(GroupHeadSelectorType.SCORE, s.type);
     assertNotNull(s.selectorText);
     assertEquals(GroupHeadSelector.build(params()), s);
-    assertFalse(s.equals(GroupHeadSelector.build(params("min", "BAR_s"))));
+    assertNotEquals(s, GroupHeadSelector.build(params("min", "BAR_s")));
 
     s = GroupHeadSelector.build(params("sort", "foo_s asc"));
     assertEquals(GroupHeadSelectorType.SORT, s.type);
     assertEquals("foo_s asc", s.selectorText);
     assertEquals(GroupHeadSelector.build(params("sort", "foo_s asc")), s);
-    assertFalse(s.equals(GroupHeadSelector.build(params("sort", "BAR_s asc"))));
-    assertFalse(s.equals(GroupHeadSelector.build(params("min", "BAR_s"))));
-    assertFalse(s.equals(GroupHeadSelector.build(params())));
+    assertNotEquals(s, GroupHeadSelector.build(params("sort", "BAR_s asc")));
+    assertNotEquals(s, GroupHeadSelector.build(params("min", "BAR_s")));
+    assertNotEquals(s, GroupHeadSelector.build(params()));
 
     assertEquals(
         GroupHeadSelector.build(params("sort", "foo_s asc")).hashCode(),
@@ -1346,8 +1346,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     // function based query for deterministic scores
     final String q = "{!func}sum(asc_i,42)";
 
-    // results should be the same regardless of wether we collapse on a string field or numeric
-    // field (docs have identicle group identifiers in both fields)
+    // results should be the same regardless of whether we collapse on a string field or numeric
+    // field (docs have identical group identifiers in both fields)
     for (String f : Arrays.asList("group_i", "group_s")) {
 
       // these group head selectors should all result in identical group heads for our query...

@@ -48,6 +48,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
+import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -218,7 +219,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
 
       restore.setConfigName("confFaulty");
       assertEquals(RequestStatusState.FAILED, restore.processAndWait(solrClient, 30));
-      assertThat(
+      MatcherAssert.assertThat(
           "Failed collection is still in the clusterstate: "
               + cluster
                   .getSolrClient()

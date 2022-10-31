@@ -33,6 +33,7 @@ public abstract class RecursiveBooleanEvaluator extends RecursiveEvaluator {
     super(expression, factory);
   }
 
+  @Override
   public Object normalizeInputType(Object value) throws StreamEvaluatorException {
     if (null == value) {
       return null;
@@ -41,6 +42,7 @@ public abstract class RecursiveBooleanEvaluator extends RecursiveEvaluator {
     }
   }
 
+  @Override
   public Object doWork(Object... values) throws IOException {
     if (values.length < 2) {
       String message = null;
@@ -99,32 +101,38 @@ public abstract class RecursiveBooleanEvaluator extends RecursiveEvaluator {
   }
 
   public interface NullChecker extends Checker {
+    @Override
     default boolean isNullAllowed() {
       return true;
     }
 
+    @Override
     default boolean isCorrectType(Object value) {
       return true;
     }
 
+    @Override
     default boolean test(Object left, Object right) {
       return null == left && null == right;
     }
   }
 
   public interface BooleanChecker extends Checker {
+    @Override
     default boolean isCorrectType(Object value) {
       return value instanceof Boolean;
     }
   }
 
   public interface NumberChecker extends Checker {
+    @Override
     default boolean isCorrectType(Object value) {
       return value instanceof Number;
     }
   }
 
   public interface StringChecker extends Checker {
+    @Override
     default boolean isCorrectType(Object value) {
       return value instanceof String;
     }

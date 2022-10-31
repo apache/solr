@@ -109,7 +109,8 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
     IOUtils.closeQuietly(fs);
     fs = null;
     try {
-      deleteCore();
+      // Make sure to clean up test resources before shutting down HDFS
+      SolrTestCaseJ4.teardownTestCases();
     } finally {
       try {
         HdfsTestUtil.teardownClass(dfsCluster);
@@ -117,8 +118,6 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
         dfsCluster = null;
         hdfsUri = null;
         System.clearProperty("solr.ulog.dir");
-        System.clearProperty("test.build.data");
-        System.clearProperty("test.cache.data");
       }
     }
   }
@@ -659,7 +658,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
     assertU(commit());
     long v2 = getVer(req("q", "id:D1"));
 
-    assert (v2 > v1);
+    assertTrue(v2 > v1);
 
     assertJQ(req("qt", "/get", "getVersions", "2"), "/versions==[" + v2 + "," + v1a + "]");
   }
@@ -719,6 +718,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("JdkObsolete")
   public void testRemoveOldLogs() throws Exception {
     try {
       TestInjection.skipIndexWriterCommitOnClose = true;

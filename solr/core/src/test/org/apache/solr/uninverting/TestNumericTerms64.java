@@ -100,7 +100,7 @@ public class TestNumericTerms64 extends SolrTestCase {
       field4.setLongValue(val);
       field2.setLongValue(val);
 
-      val = l - (noDocs / 2);
+      val = (long) l - (noDocs / 2);
       writer.addDocument(doc);
     }
     Map<String, Type> map = new HashMap<>();
@@ -130,7 +130,7 @@ public class TestNumericTerms64 extends SolrTestCase {
   private void testSorting(int precisionStep) throws Exception {
     String field = "field" + precisionStep;
     // 10 random tests, the index order is ascending,
-    // so using a reverse sort field should retun descending documents
+    // so using a reverse sort field should return descending documents
     int num = TestUtil.nextInt(random(), 10, 20);
     for (int i = 0; i < num; i++) {
       long lower = (long) (random().nextDouble() * noDocs * distance) + startOffset;

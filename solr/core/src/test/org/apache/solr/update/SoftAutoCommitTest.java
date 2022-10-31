@@ -18,13 +18,12 @@ package org.apache.solr.update;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static org.junit.Assert.assertEquals;
 
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
@@ -33,6 +32,7 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.TestHarness;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
  *       to affect the expectation of how slow B-&gt;C will be
  * </ul>
  */
-@Slow
+@Nightly // we could drop this by testing only one NONE/SOFT/HARD each time based on seed
 public class SoftAutoCommitTest extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -82,11 +82,7 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
     monitor.searcher.poll(5000, MILLISECONDS);
   }
 
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-  }
-
+  @Test
   public void testSoftAndHardCommitMaxDocs() throws Exception {
 
     // NOTE WHEN READING THIS TEST...
@@ -97,7 +93,7 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
     final int hardCommitMaxDocs = 7;
 
     // remainder of test designed with these assumptions
-    assert softCommitMaxDocs < hardCommitMaxDocs;
+    assertTrue(softCommitMaxDocs < hardCommitMaxDocs);
 
     CommitTracker hardTracker = updater.commitTracker;
     CommitTracker softTracker = updater.softCommitTracker;
@@ -164,14 +160,17 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
     monitor.clear();
   }
 
+  @Test
   public void testSoftAndHardCommitMaxTimeMixedAdds() throws Exception {
     doTestSoftAndHardCommitMaxTimeMixedAdds(CommitWithinType.NONE);
   }
 
+  @Test
   public void testSoftCommitWithinAndHardCommitMaxTimeMixedAdds() throws Exception {
     doTestSoftAndHardCommitMaxTimeMixedAdds(CommitWithinType.SOFT);
   }
 
+  @Test
   public void testHardCommitWithinAndSoftCommitMaxTimeMixedAdds() throws Exception {
     doTestSoftAndHardCommitMaxTimeMixedAdds(CommitWithinType.HARD);
   }
@@ -310,14 +309,17 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
     monitor.searcher.clear();
   }
 
+  @Test
   public void testSoftAndHardCommitMaxTimeDelete() throws Exception {
     doTestSoftAndHardCommitMaxTimeDelete(CommitWithinType.NONE);
   }
 
+  @Test
   public void testSoftCommitWithinAndHardCommitMaxTimeDelete() throws Exception {
     doTestSoftAndHardCommitMaxTimeDelete(CommitWithinType.SOFT);
   }
 
+  @Test
   public void testHardCommitWithinAndSoftCommitMaxTimeDelete() throws Exception {
     doTestSoftAndHardCommitMaxTimeDelete(CommitWithinType.HARD);
   }
@@ -332,9 +334,6 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
     CommitTracker hardTracker = updater.commitTracker;
     CommitTracker softTracker = updater.softCommitTracker;
     updater.setCommitWithinSoftCommit(commitWithinType.equals(CommitWithinType.SOFT));
-
-    int startingHardCommits = hardTracker.getCommitCount();
-    int startingSoftCommits = softTracker.getCommitCount();
 
     softTracker.setTimeUpperBound(
         commitWithinType.equals(CommitWithinType.SOFT) ? -1 : softCommitWaitMillis);
@@ -432,14 +431,17 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
     monitor.searcher.clear();
   }
 
+  @Test
   public void testSoftAndHardCommitMaxTimeRapidAdds() throws Exception {
     doTestSoftAndHardCommitMaxTimeRapidAdds(CommitWithinType.NONE);
   }
 
+  @Test
   public void testSoftCommitWithinAndHardCommitMaxTimeRapidAdds() throws Exception {
     doTestSoftAndHardCommitMaxTimeRapidAdds(CommitWithinType.SOFT);
   }
 
+  @Test
   public void testHardCommitWithinAndSoftCommitMaxTimeRapidAdds() throws Exception {
     doTestSoftAndHardCommitMaxTimeRapidAdds(CommitWithinType.HARD);
   }
@@ -521,10 +523,7 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
       final BlockingQueue<Long> queue)
       throws InterruptedException {
 
-    assert 0 < maxNumCommits;
-
-    // do all our math/comparisons in Nanos...
-    final long commitWaitNanos = NANOSECONDS.convert(commitWaitMillis, MILLISECONDS);
+    assertTrue(0 < maxNumCommits);
 
     // these will be modified in each iteration of our assertion loop
     long prevTimestampNanos = startTimestampNanos;
@@ -605,7 +604,7 @@ class MockEventListener implements SolrEventListener {
   public final BlockingQueue<Long> searcher = new LinkedBlockingQueue<>(1000);
 
   // if non enpty, then at least one offer failed (queues full)
-  private StringBuffer fail = new StringBuffer();
+  private final StringBuilder fail = new StringBuilder();
 
   public MockEventListener() {
     /* NOOP */
@@ -614,19 +613,19 @@ class MockEventListener implements SolrEventListener {
   @Override
   public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {
     Long now = System.nanoTime();
-    if (!searcher.offer(now)) fail.append(", newSearcher @ " + now);
+    if (!searcher.offer(now)) fail.append(", newSearcher @ ").append(now);
   }
 
   @Override
   public void postCommit() {
     Long now = System.nanoTime();
-    if (!hard.offer(now)) fail.append(", hardCommit @ " + now);
+    if (!hard.offer(now)) fail.append(", hardCommit @ ").append(now);
   }
 
   @Override
   public void postSoftCommit() {
     Long now = System.nanoTime();
-    if (!soft.offer(now)) fail.append(", softCommit @ " + now);
+    if (!soft.offer(now)) fail.append(", softCommit @ ").append(now);
   }
 
   public void clear() {
@@ -637,6 +636,6 @@ class MockEventListener implements SolrEventListener {
   }
 
   public void assertSaneOffers() {
-    assertEquals("Failure of MockEventListener" + fail.toString(), 0, fail.length());
+    SolrTestCaseJ4.assertEquals("Failure of MockEventListener" + fail.toString(), 0, fail.length());
   }
 }

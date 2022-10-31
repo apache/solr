@@ -27,7 +27,11 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.cloud.CollectionStatePredicate;
+import org.apache.solr.common.cloud.CollectionStateWatcher;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -57,6 +61,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     useFactory("solr.StandardDirectoryFactory");
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
@@ -263,7 +268,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     log.info("Starting old node 2");
     cluster.startJettySolrRunner(oldNode);
     waitForState("", collectionName, clusterShape(1, 2));
-    // invoke statewatcher explicitly to avoid race condition where the assert happens before the
+    // invoke statewatcher explicitly to avoid race condition when the assert happens before the
     // state watcher is invoked by ZkStateReader
     ZkStateReader.from(solrClient).registerCollectionStateWatcher(collectionName, stateWatcher);
     assertNull(
@@ -295,12 +300,9 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
               if (jettySolrRunner.getNodeName().equals(replica.getNodeName())) {
                 SolrDispatchFilter solrDispatchFilter = jettySolrRunner.getSolrDispatchFilter();
                 try (SolrCore core = solrDispatchFilter.getCores().getCore(coreName)) {
-                  if (core.getSolrConfig().useColdSearcher) {
-                    log.error(
-                        "useColdSearcher is enabled! It should not be enabled for this test!");
-                    assert false;
-                    return false;
-                  }
+                  assertFalse(
+                      "useColdSearcher is enabled! It should not be enabled for this test!",
+                      core.getSolrConfig().useColdSearcher);
                   if (log.isInfoEnabled()) {
                     log.info("Found SolrCore: {}, id: {}", core.getName(), core);
                   }

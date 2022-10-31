@@ -21,7 +21,6 @@ import static org.apache.solr.common.params.CommonParams.SORT;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -274,6 +273,7 @@ public class MoreLikeThisComponent extends SearchComponent {
     // hmm...we are ordering by scores that are not really comparable...
     Comparator<SolrDocument> c =
         new Comparator<SolrDocument>() {
+          @Override
           public int compare(SolrDocument o1, SolrDocument o2) {
             Float f1 = getFloat(o1);
             Float f2 = getFloat(o2);
@@ -292,7 +292,7 @@ public class MoreLikeThisComponent extends SearchComponent {
           }
         };
 
-    Collections.sort(l, c);
+    l.sort(c);
 
     // Truncate list to maxSize
     if (l.size() > maxSize) {

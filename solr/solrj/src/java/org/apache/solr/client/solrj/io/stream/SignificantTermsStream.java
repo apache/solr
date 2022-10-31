@@ -21,7 +21,6 @@ import static org.apache.solr.common.params.CommonParams.DISTRIB;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -31,8 +30,8 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -238,11 +237,13 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
     this.minTermLength = minTermLength;
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.cache = context.getSolrClientCache();
     this.streamContext = context;
   }
 
+  @Override
   public void open() throws IOException {
     if (cache == null) {
       isCloseCache = true;
@@ -256,6 +257,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
             new SolrNamedThreadFactory("SignificantTermsStream"));
   }
 
+  @Override
   public List<TupleStream> children() {
     return null;
   }
@@ -281,6 +283,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
     return futures;
   }
 
+  @Override
   public void close() throws IOException {
     if (isCloseCache) {
       cache.close();
@@ -290,6 +293,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
+  @Override
   public StreamComparator getStreamSort() {
     return null;
   }
@@ -303,6 +307,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
         .withExpression(toExpression(factory).toString());
   }
 
+  @Override
   public Tuple read() throws IOException {
     try {
       if (tupleIterator == null) {
@@ -356,7 +361,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
           maps.add(map);
         }
 
-        Collections.sort(maps, new ScoreComp());
+        maps.sort(new ScoreComp());
         List<Tuple> tuples = new ArrayList<>();
         for (Map<String, Object> map : maps) {
           if (tuples.size() == numTerms) break;
@@ -374,6 +379,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
   }
 
   private static class ScoreComp implements Comparator<Map<String, ?>> {
+    @Override
     public int compare(Map<String, ?> a, Map<String, ?> b) {
       Float scorea = (Float) a.get("score");
       Float scoreb = (Float) b.get("score");
@@ -409,9 +415,10 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
       this.minTermLength = minTermLength;
     }
 
+    @Override
     public NamedList<?> call() throws Exception {
       ModifiableSolrParams params = new ModifiableSolrParams();
-      HttpSolrClient solrClient = cache.getHttpSolrClient(baseUrl);
+      SolrClient solrClient = cache.getHttpSolrClient(baseUrl);
 
       params.add(DISTRIB, "false");
       params.add("fq", "{!significantTerms}");

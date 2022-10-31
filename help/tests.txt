@@ -68,17 +68,17 @@ Test groups
 -----------
 
 Tests can be filtered by an annotation they're marked with.
-Some test group annotations include: @AwaitsFix, @Nightly, @Slow
+Some test group annotations include: @AwaitsFix, @Nightly, @Monster
 
 This uses filtering infrastructure on the *runner* (randomizedtesting), 
 not gradle's built-in mechanisms (but it can be combined with "--tests").
-For example, run all solr-core tests annotated as @Slow:
+For example, run all solr-core tests annotated as @Nightly:
 
-gradlew -p solr/core test -Ptests.filter=@Slow
+gradlew -p solr/core test -Ptests.filter=@Nightly
 
 Test group filters can be combined into Boolean expressions:
 
-gradlew -p solr/core test "default and not(@awaitsfix or @slow)"
+gradlew -p solr/core test -Ptests.filter="default and not(@awaitsfix)"
 
 
 Reiteration ("beasting")

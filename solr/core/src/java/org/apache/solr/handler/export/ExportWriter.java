@@ -179,6 +179,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
   }
 
+  @Override
   public void write(OutputStream os) throws IOException {
     try {
       _write(os);
@@ -238,7 +239,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     // obscure a condition to handle as part of this patch, if someone wants to pursue it can be
     // reproduced with:
     // ant test  -Dtestcase=StreamingTest -Dtests.method=testAllValidExportTypes
-    // -Dtests.seed=10F13879D0D1D6AD -Dtests.slow=true -Dtests.locale=es-PA
+    // -Dtests.seed=10F13879D0D1D6AD -Dtests.locale=es-PA
     // -Dtests.timezone=America/Bahia_Banderas -Dtests.asserts=true -Dtests.file.encoding=ISO-8859-1
     // You'll have to uncomment the if below to hit the null pointer exception.
     // This is such an unusual case (i.e. an empty index) that catching this concdition here is
@@ -804,7 +805,9 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         int docId;
         while ((docId = it.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
           this.sortDoc.setValues(docId);
-          if (top.lessThan(this.sortDoc)) {
+          // Always set the top doc if previously not set, otherwise
+          // set the top if the sortDoc is greater than current
+          if (top.lessThan(this.sortDoc) || top.docId == -1) {
             top.setValues(this.sortDoc);
             top = queue.updateTop();
           }
@@ -829,10 +832,12 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   }
 
   public static class IgnoreException extends IOException {
+    @Override
     public void printStackTrace(PrintWriter pw) {
       pw.print("Early Client Disconnect");
     }
 
+    @Override
     public String getMessage() {
       return "Early Client Disconnect";
     }

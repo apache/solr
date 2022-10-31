@@ -377,7 +377,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
       fail("should have failed due to no nodes with the types: " + rsp);
     } catch (Exception e) {
       assertTrue(
-          "should contain 'no nodes with types':" + e.toString(),
+          "should contain 'no nodes with types':" + e,
           e.toString().contains("no nodes with types"));
     }
     System.setProperty(AffinityPlacementConfig.NODE_TYPE_SYSPROP, "type_0");
@@ -467,9 +467,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
                         Optional<Double> indexSizeOpt =
                             replicaMetrics.getReplicaMetric(ReplicaMetricImpl.INDEX_SIZE_GB);
                         assertTrue("indexSize", indexSizeOpt.isPresent());
-                        assertTrue(
-                            "wrong type, expected Double but was " + indexSizeOpt.get().getClass(),
-                            indexSizeOpt.get() instanceof Double);
+                        indexSizeOpt.get();
                         assertTrue(
                             "indexSize should be > 0 but was " + indexSizeOpt.get(),
                             indexSizeOpt.get() > 0);

@@ -19,7 +19,6 @@ package org.apache.solr.handler.admin;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.solr.api.ApiBag.EMPTY_SPEC;
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.common.params.CommonParams.COLLECTIONS_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.CONFIGSETS_HANDLER_PATH;
@@ -62,7 +61,6 @@ import org.apache.solr.handler.CollectionsAPI;
 import org.apache.solr.handler.PingRequestHandler;
 import org.apache.solr.handler.SchemaHandler;
 import org.apache.solr.handler.SolrConfigHandler;
-import org.apache.solr.handler.api.ApiRegistrar;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
@@ -82,8 +80,9 @@ public class TestApiFramework extends SolrTestCaseJ4 {
         new TestCollectionAPIs.MockCollectionsHandler();
     containerHandlers.put(COLLECTIONS_HANDLER_PATH, collectionsHandler);
     containerHandlers.getApiBag().registerObject(new CollectionsAPI(collectionsHandler));
-    ApiRegistrar.registerCollectionApis(containerHandlers.getApiBag(), collectionsHandler);
-    ApiRegistrar.registerShardApis(containerHandlers.getApiBag(), collectionsHandler);
+    for (Api api : collectionsHandler.getApis()) {
+      containerHandlers.getApiBag().register(api);
+    }
     containerHandlers.put(CORES_HANDLER_PATH, new CoreAdminHandler(mockCC));
     containerHandlers.put(CONFIGSETS_HANDLER_PATH, new ConfigSetsHandler(mockCC));
     out.put("getRequestHandlers", containerHandlers);
@@ -124,10 +123,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     api = V2HttpCall.getApiInfo(containerHandlers, "/collections/hello", "POST", null, parts);
     assertConditions(
         api.getSpec(),
-        Map.of(
-            "/methods[0]", "POST",
-            "/commands/add-replica-property", NOT_NULL,
-            "/commands/delete-replica-property", NOT_NULL));
+        Map.of("/methods[0]", "POST", "/commands/delete-replica-property", NOT_NULL));
     assertEquals("hello", parts.get("collection"));
 
     api =
@@ -137,8 +133,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     assertEquals("shard1", parts.get("shard"));
     assertEquals("replica1", parts.get("replica"));
 
-    SolrQueryResponse rsp =
-        invoke(containerHandlers, null, "/collections/_introspect", GET, mockCC);
+    SolrQueryResponse rsp = invoke(containerHandlers, null, "/collections/_introspect", mockCC);
 
     Set<String> methodNames = new HashSet<>();
     methodNames.add(rsp.getValues()._getStr("/spec[0]/methods[0]", null));
@@ -152,26 +147,11 @@ public class TestApiFramework extends SolrTestCaseJ4 {
 
     rsp =
         invoke(
-            coreHandlers,
-            "/schema/_introspect",
-            "/collections/hello/schema/_introspect",
-            GET,
-            mockCC);
+            coreHandlers, "/schema/_introspect", "/collections/hello/schema/_introspect", mockCC);
     methodNames.add(rsp.getValues()._getStr("/spec[0]/methods[0]", null));
     methodNames.add(rsp.getValues()._getStr("/spec[1]/methods[0]", null));
     assertTrue(methodNames.contains("POST"));
     assertTrue(methodNames.contains("GET"));
-
-    rsp = invoke(coreHandlers, "/", "/collections/hello/_introspect", GET, mockCC);
-    assertConditions(
-        rsp.getValues().asMap(2),
-        Map.of(
-            "/availableSubPaths", NOT_NULL,
-            "availableSubPaths /collections/hello/config/{component}", NOT_NULL,
-            "availableSubPaths /collections/hello/schema", NOT_NULL,
-            "availableSubPaths /collections/hello/shards", NOT_NULL,
-            "availableSubPaths /collections/hello/shards/{shard}", NOT_NULL,
-            "availableSubPaths /collections/hello/shards/{shard}/{replica}", NOT_NULL));
   }
 
   public void testPayload() {
@@ -278,7 +258,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
       path = "/node/filestore/*",
       method = SolrRequest.METHOD.GET,
       permission = PermissionNameProvider.Name.ALL)
-  public class DummyTest {
+  public static class DummyTest {
     @Command
     public void read(SolrQueryRequest req, SolrQueryResponse rsp) {
       rsp.add("FSRead.called", "true");
@@ -286,7 +266,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     }
   }
 
-  public class DummyTest1 {
+  public static class DummyTest1 {
     @EndPoint(
         path = "/node/filestore/*",
         method = SolrRequest.METHOD.GET,
@@ -361,7 +341,6 @@ public class TestApiFramework extends SolrTestCaseJ4 {
       PluginBag<SolrRequestHandler> reqHandlers,
       String path,
       String fullPath,
-      SolrRequest.METHOD method,
       CoreContainer mockCC) {
     HashMap<String, String> parts = new HashMap<>();
     boolean containerHandlerLookup = mockCC.getRequestHandlers() == reqHandlers;

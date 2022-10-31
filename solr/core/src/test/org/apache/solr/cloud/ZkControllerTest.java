@@ -29,15 +29,19 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ClusterProperties;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.*;
+import org.apache.solr.core.CloudConfig;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -50,19 +54,16 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@Slow
 @SolrTestCaseJ4.SuppressSSL
 public class ZkControllerTest extends SolrTestCaseJ4 {
-
-  private static final String COLLECTION_NAME = "collection1";
 
   static final int TIMEOUT = 10000;
 
   @BeforeClass
-  public static void beforeClass() throws Exception {}
+  public static void beforeClass() {}
 
   @AfterClass
-  public static void afterClass() throws Exception {}
+  public static void afterClass() {}
 
   public void testNodeNameUrlConversion() throws Exception {
 
@@ -204,15 +205,14 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     }
   }
 
-  @Slow
   @LogLevel(value = "org.apache.solr.cloud=DEBUG;org.apache.solr.cloud.overseer=DEBUG")
   public void testPublishAndWaitForDownStates() throws Exception {
 
     /*
     This test asserts that if zkController.publishAndWaitForDownStates uses only core name to check if all local
     cores are down then the method will return immediately but if it uses coreNodeName (as it does after SOLR-6665 then
-    the method will timeout).
-    We setup the cluster state in such a way that two replicas with same core name exist on non-existent nodes
+    the method will time out).
+    We set up the cluster state in such a way that two replicas with same core name exist on non-existent nodes
     and core container also has a dummy core that has the same core name. The publishAndWaitForDownStates before SOLR-6665
     would only check the core names and therefore return immediately but after SOLR-6665 it should time out.
      */
@@ -258,7 +258,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
         zkController
             .getZkClient()
             .makePath(
-                ZkStateReader.getCollectionPathRoot(collectionName),
+                DocCollection.getCollectionPathRoot(collectionName),
                 new byte[0],
                 CreateMode.PERSISTENT,
                 true);
@@ -409,7 +409,6 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
   private static class MockCoreContainer extends CoreContainer {
     UpdateShardHandler updateShardHandler =
         new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
-    SolrMetricManager metricManager;
 
     public MockCoreContainer() {
       super(SolrXmlConfig.fromString(TEST_PATH(), "<solr/>"));

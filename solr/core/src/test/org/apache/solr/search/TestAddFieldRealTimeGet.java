@@ -25,17 +25,14 @@ import org.junit.Before;
 
 public class TestAddFieldRealTimeGet extends TestRTGBase {
 
-  private static File tmpSolrHome;
-  private static File tmpConfDir;
-
   private static final String collection = "collection1";
   private static final String confDir = collection + "/conf";
 
   @Before
-  private void initManagedSchemaCore() throws Exception {
+  public void initManagedSchemaCore() throws Exception {
     final String tmpSolrHomePath = createTempDir().toFile().getAbsolutePath();
-    tmpSolrHome = new File(tmpSolrHomePath).getAbsoluteFile();
-    tmpConfDir = new File(tmpSolrHome, confDir);
+    File tmpSolrHome = new File(tmpSolrHomePath).getAbsoluteFile();
+    File tmpConfDir = new File(tmpSolrHome, confDir);
     File testHomeConfDir = new File(TEST_HOME(), confDir);
     final String configFileName = "solrconfig-managed-schema.xml";
     final String schemaFileName = "schema-id-and-version-fields-only.xml";

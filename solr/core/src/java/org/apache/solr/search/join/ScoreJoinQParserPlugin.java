@@ -52,18 +52,19 @@ import org.apache.solr.util.RefCounted;
  * ScoreMode)}. It runs subordinate query and collects values of "from" field and scores, then it
  * lookups these collected values in "to" field, and yields aggregated scores. Local parameters are
  * similar to {@link JoinQParserPlugin} <a
- * href="https://solr.apache.org/guide/join-query-parser.html">{!join}</a> This plugin doesn't have
- * own name, and is called by specifying local parameter <code>{!join score=...}...</code>. Note:
- * this parser is invoked even if you specify <code>score=none</code>. <br>
+ * href="https://solr.apache.org/guide/solr/latest/query-guide/join-query-parser.html">{!join}</a>
+ * This plugin doesn't have its own name, and is called by specifying local parameter <code>
+ * {!join score=...}...</code>. Note: this parser is invoked even if you specify <code>score=none
+ * </code>. <br>
  * Example:<code>q={!join from=manu_id_s to=id score=total}foo</code>
  *
  * <ul>
  *   <li>from - "foreign key" field name to collect values while enumerating subordinate query
  *       (denoted as <code>foo</code> in example above). it's better to have this field declared as
  *       <code>type="string" docValues="true"</code>. note: if <a
- *       href="https://solr.apache.org/guide/docvalues.html">docValues</a> are not enabled for this
- *       field, it will work anyway, but it costs some memory for {@link UninvertingReader}. Also,
- *       numeric doc values are not supported until <a
+ *       href="https://solr.apache.org/guide/solr/latest/indexing-guide/docvalues.html">docValues</a>
+ *       are not enabled for this field, it will work anyway, but it costs some memory for {@link
+ *       UninvertingReader}. Also, numeric doc values are not supported until <a
  *       href="https://issues.apache.org/jira/browse/LUCENE-5868">LUCENE-5868</a>. Thus, it only
  *       supports {@link DocValuesType#SORTED}, {@link DocValuesType#SORTED_SET}, {@link
  *       DocValuesType#BINARY}.
@@ -138,13 +139,10 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     public boolean equals(Object obj) {
       if (this == obj) return true;
       if (!super.equals(obj)) return false;
-      if (getClass() != obj.getClass()) return false;
+      if (!(obj instanceof OtherCoreJoinQuery)) return false;
       OtherCoreJoinQuery other = (OtherCoreJoinQuery) obj;
-      if (fromCoreOpenTime != other.fromCoreOpenTime) return false;
-      if (fromIndex == null) {
-        if (other.fromIndex != null) return false;
-      } else if (!fromIndex.equals(other.fromIndex)) return false;
-      return true;
+      return (fromCoreOpenTime == other.fromCoreOpenTime)
+          && Objects.equals(fromIndex, other.fromIndex);
     }
 
     @Override

@@ -27,7 +27,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.TermsParams;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.PointMerger;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -82,7 +81,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testEmptyLower() throws Exception {
+  public void testEmptyLower() {
     assertQ(
         req("indent", "true", "qt", "/terms", "terms.fl", "lowerfilt", "terms.upper", "b"),
         "count(//lst[@name='lowerfilt']/*)=6",
@@ -95,7 +94,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testMultipleFields() throws Exception {
+  public void testMultipleFields() {
     assertQ(
         req(
             "indent",
@@ -113,7 +112,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testUnlimitedRows() throws Exception {
+  public void testUnlimitedRows() {
     assertQ(
         req("indent", "true", "qt", "/terms", "terms.fl", "lowerfilt", "terms.fl", "standardfilt"),
         "count(//lst[@name='lowerfilt']/*)=9",
@@ -135,7 +134,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testPrefix() throws Exception {
+  public void testPrefix() {
     assertQ(
         req(
             "indent",
@@ -163,7 +162,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRegexp() throws Exception {
+  public void testRegexp() {
     assertQ(
         req(
             "indent",
@@ -216,7 +215,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRegexpWithFlags() throws Exception {
+  public void testRegexpWithFlags() {
     // TODO: there are no uppercase or mixed-case terms in the index!
     assertQ(
         req(
@@ -242,7 +241,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSortCount() throws Exception {
+  public void testSortCount() {
     assertQ(
         req(
             "indent",
@@ -266,7 +265,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testTermsList() throws Exception {
+  public void testTermsList() {
     // Terms list always returns in index order
     assertQ(
         req(
@@ -294,7 +293,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testStats() throws Exception {
+  public void testStats() {
     // Terms list always returns in index order
     assertQ(
         req(
@@ -312,7 +311,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSortIndex() throws Exception {
+  public void testSortIndex() {
     assertQ(
         req(
             "indent",
@@ -336,7 +335,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testPastUpper() throws Exception {
+  public void testPastUpper() {
     assertQ(
         req(
             "indent",
@@ -352,7 +351,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testLowerExclusive() throws Exception {
+  public void testLowerExclusive() {
     assertQ(
         req(
             "indent",
@@ -392,7 +391,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void test() throws Exception {
+  public void test() {
     assertQ(
         req(
             "indent",
@@ -449,7 +448,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testMinMaxFreq() throws Exception {
+  public void testMinMaxFreq() {
     assertQ(
         req(
             "indent",
@@ -539,7 +538,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testDocFreqAndTotalTermFreq() throws Exception {
+  public void testDocFreqAndTotalTermFreq() {
     SolrQueryRequest req =
         req(
             "indent", "true",
@@ -582,7 +581,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testDocFreqAndTotalTermFreqForNonExistingTerm() throws Exception {
+  public void testDocFreqAndTotalTermFreqForNonExistingTerm() {
     SolrQueryRequest req =
         req(
             "indent", "true",
@@ -598,7 +597,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testDocFreqAndTotalTermFreqForMultipleFields() throws Exception {
+  public void testDocFreqAndTotalTermFreqForMultipleFields() {
     SolrQueryRequest req =
         req(
             "indent", "true",
@@ -695,9 +694,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
             "terms.fl", "foo_pi");
     ;
     try {
-      SchemaField sf = req.getSchema().getField("foo_pi");
-
-      /**
+      /* SchemaField sf = req.getSchema().getField("foo_pi");
        * LeafReader r = req.getSearcher().getIndexReader().leaves().get(0).reader(); PointValues pv
        * = r.getPointValues("foo_pi"); System.out.println("pv=" + pv); if (pv instanceof
        * AssertingLeafReader.AssertingPointValues) { pv =
@@ -720,15 +717,15 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
               totBuff,
               minSegBuff);
       MutableValueInt v = (MutableValueInt) iter.getMutableValue();
-      int i = 0;
+      long i = 0;
       for (; ; ) {
         long count = iter.getNextCount();
         if (count < 0) break;
-        assertEquals(vals[i], v.value);
+        assertEquals(vals[(int) i], v.value);
         i += count;
         // if (i < 10) System.out.println("COUNT=" + count + " OBJ="+v.toObject());
       }
-      assert (i == nvals);
+      assertEquals(i, nvals);
 
       totBuff = random().nextInt(50) + 1;
       minSegBuff = random().nextInt(10) + 1;
@@ -740,11 +737,11 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
       for (; ; ) {
         long count = iter.getNextCount();
         if (count < 0) break;
-        assertEquals(vals[i], lv.value);
+        assertEquals(vals[(int) i], lv.value);
         i += count;
         // if (i < 10) System.out.println("COUNT=" + count + " OBJ="+v.toObject());
       }
-      assert (i == nvals);
+      assertEquals(i, nvals);
 
       totBuff = random().nextInt(50) + 1;
       minSegBuff = random().nextInt(10) + 1;
@@ -756,11 +753,11 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
       for (; ; ) {
         long count = iter.getNextCount();
         if (count < 0) break;
-        assertEquals(vals[i], fv.value, 0);
+        assertEquals(vals[(int) i], fv.value, 0);
         i += count;
         // if (i < 10) System.out.println("COUNT=" + count + " OBJ="+v.toObject());
       }
-      assert (i == nvals);
+      assertEquals(i, nvals);
 
       totBuff = random().nextInt(50) + 1;
       minSegBuff = random().nextInt(10) + 1;
@@ -772,11 +769,11 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
       for (; ; ) {
         long count = iter.getNextCount();
         if (count < 0) break;
-        assertEquals(vals[i], dv.value, 0);
+        assertEquals(vals[(int) i], dv.value, 0);
         i += count;
         // if (i < 10) System.out.println("COUNT=" + count + " OBJ="+v.toObject());
       }
-      assert (i == nvals);
+      assertEquals(i, nvals);
 
       assertQ(
           req(
@@ -825,7 +822,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testDatePointField() throws Exception {
+  public void testDatePointField() {
     String[] dates = new String[] {"2015-01-03T14:30:00Z", "2014-03-15T12:00:00Z"};
     for (int i = 0; i < 100; i++) {
       assertU(adoc("id", Integer.toString(100000 + i), "foo_pdt", dates[i % 2]));

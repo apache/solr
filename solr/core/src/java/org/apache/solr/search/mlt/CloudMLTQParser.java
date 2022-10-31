@@ -59,6 +59,7 @@ public class CloudMLTQParser extends QParser {
     super(qstr, localParams, params, req);
   }
 
+  @Override
   public Query parse() {
     String id = localParams.get(QueryParsing.V);
     // Do a Real Time Get for the document

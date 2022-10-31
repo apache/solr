@@ -49,15 +49,15 @@ public class TestJsonFacetsStatsParsing extends SolrTestCaseJ4 {
         new FacetRequest.FacetSort("foo", FacetRequest.SortDirection.asc),
         new FacetRequest.FacetSort("foo", FacetRequest.SortDirection.asc));
     // negative assertions...
-    assertThat(
+    MatcherAssert.assertThat(
         new FacetRequest.FacetSort("foo", FacetRequest.SortDirection.desc),
         not(new FacetRequest.FacetSort("foo", FacetRequest.SortDirection.asc)));
-    assertThat(
+    MatcherAssert.assertThat(
         new FacetRequest.FacetSort("bar", FacetRequest.SortDirection.desc),
         not(new FacetRequest.FacetSort("foo", FacetRequest.SortDirection.desc)));
   }
 
-  public void testEquality() throws IOException {
+  public void testEquality() {
     try (SolrQueryRequest req =
         req(
             "custom_req_param", "foo_i",

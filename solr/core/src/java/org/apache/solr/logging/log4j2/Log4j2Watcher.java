@@ -47,7 +47,7 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
   private static final String LOG4J2_WATCHER_APPENDER = "Log4j2WatcherAppender";
 
   @SuppressForbidden(reason = "class is specific to log4j2")
-  protected class Log4j2Appender extends AbstractAppender {
+  protected static class Log4j2Appender extends AbstractAppender {
 
     private Log4j2Watcher watcher;
     private ThresholdFilter filter;
@@ -60,6 +60,7 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
       this.threshold = threshold;
     }
 
+    @Override
     public void append(LogEvent logEvent) {
       watcher.add(logEvent, logEvent.getTimeMillis());
     }
@@ -77,17 +78,17 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
   }
 
   @SuppressForbidden(reason = "class is specific to log4j2")
-  protected class Log4j2Info extends LoggerInfo {
-    final Level level;
-
+  protected static class Log4j2Info extends LoggerInfo {
     Log4j2Info(String name, Level level) {
       super(name);
-      this.level = level;
+      if (level != null) {
+        this.level = level.toString();
+      }
     }
 
     @Override
     public String getLevel() {
-      return (level != null) ? level.toString() : null;
+      return (level != null) ? level : null;
     }
 
     @Override
@@ -97,7 +98,7 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
 
     @Override
     public boolean isSet() {
-      return (level != null) ? true : false;
+      return level != null;
     }
   }
 

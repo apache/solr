@@ -17,7 +17,6 @@
 
 package org.apache.solr.cluster.events;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -52,5 +51,6 @@ public class AllEventsListener implements ClusterEventListener {
     }
   }
 
-  public void close() throws IOException {}
+  @Override
+  public void close() {}
 }

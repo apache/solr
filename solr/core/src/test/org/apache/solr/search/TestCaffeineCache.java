@@ -44,7 +44,7 @@ public class TestCaffeineCache extends SolrTestCase {
   String scope = TestUtil.randomSimpleString(random(), 2, 10);
 
   @Test
-  public void testSimple() throws IOException {
+  public void testSimple() {
     CaffeineCache<Integer, String> lfuCache = new CaffeineCache<>();
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
     lfuCache.initializeMetrics(solrMetricsContext, scope + "-1");
@@ -65,13 +65,13 @@ public class TestCaffeineCache extends SolrTestCase {
     }
     assertEquals("15", lfuCache.get(15));
     assertEquals("75", lfuCache.get(75));
-    assertEquals(null, lfuCache.get(110));
+    assertNull(lfuCache.get(110));
     Map<String, Object> nl = lfuCache.getMetricsMap().getValue();
     assertEquals(3L, nl.get("lookups"));
     assertEquals(2L, nl.get("hits"));
     assertEquals(101L, nl.get("inserts"));
 
-    assertEquals(null, lfuCache.get(1)); // first item put in should be the first out
+    assertNull(lfuCache.get(1)); // first item put in should be the first out
 
     // Test autowarming
     newLFUCache.init(params, initObj, regenerator);
@@ -81,7 +81,7 @@ public class TestCaffeineCache extends SolrTestCase {
     newLFUCache.put(103, "103");
     assertEquals("15", newLFUCache.get(15));
     assertEquals("75", newLFUCache.get(75));
-    assertEquals(null, newLFUCache.get(50));
+    assertNull(newLFUCache.get(50));
     nl = newLFUCache.getMetricsMap().getValue();
     assertEquals(3L, nl.get("lookups"));
     assertEquals(2L, nl.get("hits"));
@@ -288,5 +288,71 @@ public class TestCaffeineCache extends SolrTestCase {
     assertTrue("total ram bytes should be greater than 0", total > 0);
     assertTrue("total ram bytes exceeded limit", total < 1024 * 1024);
     cache.close();
+  }
+
+  @Test
+  public void testRamBytesSync() throws IOException {
+    CaffeineCache<Integer, String> cache = new CaffeineCache<>();
+    Map<String, String> params =
+        Map.of(
+            SolrCache.SIZE_PARAM, "100",
+            SolrCache.INITIAL_SIZE_PARAM, "10",
+            SolrCache.ASYNC_PARAM, Boolean.FALSE.toString());
+    cache.init(params, null, new NoOpRegenerator());
+
+    long emptySize = cache.ramBytesUsed();
+
+    // noop rm
+    cache.remove(0);
+    assertEquals(emptySize, cache.ramBytesUsed());
+
+    cache.put(0, "test");
+    long nonEmptySize = cache.ramBytesUsed();
+    cache.put(0, "test");
+    assertEquals(nonEmptySize, cache.ramBytesUsed());
+
+    cache.remove(0);
+    assertEquals(emptySize, cache.ramBytesUsed());
+
+    cache.put(1, "test2");
+    cache.clear();
+    assertEquals(emptySize, cache.ramBytesUsed());
+
+    cache.put(1, "test3");
+    cache.close();
+    assertEquals(emptySize, cache.ramBytesUsed());
+  }
+
+  @Test
+  public void testRamBytesAsync() throws IOException {
+    CaffeineCache<Integer, String> cache = new CaffeineCache<>();
+    Map<String, String> params =
+        Map.of(
+            SolrCache.SIZE_PARAM, "100",
+            SolrCache.INITIAL_SIZE_PARAM, "10",
+            SolrCache.ASYNC_PARAM, Boolean.TRUE.toString());
+    cache.init(params, null, new NoOpRegenerator());
+
+    long emptySize = cache.ramBytesUsed();
+
+    // noop rm
+    cache.remove(0);
+    assertEquals(emptySize, cache.ramBytesUsed());
+
+    cache.put(0, "test");
+    long nonEmptySize = cache.ramBytesUsed();
+    cache.put(0, "test");
+    assertEquals(nonEmptySize, cache.ramBytesUsed());
+
+    cache.remove(0);
+    assertEquals(emptySize, cache.ramBytesUsed());
+
+    cache.put(1, "test2");
+    cache.clear();
+    assertEquals(emptySize, cache.ramBytesUsed());
+
+    cache.put(1, "test3");
+    cache.close();
+    assertEquals(emptySize, cache.ramBytesUsed());
   }
 }

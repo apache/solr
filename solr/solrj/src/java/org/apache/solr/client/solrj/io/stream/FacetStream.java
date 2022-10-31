@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.stream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -211,8 +210,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
           String.format(
               Locale.ROOT,
               "invalid expression %s - at least one bucket expected. eg. 'buckets=\"name\"'",
-              expression,
-              collectionName));
+              expression));
     }
 
     // Construct the metrics
@@ -234,15 +232,14 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
       bucketSortString = ((StreamExpressionValue) bucketSortExpression.getParameter()).getValue();
       if (bucketSortString.contains("(")
           && metricExpressions.size() == 0
-          && (!bucketSortExpression.equals("count(*) desc")
-              && !bucketSortExpression.equals("count(*) asc"))) {
+          && (!bucketSortString.equals("count(*) desc")
+              && !bucketSortString.equals("count(*) asc"))) {
         // Attempting bucket sort on a metric that is not going to be calculated.
         throw new IOException(
             String.format(
                 Locale.ROOT,
                 "invalid expression %s - the bucketSort is being performed on a metric that is not being calculated.",
-                expression,
-                collectionName));
+                expression));
       }
     }
 
@@ -253,8 +250,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
           String.format(
               Locale.ROOT,
               "invalid expression %s - at least one bucket sort expected. eg. 'bucketSorts=\"name asc\"'",
-              expression,
-              collectionName));
+              expression));
     }
 
     boolean refine = false;
@@ -647,15 +643,18 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
     return explanation;
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.context = context;
     cache = context.getSolrClientCache();
   }
 
+  @Override
   public List<TupleStream> children() {
     return new ArrayList<>();
   }
 
+  @Override
   public void open() throws IOException {
     if (cache != null) {
       cloudSolrClient = cache.getCloudSolrClient(zkHost);
@@ -706,7 +705,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
       getTuples(response, buckets, metrics);
 
       if (resortNeeded) {
-        Collections.sort(tuples, getStreamSort());
+        tuples.sort(getStreamSort());
       }
 
       index = this.offset;
@@ -759,6 +758,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
     return true;
   }
 
+  @Override
   public void close() throws IOException {
     if (cache == null) {
       if (cloudSolrClient != null) {
@@ -767,6 +767,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
     }
   }
 
+  @Override
   public Tuple read() throws IOException {
     // if we're parallelizing the facet expression over multiple collections with plist,
     // then delegate the read operation to that stream instead
@@ -996,6 +997,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
     }
   }
 
+  @Override
   public int getCost() {
     return 0;
   }

@@ -83,7 +83,8 @@ public class Facet2DStream extends TupleStream implements Expressible {
       String[] strDimensions = dimensions.split(",");
       if (strDimensions.length != 2) {
         throw new IOException(
-            String.format(Locale.ROOT, "invalid expression %s - two dimension values expected"));
+            String.format(
+                Locale.ROOT, "two dimension values expected. %s found", strDimensions.length));
       }
       this.dimensionX = Integer.parseInt(strDimensions[0]);
       this.dimensionY = Integer.parseInt(strDimensions[1]);
@@ -157,8 +158,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
           String.format(
               Locale.ROOT,
               "invalid expression %s - x and y buckets expected. eg. 'x=\"name\"'",
-              expression,
-              collectionName));
+              expression));
     }
 
     Metric metric = null;
@@ -179,7 +179,8 @@ public class Facet2DStream extends TupleStream implements Expressible {
             ((StreamExpressionValue) dimensionsExpression.getParameter()).getValue().split(",");
         if (strDimensions.length != 2) {
           throw new IOException(
-              String.format(Locale.ROOT, "invalid expression %s - two dimension values expected"));
+              String.format(
+                  Locale.ROOT, "two dimension values expected. Found %s", strDimensions.length));
         }
         dimensionX = Integer.parseInt(strDimensions[0].trim());
         dimensionY = Integer.parseInt(strDimensions[1].trim());
@@ -308,14 +309,17 @@ public class Facet2DStream extends TupleStream implements Expressible {
     return expression;
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     cache = context.getSolrClientCache();
   }
 
+  @Override
   public List<TupleStream> children() {
     return new ArrayList<>();
   }
 
+  @Override
   public void open() throws IOException {
     if (cache != null) {
       cloudSolrClient = cache.getCloudSolrClient(zkHost);
@@ -348,6 +352,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public Tuple read() throws IOException {
     if (out.hasNext()) {
       return out.next();
@@ -358,6 +363,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public void close() throws IOException {
     if (cache == null) {
       if (cloudSolrClient != null) {
@@ -512,6 +518,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public int getCost() {
     return 0;
   }

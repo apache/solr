@@ -30,7 +30,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrIgnoredThreadsFilter;
@@ -53,7 +52,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@Slow
 @Nightly
 @ThreadLeakFilters(
     defaultFilters = true,
@@ -95,6 +93,7 @@ public class HdfsWriteToMultipleCollectionsTest extends AbstractBasicDistributed
     fixShardCount(3);
   }
 
+  @Override
   protected String getSolrXml() {
     return "solr.xml";
   }

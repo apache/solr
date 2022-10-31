@@ -21,7 +21,11 @@ import com.carrotsearch.hppc.IntObjectHashMap;
 import java.io.IOException;
 import java.util.Date;
 import java.util.function.LongFunction;
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.SortedNumericDocValues;
+import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.NumericUtils;
@@ -52,6 +56,7 @@ class MultiFieldWriter extends FieldWriter {
     }
   }
 
+  @Override
   public boolean write(
       SortDoc sortDoc, LeafReaderContext readerContext, MapWriter.EntryWriter out, int fieldIndex)
       throws IOException {

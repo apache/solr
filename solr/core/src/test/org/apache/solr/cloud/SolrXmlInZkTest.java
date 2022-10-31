@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -26,28 +25,19 @@ import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.NodeConfig;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SolrXmlInZkTest extends SolrTestCaseJ4 {
-
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  @Rule public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   protected ZkTestServer zkServer;
 
   protected Path zkDir;
 
   private SolrZkClient zkClient;
-
-  private ZkStateReader reader;
 
   private NodeConfig cfg;
 
@@ -100,9 +90,6 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
       zkClient.close();
     }
 
-    if (reader != null) {
-      reader.close();
-    }
     zkServer.shutdown();
   }
 

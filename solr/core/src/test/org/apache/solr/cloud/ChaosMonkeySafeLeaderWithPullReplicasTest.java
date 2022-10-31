@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -40,14 +40,12 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Slow
+@LuceneTestCase.Nightly
 public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final Integer RUN_LENGTH =
       Integer.parseInt(System.getProperty("solr.tests.cloud.cm.runlength", "-1"));
-
-  private final boolean useTlogReplicas = random().nextBoolean();
 
   private final int numPullReplicas;
   private final int numRealtimeOrTlogReplicas;
@@ -86,10 +84,12 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
   protected static final String[] fieldNames = new String[] {"f_i", "f_f", "f_d", "f_l", "f_dt"};
   protected static final RandVal[] randVals = new RandVal[] {rint, rfloat, rdouble, rlong, rdate};
 
+  @Override
   public String[] getFieldNames() {
     return fieldNames;
   }
 
+  @Override
   public RandVal[] getRandValues() {
     return randVals;
   }
@@ -266,8 +266,7 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
         del("*:*");
         break;
       } catch (SolrServerException | SolrException e) {
-        // cluster may not be up yet
-        e.printStackTrace();
+        log.error("cluster may not be up yet", e);
       }
       Thread.sleep(100);
     }

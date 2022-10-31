@@ -52,6 +52,7 @@ public class SimpleMLTQParser extends QParser {
     super(qstr, localParams, params, req);
   }
 
+  @Override
   public Query parse() {
 
     String defaultField = req.getSchema().getUniqueKeyField().getName();

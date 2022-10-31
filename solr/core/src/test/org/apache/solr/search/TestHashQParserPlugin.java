@@ -82,8 +82,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
     params.add("fq", "{!hash worker=0 workers=1 cost=" + getCost(random()) + "}");
     params.add("partitionKeys", "a_i");
     params.add("wt", "xml");
-    ModifiableSolrParams finalParams = params;
-    expectThrows(SolrException.class, () -> h.query(req(finalParams)));
+    expectThrows(SolrException.class, () -> h.query(req(params)));
   }
 
   @Test
@@ -195,10 +194,10 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
       }
     }
 
-    assert (set1.size() > 0);
-    assert (set2.size() > 0);
-    assert (set3.size() > 0);
-    assert (set1.size() + set2.size() + set3.size() == set.size());
+    assertTrue(set1.size() > 0);
+    assertTrue(set2.size() > 0);
+    assertTrue(set3.size() > 0);
+    assertTrue(set1.size() + set2.size() + set3.size() == set.size());
     assertNoOverLap(set1, set2);
     assertNoOverLap(set1, set3);
     assertNoOverLap(set2, set3);
@@ -245,9 +244,9 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
       }
     }
 
-    assert (set1.size() > 0);
-    assert (set2.size() > 0);
-    assert (set1.size() + set2.size() == set.size());
+    assertTrue(set1.size() > 0);
+    assertTrue(set2.size() > 0);
+    assertTrue(set1.size() + set2.size() == set.size());
     assertNoOverLap(set1, set2);
 
     // Test with 2 workers and compound partition Key
@@ -292,19 +291,16 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
       }
     }
 
-    assert (set1.size() > 0);
-    assert (set2.size() > 0);
-    assert (set1.size() + set2.size() == set.size());
+    assertTrue(set1.size() > 0);
+    assertTrue(set2.size() > 0);
+    assertEquals(set1.size() + set2.size(), set.size());
     assertNoOverLap(set1, set2);
   }
 
   private void assertNoOverLap(
       @SuppressWarnings({"rawtypes"}) Set setA, @SuppressWarnings({"rawtypes"}) Set setB)
       throws Exception {
-    @SuppressWarnings({"rawtypes"})
-    Iterator it = setA.iterator();
-    while (it.hasNext()) {
-      Object o = it.next();
+    for (Object o : setA) {
       if (setB.contains(o)) {
         throw new Exception("Overlapping sets for value:" + o.toString());
       }

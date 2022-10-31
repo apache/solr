@@ -16,7 +16,10 @@
  */
 package org.apache.solr.search;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
@@ -27,6 +30,8 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.request.SolrQueryRequest;
 
 /** */
 public class QueryUtils {
@@ -92,14 +97,14 @@ public class QueryUtils {
       BoostQuery bq = (BoostQuery) q;
       Query subQ = bq.getQuery();
       Query absSubQ = getAbs(subQ);
-      if (absSubQ == subQ) return q;
+      if (absSubQ.equals(subQ)) return q;
       return new BoostQuery(absSubQ, bq.getBoost());
     }
 
     if (q instanceof WrappedQuery) {
       Query subQ = ((WrappedQuery) q).getWrappedQuery();
       Query absSubQ = getAbs(subQ);
-      if (absSubQ == subQ) return q;
+      if (absSubQ.equals(subQ)) return q;
       return new WrappedQuery(absSubQ);
     }
 
@@ -166,6 +171,7 @@ public class QueryUtils {
    * @lucene.experimental throw exception if max boolean clauses are exceeded
    */
   public static BooleanQuery build(BooleanQuery.Builder builder, QParser parser) {
+
     int configuredMax =
         parser != null
             ? parser.getReq().getCore().getSolrConfig().booleanQueryMaxClauseCount
@@ -214,5 +220,39 @@ public class QueryUtils {
             .build();
       }
     }
+  }
+
+  /**
+   * Parse the filter queries in Solr request
+   *
+   * @param req Solr request
+   * @param fixNegativeQueries if true, negative queries are rewritten by adding a MatchAllDocs
+   *     query clause
+   * @return and array of Query. If the request does not contain filter queries, returns an empty
+   *     list.
+   * @throws SyntaxError if an error occurs during parsing
+   */
+  public static List<Query> parseFilterQueries(SolrQueryRequest req, boolean fixNegativeQueries)
+      throws SyntaxError {
+
+    String[] filterQueriesStr = req.getParams().getParams(CommonParams.FQ);
+
+    if (filterQueriesStr != null) {
+      List<Query> filters = new ArrayList<>(filterQueriesStr.length);
+      for (String fq : filterQueriesStr) {
+        if (fq != null && fq.trim().length() != 0) {
+          QParser fqp = QParser.getParser(fq, req);
+          fqp.setIsFilter(true);
+          Query query = fqp.getQuery();
+          if (fixNegativeQueries) {
+            query = makeQueryable(query);
+          }
+          filters.add(query);
+        }
+      }
+      return filters;
+    }
+
+    return Collections.emptyList();
   }
 }

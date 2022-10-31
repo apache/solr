@@ -93,14 +93,14 @@ public class PriorityStream extends TupleStream implements Expressible {
 
     // stream
     if (includeStreams) {
-      if (highPriorityTasks instanceof Expressible) {
+      if (highPriorityTasks != null) {
         expression.addParameter(((Expressible) highPriorityTasks).toExpression(factory));
       } else {
         throw new IOException(
             "The SchedulerStream contains a non-expressible TupleStream - it cannot be converted to an expression");
       }
 
-      if (tasks instanceof Expressible) {
+      if (tasks != null) {
         expression.addParameter(((Expressible) tasks).toExpression(factory));
       } else {
         throw new IOException(
@@ -125,11 +125,13 @@ public class PriorityStream extends TupleStream implements Expressible {
         .withExpression(toExpression(factory, false).toString());
   }
 
+  @Override
   public void setStreamContext(StreamContext streamContext) {
     this.highPriorityTasks.setStreamContext(streamContext);
     tasks.setStreamContext(streamContext);
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     l.add(highPriorityTasks);
@@ -137,6 +139,7 @@ public class PriorityStream extends TupleStream implements Expressible {
     return l;
   }
 
+  @Override
   public void open() throws IOException {
     highPriorityTasks.open();
     Tuple tuple = highPriorityTasks.read();
@@ -150,18 +153,22 @@ public class PriorityStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public void close() throws IOException {
     currentStream.close();
   }
 
+  @Override
   public Tuple read() throws IOException {
     return currentStream.read();
   }
 
+  @Override
   public StreamComparator getStreamSort() {
     return null;
   }
 
+  @Override
   public int getCost() {
     return 0;
   }

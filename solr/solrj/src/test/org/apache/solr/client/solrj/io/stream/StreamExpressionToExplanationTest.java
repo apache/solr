@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj.io.stream;
 
-import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.ops.GroupOperation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -74,8 +73,8 @@ public class StreamExpressionToExplanationTest extends SolrTestCase {
                 "search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\")"),
             factory)) {
       Explanation explanation = stream.toExplanation(factory);
-      Assert.assertEquals("search", explanation.getFunctionName());
-      Assert.assertEquals(CloudSolrStream.class.getName(), explanation.getImplementingClass());
+      assertEquals("search", explanation.getFunctionName());
+      assertEquals(CloudSolrStream.class.getName(), explanation.getImplementingClass());
     }
   }
 
@@ -88,8 +87,8 @@ public class StreamExpressionToExplanationTest extends SolrTestCase {
                 "select(\"a_s as fieldA\", search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"))"),
             factory)) {
       Explanation explanation = stream.toExplanation(factory);
-      Assert.assertEquals("select", explanation.getFunctionName());
-      Assert.assertEquals(SelectStream.class.getName(), explanation.getImplementingClass());
+      assertEquals("select", explanation.getFunctionName());
+      assertEquals(SelectStream.class.getName(), explanation.getImplementingClass());
     }
   }
 
@@ -102,8 +101,8 @@ public class StreamExpressionToExplanationTest extends SolrTestCase {
                 "daemon(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"), id=\"blah\", runInterval=\"1000\", queueSize=\"100\")"),
             factory)) {
       Explanation explanation = stream.toExplanation(factory);
-      Assert.assertEquals("daemon", explanation.getFunctionName());
-      Assert.assertEquals(DaemonStream.class.getName(), explanation.getImplementingClass());
+      assertEquals("daemon", explanation.getFunctionName());
+      assertEquals(DaemonStream.class.getName(), explanation.getImplementingClass());
     }
   }
 
@@ -116,8 +115,8 @@ public class StreamExpressionToExplanationTest extends SolrTestCase {
                 "topic(collection2, collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", id=\"blah\", checkpointEvery=1000)"),
             factory)) {
       Explanation explanation = stream.toExplanation(factory);
-      Assert.assertEquals("topic", explanation.getFunctionName());
-      Assert.assertEquals(TopicStream.class.getName(), explanation.getImplementingClass());
+      assertEquals("topic", explanation.getFunctionName());
+      assertEquals(TopicStream.class.getName(), explanation.getImplementingClass());
     }
   }
 
@@ -130,8 +129,8 @@ public class StreamExpressionToExplanationTest extends SolrTestCase {
                 "stats(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", sum(a_i), avg(a_i), count(*), min(a_i), max(a_i))"),
             factory)) {
       Explanation explanation = stream.toExplanation(factory);
-      Assert.assertEquals("stats", explanation.getFunctionName());
-      Assert.assertEquals(StatsStream.class.getName(), explanation.getImplementingClass());
+      assertEquals("stats", explanation.getFunctionName());
+      assertEquals(StatsStream.class.getName(), explanation.getImplementingClass());
     }
   }
 
@@ -144,8 +143,8 @@ public class StreamExpressionToExplanationTest extends SolrTestCase {
                 "unique(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"), over=\"a_f\")"),
             factory)) {
       Explanation explanation = stream.toExplanation(factory);
-      Assert.assertEquals("unique", explanation.getFunctionName());
-      Assert.assertEquals(UniqueStream.class.getName(), explanation.getImplementingClass());
+      assertEquals("unique", explanation.getFunctionName());
+      assertEquals(UniqueStream.class.getName(), explanation.getImplementingClass());
     }
   }
 
@@ -161,9 +160,9 @@ public class StreamExpressionToExplanationTest extends SolrTestCase {
                     + "on=\"a_f asc, a_s asc\")"),
             factory)) {
       Explanation explanation = stream.toExplanation(factory);
-      Assert.assertEquals("merge", explanation.getFunctionName());
-      Assert.assertEquals(MergeStream.class.getName(), explanation.getImplementingClass());
-      Assert.assertEquals(2, ((StreamExplanation) explanation).getChildren().size());
+      assertEquals("merge", explanation.getFunctionName());
+      assertEquals(MergeStream.class.getName(), explanation.getImplementingClass());
+      assertEquals(2, ((StreamExplanation) explanation).getChildren().size());
     }
   }
 
@@ -181,9 +180,9 @@ public class StreamExpressionToExplanationTest extends SolrTestCase {
                     + "sort=\"a_f asc, a_i asc\")"),
             factory)) {
       Explanation explanation = stream.toExplanation(factory);
-      Assert.assertEquals("top", explanation.getFunctionName());
-      Assert.assertEquals(RankStream.class.getName(), explanation.getImplementingClass());
-      Assert.assertEquals(1, ((StreamExplanation) explanation).getChildren().size());
+      assertEquals("top", explanation.getFunctionName());
+      assertEquals(RankStream.class.getName(), explanation.getImplementingClass());
+      assertEquals(1, ((StreamExplanation) explanation).getChildren().size());
     }
   }
 
@@ -200,9 +199,9 @@ public class StreamExpressionToExplanationTest extends SolrTestCase {
                     + "by=\"a_s\", group(sort=\"a_i desc\", n=\"5\"))"),
             factory)) {
       Explanation explanation = stream.toExplanation(factory);
-      Assert.assertEquals("reduce", explanation.getFunctionName());
-      Assert.assertEquals(ReducerStream.class.getName(), explanation.getImplementingClass());
-      Assert.assertEquals(1, ((StreamExplanation) explanation).getChildren().size());
+      assertEquals("reduce", explanation.getFunctionName());
+      assertEquals(ReducerStream.class.getName(), explanation.getImplementingClass());
+      assertEquals(1, ((StreamExplanation) explanation).getChildren().size());
     }
   }
 
@@ -221,13 +220,13 @@ public class StreamExpressionToExplanationTest extends SolrTestCase {
 
     try (UpdateStream updateStream = new UpdateStream(expression, factory)) {
       Explanation explanation = updateStream.toExplanation(factory);
-      Assert.assertEquals("solr (collection2)", explanation.getFunctionName());
-      Assert.assertEquals("Solr/Lucene", explanation.getImplementingClass());
+      assertEquals("solr (collection2)", explanation.getFunctionName());
+      assertEquals("Solr/Lucene", explanation.getImplementingClass());
 
       StreamExplanation updateExplanation = (StreamExplanation) explanation;
-      Assert.assertEquals(1, updateExplanation.getChildren().size());
-      Assert.assertEquals("update", updateExplanation.getChildren().get(0).getFunctionName());
-      Assert.assertEquals(
+      assertEquals(1, updateExplanation.getChildren().size());
+      assertEquals("update", updateExplanation.getChildren().get(0).getFunctionName());
+      assertEquals(
           UpdateStream.class.getName(),
           updateExplanation.getChildren().get(0).getImplementingClass());
     }
@@ -256,9 +255,9 @@ public class StreamExpressionToExplanationTest extends SolrTestCase {
             factory)) {
       expressionString = stream.toExpression(factory).toString();
       Explanation explanation = stream.toExplanation(factory);
-      Assert.assertEquals("facet", explanation.getFunctionName());
-      Assert.assertEquals(FacetStream.class.getName(), explanation.getImplementingClass());
-      Assert.assertEquals(1, ((StreamExplanation) explanation).getChildren().size());
+      assertEquals("facet", explanation.getFunctionName());
+      assertEquals(FacetStream.class.getName(), explanation.getImplementingClass());
+      assertEquals(1, ((StreamExplanation) explanation).getChildren().size());
     }
   }
 
@@ -273,9 +272,9 @@ public class StreamExpressionToExplanationTest extends SolrTestCase {
                 "jdbc(connection=\"jdbc:hsqldb:mem:.\", sql=\"select PEOPLE.ID, PEOPLE.NAME, COUNTRIES.COUNTRY_NAME from PEOPLE inner join COUNTRIES on PEOPLE.COUNTRY_CODE = COUNTRIES.CODE order by PEOPLE.ID\", sort=\"ID asc\")"),
             factory)) {
       Explanation explanation = stream.toExplanation(factory);
-      Assert.assertEquals("jdbc", explanation.getFunctionName());
-      Assert.assertEquals(JDBCStream.class.getName(), explanation.getImplementingClass());
-      Assert.assertEquals(1, ((StreamExplanation) explanation).getChildren().size());
+      assertEquals("jdbc", explanation.getFunctionName());
+      assertEquals(JDBCStream.class.getName(), explanation.getImplementingClass());
+      assertEquals(1, ((StreamExplanation) explanation).getChildren().size());
     }
   }
 
@@ -293,9 +292,9 @@ public class StreamExpressionToExplanationTest extends SolrTestCase {
                     + "on=\"a_f, a_s\")"),
             factory)) {
       Explanation explanation = stream.toExplanation(factory);
-      Assert.assertEquals("intersect", explanation.getFunctionName());
-      Assert.assertEquals(IntersectStream.class.getName(), explanation.getImplementingClass());
-      Assert.assertEquals(2, ((StreamExplanation) explanation).getChildren().size());
+      assertEquals("intersect", explanation.getFunctionName());
+      assertEquals(IntersectStream.class.getName(), explanation.getImplementingClass());
+      assertEquals(2, ((StreamExplanation) explanation).getChildren().size());
     }
   }
 
@@ -313,9 +312,9 @@ public class StreamExpressionToExplanationTest extends SolrTestCase {
                     + "on=\"a_f, a_s\")"),
             factory)) {
       Explanation explanation = stream.toExplanation(factory);
-      Assert.assertEquals("complement", explanation.getFunctionName());
-      Assert.assertEquals(ComplementStream.class.getName(), explanation.getImplementingClass());
-      Assert.assertEquals(2, ((StreamExplanation) explanation).getChildren().size());
+      assertEquals("complement", explanation.getFunctionName());
+      assertEquals(ComplementStream.class.getName(), explanation.getImplementingClass());
+      assertEquals(2, ((StreamExplanation) explanation).getChildren().size());
     }
   }
 }

@@ -60,10 +60,12 @@ public class SumMetric extends Metric {
     setIdentifier(functionName, "(", columnName, ")");
   }
 
+  @Override
   public String[] getColumns() {
     return new String[] {columnName};
   }
 
+  @Override
   public void update(Tuple tuple) {
     Object o = tuple.get(columnName);
     if (o instanceof Double) {
@@ -81,10 +83,12 @@ public class SumMetric extends Metric {
     }
   }
 
+  @Override
   public Metric newInstance() {
     return new SumMetric(columnName);
   }
 
+  @Override
   public Number getValue() {
     if (longSum == 0) {
       return doubleSum;

@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -163,7 +164,10 @@ public class SqlStream extends TupleStream implements Expressible {
       ModifiableSolrParams mParams = new ModifiableSolrParams(params);
       child.setExpression(
           mParams.getMap().entrySet().stream()
-              .map(e -> String.format(Locale.ROOT, "%s=%s", e.getKey(), e.getValue()))
+              .map(
+                  e ->
+                      String.format(
+                          Locale.ROOT, "%s=%s", e.getKey(), Arrays.toString(e.getValue())))
               .collect(Collectors.joining(",")));
     }
     explanation.addChild(child);
@@ -181,15 +185,18 @@ public class SqlStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.streamContext = context;
   }
 
+  @Override
   public void open() throws IOException {
     constructStream();
     tupleStream.open();
   }
 
+  @Override
   public List<TupleStream> children() {
     return null;
   }
@@ -214,15 +221,18 @@ public class SqlStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public void close() throws IOException {
     tupleStream.close();
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
+  @Override
   public StreamComparator getStreamSort() {
     return null;
   }
 
+  @Override
   public Tuple read() throws IOException {
     return tupleStream.read();
   }

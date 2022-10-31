@@ -21,16 +21,20 @@ import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Gives system administrators a way to ignore very large update from clients. When an update goes
@@ -41,14 +45,20 @@ import org.apache.solr.update.AddUpdateCommand;
  */
 public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorFactory {
   public static final String LIMIT_SIZE_PARAM = "limit";
+  public static final String PERMISSIVE_MODE_PARAM = "permissiveMode";
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // limit of a SolrInputDocument size (in kb)
-  private long maxDocumentSize = 1024 * 1024;
+  private long maxDocumentSizeKb = 1024 * 1024;
+  private boolean permissiveModeEnabled = false;
 
   @Override
   public void init(NamedList<?> args) {
-    maxDocumentSize = args.toSolrParams().required().getLong(LIMIT_SIZE_PARAM);
+    final SolrParams params = args.toSolrParams();
+    maxDocumentSizeKb = params.required().getLong(LIMIT_SIZE_PARAM);
     args.remove(LIMIT_SIZE_PARAM);
+    permissiveModeEnabled = params.getBool(PERMISSIVE_MODE_PARAM, false);
+    args.remove(PERMISSIVE_MODE_PARAM);
 
     if (args.size() > 0) {
       throw new SolrException(SERVER_ERROR, "Unexpected init param(s): '" + args.getName(0) + "'");
@@ -59,15 +69,33 @@ public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorF
   public UpdateRequestProcessor getInstance(
       SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     return new UpdateRequestProcessor(next) {
+
       @Override
       public void processAdd(AddUpdateCommand cmd) throws IOException {
-        long docSize = ObjectSizeEstimator.estimate(cmd.getSolrInputDocument());
-        if (docSize / 1024 > maxDocumentSize) {
+        long docSizeBytes = ObjectSizeEstimator.estimate(cmd.getSolrInputDocument());
+        if (docSizeBytes > maxDocumentSizeKb * 1024) {
+          handleViolatingDoc(cmd, docSizeBytes);
+        } else {
+          super.processAdd(cmd);
+        }
+      }
+
+      private void handleViolatingDoc(AddUpdateCommand cmd, long estimatedSizeBytes) {
+        if (permissiveModeEnabled) {
+          log.warn(
+              "Skipping doc because estimated size exceeds limit. [docId={}, estimatedSize={} bytes, limitSize={}kb]",
+              cmd.getPrintableId(),
+              estimatedSizeBytes,
+              maxDocumentSizeKb);
+        } else {
           throw new SolrException(
               BAD_REQUEST,
-              "Size of the document " + cmd.getPrintableId() + " is too large, around:" + docSize);
+              "Size of the document "
+                  + cmd.getPrintableId()
+                  + " is too large, around: "
+                  + estimatedSizeBytes
+                  + " bytes");
         }
-        super.processAdd(cmd);
       }
     };
   }
@@ -87,7 +115,8 @@ public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorF
   // package private for testing
   static class ObjectSizeEstimator {
     /** Sizes of primitive classes. */
-    private static final Map<Class<?>, Integer> primitiveSizes = new IdentityHashMap<>();
+    private static final IdentityHashMap<Class<?>, Integer> primitiveSizes =
+        new IdentityHashMap<>();
 
     static {
       primitiveSizes.put(boolean.class, 1);
@@ -146,7 +175,7 @@ public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorF
         return primitiveSizes.get(clazz);
       }
       if (obj instanceof String) {
-        return ((String) obj).length() * Character.BYTES;
+        return (long) ((String) obj).length() * Character.BYTES;
       }
       return def;
     }

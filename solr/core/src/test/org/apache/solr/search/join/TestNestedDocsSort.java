@@ -86,7 +86,7 @@ public class TestNestedDocsSort extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testOmitSpaceinFrontOfOrd() {
+  public void testOmitSpaceInFrontOfOrd() {
     parseAssertEq("childfield(name_s1,$q)asc", "childfield(name_s1,$q) asc");
   }
 
@@ -100,7 +100,7 @@ public class TestNestedDocsSort extends SolrTestCaseJ4 {
   }
 
   private void parseAssertNe(String sortField, String sortField2) {
-    assertFalse(parse(sortField).equals(parse(sortField2)));
+    assertNotEquals(parse(sortField), parse(sortField2));
   }
 
   private SortField parse(String a) {
@@ -124,7 +124,7 @@ public class TestNestedDocsSort extends SolrTestCaseJ4 {
     }
   }
 
-  public void testCachehits() {
+  public void testCacheHits() {
     final SolrQueryRequest req = req();
     try {
       @SuppressWarnings({"rawtypes"})

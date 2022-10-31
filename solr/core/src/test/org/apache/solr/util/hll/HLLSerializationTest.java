@@ -16,8 +16,13 @@
  */
 package org.apache.solr.util.hll;
 
-import static com.carrotsearch.randomizedtesting.RandomizedTest.*;
-import static org.apache.solr.util.hll.HLL.*;
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomLong;
+import static org.apache.solr.util.hll.HLL.MAXIMUM_EXPTHRESH_PARAM;
+import static org.apache.solr.util.hll.HLL.MAXIMUM_LOG2M_PARAM;
+import static org.apache.solr.util.hll.HLL.MAXIMUM_REGWIDTH_PARAM;
+import static org.apache.solr.util.hll.HLL.MINIMUM_EXPTHRESH_PARAM;
+import static org.apache.solr.util.hll.HLL.MINIMUM_LOG2M_PARAM;
+import static org.apache.solr.util.hll.HLL.MINIMUM_REGWIDTH_PARAM;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,12 +42,11 @@ public class HLLSerializationTest extends SolrTestCase {
    * parameters.
    */
   @Test
-  @Slow
   @Nightly
   public void serializationSmokeTest() throws Exception {
     final Random random = new Random(randomLong());
     final int randomCount = 250;
-    final List<Long> randoms = new ArrayList<Long>(randomCount);
+    final List<Long> randoms = new ArrayList<>(randomCount);
     for (int i = 0; i < randomCount; i++) {
       randoms.add(random.nextLong());
     }
@@ -63,12 +67,11 @@ public class HLLSerializationTest extends SolrTestCase {
    * @see #manyValuesHLLSerializationTest
    */
   @Test
-  @Slow
   @Monster("needs roughly -Dtests.heapsize=8g because of the (multiple) massive data structs")
   public void monsterHLLSerializationTest() throws Exception {
     final Random random = new Random(randomLong());
     final int randomCount = 250;
-    final List<Long> randoms = new ArrayList<Long>(randomCount);
+    final List<Long> randoms = new ArrayList<>(randomCount);
     for (int i = 0; i < randomCount; i++) {
       randoms.add(random.nextLong());
     }
@@ -90,9 +93,8 @@ public class HLLSerializationTest extends SolrTestCase {
    * @see #monsterHLLSerializationTest
    */
   @Test
-  @Slow
   @Monster("may require as much as -Dtests.heapsize=4g depending on random values picked")
-  public void manyValuesHLLSerializationTest() throws Exception {
+  public void manyValuesHLLSerializationTest() {
 
     final HLLType[] ALL_TYPES = EnumSet.allOf(HLLType.class).toArray(new HLLType[0]);
     Arrays.sort(ALL_TYPES);
@@ -109,7 +111,7 @@ public class HLLSerializationTest extends SolrTestCase {
     final long NUM_VALS = TestUtil.nextLong(random(), 150000, 1000000);
     final long MIN_VAL = TestUtil.nextLong(random(), Long.MIN_VALUE, Long.MAX_VALUE - NUM_VALS);
     final long MAX_VAL = MIN_VAL + NUM_VALS;
-    assert MIN_VAL < MAX_VAL;
+    assertTrue(MIN_VAL < MAX_VAL);
 
     for (long val = MIN_VAL; val < MAX_VAL; val++) {
       hll.addRaw(val);
@@ -135,9 +137,8 @@ public class HLLSerializationTest extends SolrTestCase {
    * @see #monsterHLLSerializationTest
    */
   @Test
-  @Slow
   @Monster("can require as much as -Dtests.heapsize=4g because of the massive data structs")
-  public void manyValuesMonsterHLLSerializationTest() throws Exception {
+  public void manyValuesMonsterHLLSerializationTest() {
 
     final HLLType[] ALL_TYPES = EnumSet.allOf(HLLType.class).toArray(new HLLType[0]);
     Arrays.sort(ALL_TYPES);
@@ -151,7 +152,7 @@ public class HLLSerializationTest extends SolrTestCase {
     final long NUM_VALS = TestUtil.nextLong(random(), 150000, 1000000);
     final long MIN_VAL = TestUtil.nextLong(random(), Long.MIN_VALUE, Long.MAX_VALUE - NUM_VALS);
     final long MAX_VAL = MIN_VAL + NUM_VALS;
-    assert MIN_VAL < MAX_VAL;
+    assertTrue(MIN_VAL < MAX_VAL);
 
     for (long val = MIN_VAL; val < MAX_VAL; val++) {
       hll.addRaw(val);
@@ -171,8 +172,8 @@ public class HLLSerializationTest extends SolrTestCase {
   }
 
   /**
-   * Iterates over all possible constructor args, with the exception of log2m, which is only
-   * iterated up to the specified max so the test runs in a "reasonable" amount of time and ram.
+   * Iterates over all possible constructor args, except for log2m, which is only iterated up to the
+   * specified max so the test runs in a "reasonable" amount of time and RAM.
    */
   private static void assertCardinality(
       final HLLType hllType, final int maxLog2m, final Collection<Long> items)
@@ -189,7 +190,7 @@ public class HLLSerializationTest extends SolrTestCase {
   }
 
   /**
-   * Adds all of the items to the specified hll, then does a round trip serialize/deserialize and
+   * Adds all the items to the specified hll, then does a round trip serialize/deserialize and
    * confirms equality of several properties (including the byte serialization). Repeats process
    * with a clone.
    */
@@ -208,13 +209,13 @@ public class HLLSerializationTest extends SolrTestCase {
     HLL copy = HLL.fromBytes(hllBytes);
     assertEquals(copy.cardinality(), hllCardinality);
     assertEquals(copy.getType(), hllType);
-    assertTrue(Arrays.equals(copy.toBytes(), hllBytes));
+    assertArrayEquals(copy.toBytes(), hllBytes);
 
     HLL clone = copy.clone();
     copy = null; // allow some GC
 
     assertEquals(clone.cardinality(), hllCardinality);
     assertEquals(clone.getType(), hllType);
-    assertTrue(Arrays.equals(clone.toBytes(), hllBytes));
+    assertArrayEquals(clone.toBytes(), hllBytes);
   }
 }

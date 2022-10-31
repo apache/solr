@@ -31,12 +31,12 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -44,6 +44,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpMessage;
@@ -392,7 +393,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
                   || (streams != null && streams.size() > 1))
               && !hasNullStreamName;
 
-      LinkedList<NameValuePair> postOrPutParams = new LinkedList<>();
+      List<NameValuePair> postOrPutParams = new ArrayList<>();
 
       if (contentWriter != null) {
         String fullQueryUrl = url + wparams.toQueryString();
@@ -474,7 +475,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       Collection<ContentStream> streams,
       ModifiableSolrParams wparams,
       boolean isMultipart,
-      LinkedList<NameValuePair> postOrPutParams,
+      List<NameValuePair> postOrPutParams,
       String fullQueryUrl)
       throws IOException {
     HttpEntityEnclosingRequestBase postOrPut =
@@ -486,7 +487,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       postOrPut.addHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
     }
 
-    List<FormBodyPart> parts = new LinkedList<>();
+    List<FormBodyPart> parts = new ArrayList<>();
     Iterator<String> iter = wparams.getParameterNamesIterator();
     while (iter.hasNext()) {
       String p = iter.next();
@@ -630,11 +631,13 @@ public class HttpSolrClient extends BaseHttpSolrClient {
         return rsp;
       }
 
-      String procCt = processor.getContentType();
-      if (procCt != null) {
-        String procMimeType =
-            ContentType.parse(procCt).getMimeType().trim().toLowerCase(Locale.ROOT);
-        if (!procMimeType.equals(mimeType)) {
+      final Collection<String> processorSupportedContentTypes = processor.getContentTypes();
+      if (processorSupportedContentTypes != null && !processorSupportedContentTypes.isEmpty()) {
+        final Collection<String> processorMimeTypes =
+            processorSupportedContentTypes.stream()
+                .map(ct -> ContentType.parse(ct).getMimeType().trim().toLowerCase(Locale.ROOT))
+                .collect(Collectors.toSet());
+        if (!processorMimeTypes.contains(mimeType)) {
           if (isUnmatchedErrorCode(mimeType, httpStatus)) {
             throw new RemoteSolrException(
                 baseUrl,
@@ -647,7 +650,9 @@ public class HttpSolrClient extends BaseHttpSolrClient {
           }
 
           // unexpected mime type
-          String prefix = "Expected mime type " + procMimeType + " but got " + mimeType + ". ";
+          final String combinedMimeTypes = String.join(", ", processorMimeTypes);
+          String prefix =
+              "Expected mime type in [" + combinedMimeTypes + "] but got " + mimeType + ". ";
           Charset exceptionCharset = charset != null ? charset : FALLBACK_CHARSET;
           try {
             ByteArrayOutputStream body = new ByteArrayOutputStream();
@@ -808,8 +813,8 @@ public class HttpSolrClient extends BaseHttpSolrClient {
    * In this case the client is more flexible and can be used to send requests to any cores. The
    * cost of this is that the core must be specified on each request.
    */
-  public void setBaseURL(String baseURL) {
-    this.baseUrl = baseURL;
+  public void setBaseURL(String baseUrl) {
+    this.baseUrl = baseUrl;
   }
 
   public ResponseParser getParser() {

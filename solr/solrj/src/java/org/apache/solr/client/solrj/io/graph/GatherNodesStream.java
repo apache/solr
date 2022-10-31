@@ -27,7 +27,15 @@ import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -380,8 +388,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     Set<Map.Entry<String, String>> entries = queryParams.entrySet();
     // parameters
     for (Map.Entry<String, String> param : entries) {
-      assert param.getKey() instanceof String && param.getValue() instanceof String
-          : "Bad types passed";
+      assert param.getKey() != null && param.getValue() != null : "Bad types passed";
       String value = param.getValue().toString();
 
       // SOLR-8409: This is a special case where the params contain a " character
@@ -463,6 +470,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     return explanation;
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.traversal = (Traversal) context.get("traversal");
     if (traversal == null) {
@@ -491,12 +499,14 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     l.add(tupleStream);
     return l;
   }
 
+  @Override
   public void open() throws IOException {
     tupleStream.open();
   }
@@ -510,6 +520,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       this.nodes = nodes;
     }
 
+    @Override
     public List<Tuple> call() {
 
       Set<String> flSet = new HashSet<>();
@@ -549,7 +560,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       joinSParams.set("qt", "/export");
       joinSParams.set(SORT, gather + " asc," + traverseTo + " asc");
 
-      StringBuffer nodeQuery = new StringBuffer();
+      StringBuilder nodeQuery = new StringBuilder();
 
       boolean comma = false;
       for (String node : nodes) {
@@ -610,17 +621,17 @@ public class GatherNodesStream extends TupleStream implements Expressible {
         ++i;
         Instant windowInstant =
             size > 0
-                ? instant.plus(10 * i, ChronoUnit.SECONDS)
-                : instant.minus(10 * i, ChronoUnit.SECONDS);
+                ? instant.plus(10L * i, ChronoUnit.SECONDS)
+                : instant.minus(10L * i, ChronoUnit.SECONDS);
         String windowString = windowInstant.toString();
         windowString = windowString.substring(0, 18) + "0Z";
         windowList.add(windowString);
       }
 
       List<String> laggedWindow = windowList.subList(lag, windowList.size());
-      return laggedWindow.toArray(new String[laggedWindow.size()]);
+      return laggedWindow.toArray(new String[0]);
     } catch (ParseException e) {
-      log.warn("Unparseable date:{}", String.valueOf(start));
+      log.warn("Unparseable date: {}", start);
       return new String[0];
     }
   }
@@ -680,10 +691,12 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public void close() throws IOException {
     tupleStream.close();
   }
 
+  @Override
   public Tuple read() throws IOException {
 
     if (out == null) {
@@ -833,6 +846,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public int getCost() {
     return 0;
   }
@@ -851,22 +865,28 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       this.ids = ids;
     }
 
+    @Override
     public void open() {
       this.it = ids.iterator();
     }
 
+    @Override
     public void close() {}
 
+    @Override
     public StreamComparator getStreamSort() {
       return null;
     }
 
+    @Override
     public List<TupleStream> children() {
       return new ArrayList<>();
     }
 
+    @Override
     public void setStreamContext(StreamContext context) {}
 
+    @Override
     public Tuple read() {
       if (it.hasNext()) {
         return new Tuple("node", it.next());
@@ -875,6 +895,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       }
     }
 
+    @Override
     public String toString() {
       StringBuilder builder = new StringBuilder();
       boolean comma = false;

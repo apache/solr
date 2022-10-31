@@ -93,7 +93,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
       SolrParams[] baseParamsSet =
           new SolrParams[] {
             // NOTE: doTestFieldStatisticsResult needs the full list of possible tags to exclude
-            params("stats.field", f, "stats", "true"),
+            params(StatsParams.STATS_FIELD, f, StatsParams.STATS, "true"),
             params(
                 "stats.field",
                 "{!ex=fq1,fq2}" + f,
@@ -145,11 +145,11 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     }
   }
 
-  public void doTestFieldStatisticsResult(String f, SolrParams[] baseParamsSet) throws Exception {
+  public void doTestFieldStatisticsResult(String f, SolrParams[] baseParamsSet) {
     // used when doing key overrides in conjunction with the baseParamsSet
     //
     // even when these aren't included in the request, using them helps us
-    // test the code path of an exclusion that refers to an fq that doesn't exist
+    // test the code path of an exclusion that refers to a fq that doesn't exist
     final String all_possible_ex = "fq1,fq2";
 
     assertU(adoc("id", "1", f, "-10"));
@@ -325,7 +325,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
         "count(" + kpre + "/*)=1");
   }
 
-  public void doTestMVFieldStatisticsResult(String f) throws Exception {
+  public void doTestMVFieldStatisticsResult(String f) {
     assertU(adoc("id", "1", f, "-10", f, "-100", "active_s", "true"));
     assertU(adoc("id", "2", f, "-20", f, "200", "active_s", "true"));
     assertU(commit());
@@ -462,26 +462,24 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     }
   }
 
-  public void testFieldStatisticsResultsStringField() throws Exception {
+  public void testFieldStatisticsResultsStringField() {
     String f = "active_s";
 
-    SolrCore core = h.getCore();
     assertU(adoc("id", "1", f, "string1"));
     assertU(adoc("id", "2", f, "string2"));
     assertU(adoc("id", "3", f, "string3"));
     assertU(adoc("id", "4"));
     assertU(commit());
 
-    Map<String, String> args = new HashMap<>();
-    args.put(CommonParams.Q, "*:*");
-    args.put(StatsParams.STATS, "true");
-    args.put(StatsParams.STATS_FIELD, f);
-    args.put("f." + f + ".stats.calcdistinct", "true");
-    args.put("indent", "true");
-
     for (SolrParams baseParams :
         new SolrParams[] {
-          params("stats.field", f, "stats", "true", "f." + f + ".stats.calcdistinct", "true"),
+          params(
+              StatsParams.STATS_FIELD,
+              f,
+              StatsParams.STATS,
+              "true",
+              "f." + f + ".stats.calcdistinct",
+              "true"),
           params(
               "json.facet", // note: no distinctValues support
               "{min:'min("
@@ -512,7 +510,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     // string field cardinality
     for (SolrParams baseParams :
         new SolrParams[] {
-          params("stats.field", "{!cardinality=true}" + f, "stats", "true"),
+          params(StatsParams.STATS_FIELD, "{!cardinality=true}" + f, StatsParams.STATS, "true"),
           params("json.facet", "{cardinality:'hll(" + f + ")'}")
         }) {
       assertQ(
@@ -525,7 +523,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     // stats over a string function
     for (SolrParams baseParams :
         new SolrParams[] {
-          params("stats.field", "{!func}" + strFunc, "stats", "true"),
+          params(StatsParams.STATS_FIELD, "{!func}" + strFunc, StatsParams.STATS, "true"),
           params(
               "json.facet", // note: no function support for unique
               "{min:'min("
@@ -553,7 +551,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     }
   }
 
-  public void testFieldStatisticsResultsDateField() throws Exception {
+  public void testFieldStatisticsResultsDateField() {
     SolrCore core = h.getCore();
 
     DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.ROOT);
@@ -595,7 +593,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
   }
 
   // Check for overflow of sumOfSquares
-  public void testFieldStatisticsResultsDateFieldOverflow() throws Exception {
+  public void testFieldStatisticsResultsDateFieldOverflow() {
     SolrCore core = h.getCore();
 
     assertU(adoc("id", "1", "active_dt", "2015-12-14T09:00:00Z"));
@@ -637,8 +635,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
         "//double[@name='stddev'][.='" + Double.toString(3155673599999.999) + "']");
   }
 
-  public void doTestFieldStatisticsMissingResult(String f, SolrParams[] baseParamsSet)
-      throws Exception {
+  public void doTestFieldStatisticsMissingResult(String f, SolrParams[] baseParamsSet) {
     assertU(adoc("id", "1", f, "-10"));
     assertU(adoc("id", "2", f, "-20"));
     assertU(commit());
@@ -646,7 +643,6 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "4", f, "-40"));
     assertU(commit());
 
-    final String fpre = XPRE + "lst[@name='stats_fields']/lst[@name='" + f + "']/";
     final String key = "key_key";
     final String kpre = XPRE + "lst[@name='stats_fields']/lst[@name='" + key + "']/";
 
@@ -716,7 +712,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     }
   }
 
-  public void doTestFacetStatisticsResult(String f, SolrParams[] baseParamsSet) throws Exception {
+  public void doTestFacetStatisticsResult(String f, SolrParams[] baseParamsSet) {
     assertU(adoc("id", "1", f, "10", "active_s", "true", "other_s", "foo"));
     assertU(adoc("id", "2", f, "20", "active_s", "true", "other_s", "bar"));
     assertU(commit());
@@ -790,7 +786,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
           "{!type=func key=" + f + " ex=key_ex_tag v='product(1," + f + ")'}",
         }) {
       assertQ(
-          "test statis & stats.facet over field specified as a function: " + param,
+          "test stats & stats.facet over field specified as a function: " + param,
           req(
               "q",
               "*:*",
@@ -846,8 +842,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
         pre + "/lst[@name='false']/long[@name='cardinality'][.='2']");
   }
 
-  public void doTestFacetStatisticsMissingResult(String f, SolrParams[] baseParamsSet)
-      throws Exception {
+  public void doTestFacetStatisticsMissingResult(String f, SolrParams[] baseParamsSet) {
     assertU(adoc("id", "1", f, "10", "active_s", "true"));
     assertU(adoc("id", "2", f, "20", "active_s", "true"));
     assertU(commit());
@@ -902,7 +897,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
         "//lst[@name='active_s']/lst[@name='false']/long[@name='cardinality'][.='1']");
   }
 
-  public void testFieldStatisticsResultsNumericFieldAlwaysMissing() throws Exception {
+  public void testFieldStatisticsResultsNumericFieldAlwaysMissing() {
     SolrCore core = h.getCore();
     assertU(adoc("id", "1"));
     assertU(adoc("id", "2"));
@@ -940,7 +935,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
         "//lst[@name='active_i']/long[@name='cardinality'][.='0']");
   }
 
-  public void testFieldStatisticsResultsStringFieldAlwaysMissing() throws Exception {
+  public void testFieldStatisticsResultsStringFieldAlwaysMissing() {
     SolrCore core = h.getCore();
     assertU(adoc("id", "1"));
     assertU(adoc("id", "2"));
@@ -973,7 +968,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
   }
 
   // SOLR-3160
-  public void testFieldStatisticsResultsDateFieldAlwaysMissing() throws Exception {
+  public void testFieldStatisticsResultsDateFieldAlwaysMissing() {
     SolrCore core = h.getCore();
 
     assertU(adoc("id", "1"));
@@ -1010,7 +1005,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
         "//lst[@name='active_dt']/long[@name='cardinality'][.='0']");
   }
 
-  public void testStatsFacetMultivaluedErrorHandling() throws Exception {
+  public void testStatsFacetMultivaluedErrorHandling() {
     SolrCore core = h.getCore();
     SchemaField foo_ss = core.getLatestSchema().getField("foo_ss");
 
@@ -1023,9 +1018,9 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     assertTrue(
         "schema no longer satisfies test requirements: foo_ss no longer multivalued",
         foo_ss.multiValued());
-    assertTrue(
+    assertFalse(
         "schema no longer satisfies test requirements: foo_ss's fieldtype no longer single valued",
-        !foo_ss.getType().isMultiValued());
+        foo_ss.getType().isMultiValued());
 
     assertQEx(
         "no failure trying to get stats facet on foo_ss",
@@ -1038,7 +1033,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
   }
 
   // SOLR-3177
-  public void testStatsExcludeFilterQuery() throws Exception {
+  public void testStatsExcludeFilterQuery() {
     SolrCore core = h.getCore();
     assertU(adoc("id", "1"));
     assertU(adoc("id", "2"));
@@ -1054,7 +1049,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
 
     assertQ(
-        "test exluding filter query",
+        "test excluding filter query",
         req,
         "//lst[@name='id_i']/double[@name='min'][.='1.0']",
         "//lst[@name='id_i']/double[@name='max'][.='4.0']");
@@ -1082,9 +1077,9 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     assertTrue(
         "schema no longer satisfies test requirements: cat_docValues no longer multivalued",
         catDocValues.multiValued());
-    assertTrue(
+    assertFalse(
         "schema no longer satisfies test requirements: cat_docValues fieldtype no longer single valued",
-        !catDocValues.getType().isMultiValued());
+        catDocValues.getType().isMultiValued());
     assertTrue(
         "schema no longer satisfies test requirements: cat_docValues no longer has docValues",
         catDocValues.hasDocValues());
@@ -1132,9 +1127,9 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     assertTrue(
         "schema no longer satisfies test requirements: cat_docValues no longer multivalued",
         catDocValues.multiValued());
-    assertTrue(
+    assertFalse(
         "schema no longer satisfies test requirements: cat_docValues fieldtype no longer single valued",
-        !catDocValues.getType().isMultiValued());
+        catDocValues.getType().isMultiValued());
     assertTrue(
         "schema no longer satisfies test requirements: cat_docValues no longer has docValues",
         catDocValues.hasDocValues());
@@ -1190,9 +1185,9 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     assertTrue(
         "schema no longer satisfies test requirements: cat_docValues no longer multivalued",
         catDocValues.multiValued());
-    assertTrue(
+    assertFalse(
         "schema no longer satisfies test requirements: cat_docValues fieldtype no longer single valued",
-        !catDocValues.getType().isMultiValued());
+        catDocValues.getType().isMultiValued());
     assertTrue(
         "schema no longer satisfies test requirements: cat_docValues no longer has docValues",
         catDocValues.hasDocValues());
@@ -1225,7 +1220,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     assertQEx("can not use FieldCache on multivalued field: cat_intDocValues", req, 400);
   }
 
-  public void testMiscQueryStats() throws Exception {
+  public void testMiscQueryStats() {
     final String kpre = XPRE + "lst[@name='stats_fields']/lst[@name='k']/";
 
     assertU(adoc("id", "1", "a_f", "2.3", "b_f", "9.7", "foo_t", "how now brown cow"));
@@ -1246,7 +1241,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
         kpre + "double[@name='mean'][.='34.40666643778483']",
         kpre + "double[@name='stddev'][.='10.622007151430441']");
 
-    // force constant score for matches so we aren't dependent on similarity
+    // force constant score for matches, so we aren't dependent on similarity
     final float constScore = 4.2F;
     final double expectedScore = (double) constScore;
     assertQ(
@@ -1263,9 +1258,9 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
   }
 
   /**
-   * Whitebox test of {@link StatsField} parsing to ensure expected equivilence operations hold up
+   * Whitebox test of {@link StatsField} parsing to ensure expected equivalence operations hold up
    */
-  public void testStatsFieldWhitebox() throws Exception {
+  public void testStatsFieldWhitebox() {
     StatsComponent component = new StatsComponent();
     List<SearchComponent> components = new ArrayList<>(1);
     components.add(component);
@@ -1315,9 +1310,9 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     assertTrue(
         "schema no longer satisfies test requirements: cat_docValues no longer multivalued",
         catDocValues.multiValued());
-    assertTrue(
+    assertFalse(
         "schema no longer satisfies test requirements: cat_docValues fieldtype no longer single valued",
-        !catDocValues.getType().isMultiValued());
+        catDocValues.getType().isMultiValued());
     assertTrue(
         "schema no longer satisfies test requirements: cat_docValues no longer has docValues",
         catDocValues.hasDocValues());
@@ -1385,7 +1380,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
         "//lst[@name='" + fieldName + "']/long[@name='cardinality'][.='9']");
   }
 
-  public void testEnumFieldTypeStatus() throws Exception {
+  public void testEnumFieldTypeStatus() {
     clearIndex();
 
     String fieldName = "severity";
@@ -1476,8 +1471,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
       List<FldType> types,
       String fieldName,
       String id,
-      @SuppressWarnings({"rawtypes"}) Comparable... values)
-      throws Exception {
+      @SuppressWarnings({"rawtypes"}) Comparable... values) {
     Doc doc = createDoc(types);
     doc.getValues("id").set(0, id);
     initMultyValued(doc.getValues(fieldName), values);
@@ -1491,7 +1485,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     return cat_docValues;
   }
 
-  /** Convinience struct used in {@link #testIndividualStatLocalParams} */
+  /** Convenience struct used in {@link #testIndividualStatLocalParams} */
   private static final class ExpectedStat {
     public static final String KPRE = XPRE + "lst[@name='stats_fields']/lst[@name='k']/";
     public final Stat stat;
@@ -1533,7 +1527,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     }
   }
 
-  public void testIndividualStatLocalParams() throws Exception {
+  public void testIndividualStatLocalParams() {
     final String kpre = ExpectedStat.KPRE;
 
     assertU(adoc("id", "1", "a_f", "2.3", "b_f", "9.7", "a_i", "9", "foo_t", "how now brown cow"));
@@ -1557,7 +1551,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
         kpre + "double[@name='min'][.='9.0']",
         "count(" + kpre + "*)=2");
 
-    // for stats that are true/false, sanity check false does it's job
+    // for stats that are true/false, check false does its job
     assertQ(
         "min=true & max=false: only min should come back",
         req("q", "*:*", "stats", "true", "stats.field", "{!key=k max=false min=true}a_i"),
@@ -1604,7 +1598,6 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
 
     EnumSet<Stat> allStats = EnumSet.allOf(Stat.class);
 
-    final List<ExpectedStat> expected = new ArrayList<ExpectedStat>(allStats.size());
     ExpectedStat.createSimple(Stat.min, "true", "double", "0.0");
     ExpectedStat.createSimple(Stat.max, "true", "double", "9.0");
     ExpectedStat.createSimple(Stat.missing, "true", "long", "0");
@@ -1727,7 +1720,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
   }
 
   // Test for Solr-6349
-  public void testCalcDistinctStats() throws Exception {
+  public void testCalcDistinctStats() {
     final String kpre = XPRE + "lst[@name='stats_fields']/lst[@name='k']/";
     final String min = "count(" + kpre + "/double[@name='min'])";
     final String countDistinct = "count(" + kpre + "/long[@name='countDistinct'])";
@@ -1916,7 +1909,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
   /**
    * @see #testHllOptions
    */
-  public void testCardinality() throws Exception {
+  public void testCardinality() {
     SolrCore core = h.getCore();
     // insure we have the same hasher a_l would use
     HashFunction hasher =
@@ -1981,7 +1974,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
           params("stats.field", "{!key=a min=true cardinality=false}a_l"),
           params("stats.field", "{!key=a min=true cardinality=$doit}a_l", "doit", "false"),
           params("stats.field", "{!key=a min=true cardinality=$doit}a_l"), // missing doit param
-          // other tunning options shouldn't change things
+          // other tuning options shouldn't change things
           params("stats.field", "{!key=a min=true hllPreHashed=true cardinality=false}a_l"),
           params(
               "stats.field",
@@ -2006,7 +1999,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
    * @see #testCardinality
    * @see #testHllOptionsErrors
    */
-  public void testHllOptions() throws Exception {
+  public void testHllOptions() {
     SolrCore core = h.getCore();
 
     SchemaField field_l = core.getLatestSchema().getField("field_l");
@@ -2021,26 +2014,26 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     assertNull(HllOptions.parseHllOptions(params(), field_l));
     assertNull(HllOptions.parseHllOptions(params("cardinality", "false"), field_l));
 
-    // sanity check, future proof against the HLL library changing stuff on us
+    // check, future-proof against the HLL library changing stuff on us
     assertEquals(
         "HLL Changed definition min for log2m, "
-            + "need to note in upgrade instructions and maybe adjust accuracy hueristic",
+            + "need to note in upgrade instructions and maybe adjust accuracy heuristic",
         4,
         HLL.MINIMUM_LOG2M_PARAM);
     // NOTE: https://github.com/aggregateknowledge/java-hll/issues/14
     assertEquals(
         "HLL Changed definition max for log2m, "
-            + "need to note in upgrade instructions and maybe adjust accuracy hueristic",
+            + "need to note in upgrade instructions and maybe adjust accuracy heuristic",
         30,
         HLL.MAXIMUM_LOG2M_PARAM);
     assertEquals(
         "HLL Changed definition min for regwidth, "
-            + "need to note in upgrade instructions and probably adjust hueristic",
+            + "need to note in upgrade instructions and probably adjust heuristic",
         1,
         HLL.MINIMUM_REGWIDTH_PARAM);
     assertEquals(
         "HLL Changed definition max for regwidth, "
-            + "need to note in upgrade instructions and probably adjust hueristic",
+            + "need to note in upgrade instructions and probably adjust heuristic",
         8,
         HLL.MAXIMUM_REGWIDTH_PARAM);
 
@@ -2074,7 +2067,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
       // non defaults: lower/upper accuracy bounds should give min/max log2m & adjusted regwidth
       HllOptions optsMin = HllOptions.parseHllOptions(params("cardinality", "0"), field);
       assertEquals(f + " min log2m", HLL.MINIMUM_LOG2M_PARAM, optsMin.getLog2m());
-      assertEquals(f + " min regwidth", 5, optsMin.getRegwidth()); // lowest hueristic for 64bit
+      assertEquals(f + " min regwidth", 5, optsMin.getRegwidth()); // lowest heuristic for 64bit
 
       HllOptions optsMax = HllOptions.parseHllOptions(params("cardinality", "1"), field);
       assertEquals(f + " max log2m", HLL.MAXIMUM_LOG2M_PARAM, optsMax.getLog2m());
@@ -2095,7 +2088,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
           params(
               "cardinality", "true", "hllLog2m", "13", "hllRegwidth", "5", "hllPreHash", "false"),
 
-          // explicit hllLog2M & hllRegwidth should override hueristic float arg
+          // explicit hllLog2M & hllRegwidth should override heuristic float arg
           params("cardinality", "1.0", "hllLog2m", "13", "hllRegwidth", "5"),
           params("cardinality", "0.0", "hllLog2m", "13", "hllRegwidth", "5", "hllPreHash", "false")
         };
@@ -2111,7 +2104,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
       // non defaults: lower/upper accuracy bounds should give min/max log2m & adjusted regwidth
       HllOptions optsMin = HllOptions.parseHllOptions(params("cardinality", "0"), field);
       assertEquals(f + " min log2m", HLL.MINIMUM_LOG2M_PARAM, optsMin.getLog2m());
-      assertEquals(f + " min regwidth", 4, optsMin.getRegwidth()); // lowest hueristic for 32bit
+      assertEquals(f + " min regwidth", 4, optsMin.getRegwidth()); // lowest heuristic for 32bit
 
       HllOptions optsMax = HllOptions.parseHllOptions(params("cardinality", "1"), field);
       assertEquals(f + " max log2m", HLL.MAXIMUM_LOG2M_PARAM, optsMax.getLog2m());
@@ -2134,7 +2127,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
    * @see #testCardinality
    * @see #testHllOptions
    */
-  public void testHllOptionsErrors() throws Exception {
+  public void testHllOptionsErrors() {
     String[] baseParams = new String[] {"q", "*:*", "stats", "true", "indent", "true", "rows", "0"};
     SolrCore core = h.getCore();
     SchemaField foo_s = core.getLatestSchema().getField("foo_s");
@@ -2264,7 +2257,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
             "stats.field",
             "{!percentiles='" + percentiles + "'}stat_f")) {
       SolrQueryResponse rsp = h.queryAndResponse(null, query);
-      NamedList<Double> pout = extractPercentils(rsp, "stat_f");
+      NamedList<Double> pout = extractPercentiles(rsp, "stat_f");
       for (int i = 0; i < percentilesList.size(); i++) {
         // ensure exact order, but all values should be null (empty result set)
         assertEquals(percentilesList.get(i), pout.getName(i));
@@ -2292,7 +2285,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
             "stats.field",
             "{!percentiles='" + percentiles + "'}stat_f")) {
       SolrQueryResponse rsp = h.queryAndResponse(null, query);
-      NamedList<Double> pout = extractPercentils(rsp, "stat_f");
+      NamedList<Double> pout = extractPercentiles(rsp, "stat_f");
       for (int i = 0; i < percentilesList.size(); i++) {
         String p = percentilesList.get(i);
         assertEquals(p, pout.getName(i));
@@ -2304,7 +2297,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     try (SolrQueryRequest query =
         req("q", "*:*", "stats", "true", "stats.field", "{!percentiles=''}stat_f")) {
       SolrQueryResponse rsp = h.queryAndResponse(null, query);
-      NamedList<Double> pout = extractPercentils(rsp, "stat_f");
+      NamedList<Double> pout = extractPercentiles(rsp, "stat_f");
       assertNull(pout);
     }
 
@@ -2325,13 +2318,13 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
             "stats.field",
             "{!percentiles='" + percentiles + "'}stat_s")) {
       SolrQueryResponse rsp = h.queryAndResponse(null, query);
-      assertNull(extractPercentils(rsp, "stat_dt"));
-      assertNull(extractPercentils(rsp, "stat_s"));
+      assertNull(extractPercentiles(rsp, "stat_dt"));
+      assertNull(extractPercentiles(rsp, "stat_s"));
     }
   }
 
   @SuppressWarnings({"unchecked"})
-  private NamedList<Double> extractPercentils(SolrQueryResponse rsp, String key) {
+  private NamedList<Double> extractPercentiles(SolrQueryResponse rsp, String key) {
     return ((NamedList<NamedList<NamedList<NamedList<Double>>>>) rsp.getValues().get("stats"))
         .get("stats_fields")
         .get(key)
@@ -2353,23 +2346,27 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
       intCombos = new Combinations(all.length, comboSize);
     }
 
+    @Override
     public Iterator<EnumSet<Stat>> iterator() {
       return new Iterator<EnumSet<Stat>>() {
         final Iterator<int[]> wrapped = intCombos.iterator();
 
+        @Override
         public void remove() {
           wrapped.remove();
         }
 
+        @Override
         public boolean hasNext() {
           return wrapped.hasNext();
         }
 
+        @Override
         public EnumSet<Stat> next() {
           EnumSet<Stat> result = EnumSet.noneOf(Stat.class);
           int[] indexes = wrapped.next();
-          for (int i = 0; i < indexes.length; i++) {
-            result.add(all[indexes[i]]);
+          for (int index : indexes) {
+            result.add(all[index]);
           }
           return result;
         }

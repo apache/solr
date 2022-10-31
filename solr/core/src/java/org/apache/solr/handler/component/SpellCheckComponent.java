@@ -71,6 +71,7 @@ import org.apache.solr.spelling.SpellingOptions;
 import org.apache.solr.spelling.SpellingQueryConverter;
 import org.apache.solr.spelling.SpellingResult;
 import org.apache.solr.spelling.Token;
+import org.apache.solr.util.SolrResponseUtil;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,7 +80,8 @@ import org.slf4j.LoggerFactory;
  * A SearchComponent implementation which provides support for spell checking and suggestions using
  * the Lucene contributed SpellChecker.
  *
- * <p>Refer to https://solr.apache.org/guide/spell-checking.html for more details
+ * <p>Refer to <a href="https://solr.apache.org/guide/solr/latest/query-guide/spell-checking.html">
+ * https://solr.apache.org/guide/solr/latest/query-guide/spell-checking.html</a> for more details
  *
  * @since solr 1.3
  */
@@ -262,10 +264,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
               }
             }
           }
-        } catch (IOException e) {
-          log.error("Error", e);
-          return null;
-        } catch (SyntaxError e) {
+        } catch (IOException | SyntaxError e) {
           log.error("Error", e);
           return null;
         }
@@ -366,6 +365,8 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     int purpose =
         rb.grouping() ? ShardRequest.PURPOSE_GET_TOP_GROUPS : ShardRequest.PURPOSE_GET_TOP_IDS;
     if ((sreq.purpose & purpose) != 0) {
+      getSpellChecker(params).modifyRequest(rb, sreq);
+
       // fetch at least 5 suggestions from each shard
       int count = sreq.params.getInt(SPELLCHECK_COUNT, 1);
       if (count < 5) count = 5;
@@ -406,18 +407,9 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     if (maxResultsForSuggest == null || !isCorrectlySpelled) {
       for (ShardRequest sreq : rb.finished) {
         for (ShardResponse srsp : sreq.responses) {
-          NamedList<?> nl = null;
-          try {
-            nl = (NamedList<?>) srsp.getSolrResponse().getResponse().get("spellcheck");
-          } catch (Exception e) {
-            if (ShardParams.getShardsTolerantAsBool(rb.req.getParams())) {
-              continue; // looks like a shard did not return anything
-            }
-            throw new SolrException(
-                SolrException.ErrorCode.SERVER_ERROR,
-                "Unable to read spelling info for shard: " + srsp.getShard(),
-                e);
-          }
+          NamedList<?> nl =
+              (NamedList<?>)
+                  SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "spellcheck", true);
           if (log.isDebugEnabled()) {
             log.debug("{} {}", srsp.getShard(), nl);
           }

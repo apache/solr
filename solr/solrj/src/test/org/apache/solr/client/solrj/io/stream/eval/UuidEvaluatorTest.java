@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.io.stream.eval;
 
 import java.util.HashMap;
 import java.util.Map;
-import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
@@ -35,13 +34,13 @@ public class UuidEvaluatorTest extends SolrTestCase {
     super();
 
     factory = new StreamFactory().withFunctionName("uuid", UuidEvaluator.class);
-    values = new HashMap<String, Object>();
+    values = new HashMap<>();
   }
 
   @Test
   public void testUuid() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("uuid()");
-    Assert.assertTrue(evaluator.evaluate(null) instanceof String);
+    assertTrue(evaluator.evaluate(null) instanceof String);
     String uuid = (String) evaluator.evaluate(null);
     assertEquals(uuid.split("-").length, 5);
     String uuid1 = (String) evaluator.evaluate(new Tuple(values));

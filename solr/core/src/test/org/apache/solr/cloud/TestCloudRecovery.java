@@ -56,7 +56,7 @@ public class TestCloudRecovery extends SolrCloudTestCase {
   private int tlogReplicas;
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void setupCluster() {
     System.setProperty("metricsEnabled", "true");
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     System.setProperty("solr.ulog.numRecordsToKeep", "1000");
@@ -140,9 +140,9 @@ public class TestCloudRecovery extends SolrCloudTestCase {
     }
 
     // check metrics
-    int replicationCount = 0;
-    int errorsCount = 0;
-    int skippedCount = 0;
+    long replicationCount = 0;
+    long errorsCount = 0;
+    long skippedCount = 0;
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       SolrMetricManager manager = jetty.getCoreContainer().getMetricManager();
       List<String> registryNames =

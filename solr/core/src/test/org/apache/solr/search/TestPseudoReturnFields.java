@@ -54,7 +54,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
   }
 
   @Before
-  private void addUncommittedDoc99() {
+  public void addUncommittedDoc99() {
     // uncommitted doc in transaction log at start of every test
     // Even if an RTG causes ulog to re-open realtime searcher, next test method
     // will get another copy of doc 99 in the ulog
@@ -64,7 +64,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
   public void testMultiValued() throws Exception {
     // the response writers used to consult isMultiValued on the field
     // but this doesn't work when you alias a single valued field to
-    // a multi valued field (the field value is copied first, then
+    // a multivalued field (the field value is copied first, then
     // if the type lookup is done again later, we get the wrong thing). SOLR-4036
 
     // score as pseudo field - precondition checks
@@ -237,7 +237,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     }
   }
 
-  public void testFunctions() throws Exception {
+  public void testFunctions() {
     assertQ(
         "fl=log(val_i)",
         req("q", "*:*", "rows", "1", "fl", "log(val_i)"),

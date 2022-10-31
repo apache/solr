@@ -46,7 +46,7 @@ public class TestShortCircuitedRequests extends AbstractFullDistribZkTestBase {
 
     doQuery("a!doc1", "q", "*:*", ShardParams._ROUTE_, "a!"); // can go to any random node
 
-    // query shard3 directly with _route_=a! so that we trigger the short circuited request path
+    // query shard3 directly with _route_=a! so that we trigger the short-circuited request path
     Replica shard3 =
         cloudClient.getClusterState().getCollection(DEFAULT_COLLECTION).getLeader("shard3");
     String nodeName = shard3.getNodeName();

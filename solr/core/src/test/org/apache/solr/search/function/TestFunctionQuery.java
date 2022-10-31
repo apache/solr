@@ -42,8 +42,6 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     initCore("solrconfig-functionquery.xml", "schema11.xml");
   }
 
-  String base = "external_foo_extf";
-
   static long start = System.nanoTime();
 
   void makeExternalFile(String field, String contents) {
@@ -119,7 +117,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
     for (int i = 0; i < results.length; i += 2) {
       final int id = (int) results[i];
-      assert ((float) id) == results[i];
+      assertEquals(((float) id), results[i], 0.0);
 
       String xpath =
           "//doc[./str[@name='id']='"
@@ -220,21 +218,21 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
     createIndex(null, ids);
 
-    // Unsorted field, largest first
+    // Unsorted field, the largest first
     makeExternalFile(field, "54321=543210\n0=-999\n25=250");
     // test identity (straight field value)
     singleTest(field, "\0", 54321, 543210, 0, 0, 25, 250, 100, 1);
     Object orig = FileFloatSource.onlyForTesting;
     singleTest(field, "log(\0)");
     // make sure the values were cached
-    assertTrue(orig == FileFloatSource.onlyForTesting);
+    assertSame(orig, FileFloatSource.onlyForTesting);
     singleTest(field, "sqrt(\0)");
-    assertTrue(orig == FileFloatSource.onlyForTesting);
+    assertSame(orig, FileFloatSource.onlyForTesting);
 
     makeExternalFile(field, "0=1");
     assertU(h.query("/reloadCache", lrf.makeRequest("", "")));
     singleTest(field, "sqrt(\0)");
-    assertTrue(orig != FileFloatSource.onlyForTesting);
+    assertNotSame(orig, FileFloatSource.onlyForTesting);
 
     Random r = random();
     for (int i = 0; i < 10; i++) { // do more iterations for a thorough test
@@ -942,7 +940,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
         "//float[@name='score']='0.875'");
 
     // strdist on a missing valuesource should itself by missing, so the ValueSourceAugmenter
-    // should supress it...
+    // should suppress it...
     assertQ(
         req(
             "q", "id:1",
@@ -979,7 +977,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testFuncs() throws Exception {
+  public void testFuncs() {
     clearIndex();
 
     assertU(adoc("id", "1", "foo_d", "9"));
@@ -1037,22 +1035,22 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
     createIndex(null, ids);
 
-    // Unsorted field, largest first
+    // Unsorted field, the largest first
     makeExternalFile(field, "54321=543210\n0=-999\n25=250");
     // test identity (straight field value)
     singleTest(fieldAsFunc, "\0", 54321, 543210, 0, 0, 25, 250, 100, 1);
     Object orig = FileFloatSource.onlyForTesting;
     singleTest(fieldAsFunc, "log(\0)");
     // make sure the values were cached
-    assertTrue(orig == FileFloatSource.onlyForTesting);
+    assertSame(orig, FileFloatSource.onlyForTesting);
     singleTest(fieldAsFunc, "sqrt(\0)");
-    assertTrue(orig == FileFloatSource.onlyForTesting);
+    assertSame(orig, FileFloatSource.onlyForTesting);
 
     makeExternalFile(field, "0=1");
     assertU(adoc("id", "10000")); // will get same reader if no index change
     assertU(commit());
     singleTest(fieldAsFunc, "sqrt(\0)");
-    assertTrue(orig != FileFloatSource.onlyForTesting);
+    assertNotSame(orig, FileFloatSource.onlyForTesting);
   }
 
   /**

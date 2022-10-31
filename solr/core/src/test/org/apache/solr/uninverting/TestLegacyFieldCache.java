@@ -143,9 +143,10 @@ public class TestLegacyFieldCache extends SolrTestCase {
     assertTrue(
         "docsWithField(theLong) must be class Bits.MatchAllBits",
         docsWithField instanceof Bits.MatchAllBits);
-    assertTrue(
+    assertEquals(
         "docsWithField(theLong) Size: " + docsWithField.length() + " is not: " + NUM_DOCS,
-        docsWithField.length() == NUM_DOCS);
+        docsWithField.length(),
+        NUM_DOCS);
     for (int i = 0; i < docsWithField.length(); i++) {
       assertTrue(docsWithField.get(i));
     }
@@ -158,9 +159,10 @@ public class TestLegacyFieldCache extends SolrTestCase {
     assertFalse(
         "docsWithField(sparse) must not be class Bits.MatchAllBits",
         docsWithField instanceof Bits.MatchAllBits);
-    assertTrue(
+    assertEquals(
         "docsWithField(sparse) Size: " + docsWithField.length() + " is not: " + NUM_DOCS,
-        docsWithField.length() == NUM_DOCS);
+        docsWithField.length(),
+        NUM_DOCS);
     for (int i = 0; i < docsWithField.length(); i++) {
       assertEquals(i % 2 == 0, docsWithField.get(i));
     }
@@ -330,7 +332,7 @@ public class TestLegacyFieldCache extends SolrTestCase {
     dir.close();
   }
 
-  public void testNonexistantFields() throws Exception {
+  public void testNonexistentFields() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     Document doc = new Document();

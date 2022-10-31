@@ -24,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
@@ -104,22 +105,22 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
     nl.add(null, null);
     rsp.add("nl", nl);
 
-    rsp.add("byte", Byte.valueOf((byte) -3));
-    rsp.add("short", Short.valueOf((short) -4));
+    rsp.add("byte", (byte) -3);
+    rsp.add("short", (short) -4);
     rsp.add("bytes", "abc".getBytes(StandardCharsets.UTF_8));
 
     w.write(buf, req, rsp);
 
     final String expectedNLjson;
-    if (namedListStyle == JSONWriter.JSON_NL_FLAT) {
+    if (Objects.equals(namedListStyle, JSONWriter.JSON_NL_FLAT)) {
       expectedNLjson = "\"nl\":[\"data1\",\"he\\u2028llo\\u2029!\",null,42,null,null]";
-    } else if (namedListStyle == JSONWriter.JSON_NL_MAP) {
+    } else if (Objects.equals(namedListStyle, JSONWriter.JSON_NL_MAP)) {
       expectedNLjson = "\"nl\":{\"data1\":\"he\\u2028llo\\u2029!\",\"\":42,\"\":null}";
-    } else if (namedListStyle == JSONWriter.JSON_NL_ARROFARR) {
+    } else if (Objects.equals(namedListStyle, JSONWriter.JSON_NL_ARROFARR)) {
       expectedNLjson = "\"nl\":[[\"data1\",\"he\\u2028llo\\u2029!\"],[null,42],[null,null]]";
-    } else if (namedListStyle == JSONWriter.JSON_NL_ARROFMAP) {
+    } else if (Objects.equals(namedListStyle, JSONWriter.JSON_NL_ARROFMAP)) {
       expectedNLjson = "\"nl\":[{\"data1\":\"he\\u2028llo\\u2029!\"},42,null]";
-    } else if (namedListStyle == JSONWriter.JSON_NL_ARROFNTV) {
+    } else if (Objects.equals(namedListStyle, JSONWriter.JSON_NL_ARROFNTV)) {
       expectedNLjson =
           "\"nl\":[{\"name\":\"data1\",\"type\":\"str\",\"value\":\"he\\u2028llo\\u2029!\"},"
               + "{\"name\":null,\"type\":\"int\",\"value\":42},"

@@ -296,6 +296,7 @@ public class Tuple implements Cloneable, MapWriter {
     this.fields.put(StreamParams.METRICS, metrics);
   }
 
+  @Override
   public Tuple clone() {
     Tuple clone = new Tuple(this);
     return clone;
@@ -358,12 +359,12 @@ public class Tuple implements Cloneable, MapWriter {
    * Create a new empty tuple marked as EXCEPTION, and optionally EOF.
    *
    * @param msg exception message
-   * @param eof if true the tuple will be marked as EOF
+   * @param isEOF if true the tuple will be marked as EOF
    */
-  public static Tuple EXCEPTION(String msg, boolean eof) {
+  public static Tuple EXCEPTION(String msg, boolean isEOF) {
     Tuple tuple = new Tuple();
     tuple.put(StreamParams.EXCEPTION, msg);
-    if (eof) {
+    if (isEOF) {
       tuple.put(StreamParams.EOF, true);
     }
     return tuple;
@@ -373,11 +374,11 @@ public class Tuple implements Cloneable, MapWriter {
    * Create a new empty tuple marked as EXCEPTION and optionally EOF.
    *
    * @param t exception - full stack trace will be used as an exception message
-   * @param eof if true the tuple will be marked as EOF
+   * @param isEOF if true the tuple will be marked as EOF
    */
-  public static Tuple EXCEPTION(Throwable t, boolean eof) {
+  public static Tuple EXCEPTION(Throwable t, boolean isEOF) {
     StringWriter sw = new StringWriter();
     t.printStackTrace(new PrintWriter(sw));
-    return EXCEPTION(sw.toString(), eof);
+    return EXCEPTION(sw.toString(), isEOF);
   }
 }

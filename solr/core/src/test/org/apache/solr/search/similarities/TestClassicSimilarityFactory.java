@@ -32,13 +32,13 @@ public class TestClassicSimilarityFactory extends BaseSimilarityTestCase {
   }
 
   /** Classic w/ default parameters */
-  public void testDefaults() throws Exception {
+  public void testDefaults() {
     ClassicSimilarity sim = getSimilarity("text", ClassicSimilarity.class);
-    assertEquals(true, sim.getDiscountOverlaps());
+    assertTrue(sim.getDiscountOverlaps());
   }
   /** Classic w/ explicit params */
-  public void testParams() throws Exception {
+  public void testParams() {
     ClassicSimilarity sim = getSimilarity("text_overlap", ClassicSimilarity.class);
-    assertEquals(false, sim.getDiscountOverlaps());
+    assertFalse(sim.getDiscountOverlaps());
   }
 }
