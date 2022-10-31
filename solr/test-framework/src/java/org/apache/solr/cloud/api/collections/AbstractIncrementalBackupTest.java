@@ -349,7 +349,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
 
   protected void corruptIndexFiles() throws IOException {
     List<Slice> slices = new ArrayList<>(getCollectionState(getCollectionName()).getSlices());
-    Replica leader = slices.get(random().nextInt(slices.size()) - 1).getLeader();
+    Replica leader = slices.get(random().nextInt(slices.size())).getLeader();
     JettySolrRunner leaderNode = cluster.getReplicaJetty(leader);
 
     final Path fileToCorrupt;
@@ -367,12 +367,14 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
       if (indexFiles.isEmpty()) {
         return;
       }
-      fileToCorrupt = indexFiles.get(random().nextInt(indexFiles.size()) - 1);
+      fileToCorrupt = indexFiles.get(random().nextInt(indexFiles.size()));
     }
     final byte[] contents = Files.readAllBytes(fileToCorrupt);
     for (int i = 1; i < 5; i++) {
       int key = contents.length - CodecUtil.footerLength() - i;
-      contents[key] = (byte) (contents[key] + 1);
+      if (key >= 0) {
+        contents[key] = (byte) (contents[key] + 1);
+      }
     }
     Files.write(fileToCorrupt, contents);
   }
