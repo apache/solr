@@ -26,17 +26,20 @@ import java.lang.invoke.MethodHandles;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.apache.solr.api.JerseyResource;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkDynamicConfig;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.admin.api.ZookeeperAPI;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
@@ -51,6 +54,8 @@ import org.slf4j.LoggerFactory;
  */
 public class ZookeeperStatusHandler extends RequestHandlerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  public static final Map<String, Object> zkStatus = new HashMap<>();
 
   private static final int ZOOKEEPER_DEFAULT_PORT = 2181;
   private static final String STATUS_RED = "red";
@@ -96,6 +101,16 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
           SolrException.ErrorCode.BAD_REQUEST,
           "The Zookeeper status API is only available in Cloud mode");
     }
+  }
+
+  @Override
+  public Boolean registerV2() {
+    return true;
+  }
+
+  @Override
+  public Collection<Class<? extends JerseyResource>> getJerseyResources() {
+    return List.of(ZookeeperAPI.class);
   }
 
   /**
@@ -156,7 +171,6 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
         zookeepers = hostsFromConnectionString;
       }
     }
-    final Map<String, Object> zkStatus = new HashMap<>();
     final List<Object> details = new ArrayList<>();
     int numOk = 0;
     int standalone = 0;

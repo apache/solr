@@ -25,6 +25,7 @@ import static org.apache.solr.security.PermissionNameProvider.Name.ZK_READ_PERM;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.Operation;
+import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -36,6 +37,8 @@ import org.apache.solr.api.JerseyResource;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkDynamicConfig;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -44,15 +47,20 @@ import org.apache.solr.handler.admin.ZookeeperInfoHandler.FilterType;
 import org.apache.solr.handler.admin.ZookeeperInfoHandler.PageOfCollections;
 import org.apache.solr.handler.admin.ZookeeperInfoHandler.PagedCollectionSupport;
 import org.apache.solr.handler.admin.ZookeeperInfoHandler.ZKPrinter;
+import org.apache.solr.handler.admin.ZookeeperStatusHandler;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.zookeeper.KeeperException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Path("/cluster/zookeeper/")
 public class ZookeeperAPI extends JerseyResource {
 
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final CoreContainer coreContainer;
   private final SolrQueryRequest solrQueryRequest;
 
@@ -230,16 +238,53 @@ public class ZookeeperAPI extends JerseyResource {
     return response;
   }
 
+  @GET
+  @Path("/status")
+  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
+  @Operation(
+      summary = "Show Zookeeper status.",
+      tags = {"zookeeperStatus"})
+  @PermissionName(ZK_READ_PERM)
+  public ZookeeperStatus getStatus() throws Exception {
+    final ZookeeperStatus response = instantiateJerseyResponse(ZookeeperStatus.class);
+    if (coreContainer.isZooKeeperAware()) {
+      String zkHost = coreContainer.getZkController().getZkServerAddress();
+      ZkDynamicConfig dynConfig = null;
+      try {
+        SolrZkClient zkClient = coreContainer.getZkController().getZkClient();
+        dynConfig = ZkDynamicConfig.parseLines(zkClient.getConfig());
+      } catch (SolrException e) {
+        if (!(e.getCause() instanceof KeeperException)) {
+          throw e;
+        }
+        if (log.isWarnEnabled()) {
+          log.warn("{} - Continuing with static connection string", e.toString());
+        }
+      }
+      response.zookeeperStatus.add("zkStatus", ZookeeperStatusHandler.zkStatus);
+    } else {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "The Zookeeper status API is only available in Cloud mode");
+    }
+    return response;
+  }
+
   public static class ZookeeperFilesResponse extends SolrJerseyResponse {
 
     @JsonProperty("zookeeperFiles")
     public NamedList<Object> zookeeperFiles = new NamedList<>();
-
   }
 
   public static class ZookeeperFileResponse extends SolrJerseyResponse {
 
     @JsonProperty("zookeeperFile")
     public NamedList<Object> zookeeperFile = new NamedList<>();
+  }
+
+  public static class ZookeeperStatus extends SolrJerseyResponse {
+
+    @JsonProperty("zookeeperStatus")
+    public NamedList<Object> zookeeperStatus = new NamedList<>();
   }
 }
