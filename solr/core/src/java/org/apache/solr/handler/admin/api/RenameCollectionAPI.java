@@ -16,47 +16,68 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import org.apache.solr.api.Command;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.solr.api.EndPoint;
-import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.request.beans.RenameCollectionPayload;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.handler.admin.CollectionsHandler;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.SolrJacksonAnnotationInspector;
 
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
+import static org.apache.solr.common.cloud.ZkStateReader.ALIASES;
+import static org.apache.solr.common.params.CollectionAdminParams.TARGET;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonParams.ACTION;
+import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.handler.ClusterAPI.wrapParams;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
-@EndPoint(
-        path = {"/collections/{collection}"},
-        method = POST,
-        permission = COLL_EDIT_PERM)
+
 public class RenameCollectionAPI {
 
-    private static final String V2_RENAME_COLLECTION_CMD = "rename";
-    private final CollectionsHandler collectionsHandler;
 
+
+    private final CollectionsHandler collectionsHandler;
     public RenameCollectionAPI(CollectionsHandler collectionsHandler) {
         this.collectionsHandler = collectionsHandler;
     }
 
-    @Command(name = V2_RENAME_COLLECTION_CMD)
-    public void renameCollection(PayloadObj<RenameCollectionPayload> obj) throws Exception {
-       final RenameCollectionPayload v2Body = obj.get();
-        final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
+    public static final String RENAME_COLLECTION_CMD = "rename";
 
-        v1Params.put(
-                CollectionParams.ACTION, CollectionParams.CollectionAction.RENAME.name().toLowerCase(Locale.ROOT));
-        v1Params.put(
-                CollectionAdminParams.COLLECTION, obj.getRequest().getPathTemplateValues().get(CollectionAdminParams.COLLECTION));
+    private static final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+            .disable(MapperFeature.AUTO_DETECT_FIELDS);
 
-        v1Params.put(CollectionAdminParams.TARGET, v1Params.remove("to"));
+    @EndPoint(
+            path = {"/collections/{collection}/command/rename"},
+            method = POST,
+            permission = COLL_EDIT_PERM)
+    public void renameCollection(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception{
 
-        collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
+        final ContentStream cs = req.getContentStreams().iterator().next();
+        RenameCollectionPayload v2Body = mapper.readValue(cs.getStream(), RenameCollectionPayload.class);
+
+        req =
+                wrapParams(
+                        req,
+                        ACTION,
+                        CollectionParams.CollectionAction.RENAME.name().toLowerCase(Locale.ROOT),
+                        NAME,
+                        req.getPathTemplateValues().get(CollectionAdminParams.COLLECTION),
+                        TARGET,
+                        v2Body.to,
+                        ASYNC,
+                        v2Body.async,
+                        ALIASES,
+                        v2Body.followAliases);
+        collectionsHandler.handleRequestBody(req, rsp);
     }
 }

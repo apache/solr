@@ -19,17 +19,26 @@ package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.common.params.CollectionAdminParams.*;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.apache.solr.common.params.CommonParams.ACTION;
-import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CommonParams.*;
 import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
+import com.google.common.collect.Maps;
+import org.apache.solr.api.Api;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.TestCollectionAPIs;
 import org.apache.solr.handler.admin.V2ApiMappingTest;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Test;
 
 /**
@@ -87,13 +96,15 @@ public class V2CollectionAPIMappingTest extends V2ApiMappingTest<CollectionsHand
 
 
   @Test
-  public void testRenameCollectionAllParams() throws Exception {
-    final SolrParams v1Params = captureConvertedV1Params(
-            "/collections/collName", "POST", "{\"rename\": {\"to\": \"targetColl\"}}");
+  public void testRenameCollectionAllParams(){
+    final SolrQueryRequest request = runRenameCollectionsApi("/collections/collName");
 
-    assertEquals("rename", v1Params.get(ACTION));
-    assertEquals("collName", v1Params.get(COLLECTION));
-    assertEquals("targetColl", v1Params.get(TARGET));
+    assertEquals("rename", request.getContext().get(ACTION));
+    assertEquals("collName", request.getContext().get(NAME));
+    assertEquals("targetColl", request.getContext().get(TARGET));
+    assertEquals("requestTrackingId", request.getContext().get(ASYNC));
+    assertEquals(true, request.getParams().getPrimitiveBool("followAliases"));
+
   }
 
 
@@ -258,5 +269,38 @@ public class V2CollectionAPIMappingTest extends V2ApiMappingTest<CollectionsHand
     assertEquals("collName", v1Params.get(NAME));
     assertEquals("somePropertyName", v1Params.get("propertyName"));
     assertEquals("somePropertyValue", v1Params.get("propertyValue"));
+  }
+
+
+
+
+
+
+  private SolrQueryRequest runRenameCollectionsApi(String path) {
+    final HashMap<String, String> parts = new HashMap<>();
+    final Api api = apiBag.lookup(path, "POST", parts);
+    final SolrQueryResponse rsp = new SolrQueryResponse();
+    final LocalSolrQueryRequest req =
+            new LocalSolrQueryRequest(null, Maps.newHashMap()) {
+              @Override
+              public List<CommandOperation> getCommands(boolean validateInput) {
+                return Collections.emptyList();
+              }
+
+              @Override
+              public Map<String, String> getPathTemplateValues() {
+                return parts;
+              }
+
+              @Override
+              public String getHttpMethod() {
+                return "POST";
+              }
+            };
+    req.getContext().put(PATH, path);
+
+    api.call(req, rsp);
+
+    return req;
   }
 }

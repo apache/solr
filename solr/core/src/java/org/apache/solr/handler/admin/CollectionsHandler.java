@@ -200,25 +200,7 @@ import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.handler.admin.api.AddReplicaAPI;
-import org.apache.solr.handler.admin.api.AddReplicaPropertyAPI;
-import org.apache.solr.handler.admin.api.AdminAPIBase;
-import org.apache.solr.handler.admin.api.BalanceShardUniqueAPI;
-import org.apache.solr.handler.admin.api.CollectionStatusAPI;
-import org.apache.solr.handler.admin.api.CreateShardAPI;
-import org.apache.solr.handler.admin.api.DeleteCollectionAPI;
-import org.apache.solr.handler.admin.api.DeleteReplicaAPI;
-import org.apache.solr.handler.admin.api.DeleteReplicaPropertyAPI;
-import org.apache.solr.handler.admin.api.DeleteShardAPI;
-import org.apache.solr.handler.admin.api.ForceLeaderAPI;
-import org.apache.solr.handler.admin.api.MigrateDocsAPI;
-import org.apache.solr.handler.admin.api.ModifyCollectionAPI;
-import org.apache.solr.handler.admin.api.MoveReplicaAPI;
-import org.apache.solr.handler.admin.api.RebalanceLeadersAPI;
-import org.apache.solr.handler.admin.api.ReloadCollectionAPI;
-import org.apache.solr.handler.admin.api.SetCollectionPropertyAPI;
-import org.apache.solr.handler.admin.api.SplitShardAPI;
-import org.apache.solr.handler.admin.api.SyncShardAPI;
+import org.apache.solr.handler.admin.api.*;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -2094,6 +2076,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     apis.addAll(AnnotatedApi.getApis(new ReloadCollectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new SetCollectionPropertyAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new CollectionStatusAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new RenameCollectionAPI(this)));
     return apis;
   }
 
