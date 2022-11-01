@@ -828,6 +828,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
    *     specified as part of the request.
    * @see org.apache.solr.client.solrj.SolrRequest#getResponseParser()
    */
+  @Deprecated
   public void setParser(ResponseParser processor) {
     parser = processor;
   }
@@ -841,12 +842,15 @@ public class HttpSolrClient extends BaseHttpSolrClient {
    * Configure whether the client should follow redirects or not.
    *
    * <p>This defaults to false under the assumption that if you are following a redirect to get to a
-   * Solr installation, something is misconfigured somewhere.
+   * Solr installation, something is configured wrong somewhere.
+   *
    */
+  @Deprecated
   public void setFollowRedirects(boolean followRedirects) {
     this.followRedirects = followRedirects;
   }
 
+  @Deprecated
   public void setRequestWriter(RequestWriter requestWriter) {
     this.requestWriter = requestWriter;
   }
@@ -864,6 +868,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   }
 
   /** Set the multipart connection properties */
+  @Deprecated
   public void setUseMultiPartPost(boolean useMultiPartPost) {
     this.useMultiPartPost = useMultiPartPost;
   }
