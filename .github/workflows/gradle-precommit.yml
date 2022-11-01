@@ -3,7 +3,7 @@ name: Gradle Precommit
 on: 
   pull_request:
     branches:
-    - '*'
+    - '**'
 
 jobs:
   test:
