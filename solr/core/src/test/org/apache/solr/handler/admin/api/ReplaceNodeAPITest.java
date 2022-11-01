@@ -19,34 +19,33 @@ package org.apache.solr.handler.admin.api;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.Map;
 import java.util.Optional;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
+import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.admin.CollectionsHandler;
-import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
 /** Unit tests for {@link ReplaceNodeAPI} */
 public class ReplaceNodeAPITest extends SolrTestCaseJ4 {
 
   private CoreContainer mockCoreContainer;
-  private static final String sourceNodeName = "demoSourceNode";
-  private static final String targetNodeName = "demoTargetNode";
-  public static final String async = "async";
-  private static final boolean waitForFinalState = false;
   private SolrQueryRequest mockQueryRequest;
   private SolrQueryResponse queryResponse;
   private ReplaceNodeAPI replaceNodeApi;
   private DistributedCollectionConfigSetCommandRunner mockCommandRunner;
+  private ArgumentCaptor<ZkNodeProps> messageCapturer;
 
   @BeforeClass
   public static void ensureWorkingMockito() {
@@ -67,19 +66,24 @@ public class ReplaceNodeAPITest extends SolrTestCaseJ4 {
     mockQueryRequest = mock(SolrQueryRequest.class);
     queryResponse = new SolrQueryResponse();
     replaceNodeApi = new ReplaceNodeAPI(mockCoreContainer, mockQueryRequest, queryResponse);
+    messageCapturer = ArgumentCaptor.forClass(ZkNodeProps.class);
   }
 
   @Test
-  public void testSuccessfulReplaceNodeCommand() throws Exception {
+  public void testCreatesValidOverseerMessage() throws Exception {
     when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
-    final String expectedJson = "{\"responseHeader\":{\"status\":0,\"QTime\":0}}";
-    final CollectionsHandler collectionsHandler = mock(CollectionsHandler.class);
-    when(mockCoreContainer.getCollectionsHandler()).thenReturn(collectionsHandler);
     ReplaceNodeAPI.ReplaceNodeRequestBody requestBody =
-        new ReplaceNodeAPI.ReplaceNodeRequestBody(targetNodeName, waitForFinalState, async);
-    final SolrJerseyResponse response = replaceNodeApi.replaceNode(sourceNodeName, requestBody);
+        new ReplaceNodeAPI.ReplaceNodeRequestBody("demoTargetNode", false, "async");
+    replaceNodeApi.replaceNode("demoSourceNode", requestBody);
+    verify(mockCommandRunner).runCollectionCommand(messageCapturer.capture(), any(), anyLong());
 
-    assertEquals(0, response.responseHeader.status);
-    assertEquals(0, response.responseHeader.qTime);
+    final ZkNodeProps createdMessage = messageCapturer.getValue();
+    final Map<String, Object> createdMessageProps = createdMessage.getProperties();
+    assertEquals(5, createdMessageProps.size());
+    assertEquals("demoSourceNode", createdMessageProps.get("sourceNode"));
+    assertEquals("demoTargetNode", createdMessageProps.get("targetNode"));
+    assertEquals(false, createdMessageProps.get("waitForFinalState"));
+    assertEquals("async", createdMessageProps.get("async"));
+    assertEquals("replacenode", createdMessageProps.get("operation"));
   }
 }
