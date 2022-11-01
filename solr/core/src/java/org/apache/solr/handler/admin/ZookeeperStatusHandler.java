@@ -53,8 +53,6 @@ import org.slf4j.LoggerFactory;
 public class ZookeeperStatusHandler extends RequestHandlerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final Map<String, Object> zkStatus = new HashMap<>();
-
   private static final int ZOOKEEPER_DEFAULT_PORT = 2181;
   private static final String STATUS_RED = "red";
   private static final String STATUS_GREEN = "green";
@@ -102,7 +100,7 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
    * @return map of zookeeper config and status per zk host
    */
   @SuppressWarnings({"unchecked"})
-  protected Map<String, Object> getZkStatus(String zkHost, ZkDynamicConfig zkDynamicConfig) {
+  public Map<String, Object> getZkStatus(String zkHost, ZkDynamicConfig zkDynamicConfig) {
     final ZkDynamicConfig hostsFromConnectionString = ZkDynamicConfig.fromZkConnectString(zkHost);
     final ZkDynamicConfig zookeepers;
     boolean dynamicReconfig;
@@ -150,6 +148,7 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
         zookeepers = hostsFromConnectionString;
       }
     }
+    final Map<String, Object> zkStatus = new HashMap<>();
     final List<Object> details = new ArrayList<>();
     int numOk = 0;
     int standalone = 0;

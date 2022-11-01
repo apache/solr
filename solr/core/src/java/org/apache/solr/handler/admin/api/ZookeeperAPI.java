@@ -26,7 +26,9 @@ import static org.apache.solr.security.PermissionNameProvider.Name.ZK_READ_PERM;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.Operation;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import javax.inject.Inject;
@@ -251,7 +253,8 @@ public class ZookeeperAPI extends JerseyResource {
           log.warn("{} - Continuing with static connection string", e.toString());
         }
       }
-      response.zookeeperStatus = ZookeeperStatusHandler.zkStatus;
+      response.zookeeperStatus.add(
+          new ZookeeperStatusHandler(coreContainer).getZkStatus(zkHost, dynConfig));
     } else {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
@@ -275,6 +278,6 @@ public class ZookeeperAPI extends JerseyResource {
   public static class ZookeeperStatus extends SolrJerseyResponse {
 
     @JsonProperty("zookeeperStatus")
-    public Map<String, Object> zookeeperStatus = new HashMap<>();
+    public List<Map<String, Object>> zookeeperStatus = new ArrayList<>();
   }
 }
