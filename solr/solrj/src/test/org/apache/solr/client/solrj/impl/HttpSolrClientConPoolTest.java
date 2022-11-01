@@ -72,8 +72,10 @@ public class HttpSolrClientConPoolTest extends SolrJettyTestBase {
     CloseableHttpClient httpClient =
         HttpClientUtil.createClient(
             new ModifiableSolrParams(), pool, false /* let client shutdown it*/);
-    final HttpSolrClient clientFoo = new HttpSolrClient.Builder(fooUrl).withHttpClient(httpClient).build();
-    final HttpSolrClient clientBar = new HttpSolrClient.Builder(barUrl).withHttpClient(httpClient).build();
+    final HttpSolrClient clientFoo =
+        new HttpSolrClient.Builder(fooUrl).withHttpClient(httpClient).build();
+    final HttpSolrClient clientBar =
+        new HttpSolrClient.Builder(barUrl).withHttpClient(httpClient).build();
 
     clientFoo.deleteByQuery("*:*");
     clientBar.deleteByQuery("*:*");
