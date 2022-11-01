@@ -16,9 +16,7 @@
  */
 package org.apache.solr.handler.admin;
 
-import static org.apache.solr.common.params.CommonParams.OMIT_HEADER;
 import static org.apache.solr.common.params.CommonParams.PATH;
-import static org.apache.solr.common.params.CommonParams.WT;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,9 +30,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
@@ -54,16 +50,15 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice.SliceStateProps;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.ZookeeperAPI;
+import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.JSONResponseWriter;
-import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.util.SimplePostTool.BAOS;
@@ -364,74 +359,11 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     final ZookeeperAPI zookeeperAPI = new ZookeeperAPI(cores, req, rsp);
     final SolrParams params = req.getParams();
-    Map<String, String> map = new HashMap<>(1);
-    map.put(WT, "raw");
-    map.put(OMIT_HEADER, "true");
-    req.setParams(SolrParams.wrapDefaults(new MapSolrParams(map), params));
-    synchronized (this) {
-      if (pagingSupport == null) {
-        pagingSupport = new PagedCollectionSupport();
-        ZkController zkController = cores.getZkController();
-        if (zkController != null) {
-          // get notified when the ZK session expires (so we can clear the cached collections and
-          // rebuild)
-          zkController.addOnReconnectListener(pagingSupport);
-        }
-      }
+    if (params.get(PATH).isBlank()) {
+      V2ApiUtils.squashIntoNamedList(rsp.getValues(), zookeeperAPI.getFiles());
+    } else {
+      V2ApiUtils.squashIntoNamedList(rsp.getValues(), zookeeperAPI.getFile());
     }
-
-    String path = params.get(PATH);
-
-    if (params.get("addr") != null) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Illegal parameter \"addr\"");
-    }
-
-    String detailS = params.get(PARAM_DETAIL);
-    boolean detail = detailS != null && detailS.equals("true");
-
-    String dumpS = params.get("dump");
-    boolean dump = dumpS != null && dumpS.equals("true");
-
-    int start = params.getInt("start", 0); // Note start ignored if rows not specified
-    int rows = params.getInt("rows", -1);
-
-    String filterType = params.get("filterType");
-    if (filterType != null) {
-      filterType = filterType.trim().toLowerCase(Locale.ROOT);
-      if (filterType.length() == 0) filterType = null;
-    }
-    FilterType type = (filterType != null) ? FilterType.valueOf(filterType) : FilterType.none;
-
-    String filter = (type != FilterType.none) ? params.get("filter") : null;
-    if (filter != null) {
-      filter = filter.trim();
-      if (filter.length() == 0) filter = null;
-    }
-
-    ZKPrinter printer = new ZKPrinter(cores.getZkController());
-    printer.detail = detail;
-    printer.dump = dump;
-    boolean isGraphView = "graph".equals(params.get("view"));
-    // There is no znode /clusterstate.json (removed in Solr 9), but we do as if there's one and
-    // return collection listing. Need to change services.js if cleaning up here, collection list is
-    // used from Admin UI Cloud - Graph
-    boolean paginateCollections = (isGraphView && "/clusterstate.json".equals(path));
-    printer.page = paginateCollections ? new PageOfCollections(start, rows, type, filter) : null;
-    printer.pagingSupport = pagingSupport;
-
-    try {
-      if (paginateCollections) {
-        // List collections and allow pagination, but no specific znode info like when looking at a
-        // normal ZK path
-        printer.printPaginatedCollections();
-      } else {
-        printer.print(path);
-      }
-    } finally {
-      printer.close();
-    }
-    // V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, zookeeperAPI.listZookeeperFiles());
-    rsp.getValues().add(RawResponseWriter.CONTENT, printer);
   }
 
   @Override

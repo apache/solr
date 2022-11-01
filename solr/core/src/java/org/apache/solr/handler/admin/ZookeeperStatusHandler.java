@@ -34,16 +34,14 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkDynamicConfig;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.ZookeeperAPI;
+import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
-import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,27 +78,8 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    NamedList<Object> values = rsp.getValues();
-    if (cores.isZooKeeperAware()) {
-      String zkHost = cores.getZkController().getZkServerAddress();
-      ZkDynamicConfig dynConfig = null;
-      try {
-        SolrZkClient zkClient = cores.getZkController().getZkClient();
-        dynConfig = ZkDynamicConfig.parseLines(zkClient.getConfig());
-      } catch (SolrException e) {
-        if (!(e.getCause() instanceof KeeperException)) {
-          throw e;
-        }
-        if (log.isWarnEnabled()) {
-          log.warn("{} - Continuing with static connection string", e.toString());
-        }
-      }
-      values.add("zkStatus", getZkStatus(zkHost, dynConfig));
-    } else {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          "The Zookeeper status API is only available in Cloud mode");
-    }
+    final ZookeeperAPI zookeeperAPI = new ZookeeperAPI(cores, req, rsp);
+    V2ApiUtils.squashIntoNamedList(rsp.getValues(), zookeeperAPI.getStatus());
   }
 
   @Override
