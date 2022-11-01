@@ -39,9 +39,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkDynamicConfig;
-import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.ZookeeperInfoHandler.FilterType;
 import org.apache.solr.handler.admin.ZookeeperInfoHandler.PageOfCollections;
@@ -51,7 +49,6 @@ import org.apache.solr.handler.admin.ZookeeperStatusHandler;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -63,9 +60,7 @@ public class ZookeeperAPI extends JerseyResource {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final CoreContainer coreContainer;
   private final SolrQueryRequest solrQueryRequest;
-
   private final SolrQueryResponse solrQueryResponse;
-
   private PagedCollectionSupport pagingSupport;
 
   @Inject
@@ -91,7 +86,6 @@ public class ZookeeperAPI extends JerseyResource {
     Map<String, String> map = new HashMap<>(1);
     map.put(WT, "raw");
     map.put(OMIT_HEADER, "true");
-    solrQueryRequest.setParams(SolrParams.wrapDefaults(new MapSolrParams(map), params));
     synchronized (this) {
       if (pagingSupport == null) {
         pagingSupport = new PagedCollectionSupport();
@@ -169,7 +163,6 @@ public class ZookeeperAPI extends JerseyResource {
     Map<String, String> map = new HashMap<>(1);
     map.put(WT, "raw");
     map.put(OMIT_HEADER, "true");
-    solrQueryRequest.setParams(SolrParams.wrapDefaults(new MapSolrParams(map), params));
     synchronized (this) {
       if (pagingSupport == null) {
         pagingSupport = new PagedCollectionSupport();

@@ -359,7 +359,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     final ZookeeperAPI zookeeperAPI = new ZookeeperAPI(cores, req, rsp);
     final SolrParams params = req.getParams();
-    if (params.get(PATH).isBlank()) {
+    if (params.get(PATH) == null) {
       V2ApiUtils.squashIntoNamedList(rsp.getValues(), zookeeperAPI.getFiles());
     } else {
       V2ApiUtils.squashIntoNamedList(rsp.getValues(), zookeeperAPI.getFile());
@@ -459,7 +459,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       json.endObject();
       out.write(chars.toString());
 
-      return baos.toString();
+      return baos.toString(StandardCharsets.UTF_8);
     }
 
     // main entry point for printing collections
@@ -538,7 +538,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       json.endObject();
       out.write(chars.toString());
 
-      return baos.toString();
+      return baos.toString(StandardCharsets.UTF_8);
     }
 
     void writeError(int code, String msg) throws IOException {
