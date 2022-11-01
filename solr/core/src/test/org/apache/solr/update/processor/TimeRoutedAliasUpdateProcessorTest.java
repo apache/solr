@@ -807,7 +807,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
       try {
         solrClient.query(col, params("q", "*:*", "rows", "10"));
       } catch (SolrException e) {
-        e.printStackTrace();
+        log.error("Unable to query ", e);
         fail("Unable to query " + col);
       }
     }

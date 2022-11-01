@@ -1562,7 +1562,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
             }
             client.request(createCmd);
           } catch (Exception e) {
-            e.printStackTrace();
+            log.error("error creating core", e);
             // fail
           }
           return null;
@@ -1669,7 +1669,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
               .process(cloudClient)
               .getStatus());
     } catch (Exception e) {
-      e.printStackTrace();
+      log.error("error creating collection", e);
       // fails
     }
     final List<SolrClient> collectionClients = new ArrayList<>();
@@ -1688,7 +1688,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
                       .process(cloudClient)
                       .isSuccess());
             } catch (Exception e) {
-              e.printStackTrace();
+              log.error("error adding replica", e);
               // fails
             }
             return null;

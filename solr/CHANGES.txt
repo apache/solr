@@ -35,6 +35,8 @@ New Features
 
 * SOLR-16435: Add Request timeout to Http2SolrClient (Tomás Fernández Löbbe)
 
+* SOLR-16500: Added --enable-preview for JDK 19 to enable MemorySegment support in MMapDirectory (Kevin Risden)
+
 Improvements
 ---------------------
 
@@ -54,9 +56,11 @@ Improvements
   cause.  This capability is now also present on Windows.  Before, with bin/solr but not
   bin/solr.cmd, Solr would execute a script that killed the Solr pid, leaving a very small time
   window where Solr would continue to execute in an unpredictable state. (Shawn Heisey, Kevin Risden)
-  
+
 * SOLR-15478: A v2 equivalent of CLUSTERSTATUS command is now available at `GET /api/cluster`. Collection listing,
   previously at this path, can still be accessed at `GET /api/collections`. (Joshua Ouma via Jason Gerlowski)
+
+* SOLR-13626: Document the SystemInfoHandler in the Ref Guide.  (Tony Cook via Eric Pugh)
 
 Optimizations
 ---------------------
@@ -76,6 +80,16 @@ Bug Fixes
 
 * SOLR-16363: DirectUpdateHandler2 should not throw UnknownFormatConversionException (Kevin Risden)
 
+* SOLR-16293: Luke request fails for document with a binary field (Kevin Risden)
+
+* SOLR-16477: Collection RENAME api creates broken alias (Alex Deparvu via Kevin Risden)
+
+* SOLR-10918: Fix IntPointField hashing for HLL (Houston Putman)
+
+* SOLR-16274: HEAD request for managed resource returns 500 Server Error (Kevin Risden)
+
+* SOLR-16502: Multiple CopyField should not limit to first maxChars (Fredrik Rodland, Kevin Risden)
+
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
@@ -83,6 +97,8 @@ Build
 * SOLR-16432: Upgrade the gradle wrapper to 7.5.1 (Shawn Heisey, Kevin Risden)
 
 * SOLR-16476: Remove commons-text dependency from solr-core (Kevin Risden)
+
+* SOLR-16442: Upgrade to Lucene 9.4.1 (Christine Poerschke)
 
 Other Changes
 ---------------------
@@ -94,6 +110,8 @@ Other Changes
 * SOLR-16443: Upgrade Jackson bom to 2.13.4.20221013 (Kevin Risden)
 
 * SOLR-16467: Upgrade semver4j to 2.2.0 to fix failures with some locales (Kevin Risden)
+
+* SOLR-15718: Remove backcompat feature solr.useUnsafeOverseerResponse (janhoy)
 
 ==================  9.1.0 ==================
 

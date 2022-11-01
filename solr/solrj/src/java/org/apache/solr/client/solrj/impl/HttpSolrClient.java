@@ -813,8 +813,8 @@ public class HttpSolrClient extends BaseHttpSolrClient {
    * In this case the client is more flexible and can be used to send requests to any cores. The
    * cost of this is that the core must be specified on each request.
    */
-  public void setBaseURL(String baseURL) {
-    this.baseUrl = baseURL;
+  public void setBaseURL(String baseUrl) {
+    this.baseUrl = baseUrl;
   }
 
   public ResponseParser getParser() {

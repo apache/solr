@@ -82,6 +82,7 @@ import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@SuppressWarnings("ImmutableEnumChecker")
 public enum CoreAdminOperation implements CoreAdminOp {
   CREATE_OP(
       CREATE,
