@@ -88,6 +88,7 @@ public class ZookeeperAPI extends JerseyResource {
     Map<String, String> map = new HashMap<>(1);
     map.put(WT, "raw");
     map.put(OMIT_HEADER, "true");
+    // solrQueryRequest.setParams(SolrParams.wrapDefaults(new MapSolrParams(map), params));
     synchronized (this) {
       if (pagingSupport == null) {
         pagingSupport = new PagedCollectionSupport();
@@ -165,6 +166,7 @@ public class ZookeeperAPI extends JerseyResource {
     Map<String, String> map = new HashMap<>(1);
     map.put(WT, "raw");
     map.put(OMIT_HEADER, "true");
+    // solrQueryRequest.setParams(SolrParams.wrapDefaults(new MapSolrParams(map), params));
     synchronized (this) {
       if (pagingSupport == null) {
         pagingSupport = new PagedCollectionSupport();
