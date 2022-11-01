@@ -32,15 +32,14 @@ public class SolrExampleXMLTest extends SolrExampleTests {
 
   @Override
   public SolrClient createNewSolrClient() {
-    try {
-      String url = jetty.getBaseUrl().toString() + "/collection1";
-      HttpSolrClient client = getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT);
-      client.setUseMultiPartPost(random().nextBoolean());
-      client.setParser(new XMLResponseParser());
-      client.setRequestWriter(new RequestWriter());
-      return client;
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
+
+    String url = jetty.getBaseUrl().toString() + "/collection1";
+    HttpSolrClient.Builder httpSolrClientBuilder = new HttpSolrClient.Builder(url);
+    httpSolrClientBuilder.withUseMultiPartPost(random().nextBoolean());
+
+    httpSolrClientBuilder
+        .withRequestWriter(new RequestWriter())
+        .withResponseParser(new XMLResponseParser());
+    return httpSolrClientBuilder.build();
   }
 }

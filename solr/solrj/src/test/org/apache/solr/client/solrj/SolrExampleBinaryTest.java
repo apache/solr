@@ -32,19 +32,15 @@ public class SolrExampleBinaryTest extends SolrExampleTests {
 
   @Override
   public SolrClient createNewSolrClient() {
-    try {
-      // setup the server...
-      String url = jetty.getBaseUrl().toString() + "/collection1";
-      HttpSolrClient client = getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT);
-      client.setUseMultiPartPost(random().nextBoolean());
+    // setup the server...
+    String url = jetty.getBaseUrl().toString() + "/collection1";
+    HttpSolrClient.Builder httpSolrClientBuilder = new HttpSolrClient.Builder(url);
+    httpSolrClientBuilder.withUseMultiPartPost(random().nextBoolean());
 
-      // where the magic happens
-      client.setParser(new BinaryResponseParser());
-      client.setRequestWriter(new BinaryRequestWriter());
+    httpSolrClientBuilder
+        .withRequestWriter(new BinaryRequestWriter())
+        .withResponseParser(new BinaryResponseParser());
 
-      return client;
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
+    return httpSolrClientBuilder.build();
   }
 }
