@@ -813,6 +813,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
    * In this case the client is more flexible and can be used to send requests to any cores. The
    * cost of this is that the core must be specified on each request.
    */
+  @Deprecated
   public void setBaseURL(String baseURL) {
     this.baseUrl = baseURL;
   }
@@ -843,7 +844,6 @@ public class HttpSolrClient extends BaseHttpSolrClient {
    *
    * <p>This defaults to false under the assumption that if you are following a redirect to get to a
    * Solr installation, something is configured wrong somewhere.
-   *
    */
   @Deprecated
   public void setFollowRedirects(boolean followRedirects) {

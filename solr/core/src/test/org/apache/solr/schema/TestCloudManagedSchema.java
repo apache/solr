@@ -18,6 +18,7 @@ package org.apache.solr.schema;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
@@ -53,12 +54,11 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/cores");
     int which = r.nextInt(clients.size());
-    HttpSolrClient client = (HttpSolrClient) clients.get(which);
-    String previousBaseURL = client.getBaseURL();
-    // Strip /collection1 step from baseURL - requests fail otherwise
-    client.setBaseURL(previousBaseURL.substring(0, previousBaseURL.lastIndexOf("/")));
-    NamedList<?> namedListResponse = client.request(request);
-    client.setBaseURL(previousBaseURL); // Restore baseURL
+
+    // create a client that does not have the /collection1 as part of the URL.
+    SolrClient rootClient =
+        new HttpSolrClient.Builder(buildUrl(jettys.get(which).getLocalPort())).build();
+    NamedList<?> namedListResponse = rootClient.request(request);
     NamedList<?> status = (NamedList<?>) namedListResponse.get("status");
     NamedList<?> collectionStatus = (NamedList<?>) status.getVal(0);
     String collectionSchema = (String) collectionStatus.get(CoreAdminParams.SCHEMA);
