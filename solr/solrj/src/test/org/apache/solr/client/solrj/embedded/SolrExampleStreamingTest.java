@@ -41,21 +41,14 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
 
   @Override
   public SolrClient createNewSolrClient() {
-    try {
-      // setup the server...
-      String url = jetty.getBaseUrl().toString() + "/collection1";
-      // smaller queue size hits locks more often
-      ConcurrentUpdateSolrClient concurrentClient =
-          new ErrorTrackingConcurrentUpdateSolrClient.Builder(url)
-              .withQueueSize(2)
-              .withThreadCount(5)
-              .build();
-      concurrentClient.setParser(new XMLResponseParser());
-      concurrentClient.setRequestWriter(new RequestWriter());
-      return concurrentClient;
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
+    // setup the server...
+    // smaller queue size hits locks more often
+    return new ErrorTrackingConcurrentUpdateSolrClient.Builder(getServerUrl())
+        .withQueueSize(2)
+        .withThreadCount(5)
+        .withResponseParser(new XMLResponseParser())
+        .withRequestWriter(new RequestWriter())
+        .build();
   }
 
   public void testWaitOptions() throws Exception {
