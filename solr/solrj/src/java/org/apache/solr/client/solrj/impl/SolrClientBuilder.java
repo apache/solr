@@ -33,6 +33,7 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
   protected boolean useMultiPartPost;
   protected Integer connectionTimeoutMillis = 15000;
   protected Integer socketTimeoutMillis = 120000;
+  private boolean withFollowRedirects;
 
   /** The solution for the unchecked cast warning. */
   public abstract B getThis();
@@ -56,6 +57,11 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
 
   public B withUseMultiPartPost(Boolean useMultiPartPost) {
     this.useMultiPartPost = useMultiPartPost;
+    return getThis();
+  }
+
+  public B setFollowRedirects(boolean withFollowRedirects) {
+    this.withFollowRedirects = withFollowRedirects;
     return getThis();
   }
 
