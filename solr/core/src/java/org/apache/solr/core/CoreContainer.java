@@ -1194,8 +1194,8 @@ public class CoreContainer {
 
       // First wake up the closer thread, it'll terminate almost immediately since it checks
       // isShutDown.
+      solrCores.getWriteLock().lock();
       try {
-        solrCores.getWriteLock().lock();
         solrCores.getWriteLockCondition().signalAll(); // wake up anyone waiting
       } finally {
         solrCores.getWriteLock().unlock();
@@ -1206,8 +1206,8 @@ public class CoreContainer {
           while (true) {
             backgroundCloser.join(15000);
             if (backgroundCloser.isAlive()) {
+              solrCores.getWriteLock().lock();
               try {
-                solrCores.getWriteLock().lock();
                 solrCores
                     .getWriteLockCondition()
                     .signalAll(); // there is a race we have to protect against
@@ -1233,8 +1233,8 @@ public class CoreContainer {
       // It's still possible that one of the pending dynamic load operation is waiting, so wake it
       // up if so. Since all the pending operations queues have been drained, there should be
       // nothing to do.
+      solrCores.getWriteLock().lock();
       try {
-        solrCores.getWriteLock().lock();
         solrCores.getWriteLockCondition().signalAll(); // wake up the thread
       } finally {
         solrCores.getWriteLock().unlock();
@@ -2523,8 +2523,8 @@ class CloserThread extends Thread {
   @Override
   public void run() {
     while (!container.isShutDown()) {
+      solrCores.getWriteLock().lock();
       try { // need this so we can wait and be awoken.
-        solrCores.getWriteLock().lock();
         try {
           solrCores.getWriteLockCondition().await();
         } catch (InterruptedException e) {
