@@ -2937,7 +2937,7 @@ public class ZkController implements Closeable {
     } else {
       try {
         // Create a concurrently accessible set to avoid repeating collections
-        Set<String> collectionsInThisNode = new HashSet<>();
+      /*  Set<String> collectionsInThisNode = new HashSet<>();
         for (CoreDescriptor cd : cc.getCoreDescriptors()) {
           if (cd.getCloudDescriptor() != null
               && cd.getCloudDescriptor().getCollectionName() != null) {
@@ -2971,7 +2971,7 @@ public class ZkController implements Closeable {
                       throw new RuntimeException(e);
                     }
                   }
-                });
+                });*/
 
         // We always send a down node event to overseer to be safe, but overseer will not need to do
         // anything for PRS collections
