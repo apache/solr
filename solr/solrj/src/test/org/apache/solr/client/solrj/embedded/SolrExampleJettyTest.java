@@ -33,6 +33,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -125,61 +126,59 @@ public class SolrExampleJettyTest extends SolrExampleTests {
 
   @Ignore
   public void testUtf8QueryPerf() throws Exception {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
-    client.deleteByQuery("*:*");
-    client.commit();
-    List<SolrInputDocument> docs = new ArrayList<>();
-    for (int i = 0; i < 10; i++) {
-      SolrInputDocument doc2 = new SolrInputDocument();
-      doc2.addField("id", "" + i);
-      doc2.addField("fld1_s", "1 value 1 value 1 value 1 value 1 value 1 value 1 value ");
-      doc2.addField(
-          "fld2_s",
-          "2 value 2 value 2 value 2 value 2 value 2 value 2 value 2 value 2 value 2 value ");
-      doc2.addField(
-          "fld3_s",
-          "3 value 3 value 3 value 3 value 3 value 3 value 3 value 3 value 3 value 3 value 3 value 3 value 3 value 3 value ");
-      doc2.addField(
-          "fld4_s", "4 value 4 value 4 value 4 value 4 value 4 value 4 value 4 value 4 value ");
-      doc2.addField(
-          "fld5_s",
-          "5 value 5 value 5 value 5 value 5 value 5 value 5 value 5 value 5 value 5 value 5 value 5 value ");
-      docs.add(doc2);
+    try (SolrClient client = getSolrClient()) {
+      client.deleteByQuery("*:*");
+      client.commit();
+      List<SolrInputDocument> docs = new ArrayList<>();
+      for (int i = 0; i < 10; i++) {
+        SolrInputDocument doc2 = new SolrInputDocument();
+        doc2.addField("id", "" + i);
+        doc2.addField("fld1_s", "1 value 1 value 1 value 1 value 1 value 1 value 1 value ");
+        doc2.addField(
+            "fld2_s",
+            "2 value 2 value 2 value 2 value 2 value 2 value 2 value 2 value 2 value 2 value ");
+        doc2.addField(
+            "fld3_s",
+            "3 value 3 value 3 value 3 value 3 value 3 value 3 value 3 value 3 value 3 value 3 value 3 value 3 value 3 value ");
+        doc2.addField(
+            "fld4_s", "4 value 4 value 4 value 4 value 4 value 4 value 4 value 4 value 4 value ");
+        doc2.addField(
+            "fld5_s",
+            "5 value 5 value 5 value 5 value 5 value 5 value 5 value 5 value 5 value 5 value 5 value 5 value ");
+        docs.add(doc2);
+      }
+      client.add(docs);
+      client.commit();
+      QueryResponse rsp = client.query(new SolrQuery("*:*"));
+      assertEquals(10, rsp.getResults().getNumFound());
     }
-    client.add(docs);
-    client.commit();
-    QueryResponse rsp = client.query(new SolrQuery("*:*"));
-    assertEquals(10, rsp.getResults().getNumFound());
+    try (SolrClient client2 =
+        new HttpSolrClient.Builder(getServerUrl())
+            .withResponseParser(
+                new BinaryResponseParser() {
+                  @Override
+                  public NamedList<Object> processResponse(InputStream body, String encoding) {
+                    try {
+                      IOUtils.skip(body, 1024 * 1000);
+                    } catch (IOException e) {
+                      e.printStackTrace();
+                    }
+                    return rsp.getResponse();
+                  }
+                })
+            .build()) {
 
-    client.setParser(
-        new BinaryResponseParser() {
-          @Override
-          public NamedList<Object> processResponse(InputStream body, String encoding) {
-            try {
-              IOUtils.skip(body, 1024 * 1000);
-            } catch (IOException e) {
-              e.printStackTrace();
-            }
-            return rsp.getResponse();
-          }
-        });
-
-    runQueries(client, 1000, true);
-    /*BinaryResponseWriter.useUtf8CharSeq = false;
-    System.out.println("BinaryResponseWriter.useUtf8CharSeq = " + BinaryResponseWriter.useUtf8CharSeq);
-    runQueries(client, 10000, false);
-    BinaryResponseWriter.useUtf8CharSeq = true;
-    System.out.println("BinaryResponseWriter.useUtf8CharSeq = " + BinaryResponseWriter.useUtf8CharSeq);*/
-    runQueries(client, 10000, false);
+      runQueries(client2, 1000, true);
+      runQueries(client2, 10000, false);
+    }
   }
 
-  private void runQueries(HttpSolrClient client, int count, boolean warmup)
+  private void runQueries(SolrClient client, int count, boolean warmup)
       throws SolrServerException, IOException {
     long start = System.nanoTime();
     for (int i = 0; i < count; i++) {
       client.query(new SolrQuery("*:*"));
     }
     if (warmup) return;
-    System.out.println("time taken : " + ((System.nanoTime() - start)) / (1000 * 1000));
   }
 }
