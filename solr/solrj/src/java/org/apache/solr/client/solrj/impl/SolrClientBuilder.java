@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.impl;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
+import org.apache.solr.client.solrj.request.RequestWriter;
 
 /**
  * @deprecated Please look into using Solr's new Http2 clients
@@ -28,6 +29,8 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
 
   protected HttpClient httpClient;
   protected ResponseParser responseParser;
+  protected RequestWriter requestWriter;
+  protected boolean useMultiPartPost;
   protected Integer connectionTimeoutMillis = 15000;
   protected Integer socketTimeoutMillis = 120000;
 
@@ -43,6 +46,16 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
   /** Provides a {@link ResponseParser} for created clients to use when handling requests. */
   public B withResponseParser(ResponseParser responseParser) {
     this.responseParser = responseParser;
+    return getThis();
+  }
+
+  public B withRequestWriter(RequestWriter requestWriter) {
+    this.requestWriter = requestWriter;
+    return getThis();
+  }
+
+  public B withUseMultiPartPost(Boolean useMultiPartPost) {
+    this.useMultiPartPost = useMultiPartPost;
     return getThis();
   }
 

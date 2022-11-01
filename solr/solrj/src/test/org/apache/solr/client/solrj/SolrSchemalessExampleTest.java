@@ -130,20 +130,18 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
 
   @Override
   public SolrClient createNewSolrClient() {
-    try {
-      // setup the server...
-      String url = jetty.getBaseUrl().toString() + "/collection1";
-      HttpSolrClient client = getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT);
-      client.setUseMultiPartPost(random().nextBoolean());
-
-      if (random().nextBoolean()) {
-        client.setParser(new BinaryResponseParser());
-        client.setRequestWriter(new BinaryRequestWriter());
-      }
-
-      return client;
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
+    // setup the server...
+    String url = jetty.getBaseUrl().toString() + "/collection1";
+    HttpSolrClient.Builder httpSolrClientBuilder = new HttpSolrClient.Builder(url);
+    if (random().nextBoolean()) {
+      httpSolrClientBuilder
+          .withRequestWriter(new BinaryRequestWriter())
+          .withResponseParser(new BinaryResponseParser());
     }
+    if (random().nextBoolean()) {
+      httpSolrClientBuilder.withUseMultiPartPost(true);
+    }
+
+    return httpSolrClientBuilder.build();
   }
 }
