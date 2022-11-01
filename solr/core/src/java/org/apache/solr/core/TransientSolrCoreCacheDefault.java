@@ -108,8 +108,8 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
   private void onEvict(SolrCore core) {
     final SolrCores solrCores = coreContainer.solrCores;
 
+    solrCores.getWriteLock().lock();
     try {
-      solrCores.getWriteLock().lock();
       // note: the cache's maximum size isn't strictly enforced; it can grow some if we un-evict
       if (solrCores.hasPendingCoreOps(core.getName())) {
         // core is loading, unloading, or reloading
