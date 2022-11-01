@@ -818,14 +818,14 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
   }
 
   /** A custom impl of a standard attribute impl; test this instance is used. */
-  public class CustomFlagsAttributeImpl extends FlagsAttributeImpl {
+  public static class CustomFlagsAttributeImpl extends FlagsAttributeImpl {
     @Override
     public void setFlags(int flags) {
       super.setFlags(900 + flags); // silly modification
     }
   }
 
-  private class CustomTokenizer extends Tokenizer {
+  private static class CustomTokenizer extends Tokenizer {
     CharTermAttribute charAtt;
     FlagsAttribute customAtt;
     boolean sentOneToken;
@@ -854,7 +854,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     }
   }
 
-  private class CustomTokenFilter extends TokenFilter {
+  private static class CustomTokenFilter extends TokenFilter {
     FlagsAttribute flagAtt;
 
     public CustomTokenFilter(TokenStream input) {

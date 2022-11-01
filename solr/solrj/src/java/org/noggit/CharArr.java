@@ -258,7 +258,7 @@ public class CharArr implements CharSequence, Appendable {
   }
 
   // IDEA: a subclass that refills the array from a reader?
-  class CharArrReader extends CharArr {
+  static class CharArrReader extends CharArr {
     protected final Reader in;
 
     public CharArrReader(Reader in, int size) {

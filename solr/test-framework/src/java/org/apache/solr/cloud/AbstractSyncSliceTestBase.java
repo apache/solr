@@ -17,6 +17,7 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -38,10 +39,14 @@ import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.util.LogLevel;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Test sync phase that occurs when Leader goes down and a new Leader is elected. */
 @LogLevel("org.apache.solr.update.processor.DistributedZkUpdateProcessor=WARN")
 public abstract class AbstractSyncSliceTestBase extends AbstractFullDistribZkTestBase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   private boolean success = false;
 
   @Override
@@ -144,7 +149,7 @@ public abstract class AbstractSyncSliceTestBase extends AbstractFullDistribZkTes
     CloudJettyRunner deadJetty = leaderJetty;
 
     // let's get the latest leader
-    while (deadJetty == leaderJetty) {
+    while (deadJetty.equals(leaderJetty)) {
       updateMappingsFromZk(this.jettys, this.clients);
       leaderJetty = shardToLeaderJetty.get("shard1");
     }
@@ -236,7 +241,7 @@ public abstract class AbstractSyncSliceTestBase extends AbstractFullDistribZkTes
     try {
       commit();
     } catch (Throwable t) {
-      t.printStackTrace();
+      log.error("commit error", t);
     }
     if (shardFailMessage == null) {
       // try again

@@ -161,6 +161,7 @@ public class SolrCLI implements CLIO {
       stdout.println(msg);
     }
 
+    @Override
     public int runTool(CommandLine cli) throws Exception {
       verbose = cli.hasOption(OPTION_VERBOSE.getOpt());
 
@@ -195,10 +196,12 @@ public class SolrCLI implements CLIO {
       super(stdout);
     }
 
+    @Override
     public Option[] getOptions() {
       return cloudOptions;
     }
 
+    @Override
     protected void runImpl(CommandLine cli) throws Exception {
       raiseLogLevelUnlessVerbose(cli);
       String zkHost = cli.getOptionValue(OPTION_ZKHOST.getOpt(), ZK_HOST);
@@ -694,6 +697,7 @@ public class SolrCLI implements CLIO {
 
   @SuppressWarnings("unchecked")
   private static class SolrResponseHandler implements ResponseHandler<Map<String, Object>> {
+    @Override
     public Map<String, Object> handleResponse(HttpResponse response)
         throws ClientProtocolException, IOException {
       HttpEntity entity = response.getEntity();
@@ -879,10 +883,12 @@ public class SolrCLI implements CLIO {
       super(stdout);
     }
 
+    @Override
     public String getName() {
       return "status";
     }
 
+    @Override
     public Option[] getOptions() {
       return new Option[] {
         Option.builder("solr")
@@ -900,6 +906,7 @@ public class SolrCLI implements CLIO {
       };
     }
 
+    @Override
     protected void runImpl(CommandLine cli) throws Exception {
       int maxWaitSecs = Integer.parseInt(cli.getOptionValue("maxWaitSecs", "0"));
       String solrUrl = cli.getOptionValue("solr", DEFAULT_SOLR_URL);
@@ -1031,10 +1038,12 @@ public class SolrCLI implements CLIO {
       super(stdout);
     }
 
+    @Override
     public String getName() {
       return "api";
     }
 
+    @Override
     public Option[] getOptions() {
       return new Option[] {
         Option.builder("get")
@@ -1046,6 +1055,7 @@ public class SolrCLI implements CLIO {
       };
     }
 
+    @Override
     protected void runImpl(CommandLine cli) throws Exception {
       String getUrl = cli.getOptionValue("get");
       if (getUrl != null) {
@@ -1126,16 +1136,19 @@ public class SolrCLI implements CLIO {
       return map;
     }
 
+    @Override
     public String toString() {
       CharArr arr = new CharArr();
       new JSONWriter(arr, 2).write(asMap());
       return arr.toString();
     }
 
+    @Override
     public int hashCode() {
       return this.shard.hashCode() + (isLeader ? 1 : 0);
     }
 
+    @Override
     public boolean equals(Object obj) {
       if (this == obj) return true;
       if (obj == null) return false;
@@ -1144,6 +1157,7 @@ public class SolrCLI implements CLIO {
       return this.shard.equals(that.shard) && this.isLeader == that.isLeader;
     }
 
+    @Override
     public int compareTo(ReplicaHealth other) {
       if (this == other) return 0;
       if (other == null) return 1;
@@ -1208,6 +1222,7 @@ public class SolrCLI implements CLIO {
       return map;
     }
 
+    @Override
     public String toString() {
       CharArr arr = new CharArr();
       new JSONWriter(arr, 2).write(asMap());
@@ -1533,14 +1548,17 @@ public class SolrCLI implements CLIO {
       super(stdout);
     }
 
+    @Override
     public String getName() {
       return "create_collection";
     }
 
+    @Override
     public Option[] getOptions() {
       return CREATE_COLLECTION_OPTIONS;
     }
 
+    @Override
     protected void runImpl(CommandLine cli) throws Exception {
       raiseLogLevelUnlessVerbose(cli);
       String zkHost = getZkHost(cli);
@@ -1692,10 +1710,12 @@ public class SolrCLI implements CLIO {
       super(stdout);
     }
 
+    @Override
     public String getName() {
       return "create_core";
     }
 
+    @Override
     public Option[] getOptions() {
       return new Option[] {
         OPTION_SOLRURL,
@@ -1724,6 +1744,7 @@ public class SolrCLI implements CLIO {
       };
     }
 
+    @Override
     protected void runImpl(CommandLine cli) throws Exception {
       String solrUrl = cli.getOptionValue("solrUrl", DEFAULT_SOLR_URL);
       if (!solrUrl.endsWith("/")) solrUrl += "/";
@@ -1851,14 +1872,17 @@ public class SolrCLI implements CLIO {
       super(stdout);
     }
 
+    @Override
     public String getName() {
       return "create";
     }
 
+    @Override
     public Option[] getOptions() {
       return CREATE_COLLECTION_OPTIONS;
     }
 
+    @Override
     protected void runImpl(CommandLine cli) throws Exception {
       raiseLogLevelUnlessVerbose(cli);
       String solrUrl = cli.getOptionValue("solrUrl", DEFAULT_SOLR_URL);
@@ -1892,6 +1916,7 @@ public class SolrCLI implements CLIO {
       super(stdout);
     }
 
+    @Override
     public Option[] getOptions() {
       return new Option[] {
         Option.builder("confname")
@@ -1917,10 +1942,12 @@ public class SolrCLI implements CLIO {
       };
     }
 
+    @Override
     public String getName() {
       return "upconfig";
     }
 
+    @Override
     protected void runImpl(CommandLine cli) throws Exception {
       raiseLogLevelUnlessVerbose(cli);
       String zkHost = getZkHost(cli);
@@ -1968,6 +1995,7 @@ public class SolrCLI implements CLIO {
       super(stdout);
     }
 
+    @Override
     public Option[] getOptions() {
       return new Option[] {
         Option.builder("confname")
@@ -1987,10 +2015,12 @@ public class SolrCLI implements CLIO {
       };
     }
 
+    @Override
     public String getName() {
       return "downconfig";
     }
 
+    @Override
     protected void runImpl(CommandLine cli) throws Exception {
       raiseLogLevelUnlessVerbose(cli);
       String zkHost = getZkHost(cli);
@@ -2038,6 +2068,7 @@ public class SolrCLI implements CLIO {
       super(stdout);
     }
 
+    @Override
     public Option[] getOptions() {
       return new Option[] {
         Option.builder("path")
@@ -2052,10 +2083,12 @@ public class SolrCLI implements CLIO {
       };
     }
 
+    @Override
     public String getName() {
       return "rm";
     }
 
+    @Override
     protected void runImpl(CommandLine cli) throws Exception {
       raiseLogLevelUnlessVerbose(cli);
       String zkHost = getZkHost(cli);
@@ -2107,6 +2140,7 @@ public class SolrCLI implements CLIO {
       super(stdout);
     }
 
+    @Override
     public Option[] getOptions() {
       return new Option[] {
         Option.builder("path")
@@ -2121,10 +2155,12 @@ public class SolrCLI implements CLIO {
       };
     }
 
+    @Override
     public String getName() {
       return "ls";
     }
 
+    @Override
     protected void runImpl(CommandLine cli) throws Exception {
       raiseLogLevelUnlessVerbose(cli);
       String zkHost = getZkHost(cli);
@@ -2167,6 +2203,7 @@ public class SolrCLI implements CLIO {
       super(stdout);
     }
 
+    @Override
     public Option[] getOptions() {
       return new Option[] {
         Option.builder("path")
@@ -2180,10 +2217,12 @@ public class SolrCLI implements CLIO {
       };
     }
 
+    @Override
     public String getName() {
       return "mkroot";
     }
 
+    @Override
     protected void runImpl(CommandLine cli) throws Exception {
       raiseLogLevelUnlessVerbose(cli);
       String zkHost = getZkHost(cli);
@@ -2218,6 +2257,7 @@ public class SolrCLI implements CLIO {
       super(stdout);
     }
 
+    @Override
     public Option[] getOptions() {
       return new Option[] {
         Option.builder("src")
@@ -2238,10 +2278,12 @@ public class SolrCLI implements CLIO {
       };
     }
 
+    @Override
     public String getName() {
       return "cp";
     }
 
+    @Override
     protected void runImpl(CommandLine cli) throws Exception {
       raiseLogLevelUnlessVerbose(cli);
       String zkHost = getZkHost(cli);
@@ -2295,6 +2337,7 @@ public class SolrCLI implements CLIO {
       super(stdout);
     }
 
+    @Override
     public Option[] getOptions() {
       return new Option[] {
         Option.builder("src")
@@ -2314,10 +2357,12 @@ public class SolrCLI implements CLIO {
       };
     }
 
+    @Override
     public String getName() {
       return "mv";
     }
 
+    @Override
     protected void runImpl(CommandLine cli) throws Exception {
       raiseLogLevelUnlessVerbose(cli);
       String zkHost = getZkHost(cli);
@@ -2367,10 +2412,12 @@ public class SolrCLI implements CLIO {
       super(stdout);
     }
 
+    @Override
     public String getName() {
       return "delete";
     }
 
+    @Override
     public Option[] getOptions() {
       return new Option[] {
         OPTION_SOLRURL,
@@ -2397,6 +2444,7 @@ public class SolrCLI implements CLIO {
       };
     }
 
+    @Override
     protected void runImpl(CommandLine cli) throws Exception {
       raiseLogLevelUnlessVerbose(cli);
       String solrUrl = cli.getOptionValue("solrUrl", DEFAULT_SOLR_URL);
@@ -2568,6 +2616,7 @@ public class SolrCLI implements CLIO {
       super(stdout);
     }
 
+    @Override
     public String getName() {
       return "config";
     }
@@ -2617,6 +2666,7 @@ public class SolrCLI implements CLIO {
       return joinOptions(configOptions, cloudOptions);
     }
 
+    @Override
     protected void runImpl(CommandLine cli) throws Exception {
       String solrUrl;
       try {
@@ -2699,10 +2749,12 @@ public class SolrCLI implements CLIO {
       this.userInput = userInput;
     }
 
+    @Override
     public String getName() {
       return "run_example";
     }
 
+    @Override
     public Option[] getOptions() {
       return new Option[] {
         Option.builder("noprompt")
@@ -2793,6 +2845,7 @@ public class SolrCLI implements CLIO {
       };
     }
 
+    @Override
     protected void runImpl(CommandLine cli) throws Exception {
       this.urlScheme = cli.getOptionValue("urlScheme", "http");
 
@@ -3677,10 +3730,12 @@ public class SolrCLI implements CLIO {
       super(stdout);
     }
 
+    @Override
     public String getName() {
       return "assert";
     }
 
+    @Override
     public Option[] getOptions() {
       return new Option[] {
         Option.builder("R")
@@ -3752,6 +3807,7 @@ public class SolrCLI implements CLIO {
       };
     }
 
+    @Override
     public int runTool(CommandLine cli) throws Exception {
       verbose = cli.hasOption(OPTION_VERBOSE.getOpt());
 
@@ -4013,6 +4069,7 @@ public class SolrCLI implements CLIO {
       super(stdout);
     }
 
+    @Override
     public String getName() {
       return "auth";
     }
@@ -4021,6 +4078,7 @@ public class SolrCLI implements CLIO {
         Arrays.asList(
             "SOLR_AUTHENTICATION_CLIENT_BUILDER", "SOLR_AUTH_TYPE", "SOLR_AUTHENTICATION_OPTS");
 
+    @Override
     public Option[] getOptions() {
       return new Option[] {
         Option.builder("type")

@@ -468,7 +468,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
     observedCols.sort(String::compareTo); // don't really care about the order here.
     assertFalse(observedCols.isEmpty());
 
-    int numFoundViaCollections = 0;
+    long numFoundViaCollections = 0;
     for (String col : observedCols) {
       final QueryResponse colResponse =
           solrClient.query(

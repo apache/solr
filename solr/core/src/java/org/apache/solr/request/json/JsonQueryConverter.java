@@ -114,8 +114,8 @@ class JsonQueryConverter {
         }
       } else {
         if (qtype.equals("param")) {
-          boolean toplevel;
-          if (toplevel = (builder.length() == 0)) {
+          boolean toplevel = builder.length() == 0;
+          if (toplevel) {
             builder.append("{!v=");
           }
           builder.append("$").append(map.get("param"));

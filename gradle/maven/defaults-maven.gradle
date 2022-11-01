@@ -172,6 +172,9 @@ configure(subprojects.findAll { it.path in rootProject.published }) { prj ->
       }
 
       signing {
+        if (project(":solr:distribution").ext.useGpgForSigning) {
+          useGpgCmd()
+        }
         required { !version.endsWith("SNAPSHOT") }
         sign publishing.publications.jars
       }

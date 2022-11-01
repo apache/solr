@@ -248,6 +248,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
           + (filter != null ? filter : "");
     }
 
+    @Override
     public String toString() {
       return getPagingHeader();
     }

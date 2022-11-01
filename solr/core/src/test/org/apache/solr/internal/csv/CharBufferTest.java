@@ -62,9 +62,9 @@ public class CharBufferTest extends SolrTestCaseJ4 {
     }
   }
 
-  public void testAppendStringBuffer() {
+  public void testAppendStringBuilder() {
     CharBuffer cb = new CharBuffer(1);
-    StringBuffer abcd = new StringBuffer("abcd");
+    StringBuilder abcd = new StringBuilder("abcd");
     String expected = "";
     for (int i = 0; i < 10; i++) {
       cb.append(abcd);

@@ -1409,7 +1409,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     }
   }
 
-  private class SortFields {
+  private static class SortFields {
     String fieldName;
     String sortOrder;
     String[] orders = {"asc", "desc"};

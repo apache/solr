@@ -95,6 +95,7 @@ public class StressHdfsTest extends AbstractBasicDistributedZkTestBase {
     testRestartIntoSafeMode = random().nextBoolean();
   }
 
+  @Override
   protected String getSolrXml() {
     return "solr.xml";
   }

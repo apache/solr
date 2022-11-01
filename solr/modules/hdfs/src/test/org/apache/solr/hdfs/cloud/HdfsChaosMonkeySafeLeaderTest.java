@@ -73,6 +73,7 @@ public class HdfsChaosMonkeySafeLeaderTest extends AbstractChaosMonkeySafeLeader
     return HdfsTestUtil.getDataDir(dfsCluster, dataDir);
   }
 
+  @Override
   protected String getDirectoryFactory() {
     return HdfsDirectoryFactory.class.getCanonicalName();
   }

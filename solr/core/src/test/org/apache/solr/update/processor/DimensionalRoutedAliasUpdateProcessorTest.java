@@ -555,7 +555,7 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
       throws Exception {
     final int expectNumFound =
         lastDocId - numDocsDeletedOrFailed; // lastDocId is effectively # generated docs
-    int totalNumFound = 0;
+    long totalNumFound = 0;
 
     final List<String> cols =
         new CollectionAdminRequest.ListAliases()

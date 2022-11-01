@@ -230,6 +230,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
       standaloneSolr = new JettySolrRunner(solrHomeDir.getAbsolutePath(), "/solr", port);
       Thread bg =
           new Thread() {
+            @Override
             public void run() {
               try {
                 standaloneSolr.start();
@@ -294,6 +295,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
   protected List<Closeable> closeables = new ArrayList<>();
 
+  @Override
   @After
   public void tearDown() throws Exception {
     super.tearDown();

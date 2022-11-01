@@ -90,6 +90,7 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
     updateRequestHandler.init(null);
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     if (null != monitor) {
@@ -262,7 +263,7 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
     public final BlockingQueue<Long> hard = new LinkedBlockingQueue<>(1000);
 
     // if non enpty, then at least one offer failed (queues full)
-    private StringBuffer fail = new StringBuffer();
+    private final StringBuilder fail = new StringBuilder();
 
     @Override
     public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {
@@ -272,7 +273,7 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
     @Override
     public void postCommit() {
       Long now = System.nanoTime();
-      if (!hard.offer(now)) fail.append(", hardCommit @ " + now);
+      if (!hard.offer(now)) fail.append(", hardCommit @ ").append(now);
     }
 
     @Override

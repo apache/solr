@@ -667,7 +667,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
         .toArray(new String[list.size()]);
   }
 
-  private class PosVal<T extends Comparable<T>> {
+  private static class PosVal<T extends Comparable<T>> {
     int pos;
     T val;
 
@@ -676,6 +676,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
       this.val = val;
     }
 
+    @Override
     public String toString() {
       return "(" + pos + ": " + val.toString() + ")";
     }
@@ -4701,7 +4702,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
     long inc1;
     for (; ; ) {
       number2 = random().nextInt();
-      inc1 = number2 - number1;
+      inc1 = (long) number2 - number1;
       if (Math.abs(inc1) < (long) Integer.MAX_VALUE) {
         break;
       }
