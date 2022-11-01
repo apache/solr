@@ -46,24 +46,28 @@ public class TestBatchUpdate extends SolrJettyTestBase {
 
   @Test
   public void testWithXml() throws Exception {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
-    client.setRequestWriter(new RequestWriter());
+    client =
+        new HttpSolrClient.Builder(getServerUrl()).withRequestWriter(new RequestWriter()).build();
     client.deleteByQuery("*:*"); // delete everything!
     doIt(client);
   }
 
   @Test
   public void testWithBinary() throws Exception {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
-    client.setRequestWriter(new BinaryRequestWriter());
+    client =
+        new HttpSolrClient.Builder(getServerUrl())
+            .withRequestWriter(new BinaryRequestWriter())
+            .build();
     client.deleteByQuery("*:*"); // delete everything!
     doIt(client);
   }
 
   @Test
   public void testWithBinaryBean() throws Exception {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
-    client.setRequestWriter(new BinaryRequestWriter());
+    client =
+        new HttpSolrClient.Builder(getServerUrl())
+            .withRequestWriter(new BinaryRequestWriter())
+            .build();
     client.deleteByQuery("*:*"); // delete everything!
     final int[] counter = new int[1];
     counter[0] = 0;
@@ -100,7 +104,7 @@ public class TestBatchUpdate extends SolrJettyTestBase {
     @Field String cat;
   }
 
-  private void doIt(HttpSolrClient client) throws SolrServerException, IOException {
+  private void doIt(SolrClient client) throws SolrServerException, IOException {
     final int[] counter = new int[1];
     counter[0] = 0;
     client.add(

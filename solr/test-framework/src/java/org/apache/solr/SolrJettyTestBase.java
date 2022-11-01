@@ -127,6 +127,10 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
     return jetty;
   }
 
+  protected String getServerUrl() {
+    return jetty.getBaseUrl().toString() + "/" + "collection1";
+  }
+
   @After
   public synchronized void afterClass() throws Exception {
     if (client != null) client.close();
@@ -156,8 +160,7 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
   public SolrClient createNewSolrClient() {
     try {
       // setup the client...
-      final String url = jetty.getBaseUrl().toString() + "/" + "collection1";
-      final SolrClient client = getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT);
+      final SolrClient client = getHttpSolrClient(getServerUrl(), DEFAULT_CONNECTION_TIMEOUT);
       return client;
     } catch (final Exception ex) {
       throw new RuntimeException(ex);
