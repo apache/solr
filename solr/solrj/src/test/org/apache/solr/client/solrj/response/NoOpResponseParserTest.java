@@ -72,7 +72,10 @@ public class NoOpResponseParserTest extends SolrJettyTestBase {
   @Test
   public void testQueryParse() throws Exception {
 
-    try (SolrClient client = new HttpSolrClient.Builder(getServerUrl()).withResponseParser(new NoOpResponseParser()).build()) {
+    try (SolrClient client =
+        new HttpSolrClient.Builder(getServerUrl())
+            .withResponseParser(new NoOpResponseParser())
+            .build()) {
       SolrQuery query = new SolrQuery("id:1234");
       QueryRequest req = new QueryRequest(query);
       NamedList<Object> resp = client.request(req);

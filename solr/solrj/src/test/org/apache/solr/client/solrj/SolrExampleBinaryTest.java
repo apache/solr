@@ -32,9 +32,8 @@ public class SolrExampleBinaryTest extends SolrExampleTests {
 
   @Override
   public SolrClient createNewSolrClient() {
-    // setup the server...
-    String url = jetty.getBaseUrl().toString() + "/collection1";
-    HttpSolrClient.Builder httpSolrClientBuilder = new HttpSolrClient.Builder(url);
+    // setup the server...;
+    HttpSolrClient.Builder httpSolrClientBuilder = new HttpSolrClient.Builder(getServerUrl());
     httpSolrClientBuilder.withUseMultiPartPost(random().nextBoolean());
 
     httpSolrClientBuilder

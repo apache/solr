@@ -131,16 +131,13 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
   @Override
   public SolrClient createNewSolrClient() {
     // setup the server...
-    String url = jetty.getBaseUrl().toString() + "/collection1";
-    HttpSolrClient.Builder httpSolrClientBuilder = new HttpSolrClient.Builder(url);
+    HttpSolrClient.Builder httpSolrClientBuilder = new HttpSolrClient.Builder(getServerUrl());
     if (random().nextBoolean()) {
       httpSolrClientBuilder
           .withRequestWriter(new BinaryRequestWriter())
           .withResponseParser(new BinaryResponseParser());
     }
-    if (random().nextBoolean()) {
-      httpSolrClientBuilder.withUseMultiPartPost(true);
-    }
+    httpSolrClientBuilder.withUseMultiPartPost(random().nextBoolean());
 
     return httpSolrClientBuilder.build();
   }

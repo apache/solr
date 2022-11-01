@@ -32,9 +32,7 @@ public class SolrExampleXMLTest extends SolrExampleTests {
 
   @Override
   public SolrClient createNewSolrClient() {
-
-    String url = jetty.getBaseUrl().toString() + "/collection1";
-    HttpSolrClient.Builder httpSolrClientBuilder = new HttpSolrClient.Builder(url);
+    HttpSolrClient.Builder httpSolrClientBuilder = new HttpSolrClient.Builder(getServerUrl());
     httpSolrClientBuilder.withUseMultiPartPost(random().nextBoolean());
 
     httpSolrClientBuilder
