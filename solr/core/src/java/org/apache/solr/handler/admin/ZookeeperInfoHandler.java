@@ -413,9 +413,9 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     }
 
     // main entry point for printing from path
-    public void print(String path) throws IOException {
+    public String print(String path) throws IOException {
       if (zkClient == null) {
-        return;
+        return "";
       }
 
       // normalize path
@@ -444,7 +444,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
 
       if (detail) {
         if (!printZnode(json, path)) {
-          return;
+          return "";
         }
         json.writeValueSeparator();
       }
@@ -453,16 +453,18 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       json.writeNameSeparator();
       json.startArray();
       if (!printTree(json, path)) {
-        return; // there was an error
+        return ""; // there was an error
       }
       json.endArray();
       json.endObject();
       out.write(chars.toString());
+
+      return baos.toString();
     }
 
     // main entry point for printing collections
     @SuppressWarnings("unchecked")
-    public void printPaginatedCollections() throws IOException {
+    public String printPaginatedCollections() throws IOException {
       SortedMap<String, Object> collectionStates;
       try {
         // support paging of the collections graph view (in case there are many collections)
@@ -510,7 +512,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
         }
       } catch (KeeperException | InterruptedException e) {
         writeError(500, e.toString());
-        return;
+        return "";
       }
 
       CharArr chars = new CharArr();
@@ -535,6 +537,8 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       json.endObject();
       json.endObject();
       out.write(chars.toString());
+
+      return baos.toString();
     }
 
     void writeError(int code, String msg) throws IOException {

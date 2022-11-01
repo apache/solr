@@ -146,15 +146,13 @@ public class ZookeeperAPI extends JerseyResource {
       if (paginateCollections) {
         // List collections and allow pagination, but no specific znode info like when looking at a
         // normal ZK path
-        printer.printPaginatedCollections();
+        response.zookeeperFiles = printer.printPaginatedCollections();
       } else {
-        printer.print(path);
+        response.zookeeperFiles = printer.print(path);
       }
     } finally {
       printer.close();
     }
-
-    response.zookeeperFiles.add(RawResponseWriter.CONTENT, printer);
     return response;
   }
 
@@ -226,15 +224,14 @@ public class ZookeeperAPI extends JerseyResource {
       if (paginateCollections) {
         // List collections and allow pagination, but no specific znode info like when looking at a
         // normal ZK path
-        printer.printPaginatedCollections();
+        response.zookeeperFile = printer.printPaginatedCollections();
       } else {
-        printer.print(path);
+        response.zookeeperFile = printer.print(path);
       }
     } finally {
       printer.close();
     }
 
-    response.zookeeperFile.add(RawResponseWriter.CONTENT, printer);
     return response;
   }
 
@@ -261,7 +258,7 @@ public class ZookeeperAPI extends JerseyResource {
           log.warn("{} - Continuing with static connection string", e.toString());
         }
       }
-      response.zookeeperStatus.add("zkStatus", ZookeeperStatusHandler.zkStatus);
+      response.zookeeperStatus = ZookeeperStatusHandler.zkStatus;
     } else {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
@@ -273,18 +270,18 @@ public class ZookeeperAPI extends JerseyResource {
   public static class ZookeeperFilesResponse extends SolrJerseyResponse {
 
     @JsonProperty("zookeeperFiles")
-    public NamedList<Object> zookeeperFiles = new NamedList<>();
+    public String zookeeperFiles;
   }
 
   public static class ZookeeperFileResponse extends SolrJerseyResponse {
 
     @JsonProperty("zookeeperFile")
-    public NamedList<Object> zookeeperFile = new NamedList<>();
+    public String zookeeperFile;
   }
 
   public static class ZookeeperStatus extends SolrJerseyResponse {
 
     @JsonProperty("zookeeperStatus")
-    public NamedList<Object> zookeeperStatus = new NamedList<>();
+    public Map<String, Object> zookeeperStatus = new HashMap<>();
   }
 }
