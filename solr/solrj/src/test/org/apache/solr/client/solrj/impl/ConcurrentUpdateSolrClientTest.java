@@ -156,9 +156,8 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
                 serverUrl, successCounter, errorCounter, errors)
             .withQueueSize(cussQueueSize)
             .withThreadCount(cussThreadCount)
+            .withPollQueueTime(0)
             .build();
-
-    concurrentClient.setPollQueueTime(0);
 
     // ensure it doesn't block where there's nothing to do yet
     concurrentClient.blockUntilFinished();
@@ -251,8 +250,8 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
         (new ConcurrentUpdateSolrClient.Builder(jetty.getBaseUrl().toString()))
             .withQueueSize(cussQueueSize)
             .withThreadCount(cussThreadCount)
+            .withPollQueueTime(0)
             .build()) {
-      concurrentClient.setPollQueueTime(0);
 
       // ensure it doesn't block where there's nothing to do yet
       concurrentClient.blockUntilFinished();
