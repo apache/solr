@@ -20,15 +20,12 @@ import static org.apache.solr.common.util.Utils.fromJSONString;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.apache.commons.io.IOUtils;
+
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
@@ -38,15 +35,12 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.util.NamedList;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,7 +75,7 @@ public class SolrExampleJettyTest extends SolrExampleTests {
     // two docs, one with uniqueKey, another without it
     String json = "{\"id\":\"abc1\", \"name\": \"name1\"} {\"name\" : \"name2\"}";
     HttpClient httpClient = client.getHttpClient();
-    HttpPost post = new HttpPost(getUri(client));
+    HttpPost post = new HttpPost(getJsonUpdateUrl(getServerUrl()));
     post.setHeader("Content-Type", "application/json");
     post.setEntity(
         new InputStreamEntity(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), -1));
@@ -105,8 +99,7 @@ public class SolrExampleJettyTest extends SolrExampleTests {
     assertEquals("name2", m.get("name"));
   }
 
-  private String getUri(HttpSolrClient client) {
-    String baseURL = client.getBaseURL();
+  private String getJsonUpdateUrl(String baseURL) {
     return random().nextBoolean()
         ? baseURL.replace("/collection1", "/____v2/cores/collection1/update")
         : baseURL + "/update/json/docs";
@@ -119,61 +112,13 @@ public class SolrExampleJettyTest extends SolrExampleTests {
     doc.addField("id", "1");
     doc.addField("b_is", IntStream.range(0, 30000).boxed().collect(Collectors.toList()));
 
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
-    client.add(doc);
-    client.commit();
-    long start = System.nanoTime();
-    QueryResponse rsp = client.query(new SolrQuery("*:*"));
-    System.out.println("time taken : " + ((System.nanoTime() - start)) / (1000 * 1000));
-    assertEquals(1, rsp.getResults().getNumFound());
-  }
-
-  @Ignore
-  public void testUtf8QueryPerf() throws Exception {
     try (SolrClient client = getSolrClient()) {
-      client.deleteByQuery("*:*");
+      client.add(doc);
       client.commit();
-      List<SolrInputDocument> docs = new ArrayList<>();
-      for (int i = 0; i < 10; i++) {
-        SolrInputDocument doc2 = new SolrInputDocument();
-        doc2.addField("id", "" + i);
-        doc2.addField("fld1_s", "1 value 1 value 1 value 1 value 1 value 1 value 1 value ");
-        doc2.addField(
-            "fld2_s",
-            "2 value 2 value 2 value 2 value 2 value 2 value 2 value 2 value 2 value 2 value ");
-        doc2.addField(
-            "fld3_s",
-            "3 value 3 value 3 value 3 value 3 value 3 value 3 value 3 value 3 value 3 value 3 value 3 value 3 value 3 value ");
-        doc2.addField(
-            "fld4_s", "4 value 4 value 4 value 4 value 4 value 4 value 4 value 4 value 4 value ");
-        doc2.addField(
-            "fld5_s",
-            "5 value 5 value 5 value 5 value 5 value 5 value 5 value 5 value 5 value 5 value 5 value 5 value ");
-        docs.add(doc2);
-      }
-      client.add(docs);
-      client.commit();
+      long start = System.nanoTime();
       QueryResponse rsp = client.query(new SolrQuery("*:*"));
-      assertEquals(10, rsp.getResults().getNumFound());
-    }
-    try (SolrClient client2 =
-        new HttpSolrClient.Builder(getServerUrl())
-            .withResponseParser(
-                new BinaryResponseParser() {
-                  @Override
-                  public NamedList<Object> processResponse(InputStream body, String encoding) {
-                    try {
-                      IOUtils.skip(body, 1024 * 1000);
-                    } catch (IOException e) {
-                      e.printStackTrace();
-                    }
-                    return rsp.getResponse();
-                  }
-                })
-            .build()) {
-
-      runQueries(client2, 1000, true);
-      runQueries(client2, 10000, false);
+      System.out.println("time taken : " + ((System.nanoTime() - start)) / (1000 * 1000));
+      assertEquals(1, rsp.getResults().getNumFound());
     }
   }
 
