@@ -38,6 +38,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -49,6 +50,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.function.Consumer;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -83,9 +85,11 @@ import org.apache.solr.response.transform.ExcludedMarkerFactory;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.CollapsingQParserPlugin;
+import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortSpec;
+import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.SafeXMLParsing;
@@ -131,7 +135,6 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   private static final boolean DEFAULT_SUBSET_MATCH = false;
   private static final String DEFAULT_EXCLUDE_MARKER_FIELD_NAME = "excluded";
   private static final String DEFAULT_EDITORIAL_MARKER_FIELD_NAME = "elevated";
-  private static final boolean DEFAULT_ELEVATE_FILTERED_DOCS = false;
   private static final WeakReference<IndexReader> NULL_REF = new WeakReference<>(null);
 
   protected SolrParams initArgs;
@@ -485,6 +488,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     Elevation elevation = getElevation(rb);
     if (elevation != null) {
       setQuery(rb, elevation);
+      setFilters(rb, elevation);
       setSort(rb, elevation);
     }
 
@@ -554,25 +558,82 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       }
       rb.setQuery(queryBuilder.build());
     }
+  }
+
+  /**
+   * Updates any filters that have been tagged for exclusion. Filters can be tagged for exclusion
+   * via the syntax fq={!tag=t1}field1:value1&elevate.excludeTags=t1 This method modifies each
+   * "excluded" filter so that it becomes a boolean OR of the original filter with an "include
+   * query" that matches the elevated documents by their IDs. To be clear, the "excluded" filters
+   * are not ignored entirely, but rather broadened so that the elevated documents are allowed
+   * through.
+   */
+  private void setFilters(ResponseBuilder rb, Elevation elevation) {
+    SolrParams params = rb.req.getParams();
+
+    String tagStr = params.get(QueryElevationParams.ELEVATE_EXCLUDE_TAGS);
+    if (StringUtils.isEmpty(tagStr)) {
+      // the parameter that specifies tags for exclusion was not provided or had no value
+      return;
+    }
+
+    List<String> excludeTags = StrUtils.splitSmart(tagStr, ',');
+    excludeTags.removeIf(s -> StringUtils.isBlank(s));
+    if (excludeTags.isEmpty()) {
+      // the parameter that specifies tags for exclusion was provided but the tag names were blank
+      return;
+    }
 
     List<Query> filters = rb.getFilters();
-    if (params.getBool(QueryElevationParams.ELEVATE_FILTERED_DOCS, DEFAULT_ELEVATE_FILTERED_DOCS)
-        && filters != null
-        && !filters.isEmpty()) {
-      // Change the filter queries to match forced documents
-      List<Query> updatedFilters = new ArrayList<Query>();
-      for (Query q : filters) {
-        if (q instanceof CollapsingQParserPlugin.CollapsingPostFilter) {
-          updatedFilters.add(q);
-          continue;
-        }
-        BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
-        queryBuilder.add(q, BooleanClause.Occur.SHOULD);
-        queryBuilder.add(elevation.includeQuery, BooleanClause.Occur.SHOULD);
-        updatedFilters.add(queryBuilder.build());
-      }
-      rb.setFilters(updatedFilters);
+    if (filters == null || filters.isEmpty()) {
+      // no filters were provided
+      return;
     }
+
+    Map<?, ?> tagMap = (Map<?, ?>) rb.req.getContext().get("tags");
+    if (tagMap == null) {
+      // no filters were tagged
+      return;
+    }
+
+    // TODO: this code is copied from FacetProcessor#handleFilterExclusions()
+    // duplication could be avoided by placing this code in a common utility method, perhaps in
+    // QueryUtils
+    IdentityHashMap<Query, Boolean> excludeSet = new IdentityHashMap<>();
+    for (String excludeTag : excludeTags) {
+      Object olst = tagMap.get(excludeTag);
+      // tagMap has entries of List<String,List<QParser>>, but subject to change in the future
+      if (!(olst instanceof Collection)) continue;
+      for (Object o : (Collection<?>) olst) {
+        if (!(o instanceof QParser)) continue;
+        QParser qp = (QParser) o;
+        try {
+          excludeSet.put(qp.getQuery(), Boolean.TRUE);
+        } catch (SyntaxError syntaxError) {
+          // This should not happen since we should only be retrieving a previously parsed query
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, syntaxError);
+        }
+      }
+    }
+
+    List<Query> updatedFilters = new ArrayList<Query>();
+
+    for (Query q : filters) {
+      if (!excludeSet.containsKey(q) || q instanceof CollapsingQParserPlugin.CollapsingPostFilter) {
+        updatedFilters.add(q);
+        continue;
+      }
+
+      // we're looking at a filter that has been tagged for exclusion
+      // transform it into a boolean OR of the original filter with the "include query" matching the
+      // elevated docs
+      BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
+      queryBuilder.add(q, BooleanClause.Occur.SHOULD);
+      queryBuilder.add(elevation.includeQuery, BooleanClause.Occur.SHOULD);
+      updatedFilters.add(queryBuilder.build());
+    }
+
+    rb.setFilters(updatedFilters);
   }
 
   private void setSort(ResponseBuilder rb, Elevation elevation) throws IOException {

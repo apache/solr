@@ -62,7 +62,8 @@ public interface QueryElevationParams {
 
   /**
    * By default, the component respects the fq parameter. If you want to elevate documents that do
-   * not match the provided filters, set this to true. False by default.
+   * not match the provided filters, tag the filters in question via the local parameter syntax
+   * fq={!tag=t1}field1:value1 and then specify the tags for exclusion via elevate.excludeTag=t1
    */
-  String ELEVATE_FILTERED_DOCS = "elevateFilteredDocs";
+  String ELEVATE_EXCLUDE_TAGS = "elevate.excludeTags";
 }

@@ -172,31 +172,47 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           "//result/doc[1]/str[@name='id'][.='2']",
           "//result/doc[1]/bool[@name='[elevated]'][.='true']");
 
-      // if we explicitly set QueryElevationParams.ELEVATE_FILTERED_DOCS=false (which is the
-      // default)
-      // we should see the same behavior as above
+      // if we tag the filter without also specifying the tag for exclusion,
+      // we should see the same behavior as above; the filter still takes effect on the elevated
+      // docs
       assertQ(
           "",
           req(
               CommonParams.Q, "ZZZZ",
               CommonParams.QT, "/elevate",
               CommonParams.FL, "id, score, [elevated]",
-              CommonParams.FQ, "str_s:b",
-              QueryElevationParams.ELEVATE_FILTERED_DOCS, "false"),
+              CommonParams.FQ, "{!tag=test1,test2}str_s:b",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test3"),
           "//*[@numFound='1']",
           "//result/doc[1]/str[@name='id'][.='2']",
           "//result/doc[1]/bool[@name='[elevated]'][.='true']");
 
-      // if we set QueryElevationParams.ELEVATE_FILTERED_DOCS=true we should see docs 1 and 3
-      // returned even though they don't match the filter query
+      // if we tag the filter without also specifying the tag for exclusion,
+      // we should see the same behavior as above; the filter still takes effect on the elevated
+      // docs
       assertQ(
           "",
           req(
               CommonParams.Q, "ZZZZ",
               CommonParams.QT, "/elevate",
               CommonParams.FL, "id, score, [elevated]",
-              CommonParams.FQ, "str_s:b",
-              QueryElevationParams.ELEVATE_FILTERED_DOCS, "true"),
+              CommonParams.FQ, "{!tag=test1,test2}str_s:b",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, ","),
+          "//*[@numFound='1']",
+          "//result/doc[1]/str[@name='id'][.='2']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']");
+
+      // if we specify at least one of the filter's tags for exclusion,
+      // the filter is broadened to include the elvated docs;
+      // we should see docs 1 and 3 returned even though they don't match the original filter
+      assertQ(
+          "",
+          req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "{!tag=test1,test2}str_s:b",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test0,test2,test4"),
           "//*[@numFound='3']",
           "//result/doc[1]/str[@name='id'][.='1']",
           "//result/doc[2]/str[@name='id'][.='2']",
@@ -205,6 +221,56 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           "//result/doc[2]/bool[@name='[elevated]'][.='true']",
           "//result/doc[3]/bool[@name='[elevated]'][.='true']");
 
+      // redundant tags don't cause problems;
+      // nor does tagging something that's not a filter (in this case, the main query);
+      // nor does including empty values in the list of tags to exclude
+      assertQ(
+          "",
+          req(
+              CommonParams.Q, "{!tag=test0}ZZZZ",
+              CommonParams.QT, "/elevate",
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "{!tag=test1,test1,test2,test2}str_s:b",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test0,test0,test2,test2,test4,test4,,,"),
+          "//*[@numFound='3']",
+          "//result/doc[1]/str[@name='id'][.='1']",
+          "//result/doc[2]/str[@name='id'][.='2']",
+          "//result/doc[3]/str[@name='id'][.='3']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[2]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[3]/bool[@name='[elevated]'][.='true']");
+
+      // we can exclude some filters while leaving others in place
+      assertQ(
+          "",
+          req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "{!tag=test1}id:10",
+              CommonParams.FQ, "{!tag=test2}str_s:b",
+              CommonParams.FQ, "{!tag=test3}id:11",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test1,test3"),
+          "//*[@numFound='1']",
+          "//result/doc[1]/str[@name='id'][.='2']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']");
+
+      // we can apply the same tag to two different filters
+      assertQ(
+          "",
+          req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "{!tag=test1}id:10",
+              CommonParams.FQ, "{!tag=test2}str_s:b",
+              CommonParams.FQ, "{!tag=test1}id:11",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test1,test3"),
+          "//*[@numFound='1']",
+          "//result/doc[1]/str[@name='id'][.='2']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']");
+
+      // the next few assertions confirm that filter exclusion only applies to elevated documents;
       // if we search for MMMM we should get one match; no documents are elevated for this query
       assertQ(
           "",
@@ -216,7 +282,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           "//result/doc[1]/str[@name='id'][.='4']",
           "//result/doc[1]/bool[@name='[elevated]'][.='false']");
 
-      // if we add fq=str_s:b, our one document that matches MMMM will no longer be returned
+      // if we add fq=str_s:b, our one document that matches MMMM will be filtered out
       assertQ(
           "",
           req(
@@ -226,7 +292,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
               CommonParams.FQ, "str_s:b"),
           "//*[@numFound='0']");
 
-      // if we set QueryElevationParams.ELEVATE_FILTERED_DOCS=true we should see the same behavior
+      // if we tag the filters and exclude it, we should should see the same behavior
       // as before
       // filters are only bypassed for elevated documents
       // our MMMM document is not elevated so it is still subject to the filter
@@ -236,11 +302,12 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
               CommonParams.Q, "MMMM",
               CommonParams.QT, "/elevate",
               CommonParams.FL, "id, score, [elevated]",
-              CommonParams.FQ, "str_s:b",
-              QueryElevationParams.ELEVATE_FILTERED_DOCS, "true"),
+              CommonParams.FQ, "{!tag=test1}str_s:b",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test1"),
           "//*[@numFound='0']");
 
-      // when collapsing, all elevated docs are visible by default
+      // the next few assertions confirm that collapsing works as expected when filters are excluded
+      // first, confirm that when collapsing, all elevated docs are visible by default
       assertQ(
           "",
           req(
@@ -269,9 +336,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           "//result/doc[1]/str[@name='id'][.='2']",
           "//result/doc[1]/bool[@name='[elevated]'][.='true']");
 
-      // when collapsing, QueryElevationParams.ELEVATE_FILTERED_DOCS can still be used to prevent
+      // when collapsing, filters can still be tagged and excluded so that they don't affect
       // elevated documents
-      // from being affected by filters
       assertQ(
           "",
           req(
@@ -279,8 +345,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
               CommonParams.QT, "/elevate",
               CommonParams.FQ, "{!collapse field=str_s sort='score desc'}",
               CommonParams.FL, "id, score, [elevated]",
-              CommonParams.FQ, "str_s:b",
-              QueryElevationParams.ELEVATE_FILTERED_DOCS, "true"),
+              CommonParams.FQ, "{!tag=test1}str_s:b",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test1"),
           "//*[@numFound='3']",
           "//result/doc[1]/str[@name='id'][.='1']",
           "//result/doc[2]/str[@name='id'][.='2']",
