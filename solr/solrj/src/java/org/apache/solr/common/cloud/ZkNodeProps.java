@@ -30,9 +30,7 @@ import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.Utils;
 
 /** ZkNodeProps contains generic immutable properties. */
-
 public class ZkNodeProps implements MapWriter {
-
 
   protected final Map<String, Object> propMap;
 
