@@ -105,16 +105,6 @@ public class ZkNodeProps implements MapWriter {
     }
     return new ZkNodeProps(props);
   }
-  /*
-  @Override
-  public void write(JSONWriter jsonWriter) {
-    jsonWriter.write(propMap);
-  }*/
-
-  @Override
-  public void writeMap(EntryWriter ew) throws IOException {
-    propMap.forEach(ew.getBiConsumer());
-  }
 
   /** Get a string property value. */
   public String getStr(String key) {
