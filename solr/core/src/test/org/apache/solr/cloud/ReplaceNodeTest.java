@@ -216,7 +216,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
 
   @Test
   public void testGoodSpreadDuringAssignWithNoTarget() throws Exception {
-    configureCluster(5)
+    configureCluster(4)
         .addConfig(
             "conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
         .configure();
@@ -233,17 +233,19 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     l = l.subList(2, l.size());
     String nodeToBeDecommissioned = l.get(0);
 
+    int numShards = 3;
+
     // TODO: tlog replicas do not work correctly in tests due to fault
     // TestInjection#waitForInSyncWithLeader
     CollectionAdminRequest.Create create =
-        CollectionAdminRequest.createCollection(coll, "conf1", 4, 3, 0, 0);
+        CollectionAdminRequest.createCollection(coll, "conf1", numShards, 2, 0, 0);
     create.setCreateNodeSet(StrUtils.join(l, ','));
     cloudClient.request(create);
 
     cluster.waitForActiveCollection(
         coll,
-        4,
-        4
+        numShards,
+        numShards
             * (create.getNumNrtReplicas()
                 + create.getNumPullReplicas()
                 + create.getNumTlogReplicas()));
@@ -258,7 +260,8 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     createReplaceNodeRequest(nodeToBeDecommissioned, null, true)
         .processAndWait("000", cloudClient, 15);
 
-    DocCollection collection = cloudClient.getClusterState().getCollection(coll);
+    DocCollection collection = cloudClient.getClusterState().getCollectionOrNull(coll, false);
+    assertNotNull("Collection cannot be null: " + coll, collection);
     log.debug("### After decommission: {}", collection);
     // check what are replica states on the decommissioned node
     List<Replica> replicas = collection.getReplicas(nodeToBeDecommissioned);
