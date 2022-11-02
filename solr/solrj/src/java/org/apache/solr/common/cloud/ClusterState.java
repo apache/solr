@@ -18,6 +18,7 @@ package org.apache.solr.common.cloud;
 
 import static org.apache.solr.common.util.Utils.STANDARDOBJBUILDER;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
@@ -33,13 +34,13 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 import org.apache.solr.common.cloud.Replica.ReplicaStateProps;
 import org.apache.solr.common.util.Utils;
 import org.noggit.JSONParser;
-import org.noggit.JSONWriter;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +51,7 @@ import org.slf4j.LoggerFactory;
  *
  * @lucene.experimental
  */
-public class ClusterState implements JSONWriter.Writable {
+public class ClusterState implements MapWriter {
 
   /** Cluster Prop that is http or https. */
   public static final String URL_SCHEME = "urlScheme";
@@ -222,8 +223,8 @@ public class ClusterState implements JSONWriter.Writable {
    * thus don't call it where that's important
    *
    * @param bytes a byte array of a Json representation of a mapping from collection name to the
-   *     Json representation of a {@link DocCollection} as written by {@link #write(JSONWriter)}. It
-   *     can represent one or more collections.
+   *     Json representation of a {@link DocCollection} as written by {@link
+   *     #writeMap(EntryWriter)}. It can represent one or more collections.
    * @param liveNodes list of live nodes
    * @return the ClusterState
    */
@@ -295,15 +296,12 @@ public class ClusterState implements JSONWriter.Writable {
   }
 
   @Override
-  public void write(JSONWriter jsonWriter) {
-    LinkedHashMap<String, DocCollection> map = new LinkedHashMap<>();
-    for (Entry<String, CollectionRef> e : collectionStates.entrySet()) {
-      if (e.getValue().getClass() == CollectionRef.class) {
-        DocCollection coll = e.getValue().get();
-        map.put(coll.getName(), coll);
-      }
-    }
-    jsonWriter.write(map);
+  public void writeMap(EntryWriter ew) throws IOException {
+    collectionStates.forEach(
+        (s, ref) -> {
+          DocCollection coll = ref.get();
+          ew.putNoEx(coll.getName(), coll);
+        });
   }
 
   @Override

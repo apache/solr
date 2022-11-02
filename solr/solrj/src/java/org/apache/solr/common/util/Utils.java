@@ -229,7 +229,6 @@ public class Utils {
         startObject();
         final boolean[] first = new boolean[1];
         first[0] = true;
-        int sz = mapWriter._size();
         mapWriter._forEachEntry(
             (k, v) -> {
               if (first[0]) {
@@ -237,7 +236,7 @@ public class Utils {
               } else {
                 writeValueSeparator();
               }
-              if (sz > 1) indent();
+              indent();
               writeString(k.toString());
               writeNameSeparator();
               write(v);
@@ -267,6 +266,8 @@ public class Utils {
           throw new RuntimeException("this should never happen", e);
         }
         endArray();
+      } else if (o instanceof MapWriter.StringValue) {
+        super.write(o.toString());
       } else {
         super.handleUnknownClass(o);
       }
