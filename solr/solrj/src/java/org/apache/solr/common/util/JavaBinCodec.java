@@ -496,6 +496,7 @@ public class JavaBinCodec implements PushWriter {
 
   public final BinEntryWriter ew = new BinEntryWriter();
 
+  @Override
   public void writeMap(MapWriter val) throws IOException {
     writeTag(MAP_ENTRY_ITER);
     val.writeMap(ew);

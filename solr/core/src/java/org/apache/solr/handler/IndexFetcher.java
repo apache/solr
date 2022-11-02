@@ -2020,18 +2020,22 @@ public class IndexFetcher {
       outStream = copy2Dir.createOutput(this.saveAs, DirectoryFactory.IOCONTEXT_NO_CACHE);
     }
 
+    @Override
     public void sync() throws IOException {
       copy2Dir.sync(Collections.singleton(saveAs));
     }
 
+    @Override
     public void write(byte[] buf, int packetSize) throws IOException {
       outStream.writeBytes(buf, 0, packetSize);
     }
 
+    @Override
     public void close() throws Exception {
       outStream.close();
     }
 
+    @Override
     public void delete() throws Exception {
       copy2Dir.deleteFile(saveAs);
     }
@@ -2075,19 +2079,23 @@ public class IndexFetcher {
       this.fileChannel = this.fileOutputStream.getChannel();
     }
 
+    @Override
     public void sync() throws IOException {
       FileUtils.sync(file);
     }
 
+    @Override
     public void write(byte[] buf, int packetSize) throws IOException {
       fileChannel.write(ByteBuffer.wrap(buf, 0, packetSize));
     }
 
+    @Override
     public void close() throws Exception {
       // close the FileOutputStream (which also closes the Channel)
       fileOutputStream.close();
     }
 
+    @Override
     public void delete() throws Exception {
       Files.delete(file.toPath());
     }

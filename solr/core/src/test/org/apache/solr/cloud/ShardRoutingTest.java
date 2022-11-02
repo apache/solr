@@ -258,7 +258,7 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
     CloudJettyRunner leader = shardToLeaderJetty.get(bucket1);
     CloudJettyRunner replica = null;
     for (CloudJettyRunner r : runners) {
-      if (r != leader) replica = r;
+      if (!r.equals(leader)) replica = r;
     }
 
     long nStart = getNumRequests();

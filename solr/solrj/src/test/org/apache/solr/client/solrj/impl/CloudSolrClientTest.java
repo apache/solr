@@ -80,9 +80,7 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -400,8 +398,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     // Request counts increase from expected nodes should aggregate to 1000, while there should be
     // no increase in unexpected nodes.
-    int increaseFromExpectedUrls = 0;
-    int increaseFromUnexpectedUrls = 0;
+    long increaseFromExpectedUrls = 0;
+    long increaseFromUnexpectedUrls = 0;
     Map<String, Long> numRequestsToUnexpectedUrls = Maps.newHashMap();
     for (Slice slice : col.getSlices()) {
       for (Replica replica : slice.getReplicas()) {
@@ -834,8 +832,6 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     }
   }
 
-  @Rule public ExpectedException exception = ExpectedException.none();
-
   @Test
   public void testWrongZkChrootTest() throws IOException {
     try (CloudSolrClient client =
@@ -949,7 +945,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   public void testRetryUpdatesWhenClusterStateIsStale() throws Exception {
     final String COL = "stale_state_test_col";
-    assert cluster.getJettySolrRunners().size() >= 2;
+    assertTrue(cluster.getJettySolrRunners().size() >= 2);
 
     final JettySolrRunner old_leader_node = cluster.getJettySolrRunners().get(0);
     final JettySolrRunner new_leader_node = cluster.getJettySolrRunners().get(1);

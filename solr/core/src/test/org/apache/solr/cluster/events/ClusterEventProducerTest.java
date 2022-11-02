@@ -63,6 +63,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
         .configure();
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     System.setProperty("enable.packages", "true");
@@ -261,10 +262,9 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
         ClusterEvent.EventType.CLUSTER_PROPERTIES_CHANGED,
         event.getType());
     propertiesChanged = (ClusterPropertiesChangedEvent) event;
-    assertEquals(
+    assertNull(
         "new properties should not have 'ext.foo' property: "
             + propertiesChanged.getNewClusterProperties(),
-        null,
         propertiesChanged.getNewClusterProperties().get("ext.foo"));
   }
 

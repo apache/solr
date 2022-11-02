@@ -37,7 +37,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import javax.servlet.MultipartConfigElement;
@@ -356,7 +355,7 @@ public class SolrRequestParsers {
       boolean supportCharsetParam)
       throws IOException {
     CharsetDecoder charsetDecoder = supportCharsetParam ? null : getCharsetDecoder(charset);
-    final LinkedList<Object> buffer = supportCharsetParam ? new LinkedList<>() : null;
+    final List<Object> buffer = supportCharsetParam ? new ArrayList<>() : null;
     long len = 0L, keyPos = 0L, valuePos = 0L;
     final ByteArrayOutputStream keyStream = new ByteArrayOutputStream(),
         valueStream = new ByteArrayOutputStream();
@@ -476,9 +475,7 @@ public class SolrRequestParsers {
   }
 
   private static void decodeBuffer(
-      final LinkedList<Object> input,
-      final Map<String, String[]> map,
-      CharsetDecoder charsetDecoder) {
+      final List<Object> input, final Map<String, String[]> map, CharsetDecoder charsetDecoder) {
     for (final Iterator<Object> it = input.iterator(); it.hasNext(); ) {
       final byte[] keyBytes = (byte[]) it.next();
       it.remove();
@@ -844,7 +841,7 @@ public class SolrRequestParsers {
 
         boolean schemaRestPath = false;
         int idx = uri.indexOf("/schema");
-        if (idx >= 0 && uri.endsWith("/schema") || uri.contains("/schema/")) {
+        if ((idx >= 0 && uri.endsWith("/schema")) || uri.contains("/schema/")) {
           schemaRestPath = true;
         }
 

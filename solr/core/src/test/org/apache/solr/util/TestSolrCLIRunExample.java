@@ -230,6 +230,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
       standaloneSolr = new JettySolrRunner(solrHomeDir.getAbsolutePath(), "/solr", port);
       Thread bg =
           new Thread() {
+            @Override
             public void run() {
               try {
                 standaloneSolr.start();
@@ -294,6 +295,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
   protected List<Closeable> closeables = new ArrayList<>();
 
+  @Override
   @After
   public void tearDown() throws Exception {
     super.tearDown();
@@ -415,14 +417,15 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
             }
             numFound = solrClient.query(query).getResults().getNumFound();
           }
-          assertTrue(
+          assertEquals(
               "expected 32 docs in the "
                   + exampleName
                   + " example but found "
                   + numFound
                   + ", output: "
                   + toolOutput,
-              numFound == 32);
+              32,
+              numFound);
         } finally {
           solrClient.close();
         }
@@ -605,6 +608,6 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
         tool.runTool(
             SolrCLI.processCommandLineArgs(
                 SolrCLI.joinCommonAndToolOptions(tool.getOptions()), toolArgs));
-    assertTrue("Execution should have failed with return code 1", code == 1);
+    assertEquals("Execution should have failed with return code 1", 1, code);
   }
 }

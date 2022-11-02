@@ -19,7 +19,6 @@ package org.apache.solr.handler.component;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import junit.framework.Assert;
 import org.apache.lucene.tests.util.LuceneTestCase.SuppressTempFileChecks;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrClient;
@@ -79,7 +78,7 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
           explicitNumSuggestExpected,
           Integer.toString(sug.size()));
     } else if (sug.size() == 0) {
-      Assert.fail("Control data did not return any suggestions.");
+      fail("Control data did not return any suggestions.");
     }
   }
 

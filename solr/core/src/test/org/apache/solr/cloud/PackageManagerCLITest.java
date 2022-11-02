@@ -69,8 +69,13 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
 
   @AfterClass
   public static void teardown() throws Exception {
-    repositoryServer.stop();
-    System.clearProperty("enable.packages");
+    try {
+      if (repositoryServer != null) {
+        repositoryServer.stop();
+      }
+    } finally {
+      System.clearProperty("enable.packages");
+    }
   }
 
   @Test

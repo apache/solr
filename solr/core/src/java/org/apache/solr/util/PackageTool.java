@@ -310,6 +310,7 @@ public class PackageTool extends SolrCLI.ToolBase {
     return new Pair<>(packageName, version);
   }
 
+  @Override
   public Option[] getOptions() {
     return new Option[] {
       Option.builder("solrUrl")

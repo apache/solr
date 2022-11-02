@@ -60,6 +60,7 @@ public class AddReplicaPropertyAPITest extends SolrTestCaseJ4 {
     assumeWorkingMockito();
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();

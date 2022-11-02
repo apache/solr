@@ -65,6 +65,7 @@ public class SortableTextField extends TextField {
 
   private int maxCharsForDocValues = DEFAULT_MAX_CHARS_FOR_DOC_VALUES;
 
+  @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
     {
       final String maxS = args.remove("maxCharsForDocValues");

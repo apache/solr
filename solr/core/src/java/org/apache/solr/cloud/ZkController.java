@@ -186,16 +186,10 @@ public class ZkController implements Closeable {
     @Override
     public boolean equals(Object obj) {
       if (this == obj) return true;
-      if (obj == null) return false;
-      if (getClass() != obj.getClass()) return false;
+      if (!(obj instanceof ContextKey)) return false;
       ContextKey other = (ContextKey) obj;
-      if (collection == null) {
-        if (other.collection != null) return false;
-      } else if (!collection.equals(other.collection)) return false;
-      if (coreNodeName == null) {
-        if (other.coreNodeName != null) return false;
-      } else if (!coreNodeName.equals(other.coreNodeName)) return false;
-      return true;
+      return Objects.equals(collection, other.collection)
+          && Objects.equals(coreNodeName, other.coreNodeName);
     }
 
     @Override
@@ -275,6 +269,7 @@ public class ZkController implements Closeable {
       this.afterExpiration = afterExpiration;
     }
 
+    @Override
     public Object call() throws Exception {
       if (log.isInfoEnabled()) {
         log.info("Registering core {} afterExpiration? {}", descriptor.getName(), afterExpiration);
@@ -737,6 +732,7 @@ public class ZkController implements Closeable {
   }
 
   /** Closes the underlying ZooKeeper client. */
+  @Override
   public void close() {
     if (!this.isClosed) preClose();
 
@@ -804,7 +800,7 @@ public class ZkController implements Closeable {
 
     // if this replica is not a leader, it will be put in recovery state by the leader
     String leader = cd.getCloudDescriptor().getCoreNodeName();
-    if (shard.getReplica(leader) != shard.getLeader()) return;
+    if (!Objects.equals(shard.getReplica(leader), shard.getLeader())) return;
 
     Set<String> liveNodes = getClusterState().getLiveNodes();
     int numActiveReplicas =
@@ -1779,7 +1775,7 @@ public class ZkController implements Closeable {
               getSolrCloudManager(),
               zkStateReader);
         } else {
-          overseerJobQueue.offer(Utils.toJSON(m));
+          overseerJobQueue.offer(m);
         }
       }
       // extra handling for PRS, we need to write the PRS entries from this node directly,
@@ -1861,6 +1857,21 @@ public class ZkController implements Closeable {
     }
     CloudDescriptor cloudDescriptor = cd.getCloudDescriptor();
     if (removeCoreFromZk) {
+      // extra handling for PRS, we need to write the PRS entries from this node directly,
+      // as overseer does not and should not handle those entries
+      if (docCollection != null && docCollection.isPerReplicaState() && coreNodeName != null) {
+        if (log.isDebugEnabled()) {
+          log.debug(
+              "Unregistering core with coreNodeName {} of collection {} - deleting the PRS entries from ZK",
+              coreNodeName,
+              docCollection.getName());
+        }
+        PerReplicaStates perReplicaStates =
+            PerReplicaStatesFetcher.fetch(
+                docCollection.getZNode(), zkClient, docCollection.getPerReplicaStates());
+        PerReplicaStatesOps.deleteReplica(coreNodeName, perReplicaStates)
+            .persist(docCollection.getZNode(), zkClient);
+      }
       ZkNodeProps m =
           new ZkNodeProps(
               Overseer.QUEUE_OPERATION,
@@ -1882,7 +1893,7 @@ public class ZkController implements Closeable {
             getSolrCloudManager(),
             zkStateReader);
       } else {
-        overseerJobQueue.offer(Utils.toJSON(m));
+        overseerJobQueue.offer(m);
       }
     }
   }
@@ -2466,7 +2477,7 @@ public class ZkController implements Closeable {
             // restart the replication thread to ensure the replication is running in each new
             // replica especially if previous role is "leader" (i.e., no replication thread)
             stopReplicationFromLeader(coreName);
-            startReplicationFromLeader(coreName, false);
+            startReplicationFromLeader(coreName, true);
           }
         }
       }
@@ -2509,7 +2520,7 @@ public class ZkController implements Closeable {
     log.warn(
         "Going to add role {}. It is deprecated to use ADDROLE and consider using Node Roles instead.",
         props);
-    getOverseerCollectionQueue().offer(Utils.toJSON(props));
+    getOverseerCollectionQueue().offer(props);
   }
 
   public CoreContainer getCoreContainer() {
@@ -2867,7 +2878,7 @@ public class ZkController implements Closeable {
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
+      if (!(o instanceof UnloadCoreOnDeletedWatcher)) return false;
       UnloadCoreOnDeletedWatcher that = (UnloadCoreOnDeletedWatcher) o;
       return Objects.equals(coreNodeName, that.coreNodeName)
           && Objects.equals(shard, that.shard)
@@ -2960,13 +2971,12 @@ public class ZkController implements Closeable {
 
         // We always send a down node event to overseer to be safe, but overseer will not need to do
         // anything for PRS collections
-        ZkNodeProps m =
-            new ZkNodeProps(
-                Overseer.QUEUE_OPERATION,
-                OverseerAction.DOWNNODE.toLower(),
-                ZkStateReader.NODE_NAME_PROP,
-                nodeName);
-        overseer.getStateUpdateQueue().offer(Utils.toJSON(m));
+        overseer
+            .getStateUpdateQueue()
+            .offer(
+                m ->
+                    m.put(Overseer.QUEUE_OPERATION, OverseerAction.DOWNNODE.toLower())
+                        .put(ZkStateReader.NODE_NAME_PROP, nodeName));
       } catch (AlreadyClosedException e) {
         log.info(
             "Not publishing node as DOWN because a resource required to do so is already closed.");

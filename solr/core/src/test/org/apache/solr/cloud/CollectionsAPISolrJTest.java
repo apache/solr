@@ -595,7 +595,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     Replica newReplica = grabNewReplica(response, getCollectionState(collectionName));
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
-    assertTrue(newReplica.getNodeName().equals(node));
+    assertEquals(newReplica.getNodeName(), node);
 
     // Test DELETEREPLICA
     response =
@@ -1045,7 +1045,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     if (followAliases) {
       assertEquals(
           aliases.getCollectionAliasListMap().toString(),
-          collectionName2,
+          collectionName1,
           aliases.resolveSimpleAlias("foo"));
     }
     assertEquals(
@@ -1054,7 +1054,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         aliases.resolveSimpleAlias("simpleAlias"));
     assertEquals(
         aliases.getCollectionAliasListMap().toString(),
-        collectionName2,
+        collectionName1,
         aliases.resolveSimpleAlias(collectionName1));
     // we renamed col1 -> col2 so the compound alias contains only "col2,col2" which is reduced to
     // col2

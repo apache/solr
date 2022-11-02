@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -42,8 +43,11 @@ import org.apache.solr.util.ConcurrentLRUCache;
 import org.apache.solr.util.RTimer;
 import org.junit.Test;
 import org.noggit.CharArr;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestJavaBinCodec extends SolrTestCaseJ4 {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String SOLRJ_JAVABIN_BACKCOMPAT_BIN = "/solrj/javabin_backcompat.bin";
   private static final String BIN_FILE_LOCATION =
@@ -209,7 +213,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
       if (unmarshaledObj.get(i) instanceof byte[] && matchObj.get(i) instanceof byte[]) {
         byte[] b1 = (byte[]) unmarshaledObj.get(i);
         byte[] b2 = (byte[]) matchObj.get(i);
-        assertTrue(Arrays.equals(b1, b2));
+        assertArrayEquals(b1, b2);
       } else if (unmarshaledObj.get(i) instanceof SolrDocument
           && matchObj.get(i) instanceof SolrDocument) {
         assertTrue(compareSolrDocument(unmarshaledObj.get(i), matchObj.get(i)));
@@ -564,7 +568,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
 
   // common-case ascii
   static String str(Random r, int sz) {
-    StringBuffer sb = new StringBuffer(sz);
+    StringBuilder sb = new StringBuilder(sz);
     for (int i = 0; i < sz; i++) {
       sb.append('\n' + r.nextInt(128 - '\n'));
     }
@@ -627,7 +631,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
             try {
               doDecode(buffers, iter, stringCache);
             } catch (IOException e) {
-              e.printStackTrace();
+              log.error("exception decoding", e);
             }
           });
     }

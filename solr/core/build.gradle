@@ -68,6 +68,8 @@ dependencies {
 
   api project(':solr:solrj')
   api project(':solr:solrj-zookeeper')
+  api project(':solr:solrj-streaming')
+
 
   api 'io.dropwizard.metrics:metrics-core'
   implementation ('io.dropwizard.metrics:metrics-graphite', {
@@ -165,7 +167,7 @@ dependencies {
   runtimeOnly ('org.xerial.snappy:snappy-java')
 
   // For Package Manager
-  implementation 'com.github.zafarkhaja:java-semver'
+  implementation 'org.semver4j:semver4j'
 
   implementation('com.jayway.jsonpath:json-path', {
     exclude group: "net.minidev", module: "json-smart"
@@ -182,8 +184,6 @@ dependencies {
 
   implementation 'org.apache.commons:commons-exec'
 
-  implementation 'org.apache.commons:commons-text'
-
   implementation 'org.apache.logging.log4j:log4j-api'
   implementation 'org.apache.logging.log4j:log4j-core'
   implementation 'org.apache.logging.log4j:log4j-slf4j-impl'
@@ -191,6 +191,9 @@ dependencies {
   // For faster XML processing than the JDK
   implementation 'org.codehaus.woodstox:stax2-api'
   implementation 'com.fasterxml.woodstox:woodstox-core'
+  // See https://issues.apache.org/jira/browse/LOG4J2-3609 due to needing these annotations
+  compileOnly 'biz.aQute.bnd:biz.aQute.bnd.annotation'
+  compileOnly 'org.osgi:osgi.annotation'
 
   testRuntimeOnly 'org.slf4j:jcl-over-slf4j'
 

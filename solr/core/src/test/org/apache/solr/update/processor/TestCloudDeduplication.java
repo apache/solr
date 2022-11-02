@@ -110,7 +110,7 @@ public class TestCloudDeduplication extends SolrCloudTestCase {
     }
     assertEquals("commit failed", 0, getRandClient().commit(COLLECTION).getStatus());
 
-    assert docCounter > uniqueMod;
+    assertTrue(docCounter > uniqueMod);
 
     // query our collection and confirm no duplicates on the signature field (using faceting)
     // Check every (node) for consistency...

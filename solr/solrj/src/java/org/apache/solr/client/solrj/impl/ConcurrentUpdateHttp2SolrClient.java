@@ -20,8 +20,8 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayDeque;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -146,7 +146,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     this.shutdownClient = builder.closeHttp2Client;
     this.threadCount = builder.threadCount;
     this.queue = new CustomBlockingQueue<>(builder.queueSize, threadCount, END_UPDATE);
-    this.runners = new LinkedList<>();
+    this.runners = new ArrayDeque<>();
     this.streamDeletes = builder.streamDeletes;
     this.basePath = builder.baseSolrUrl;
     this.stallTime = Integer.getInteger("solr.cloud.client.stallTime", 15000);

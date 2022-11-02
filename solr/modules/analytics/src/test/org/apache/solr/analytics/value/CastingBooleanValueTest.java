@@ -16,8 +16,8 @@
  */
 package org.apache.solr.analytics.value;
 
-import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.value.AnalyticsValueStream.ExpressionType;
 import org.apache.solr.analytics.value.FillableTestValue.TestBooleanValue;
@@ -30,56 +30,49 @@ public class CastingBooleanValueTest extends SolrTestCaseJ4 {
   public void stringCastingTest() {
     TestBooleanValue val = new TestBooleanValue();
 
-    assertTrue(val instanceof StringValue);
-    StringValue casted = (StringValue) val;
-
     val.setValue(false).setExists(true);
-    assertEquals("false", casted.getString());
-    assertTrue(casted.exists());
+    assertEquals("false", ((StringValue) val).getString());
+    assertTrue(((StringValue) val).exists());
 
     val.setValue(true).setExists(true);
-    assertEquals("true", casted.getString());
-    assertTrue(casted.exists());
+    assertEquals("true", ((StringValue) val).getString());
+    assertTrue(((StringValue) val).exists());
   }
 
   @Test
   public void objectCastingTest() {
     TestBooleanValue val = new TestBooleanValue();
 
-    assertTrue(val instanceof AnalyticsValue);
-    AnalyticsValue casted = (AnalyticsValue) val;
-
     val.setValue(false).setExists(true);
-    assertEquals(Boolean.FALSE, casted.getObject());
-    assertTrue(casted.exists());
+    assertEquals(Boolean.FALSE, ((AnalyticsValue) val).getObject());
+    assertTrue(((AnalyticsValue) val).exists());
 
     val.setValue(true).setExists(true);
-    assertEquals(Boolean.TRUE, casted.getObject());
-    assertTrue(casted.exists());
+    assertEquals(Boolean.TRUE, ((AnalyticsValue) val).getObject());
+    assertTrue(((AnalyticsValue) val).exists());
   }
 
   @Test
   public void booleanStreamCastingTest() {
     TestBooleanValue val = new TestBooleanValue();
 
-    assertTrue(val instanceof BooleanValueStream);
-    BooleanValueStream casted = (BooleanValueStream) val;
-
     // No values
     val.setExists(false);
-    casted.streamBooleans(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    ((BooleanValueStream) val)
+        .streamBooleans(
+            value -> {
+              fail("There should be no values to stream");
+            });
 
     // Multiple Values
     val.setValue(false).setExists(true);
-    Iterator<Boolean> values = Arrays.asList(false).iterator();
-    casted.streamBooleans(
-        value -> {
-          assertTrue(values.hasNext());
-          assertEquals(values.next(), value);
-        });
+    Iterator<Boolean> values = List.of(false).iterator();
+    ((BooleanValueStream) val)
+        .streamBooleans(
+            value -> {
+              assertTrue(values.hasNext());
+              assertEquals(values.next(), value);
+            });
     assertFalse(values.hasNext());
   }
 
@@ -87,24 +80,23 @@ public class CastingBooleanValueTest extends SolrTestCaseJ4 {
   public void stringStreamCastingTest() {
     TestBooleanValue val = new TestBooleanValue();
 
-    assertTrue(val instanceof StringValueStream);
-    StringValueStream casted = (StringValueStream) val;
-
     // No values
     val.setExists(false);
-    casted.streamStrings(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    ((StringValueStream) val)
+        .streamStrings(
+            value -> {
+              fail("There should be no values to stream");
+            });
 
     // Multiple Values
     val.setValue(false).setExists(true);
-    Iterator<String> values = Arrays.asList("false").iterator();
-    casted.streamStrings(
-        value -> {
-          assertTrue(values.hasNext());
-          assertEquals(values.next(), value);
-        });
+    Iterator<String> values = List.of("false").iterator();
+    ((StringValueStream) val)
+        .streamStrings(
+            value -> {
+              assertTrue(values.hasNext());
+              assertEquals(values.next(), value);
+            });
     assertFalse(values.hasNext());
   }
 
@@ -112,24 +104,23 @@ public class CastingBooleanValueTest extends SolrTestCaseJ4 {
   public void objectStreamCastingTest() {
     TestBooleanValue val = new TestBooleanValue();
 
-    assertTrue(val instanceof AnalyticsValueStream);
-    AnalyticsValueStream casted = (AnalyticsValueStream) val;
-
     // No values
     val.setExists(false);
-    casted.streamObjects(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    ((AnalyticsValueStream) val)
+        .streamObjects(
+            value -> {
+              fail("There should be no values to stream");
+            });
 
     // Multiple Values
     val.setValue(false).setExists(true);
-    Iterator<Object> values = Arrays.<Object>asList(Boolean.FALSE).iterator();
-    casted.streamObjects(
-        value -> {
-          assertTrue(values.hasNext());
-          assertEquals(values.next(), value);
-        });
+    Iterator<Object> values = List.<Object>of(Boolean.FALSE).iterator();
+    ((AnalyticsValueStream) val)
+        .streamObjects(
+            value -> {
+              assertTrue(values.hasNext());
+              assertEquals(values.next(), value);
+            });
     assertFalse(values.hasNext());
   }
 
@@ -139,7 +130,7 @@ public class CastingBooleanValueTest extends SolrTestCaseJ4 {
     val.setValue(true).setExists(true);
     AnalyticsValueStream conv = val.convertToConstant();
     assertTrue(conv instanceof ConstantBooleanValue);
-    assertEquals(true, ((ConstantBooleanValue) conv).getBoolean());
+    assertTrue(((ConstantBooleanValue) conv).getBoolean());
 
     val = new TestBooleanValue(ExpressionType.FIELD);
     val.setValue(true).setExists(true);

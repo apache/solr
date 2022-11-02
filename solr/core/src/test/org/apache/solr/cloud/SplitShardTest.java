@@ -17,6 +17,8 @@
 
 package org.apache.solr.cloud;
 
+import static org.hamcrest.core.StringContains.containsString;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
@@ -39,6 +41,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -122,20 +125,17 @@ public class SplitShardTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void multipleOptionsSplitTest() throws IOException, SolrServerException {
+  public void multipleOptionsSplitTest() {
     CollectionAdminRequest.SplitShard splitShard =
         CollectionAdminRequest.splitShard(COLLECTION_NAME)
             .setNumSubShards(5)
             .setRanges("0-c,d-7fffffff")
             .setShardName("shard1");
-    boolean expectedException = false;
-    try {
-      splitShard.process(cluster.getSolrClient());
-      fail("An exception should have been thrown");
-    } catch (SolrException ex) {
-      expectedException = true;
-    }
-    assertTrue("Expected SolrException but it didn't happen", expectedException);
+    SolrException thrown =
+        assertThrows(SolrException.class, () -> splitShard.process(cluster.getSolrClient()));
+    MatcherAssert.assertThat(
+        thrown.getMessage(),
+        containsString("numSubShards can not be specified with split.key or ranges parameters"));
   }
 
   @Test
@@ -163,8 +163,8 @@ public class SplitShardTest extends SolrCloudTestCase {
     Slice s1_0 = coll.getSlice("shard1_0");
     Slice s1_1 = coll.getSlice("shard1_1");
     long fuzz = ((long) Integer.MAX_VALUE >> 3) + 1L;
-    long delta0 = s1_0.getRange().max - s1_0.getRange().min;
-    long delta1 = s1_1.getRange().max - s1_1.getRange().min;
+    long delta0 = (long) s1_0.getRange().max - s1_0.getRange().min;
+    long delta1 = (long) s1_1.getRange().max - s1_1.getRange().min;
     long expected0 = (Integer.MAX_VALUE >> 1) + fuzz;
     long expected1 = (Integer.MAX_VALUE >> 1) - fuzz;
     assertEquals("wrong range in s1_0", expected0, delta0);

@@ -455,7 +455,7 @@ Ideally this would mean more machines, but budget constraints might make that im
 There is another issue once the heap reaches 32GB.
 Below 32GB, Java is able to use compressed pointers, but above that point, larger pointers are required, which uses more memory and slows down the JVM.
 
-Because of the potential garbage collection issues and the particular issues that happen at 32GB, if a single instance would require a 64GB heap, performance is likely to improve greatly if the machine is set up with two nodes that each have a 31GB heap.
+If your use case needs over 31GB of heap, then consider multiple nodes since they typically will perform better than one node with >32GB of heap.
 ====
 
 If your use case requires multiple instances, at a minimum you will need unique Solr home directories for each node you want to run; ideally, each home should be on a different physical disk so that multiple Solr nodes don’t have to compete with each other when accessing files on disk.

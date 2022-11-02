@@ -135,6 +135,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   private final State state;
   private final String parent;
   private final Map<String, RoutingRule> routingRules;
+  private final int numLeaderReplicas;
 
   /**
    * @param name The name of the slice
@@ -184,6 +185,8 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
                 collection, name, (Map<String, Object>) propMap.get(SliceStateProps.REPLICAS));
     propMap.put(SliceStateProps.REPLICAS, this.replicas);
 
+    this.numLeaderReplicas =
+        (int) this.replicas.values().stream().filter(r -> r.type.leaderEligible).count();
     Map<String, Object> rules = (Map<String, Object>) propMap.get("routingRules");
     if (rules != null) {
       this.routingRules = new HashMap<>();
@@ -272,6 +275,10 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
 
   public Replica getLeader() {
     return leader;
+  }
+
+  public int getNumLeaderReplicas() {
+    return numLeaderReplicas;
   }
 
   public Replica getReplica(String replicaName) {

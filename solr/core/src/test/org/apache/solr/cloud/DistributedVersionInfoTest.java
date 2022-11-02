@@ -154,6 +154,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     final Random rand = new Random(5150);
     Thread docSenderThread =
         new Thread() {
+          @Override
           public void run() {
 
             // brief delay before sending docs
@@ -182,6 +183,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
 
     Thread reloaderThread =
         new Thread() {
+          @Override
           public void run() {
             try {
               Thread.sleep(rand.nextInt(300) + 1);
@@ -204,6 +206,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
 
     Thread deleteThread =
         new Thread() {
+          @Override
           public void run() {
 
             // brief delay before sending docs
@@ -232,6 +235,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
 
     Thread committerThread =
         new Thread() {
+          @Override
           public void run() {
             try {
               Thread.sleep(rand.nextInt(200) + 1);
@@ -367,8 +371,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     NamedList<?> rsp = solr.request(qr);
     SolrDocument doc = (SolrDocument) rsp.get("doc");
     String match = JSONTestUtil.matchObj("/id", doc, docId);
-    assertTrue(
-        "Doc with id=" + docId + " not found due to: " + match + "; rsp=" + rsp, match == null);
+    assertNull("Doc with id=" + docId + " not found due to: " + match + "; rsp=" + rsp, match);
 
     Long vers = (Long) doc.getFirstValue("_version_");
     assertNotNull(vers);

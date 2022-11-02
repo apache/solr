@@ -22,7 +22,6 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -218,16 +217,12 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
 
   // a static mapping of the reflected attribute keys to the names used in Solr 1.4
   static Map<String, String> ATTRIBUTE_MAPPING =
-      Collections.unmodifiableMap(
-          new HashMap<String, String>() {
-            {
-              put(OffsetAttribute.class.getName() + "#startOffset", "start");
-              put(OffsetAttribute.class.getName() + "#endOffset", "end");
-              put(TypeAttribute.class.getName() + "#type", "type");
-              put(TokenTrackingAttribute.class.getName() + "#position", "position");
-              put(TokenTrackingAttribute.class.getName() + "#positionHistory", "positionHistory");
-            }
-          });
+      Map.of(
+          OffsetAttribute.class.getName() + "#startOffset", "start",
+          OffsetAttribute.class.getName() + "#endOffset", "end",
+          TypeAttribute.class.getName() + "#type", "type",
+          TokenTrackingAttribute.class.getName() + "#position", "position",
+          TokenTrackingAttribute.class.getName() + "#positionHistory", "positionHistory");
 
   /**
    * Converts the list of Tokens to a list of NamedLists representing the tokens.
@@ -386,7 +381,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       }
     }
 
-    protected void addAttributes(AttributeSource attributeSource) {
+    private void addAttributes(AttributeSource attributeSource) {
       // note: ideally we wouldn't call addAttributeImpl which is marked internal. But nonetheless
       // it's possible this method is used by some custom attributes, especially since Solr doesn't
       // provide a way to customize the AttributeFactory which is the recommended way to choose

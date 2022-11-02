@@ -139,56 +139,54 @@ public class ExpressionFactoryTest extends SolrTestCaseJ4 {
 
     // Two ungrouped exactly the same expression
     fact.startRequest();
-    assertTrue(
+    assertSame(
         "The objects of the two mapping expressions are not the same.",
-        fact.createExpression("pow(int_i,double_d)")
-            == fact.createExpression("pow(int_i,double_d)"));
-    assertTrue(
+        fact.createExpression("pow(int_i,double_d)"),
+        fact.createExpression("pow(int_i,double_d)"));
+    assertSame(
         "The objects of the two reduced expressions are not the same.",
-        fact.createExpression("unique(add(int_i,double_d))")
-            == fact.createExpression("unique(add(int_i,double_d))"));
+        fact.createExpression("unique(add(int_i,double_d))"),
+        fact.createExpression("unique(add(int_i,double_d))"));
 
     // Two ungrouped different expressions
     fact.startRequest();
-    assertFalse(
+    assertNotSame(
         "The objects of the two mapping expressions are not the same.",
-        fact.createExpression("pow(int_i,double_d)")
-            == fact.createExpression("pow(int_i,float_f)"));
-    assertFalse(
+        fact.createExpression("pow(int_i,double_d)"),
+        fact.createExpression("pow(int_i,float_f)"));
+    assertNotSame(
         "The objects of the two reduced expressions are not the same.",
-        fact.createExpression("unique(add(int_i,double_d))")
-            == fact.createExpression("unique(add(int_i,float_f))"));
+        fact.createExpression("unique(add(int_i,double_d))"),
+        fact.createExpression("unique(add(int_i,float_f))"));
 
     // Grouped and ungrouped mapping expression
     fact.startRequest();
     Object ungrouped = fact.createExpression("pow(int_i,double_d)");
     fact.startGrouping();
     Object grouped = fact.createExpression("pow(int_i,double_d)");
-    assertTrue(
-        "The objects of the two mapping expressions are not the same.", ungrouped == grouped);
+    assertSame("The objects of the two mapping expressions are not the same.", ungrouped, grouped);
 
     // Grouped and ungrouped diferent mapping expressions
     fact.startRequest();
     ungrouped = fact.createExpression("pow(int_i,double_d)");
     fact.startGrouping();
     grouped = fact.createExpression("pow(int_i,float_f)");
-    assertFalse(
-        "The objects of the two mapping expressions are not the same.", ungrouped == grouped);
+    assertNotSame(
+        "The objects of the two mapping expressions are not the same.", ungrouped, grouped);
 
     // Grouped and ungrouped reduced expression.
     fact.startRequest();
     ungrouped = fact.createExpression("unique(add(int_i,double_d))");
     fact.startGrouping();
     grouped = fact.createExpression("unique(add(int_i,double_d))");
-    assertTrue(
-        "The objects of the two mapping expressions are not the same.", ungrouped == grouped);
+    assertSame("The objects of the two mapping expressions are not the same.", ungrouped, grouped);
 
     // Grouped and ungrouped different reduced expressions.
     fact.startRequest();
     ungrouped = fact.createExpression("unique(add(int_i,double_d))");
     fact.startGrouping();
     grouped = fact.createExpression("unique(add(int_i,float_f))");
-    assertFalse("The objects of the two mapping expressions are the same.", ungrouped == grouped);
+    assertNotSame("The objects of the two mapping expressions are the same.", ungrouped, grouped);
   }
 
   @Test

@@ -17,13 +17,11 @@
 
 package org.apache.solr.handler.admin;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrException;
 import org.junit.Test;
 
-public class SolrEnvironmentTest {
+public class SolrEnvironmentTest extends SolrTestCase {
 
   @Test(expected = SolrException.class)
   public void parseWrongKey() {

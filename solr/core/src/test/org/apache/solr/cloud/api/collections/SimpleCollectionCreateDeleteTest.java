@@ -100,7 +100,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
           CollectionAdminRequest.createCollection(collectionName, 1, 1)
               .setCreateNodeSet(notOverseerNode);
       request = create.process(cloudClient).getResponse();
-      assertTrue("Collection creation should not have failed", request.get("success") != null);
+      assertNotNull("Collection creation should not have failed", request.get("success"));
     }
   }
 
@@ -175,9 +175,9 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
 
       NamedList<Object> requestWithSharedConfig =
           createWithSharedConfig.process(cloudClient).getResponse();
-      assertTrue(
+      assertNotNull(
           "The collection with shared config set should have been created",
-          requestWithSharedConfig.get("success") != null);
+          requestWithSharedConfig.get("success"));
       assertTrue(
           "The new collection should exist after a successful creation",
           getZkClient()

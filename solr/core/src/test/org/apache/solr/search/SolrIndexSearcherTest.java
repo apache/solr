@@ -69,6 +69,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
     return numbers.toString();
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     assertU(
@@ -299,6 +300,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
       this.fixedScore = fixedScore;
     }
 
+    @Override
     public Weight createWeight(IndexSearcher indexSearcher, ScoreMode scoreMode, float boost)
         throws IOException {
       return q.createWeight(indexSearcher, scoreMode, boost);
@@ -355,6 +357,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
       return null;
     }
 
+    @Override
     public RankQuery wrap(Query q) {
       this.q = q;
       return this;
@@ -451,7 +454,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
 
     public MockPostFilter(int maxDocsToCollect, int cost, ScoreMode scoreMode) {
       super(new Term("foo", "bar")); // The term won't really be used. just the collector
-      assert cost > 100;
+      assertTrue(cost > 100);
       this.cost = cost;
       this.maxDocsToCollect = maxDocsToCollect;
       this.scoreMode = scoreMode;

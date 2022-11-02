@@ -30,7 +30,9 @@ import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.Utils;
 
 /** ZkNodeProps contains generic immutable properties. */
+
 public class ZkNodeProps implements MapWriter {
+
 
   protected final Map<String, Object> propMap;
 
@@ -40,6 +42,10 @@ public class ZkNodeProps implements MapWriter {
 
     // TODO: store an unmodifiable map, but in a way that guarantees not to wrap more than once.
     // Always wrapping introduces a memory leak.
+  }
+
+  public ZkNodeProps(MapWriter mw) {
+    propMap = mw.toMap(new HashMap<>());
   }
 
   public ZkNodeProps plus(String key, Object val) {
@@ -146,6 +152,11 @@ public class ZkNodeProps implements MapWriter {
     if (o == null) return b;
     if (o instanceof Boolean) return (boolean) o;
     return Boolean.parseBoolean(o.toString());
+  }
+
+  @Override
+  public void writeMap(EntryWriter ew) throws IOException {
+    propMap.forEach(ew.getBiConsumer());
   }
 
   @Override
