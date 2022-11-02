@@ -814,8 +814,8 @@ public class HttpSolrClient extends BaseHttpSolrClient {
    * cost of this is that the core must be specified on each request.
    */
   @Deprecated
-  public void setBaseURL(String baseURL) {
-    this.baseUrl = baseURL;
+  public void setBaseURL(String baseUrl) {
+    this.baseUrl = baseUrl;
   }
 
   public ResponseParser getParser() {
