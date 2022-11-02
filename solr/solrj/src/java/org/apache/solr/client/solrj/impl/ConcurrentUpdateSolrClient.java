@@ -107,7 +107,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
             .withHttpClient(builder.httpClient)
             .withConnectionTimeout(builder.connectionTimeoutMillis)
             .withSocketTimeout(builder.socketTimeoutMillis)
-            .setFollowRedirects(false)
+            .withFollowRedirects(false)
             .build();
     this.queue = new LinkedBlockingQueue<>(builder.queueSize);
     this.threadCount = builder.threadCount;

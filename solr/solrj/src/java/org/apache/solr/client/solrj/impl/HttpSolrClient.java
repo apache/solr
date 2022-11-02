@@ -859,7 +859,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
    * <p>This defaults to false under the assumption that if you are following a redirect to get to a
    * Solr installation, something is configured wrong somewhere.
    *
-   * @deprecated use {@link Builder#setFollowRedirects(boolean)} Redirects(boolean)} instead
+   * @deprecated use {@link Builder#withFollowRedirects(boolean)} Redirects(boolean)} instead
    */
   @Deprecated
   public void setFollowRedirects(boolean followRedirects) {

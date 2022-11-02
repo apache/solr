@@ -75,7 +75,7 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
     return getThis();
   }
 
-  public B setFollowRedirects(boolean followRedirects) {
+  public B withFollowRedirects(boolean followRedirects) {
     this.followRedirects = followRedirects;
     return getThis();
   }
