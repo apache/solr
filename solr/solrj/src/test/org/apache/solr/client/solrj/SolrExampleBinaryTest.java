@@ -34,7 +34,7 @@ public class SolrExampleBinaryTest extends SolrExampleTests {
   public SolrClient createNewSolrClient() {
     // setup the server...;
     HttpSolrClient.Builder httpSolrClientBuilder = new HttpSolrClient.Builder(getServerUrl());
-    httpSolrClientBuilder.withUseMultiPartPost(random().nextBoolean());
+    httpSolrClientBuilder.allowMultiPartPost(random().nextBoolean());
 
     httpSolrClientBuilder
         .withRequestWriter(new BinaryRequestWriter())

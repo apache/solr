@@ -33,7 +33,7 @@ public class SolrExampleXMLTest extends SolrExampleTests {
   @Override
   public SolrClient createNewSolrClient() {
     HttpSolrClient.Builder httpSolrClientBuilder = new HttpSolrClient.Builder(getServerUrl());
-    httpSolrClientBuilder.withUseMultiPartPost(random().nextBoolean());
+    httpSolrClientBuilder.allowMultiPartPost(random().nextBoolean());
 
     httpSolrClientBuilder
         .withRequestWriter(new RequestWriter())

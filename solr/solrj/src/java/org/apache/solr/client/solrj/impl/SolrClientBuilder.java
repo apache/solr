@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import java.util.Set;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
@@ -33,7 +34,8 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
   protected boolean useMultiPartPost;
   protected Integer connectionTimeoutMillis = 15000;
   protected Integer socketTimeoutMillis = 120000;
-  private boolean withFollowRedirects;
+  protected boolean followRedirects = false;
+  protected Set<String> queryParams;
 
   /** The solution for the unchecked cast warning. */
   public abstract B getThis();
@@ -50,18 +52,31 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
     return getThis();
   }
 
+  /** Provides a {@link RequestWriter} for created clients to use when handing requests. */
   public B withRequestWriter(RequestWriter requestWriter) {
     this.requestWriter = requestWriter;
     return getThis();
   }
 
-  public B withUseMultiPartPost(Boolean useMultiPartPost) {
+  /** Enables or disables splitting POST requests into pieces. */
+  public B allowMultiPartPost(Boolean useMultiPartPost) {
     this.useMultiPartPost = useMultiPartPost;
     return getThis();
   }
 
-  public B setFollowRedirects(boolean withFollowRedirects) {
-    this.withFollowRedirects = withFollowRedirects;
+  /**
+   * Provides a set of keys which the created client will send as a part of the query string.
+   *
+   * @param queryParams set of param keys to only send via the query string Note that the param will
+   *     be sent as a query string if the key is part of this Set or the SolrRequest's query params.
+   */
+  public B withQueryParams(Set<String> queryParams) {
+    this.queryParams = queryParams;
+    return getThis();
+  }
+
+  public B setFollowRedirects(boolean followRedirects) {
+    this.followRedirects = followRedirects;
     return getThis();
   }
 

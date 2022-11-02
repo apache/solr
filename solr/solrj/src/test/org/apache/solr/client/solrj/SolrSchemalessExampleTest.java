@@ -137,7 +137,7 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
           .withRequestWriter(new BinaryRequestWriter())
           .withResponseParser(new BinaryResponseParser());
     }
-    httpSolrClientBuilder.withUseMultiPartPost(random().nextBoolean());
+    httpSolrClientBuilder.allowMultiPartPost(random().nextBoolean());
 
     return httpSolrClientBuilder.build();
   }
