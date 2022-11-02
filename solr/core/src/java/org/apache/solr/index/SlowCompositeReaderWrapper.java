@@ -223,7 +223,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
     CacheHelper cacheHelper = getReaderCacheHelper();
 
     Function<? super String, ? extends OrdinalMap> producer =
-        (f) -> {
+        (notUsed) -> {
           try {
             OrdinalMap mapping =
                 OrdinalMap.build(
@@ -297,7 +297,9 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
     Function<? super String, ? extends OrdinalMap> producer =
         (notUsed) -> {
           try {
-            OrdinalMap mapping = OrdinalMap.build(cacheHelper.getKey(), values, PackedInts.DEFAULT);
+            OrdinalMap mapping =
+                OrdinalMap.build(
+                    cacheHelper == null ? null : cacheHelper.getKey(), values, PackedInts.DEFAULT);
             return mapping;
           } catch (IOException e) {
             throw new RuntimeException(e);
