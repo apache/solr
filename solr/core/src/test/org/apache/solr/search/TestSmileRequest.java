@@ -71,7 +71,7 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
           @Override
           public void assertJQ(SolrClient client, SolrParams args, String... tests)
               throws Exception {
-            ((HttpSolrClient) client).setParser(SmileResponseParser.inst);
+            ((HttpSolrClient) client).setParser(new SmileResponseParser());
             QueryRequest query = new QueryRequest(args);
             String path = args.get("qt");
             if (path != null) {
@@ -91,7 +91,6 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
   // adding this to core adds the dependency on a few extra jars to our distribution.
   // So this is not added there
   public static class SmileResponseParser extends BinaryResponseParser {
-    public static final SmileResponseParser inst = new SmileResponseParser();
 
     @Override
     public String getWriterType() {
