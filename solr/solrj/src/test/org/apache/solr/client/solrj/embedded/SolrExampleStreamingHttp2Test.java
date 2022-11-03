@@ -44,8 +44,10 @@ public class SolrExampleStreamingHttp2Test extends SolrExampleTests {
     String url = jetty.getBaseUrl().toString() + "/collection1";
     // smaller queue size hits locks more often
     Http2SolrClient solrClient =
-        new Http2SolrClient.Builder().withRequestWriter(new RequestWriter()).build();
-    solrClient.setParser(new XMLResponseParser());
+        new Http2SolrClient.Builder()
+            .withRequestWriter(new RequestWriter())
+            .withResponseParser(new XMLResponseParser())
+            .build();
     ConcurrentUpdateHttp2SolrClient concurrentClient =
         new ErrorTrackingConcurrentUpdateSolrClient.Builder(url, solrClient)
             .withQueueSize(2)

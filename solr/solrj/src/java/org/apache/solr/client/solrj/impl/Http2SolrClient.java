@@ -174,6 +174,9 @@ public class Http2SolrClient extends SolrClient {
     if (builder.requestWriter != null) {
       requestWriter = builder.requestWriter;
     }
+    if (builder.responseParser != null) {
+      parser = builder.responseParser;
+    }
     if (builder.requestTimeout == null) {
       requestTimeout = -1;
     } else {
@@ -966,6 +969,7 @@ public class Http2SolrClient extends SolrClient {
     protected String baseSolrUrl;
     private ExecutorService executor;
     protected RequestWriter requestWriter;
+    protected ResponseParser responseParser;
 
     public Builder() {}
 
@@ -1018,6 +1022,12 @@ public class Http2SolrClient extends SolrClient {
     /** Provides a {@link RequestWriter} for created clients to use when handing requests. */
     public Builder withRequestWriter(RequestWriter requestWriter) {
       this.requestWriter = requestWriter;
+      return this;
+    }
+
+    /** Provides a {@link ResponseParser} for created clients to use when handling requests. */
+    public Builder withResponseParser(ResponseParser responseParser) {
+      this.responseParser = responseParser;
       return this;
     }
 
@@ -1120,8 +1130,17 @@ public class Http2SolrClient extends SolrClient {
     return parser;
   }
 
-  public void setParser(ResponseParser processor) {
-    parser = processor;
+  /**
+   * Note: This setter method is <b>not thread-safe</b>.
+   *
+   * @param parser Default Response Parser chosen to parse the response if the parser were not
+   *     specified as part of the request.
+   * @see org.apache.solr.client.solrj.SolrRequest#getResponseParser()
+   * @deprecated use {@link Http2SolrClient.Builder#withResponseParser(ResponseParser)} instead
+   */
+  @Deprecated
+  public void setParser(ResponseParser parser) {
+    this.parser = parser;
   }
 
   public static void setDefaultSSLConfig(SSLConfig sslConfig) {

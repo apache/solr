@@ -838,14 +838,14 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   /**
    * Note: This setter method is <b>not thread-safe</b>.
    *
-   * @param processor Default Response Parser chosen to parse the response if the parser were not
+   * @param parser Default Response Parser chosen to parse the response if the parser were not
    *     specified as part of the request.
    * @see org.apache.solr.client.solrj.SolrRequest#getResponseParser()
    * @deprecated use {@link Builder#withResponseParser(ResponseParser)} instead
    */
   @Deprecated
-  public void setParser(ResponseParser processor) {
-    parser = processor;
+  public void setParser(ResponseParser parser) {
+    this.parser = parser;
   }
 
   /** Return the HttpClient this instance uses. */

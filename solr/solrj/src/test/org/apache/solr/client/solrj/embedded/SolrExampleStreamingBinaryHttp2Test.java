@@ -41,8 +41,10 @@ public class SolrExampleStreamingBinaryHttp2Test extends SolrExampleStreamingHtt
     String url = jetty.getBaseUrl().toString() + "/collection1";
     // smaller queue size hits locks more often
     Http2SolrClient solrClient =
-        new Http2SolrClient.Builder().withRequestWriter(new BinaryRequestWriter()).build();
-    solrClient.setParser(new BinaryResponseParser());
+        new Http2SolrClient.Builder()
+            .withRequestWriter(new BinaryRequestWriter())
+            .withResponseParser(new BinaryResponseParser())
+            .build();
     ConcurrentUpdateHttp2SolrClient concurrentClient =
         new ErrorTrackingConcurrentUpdateSolrClient.Builder(url, solrClient)
             .withQueueSize(2)

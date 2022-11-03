@@ -274,10 +274,11 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   @Test
   public void testQuery() throws Exception {
     DebugServlet.clear();
-    try (Http2SolrClient client =
-        getHttp2SolrClient(jetty.getBaseUrl().toString() + "/debug/foo")) {
-      SolrQuery q = new SolrQuery("foo");
-      q.setParam("a", "\u1234");
+    String url = jetty.getBaseUrl().toString() + "/debug/foo";
+    SolrQuery q = new SolrQuery("foo");
+    q.setParam("a", "\u1234");
+    try (Http2SolrClient client = getHttp2SolrClient(url)) {
+
       try {
         client.query(q, SolrRequest.METHOD.GET);
       } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
@@ -339,9 +340,11 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
       assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
       assertEquals(EXPECTED_USER_AGENT, DebugServlet.headers.get("user-agent"));
       assertEquals("application/x-www-form-urlencoded", DebugServlet.headers.get("content-type"));
+    }
+    // XML/GET
+    try (Http2SolrClient client =
+        new Http2SolrClient.Builder(url).withResponseParser(new XMLResponseParser()).build()) {
 
-      // XML/GET
-      client.setParser(new XMLResponseParser());
       DebugServlet.clear();
       try {
         client.query(q, SolrRequest.METHOD.GET);
@@ -360,7 +363,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
       assertEquals(EXPECTED_USER_AGENT, DebugServlet.headers.get("user-agent"));
 
       // XML/POST
-      client.setParser(new XMLResponseParser());
+      // client.setParser(new XMLResponseParser());
       DebugServlet.clear();
       try {
         client.query(q, SolrRequest.METHOD.POST);
@@ -379,7 +382,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
       assertEquals(EXPECTED_USER_AGENT, DebugServlet.headers.get("user-agent"));
       assertEquals("application/x-www-form-urlencoded", DebugServlet.headers.get("content-type"));
 
-      client.setParser(new XMLResponseParser());
+      // client.setParser(new XMLResponseParser());
       DebugServlet.clear();
       try {
         client.query(q, SolrRequest.METHOD.PUT);
@@ -403,8 +406,8 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   @Test
   public void testDelete() throws Exception {
     DebugServlet.clear();
-    try (Http2SolrClient client =
-        getHttp2SolrClient(jetty.getBaseUrl().toString() + "/debug/foo")) {
+    String url = jetty.getBaseUrl().toString() + "/debug/foo";
+    try (Http2SolrClient client = getHttp2SolrClient(url)) {
       try {
         client.deleteById("id");
       } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
@@ -423,9 +426,12 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
           client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
       // agent
       assertEquals(EXPECTED_USER_AGENT, DebugServlet.headers.get("user-agent"));
+    }
+    // XML
+    try (Http2SolrClient client =
+        new Http2SolrClient.Builder(url).withResponseParser(new XMLResponseParser()).build()) {
 
-      // XML
-      client.setParser(new XMLResponseParser());
+      // client.setParser(new XMLResponseParser());
       try {
         client.deleteByQuery("*:*");
       } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
@@ -473,11 +479,12 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   @Test
   public void testUpdate() throws Exception {
     DebugServlet.clear();
-    try (Http2SolrClient client =
-        getHttp2SolrClient(jetty.getBaseUrl().toString() + "/debug/foo")) {
-      UpdateRequest req = new UpdateRequest();
-      req.add(new SolrInputDocument());
-      req.setParam("a", "\u1234");
+    String url = jetty.getBaseUrl().toString() + "/debug/foo";
+    UpdateRequest req = new UpdateRequest();
+    req.add(new SolrInputDocument());
+    req.setParam("a", "\u1234");
+    try (Http2SolrClient client = getHttp2SolrClient(url)) {
+
       try {
         client.request(req);
       } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
@@ -499,10 +506,16 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
       // parameter encoding
       assertEquals(1, DebugServlet.parameters.get("a").length);
       assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
+    }
+    try (Http2SolrClient client =
+        new Http2SolrClient.Builder(url)
+            .withRequestWriter(new RequestWriter())
+            .withResponseParser(new XMLResponseParser())
+            .build()) {
 
       // XML response and writer
-      client.setParser(new XMLResponseParser());
-      client.setRequestWriter(new RequestWriter());
+      // client.setParser(new XMLResponseParser());
+      // client.setRequestWriter(new RequestWriter());
       try {
         client.request(req);
       } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
@@ -518,10 +531,16 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
       assertEquals("application/xml; charset=UTF-8", DebugServlet.headers.get("content-type"));
       assertEquals(1, DebugServlet.parameters.get("a").length);
       assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
+    }
+    try (Http2SolrClient client =
+        new Http2SolrClient.Builder(url)
+            .withRequestWriter(new BinaryRequestWriter())
+            .withResponseParser(new BinaryResponseParser())
+            .build()) {
 
       // javabin request
-      client.setParser(new BinaryResponseParser());
-      client.setRequestWriter(new BinaryRequestWriter());
+      // client.setParser(new BinaryResponseParser());
+      // client.setRequestWriter(new BinaryRequestWriter());
       DebugServlet.clear();
       try {
         client.request(req);
