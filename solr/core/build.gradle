@@ -68,6 +68,8 @@ dependencies {
 
   api project(':solr:solrj')
   api project(':solr:solrj-zookeeper')
+  api project(':solr:solrj-streaming')
+
 
   api 'io.dropwizard.metrics:metrics-core'
   implementation ('io.dropwizard.metrics:metrics-graphite', {
