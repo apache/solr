@@ -35,7 +35,6 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiBits;
 import org.apache.lucene.index.MultiDocValues;
-import org.apache.lucene.index.MultiDocValues.MultiSortedDocValues;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.NumericDocValues;
@@ -47,6 +46,7 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.VectorValues;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Version;
@@ -173,39 +173,54 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
     return MultiDocValues.getSortedNumericValues(in, field); // TODO cache?
   }
 
-  @Override
-  public SortedDocValues getSortedDocValues(String field) throws IOException {
+  private interface MultiDocValuesAccessor<T> {
+    T getSortedValues(LeafReader reader, String field) throws IOException;
+
+    T[] createSortedValuesArray(int size);
+
+    T createMultiSortedValues(T[] values, int[] docStarts, OrdinalMap mapping, long totalCost);
+
+    DocValuesType getDocValuesType();
+
+    T getEmptySortedValues();
+
+    OrdinalMap buildMap(CacheKey key, T[] values) throws IOException;
+  }
+
+  private <T extends DocIdSetIterator> T getMultiSortedDocValues(
+          MultiDocValuesAccessor<T> multiDocValuesAccessor, String field) throws IOException {
     ensureOpen();
 
-    // Integration of what was previously in MultiDocValues.getSortedValues:
+    // Integration of what was previously in MultiDocValues.getSortedValues/getSortedSetValues:
     // The purpose of this integration is to be able to construct a value producer which can always
     // produce a value that is actually needed. The reason for the producer is to avoid getAndSet
     // pitfalls in this multithreaded context.
     // So all cases that do not lead to a cacheable value are handled upfront.
-    // We kept the semantics of MultiDocValues.getSortedValues.
+    // We kept the semantics of MultiDocValues.getSortedValues/getSortedSetValues.
     final List<LeafReaderContext> leaves = in.leaves();
     final int size = leaves.size();
 
     if (size == 0) {
       return null;
     } else if (size == 1) {
-      return leaves.get(0).reader().getSortedDocValues(field);
+      return multiDocValuesAccessor.getSortedValues(leaves.get(0).reader(), field);
     }
 
     boolean anyReal = false;
-    final SortedDocValues[] values = new SortedDocValues[size];
+    final T[] values = multiDocValuesAccessor.createSortedValuesArray(size);
     final int[] starts = new int[size + 1];
     long totalCost = 0;
     for (int i = 0; i < size; i++) {
       LeafReaderContext context = in.leaves().get(i);
       final LeafReader reader = context.reader();
       final FieldInfo fieldInfo = reader.getFieldInfos().fieldInfo(field);
-      if (fieldInfo != null && fieldInfo.getDocValuesType() != DocValuesType.SORTED) {
+      if (fieldInfo != null
+          && fieldInfo.getDocValuesType() != multiDocValuesAccessor.getDocValuesType()) {
         return null;
       }
-      SortedDocValues v = reader.getSortedDocValues(field);
+      T v = multiDocValuesAccessor.getSortedValues(reader, field);
       if (v == null) {
-        v = DocValues.emptySorted();
+        v = multiDocValuesAccessor.getEmptySortedValues();
       } else {
         anyReal = true;
       }
@@ -225,10 +240,8 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
     Function<? super String, ? extends OrdinalMap> producer =
         (notUsed) -> {
           try {
-            OrdinalMap mapping =
-                OrdinalMap.build(
-                    cacheHelper == null ? null : cacheHelper.getKey(), values, PackedInts.DEFAULT);
-            return mapping;
+            return multiDocValuesAccessor.buildMap(
+                cacheHelper == null ? null : cacheHelper.getKey(), values);
           } catch (IOException e) {
             throw new RuntimeException(e);
           }
@@ -242,79 +255,88 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
       map = producer.apply("notUsed");
     }
 
-    return new MultiSortedDocValues(values, starts, map, totalCost);
+    return multiDocValuesAccessor.createMultiSortedValues(values, starts, map, totalCost);
+  }
+
+  @Override
+  public SortedDocValues getSortedDocValues(String field) throws IOException {
+    MultiDocValuesAccessor<SortedDocValues> sortedDocValuesAccessor =
+        new MultiDocValuesAccessor<>() {
+          @Override
+          public SortedDocValues getSortedValues(LeafReader reader, String field)
+              throws IOException {
+            return reader.getSortedDocValues(field);
+          }
+
+          @Override
+          public SortedDocValues[] createSortedValuesArray(int size) {
+            return new SortedDocValues[size];
+          }
+
+          @Override
+          public SortedDocValues createMultiSortedValues(
+              SortedDocValues[] values, int[] docStarts, OrdinalMap mapping, long totalCost) {
+            return new MultiDocValues.MultiSortedDocValues(values, docStarts, mapping, totalCost);
+          }
+
+          @Override
+          public DocValuesType getDocValuesType() {
+            return DocValuesType.SORTED;
+          }
+
+          @Override
+          public SortedDocValues getEmptySortedValues() {
+            return DocValues.emptySorted();
+          }
+
+          @Override
+          public OrdinalMap buildMap(CacheKey key, SortedDocValues[] values) throws IOException {
+            return OrdinalMap.build(key, values, PackedInts.DEFAULT);
+          }
+        };
+    return getMultiSortedDocValues(sortedDocValuesAccessor, field);
   }
 
   @Override
   public SortedSetDocValues getSortedSetDocValues(String field) throws IOException {
-    ensureOpen();
+    MultiDocValuesAccessor<SortedSetDocValues> sortedSetDocValuesAccessor =
+        new MultiDocValuesAccessor<>() {
 
-    // Integration of what was previously in MultiDocValues.getSortedSetValues:
-    // The purpose of this integration is to be able to construct a value producer which can always
-    // produce a value that is actually needed. The reason for the producer is to avoid getAndSet
-    // pitfalls in this multithreaded context.
-    // So all cases that do not lead to a cacheable value are handled upfront.
-    // We kept the semantics of MultiDocValues.getSortedSetValues.
-    final List<LeafReaderContext> leaves = in.leaves();
-    final int size = leaves.size();
+          @Override
+          public SortedSetDocValues getSortedValues(LeafReader reader, String field)
+              throws IOException {
+            return reader.getSortedSetDocValues(field);
+          }
 
-    if (size == 0) {
-      return null;
-    } else if (size == 1) {
-      return leaves.get(0).reader().getSortedSetDocValues(field);
-    }
+          @Override
+          public SortedSetDocValues[] createSortedValuesArray(int size) {
+            return new SortedSetDocValues[size];
+          }
 
-    boolean anyReal = false;
-    final SortedSetDocValues[] values = new SortedSetDocValues[size];
-    final int[] starts = new int[size + 1];
-    long totalCost = 0;
-    for (int i = 0; i < size; i++) {
-      LeafReaderContext context = in.leaves().get(i);
-      final LeafReader reader = context.reader();
-      final FieldInfo fieldInfo = reader.getFieldInfos().fieldInfo(field);
-      if (fieldInfo != null && fieldInfo.getDocValuesType() != DocValuesType.SORTED_SET) {
-        return null;
-      }
-      SortedSetDocValues v = reader.getSortedSetDocValues(field);
-      if (v == null) {
-        v = DocValues.emptySortedSet();
-      } else {
-        anyReal = true;
-      }
-      totalCost += v.cost();
-      values[i] = v;
-      starts[i] = context.docBase;
-    }
-    starts[size] = maxDoc();
-    if (anyReal == false) {
-      return null;
-    }
+          @Override
+          public SortedSetDocValues createMultiSortedValues(
+              SortedSetDocValues[] values, int[] docStarts, OrdinalMap mapping, long totalCost) {
+            return new MultiDocValues.MultiSortedSetDocValues(
+                values, docStarts, mapping, totalCost);
+          }
 
-    // at this point in time we are able to formulate the producer
-    OrdinalMap map = null;
-    CacheHelper cacheHelper = getReaderCacheHelper();
+          @Override
+          public DocValuesType getDocValuesType() {
+            return DocValuesType.SORTED_SET;
+          }
 
-    Function<? super String, ? extends OrdinalMap> producer =
-        (notUsed) -> {
-          try {
-            OrdinalMap mapping =
-                OrdinalMap.build(
-                    cacheHelper == null ? null : cacheHelper.getKey(), values, PackedInts.DEFAULT);
-            return mapping;
-          } catch (IOException e) {
-            throw new RuntimeException(e);
+          @Override
+          public SortedSetDocValues getEmptySortedValues() {
+            return DocValues.emptySortedSet();
+          }
+
+          @Override
+          public OrdinalMap buildMap(CacheKey key, SortedSetDocValues[] values) throws IOException {
+            return OrdinalMap.build(key, values, PackedInts.DEFAULT);
           }
         };
 
-    // either we use a cached result that gets produced eventually during caching,
-    // or we produce directly without caching
-    if (cacheHelper != null) {
-      map = cachedOrdMaps.computeIfAbsent(field + cacheHelper.getKey(), producer);
-    } else {
-      map = producer.apply("notUsed");
-    }
-
-    return new MultiDocValues.MultiSortedSetDocValues(values, starts, map, totalCost);
+    return getMultiSortedDocValues(sortedSetDocValuesAccessor, field);
   }
 
   @Override
