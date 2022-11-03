@@ -2328,7 +2328,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     throw new RuntimeException("Could not find a live node for collection:" + collection);
   }
 
-  public static void waitForNon403or404or503(SolrClient collectionClient, String url) throws Exception {
+  public static void waitForNon403or404or503(SolrClient collectionClient, String url)
+      throws Exception {
     SolrException exp = null;
     final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
 
@@ -2350,11 +2351,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       Thread.sleep(50);
     }
 
-    fail(
-        "Could not find the new collection - "
-            + exp.code()
-            + " : "
-            + url);
+    fail("Could not find the new collection - " + exp.code() + " : " + url);
   }
 
   protected void createCollection(
