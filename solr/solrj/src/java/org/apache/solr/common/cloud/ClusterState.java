@@ -297,11 +297,7 @@ public class ClusterState implements MapWriter {
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
-    collectionStates.forEach(
-        (s, ref) -> {
-          DocCollection coll = ref.get();
-          ew.putNoEx(coll.getName(), coll);
-        });
+    collectionStates.forEach(ew.getBiConsumer());
   }
 
   @Override
@@ -374,7 +370,7 @@ public class ClusterState implements MapWriter {
         });
   }
 
-  public static class CollectionRef {
+  public static class CollectionRef implements MapWriter {
     protected final AtomicInteger gets = new AtomicInteger();
     private final DocCollection coll;
 
@@ -408,6 +404,11 @@ public class ClusterState implements MapWriter {
 
     public boolean isLazilyLoaded() {
       return false;
+    }
+
+    @Override
+    public void writeMap(EntryWriter ew) throws IOException {
+      get().writeMap(ew);
     }
 
     @Override
