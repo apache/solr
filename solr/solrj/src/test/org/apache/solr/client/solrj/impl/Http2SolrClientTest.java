@@ -542,7 +542,32 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   }
 
   @Test
-  public void testRedirect() throws Exception {
+  public void testFollowRedirect() throws Exception {
+    final String clientUrl = jetty.getBaseUrl().toString() + "/redirect/foo";
+    try (Http2SolrClient client =
+        new Http2SolrClient.Builder(clientUrl).withFollowRedirects(true).build()) {
+      SolrQuery q = new SolrQuery("*:*");
+      client.query(q);
+    }
+  }
+
+  @Test
+  public void testDoNotFollowRedirect() throws Exception {
+    final String clientUrl = jetty.getBaseUrl().toString() + "/redirect/foo";
+    try (Http2SolrClient client =
+        new Http2SolrClient.Builder(clientUrl).withFollowRedirects(false).build()) {
+      SolrQuery q = new SolrQuery("*:*");
+      try {
+        client.query(q);
+        fail("Should have thrown an exception.");
+      } catch (SolrServerException e) {
+        assertTrue(e.getMessage().contains("redirect"));
+      }
+    }
+  }
+
+  @Test
+  public void testRedirectSwapping() throws Exception {
     final String clientUrl = jetty.getBaseUrl().toString() + "/redirect/foo";
     try (Http2SolrClient client = getHttp2SolrClient(clientUrl)) {
       SolrQuery q = new SolrQuery("*:*");

@@ -171,11 +171,15 @@ public class Http2SolrClient extends SolrClient {
     } else {
       basicAuthAuthorizationStr = null;
     }
+    if (builder.requestWriter != null) {
+      requestWriter = builder.requestWriter;
+    }
     if (builder.requestTimeout == null) {
       requestTimeout = -1;
     } else {
       requestTimeout = builder.requestTimeout;
     }
+    httpClient.setFollowRedirects(builder.followRedirects);
     assert ObjectReleaseTracker.track(this);
   }
 
@@ -870,6 +874,16 @@ public class Http2SolrClient extends SolrClient {
     }
   }
 
+  /**
+   * Choose the {@link RequestWriter} to use.
+   *
+   * <p>By default, {@link BinaryRequestWriter} is used.
+   *
+   * <p>Note: This setter method is <b>not thread-safe</b>.
+   *
+   * @deprecated use {@link Http2SolrClient.Builder#withRequestWriter(RequestWriter)} instead
+   */
+  @Deprecated
   public void setRequestWriter(RequestWriter requestWriter) {
     this.requestWriter = requestWriter;
   }
@@ -878,6 +892,16 @@ public class Http2SolrClient extends SolrClient {
     return requestWriter;
   }
 
+  /**
+   * Configure whether the client should follow redirects or not.
+   *
+   * <p>This defaults to false under the assumption that if you are following a redirect to get to a
+   * Solr installation, something is configured wrong somewhere.
+   *
+   * @deprecated use {@link Http2SolrClient.Builder#withFollowRedirects(boolean)}
+   *     Redirects(boolean)} instead
+   */
+  @Deprecated
   public void setFollowRedirects(boolean follow) {
     httpClient.setFollowRedirects(follow);
   }
@@ -938,8 +962,10 @@ public class Http2SolrClient extends SolrClient {
     private String basicAuthUser;
     private String basicAuthPassword;
     private boolean useHttp1_1 = Boolean.getBoolean("solr.http1");
+    private boolean followRedirects = false;
     protected String baseSolrUrl;
     private ExecutorService executor;
+    protected RequestWriter requestWriter;
 
     public Builder() {}
 
@@ -986,6 +1012,17 @@ public class Http2SolrClient extends SolrClient {
     /** Reuse {@code httpClient} connections pool */
     public Builder withHttpClient(Http2SolrClient httpClient) {
       this.http2SolrClient = httpClient;
+      return this;
+    }
+
+    /** Provides a {@link RequestWriter} for created clients to use when handing requests. */
+    public Builder withRequestWriter(RequestWriter requestWriter) {
+      this.requestWriter = requestWriter;
+      return this;
+    }
+
+    public Builder withFollowRedirects(boolean followRedirects) {
+      this.followRedirects = followRedirects;
       return this;
     }
 
