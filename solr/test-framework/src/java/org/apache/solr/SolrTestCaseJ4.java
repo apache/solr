@@ -2875,7 +2875,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * This method creates a basic Http2SolrClient. Tests that want to control the creation process
    * should use the {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
    */
-  public static Http2SolrClient getHttp2SolrClient(String url){
+  public static Http2SolrClient getHttp2SolrClient(String url) {
     return new Http2SolrClient.Builder(url).build();
   }
 
