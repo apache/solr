@@ -458,7 +458,9 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
   @Test
   public void testUpdate() throws Exception {
     DebugServlet.clear();
-    try (HttpSolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString() + "/debug/foo")) {
+    String url = jetty.getBaseUrl().toString() + "/debug/foo";
+
+    try (HttpSolrClient client = getHttpSolrClient(url)) {
       UpdateRequest req = new UpdateRequest();
       req.add(new SolrInputDocument());
       req.setParam("a", "\u1234");
@@ -482,11 +484,20 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       // parameter encoding
       assertEquals(1, DebugServlet.parameters.get("a").length);
       assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
+    }
+    DebugServlet.clear();
+    // XML response and writer
+    try (HttpSolrClient client =
+        new HttpSolrClient.Builder(url)
+            .withRequestWriter(new RequestWriter())
+            .withResponseParser(new XMLResponseParser())
+            .build()) {
+      UpdateRequest req = new UpdateRequest();
+      req.add(new SolrInputDocument());
+      req.setParam("a", "\u1234");
 
-      // XML response and writer
       // Have not been able to move this to the Builder pattern, the below check for application/xml
-      // always returns as application/javabin when I try this!
-      client.setParser(new XMLResponseParser());
+      // always returns as application/javabin when .setRequestWriter() is commented out.
       client.setRequestWriter(new RequestWriter());
       expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.request(req));
 
@@ -502,11 +513,18 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       assertEquals("application/xml; charset=UTF-8", DebugServlet.headers.get("Content-Type"));
       assertEquals(1, DebugServlet.parameters.get("a").length);
       assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
+    }
+    DebugServlet.clear();
+    // javabin request
+    try (HttpSolrClient client =
+        new HttpSolrClient.Builder(url)
+            .withRequestWriter(new BinaryRequestWriter())
+            .withResponseParser(new BinaryResponseParser())
+            .build()) {
+      UpdateRequest req = new UpdateRequest();
+      req.add(new SolrInputDocument());
+      req.setParam("a", "\u1234");
 
-      // javabin request
-      client.setParser(new BinaryResponseParser());
-      client.setRequestWriter(new BinaryRequestWriter());
-      DebugServlet.clear();
       expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.request(req));
 
       assertEquals("post", DebugServlet.lastMethod);
