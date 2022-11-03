@@ -158,13 +158,9 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
    * options.
    */
   public SolrClient createNewSolrClient() {
-    try {
-      // setup the client...
-      final SolrClient client = getHttpSolrClient(getServerUrl(), DEFAULT_CONNECTION_TIMEOUT);
-      return client;
-    } catch (final Exception ex) {
-      throw new RuntimeException(ex);
-    }
+    // setup the client...
+    final SolrClient client = getHttpSolrClient(getServerUrl(), DEFAULT_CONNECTION_TIMEOUT);
+    return client;
   }
 
   // Sets up the necessary config files for Jetty. At least some tests require that the solrconfig
