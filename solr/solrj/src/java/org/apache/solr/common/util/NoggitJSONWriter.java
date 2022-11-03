@@ -17,83 +17,81 @@
 
 package org.apache.solr.common.util;
 
+import java.io.IOException;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 
-import java.io.IOException;
-
-/**
- * Serialize JSON using noggit
- *
- */
+/** Serialize JSON using noggit */
 public class NoggitJSONWriter extends JSONWriter {
 
-    public NoggitJSONWriter(CharArr out, int indentSize) {
-        super(out, indentSize);
-    }
+  public NoggitJSONWriter(CharArr out, int indentSize) {
+    super(out, indentSize);
+  }
 
-    @Override
-    public void write(Object o) {
-        if (o instanceof MapWriter) {
-            MapWriter mapWriter = (MapWriter) o;
-            startObject();
-            try {
-                mapWriter.writeMap(entryWriter());
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            endObject();
-        } else if (o instanceof IteratorWriter) {
-            IteratorWriter iteratorWriter = (IteratorWriter) o;
-            startArray();
-            try {
-                iteratorWriter.writeIter(getItemWriter());
-            } catch (IOException e) {
-                throw new RuntimeException("this should never happen", e);
-            }
-            endArray();
-        } else if (o instanceof MapWriter.StringValue) {
-            super.write(o.toString());
+  @Override
+  public void write(Object o) {
+    if (o instanceof MapWriter) {
+      MapWriter mapWriter = (MapWriter) o;
+      startObject();
+      try {
+        mapWriter.writeMap(entryWriter());
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+      endObject();
+    } else if (o instanceof IteratorWriter) {
+      IteratorWriter iteratorWriter = (IteratorWriter) o;
+      startArray();
+      try {
+        iteratorWriter.writeIter(itemWriter());
+      } catch (IOException e) {
+        throw new RuntimeException("this should never happen", e);
+      }
+      endArray();
+    } else if (o instanceof MapWriter.StringValue) {
+      super.write(o.toString());
+    } else {
+      super.write(o);
+    }
+  }
+
+  private IteratorWriter.ItemWriter itemWriter() {
+    return new IteratorWriter.ItemWriter() {
+      private boolean first;
+
+      @Override
+      public IteratorWriter.ItemWriter add(Object o) {
+        if (first) {
+          first = false;
         } else {
-            super.write(o);
+          writeValueSeparator();
         }
-    }
-    private IteratorWriter.ItemWriter getItemWriter() {
-        return new IteratorWriter.ItemWriter() {
-            private  boolean first;
+        indent();
+        write(o);
+        return this;
+      }
+    };
+  }
 
-            @Override
-            public IteratorWriter.ItemWriter add(Object o) {
-                if (first) {
-                    first = false;
-                } else {
-                    writeValueSeparator();
-                }
-                indent();
-                write(o);
-                return this;
-            }
-        };
-    }
+  private MapWriter.EntryWriter entryWriter() {
+    return new MapWriter.EntryWriter() {
+      private boolean first;
 
-    private MapWriter.EntryWriter entryWriter() {
-        return new MapWriter.EntryWriter(){
-            private boolean first;
-            @Override
-            public MapWriter.EntryWriter put(CharSequence k, Object v) {
-                if (first) {
-                    first = false;
-                } else {
-                    writeValueSeparator();
-                }
-                indent();
-                writeString(k.toString());
-                writeNameSeparator();
-                write(v);
-                return this;
-            }
-        };
-    }
+      @Override
+      public MapWriter.EntryWriter put(CharSequence k, Object v) {
+        if (first) {
+          first = false;
+        } else {
+          writeValueSeparator();
+        }
+        indent();
+        writeString(k.toString());
+        writeNameSeparator();
+        write(v);
+        return this;
+      }
+    };
+  }
 }
