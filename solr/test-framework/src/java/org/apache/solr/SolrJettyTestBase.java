@@ -158,7 +158,6 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
    * options.
    */
   public SolrClient createNewSolrClient() {
-    // setup the client...
     final SolrClient client = getHttp2SolrClient(getServerUrl());
     return client;
   }

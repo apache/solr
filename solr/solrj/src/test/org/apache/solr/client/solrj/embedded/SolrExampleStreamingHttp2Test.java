@@ -40,7 +40,6 @@ public class SolrExampleStreamingHttp2Test extends SolrExampleTests {
 
   @Override
   public SolrClient createNewSolrClient() {
-    // setup the server...
     String url = jetty.getBaseUrl().toString() + "/collection1";
     // smaller queue size hits locks more often
     Http2SolrClient solrClient =

@@ -130,7 +130,6 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
 
   @Override
   public SolrClient createNewSolrClient() {
-    // setup the server...
     HttpSolrClient.Builder httpSolrClientBuilder = new HttpSolrClient.Builder(getServerUrl());
     if (random().nextBoolean()) {
       httpSolrClientBuilder

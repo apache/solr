@@ -34,7 +34,6 @@ public class SolrExampleBinaryHttp2Test extends SolrExampleTests {
 
   @Override
   public SolrClient createNewSolrClient() {
-    // setup the server...
     String url = jetty.getBaseUrl().toString() + "/collection1";
     Http2SolrClient client =
         new Http2SolrClient.Builder(url)

@@ -41,7 +41,6 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
 
   @Override
   public SolrClient createNewSolrClient() {
-    // setup the server...
     // smaller queue size hits locks more often
     return new ErrorTrackingConcurrentUpdateSolrClient.Builder(getServerUrl())
         .withQueueSize(2)
