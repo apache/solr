@@ -188,10 +188,11 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
 
     SolrQuery query = new SolrQuery("*:*");
 
-    try (HttpSolrClient qclient = getHttpSolrClient(baseUrl + "/onenodecollection" + "core")) {
+    String url = baseUrl + "/onenodecollection" + "core";
+    try (SolrClient qclient = getHttpSolrClient(url)) {
 
       // it might take a moment for the proxy node to see us in their cloud state
-      waitForNon403or404or503(qclient);
+      waitForNon403or404or503(qclient, url);
 
       // add a doc
       SolrInputDocument doc = new SolrInputDocument();
