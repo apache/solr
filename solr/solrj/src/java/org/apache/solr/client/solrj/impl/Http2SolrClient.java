@@ -77,7 +77,6 @@ import org.apache.solr.common.util.Utils;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.ProtocolHandlers;
-import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
@@ -293,10 +292,6 @@ public class Http2SolrClient extends SolrClient {
     }
 
     assert ObjectReleaseTracker.release(this);
-  }
-
-  public void setAuthenticationStore(AuthenticationStore authenticationStore) {
-    this.authenticationStore.updateAuthenticationStore(authenticationStore);
   }
 
   public boolean isV2ApiRequest(final SolrRequest<?> request) {
