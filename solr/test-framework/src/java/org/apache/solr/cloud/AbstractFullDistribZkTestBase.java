@@ -2197,14 +2197,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   protected SolrClient createNewSolrClient(String collection, String baseUrl) {
-    try {
       // setup the server...
       SolrClient client =
-          getHttpSolrClient(baseUrl + "/" + collection, DEFAULT_CONNECTION_TIMEOUT, 60000);
+          getHttp2SolrClient(baseUrl + "/" + collection);
       return client;
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
   }
 
   protected String getBaseUrl(HttpSolrClient client) {
