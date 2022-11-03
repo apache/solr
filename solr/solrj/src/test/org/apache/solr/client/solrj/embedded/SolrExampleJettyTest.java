@@ -34,6 +34,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -66,14 +67,14 @@ public class SolrExampleJettyTest extends SolrExampleTests {
 
   @Test
   public void testArbitraryJsonIndexing() throws Exception {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    SolrClient client = getSolrClient();
     client.deleteByQuery("*:*");
     client.commit();
     assertNumFound("*:*", 0); // make sure it got in
 
     // two docs, one with uniqueKey, another without it
     String json = "{\"id\":\"abc1\", \"name\": \"name1\"} {\"name\" : \"name2\"}";
-    HttpClient httpClient = client.getHttpClient();
+    HttpClient httpClient = getHttpSolrClient(getServerUrl()).getHttpClient();
     HttpPost post = new HttpPost(getJsonUpdateUrl(getServerUrl()));
     post.setHeader("Content-Type", "application/json");
     post.setEntity(

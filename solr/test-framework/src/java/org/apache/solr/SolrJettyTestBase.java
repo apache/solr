@@ -159,7 +159,7 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
    */
   public SolrClient createNewSolrClient() {
     // setup the client...
-    final SolrClient client = getHttpSolrClient(getServerUrl(), DEFAULT_CONNECTION_TIMEOUT);
+    final SolrClient client = getHttp2SolrClient(getServerUrl());
     return client;
   }
 

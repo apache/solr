@@ -196,10 +196,6 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
         .idleTimeout(socketTimeout);
   }
 
-  private Http2SolrClient getHttp2SolrClient(String url) {
-    return new Http2SolrClient.Builder(url).build();
-  }
-
   @Test
   public void testTimeout() throws Exception {
     SolrQuery q = new SolrQuery("*:*");
