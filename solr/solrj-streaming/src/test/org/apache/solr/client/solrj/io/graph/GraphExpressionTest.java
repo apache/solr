@@ -1233,7 +1233,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     JettySolrRunner runner = runners.get(0);
     String url = runner.getBaseUrl().toString();
 
-    SolrClient client = getHttpSolrClient(url);
+    SolrClient client = getHttp1SolrClient(url);
     ModifiableSolrParams params = new ModifiableSolrParams();
 
     String expr =
