@@ -89,7 +89,7 @@ public class StreamHandler extends RequestHandlerBase
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private String coreName;
   private SolrClientCache solrClientCache;
-  private Map<String, DaemonStream> daemons = Collections.synchronizedMap(new HashMap<>());
+  private Map<String, DaemonStream> daemons = new ConcurrentHashMap<>();
 
   @Override
   public PermissionNameProvider.Name getPermissionName(AuthorizationContext request) {
