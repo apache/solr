@@ -88,8 +88,6 @@ Bug Fixes
 
 * SOLR-16274: HEAD request for managed resource returns 500 Server Error (Kevin Risden)
 
-* SOLR-16502: Multiple CopyField should not limit to first maxChars (Fredrik Rodland, Kevin Risden)
-
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
@@ -285,6 +283,8 @@ Bug Fixes
 * SOLR-16416: OverseerPrioritizer now runs after all handlers are registered, and retries on failures. (Houston Putman)
 
 * SOLR-14679: Fix continuously growing TLOGs on TLOG replicas (Viktor Molnár via Houston Putman)
+
+* SOLR-16502: Multiple CopyField should not limit to first maxChars (Fredrik Rodland, Kevin Risden)
 
 Other Changes
 ---------------------
