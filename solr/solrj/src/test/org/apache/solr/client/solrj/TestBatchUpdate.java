@@ -46,57 +46,60 @@ public class TestBatchUpdate extends SolrJettyTestBase {
 
   @Test
   public void testWithXml() throws Exception {
-    client =
-        new HttpSolrClient.Builder(getServerUrl()).withRequestWriter(new RequestWriter()).build();
-    client.deleteByQuery("*:*"); // delete everything!
-    doIt(client);
+    try (SolrClient client =
+        new HttpSolrClient.Builder(getServerUrl()).withRequestWriter(new RequestWriter()).build()) {
+      client.deleteByQuery("*:*"); // delete everything!
+      doIt(client);
+    }
   }
 
   @Test
   public void testWithBinary() throws Exception {
-    client =
+    try (SolrClient client =
         new HttpSolrClient.Builder(getServerUrl())
             .withRequestWriter(new BinaryRequestWriter())
-            .build();
-    client.deleteByQuery("*:*"); // delete everything!
-    doIt(client);
+            .build()) {
+      client.deleteByQuery("*:*"); // delete everything!
+      doIt(client);
+    }
   }
 
   @Test
   public void testWithBinaryBean() throws Exception {
-    client =
+    try (SolrClient client =
         new HttpSolrClient.Builder(getServerUrl())
             .withRequestWriter(new BinaryRequestWriter())
-            .build();
-    client.deleteByQuery("*:*"); // delete everything!
-    final int[] counter = new int[1];
-    counter[0] = 0;
-    client.addBeans(
-        new Iterator<Bean>() {
+            .build()) {
+      client.deleteByQuery("*:*"); // delete everything!
+      final int[] counter = new int[1];
+      counter[0] = 0;
+      client.addBeans(
+          new Iterator<Bean>() {
 
-          @Override
-          public boolean hasNext() {
-            return counter[0] < numdocs;
-          }
+            @Override
+            public boolean hasNext() {
+              return counter[0] < numdocs;
+            }
 
-          @Override
-          public Bean next() {
-            Bean bean = new Bean();
-            bean.id = "" + (++counter[0]);
-            bean.cat = "foocat";
-            return bean;
-          }
+            @Override
+            public Bean next() {
+              Bean bean = new Bean();
+              bean.id = "" + (++counter[0]);
+              bean.cat = "foocat";
+              return bean;
+            }
 
-          @Override
-          public void remove() {
-            // do nothing
-          }
-        });
-    client.commit();
-    SolrQuery query = new SolrQuery("*:*");
-    QueryResponse response = client.query(query);
-    assertEquals(0, response.getStatus());
-    assertEquals(numdocs, response.getResults().getNumFound());
+            @Override
+            public void remove() {
+              // do nothing
+            }
+          });
+      client.commit();
+      SolrQuery query = new SolrQuery("*:*");
+      QueryResponse response = client.query(query);
+      assertEquals(0, response.getStatus());
+      assertEquals(numdocs, response.getResults().getNumFound());
+    }
   }
 
   public static class Bean {
