@@ -592,36 +592,16 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       return;
     }
 
-    Map<?, ?> tagMap = (Map<?, ?>) rb.req.getContext().get("tags");
-    if (tagMap == null) {
+    Set<Query> excludeSet = getTaggedQueries(rb, excludeTags);
+    if (excludeSet.isEmpty()) {
       // no filters were tagged
       return;
-    }
-
-    // TODO: this code is copied from FacetProcessor#handleFilterExclusions()
-    // duplication could be avoided by placing this code in a common utility method, perhaps in
-    // QueryUtils
-    IdentityHashMap<Query, Boolean> excludeSet = new IdentityHashMap<>();
-    for (String excludeTag : excludeTags) {
-      Object olst = tagMap.get(excludeTag);
-      // tagMap has entries of List<String,List<QParser>>, but subject to change in the future
-      if (!(olst instanceof Collection)) continue;
-      for (Object o : (Collection<?>) olst) {
-        if (!(o instanceof QParser)) continue;
-        QParser qp = (QParser) o;
-        try {
-          excludeSet.put(qp.getQuery(), Boolean.TRUE);
-        } catch (SyntaxError syntaxError) {
-          // This should not happen since we should only be retrieving a previously parsed query
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, syntaxError);
-        }
-      }
     }
 
     List<Query> updatedFilters = new ArrayList<Query>();
 
     for (Query filter : filters) {
-      if (!excludeSet.containsKey(filter) || filter instanceof PostFilter) {
+      if (!excludeSet.contains(filter) || filter instanceof PostFilter) {
         updatedFilters.add(filter);
         continue;
       }
@@ -649,6 +629,40 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     }
 
     rb.setFilters(updatedFilters);
+  }
+
+  /**
+   * Returns a Set containing all of the queries from the given ResponseBuilder possessing a tag in
+   * the provided list of desiredTags. The Set uses reference equality.
+   *
+   * <p>TODO: this is similar to code in FacetProcessor#handleFilterExclusions()
+   */
+  private static Set<Query> getTaggedQueries(ResponseBuilder rb, List<String> desiredTags) {
+    Map<?, ?> tagMap = (Map<?, ?>) rb.req.getContext().get("tags");
+
+    if (tagMap == null || tagMap.isEmpty() || desiredTags == null || desiredTags.isEmpty()) {
+      Collections.emptySet();
+    }
+
+    Set<Query> taggedQueries = Collections.newSetFromMap(new IdentityHashMap<>());
+
+    for (String tag : desiredTags) {
+      Object olst = tagMap.get(tag);
+      // tagMap has entries of List<String,List<QParser>>, but subject to change in the future
+      if (!(olst instanceof Collection)) continue;
+      for (Object o : (Collection<?>) olst) {
+        if (!(o instanceof QParser)) continue;
+        QParser qp = (QParser) o;
+        try {
+          taggedQueries.add(qp.getQuery());
+        } catch (SyntaxError syntaxError) {
+          // This should not happen since we should only be retrieving a previously parsed query
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, syntaxError);
+        }
+      }
+    }
+
+    return taggedQueries;
   }
 
   private void setSort(ResponseBuilder rb, Elevation elevation) throws IOException {
