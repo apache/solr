@@ -28,11 +28,13 @@ import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
@@ -43,7 +45,9 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.CollapsingQParserPlugin;
+import org.apache.solr.search.ExtendedQuery;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -255,6 +259,21 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           "//result/doc[1]/str[@name='id'][.='2']",
           "//result/doc[1]/bool[@name='[elevated]'][.='true']");
 
+      // when filters are marked as cache=false, tag exclusion works the same as before
+      assertQ(
+          "",
+          req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "{!tag=test1 cache=false}id:10",
+              CommonParams.FQ, "{!tag=test2 cache=false}str_s:b",
+              CommonParams.FQ, "{!tag=test3 cache=false}id:11",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test1,test3"),
+          "//*[@numFound='1']",
+          "//result/doc[1]/str[@name='id'][.='2']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']");
+
       // we can apply the same tag to two different filters
       assertQ(
           "",
@@ -354,6 +373,118 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           "//result/doc[1]/bool[@name='[elevated]'][.='true']",
           "//result/doc[2]/bool[@name='[elevated]'][.='true']",
           "//result/doc[3]/bool[@name='[elevated]'][.='true']");
+
+    } finally {
+      delete();
+    }
+  }
+
+  @Test
+  public void testFqWithCacheAndCostLocalParams() throws Exception {
+    try {
+      init("schema11.xml");
+      SearchComponent queryComponent =
+          h.getCore().getSearchComponent(QueryComponent.COMPONENT_NAME);
+      QueryElevationComponent elevationComponent =
+          (QueryElevationComponent) h.getCore().getSearchComponent("elevate");
+
+      // when a filter like "str_s:A" has no local params, it will generate a TermQuery;
+      // when a filter uses the "cache" and/or "cost" local params, it will generate an
+      // ExtendedQuery with the cache and cost set according to the param values;
+      // first, we establish this behavior while executing a query that is NOT elevated
+      try (SolrQueryRequest request =
+          req(
+              CommonParams.Q, "ZZZZ1",
+              CommonParams.QT, "/elevate",
+              CommonParams.DF, "text",
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "str_s:A",
+              CommonParams.FQ, "{!cache=false cost=100}str_s:B",
+              CommonParams.FQ, "{!cache=true}str_s:C",
+              CommonParams.FQ, "{!tag=test1 cache=false cost=200}str_s:D",
+              CommonParams.FQ, "{!tag=test1 cache=true}str_s:E",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test1")) {
+
+        ResponseBuilder rb =
+            new ResponseBuilder(request, new SolrQueryResponse(), new ArrayList<>());
+        queryComponent.prepare(rb);
+        elevationComponent.prepare(rb);
+
+        assertNull(elevationComponent.getElevation(rb));
+
+        Query[] filters = rb.getFilters().toArray(new Query[0]);
+        assertEquals(5, filters.length);
+
+        // str_s:A
+        assertFalse(filters[0] instanceof ExtendedQuery);
+
+        // {!cache=false cost=100}str_s:B
+        assertTrue(filters[1] instanceof ExtendedQuery);
+        assertFalse(((ExtendedQuery) filters[1]).getCache());
+        assertEquals(100, ((ExtendedQuery) filters[1]).getCost());
+
+        // {!cache=true}str_s:C
+        assertTrue(filters[2] instanceof ExtendedQuery);
+        assertTrue(((ExtendedQuery) filters[2]).getCache());
+
+        // {!tag=test1 cache=false cost=200}str_s:D
+        assertTrue(filters[3] instanceof ExtendedQuery);
+        assertFalse(((ExtendedQuery) filters[3]).getCache());
+        assertEquals(200, ((ExtendedQuery) filters[3]).getCost());
+
+        // {!tag=test1 cache=true}str_s:E
+        assertTrue(filters[4] instanceof ExtendedQuery);
+        assertTrue(((ExtendedQuery) filters[4]).getCache());
+      }
+
+      // now we establish that when a query IS elevated and some of the filters are tagged for
+      // exclusion, the behavior is the same as before
+      // the local params "cache" and "cost" are still applied to the filters that were
+      // tagged for exclusion
+      try (SolrQueryRequest request =
+          req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              CommonParams.DF, "text",
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "str_s:A",
+              CommonParams.FQ, "{!cache=false cost=100}str_s:B",
+              CommonParams.FQ, "{!cache=true}str_s:C",
+              CommonParams.FQ, "{!tag=test1 cache=false cost=200}str_s:D",
+              CommonParams.FQ, "{!tag=test1 cache=true}str_s:E",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test1")) {
+
+        ResponseBuilder rb =
+            new ResponseBuilder(request, new SolrQueryResponse(), new ArrayList<>());
+        queryComponent.prepare(rb);
+        elevationComponent.prepare(rb);
+
+        assertEquals(3, elevationComponent.getElevation(rb).elevatedIds.size());
+
+        Query[] filters = rb.getFilters().toArray(new Query[0]);
+        assertEquals(5, filters.length);
+
+        // str_s:A
+        assertFalse(filters[0] instanceof ExtendedQuery);
+
+        // {!cache=false cost=100}str_s:B
+        assertTrue(filters[1] instanceof ExtendedQuery);
+        assertFalse(((ExtendedQuery) filters[1]).getCache());
+        assertEquals(100, ((ExtendedQuery) filters[1]).getCost());
+
+        // {!cache=true}str_s:C
+        assertTrue(filters[2] instanceof ExtendedQuery);
+        assertTrue(((ExtendedQuery) filters[2]).getCache());
+
+        // {!tag=test1 cache=false cost=200}str_s:D
+        assertTrue(filters[3] instanceof ExtendedQuery);
+        assertFalse(((ExtendedQuery) filters[3]).getCache());
+        assertEquals(200, ((ExtendedQuery) filters[3]).getCost());
+
+        // {!tag=test1 cache=true}str_s:E
+        assertTrue(filters[4] instanceof ExtendedQuery);
+        assertTrue(((ExtendedQuery) filters[4]).getCache());
+      }
 
     } finally {
       delete();

@@ -84,12 +84,14 @@ import org.apache.solr.response.transform.ElevatedMarkerFactory;
 import org.apache.solr.response.transform.ExcludedMarkerFactory;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.CollapsingQParserPlugin;
+import org.apache.solr.search.ExtendedQuery;
+import org.apache.solr.search.PostFilter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.search.WrappedQuery;
 import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.SafeXMLParsing;
@@ -618,9 +620,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
     List<Query> updatedFilters = new ArrayList<Query>();
 
-    for (Query q : filters) {
-      if (!excludeSet.containsKey(q) || q instanceof CollapsingQParserPlugin.CollapsingPostFilter) {
-        updatedFilters.add(q);
+    for (Query filter : filters) {
+      if (!excludeSet.containsKey(filter) || filter instanceof PostFilter) {
+        updatedFilters.add(filter);
         continue;
       }
 
@@ -628,9 +630,22 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       // transform it into a boolean OR of the original filter with the "include query" matching the
       // elevated docs
       BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
-      queryBuilder.add(q, BooleanClause.Occur.SHOULD);
+      queryBuilder.add(filter, BooleanClause.Occur.SHOULD);
       queryBuilder.add(elevation.includeQuery, BooleanClause.Occur.SHOULD);
-      updatedFilters.add(queryBuilder.build());
+      BooleanQuery updatedFilter = queryBuilder.build();
+
+      if (!(filter instanceof ExtendedQuery)) {
+        updatedFilters.add(updatedFilter);
+      } else {
+        // if the original filter had the Local Param "cache" and/or "cost", it will be an
+        // ExtendedQuery;
+        // in this case, the updated filter should be wrapped with the same cache and cost settings
+        ExtendedQuery eq = (ExtendedQuery) filter;
+        WrappedQuery wrappedUpdatedFilter = new WrappedQuery(updatedFilter);
+        wrappedUpdatedFilter.setCache(eq.getCache());
+        wrappedUpdatedFilter.setCost(eq.getCost());
+        updatedFilters.add(wrappedUpdatedFilter);
+      }
     }
 
     rb.setFilters(updatedFilters);
