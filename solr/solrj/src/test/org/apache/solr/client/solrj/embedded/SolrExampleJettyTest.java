@@ -65,36 +65,38 @@ public class SolrExampleJettyTest extends SolrExampleTests {
 
   @Test
   public void testArbitraryJsonIndexing() throws Exception {
-    SolrClient client = getSolrClient();
-    client.deleteByQuery("*:*");
-    client.commit();
-    assertNumFound("*:*", 0); // make sure it got in
+    try (SolrClient client = getSolrClient()) {
+      client.deleteByQuery("*:*");
+      client.commit();
+      assertNumFound("*:*", 0); // make sure it got in
 
-    // two docs, one with uniqueKey, another without it
-    String json = "{\"id\":\"abc1\", \"name\": \"name1\"} {\"name\" : \"name2\"}";
-    HttpClient httpClient = getHttpClient(getServerUrl());
-    HttpPost post = new HttpPost(getJsonUpdateUrl(getServerUrl()));
-    post.setHeader("Content-Type", "application/json");
-    post.setEntity(
-        new InputStreamEntity(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), -1));
-    HttpResponse response =
-        httpClient.execute(post, HttpClientUtil.createNewHttpClientRequestContext());
-    assertEquals(200, response.getStatusLine().getStatusCode());
-    client.commit();
-    QueryResponse rsp = getSolrClient().query(new SolrQuery("*:*"));
-    assertEquals(2, rsp.getResults().getNumFound());
+      // two docs, one with uniqueKey, another without it
+      String json = "{\"id\":\"abc1\", \"name\": \"name1\"} {\"name\" : \"name2\"}";
+      HttpClient httpClient = getHttpClient(getServerUrl());
+      HttpPost post = new HttpPost(getJsonUpdateUrl(getServerUrl()));
+      post.setHeader("Content-Type", "application/json");
+      post.setEntity(
+          new InputStreamEntity(
+              new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), -1));
+      HttpResponse response =
+          httpClient.execute(post, HttpClientUtil.createNewHttpClientRequestContext());
+      assertEquals(200, response.getStatusLine().getStatusCode());
+      client.commit();
+      QueryResponse rsp = getSolrClient().query(new SolrQuery("*:*"));
+      assertEquals(2, rsp.getResults().getNumFound());
 
-    SolrDocument doc = rsp.getResults().get(0);
-    String src = (String) doc.getFieldValue("_src_");
-    @SuppressWarnings({"rawtypes"})
-    Map m = (Map) fromJSONString(src);
-    assertEquals("abc1", m.get("id"));
-    assertEquals("name1", m.get("name"));
+      SolrDocument doc = rsp.getResults().get(0);
+      String src = (String) doc.getFieldValue("_src_");
+      @SuppressWarnings({"rawtypes"})
+      Map m = (Map) fromJSONString(src);
+      assertEquals("abc1", m.get("id"));
+      assertEquals("name1", m.get("name"));
 
-    doc = rsp.getResults().get(1);
-    src = (String) doc.getFieldValue("_src_");
-    m = (Map) fromJSONString(src);
-    assertEquals("name2", m.get("name"));
+      doc = rsp.getResults().get(1);
+      src = (String) doc.getFieldValue("_src_");
+      m = (Map) fromJSONString(src);
+      assertEquals("name2", m.get("name"));
+    }
   }
 
   private String getJsonUpdateUrl(String baseURL) {
