@@ -96,15 +96,20 @@ public class ReplaceNodeAPI extends AdminAPIBase {
   public ZkNodeProps createRemoteMessage(String nodeName, ReplaceNodeRequestBody requestBody) {
     final Map<String, Object> remoteMessage = new HashMap<>();
     remoteMessage.put(SOURCE_NODE, nodeName);
-    /** TODO Test null check */
     if (requestBody != null) {
-      remoteMessage.put(TARGET_NODE, requestBody.targetNodeName);
-      remoteMessage.put(WAIT_FOR_FINAL_STATE, requestBody.waitForFinalState);
-      remoteMessage.put(ASYNC, requestBody.async);
+      insertIfValueNotNull(remoteMessage, TARGET_NODE, requestBody.targetNodeName);
+      insertIfValueNotNull(remoteMessage, WAIT_FOR_FINAL_STATE, requestBody.waitForFinalState);
+      insertIfValueNotNull(remoteMessage, ASYNC, requestBody.async);
     }
     remoteMessage.put(QUEUE_OPERATION, CollectionAction.REPLACENODE.toLower());
 
     return new ZkNodeProps(remoteMessage);
+  }
+
+  private void insertIfValueNotNull(Map<String, Object> dest, String key, Object value) {
+    if (value != null) {
+      dest.put(key, value);
+    }
   }
 
   public static class ReplaceNodeRequestBody implements JacksonReflectMapWriter {

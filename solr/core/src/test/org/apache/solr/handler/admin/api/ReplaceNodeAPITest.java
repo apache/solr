@@ -67,11 +67,12 @@ public class ReplaceNodeAPITest extends SolrTestCaseJ4 {
     queryResponse = new SolrQueryResponse();
     replaceNodeApi = new ReplaceNodeAPI(mockCoreContainer, mockQueryRequest, queryResponse);
     messageCapturer = ArgumentCaptor.forClass(ZkNodeProps.class);
+
+    when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
   }
 
   @Test
   public void testCreatesValidOverseerMessage() throws Exception {
-    when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
     ReplaceNodeAPI.ReplaceNodeRequestBody requestBody =
         new ReplaceNodeAPI.ReplaceNodeRequestBody("demoTargetNode", false, "async");
     replaceNodeApi.replaceNode("demoSourceNode", requestBody);
@@ -85,5 +86,40 @@ public class ReplaceNodeAPITest extends SolrTestCaseJ4 {
     assertEquals(false, createdMessageProps.get("waitForFinalState"));
     assertEquals("async", createdMessageProps.get("async"));
     assertEquals("replacenode", createdMessageProps.get("operation"));
+  }
+
+  @Test
+  public void testRequestBodyCanBeOmittedAltogether() throws Exception {
+    replaceNodeApi.replaceNode("demoSourceNode", null);
+    verify(mockCommandRunner).runCollectionCommand(messageCapturer.capture(), any(), anyLong());
+
+    final ZkNodeProps createdMessage = messageCapturer.getValue();
+    final Map<String, Object> createdMessageProps = createdMessage.getProperties();
+    assertEquals(2, createdMessageProps.size());
+    assertEquals("demoSourceNode", createdMessageProps.get("sourceNode"));
+    assertEquals("replacenode", createdMessageProps.get("operation"));
+  }
+
+  @Test
+  public void testOptionalValuesNotAddedToRemoteMessageIfNotProvided() throws Exception {
+    ReplaceNodeAPI.ReplaceNodeRequestBody requestBody =
+        new ReplaceNodeAPI.ReplaceNodeRequestBody("demoTargetNode", null, null);
+    replaceNodeApi.replaceNode("demoSourceNode", requestBody);
+    verify(mockCommandRunner).runCollectionCommand(messageCapturer.capture(), any(), anyLong());
+
+    final ZkNodeProps createdMessage = messageCapturer.getValue();
+    final Map<String, Object> createdMessageProps = createdMessage.getProperties();
+
+    assertEquals(3, createdMessageProps.size());
+    assertEquals("demoSourceNode", createdMessageProps.get("sourceNode"));
+    assertEquals("demoTargetNode", createdMessageProps.get("targetNode"));
+    assertEquals("replacenode", createdMessageProps.get("operation"));
+    assertFalse(
+        "Expected message to not contain value for waitForFinalState: "
+            + createdMessageProps.get("waitForFinalState"),
+        createdMessageProps.containsKey("waitForFinalState"));
+    assertFalse(
+        "Expected message to not contain value for async: " + createdMessageProps.get("async"),
+        createdMessageProps.containsKey("async"));
   }
 }
