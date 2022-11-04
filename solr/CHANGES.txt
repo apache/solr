@@ -89,6 +89,8 @@ Bug Fixes
 
 * SOLR-16274: HEAD request for managed resource returns 500 Server Error (Kevin Risden)
 
+* SOLR-16527: RuleBasedAuthorizationPluginBase NPE (Alex Deparvu)
+
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
