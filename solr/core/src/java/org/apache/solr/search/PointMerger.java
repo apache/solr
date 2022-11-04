@@ -65,9 +65,8 @@ public class PointMerger {
       if (readers.isEmpty()) {
         return;
       }
-      long ndocs =
-          readers.get(readers.size() - 1).docBase
-              + readers.get(readers.size() - 1).reader().maxDoc();
+      LeafReaderContext leafReaderContext = readers.get(readers.size() - 1);
+      long ndocs = (long) leafReaderContext.docBase + leafReaderContext.reader().maxDoc();
       for (LeafReaderContext ctx : readers) {
         PointValues pv = ctx.reader().getPointValues(field.getName());
         if (pv == null) continue;
@@ -202,6 +201,7 @@ public class PointMerger {
       this.currentValue = this.mval = new MutableValueInt();
     }
 
+    @Override
     public int setNextValue() throws IOException {
       if (readPos >= pos) {
         if (last != Integer.MAX_VALUE) {
@@ -264,6 +264,7 @@ public class PointMerger {
       this.currentValue = this.mval = new MutableValueLong();
     }
 
+    @Override
     public int setNextValue() throws IOException {
       if (readPos >= pos) {
         if (last != Long.MAX_VALUE) {
@@ -326,6 +327,7 @@ public class PointMerger {
       this.currentValue = this.mval = new MutableValueFloat();
     }
 
+    @Override
     public int setNextValue() throws IOException {
       if (readPos >= pos) {
         if (last != Float.MAX_VALUE) {
@@ -388,6 +390,7 @@ public class PointMerger {
       this.currentValue = this.mval = new MutableValueDouble();
     }
 
+    @Override
     public int setNextValue() throws IOException {
       if (readPos >= pos) {
         if (last != Double.MAX_VALUE) {

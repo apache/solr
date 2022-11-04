@@ -117,6 +117,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     useLegacyParams = rarely();
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
@@ -1737,7 +1738,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertEquals("aaa", ReplicationHandler.getObjectWithBackwardCompatibility(nl, "foo", "bar"));
   }
 
-  private class AddExtraDocs implements Runnable {
+  private static class AddExtraDocs implements Runnable {
 
     SolrClient leaderClient;
     int startId;

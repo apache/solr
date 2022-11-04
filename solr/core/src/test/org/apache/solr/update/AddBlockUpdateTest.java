@@ -29,10 +29,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -718,13 +716,11 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     topDocument.addField("parent_f2", "v2");
 
     int childsNum = atLeast(10);
-    Map<String, SolrInputDocument> children = new HashMap<>(childsNum);
     for (int i = 0; i < childsNum; ++i) {
       SolrInputDocument child = new SolrInputDocument();
       child.addField("key", (i + 5) * atLeast(4));
       String childKey = String.format(Locale.ROOT, "child%d", i);
       topDocument.addField(childKey, child);
-      children.put(childKey, child);
     }
 
     ByteArrayOutputStream os = new ByteArrayOutputStream();

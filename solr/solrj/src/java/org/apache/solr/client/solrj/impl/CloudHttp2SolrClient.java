@@ -102,6 +102,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     super.close();
   }
 
+  @Override
   public LBHttp2SolrClient getLbClient() {
     return lbClient;
   }

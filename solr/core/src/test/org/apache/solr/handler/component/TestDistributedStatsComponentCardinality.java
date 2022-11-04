@@ -157,18 +157,14 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
 
       Map<String, FieldStatsInfo> stats = rsp.getFieldStatsInfo();
 
-      if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) {
-        // SOLR-10918: can't rely on exact match with pre-hashed values when using points
-      } else {
-        for (String f : STAT_FIELDS) {
-          // regardless of log2m and regwidth, the estimated cardinality of the
-          // hashed vs prehashed values should be exactly the same for each field
+      for (String f : STAT_FIELDS) {
+        // regardless of log2m and regwidth, the estimated cardinality of the
+        // hashed vs prehashed values should be exactly the same for each field
 
-          assertEquals(
-              f + ": hashed vs prehashed, real=" + numMatches + ", p=" + p,
-              stats.get(f).getCardinality().longValue(),
-              stats.get(f + "_prehashed_l").getCardinality().longValue());
-        }
+        assertEquals(
+            f + ": hashed vs prehashed, real=" + numMatches + ", p=" + p,
+            stats.get(f).getCardinality().longValue(),
+            stats.get(f + "_prehashed_l").getCardinality().longValue());
       }
 
       for (String f : STAT_FIELDS) {

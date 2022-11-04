@@ -1379,6 +1379,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       this.achievedRf = Math.min(this.achievedRf, rf);
     }
 
+    @Override
     public String toString() {
       StringBuilder sb =
           new StringBuilder("RollupRequestReplicationTracker")
@@ -1424,6 +1425,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
     }
 
+    @Override
     public String toString() {
       StringBuilder sb = new StringBuilder("LeaderRequestReplicationTracker");
       sb.append(", achievedRf=").append(getAchievedRf()).append(" for shard ").append(myShardId);

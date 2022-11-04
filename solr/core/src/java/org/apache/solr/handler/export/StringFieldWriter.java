@@ -55,6 +55,7 @@ class StringFieldWriter extends FieldWriter {
     this.fieldType = fieldType;
   }
 
+  @Override
   public boolean write(
       SortDoc sortDoc, LeafReaderContext readerContext, MapWriter.EntryWriter ew, int fieldIndex)
       throws IOException {

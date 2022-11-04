@@ -37,6 +37,7 @@ public class NotNullEvaluator extends RecursiveBooleanEvaluator implements ManyV
     }
   }
 
+  @Override
   public Object doWork(Object... values) throws IOException {
 
     if (values[0] == null) {
@@ -54,6 +55,7 @@ public class NotNullEvaluator extends RecursiveBooleanEvaluator implements ManyV
     return true;
   }
 
+  @Override
   protected Checker constructChecker(Object value) throws IOException {
     return null;
   }

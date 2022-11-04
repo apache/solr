@@ -512,7 +512,7 @@ public class CoreContainerProvider implements ServletContextListener {
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
+      if (!(o instanceof ContextInitializationKey)) return false;
       ContextInitializationKey that = (ContextInitializationKey) o;
       return ctx.equals(that.ctx);
     }

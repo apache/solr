@@ -17,6 +17,9 @@
 
 package org.apache.solr.cloud;
 
+import static org.apache.solr.common.params.CollectionParams.SOURCE_NODE;
+import static org.apache.solr.common.params.CollectionParams.TARGET_NODE;
+
 import com.codahale.metrics.Metric;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -319,9 +322,9 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
         @Override
         public SolrParams getParams() {
           ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
-          params.set("source", sourceNode);
+          params.set(SOURCE_NODE, sourceNode);
           if (!StringUtils.isEmpty(targetNode)) {
-            params.setNonNull("target", targetNode);
+            params.setNonNull(TARGET_NODE, targetNode);
           }
           if (parallel != null) params.set("parallel", parallel.toString());
           return params;

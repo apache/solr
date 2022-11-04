@@ -72,6 +72,7 @@ public class TsvStream extends CsvStream implements Expressible {
         .withExpression(toExpression(factory, false).toString());
   }
 
+  @Override
   protected String[] split(String line) {
     String[] parts = line.split("\\t", -1);
     return parts;

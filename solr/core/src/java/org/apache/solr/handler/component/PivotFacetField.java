@@ -392,6 +392,7 @@ public class PivotFacetField {
     }
   }
 
+  @Override
   public String toString() {
     return String.format(Locale.ROOT, "P:%s F:%s V:%s", parentValue, field, valueCollection);
   }

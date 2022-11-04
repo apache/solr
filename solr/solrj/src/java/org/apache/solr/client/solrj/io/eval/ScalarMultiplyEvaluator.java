@@ -38,6 +38,7 @@ public class ScalarMultiplyEvaluator extends ScalarAddEvaluator implements TwoVa
     }
   }
 
+  @Override
   protected double operate(double value, double d) {
     return value * d;
   }

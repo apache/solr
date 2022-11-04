@@ -137,8 +137,8 @@ class SerializationUtil {
    *     <ul>
    *       <li>If 'explicit-disabled' is chosen, this value should be <code>0</code>.
    *       <li>If 'auto' is chosen, this value should be <code>63</code>.
-   *       <li>If a cutoff of 2<sup>n</sup> is desired, for <code>0 <= n < 31</code>, this value
-   *           should be <code>n + 1</code>.
+   *       <li>If a cutoff of 2<sup>n</sup> is desired, for {@code 0 <= n < 31}, this value should
+   *           be {@code n + 1}.
    *     </ul>
    *
    * @param sparseEnabled whether {@link HLLType#SPARSE} should be used in the promotion hierarchy

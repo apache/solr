@@ -45,6 +45,7 @@ public class MultipleFieldComparator implements StreamComparator {
     return comps;
   }
 
+  @Override
   public int compare(Tuple t1, Tuple t2) {
     for (StreamComparator comp : comps) {
       int i = comp.compare(t1, t2);
@@ -59,7 +60,7 @@ public class MultipleFieldComparator implements StreamComparator {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (!(o instanceof MultipleFieldComparator)) return false;
     MultipleFieldComparator that = (MultipleFieldComparator) o;
     return Arrays.equals(comps, that.comps);
   }

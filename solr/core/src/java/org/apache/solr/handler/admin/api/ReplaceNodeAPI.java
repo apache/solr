@@ -20,6 +20,7 @@ import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONT
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.params.CollectionParams.SOURCE_NODE;
 import static org.apache.solr.common.params.CollectionParams.TARGET_NODE;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
@@ -69,14 +70,14 @@ public class ReplaceNodeAPI extends AdminAPIBase {
   public SolrJerseyResponse replaceNode(
       @Parameter(description = "The name of the node to be replaced.", required = true)
           @PathParam("sourceNodeName")
-          String nodeName,
+          String sourceNodeName,
       @RequestBody(description = "Contains user provided parameters", required = true)
           ReplaceNodeRequestBody requestBody)
       throws Exception {
     final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
     final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
-    /** TODO Record node for log and tracing */
-    final ZkNodeProps remoteMessage = createRemoteMessage(nodeName, requestBody);
+    // TODO Record node for log and tracing
+    final ZkNodeProps remoteMessage = createRemoteMessage(sourceNodeName, requestBody);
     final SolrResponse remoteResponse =
         CollectionsHandler.submitCollectionApiCommand(
             coreContainer,
@@ -95,8 +96,12 @@ public class ReplaceNodeAPI extends AdminAPIBase {
   public ZkNodeProps createRemoteMessage(String nodeName, ReplaceNodeRequestBody requestBody) {
     final Map<String, Object> remoteMessage = new HashMap<>();
     remoteMessage.put(SOURCE_NODE, nodeName);
-    remoteMessage.put(TARGET_NODE, requestBody.targetNodeName);
-    remoteMessage.put(WAIT_FOR_FINAL_STATE, requestBody.waitForFinalState);
+    /** TODO Test null check */
+    if (requestBody != null) {
+      remoteMessage.put(TARGET_NODE, requestBody.targetNodeName);
+      remoteMessage.put(WAIT_FOR_FINAL_STATE, requestBody.waitForFinalState);
+      remoteMessage.put(ASYNC, requestBody.async);
+    }
     remoteMessage.put(QUEUE_OPERATION, CollectionAction.REPLACENODE.toLower());
 
     return new ZkNodeProps(remoteMessage);
@@ -106,16 +111,29 @@ public class ReplaceNodeAPI extends AdminAPIBase {
 
     public ReplaceNodeRequestBody() {}
 
-    public ReplaceNodeRequestBody(String targetNodeName, Boolean waitForFinalState) {
+    public ReplaceNodeRequestBody(String targetNodeName, Boolean waitForFinalState, String async) {
       this.targetNodeName = targetNodeName;
       this.waitForFinalState = waitForFinalState;
+      this.async = async;
     }
 
-    @Schema(description = "The name of the targetNode.")
+    @Schema(
+        description =
+            "The target node where replicas will be copied. If this parameter is not provided, Solr "
+                + "will identify nodes automatically based on policies or number of cores in each node.")
     @JsonProperty("targetNodeName")
     public String targetNodeName;
 
+    @Schema(
+        description =
+            "If true, the request will complete only when all affected replicas become active. "
+                + "If false, the API will return the status of the single action, which may be "
+                + "before the new replica is online and active.")
     @JsonProperty("waitForFinalState")
     public Boolean waitForFinalState = false;
+
+    @Schema(description = "Request ID to track this action which will be processed asynchronously.")
+    @JsonProperty("async")
+    public String async;
   }
 }

@@ -538,6 +538,7 @@ abstract class FacetParser<T extends FacetRequest> {
       facet = new FacetField();
     }
 
+    @Override
     public FacetField parse(Object arg) throws SyntaxError {
       parseCommonParams(arg);
       if (arg instanceof String) {

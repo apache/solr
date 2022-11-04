@@ -55,6 +55,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
   private final int numPullReplicas;
   private final int numRealtimeOrTlogReplicas;
 
+  @Override
   protected int getPullReplicaCount() {
     return numPullReplicas;
   }
@@ -87,10 +88,12 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
 
   private final boolean runFullThrottle;
 
+  @Override
   public String[] getFieldNames() {
     return fieldNames;
   }
 
+  @Override
   public RandVal[] getRandValues() {
     return randVals;
   }

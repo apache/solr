@@ -224,6 +224,7 @@ public class CartesianProductStream extends TupleStream implements Expressible {
     return explanation;
   }
 
+  @Override
   public Tuple read() throws IOException {
     if (generatedTuples.isEmpty()) {
       Tuple tuple = stream.read();
@@ -298,6 +299,7 @@ public class CartesianProductStream extends TupleStream implements Expressible {
   }
 
   /** Return the incoming sort + the sort applied to the generated tuples */
+  @Override
   public StreamComparator getStreamSort() {
     if (null != orderBy) {
       return stream.getStreamSort().append(orderBy);
@@ -305,6 +307,7 @@ public class CartesianProductStream extends TupleStream implements Expressible {
     return stream.getStreamSort();
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.stream.setStreamContext(context);
     for (NamedEvaluator evaluator : evaluators) {
@@ -312,27 +315,31 @@ public class CartesianProductStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     l.add(stream);
     return l;
   }
 
+  @Override
   public void open() throws IOException {
     stream.open();
     generatedTuples = new ArrayDeque<>();
   }
 
+  @Override
   public void close() throws IOException {
     stream.close();
     generatedTuples.clear();
   }
 
+  @Override
   public int getCost() {
     return 0;
   }
 
-  class NamedEvaluator {
+  static class NamedEvaluator {
     private String name;
     private StreamEvaluator evaluator;
 

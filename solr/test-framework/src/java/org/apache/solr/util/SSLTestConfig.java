@@ -75,11 +75,11 @@ public class SSLTestConfig {
    * <p>As needed, keystore/truststore information will be pulled from a hardcoded resource file
    * provided by the solr test-framework
    *
-   * @param useSSL - whether SSL should be required.
+   * @param useSsl - whether SSL should be required.
    * @param clientAuth - whether client authentication should be required.
    */
-  public SSLTestConfig(boolean useSSL, boolean clientAuth) {
-    this(useSSL, clientAuth, false);
+  public SSLTestConfig(boolean useSsl, boolean clientAuth) {
+    this(useSsl, clientAuth, false);
   }
 
   // NOTE: if any javadocs below change, update create-keystores.sh
@@ -97,18 +97,18 @@ public class SSLTestConfig {
    *       SSLTestConfig should care what CN/SAN are.
    * </ul>
    *
-   * @param useSSL - whether SSL should be required.
+   * @param useSsl - whether SSL should be required.
    * @param clientAuth - whether client authentication should be required.
    * @param checkPeerName - whether the client should validate the 'peer name' of the SSL
    *     Certificate (and which testing Cert should be used)
    * @see HttpClientUtil#SYS_PROP_CHECK_PEER_NAME
    */
-  public SSLTestConfig(boolean useSSL, boolean clientAuth, boolean checkPeerName) {
-    this.useSsl = useSSL;
+  public SSLTestConfig(boolean useSsl, boolean clientAuth, boolean checkPeerName) {
+    this.useSsl = useSsl;
     this.clientAuth = clientAuth;
     this.checkPeerName = checkPeerName;
 
-    if (useSsl) {
+    if (this.useSsl) {
       assumeSslIsSafeToTest();
     }
 
@@ -335,14 +335,17 @@ public class SSLTestConfig {
     private static final SecureRandomSpi NOT_SECURE_SPI =
         new SecureRandomSpi() {
           /** returns a new byte[] filled with static data */
+          @Override
           public byte[] engineGenerateSeed(int numBytes) {
             return fillData(new byte[numBytes]);
           }
           /** fills the byte[] with static data */
+          @Override
           public void engineNextBytes(byte[] bytes) {
             fillData(bytes);
           }
           /** NOOP */
+          @Override
           public void engineSetSeed(byte[] seed) {
             /* NOOP */
           }
@@ -353,30 +356,37 @@ public class SSLTestConfig {
     }
 
     /** returns a new byte[] filled with static data */
+    @Override
     public byte[] generateSeed(int numBytes) {
       return fillData(new byte[numBytes]);
     }
     /** fills the byte[] with static data */
+    @Override
     public void nextBytes(byte[] bytes) {
       fillData(bytes);
     }
 
+    @Override
     public void nextBytes(byte[] bytes, SecureRandomParameters params) {
       fillData(bytes);
     }
     /** NOOP */
+    @Override
     public void setSeed(byte[] seed) {
       /* NOOP */
     }
     /** NOOP */
+    @Override
     public void setSeed(long seed) {
       /* NOOP */
     }
 
+    @Override
     public void reseed() {
       /* NOOP */
     }
 
+    @Override
     public void reseed(SecureRandomParameters params) {
       /* NOOP */
     }

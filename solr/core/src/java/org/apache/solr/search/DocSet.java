@@ -129,6 +129,7 @@ public abstract class DocSet implements Accountable, Cloneable /* extends Collec
    */
   public abstract void addAllTo(FixedBitSet target);
 
+  @Override
   public abstract DocSet clone();
 
   /**

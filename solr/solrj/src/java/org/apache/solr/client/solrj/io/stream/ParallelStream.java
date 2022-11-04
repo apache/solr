@@ -243,12 +243,14 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
     return explanation;
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     l.add(tupleStream);
     return l;
   }
 
+  @Override
   public Tuple read() throws IOException {
     Tuple tuple = _read();
 
@@ -273,6 +275,7 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
     return tuple;
   }
 
+  @Override
   public void setStreamContext(StreamContext streamContext) {
     this.streamContext = streamContext;
     if (streamFactory == null) {
@@ -281,6 +284,7 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
     this.tupleStream.setStreamContext(streamContext);
   }
 
+  @Override
   protected void constructStreams() throws IOException {
     try {
       Object pushStream = ((Expressible) tupleStream).toExpression(streamFactory);

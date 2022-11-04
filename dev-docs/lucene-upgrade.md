@@ -43,11 +43,7 @@ gradlew --write-locks
 ### `solr/licenses` update
 
 ```
-git rm lucene-*-9.3.0.jar.sha1
-
-# ???manually get new .sha1 files???
-
-git add lucene-*-9.4.0.jar.sha1
+gradlew updateLicenses
 ```
 
 ## Code
@@ -76,15 +72,6 @@ gradlew precommit
 
 ```
 gradlew test
-```
-
-## Documentation
-
-### `solr/solr-ref-guide/antora.yml` update
-
-```
-- lucene-javadocs: 'https://lucene.apache.org/core/9_3_0'
-+ lucene-javadocs: 'https://lucene.apache.org/core/9_4_0'
 ```
 
 ## Finish

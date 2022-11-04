@@ -227,22 +227,27 @@ public class RestoreCore implements Callable<Boolean> {
       this.repository = repository;
     }
 
+    @Override
     public String[] listAllFiles() throws IOException {
       return repository.listAll(backupPath);
     }
 
+    @Override
     public IndexInput openInput(String filename) throws IOException {
       return repository.openInput(backupPath, filename, IOContext.READONCE);
     }
 
+    @Override
     public void repoCopy(String filename, Directory dest) throws IOException {
       repository.copyFileTo(backupPath, filename, dest);
     }
 
+    @Override
     public void localCopy(Directory src, String filename, Directory dest) throws IOException {
       dest.copyFrom(src, filename, filename, IOContext.READONCE);
     }
 
+    @Override
     public Checksum checksum(String filename) throws IOException {
       try (IndexInput indexInput = repository.openInput(backupPath, filename, IOContext.READONCE)) {
         try {
@@ -298,6 +303,7 @@ public class RestoreCore implements Callable<Boolean> {
       dest.copyFrom(src, filename, filename, IOContext.READONCE);
     }
 
+    @Override
     public Checksum checksum(String filename) {
       Optional<ShardBackupMetadata.BackedFile> backedFile = shardBackupMetadata.getFile(filename);
       return backedFile.map(bf -> bf.fileChecksum).orElse(null);

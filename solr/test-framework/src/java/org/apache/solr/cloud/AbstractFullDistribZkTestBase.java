@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
@@ -171,13 +172,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     @Override
     public boolean equals(Object obj) {
       if (this == obj) return true;
-      if (obj == null) return false;
-      if (getClass() != obj.getClass()) return false;
+      if (!(obj instanceof CloudJettyRunner)) return false;
       CloudJettyRunner other = (CloudJettyRunner) obj;
-      if (url == null) {
-        if (other.url != null) return false;
-      } else if (!url.equals(other.url)) return false;
-      return true;
+      return Objects.equals(url, other.url);
     }
 
     @Override
@@ -213,13 +210,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     @Override
     public boolean equals(Object obj) {
       if (this == obj) return true;
-      if (obj == null) return false;
-      if (getClass() != obj.getClass()) return false;
+      if (!(obj instanceof CloudSolrServerClient)) return false;
       CloudSolrServerClient other = (CloudSolrServerClient) obj;
-      if (solrClient == null) {
-        if (other.solrClient != null) return false;
-      } else if (!solrClient.equals(other.solrClient)) return false;
-      return true;
+      return Objects.equals(solrClient, other.solrClient);
     }
   }
 
@@ -502,11 +495,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                   SolrClient client = createNewSolrClient(j.getLocalPort());
                   clients.add(client);
 
-                } catch (IOException e) {
-                  e.printStackTrace();
-                  throw new RuntimeException(e);
                 } catch (Exception e) {
-                  e.printStackTrace();
+                  log.error("error creating jetty", e);
                   throw new RuntimeException(e);
                 }
               });
@@ -544,11 +534,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                   coreClients.add(createNewSolrClient(coreName, j.getLocalPort()));
                   SolrClient client = createNewSolrClient(j.getLocalPort());
                   clients.add(client);
-                } catch (IOException e) {
-                  e.printStackTrace();
-                  throw new RuntimeException(e);
                 } catch (Exception e) {
-                  e.printStackTrace();
+                  log.error("error creating jetty", e);
                   throw new RuntimeException(e);
                 }
               });
@@ -584,11 +571,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                 coreClients.add(createNewSolrClient(coreName, j.getLocalPort()));
                 SolrClient client = createNewSolrClient(j.getLocalPort());
                 clients.add(client);
-              } catch (IOException e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
               } catch (Exception e) {
-                e.printStackTrace();
+                log.error("error creating jetty", e);
                 throw new RuntimeException(e);
               }
             });
@@ -765,6 +749,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return jetty;
   }
 
+  @Override
   public final JettySolrRunner createJetty(
       File solrHome,
       String dataDir,
@@ -980,7 +965,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
               list = new ArrayList<>();
               shardToJetty.put(slice.getName(), list);
             }
-            boolean isLeader = slice.getLeader() == replica;
+            boolean isLeader = Objects.equals(slice.getLeader(), replica);
             CloudJettyRunner cjr = new CloudJettyRunner();
             cjr.jetty = jetty;
             cjr.info = replica;
@@ -1739,7 +1724,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     // now check that the right # are on each shard
     theShards = shardToJetty.keySet();
-    int cnt = 0;
+    long cnt = 0;
     for (String s : theShards) {
       int times = shardToJetty.get(s).size();
       for (int i = 0; i < times; i++) {
@@ -1931,8 +1916,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       try {
         commit();
       } catch (Throwable t) {
-        t.printStackTrace();
-        // we don't care if this commit fails on some nodes
+        log.error("we don't care if this commit fails on some nodes", t);
       }
 
       updateMappingsFromZk(jettys, clients);

@@ -48,10 +48,12 @@ public class SplittableRandomGenerator implements RandomGenerator {
     this.random = new SplittableRandom(seed);
   }
 
+  @Override
   public void setSeed(int seed) {
     setSeed((long) seed);
   }
 
+  @Override
   public void setSeed(int[] seed) {
     setSeed(RandomGeneratorFactory.convertToLong(seed));
   }

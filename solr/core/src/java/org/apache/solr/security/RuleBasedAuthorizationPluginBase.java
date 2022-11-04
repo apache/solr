@@ -366,6 +366,7 @@ public abstract class RuleBasedAuthorizationPluginBase
   @Override
   public void close() throws IOException {}
 
+  @SuppressWarnings("ImmutableEnumChecker")
   enum MatchStatus {
     USER_REQUIRED(AuthorizationResponse.PROMPT),
     NO_PERMISSIONS_FOUND(AuthorizationResponse.OK),

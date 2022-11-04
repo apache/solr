@@ -252,12 +252,14 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
     this.numTerms = numTopTerms;
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.cache = context.getSolrClientCache();
     this.streamContext = context;
   }
 
   /** Opens the CloudSolrStream */
+  @Override
   public void open() throws IOException {
     if (cache == null) {
       isCloseCache = true;
@@ -272,6 +274,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
             new SolrNamedThreadFactory("FeaturesSelectionStream"));
   }
 
+  @Override
   public List<TupleStream> children() {
     return null;
   }
@@ -320,6 +323,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
     return futures;
   }
 
+  @Override
   public void close() throws IOException {
     if (isCloseCache && cache != null) {
       cache.close();
@@ -331,6 +335,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
+  @Override
   public StreamComparator getStreamSort() {
     return null;
   }
@@ -344,6 +349,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
         .withExpression(toExpression(factory).toString());
   }
 
+  @Override
   public Tuple read() throws IOException {
     try {
       if (tupleIterator == null) {
@@ -427,6 +433,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
       this.paramsMap = paramsMap;
     }
 
+    @Override
     public NamedList<?> call() throws Exception {
       ModifiableSolrParams params = new ModifiableSolrParams();
       SolrClient solrClient = cache.getHttpSolrClient(baseUrl);

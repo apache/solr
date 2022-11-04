@@ -859,6 +859,7 @@ public class PhrasesIdentificationComponent extends SearchComponent {
     private final Map<String, Long> phrase_df = new TreeMap<>();
     private final Map<String, Double> fieldScores = new TreeMap<>();
 
+    @Override
     public String toString() {
       return "'"
           + subSequence

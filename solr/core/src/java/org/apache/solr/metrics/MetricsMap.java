@@ -103,6 +103,7 @@ public class MetricsMap implements Gauge<Map<String, Object>>, MapWriter, Dynami
     return map;
   }
 
+  @Override
   public String toString() {
     return getValue().toString();
   }

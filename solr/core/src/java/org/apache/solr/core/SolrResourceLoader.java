@@ -599,6 +599,7 @@ public class SolrResourceLoader
   private static final Class<?>[] NO_CLASSES = new Class<?>[0];
   private static final Object[] NO_OBJECTS = new Object[0];
 
+  @Override
   public <T> T newInstance(String cname, Class<T> expectedType, String... subpackages) {
     return newInstance(cname, expectedType, subpackages, NO_CLASSES, NO_OBJECTS);
   }
@@ -710,6 +711,7 @@ public class SolrResourceLoader
   }
 
   /** Tell all {@link SolrCoreAware} instances about the SolrCore */
+  @Override
   public void inform(SolrCore core) {
     if (getSchemaLoader() != null) core.getPackageListeners().addListener(schemaLoader);
 

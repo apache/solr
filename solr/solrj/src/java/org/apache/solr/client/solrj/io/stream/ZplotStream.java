@@ -101,15 +101,18 @@ public class ZplotStream extends TupleStream implements Expressible {
     return explanation;
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.streamContext = context;
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     return l;
   }
 
+  @Override
   public Tuple read() throws IOException {
     if (out.hasNext()) {
       return out.next();
@@ -118,8 +121,10 @@ public class ZplotStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public void close() throws IOException {}
 
+  @Override
   public void open() throws IOException {
     Map<String, Object> lets = streamContext.getLets();
     Set<Map.Entry<String, Object>> entries = letParams.entrySet();
@@ -423,10 +428,12 @@ public class ZplotStream extends TupleStream implements Expressible {
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
+  @Override
   public StreamComparator getStreamSort() {
     return null;
   }
 
+  @Override
   public int getCost() {
     return 0;
   }

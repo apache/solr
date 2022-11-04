@@ -267,6 +267,7 @@ public final class DefaultSolrCoreState extends SolrCoreState
         core.getCodec());
   }
 
+  @Override
   public Sort getMergePolicySort() throws IOException {
     lock(iwLock.readLock());
     try {

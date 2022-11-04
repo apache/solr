@@ -83,7 +83,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
    * <p>Use by calling {@link #reset()} before the API calls, and then {@link #waitFor(int)} to
    * block until <code>num</code> cores have been notified.
    */
-  class CountingListener implements PackageListeners.Listener {
+  static class CountingListener implements PackageListeners.Listener {
     private Semaphore changeCalled = new Semaphore(0);
 
     @Override
@@ -463,7 +463,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       method = GET,
       path = "/plugin/my/plugin",
       permission = PermissionNameProvider.Name.COLL_READ_PERM)
-  public class C2 {}
+  public static class C2 {}
 
   @EndPoint(
       method = GET,

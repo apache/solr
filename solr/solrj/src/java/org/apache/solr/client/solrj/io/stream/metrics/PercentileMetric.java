@@ -62,6 +62,7 @@ public class PercentileMetric extends Metric {
     setIdentifier(functionName, "(", columnName, "," + percentile, ")");
   }
 
+  @Override
   public Number getValue() {
     if (longMax == Long.MIN_VALUE) {
       return doubleMax;
@@ -70,12 +71,15 @@ public class PercentileMetric extends Metric {
     }
   }
 
+  @Override
   public String[] getColumns() {
     return new String[] {columnName};
   }
 
+  @Override
   public void update(Tuple tuple) {}
 
+  @Override
   public Metric newInstance() {
     return new MaxMetric(columnName);
   }

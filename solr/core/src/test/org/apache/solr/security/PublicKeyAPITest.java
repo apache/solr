@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,17 +15,20 @@
  * limitations under the License.
  */
 
-configure(project(":solr")) {
-  task validateRefGuideFiles() {
-    doFirst {
-      def (major, minor, patch) = rootProject.luceneBaseVersionProvider.get().tokenize('.')
-      def linkVersion = "${major}_${minor}_${patch}"
+package org.apache.solr.security;
 
-      def antora_yml = file("solr-ref-guide/antora.yml")
-      def content = antora_yml.getText("UTF-8")
-      if (!content.contains("lucene-javadocs: 'https://lucene.apache.org/core/${linkVersion}'")) {
-        throw new GradleException("${antora_yml.absolutePath} lucene-javadocs does not link to the correct lucene version (${linkVersion})")
-      }
-    }
+import org.apache.solr.SolrTestCaseJ4;
+import org.junit.Test;
+
+/** Unit test for {@link PublicKeyAPI} */
+public class PublicKeyAPITest extends SolrTestCaseJ4 {
+
+  @Test
+  public void testRetrievesPublicKey() {
+    final SolrNodeKeyPair nodeKeyPair = new SolrNodeKeyPair(null);
+
+    final PublicKeyAPI.PublicKeyResponse response = new PublicKeyAPI(nodeKeyPair).getPublicKey();
+
+    assertEquals(nodeKeyPair.getKeyPair().getPublicKeyStr(), response.key);
   }
 }
