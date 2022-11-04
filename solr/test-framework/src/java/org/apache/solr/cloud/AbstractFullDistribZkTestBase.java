@@ -2165,31 +2165,14 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return createNewSolrClient(DEFAULT_COLLECTION, port);
   }
 
-  protected SolrClient createNewSolrClient(
-      int port, int connectionTimeoutMillis, int socketTimeoutMillis) {
-    return createNewSolrClient(
-        DEFAULT_COLLECTION, port, connectionTimeoutMillis, socketTimeoutMillis);
-  }
-
   protected SolrClient createNewSolrClient(String coreName, int port) {
-    // setup the server...
     String baseUrl = buildUrl(port);
     String url = baseUrl + (baseUrl.endsWith("/") ? "" : "/") + coreName;
     SolrClient client = getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT, 60000);
     return client;
   }
 
-  protected SolrClient createNewSolrClient(
-      String coreName, int port, int connectionTimeoutMillis, int socketTimeoutMillis) {
-    // setup the server...
-    String baseUrl = buildUrl(port);
-    String url = baseUrl + (baseUrl.endsWith("/") ? "" : "/") + coreName;
-    SolrClient client = getHttpSolrClient(url, connectionTimeoutMillis, socketTimeoutMillis);
-    return client;
-  }
-
   protected SolrClient createNewSolrClient(String collection, String baseUrl) {
-    // setup the server...
     SolrClient client = getHttp2SolrClient(baseUrl + "/" + collection);
     return client;
   }
