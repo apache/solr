@@ -94,7 +94,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
 
     // add a new node for the purpose of negative testing
     JettySolrRunner newJetty = cluster.startJettySolrRunner();
-    try (SolrClient solrClient = getHttpSolrClient(newJetty.getBaseUrl().toString())) {
+    try (SolrClient solrClient = getHttp1SolrClient(newJetty.getBaseUrl().toString())) {
 
       // positive check that our (new) "healthy" node works with direct http client
       assertEquals(CommonParams.OK, req.process(solrClient).getResponse().get(CommonParams.STATUS));
@@ -118,7 +118,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
     // add a new node for the purpose of negative testing
     // negative check that if core container is not available at the node
     newJetty = cluster.startJettySolrRunner();
-    try (SolrClient solrClient = getHttpSolrClient(newJetty.getBaseUrl().toString())) {
+    try (SolrClient solrClient = getHttp1SolrClient(newJetty.getBaseUrl().toString())) {
 
       // positive check that our (new) "healthy" node works with direct http client
       assertEquals(CommonParams.OK, req.process(solrClient).getResponse().get(CommonParams.STATUS));
@@ -159,7 +159,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
     // positive check of a HealthCheckRequest using http client
     HealthCheckRequest req = new HealthCheckRequest();
     try (SolrClient solrClient =
-        getHttpSolrClient(cluster.getJettySolrRunner(0).getBaseUrl().toString())) {
+        getHttp1SolrClient(cluster.getJettySolrRunner(0).getBaseUrl().toString())) {
       HealthCheckResponse rsp = req.process(solrClient);
       assertEquals(CommonParams.OK, rsp.getNodeStatus());
     }
@@ -180,7 +180,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
 
     // add a new node for the purpose of negative testing
     JettySolrRunner newJetty = cluster.startJettySolrRunner();
-    try (SolrClient solrClient = getHttpSolrClient(newJetty.getBaseUrl().toString())) {
+    try (SolrClient solrClient = getHttp1SolrClient(newJetty.getBaseUrl().toString())) {
 
       // positive check that our (new) "healthy" node works with direct http client
       assertEquals(
