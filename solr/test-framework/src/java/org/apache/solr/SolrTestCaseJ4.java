@@ -2871,9 +2871,23 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return new LBHttpSolrClient.Builder().withBaseSolrUrls(solrUrls).build();
   }
 
+  /** This method creates a HttpClient from a URL. */
+  public static HttpClient getHttpClient(String url) {
+    return new HttpSolrClient.Builder(url).build().getHttpClient();
+  }
+
+  /**
+   * This method creates a basic HttpSolrClient. Tests that want to control the creation process
+   * should use the {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
+   */
+  public static HttpSolrClient getHttp1SolrClient(String url) {
+    return new HttpSolrClient.Builder(url).build();
+  }
+
+
   /**
    * This method creates a basic Http2SolrClient. Tests that want to control the creation process
-   * should use the {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
+   * should use the {@link org.apache.solr.client.solrj.impl.Http2SolrClient.Builder} class directly
    */
   public static Http2SolrClient getHttp2SolrClient(String url) {
     return new Http2SolrClient.Builder(url).build();

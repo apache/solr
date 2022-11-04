@@ -58,9 +58,9 @@ public class SolrExampleJettyTest extends SolrExampleTests {
 
   @Test
   public void testBadSetup() {
-    // setup the server...
     String url = "http" + (isSSLMode() ? "s" : "") + "://127.0.0.1/?core=xxx";
-    expectThrows(Exception.class, () -> getHttpSolrClient(url));
+    // This test does NOT fail for Http2SolrClient
+    expectThrows(Exception.class, () -> getHttp1SolrClient(url));
   }
 
   @Test
@@ -72,7 +72,7 @@ public class SolrExampleJettyTest extends SolrExampleTests {
 
     // two docs, one with uniqueKey, another without it
     String json = "{\"id\":\"abc1\", \"name\": \"name1\"} {\"name\" : \"name2\"}";
-    HttpClient httpClient = getHttpSolrClient(getServerUrl()).getHttpClient();
+    HttpClient httpClient = getHttpClient(getServerUrl());
     HttpPost post = new HttpPost(getJsonUpdateUrl(getServerUrl()));
     post.setHeader("Content-Type", "application/json");
     post.setEntity(
