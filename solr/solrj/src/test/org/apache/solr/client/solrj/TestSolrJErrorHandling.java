@@ -102,21 +102,23 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
 
   @Test
   public void testWithXml() throws Exception {
-    client =
-        new HttpSolrClient.Builder(getServerUrl()).withRequestWriter(new RequestWriter()).build();
+    try (SolrClient client =
+        new HttpSolrClient.Builder(getServerUrl()).withRequestWriter(new RequestWriter()).build()) {
 
-    client.deleteByQuery("*:*"); // delete everything!
-    doIt(client);
+      client.deleteByQuery("*:*"); // delete everything!
+      doIt(client);
+    }
   }
 
   @Test
   public void testWithBinary() throws Exception {
-    client =
+    try (SolrClient client =
         new HttpSolrClient.Builder(getServerUrl())
             .withRequestWriter(new BinaryRequestWriter())
-            .build();
-    client.deleteByQuery("*:*"); // delete everything!
-    doIt(client);
+            .build()) {
+      client.deleteByQuery("*:*"); // delete everything!
+      doIt(client);
+    }
   }
 
   Iterator<SolrInputDocument> manyDocs(final int base, final int numDocs) {
