@@ -528,15 +528,14 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
       assertEquals(1, DebugServlet.parameters.get("a").length);
       assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
     }
+
+    // javabin request
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(url)
             .withRequestWriter(new BinaryRequestWriter())
             .withResponseParser(new BinaryResponseParser())
             .build()) {
 
-      // javabin request
-      // client.setParser(new BinaryResponseParser());
-      // client.setRequestWriter(new BinaryRequestWriter());
       DebugServlet.clear();
       try {
         client.request(req);
@@ -572,12 +571,9 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(clientUrl).withFollowRedirects(false).build()) {
       SolrQuery q = new SolrQuery("*:*");
-      try {
-        client.query(q);
-        fail("Should have thrown an exception.");
-      } catch (SolrServerException e) {
-        assertTrue(e.getMessage().contains("redirect"));
-      }
+
+      SolrServerException thrown = assertThrows(SolrServerException.class, () -> client.query(q));
+      assertTrue(thrown.getMessage().contains("redirect"));
     }
   }
 
