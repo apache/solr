@@ -56,18 +56,20 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
     int which = r.nextInt(clients.size());
 
     // create a client that does not have the /collection1 as part of the URL.
-    SolrClient rootClient =
-        new HttpSolrClient.Builder(buildUrl(jettys.get(which).getLocalPort())).build();
-    NamedList<?> namedListResponse = rootClient.request(request);
-    NamedList<?> status = (NamedList<?>) namedListResponse.get("status");
-    NamedList<?> collectionStatus = (NamedList<?>) status.getVal(0);
-    String collectionSchema = (String) collectionStatus.get(CoreAdminParams.SCHEMA);
-    // Make sure the upgrade to managed schema happened
-    assertEquals(
-        "Schema resource name differs from expected name", "managed-schema.xml", collectionSchema);
+    try (SolrClient rootClient =
+        new HttpSolrClient.Builder(buildUrl(jettys.get(which).getLocalPort())).build()) {
+      NamedList<?> namedListResponse = rootClient.request(request);
+      NamedList<?> status = (NamedList<?>) namedListResponse.get("status");
+      NamedList<?> collectionStatus = (NamedList<?>) status.getVal(0);
+      String collectionSchema = (String) collectionStatus.get(CoreAdminParams.SCHEMA);
+      // Make sure the upgrade to managed schema happened
+      assertEquals(
+          "Schema resource name differs from expected name",
+          "managed-schema.xml",
+          collectionSchema);
+    }
 
-    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), 30000);
-    try {
+    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), 30000)) {
       // Make sure "DO NOT EDIT" is in the content of the managed schema
       String fileContent =
           getFileContentFromZooKeeper(zkClient, "/solr/configs/conf1/managed-schema.xml");
@@ -79,10 +81,6 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
       // Make sure the renamed non-managed schema is present in ZooKeeper
       fileContent = getFileContentFromZooKeeper(zkClient, "/solr/configs/conf1/schema.xml.bak");
       assertTrue("schema file doesn't contain '<schema'", fileContent.contains("<schema"));
-    } finally {
-      if (zkClient != null) {
-        zkClient.close();
-      }
     }
   }
 
