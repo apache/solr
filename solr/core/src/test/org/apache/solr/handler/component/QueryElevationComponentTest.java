@@ -374,6 +374,27 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           "//result/doc[2]/bool[@name='[elevated]'][.='true']",
           "//result/doc[3]/bool[@name='[elevated]'][.='true']");
 
+      // if a collapse filter itself is tagged for exclusion, the elevate component ignores this
+      // tagging;
+      // the collapse filter operates as usual and is not modified by the component;
+      // TODO: consider whether an error should be raised instead
+      assertQ(
+          "",
+          req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              CommonParams.FQ, "{!collapse tag=test1 field=str_s sort='score desc'}",
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "{!tag=test2}str_s:b",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test1,test2"),
+          "//*[@numFound='3']",
+          "//result/doc[1]/str[@name='id'][.='1']",
+          "//result/doc[2]/str[@name='id'][.='2']",
+          "//result/doc[3]/str[@name='id'][.='3']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[2]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[3]/bool[@name='[elevated]'][.='true']");
+
     } finally {
       delete();
     }
