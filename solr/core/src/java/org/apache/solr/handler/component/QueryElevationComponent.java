@@ -84,8 +84,8 @@ import org.apache.solr.response.transform.ElevatedMarkerFactory;
 import org.apache.solr.response.transform.ExcludedMarkerFactory;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.CollapsingQParserPlugin;
 import org.apache.solr.search.ExtendedQuery;
-import org.apache.solr.search.PostFilter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -601,9 +601,19 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     List<Query> updatedFilters = new ArrayList<Query>();
 
     for (Query filter : filters) {
-      if (!excludeSet.contains(filter) || filter instanceof PostFilter) {
+
+      if (!excludeSet.contains(filter)) {
         updatedFilters.add(filter);
         continue;
+      }
+
+      // collapse filter is a special case that cannot be included as a clause in a BooleanQuery
+      // its createWeight() method would throw an UnsupportedOperationException when called by the
+      // BooleanQuery's
+      // own createWeight()
+      if (filter instanceof CollapsingQParserPlugin.CollapsingPostFilter) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "collapse filter cannot be tagged for exclusion");
       }
 
       // we're looking at a filter that has been tagged for exclusion

@@ -37,6 +37,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CursorMarkParams;
 import org.apache.solr.common.params.GroupParams;
@@ -325,7 +326,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
               CommonParams.FQ, "str_s:b"),
           "//*[@numFound='0']");
 
-      // if we tag the filters and exclude it, we should should see the same behavior
+      // if we tag the filters and exclude it, we should see the same behavior
       // as before
       // filters are only bypassed for elevated documents
       // our MMMM document is not elevated so it is still subject to the filter
@@ -346,8 +347,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           req(
               CommonParams.Q, "ZZZZ",
               CommonParams.QT, "/elevate",
-              CommonParams.FQ, "{!collapse field=str_s sort='score desc'}",
-              CommonParams.FL, "id, score, [elevated]"),
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "{!collapse field=str_s sort='score desc'}"),
           "//*[@numFound='3']",
           "//result/doc[1]/str[@name='id'][.='1']",
           "//result/doc[2]/str[@name='id'][.='2']",
@@ -362,8 +363,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           req(
               CommonParams.Q, "ZZZZ",
               CommonParams.QT, "/elevate",
-              CommonParams.FQ, "{!collapse field=str_s sort='score desc'}",
               CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "{!collapse field=str_s sort='score desc'}",
               CommonParams.FQ, "str_s:b"),
           "//*[@numFound='1']",
           "//result/doc[1]/str[@name='id'][.='2']",
@@ -376,8 +377,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           req(
               CommonParams.Q, "ZZZZ",
               CommonParams.QT, "/elevate",
-              CommonParams.FQ, "{!collapse field=str_s sort='score desc'}",
               CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "{!collapse field=str_s sort='score desc'}",
               CommonParams.FQ, "{!tag=test1}str_s:b",
               QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test1"),
           "//*[@numFound='3']",
@@ -388,17 +389,31 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           "//result/doc[2]/bool[@name='[elevated]'][.='true']",
           "//result/doc[3]/bool[@name='[elevated]'][.='true']");
 
-      // if a collapse filter itself is tagged for exclusion, the elevate component ignores this
-      // tagging;
-      // the collapse filter operates as usual and is not modified by the component;
-      // TODO: consider whether an error should be raised instead
+      // if a collapse filter itself is tagged for exclusion, this is considered an error and the
+      // user should be informed
+      assertQEx(
+          "tagging a collapse filter for exclusion should lead to a BAD_REQUEST",
+          req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "{!collapse tag=test1 field=str_s sort='score desc'}",
+              CommonParams.FQ, "{!tag=test2}str_s:b",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test1,test2"),
+          SolrException.ErrorCode.BAD_REQUEST);
+
+      // if a function range query is provided as a filter, it can be tagged for exclusion;
+      // FunctionRangeQuery is special because it implements the PostFilter interface and
+      // we want to be sure that while CollapsingPostFilter leads to an error, other PostFilters
+      // can still be used; here we set cache=false and cost=200 to trigger the post-filtering
+      // behavior
       assertQ(
           "",
           req(
               CommonParams.Q, "ZZZZ",
               CommonParams.QT, "/elevate",
-              CommonParams.FQ, "{!collapse tag=test1 field=str_s sort='score desc'}",
               CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "{!frange tag=test1 l=100 cache=false cost=200}5.0",
               CommonParams.FQ, "{!tag=test2}str_s:b",
               QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test1,test2"),
           "//*[@numFound='3']",
