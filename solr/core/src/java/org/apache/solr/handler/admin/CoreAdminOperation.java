@@ -71,6 +71,7 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminOp;
+import org.apache.solr.handler.admin.api.CoreAdminAPIBase;
 import org.apache.solr.handler.admin.api.CoreSnapshotAPI;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.UpdateLog;
@@ -217,7 +218,8 @@ public enum CoreAdminOperation implements CoreAdminOp {
         String requestId = params.required().get(CoreAdminParams.REQUESTID);
         log().info("Checking request status for : " + requestId);
 
-        if (it.handler.getRequestStatusMap(RUNNING).containsKey(requestId)) {
+        if (it.handler.getRequestStatusMap(RUNNING).containsKey(requestId)
+            || CoreAdminAPIBase.getRequestStatusMap(RUNNING).containsKey(requestId)) {
           it.rsp.add(RESPONSE_STATUS, RUNNING);
         } else if (it.handler.getRequestStatusMap(COMPLETED).containsKey(requestId)) {
           it.rsp.add(RESPONSE_STATUS, COMPLETED);
@@ -227,11 +229,26 @@ public enum CoreAdminOperation implements CoreAdminOp {
           it.rsp.add(
               OPERATION_RESPONSE,
               it.handler.getRequestStatusMap(COMPLETED).get(requestId).getOperationRspObject());
+        } else if (CoreAdminAPIBase.getRequestStatusMap(COMPLETED).containsKey(requestId)) {
+          it.rsp.add(RESPONSE_STATUS, COMPLETED);
+          it.rsp.add(
+              RESPONSE_MESSAGE,
+              CoreAdminAPIBase.getRequestStatusMap(COMPLETED).get(requestId).getRspObject());
+          it.rsp.add(
+              OPERATION_RESPONSE,
+              CoreAdminAPIBase.getRequestStatusMap(COMPLETED)
+                  .get(requestId)
+                  .getOperationRspObject());
         } else if (it.handler.getRequestStatusMap(FAILED).containsKey(requestId)) {
           it.rsp.add(RESPONSE_STATUS, FAILED);
           it.rsp.add(
               RESPONSE_MESSAGE,
               it.handler.getRequestStatusMap(FAILED).get(requestId).getRspObject());
+        } else if (CoreAdminAPIBase.getRequestStatusMap(FAILED).containsKey(requestId)) {
+          it.rsp.add(RESPONSE_STATUS, FAILED);
+          it.rsp.add(
+              RESPONSE_MESSAGE,
+              CoreAdminAPIBase.getRequestStatusMap(FAILED).get(requestId).getRspObject());
         } else {
           it.rsp.add(RESPONSE_STATUS, "notfound");
           it.rsp.add(RESPONSE_MESSAGE, "No task found in running, completed or failed tasks");
@@ -278,10 +295,10 @@ public enum CoreAdminOperation implements CoreAdminOp {
         final String coreName = params.required().get(CoreAdminParams.CORE);
 
         final CoreContainer coreContainer = it.handler.getCoreContainer();
-        final CoreSnapshotAPI coreSnapshotAPI = new CoreSnapshotAPI(coreContainer);
+        final CoreSnapshotAPI coreSnapshotAPI = new CoreSnapshotAPI(it.req, it.rsp, coreContainer);
 
         final CoreSnapshotAPI.ListSnapshotsResponse response =
-            coreSnapshotAPI.listSnapshots(coreName);
+            coreSnapshotAPI.listSnapshots(coreName, null);
 
         final NamedList<Object> snapshotsResult = new NamedList<>();
         for (Map.Entry<String, CoreSnapshotAPI.SnapshotInformation> snapshotEntry :

@@ -24,6 +24,7 @@ import static org.apache.solr.security.PermissionNameProvider.Name.CORE_READ_PER
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -35,8 +36,8 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import org.apache.lucene.index.IndexCommit;
-import org.apache.solr.api.JerseyResource;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.CoreContainer;
@@ -47,15 +48,16 @@ import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
 import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.jersey.SolrJerseyResponse;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 
 @Path("/cores/{coreName}/snapshots")
-public class CoreSnapshotAPI extends JerseyResource {
-
-  private final CoreContainer coreContainer;
+public class CoreSnapshotAPI extends CoreAdminAPIBase {
 
   @Inject
-  public CoreSnapshotAPI(CoreContainer coreContainer) {
-    this.coreContainer = coreContainer;
+  public CoreSnapshotAPI(
+      SolrQueryRequest request, SolrQueryResponse response, CoreContainer coreContainer) {
+    super(coreContainer, request, response);
   }
 
   @POST
@@ -68,39 +70,50 @@ public class CoreSnapshotAPI extends JerseyResource {
           String coreName,
       @Parameter(description = "The name to associate with the core snapshot.", required = true)
           @PathParam("snapshotName")
-          String snapshotName)
+          String snapshotName,
+      @Parameter(description = "The id to associate with the async task.") @QueryParam("async")
+          String taskId)
       throws Exception {
     final CreateSnapshotResponse response = instantiateJerseyResponse(CreateSnapshotResponse.class);
 
-    try (SolrCore core = coreContainer.getCore(coreName)) {
-      if (core == null) {
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST, "Unable to locate core " + coreName);
-      }
+    return handle(
+        response,
+        coreName,
+        taskId,
+        "createSnapshot",
+        () -> {
+          try (SolrCore core = coreContainer.getCore(coreName)) {
+            if (core == null) {
+              throw new SolrException(
+                  SolrException.ErrorCode.BAD_REQUEST, "Unable to locate core " + coreName);
+            }
 
-      final String indexDirPath = core.getIndexDir();
-      final IndexDeletionPolicyWrapper delPol = core.getDeletionPolicy();
-      final IndexCommit ic = delPol.getAndSaveLatestCommit();
-      try {
-        if (null == ic) {
-          throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST,
-              "No index commits to snapshot in core " + coreName);
-        }
-        final SolrSnapshotMetaDataManager mgr = core.getSnapshotMetaDataManager();
-        mgr.snapshot(snapshotName, indexDirPath, ic.getGeneration());
+            final String indexDirPath = core.getIndexDir();
+            final IndexDeletionPolicyWrapper delPol = core.getDeletionPolicy();
+            final IndexCommit ic = delPol.getAndSaveLatestCommit();
+            try {
+              if (null == ic) {
+                throw new SolrException(
+                    SolrException.ErrorCode.BAD_REQUEST,
+                    "No index commits to snapshot in core " + coreName);
+              }
+              final SolrSnapshotMetaDataManager mgr = core.getSnapshotMetaDataManager();
+              mgr.snapshot(snapshotName, indexDirPath, ic.getGeneration());
 
-        response.core = core.getName();
-        response.commitName = snapshotName;
-        response.indexDirPath = indexDirPath;
-        response.generation = ic.getGeneration();
-        response.files = ic.getFileNames();
-      } finally {
-        delPol.releaseCommitPoint(ic);
-      }
-    }
+              response.core = core.getName();
+              response.commitName = snapshotName;
+              response.indexDirPath = indexDirPath;
+              response.generation = ic.getGeneration();
+              response.files = ic.getFileNames();
+            } catch (IOException e) {
+              throw new CoreAdminAPIBaseException(e);
+            } finally {
+              delPol.releaseCommitPoint(ic);
+            }
+          }
 
-    return response;
+          return response;
+        });
   }
 
   public static class CreateSnapshotResponse extends SolrJerseyResponse {
@@ -133,33 +146,43 @@ public class CoreSnapshotAPI extends JerseyResource {
               description = "The name of the core for which to retrieve snapshots.",
               required = true)
           @PathParam("coreName")
-          String coreName) {
+          String coreName,
+      @Parameter(description = "The id to associate with the async task.") @QueryParam("async")
+          String taskId)
+      throws Exception {
     final ListSnapshotsResponse response = instantiateJerseyResponse(ListSnapshotsResponse.class);
 
-    try (SolrCore core = coreContainer.getCore(coreName)) {
-      if (core == null) {
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST, "Unable to locate core " + coreName);
-      }
+    return handle(
+        response,
+        coreName,
+        taskId,
+        "listSnapshots",
+        () -> {
+          try (SolrCore core = coreContainer.getCore(coreName)) {
+            if (core == null) {
+              throw new SolrException(
+                  SolrException.ErrorCode.BAD_REQUEST, "Unable to locate core " + coreName);
+            }
 
-      SolrSnapshotMetaDataManager mgr = core.getSnapshotMetaDataManager();
+            SolrSnapshotMetaDataManager mgr = core.getSnapshotMetaDataManager();
 
-      final Map<String, SnapshotInformation> result = new HashMap<>();
-      for (String name : mgr.listSnapshots()) {
-        Optional<SolrSnapshotMetaDataManager.SnapshotMetaData> metadata =
-            mgr.getSnapshotMetaData(name);
-        if (metadata.isPresent()) {
-          final SnapshotInformation snapshotInformation =
-              new SnapshotInformation(
-                  metadata.get().getGenerationNumber(), metadata.get().getIndexDirPath());
-          result.put(name, snapshotInformation);
-        }
-      }
+            final Map<String, SnapshotInformation> result = new HashMap<>();
+            for (String name : mgr.listSnapshots()) {
+              Optional<SolrSnapshotMetaDataManager.SnapshotMetaData> metadata =
+                  mgr.getSnapshotMetaData(name);
+              if (metadata.isPresent()) {
+                final SnapshotInformation snapshotInformation =
+                    new SnapshotInformation(
+                        metadata.get().getGenerationNumber(), metadata.get().getIndexDirPath());
+                result.put(name, snapshotInformation);
+              }
+            }
 
-      response.snapshots = result;
-    }
+            response.snapshots = result;
+          }
 
-    return response;
+          return response;
+        });
   }
 
   public static class ListSnapshotsResponse extends SolrJerseyResponse {
@@ -195,27 +218,41 @@ public class CoreSnapshotAPI extends JerseyResource {
           String coreName,
       @Parameter(description = "The name of the core snapshot to delete.", required = true)
           @PathParam("snapshotName")
-          String snapshotName)
+          String snapshotName,
+      @Parameter(description = "The id to associate with the async task.") @QueryParam("async")
+          String taskId)
       throws Exception {
     final DeleteSnapshotResponse response = instantiateJerseyResponse(DeleteSnapshotResponse.class);
 
-    final SolrCore core = coreContainer.getCore(coreName);
-    if (core == null) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST, "Unable to locate core " + coreName);
-    }
+    return handle(
+        response,
+        coreName,
+        taskId,
+        "deleteSnapshot",
+        () -> {
+          final SolrCore core = coreContainer.getCore(coreName);
+          if (core == null) {
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST, "Unable to locate core " + coreName);
+          }
 
-    try {
-      core.deleteNamedSnapshot(snapshotName);
-      // Ideally we shouldn't need this. This is added since the RPC logic in
-      // OverseerCollectionMessageHandler can not provide the coreName as part of the result.
-      response.coreName = coreName;
-      response.commitName = snapshotName;
-    } finally {
-      core.close();
-    }
+          try {
+            try {
+              core.deleteNamedSnapshot(snapshotName);
+            } catch (IOException e) {
+              throw new CoreAdminAPIBaseException(e);
+            }
 
-    return response;
+            // Ideally we shouldn't need this. This is added since the RPC logic in
+            // OverseerCollectionMessageHandler can not provide the coreName as part of the result.
+            response.coreName = coreName;
+            response.commitName = snapshotName;
+          } finally {
+            core.close();
+          }
+
+          return response;
+        });
   }
 
   public static class DeleteSnapshotResponse extends SolrJerseyResponse {

@@ -31,10 +31,10 @@ class CreateSnapshotOp implements CoreAdminHandler.CoreAdminOp {
     final String commitName = params.required().get(CoreAdminParams.COMMIT_NAME);
 
     final CoreContainer coreContainer = it.handler.getCoreContainer();
-    final CoreSnapshotAPI coreSnapshotAPI = new CoreSnapshotAPI(coreContainer);
+    final CoreSnapshotAPI coreSnapshotAPI = new CoreSnapshotAPI(it.req, it.rsp, coreContainer);
 
     final CoreSnapshotAPI.CreateSnapshotResponse response =
-        coreSnapshotAPI.createSnapshot(coreName, commitName);
+        coreSnapshotAPI.createSnapshot(coreName, commitName, null);
 
     V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, response);
   }
