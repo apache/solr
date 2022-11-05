@@ -289,6 +289,20 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           "//result/doc[1]/str[@name='id'][.='2']",
           "//result/doc[1]/bool[@name='[elevated]'][.='true']");
 
+      // we can use filter() syntax inside fq's that are tagged for exclusion
+      assertQ(
+          "",
+          req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "{!tag=test1}+filter(id:10) +filter(id:11)",
+              CommonParams.FQ, "{!tag=test2}filter(str_s:b)",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test1"),
+          "//*[@numFound='1']",
+          "//result/doc[1]/str[@name='id'][.='2']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']");
+
       // the next few assertions confirm that filter exclusion only applies to elevated documents;
       // if we search for MMMM we should get one match; no documents are elevated for this query
       assertQ(
