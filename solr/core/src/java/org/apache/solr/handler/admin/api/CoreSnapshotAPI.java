@@ -131,7 +131,7 @@ public class CoreSnapshotAPI extends CoreAdminAPIBase {
 
     @Schema(description = "The generation value for the created snapshot.")
     @JsonProperty(SolrSnapshotManager.GENERATION_NUM)
-    public long generation;
+    public Long generation;
 
     @Schema(description = "The list of index filenames contained within the created snapshot.")
     @JsonProperty(SolrSnapshotManager.FILE_LIST)

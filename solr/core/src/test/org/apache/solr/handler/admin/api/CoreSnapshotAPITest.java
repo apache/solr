@@ -73,7 +73,7 @@ public class CoreSnapshotAPITest extends SolrTestCaseJ4 {
     assertEquals(coreName, response.core);
     assertEquals("my-new-snapshot", response.commitName);
     assertNotNull(response.indexDirPath);
-    assertEquals(1, response.generation);
+    assertEquals(Long.valueOf(1L), response.generation);
     assertFalse(response.files.isEmpty());
   }
 
