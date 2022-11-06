@@ -16,11 +16,14 @@
  */
 package org.apache.solr.handler.admin.api;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -37,6 +40,7 @@ public class CoreSnapshotAPITest extends SolrTestCaseJ4 {
   }
 
   @Before
+  @Override
   public void setUp() throws Exception {
     super.setUp();
 
@@ -45,6 +49,32 @@ public class CoreSnapshotAPITest extends SolrTestCaseJ4 {
     CoreContainer coreContainer = h.getCoreContainer();
 
     coreSnapshotAPI = new CoreSnapshotAPI(solrQueryRequest, solrQueryResponse, coreContainer);
+  }
+
+  private List<String> snapshotsToCleanup = new ArrayList<>();
+
+  @After
+  public void deleteSnapshots() throws Exception {
+    for (String snapshotName : snapshotsToCleanup) {
+      coreSnapshotAPI.deleteSnapshot(coreName, snapshotName, null);
+    }
+
+    snapshotsToCleanup.clear();
+  }
+
+  @Test
+  public void testCreateSnapshotReturnsValidResponse() throws Exception {
+    final String snapshotName = "my-new-snapshot";
+
+    final CoreSnapshotAPI.CreateSnapshotResponse response =
+        coreSnapshotAPI.createSnapshot(coreName, snapshotName, null);
+    snapshotsToCleanup.add(snapshotName);
+
+    assertEquals(coreName, response.core);
+    assertEquals("my-new-snapshot", response.commitName);
+    assertNotNull(response.indexDirPath);
+    assertEquals(1, response.generation);
+    assertFalse(response.files.isEmpty());
   }
 
   @Test
@@ -64,6 +94,22 @@ public class CoreSnapshotAPITest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testListSnapshotsReturnsValidResponse() throws Exception {
+    final String snapshotNameBase = "my-new-snapshot-";
+
+    for (int i = 0; i < 5; i++) {
+      final String snapshotName = snapshotNameBase + i;
+      coreSnapshotAPI.createSnapshot(coreName, snapshotName, null);
+      snapshotsToCleanup.add(snapshotName);
+    }
+
+    final CoreSnapshotAPI.ListSnapshotsResponse response =
+        coreSnapshotAPI.listSnapshots(coreName, null);
+
+    assertEquals(5, response.snapshots.size());
+  }
+
+  @Test
   public void testReportsErrorWhenListingSnapshotsForNonexistentCore() {
     final String nonExistentCoreName = "non-existent";
 
@@ -77,6 +123,24 @@ public class CoreSnapshotAPITest extends SolrTestCaseJ4 {
     assertTrue(
         "Exception message differed from expected: " + solrException.getMessage(),
         solrException.getMessage().contains("Unable to locate core " + nonExistentCoreName));
+  }
+
+  @Test
+  public void testDeleteSnapshotReturnsValidResponse() throws Exception {
+    final String snapshotName = "my-new-snapshot";
+
+    coreSnapshotAPI.createSnapshot(coreName, snapshotName, null);
+
+    final CoreSnapshotAPI.DeleteSnapshotResponse deleteResponse =
+        coreSnapshotAPI.deleteSnapshot(coreName, snapshotName, null);
+
+    assertEquals(coreName, deleteResponse.coreName);
+    assertEquals(snapshotName, deleteResponse.commitName);
+
+    final CoreSnapshotAPI.ListSnapshotsResponse response =
+        coreSnapshotAPI.listSnapshots(coreName, null);
+
+    assertEquals(0, response.snapshots.size());
   }
 
   @Test
