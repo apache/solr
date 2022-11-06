@@ -56,13 +56,16 @@ Improvements
   cause.  This capability is now also present on Windows.  Before, with bin/solr but not
   bin/solr.cmd, Solr would execute a script that killed the Solr pid, leaving a very small time
   window where Solr would continue to execute in an unpredictable state. (Shawn Heisey, Kevin Risden)
-  
+
 * SOLR-15478: A v2 equivalent of CLUSTERSTATUS command is now available at `GET /api/cluster`. Collection listing,
   previously at this path, can still be accessed at `GET /api/collections`. (Joshua Ouma via Jason Gerlowski)
 
+* SOLR-13626: Document the SystemInfoHandler in the Ref Guide.  (Tony Cook via Eric Pugh)
+
 Optimizations
 ---------------------
-(No changes)
+
+* SOLR-16515: Remove synchronized access to cachedOrdMaps in SlowCompositeReaderWrapper (Dennis Berger, Torsten Bøgh Köster, Marco Petris)
 
 Bug Fixes
 ---------------------
@@ -84,11 +87,9 @@ Bug Fixes
 
 * SOLR-10918: Fix IntPointField hashing for HLL (Houston Putman)
 
-* SOLR-16274: HEAD request for managed resource returns 500 Server Error (Kevin Risden)
-
-* SOLR-16502: Multiple CopyField should not limit to first maxChars (Fredrik Rodland, Kevin Risden)
-
 * SOLR-16155: DocumentBuilder should not include field values in error messages (janhoy)
+
+* SOLR-16274: HEAD request for managed resource returns 500 Server Error (Kevin Risden)
 
 Build
 ---------------------
@@ -110,6 +111,8 @@ Other Changes
 * SOLR-16443: Upgrade Jackson bom to 2.13.4.20221013 (Kevin Risden)
 
 * SOLR-16467: Upgrade semver4j to 2.2.0 to fix failures with some locales (Kevin Risden)
+
+* SOLR-15718: Remove backcompat feature solr.useUnsafeOverseerResponse (janhoy)
 
 ==================  9.1.0 ==================
 
@@ -283,6 +286,8 @@ Bug Fixes
 * SOLR-16416: OverseerPrioritizer now runs after all handlers are registered, and retries on failures. (Houston Putman)
 
 * SOLR-14679: Fix continuously growing TLOGs on TLOG replicas (Viktor Molnár via Houston Putman)
+
+* SOLR-16502: Multiple CopyField should not limit to first maxChars (Fredrik Rodland, Kevin Risden)
 
 Other Changes
 ---------------------
