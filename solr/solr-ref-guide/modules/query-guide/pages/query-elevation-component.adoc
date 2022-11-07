@@ -248,4 +248,3 @@ q=mainquery&fq=status:public&fq={!tag=t1,t2}a:b&fq={!tag=t3}c:d&fq={!tag=t4}e:f&
 
 When a filter is tagged for exclusion, it is not ignored completely; rather it is modified so that the elevated documents can pass through.
 Documents that are not elevated are still subject to the filter.
-This feature may have a performance impact when filter caching is enabled and the modified filters are not found in the cache.

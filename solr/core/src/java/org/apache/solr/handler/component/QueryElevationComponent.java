@@ -79,6 +79,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceNotFoundException;
+import org.apache.solr.query.FilterQuery;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.ElevatedMarkerFactory;
 import org.apache.solr.response.transform.ExcludedMarkerFactory;
@@ -602,40 +603,70 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
     for (Query filter : filters) {
 
+      // filters that weren't tagged for exclusion are left unchanged
       if (!excludeSet.contains(filter)) {
         updatedFilters.add(filter);
         continue;
       }
 
-      // collapse filter is a special case that cannot be included as a clause in a BooleanQuery
+      // if a collapse filter was tagged for exclusion, throw an Exception;
+      // the desired semantics of tagging a collapse filter this way is unclear;
+      // furthermore, CollapsingPostFilter is a special case that
+      // cannot be included as a clause in a BooleanQuery;
       // its createWeight() method would throw an UnsupportedOperationException when called by the
-      // BooleanQuery's
-      // own createWeight()
+      // BooleanQuery's own createWeight()
       if (filter instanceof CollapsingQParserPlugin.CollapsingPostFilter) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST, "collapse filter cannot be tagged for exclusion");
       }
 
-      // we're looking at a filter that has been tagged for exclusion
-      // transform it into a boolean OR of the original filter with the "include query" matching the
+      // we're looking at a filter that has been tagged for exclusion;
+      // first, figure out whether it avoids the cache;
+      // if the original filter had the Local Param "cache" and/or "cost", it will be an
+      // ExtendedQuery; unless it specifically had cache=false, it's cacheable
+      boolean avoidCache =
+          (filter instanceof ExtendedQuery) && !((ExtendedQuery) filter).getCache();
+
+      // transform the filter into a boolean OR of the original filter with the "include query"
+      // matching the
       // elevated docs
       BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
-      queryBuilder.add(filter, BooleanClause.Occur.SHOULD);
+      if (avoidCache || filter instanceof FilterQuery) {
+        // if the original filter avoids the cache, we add it to the BooleanQuery as-is;
+        // we do the same if the filter is _already_ a FilterQuery -- there's no need to wrap it in
+        // another;
+        // note that FilterQuery.getCache() returns false, so in this scenario, avoidCache will
+        // be true and the instanceof check is not necessary; however, it is left in place for
+        // clarity and as a
+        // failsafe in case the behavior of FilterQuery.getCache() should ever change
+        queryBuilder.add(filter, BooleanClause.Occur.SHOULD);
+      } else {
+        // the original filter is cacheable and not already a FilterQuery;
+        // wrap it in a FilterQuery so that it always consults the
+        // filter cache even though it will be represented as a clause within a larger non-caching
+        // BooleanQuery
+        queryBuilder.add(new FilterQuery(filter), BooleanClause.Occur.SHOULD);
+      }
       queryBuilder.add(elevation.includeQuery, BooleanClause.Occur.SHOULD);
       BooleanQuery updatedFilter = queryBuilder.build();
 
-      if (!(filter instanceof ExtendedQuery)) {
-        updatedFilters.add(updatedFilter);
-      } else {
-        // if the original filter had the Local Param "cache" and/or "cost", it will be an
-        // ExtendedQuery;
-        // in this case, the updated filter should be wrapped with the same cache and cost settings
-        ExtendedQuery eq = (ExtendedQuery) filter;
-        WrappedQuery wrappedUpdatedFilter = new WrappedQuery(updatedFilter);
-        wrappedUpdatedFilter.setCache(eq.getCache());
-        wrappedUpdatedFilter.setCost(eq.getCost());
-        updatedFilters.add(wrappedUpdatedFilter);
+      // we don't want to cache the BooleanQuery that we've built from the original filter and the
+      // elevated doc ids;
+      // the first clause of the BooleanQuery will be a FilterQuery if the original filter was
+      // cacheable, and
+      // FilterQueries always consult the cache; the second clause is a set of doc ids that should
+      // be fast on its own
+      WrappedQuery wrappedUpdatedFilter = new WrappedQuery(updatedFilter);
+      wrappedUpdatedFilter.setCache(false);
+
+      // if the original filter is an ExtendedQuery, it has a cost; copy that cost to the outer
+      // WrappedQuery
+      // TODO: is this necessary?
+      if (filter instanceof ExtendedQuery) {
+        wrappedUpdatedFilter.setCost(((ExtendedQuery) filter).getCost());
       }
+
+      updatedFilters.add(wrappedUpdatedFilter);
     }
 
     rb.setFilters(updatedFilters);
@@ -651,7 +682,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     Map<?, ?> tagMap = (Map<?, ?>) rb.req.getContext().get("tags");
 
     if (tagMap == null || tagMap.isEmpty() || desiredTags == null || desiredTags.isEmpty()) {
-      Collections.emptySet();
+      return Collections.emptySet();
     }
 
     Set<Query> taggedQueries = Collections.newSetFromMap(new IdentityHashMap<>());
