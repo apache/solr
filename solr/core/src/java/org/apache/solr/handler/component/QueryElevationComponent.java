@@ -659,9 +659,10 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       WrappedQuery wrappedUpdatedFilter = new WrappedQuery(updatedFilter);
       wrappedUpdatedFilter.setCache(false);
 
-      // if the original filter is an ExtendedQuery, it has a cost; copy that cost to the outer
-      // WrappedQuery
-      // TODO: is this necessary?
+      // if the original filter is an ExtendedQuery, it may have a user-provided cost;
+      // this cost would be ignored for nested queries so we copy it to the outer WrappedQuery;
+      // this allows it serve as a tiebreaker for filters that produce the same internal cost
+      // in the case where the user-provided cost is >= 100
       if (filter instanceof ExtendedQuery) {
         wrappedUpdatedFilter.setCost(((ExtendedQuery) filter).getCost());
       }
