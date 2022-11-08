@@ -39,7 +39,8 @@ Improvements
 
 Optimizations
 ---------------------
-(No changes)
+
+* SOLR-16515: Remove synchronized access to cachedOrdMaps in SlowCompositeReaderWrapper (Dennis Berger, Torsten Bøgh Köster, Marco Petris)
 
 Bug Fixes
 ---------------------
@@ -258,6 +259,8 @@ Bug Fixes
 * SOLR-14679: Fix continuously growing TLOGs on TLOG replicas (Viktor Molnár via Houston Putman)
 
 * SOLR-16502: Multiple CopyField should not limit to first maxChars (Fredrik Rodland, Kevin Risden)
+
+* SOLR-16527: RuleBasedAuthorizationPluginBase NPE (Alex Deparvu)
 
 Other Changes
 ---------------------
