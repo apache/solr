@@ -53,7 +53,7 @@ import org.apache.solr.response.SolrQueryResponse;
  *
  * <p>This API is analogous to the v1 /admin/collections?action=REPLACENODE command.
  */
-@Path("cluster/nodes/{sourceNodeName}/commands/replace/")
+@Path("cluster/nodes/{sourceNodeName}/replace/")
 public class ReplaceNodeAPI extends AdminAPIBase {
 
   @Inject
