@@ -95,7 +95,7 @@ class SegmentTerminateEarlyTestState {
 
   void queryTimestampDescending(CloudSolrClient cloudSolrClient) throws Exception {
     TestSegmentSorting.assertFalse(maxTimestampDocKeys.isEmpty());
-    TestSegmentSorting.assertTrue("numDocs=" + numDocs + " is not even", (numDocs % 2) == 0);
+    TestSegmentSorting.assertEquals("numDocs=" + numDocs + " is not even", 0, (numDocs % 2));
     final Long oddFieldValue = (long) (maxTimestampDocKeys.iterator().next() % 2);
     final SolrQuery query = new SolrQuery(ODD_FIELD + ":" + oddFieldValue);
     query.setSort(TIMESTAMP_FIELD, SolrQuery.ORDER.desc);
@@ -132,7 +132,7 @@ class SegmentTerminateEarlyTestState {
   void queryTimestampDescendingSegmentTerminateEarlyYes(
       CloudSolrClient cloudSolrClient, boolean appendKeyDescendingToSort) throws Exception {
     TestSegmentSorting.assertFalse(maxTimestampDocKeys.isEmpty());
-    TestSegmentSorting.assertTrue("numDocs=" + numDocs + " is not even", (numDocs % 2) == 0);
+    TestSegmentSorting.assertEquals("numDocs=" + numDocs + " is not even", 0, (numDocs % 2));
     final Long oddFieldValue = (long) (maxTimestampDocKeys.iterator().next() % 2);
     final SolrQuery query = new SolrQuery(ODD_FIELD + ":" + oddFieldValue);
     query.setSort(TIMESTAMP_FIELD, SolrQuery.ORDER.desc);
@@ -171,11 +171,11 @@ class SegmentTerminateEarlyTestState {
         "responseHeader.segmentTerminatedEarly missing in " + rsp.getResponseHeader(),
         rsp.getResponseHeader()
             .get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY));
-    TestSegmentSorting.assertTrue(
+    TestSegmentSorting.assertEquals(
         "responseHeader.segmentTerminatedEarly missing/false in " + rsp.getResponseHeader(),
-        Boolean.TRUE.equals(
-            rsp.getResponseHeader()
-                .get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY)));
+        Boolean.TRUE,
+        rsp.getResponseHeader()
+            .get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY));
     // check shards info
     final Object shardsInfo = rsp.getResponse().get(ShardParams.SHARDS_INFO);
     if (!Boolean.TRUE.equals(shardsInfoWanted)) {
@@ -202,7 +202,7 @@ class SegmentTerminateEarlyTestState {
   void queryTimestampDescendingSegmentTerminateEarlyNo(
       CloudSolrClient cloudSolrClient, boolean appendKeyDescendingToSort) throws Exception {
     TestSegmentSorting.assertFalse(maxTimestampDocKeys.isEmpty());
-    TestSegmentSorting.assertTrue("numDocs=" + numDocs + " is not even", (numDocs % 2) == 0);
+    TestSegmentSorting.assertEquals("numDocs=" + numDocs + " is not even", 0, (numDocs % 2));
     final Long oddFieldValue = (long) (maxTimestampDocKeys.iterator().next() % 2);
     final SolrQuery query = new SolrQuery(ODD_FIELD + ":" + oddFieldValue);
     query.setSort(TIMESTAMP_FIELD, SolrQuery.ORDER.desc);
@@ -239,11 +239,11 @@ class SegmentTerminateEarlyTestState {
         "responseHeader.segmentTerminatedEarly present in " + rsp.getResponseHeader(),
         rsp.getResponseHeader()
             .get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY));
-    TestSegmentSorting.assertFalse(
+    TestSegmentSorting.assertNotEquals(
         "responseHeader.segmentTerminatedEarly present/true in " + rsp.getResponseHeader(),
-        Boolean.TRUE.equals(
-            rsp.getResponseHeader()
-                .get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY)));
+        Boolean.TRUE,
+        rsp.getResponseHeader()
+            .get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY));
     // check shards info
     final Object shardsInfo = rsp.getResponse().get(ShardParams.SHARDS_INFO);
     if (!Boolean.TRUE.equals(shardsInfoWanted)) {
@@ -268,7 +268,7 @@ class SegmentTerminateEarlyTestState {
   void queryTimestampDescendingSegmentTerminateEarlyYesGrouped(
       CloudSolrClient cloudSolrClient, boolean appendKeyDescendingToSort) throws Exception {
     TestSegmentSorting.assertFalse(maxTimestampDocKeys.isEmpty());
-    TestSegmentSorting.assertTrue("numDocs=" + numDocs + " is not even", (numDocs % 2) == 0);
+    TestSegmentSorting.assertEquals("numDocs=" + numDocs + " is not even", 0, (numDocs % 2));
     final Long oddFieldValue = (long) (maxTimestampDocKeys.iterator().next() % 2);
     final SolrQuery query = new SolrQuery(ODD_FIELD + ":" + oddFieldValue);
     query.setSort(TIMESTAMP_FIELD, SolrQuery.ORDER.desc);
@@ -276,7 +276,7 @@ class SegmentTerminateEarlyTestState {
     query.setFields(KEY_FIELD, ODD_FIELD, TIMESTAMP_FIELD);
     query.setRows(1);
     query.set(CommonParams.SEGMENT_TERMINATE_EARLY, true);
-    TestSegmentSorting.assertTrue("numDocs=" + numDocs + " is not quad-able", (numDocs % 4) == 0);
+    TestSegmentSorting.assertEquals("numDocs=" + numDocs + " is not quad-able", 0, (numDocs % 4));
     query.add("group.field", QUAD_FIELD);
     query.set("group", true);
     final QueryResponse rsp = cloudSolrClient.query(query);
@@ -303,17 +303,17 @@ class SegmentTerminateEarlyTestState {
     }
     // check segmentTerminatedEarly flag
     // at present segmentTerminateEarly cannot be used with grouped queries
-    TestSegmentSorting.assertFalse(
+    TestSegmentSorting.assertNotEquals(
         "responseHeader.segmentTerminatedEarly present/true in " + rsp.getResponseHeader(),
-        Boolean.TRUE.equals(
-            rsp.getResponseHeader()
-                .get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY)));
+        Boolean.TRUE,
+        rsp.getResponseHeader()
+            .get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY));
   }
 
   void queryTimestampAscendingSegmentTerminateEarlyYes(
       CloudSolrClient cloudSolrClient, boolean appendKeyDescendingToSort) throws Exception {
     TestSegmentSorting.assertFalse(minTimestampDocKeys.isEmpty());
-    TestSegmentSorting.assertTrue("numDocs=" + numDocs + " is not even", (numDocs % 2) == 0);
+    TestSegmentSorting.assertEquals("numDocs=" + numDocs + " is not even", 0, (numDocs % 2));
     final Long oddFieldValue = (long) (minTimestampDocKeys.iterator().next() % 2);
     final SolrQuery query = new SolrQuery(ODD_FIELD + ":" + oddFieldValue);
     // a sort order that is _not_ compatible with the merge sort order
@@ -348,10 +348,10 @@ class SegmentTerminateEarlyTestState {
         rsp.getResponseHeader()
             .get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY));
     // segmentTerminateEarly cannot be used with incompatible sort orders
-    TestSegmentSorting.assertTrue(
+    TestSegmentSorting.assertEquals(
         "responseHeader.segmentTerminatedEarly missing/true in " + rsp.getResponseHeader(),
-        Boolean.FALSE.equals(
-            rsp.getResponseHeader()
-                .get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY)));
+        Boolean.FALSE,
+        rsp.getResponseHeader()
+            .get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY));
   }
 }

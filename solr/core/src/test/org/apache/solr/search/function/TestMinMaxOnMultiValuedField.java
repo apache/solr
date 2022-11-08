@@ -634,7 +634,7 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
       @SuppressWarnings({"rawtypes"}) final Comparable... vals) {
     clearIndex();
 
-    assert 0 < vals.length;
+    assertTrue(0 < vals.length);
     @SuppressWarnings({"rawtypes"})
     Comparable min = vals[0];
     @SuppressWarnings({"rawtypes"})

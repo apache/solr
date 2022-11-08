@@ -203,7 +203,7 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
       assertEquals(docs - 1, results.getResults().getNumFound());
     }
 
-    try (HttpSolrClient qclient = getHttpSolrClient(baseUrl + "/onenodecollection")) {
+    try (SolrClient qclient = getHttpSolrClient(baseUrl + "/onenodecollection")) {
       QueryResponse results = qclient.query(query);
       assertEquals(docs - 1, results.getResults().getNumFound());
 
@@ -421,7 +421,7 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
     checkShardConsistency(true, false);
 
     // try a backup command
-    try (final HttpSolrClient client =
+    try (final SolrClient client =
         getHttpSolrClient((String) shardToJetty.get(SHARD2).get(0).info.get("base_url"))) {
       final String backupName = "the_backup";
       ModifiableSolrParams params = new ModifiableSolrParams();

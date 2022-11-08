@@ -320,7 +320,7 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
     int numDocs = atLeast(300);
     // numDocs should be always > 256 so that in case of a codec that optimizes
     // for numbers of values <= 256, all storage layouts are tested
-    assert numDocs > 256;
+    assertTrue(numDocs > 256);
     for (int i = 0; i < numDocs; i++) {
       idField.setStringValue(Integer.toString(i));
       long value = longs.next();

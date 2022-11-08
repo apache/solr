@@ -258,9 +258,9 @@ public class PivotFacetFieldValueCollection implements Iterable<PivotFacetValue>
 
     if (dirty) {
       if (facetFieldSort.equals(FacetParams.FACET_SORT_COUNT)) {
-        Collections.sort(this.explicitValues, new PivotFacetCountComparator());
+        this.explicitValues.sort(new PivotFacetCountComparator());
       } else if (facetFieldSort.equals(FacetParams.FACET_SORT_INDEX)) {
-        Collections.sort(this.explicitValues, new PivotFacetValueComparator());
+        this.explicitValues.sort(new PivotFacetValueComparator());
       }
       dirty = false;
     }
@@ -314,6 +314,7 @@ public class PivotFacetFieldValueCollection implements Iterable<PivotFacetValue>
 
   /** Sorts {@link PivotFacetValue} instances by their count */
   public static class PivotFacetCountComparator implements Comparator<PivotFacetValue> {
+    @Override
     public int compare(PivotFacetValue left, PivotFacetValue right) {
       int countCmp = right.getCount() - left.getCount();
       return (0 != countCmp) ? countCmp : compareWithNullLast(left.getValue(), right.getValue());
@@ -322,6 +323,7 @@ public class PivotFacetFieldValueCollection implements Iterable<PivotFacetValue>
 
   /** Sorts {@link PivotFacetValue} instances by their value */
   public static class PivotFacetValueComparator implements Comparator<PivotFacetValue> {
+    @Override
     public int compare(PivotFacetValue left, PivotFacetValue right) {
       return compareWithNullLast(left.getValue(), right.getValue());
     }
@@ -345,6 +347,7 @@ public class PivotFacetFieldValueCollection implements Iterable<PivotFacetValue>
     return o1.compareTo(o2);
   }
 
+  @Override
   public String toString() {
     return String.format(Locale.ROOT, "Values:%s | Missing:%s ", explicitValues, missingValue);
   }

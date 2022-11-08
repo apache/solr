@@ -44,18 +44,22 @@ public class ContainerRequestUtils {
   // all requests.
   public static final SecurityContext DEFAULT_SECURITY_CONTEXT =
       new SecurityContext() {
+        @Override
         public boolean isUserInRole(String role) {
           return false;
         }
 
+        @Override
         public boolean isSecure() {
           return false;
         }
 
+        @Override
         public Principal getUserPrincipal() {
           return null;
         }
 
+        @Override
         public String getAuthenticationScheme() {
           return null;
         }

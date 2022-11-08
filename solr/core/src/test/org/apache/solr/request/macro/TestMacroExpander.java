@@ -108,7 +108,7 @@ public class TestMacroExpander extends SolrTestCase {
         "q=popularity:[ " + expandedLow + " TO " + expandedHigh + " ]",
         meSkipOnMissingParams.expand(testQuery));
     if (testParams.size() < 2) { // at least one of the two parameters missing
-      assertEquals(null, meFailOnMissingParams.expand(testQuery));
+      assertNull(meFailOnMissingParams.expand(testQuery));
     }
   }
 

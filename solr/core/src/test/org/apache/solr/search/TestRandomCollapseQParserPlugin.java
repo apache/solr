@@ -32,6 +32,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
+import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -189,14 +190,15 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
                 continue;
               }
 
-              assertFalse(
+              assertNotEquals(
                   groupHeadId
                       + " has null collapseVal but nullPolicy==ignore; "
                       + "mainP: "
                       + mainP
                       + ", collapseP: "
                       + collapseP,
-                  nullPolicy.equals(CollapsingQParserPlugin.NullPolicy.IGNORE.getName()));
+                  nullPolicy,
+                  CollapsingQParserPlugin.NullPolicy.IGNORE.getName());
             }
 
             // workaround for SOLR-8082...
@@ -219,9 +221,9 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
 
             final QueryResponse checkRsp = SOLR.query(SolrParams.wrapDefaults(checkP, mainP));
 
-            assertTrue(
+            assertFalse(
                 "not even 1 match for sanity check query? expected: " + doc,
-                !checkRsp.getResults().isEmpty());
+                checkRsp.getResults().isEmpty());
             final SolrDocument firstMatch = checkRsp.getResults().get(0);
             final Object firstMatchId = firstMatch.getFieldValue("id");
             assertEquals(
@@ -290,7 +292,7 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
 
     SolrException e = expectThrows(SolrException.class, () -> SOLR.query(solrParams));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    assertThat(e.getMessage(), containsString("Invalid nullPolicy: " + nullPolicy));
+    MatcherAssert.assertThat(e.getMessage(), containsString("Invalid nullPolicy: " + nullPolicy));
 
     // valid nullPolicy
     assertQ(req("q", "*:*", "fq", "{!collapse field=id nullPolicy=" + randomNullPolicy() + "}"));

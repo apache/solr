@@ -27,6 +27,7 @@ class BoolFieldWriter extends StringFieldWriter {
     super(field, fieldType);
   }
 
+  @Override
   protected void writeBytes(MapWriter.EntryWriter ew, BytesRef ref, FieldType fieldType)
       throws IOException {
     fieldType.indexedToReadable(ref, cref);

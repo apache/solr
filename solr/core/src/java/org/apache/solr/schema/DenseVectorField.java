@@ -17,8 +17,8 @@
 package org.apache.solr.schema;
 
 import static java.util.Optional.ofNullable;
-import static org.apache.lucene.codecs.lucene92.Lucene92HnswVectorsFormat.DEFAULT_BEAM_WIDTH;
-import static org.apache.lucene.codecs.lucene92.Lucene92HnswVectorsFormat.DEFAULT_MAX_CONN;
+import static org.apache.lucene.codecs.lucene94.Lucene94HnswVectorsFormat.DEFAULT_BEAM_WIDTH;
+import static org.apache.lucene.codecs.lucene94.Lucene94HnswVectorsFormat.DEFAULT_MAX_CONN;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -162,6 +162,7 @@ public class DenseVectorField extends FloatPointField {
     }
   }
 
+  @Override
   public List<IndexableField> createFields(SchemaField field, Object value) {
     ArrayList<IndexableField> fields = new ArrayList<>();
     float[] parsedVector;

@@ -1,4 +1,5 @@
 = Implicit Request Handlers
+:page-children: system-info-handler
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -121,7 +122,9 @@ Segments:: Return info on last commit generation Lucene index segments.
 |`solr/<collection>/admin/segments` |{solr-javadocs}/core/org/apache/solr/handler/admin/SegmentsInfoRequestHandler.html[SegmentsInfoRequestHandler] |`_ADMIN_SEGMENTS`
 |===
 
-System Settings:: Return server statistics and settings.
+System Info:: Return server statistics and settings.
++
+*Documentation*: xref:system-info-handler.adoc[]
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===

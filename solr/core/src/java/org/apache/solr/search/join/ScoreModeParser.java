@@ -24,19 +24,18 @@ import org.apache.lucene.search.join.ScoreMode;
 import org.apache.solr.search.SyntaxError;
 
 class ScoreModeParser {
-  @SuppressWarnings("serial")
-  private static final Map<String, ScoreMode> lowerAndCapitalCase =
-      Collections.unmodifiableMap(
-          new HashMap<>() {
-            {
-              for (ScoreMode s : ScoreMode.values()) {
-                put(s.name().toLowerCase(Locale.ROOT), s);
-                put(s.name(), s);
-              }
-            }
-          });
+  private static final Map<String, ScoreMode> lowerAndCapitalCase = getLowerAndCapitalCaseMap();
 
   private ScoreModeParser() {}
+
+  private static Map<String, ScoreMode> getLowerAndCapitalCaseMap() {
+    Map<String, ScoreMode> map = new HashMap<>(ScoreMode.values().length * 2);
+    for (ScoreMode s : ScoreMode.values()) {
+      map.put(s.name().toLowerCase(Locale.ROOT), s);
+      map.put(s.name(), s);
+    }
+    return Collections.unmodifiableMap(map);
+  }
 
   /**
    * recognizes as-is {@link ScoreMode} names, and lowercase as well, otherwise throws exception

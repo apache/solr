@@ -103,7 +103,7 @@ class BitVector implements Cloneable {
       return ((words[firstWordIndex] >>> bitRemainder) & registerMask);
     /* else -- register spans words */
     return (words[firstWordIndex] >>> bitRemainder) /*no need to mask since at top of word*/
-        | (words[secondWordIndex] << (BITS_PER_WORD - bitRemainder)) & registerMask;
+        | ((words[secondWordIndex] << (BITS_PER_WORD - bitRemainder)) & registerMask);
   }
 
   /**
@@ -222,7 +222,7 @@ class BitVector implements Cloneable {
     else /*register spans words*/
       registerValue =
           (words[firstWordIndex] >>> bitRemainder) /*no need to mask since at top of word*/
-              | (words[secondWordIndex] << (BITS_PER_WORD - bitRemainder)) & registerMask;
+              | ((words[secondWordIndex] << (BITS_PER_WORD - bitRemainder)) & registerMask);
 
     // determine which is the larger and update as necessary
     if (value > registerValue) {

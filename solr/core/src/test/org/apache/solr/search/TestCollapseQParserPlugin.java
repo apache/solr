@@ -34,6 +34,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.search.CollapsingQParserPlugin.GroupHeadSelector;
 import org.apache.solr.search.CollapsingQParserPlugin.GroupHeadSelectorType;
+import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -970,7 +971,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
                           "id")));
             });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
-    assertThat(ex.getMessage(), containsString("Can not use collapse with Grouping enabled"));
+    MatcherAssert.assertThat(
+        ex.getMessage(), containsString("Can not use collapse with Grouping enabled"));
 
     // delete the elevated docs, confirm collapsing still works
     assertU(delI("1"));
@@ -1137,21 +1139,21 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     s = GroupHeadSelector.build(params("max", "foo_s"));
     assertEquals(GroupHeadSelectorType.MAX, s.type);
     assertEquals("foo_s", s.selectorText);
-    assertFalse(s.equals(GroupHeadSelector.build(params("min", "foo_s", "other", "stuff"))));
+    assertNotEquals(s, GroupHeadSelector.build(params("min", "foo_s", "other", "stuff")));
 
     s = GroupHeadSelector.build(params());
     assertEquals(GroupHeadSelectorType.SCORE, s.type);
     assertNotNull(s.selectorText);
     assertEquals(GroupHeadSelector.build(params()), s);
-    assertFalse(s.equals(GroupHeadSelector.build(params("min", "BAR_s"))));
+    assertNotEquals(s, GroupHeadSelector.build(params("min", "BAR_s")));
 
     s = GroupHeadSelector.build(params("sort", "foo_s asc"));
     assertEquals(GroupHeadSelectorType.SORT, s.type);
     assertEquals("foo_s asc", s.selectorText);
     assertEquals(GroupHeadSelector.build(params("sort", "foo_s asc")), s);
-    assertFalse(s.equals(GroupHeadSelector.build(params("sort", "BAR_s asc"))));
-    assertFalse(s.equals(GroupHeadSelector.build(params("min", "BAR_s"))));
-    assertFalse(s.equals(GroupHeadSelector.build(params())));
+    assertNotEquals(s, GroupHeadSelector.build(params("sort", "BAR_s asc")));
+    assertNotEquals(s, GroupHeadSelector.build(params("min", "BAR_s")));
+    assertNotEquals(s, GroupHeadSelector.build(params()));
 
     assertEquals(
         GroupHeadSelector.build(params("sort", "foo_s asc")).hashCode(),

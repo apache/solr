@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.admin;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
@@ -29,10 +28,10 @@ import java.util.Properties;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -45,10 +44,7 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 
 public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
 
@@ -56,8 +52,6 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
   }
-
-  @Rule public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   public String getCoreName() {
     return this.getClass().getName() + "_sys_vars";
@@ -310,7 +304,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
         new JettySolrRunner(solrHomeDirectory.getAbsolutePath(), buildJettyConfig("/solr"));
     runner.start();
 
-    try (HttpSolrClient client =
+    try (SolrClient client =
         getHttpSolrClient(
             runner.getBaseUrl() + "/corex",
             DEFAULT_CONNECTION_TIMEOUT,
@@ -321,7 +315,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
       client.commit();
     }
 
-    try (HttpSolrClient client =
+    try (SolrClient client =
         getHttpSolrClient(
             runner.getBaseUrl().toString(),
             DEFAULT_CONNECTION_TIMEOUT,
@@ -336,7 +330,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     // 1> has the property persisted (SOLR-11783)
     // 2> is deleted after rename properly.
 
-    try (HttpSolrClient client =
+    try (SolrClient client =
         getHttpSolrClient(
             runner.getBaseUrl().toString(),
             DEFAULT_CONNECTION_TIMEOUT,
@@ -351,7 +345,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
           "Name should have been persisted!", "brand_new_core_name", props.getProperty("name"));
     }
 
-    try (HttpSolrClient client =
+    try (SolrClient client =
         getHttpSolrClient(
             runner.getBaseUrl().toString(),
             DEFAULT_CONNECTION_TIMEOUT,
@@ -383,7 +377,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
         new JettySolrRunner(solrHomeDirectory.getAbsolutePath(), buildJettyConfig("/solr"));
     runner.start();
 
-    try (HttpSolrClient client =
+    try (SolrClient client =
         getHttpSolrClient(
             runner.getBaseUrl() + "/corex",
             DEFAULT_CONNECTION_TIMEOUT,
@@ -394,7 +388,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
       client.commit();
     }
 
-    try (HttpSolrClient client =
+    try (SolrClient client =
         getHttpSolrClient(
             runner.getBaseUrl() + "/corex",
             DEFAULT_CONNECTION_TIMEOUT,
@@ -403,7 +397,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
       assertEquals(1, result.getResults().getNumFound());
     }
 
-    try (HttpSolrClient client =
+    try (SolrClient client =
         getHttpSolrClient(
             runner.getBaseUrl().toString(),
             DEFAULT_CONNECTION_TIMEOUT,
@@ -418,7 +412,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
         expectThrows(
             BaseHttpSolrClient.RemoteSolrException.class,
             () -> {
-              try (HttpSolrClient client =
+              try (SolrClient client =
                   getHttpSolrClient(
                       runner.getBaseUrl() + "/corex",
                       DEFAULT_CONNECTION_TIMEOUT,
@@ -444,7 +438,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
         new JettySolrRunner(solrHomeDirectory.getAbsolutePath(), buildJettyConfig("/solr"));
     runner.start();
 
-    try (HttpSolrClient client =
+    try (SolrClient client =
         getHttpSolrClient(
             runner.getBaseUrl() + "/corex",
             DEFAULT_CONNECTION_TIMEOUT,
@@ -456,7 +450,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     }
 
     Path dataDir = null;
-    try (HttpSolrClient client = getHttpSolrClient(runner.getBaseUrl().toString())) {
+    try (SolrClient client = getHttpSolrClient(runner.getBaseUrl().toString())) {
       CoreStatus status = CoreAdminRequest.getCoreStatus("corex", true, client);
       String dataDirectory = status.getDataDirectory();
       dataDir = Paths.get(dataDirectory);
@@ -468,7 +462,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     FileUtils.copyFile(
         new File(top, "bad-error-solrconfig.xml"), new File(subHome, "solrconfig.xml"));
 
-    try (HttpSolrClient client =
+    try (SolrClient client =
         getHttpSolrClient(
             runner.getBaseUrl().toString(),
             DEFAULT_CONNECTION_TIMEOUT,

@@ -1410,6 +1410,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       this.commitName = checkNotNull(CoreAdminParams.COMMIT_NAME, commitName);
     }
 
+    @Override
     public String getCollectionName() {
       return collection;
     }
@@ -1436,6 +1437,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       this.commitName = checkNotNull(CoreAdminParams.COMMIT_NAME, commitName);
     }
 
+    @Override
     public String getCollectionName() {
       return collection;
     }
@@ -1459,6 +1461,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       super(CollectionAction.LISTSNAPSHOTS, checkNotNull(CoreAdminParams.COLLECTION, collection));
     }
 
+    @Override
     public String getCollectionName() {
       return collection;
     }
@@ -3289,6 +3292,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       return this;
     }
 
+    @Override
     public String getCollection() {
       return collection;
     }

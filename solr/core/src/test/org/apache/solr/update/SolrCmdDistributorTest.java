@@ -49,9 +49,9 @@ import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.index.LogDocMergePolicyFactory;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.MockStreamingSolrClients.Exp;
-import org.apache.solr.update.SolrCmdDistributor.Error;
 import org.apache.solr.update.SolrCmdDistributor.ForwardNode;
 import org.apache.solr.update.SolrCmdDistributor.Node;
+import org.apache.solr.update.SolrCmdDistributor.SolrError;
 import org.apache.solr.update.SolrCmdDistributor.StdNode;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.LeaderRequestReplicationTracker;
@@ -70,7 +70,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     STANDARD
   };
 
-  private AtomicInteger id = new AtomicInteger();
+  private final AtomicInteger uniqueId = new AtomicInteger();
 
   @BeforeClass
   public static void beforeClass() {
@@ -158,7 +158,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     ModifiableSolrParams params = new ModifiableSolrParams();
     List<Node> nodes = new ArrayList<>();
     AddUpdateCommand cmd = new AddUpdateCommand(null);
-    List<Error> errors;
+    List<SolrError> errors;
     CommitUpdateCommand ccmd = new CommitUpdateCommand(null, false);
     long numFound;
     HttpSolrClient client;
@@ -175,7 +175,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       nodes.add(new StdNode(new ZkCoreNodeProps(nodeProps)));
 
       // add one doc to controlClient
-      cmd.solrDoc = sdoc("id", id.incrementAndGet());
+      cmd.solrDoc = sdoc("id", uniqueId.incrementAndGet());
       params = new ModifiableSolrParams();
 
       cmdDistrib.distribAdd(cmd, nodes, params);
@@ -201,12 +201,12 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     int id2;
     // add another 2 docs to control and 3 to client
     try (SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(updateShardHandler)) {
-      cmd.solrDoc = sdoc("id", id.incrementAndGet());
+      cmd.solrDoc = sdoc("id", uniqueId.incrementAndGet());
       params = new ModifiableSolrParams();
       params.set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
       cmdDistrib.distribAdd(cmd, nodes, params);
 
-      id2 = id.incrementAndGet();
+      id2 = uniqueId.incrementAndGet();
       AddUpdateCommand cmd2 = new AddUpdateCommand(null);
       cmd2.solrDoc = sdoc("id", id2);
 
@@ -215,7 +215,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       cmdDistrib.distribAdd(cmd2, nodes, params);
 
       AddUpdateCommand cmd3 = new AddUpdateCommand(null);
-      cmd3.solrDoc = sdoc("id", id.incrementAndGet());
+      cmd3.solrDoc = sdoc("id", uniqueId.incrementAndGet());
 
       params = new ModifiableSolrParams();
       params.set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
@@ -290,7 +290,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
           nodes.add(new StdNode(new ZkCoreNodeProps(nodeProps)));
         }
         AddUpdateCommand c = new AddUpdateCommand(null);
-        c.solrDoc = sdoc("id", id.incrementAndGet());
+        c.solrDoc = sdoc("id", uniqueId.incrementAndGet());
         if (nodes.size() > 0) {
           params = new ModifiableSolrParams();
           cmdDistrib.distribAdd(c, nodes, params);
@@ -397,7 +397,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       Node retryNode =
           new StdNode(new ZkCoreNodeProps(nodeProps), "collection1", "shard1", 5) {
             @Override
-            public boolean checkRetry(Error err) {
+            public boolean checkRetry(SolrError err) {
               streamingClients.setExp(null);
               retries.incrementAndGet();
               return super.checkRetry(err);
@@ -408,7 +408,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
 
       for (int i = 0; i < 5; i++) {
         AddUpdateCommand cmd = new AddUpdateCommand(null);
-        int currentId = id.incrementAndGet();
+        int currentId = uniqueId.incrementAndGet();
         cmd.solrDoc = sdoc("id", currentId);
         ModifiableSolrParams params = new ModifiableSolrParams();
         cmdDistrib.distribAdd(cmd, nodes, params);
@@ -462,7 +462,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
         nodes.add(
             new ForwardNode(new ZkCoreNodeProps(nodeProps), null, "collection1", "shard1", 5) {
               @Override
-              public boolean checkRetry(Error err) {
+              public boolean checkRetry(SolrError err) {
                 if (retries.incrementAndGet() >= 3) {
                   streamingClients.setExp(null);
                 }
@@ -473,7 +473,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
         nodes.add(
             new StdNode(new ZkCoreNodeProps(nodeProps), "collection1", "shard1", 5) {
               @Override
-              public boolean checkRetry(Error err) {
+              public boolean checkRetry(SolrError err) {
                 if (retries.incrementAndGet() >= 3) {
                   streamingClients.setExp(null);
                 }
@@ -483,7 +483,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       }
 
       AddUpdateCommand cmd = new AddUpdateCommand(null);
-      cmd.solrDoc = sdoc("id", id.incrementAndGet());
+      cmd.solrDoc = sdoc("id", uniqueId.incrementAndGet());
       ModifiableSolrParams params = new ModifiableSolrParams();
       RollupRequestReplicationTracker rollupReqTracker = new RollupRequestReplicationTracker();
       LeaderRequestReplicationTracker leaderReqTracker =
@@ -506,13 +506,13 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     try (SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(streamingClients, 0)) {
       streamingClients.setExp(Exp.CONNECT_EXCEPTION);
       ArrayList<Node> nodes = new ArrayList<>();
-      final HttpSolrClient solrclient1 = (HttpSolrClient) clients.get(0);
+      final HttpSolrClient solrClient1 = (HttpSolrClient) clients.get(0);
 
       final AtomicInteger retries = new AtomicInteger();
       ZkNodeProps nodeProps =
           new ZkNodeProps(
               ZkStateReader.BASE_URL_PROP,
-              solrclient1.getBaseURL(),
+              solrClient1.getBaseURL(),
               ZkStateReader.CORE_NAME_PROP,
               "");
       Node retryNode;
@@ -520,7 +520,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
         retryNode =
             new ForwardNode(new ZkCoreNodeProps(nodeProps), null, "collection1", "shard1", 6) {
               @Override
-              public boolean checkRetry(Error err) {
+              public boolean checkRetry(SolrError err) {
                 retries.incrementAndGet();
                 return super.checkRetry(err);
               }
@@ -529,7 +529,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
         retryNode =
             new StdNode(new ZkCoreNodeProps(nodeProps), "collection1", "shard1", 6) {
               @Override
-              public boolean checkRetry(Error err) {
+              public boolean checkRetry(SolrError err) {
                 retries.incrementAndGet();
                 return super.checkRetry(err);
               }
@@ -539,7 +539,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       nodes.add(retryNode);
 
       AddUpdateCommand cmd = new AddUpdateCommand(null);
-      cmd.solrDoc = sdoc("id", id.incrementAndGet());
+      cmd.solrDoc = sdoc("id", uniqueId.incrementAndGet());
       ModifiableSolrParams params = new ModifiableSolrParams();
 
       cmdDistrib.distribAdd(cmd, nodes, params);
@@ -552,7 +552,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   }
 
   private void testReqShouldRetryNoRetries() {
-    Error err = getError(new SocketException());
+    SolrError err = getError(new SocketException());
     SolrCmdDistributor.Req req =
         new SolrCmdDistributor.Req(
             null, new StdNode(null, "collection1", "shard1", 0), new UpdateRequest(), true);
@@ -560,7 +560,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   }
 
   private void testReqShouldRetryDBQ() {
-    Error err = getError(new SocketException());
+    SolrError err = getError(new SocketException());
     UpdateRequest dbqReq = new UpdateRequest();
     dbqReq.deleteByQuery("*:*");
     SolrCmdDistributor.Req req =
@@ -589,7 +589,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   }
 
   private void testReqShouldRetryMaxRetries() {
-    Error err = getError(new SocketException());
+    SolrError err = getError(new SocketException());
     SolrCmdDistributor.Req req =
         new SolrCmdDistributor.Req(
             null, new StdNode(null, "collection1", "shard1", 1), new UpdateRequest(), true);
@@ -599,7 +599,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   }
 
   private void testReqShouldRetryBadRequest() {
-    Error err = getError(new SolrException(SolrException.ErrorCode.BAD_REQUEST, "bad request"));
+    SolrError err = getError(new SolrException(SolrException.ErrorCode.BAD_REQUEST, "bad request"));
     SolrCmdDistributor.Req req =
         new SolrCmdDistributor.Req(
             null, new StdNode(null, "collection1", "shard1", 1), new UpdateRequest(), true);
@@ -607,15 +607,15 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   }
 
   private void testReqShouldRetryNotFound() {
-    Error err = getError(new SolrException(SolrException.ErrorCode.NOT_FOUND, "not found"));
+    SolrError err = getError(new SolrException(SolrException.ErrorCode.NOT_FOUND, "not found"));
     SolrCmdDistributor.Req req =
         new SolrCmdDistributor.Req(
             null, new StdNode(null, "collection1", "shard1", 1), new UpdateRequest(), true);
     assertTrue(req.shouldRetry(err));
   }
 
-  private Error getError(Exception e) {
-    Error err = new Error();
+  private SolrError getError(Exception e) {
+    SolrError err = new SolrError();
     err.e = e;
     if (e instanceof SolrException) {
       err.statusCode = ((SolrException) e).code();
@@ -644,7 +644,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
         retryNode =
             new ForwardNode(new ZkCoreNodeProps(nodeProps), null, "collection1", "shard1", 5) {
               @Override
-              public boolean checkRetry(Error err) {
+              public boolean checkRetry(SolrError err) {
                 streamingClients.setExp(null);
                 retries.incrementAndGet();
                 return super.checkRetry(err);
@@ -654,7 +654,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
         retryNode =
             new StdNode(new ZkCoreNodeProps(nodeProps), "collection1", "shard1", 5) {
               @Override
-              public boolean checkRetry(Error err) {
+              public boolean checkRetry(SolrError err) {
                 streamingClients.setExp(null);
                 retries.incrementAndGet();
                 return super.checkRetry(err);
@@ -665,7 +665,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       nodes.add(retryNode);
 
       AddUpdateCommand cmd = new AddUpdateCommand(null);
-      cmd.solrDoc = sdoc("id", id.incrementAndGet());
+      cmd.solrDoc = sdoc("id", uniqueId.incrementAndGet());
       ModifiableSolrParams params = new ModifiableSolrParams();
 
       CommitUpdateCommand ccmd = new CommitUpdateCommand(null, false);
@@ -705,7 +705,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
         retryNode =
             new ForwardNode(new ZkCoreNodeProps(nodeProps), null, "collection1", "shard1", 5) {
               @Override
-              public boolean checkRetry(Error err) {
+              public boolean checkRetry(SolrError err) {
                 retries.incrementAndGet();
                 return super.checkRetry(err);
               }
@@ -714,7 +714,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
         retryNode =
             new StdNode(new ZkCoreNodeProps(nodeProps), "collection1", "shard1", 5) {
               @Override
-              public boolean checkRetry(Error err) {
+              public boolean checkRetry(SolrError err) {
                 retries.incrementAndGet();
                 return super.checkRetry(err);
               }
@@ -723,7 +723,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       nodes.add(retryNode);
 
       AddUpdateCommand cmd = new AddUpdateCommand(null);
-      cmd.solrDoc = sdoc("id", id.incrementAndGet());
+      cmd.solrDoc = sdoc("id", uniqueId.incrementAndGet());
       ModifiableSolrParams params = new ModifiableSolrParams();
 
       CommitUpdateCommand ccmd = new CommitUpdateCommand(null, false);
@@ -764,7 +764,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       ForwardNode retryNode =
           new ForwardNode(new ZkCoreNodeProps(nodeProps), null, "collection1", "shard1", 5) {
             @Override
-            public boolean checkRetry(Error err) {
+            public boolean checkRetry(SolrError err) {
               retries.incrementAndGet();
               return super.checkRetry(err);
             }
@@ -773,7 +773,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       nodes.add(retryNode);
 
       AddUpdateCommand cmd = new AddUpdateCommand(null);
-      cmd.solrDoc = sdoc("id", id.incrementAndGet());
+      cmd.solrDoc = sdoc("id", uniqueId.incrementAndGet());
       ModifiableSolrParams params = new ModifiableSolrParams();
 
       CommitUpdateCommand ccmd = new CommitUpdateCommand(null, false);
@@ -812,7 +812,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       Node retryNode =
           new StdNode(new ZkCoreNodeProps(nodeProps), "collection1", "shard1", 5) {
             @Override
-            public boolean checkRetry(Error err) {
+            public boolean checkRetry(SolrError err) {
               retries.incrementAndGet();
               return super.checkRetry(err);
             }
@@ -821,7 +821,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       nodes.add(retryNode);
 
       AddUpdateCommand cmd = new AddUpdateCommand(null);
-      cmd.solrDoc = sdoc("id", id.incrementAndGet());
+      cmd.solrDoc = sdoc("id", uniqueId.incrementAndGet());
       ModifiableSolrParams params = new ModifiableSolrParams();
 
       cmdDistrib.distribAdd(cmd, nodes, params);
@@ -846,7 +846,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       ForwardNode retryNode =
           new ForwardNode(new ZkCoreNodeProps(nodeProps), null, "collection1", "shard1", 5) {
             @Override
-            public boolean checkRetry(Error err) {
+            public boolean checkRetry(SolrError err) {
               ZkNodeProps leaderProps =
                   new ZkNodeProps(
                       ZkStateReader.BASE_URL_PROP,
@@ -862,7 +862,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       nodes.add(retryNode);
 
       AddUpdateCommand cmd = new AddUpdateCommand(null);
-      cmd.solrDoc = sdoc("id", id.incrementAndGet());
+      cmd.solrDoc = sdoc("id", uniqueId.incrementAndGet());
       ModifiableSolrParams params = new ModifiableSolrParams();
 
       cmdDistrib.distribAdd(cmd, nodes, params);
@@ -936,7 +936,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
           nodes.add(node);
         }
         AddUpdateCommand c = new AddUpdateCommand(null);
-        c.solrDoc = sdoc("id", id.incrementAndGet());
+        c.solrDoc = sdoc("id", uniqueId.incrementAndGet());
         if (nodes.size() > 0) {
           params = new ModifiableSolrParams();
           cmdDistrib.distribAdd(c, nodes, params, false);

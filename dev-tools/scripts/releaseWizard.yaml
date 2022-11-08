@@ -242,8 +242,8 @@ groups:
     id: gpg
     title: GPG key id is configured
     description: |-
-      To sign the release you need to provide your GPG key ID. This must be
-      the same key ID that you have registered in your Apache account.
+      To sign the release you need to provide your GPG key ID/Fingerprint. This must be
+      the same key ID & Fingerprint that you have registered in your Apache account.
       The ID is the last 8 bytes of your key fingerprint, e.g. 0D8D0B93.
 
       * Make sure your gpg key is 4096 bits key or larger
@@ -460,13 +460,13 @@ groups:
         cmd: git checkout main
         tee: true
       - !Command
-        cmd: "{{ gradle_cmd }} setOfficialAntoraYaml -Prefguide.isBranchReleased=false"
-        tee: true
-      - !Command
         cmd: python3 -u dev-tools/scripts/addVersion.py {{ next_version }}
         tee: true
       - !Command
-        comment: Make sure the edits done by `addVersion.py` are ok, then push
+        cmd: "{{ gradle_cmd }} setOfficialAntoraYaml -Prefguide.isBranchReleased=false"
+        tee: true
+      - !Command
+        comment: Make sure the new antora.yaml and edits done by `addVersion.py` are ok, then push
         cmd: git add -u .  && git commit -m "Add next major version {{ next_version }}"  && git push
         logfile: commit-stable.log
     post_description: |
@@ -488,13 +488,13 @@ groups:
         cmd: git checkout {{ stable_branch }}
         tee: true
       - !Command
-        cmd: "{{ gradle_cmd }} setOfficialAntoraYaml -Prefguide.isBranchReleased=false"
-        tee: true
-      - !Command
         cmd: python3 -u dev-tools/scripts/addVersion.py {{ next_version }}
         tee: true
       - !Command
-        comment: Make sure the edits done by `addVersion.py` are ok, then push
+        cmd: "{{ gradle_cmd }} setOfficialAntoraYaml -Prefguide.isBranchReleased=false"
+        tee: true
+      - !Command
+        comment: Make sure the new antora.yaml and edits done by `addVersion.py` are ok, then push
         cmd: git add -u .  && git commit -m "Add next minor version {{ next_version }}"  && git push
         logfile: commit-stable.log
       - !Command
@@ -696,10 +696,25 @@ groups:
         cwd: .gradle/caches/modules-2
         stdout: true
   - !Todo
+    id: setup_gpg
+    title: Setup the gpg agent
+    depends:
+    - gpg
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: |-
+        In this step we will pre-set the passphrase so that the GPG Agent can cache it for use in the RC build.
+      commands:
+        - !Command
+          cmd: echo foo | gpg --detach-sign --use-agent --pinentry-mode loopback --local-user {{ gpg.gpg_fingerprint | default("<gpg_fingerprint>", True) }}
+          tee: false
+          shell: true
+          live: true
+  - !Todo
     id: build_rc
     title: Build the release candidate
     depends: 
-    - gpg
+    - setup_gpg
     - run_tests
     vars:
       logfile: '{{ [rc_folder, ''logs'', ''buildAndPushRelease.log''] | path_join }}'
@@ -734,8 +749,8 @@ groups:
         cmd: git pull --ff-only
         tee: true
       - !Command
-        cmd: python3 -u dev-tools/scripts/buildAndPushRelease.py {{ local_keys }}  --logfile {{ logfile }}  --push-local "{{ dist_file_path }}"  --rc-num {{ rc_number }}  --sign {{ gpg.gpg_fingerprint | default("<gpg_fingerprint>", True) }}{% if gpg.use_gradle %}  --sign-method-gradle{% endif %}{% if not gpg.prompt_pass %}  --gpg-pass-noprompt{% endif %}
-        comment: "Using {% if gpg.use_gradle %}gradle{% else %}gpg command{% endif %} for signing.{% if gpg.prompt_pass %} Remember to type your GPG pass-phrase at the prompt!{% endif %}"
+        cmd: python3 -u dev-tools/scripts/buildAndPushRelease.py {{ local_keys }}  --logfile {{ logfile }}  --push-local "{{ dist_file_path }}"  --rc-num {{ rc_number }}  --sign {{ gpg.gpg_fingerprint | default("<gpg_fingerprint>", True) }} --gpg-pass-noprompt
+        comment: "Using gpg command for signing."
         logfile: build_rc.log
         tee: true
   - !Todo
