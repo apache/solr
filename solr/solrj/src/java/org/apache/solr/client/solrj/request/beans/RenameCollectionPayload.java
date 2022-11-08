@@ -20,12 +20,10 @@ import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 
 public class RenameCollectionPayload implements ReflectMapWriter {
-    @JsonProperty
-    public String async;
+  @JsonProperty public String async;
 
-    @JsonProperty
-    public Boolean followAliases;
+  @JsonProperty public Boolean followAliases;
 
-    @JsonProperty(required = true)
-    public String to;
+  @JsonProperty(required = true)
+  public String to;
 }

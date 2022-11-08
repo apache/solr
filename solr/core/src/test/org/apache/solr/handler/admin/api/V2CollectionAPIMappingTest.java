@@ -17,21 +17,21 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.common.params.CollectionAdminParams.*;
+import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
+import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
+import static org.apache.solr.common.params.CollectionAdminParams.TARGET;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.apache.solr.common.params.CommonParams.*;
+import static org.apache.solr.common.params.CommonParams.ACTION;
+import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 
 import java.util.Map;
-
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.TestCollectionAPIs;
 import org.apache.solr.handler.admin.V2ApiMappingTest;
-
 import org.junit.Test;
 
 /**
@@ -50,7 +50,6 @@ import org.junit.Test;
  * are never expected in the same request.
  */
 public class V2CollectionAPIMappingTest extends V2ApiMappingTest<CollectionsHandler> {
-  RenameCollectionAPI req;
 
   @Override
   public void populateApiBag() {
@@ -89,20 +88,20 @@ public class V2CollectionAPIMappingTest extends V2ApiMappingTest<CollectionsHand
     assertEquals("shard2", v1Params.get(SHARD));
   }
 
-
   @Test
   public void testRenameCollectionAllParams() throws Exception {
-    final SolrParams v1Params = captureConvertedV1Params("/collections/collName/commands/rename", "POST",
+    final SolrParams v1Params =
+        captureConvertedV1Params(
+            "/collections/collName/rename",
+            "POST",
             "{\"to\": \"targetColl\", \"async\": \"requestTrackingId\", \"followAliases\": true}");
 
-//    assertEquals("rename", v1Params.get(ACTION));
-//    assertEquals("collName", v1Params.get(NAME));
-    assertEquals("targetColl",v1Params.get(TARGET));
+    assertEquals("rename", v1Params.get(ACTION));
+    assertEquals("collName", v1Params.get(NAME));
+    assertEquals("targetColl", v1Params.get(TARGET));
     assertEquals("requestTrackingId", v1Params.get(ASYNC));
     assertEquals(true, v1Params.getPrimitiveBool("followAliases"));
-
   }
-
 
   @Test
   public void testModifyCollectionAllProperties() throws Exception {
