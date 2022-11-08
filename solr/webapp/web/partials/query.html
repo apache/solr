@@ -267,7 +267,7 @@ limitations under the License.
           </select>
         </label>
 
-        <p class="clearfix"><a ng-click="showAdvanced=!showAdvanced">
+        <p class="clearfix"><a ng-show="val['hl']" ng-click="showAdvanced=!showAdvanced">
           <span id="add_advanced" ng-class="{open: showAdvanced}">Show advanced</span></a></p>
         <div ng-show="showAdvanced">
           <div class="fieldset" ng-show="val['hl.method']=='unified'">
