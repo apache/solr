@@ -32,7 +32,7 @@ import org.apache.solr.util.SolrJacksonAnnotationInspector;
 import java.util.Locale;
 
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.common.cloud.ZkStateReader.ALIASES;
+import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionAdminParams.TARGET;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.ACTION;
@@ -50,14 +50,13 @@ public class RenameCollectionAPI {
         this.collectionsHandler = collectionsHandler;
     }
 
-    public static final String RENAME_COLLECTION_CMD = "rename";
 
     private static final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .disable(MapperFeature.AUTO_DETECT_FIELDS);
 
     @EndPoint(
-            path = {"/collections/{collection}/command/rename"},
+            path = {"/collections/{collection}/commands/rename"},
             method = POST,
             permission = COLL_EDIT_PERM)
     public void renameCollection(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception{
@@ -76,7 +75,7 @@ public class RenameCollectionAPI {
                         v2Body.to,
                         ASYNC,
                         v2Body.async,
-                        ALIASES,
+                        FOLLOW_ALIASES,
                         v2Body.followAliases);
         collectionsHandler.handleRequestBody(req, rsp);
     }
