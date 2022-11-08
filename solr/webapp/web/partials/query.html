@@ -216,7 +216,7 @@ limitations under the License.
           <input type="text" ng-model="val['hl.simple.post']"  name="hl.simple.post" id="hl_simple_post" value="</em>">
         </div>
 
-        <div class="fieldset" ng-show="val['hl.method']!='original'">
+        <div class="fieldset" ng-show="val['hl.method']=='unified' || val['hl.method']=='fastVector'">
           <label for="hl_tag_pre">hl.tag.pre</label>
           <input type="text" ng-model="val['hl.tag.pre']" name="hl.tag.pre" id="hl_tag_pre" value="<em>">
 
@@ -273,7 +273,7 @@ limitations under the License.
           <div class="fieldset" ng-show="val['hl.method']=='unified'">
             <label for="hl_offsetSource" title="Choose hl.offsetSource">
               hl.offsetSource
-              <select ng-model="val['hl.offsetSource']" name="hl_offsetSource" id="hl_offsetSource">
+              <select ng-model="val['hl.offsetSource']" name="hl.offsetSource" id="hl_offsetSource">
                 <option ng-selected="selected" value=''>------</option>
                 <option value="ANALYSIS">ANALYSIS</option>
                 <option value="POSTINGS">POSTINGS</option>
