@@ -64,8 +64,7 @@ public class QueryUtilsTest extends SolrTestCaseJ4 {
 
         // the "tag map" will not be populated in the SolrQueryRequest's "context" until
         // the QParsers have been initialized; before such time, QueryUtils.getTaggedQueries will
-        // always return
-        // an empty set
+        // always return an empty set
         assertEquals(0, QueryUtils.getTaggedQueries(request, Set.of("t0")).size());
 
         // initialize QParsers and thereby populate the "tag map"
@@ -98,8 +97,7 @@ public class QueryUtilsTest extends SolrTestCaseJ4 {
         // there are two fq's tagged with t3 and having the same query "str_s:b"
         // these Queries are equal() but not ==
         // QueryUtils.getTaggedQueries returns a Set that uses reference equality, so it should have
-        // 2 elements,
-        // not 1
+        // 2 elements, not 1
         assertEquals(2, QueryUtils.getTaggedQueries(request, Set.of("t3")).size());
         Query[] queries =
             QueryUtils.getTaggedQueries(request, Set.of("t3")).toArray(new Query[] {});

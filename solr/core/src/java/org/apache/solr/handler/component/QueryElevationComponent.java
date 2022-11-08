@@ -626,8 +626,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
           (filter instanceof ExtendedQuery) && !((ExtendedQuery) filter).getCache();
 
       // transform the filter into a boolean OR of the original filter with the "include query"
-      // matching the
-      // elevated docs
+      // matching the elevated docs
       BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
       if (avoidCache || filter instanceof FilterQuery) {
         // if the original filter avoids the cache, we add it to the BooleanQuery as-is;
@@ -635,8 +634,8 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         // another;
         // note that FilterQuery.getCache() returns false, so in this scenario, avoidCache will
         // be true and the instanceof check is not necessary; however, it is left in place for
-        // clarity and as a
-        // failsafe in case the behavior of FilterQuery.getCache() should ever change
+        // clarity and as a failsafe in case the behavior of FilterQuery.getCache() should ever
+        // change
         queryBuilder.add(filter, BooleanClause.Occur.SHOULD);
       } else {
         // the original filter is cacheable and not already a FilterQuery;
@@ -651,9 +650,8 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       // we don't want to cache the BooleanQuery that we've built from the original filter and the
       // elevated doc ids;
       // the first clause of the BooleanQuery will be a FilterQuery if the original filter was
-      // cacheable, and
-      // FilterQueries always consult the cache; the second clause is a set of doc ids that should
-      // be fast on its own
+      // cacheable, and FilterQueries always consult the cache;
+      // the second clause is a set of doc ids that should be fast on its own
       WrappedQuery wrappedUpdatedFilter = new WrappedQuery(updatedFilter);
       wrappedUpdatedFilter.setCache(false);
 

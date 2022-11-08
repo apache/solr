@@ -333,8 +333,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
               CommonParams.FQ, "str_s:b"),
           "//*[@numFound='0']");
 
-      // if we tag the filter and exclude it, we should see the same behavior
-      // as before;
+      // if we tag the filter and exclude it, we should see the same behavior as before;
       // filters are only bypassed for elevated documents;
       // our MMMM document is not elevated so it is still subject to the filter
       assertQ(
@@ -476,8 +475,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
               QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test1")) {
 
         // create a ResponseBuilder with our query and pass it through the prepare() methods of the
-        // QueryComponent
-        // and the QueryElevationComponent
+        // QueryComponent and the QueryElevationComponent
         ResponseBuilder rb =
             new ResponseBuilder(request, new SolrQueryResponse(), new ArrayList<>());
         queryComponent.prepare(rb);
@@ -528,8 +526,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       // however, excluded filters always generate a non-caching WrappedQuery that contains a
       // BooleanQuery;
       // the first clause of the BooleanQuery will be the original filter, if the original filter
-      // had cache=false
-      // or was FilterQuery e.g. defined using filter() syntax;
+      // had cache=false or was a FilterQuery e.g. defined using filter() syntax;
       // if the original filter was cacheable, the first clause will be FilterQuery
       // containing the original filter; if the original filter _was_ a FilterQuery it is not
       // wrapped in another one
