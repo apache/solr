@@ -175,6 +175,8 @@ Bug Fixes
 
 * SOLR-16502: Multiple CopyField should not limit to first maxChars (Fredrik Rodland, Kevin Risden)
 
+* SOLR-16527: RuleBasedAuthorizationPluginBase NPE (Alex Deparvu)
+
 Other Changes
 ---------------------
 * SOLR-16351: Upgrade Carrot2 to 4.4.3, upgrade randomizedtesting to 2.8.0. (Dawid Weiss)

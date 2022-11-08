@@ -717,6 +717,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
       assertEquals(
           Set.of("schema-edit", "collection-admin-edit", "mycoll_update", "read"),
           plugin.getPermissionNamesForRoles(Set.of("admin", "dev")));
+      assertEquals(emptySet(), plugin.getPermissionNamesForRoles(null));
     } catch (IOException e) {
       ; // swallow error, otherwise you have to add a _lot_ of exceptions to methods.
     }
