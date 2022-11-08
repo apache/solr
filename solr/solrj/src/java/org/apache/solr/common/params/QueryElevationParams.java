@@ -65,9 +65,9 @@ public interface QueryElevationParams {
    * not match the provided filters, tag the filters in question via the local parameter syntax
    * fq={!tag=t1}field1:value1 and then specify the tags for exclusion via elevate.excludeTag=t1
    *
-   * Note: This is the first parameter to use a common prefix naming standard ("elevate.X") so it looks
-   * different from the other parameters. The other parameters should eventually be reworked to follow
-   * this standard, which is used by other SearchComponents.
+   * <p>Note: This is the first parameter to use a common prefix naming standard ("elevate.X") so it
+   * looks different from the other parameters. The other parameters should eventually be reworked
+   * to follow this standard, which is used by other SearchComponents.
    */
   String ELEVATE_EXCLUDE_TAGS = "elevate.excludeTags";
 }

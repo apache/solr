@@ -38,7 +38,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -87,11 +86,10 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.CollapsingQParserPlugin;
 import org.apache.solr.search.ExtendedQuery;
-import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
+import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortSpec;
-import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.WrappedQuery;
 import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.util.RefCounted;
@@ -593,7 +591,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       return;
     }
 
-    Set<Query> excludeSet = getTaggedQueries(rb, excludeTags);
+    Set<Query> excludeSet = QueryUtils.getTaggedQueries(rb.req, excludeTags);
     if (excludeSet.isEmpty()) {
       // no filters were tagged
       return;
@@ -671,40 +669,6 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     }
 
     rb.setFilters(updatedFilters);
-  }
-
-  /**
-   * Returns a Set containing all of the queries from the given ResponseBuilder possessing a tag in
-   * the provided list of desiredTags. The Set uses reference equality.
-   *
-   * <p>TODO: this is similar to code in FacetProcessor#handleFilterExclusions()
-   */
-  private static Set<Query> getTaggedQueries(ResponseBuilder rb, List<String> desiredTags) {
-    Map<?, ?> tagMap = (Map<?, ?>) rb.req.getContext().get("tags");
-
-    if (tagMap == null || tagMap.isEmpty() || desiredTags == null || desiredTags.isEmpty()) {
-      return Collections.emptySet();
-    }
-
-    Set<Query> taggedQueries = Collections.newSetFromMap(new IdentityHashMap<>());
-
-    for (String tag : desiredTags) {
-      Object olst = tagMap.get(tag);
-      // tagMap has entries of List<String,List<QParser>>, but subject to change in the future
-      if (!(olst instanceof Collection)) continue;
-      for (Object o : (Collection<?>) olst) {
-        if (!(o instanceof QParser)) continue;
-        QParser qp = (QParser) o;
-        try {
-          taggedQueries.add(qp.getQuery());
-        } catch (SyntaxError syntaxError) {
-          // This should not happen since we should only be retrieving a previously parsed query
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, syntaxError);
-        }
-      }
-    }
-
-    return taggedQueries;
   }
 
   private void setSort(ResponseBuilder rb, Elevation elevation) throws IOException {
