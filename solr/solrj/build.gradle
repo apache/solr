@@ -40,6 +40,7 @@ dependencies {
   implementation 'org.apache.httpcomponents:httpcore'
 
   // In 9.x, ending in 10, we depend on SolrJ modules.  Users can opt-out.
+  runtimeOnly project(':solr:solrj-streaming')
   runtimeOnly project(':solr:solrj-zookeeper')
 
   testImplementation project(':solr:test-framework')
