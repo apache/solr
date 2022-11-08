@@ -25,7 +25,6 @@ dependencies {
   implementation 'io.opentracing:opentracing-api'
   implementation 'io.jaegertracing:jaeger-core'
   runtimeOnly ("io.jaegertracing:jaeger-thrift", {
-    exclude group: "com.squareup.okhttp3", module: "okhttp"
     exclude group: "com.google.code.gson", module: "gson" // for "RemoteControlledSampler", optional
     exclude group: "javax.annotation", module: "javax.annotation-api"
     exclude group: "org.apache.tomcat", module: "tomcat-annotations-api"

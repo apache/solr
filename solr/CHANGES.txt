@@ -112,6 +112,8 @@ Other Changes
 
 * SOLR-15718: Remove backcompat feature solr.useUnsafeOverseerResponse (janhoy)
 
+* SOLR-16529: Upgrade jaeger-client to 1.8.1 (janhoy)
+
 ==================  9.1.0 ==================
 
 New Features
