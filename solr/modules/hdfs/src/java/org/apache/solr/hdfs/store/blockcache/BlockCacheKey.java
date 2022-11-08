@@ -16,6 +16,8 @@
  */
 package org.apache.solr.hdfs.store.blockcache;
 
+import java.util.Objects;
+
 /**
  * @lucene.experimental
  */
@@ -62,15 +64,9 @@ public class BlockCacheKey implements Cloneable {
   @Override
   public boolean equals(Object obj) {
     if (this == obj) return true;
-    if (obj == null) return false;
-    if (getClass() != obj.getClass()) return false;
+    if (!(obj instanceof BlockCacheKey)) return false;
     BlockCacheKey other = (BlockCacheKey) obj;
-    if (block != other.block) return false;
-    if (file != other.file) return false;
-    if (path == null) {
-      if (other.path != null) return false;
-    } else if (!path.equals(other.path)) return false;
-    return true;
+    return block == other.block && file == other.file && Objects.equals(path, other.path);
   }
 
   @Override

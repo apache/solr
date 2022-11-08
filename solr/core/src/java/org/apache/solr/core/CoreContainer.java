@@ -40,7 +40,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.spec.InvalidKeySpecException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -135,7 +134,7 @@ import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
-import org.apache.solr.pkg.PackageLoader;
+import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.search.SolrFieldCacheBean;
@@ -147,6 +146,7 @@ import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.security.SecurityPluginHolder;
+import org.apache.solr.security.SolrNodeKeyPair;
 import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.OrderedExecutor;
@@ -236,6 +236,8 @@ public class CoreContainer {
 
   protected final Path solrHome;
 
+  protected final SolrNodeKeyPair nodeKeyPair;
+
   protected final CoresLocator coresLocator;
 
   private volatile String hostName;
@@ -283,7 +285,7 @@ public class CoreContainer {
       new DelegatingPlacementPluginFactory();
 
   private PackageStoreAPI packageStoreAPI;
-  private PackageLoader packageLoader;
+  private SolrPackageLoader packageLoader;
 
   private final Set<Path> allowPaths;
 
@@ -388,12 +390,8 @@ public class CoreContainer {
     this.cfg = requireNonNull(config);
     this.loader = config.getSolrResourceLoader();
     this.solrHome = config.getSolrHome();
-
-    try {
-      containerHandlers.put(PublicKeyHandler.PATH, new PublicKeyHandler(cfg.getCloudConfig()));
-    } catch (IOException | InvalidKeySpecException e) {
-      throw new RuntimeException("Bad PublicKeyHandler configuration.", e);
-    }
+    this.nodeKeyPair = new SolrNodeKeyPair(cfg.getCloudConfig());
+    containerHandlers.put(PublicKeyHandler.PATH, new PublicKeyHandler(nodeKeyPair));
     if (null != this.cfg.getBooleanQueryMaxClauseCount()) {
       IndexSearcher.setMaxClauseCount(this.cfg.getBooleanQueryMaxClauseCount());
     }
@@ -638,6 +636,7 @@ public class CoreContainer {
    */
   protected CoreContainer(Object testConstructor) {
     solrHome = null;
+    nodeKeyPair = null;
     loader = null;
     coresLocator = null;
     cfg = null;
@@ -696,7 +695,7 @@ public class CoreContainer {
     return replayUpdatesExecutor;
   }
 
-  public PackageLoader getPackageLoader() {
+  public SolrPackageLoader getPackageLoader() {
     return packageLoader;
   }
 
@@ -780,7 +779,7 @@ public class CoreContainer {
       containerHandlers.getApiBag().registerObject(packageStoreAPI.readAPI);
       containerHandlers.getApiBag().registerObject(packageStoreAPI.writeAPI);
 
-      packageLoader = new PackageLoader(this);
+      packageLoader = new SolrPackageLoader(this);
       containerHandlers.getApiBag().registerObject(packageLoader.getPackageAPI().editAPI);
       containerHandlers.getApiBag().registerObject(packageLoader.getPackageAPI().readAPI);
       ZookeeperReadAPI zookeeperReadAPI = new ZookeeperReadAPI(this);
@@ -1055,19 +1054,6 @@ public class CoreContainer {
                   clusterSingletons.getSingletons().put(singleton.getName(), singleton);
                 }
               });
-
-      clusterSingletons.setReady();
-      if (NodeRoles.MODE_PREFERRED.equals(nodeRoles.getRoleMode(NodeRoles.Role.OVERSEER))) {
-        try {
-          log.info("This node has been started as a preferred overseer");
-          zkSys.getZkController().setPreferredOverseer();
-        } catch (KeeperException | InterruptedException e) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, e);
-        }
-      }
-      if (!distributedCollectionCommandRunner.isPresent()) {
-        zkSys.getZkController().checkOverseerDesignate();
-      }
     }
 
     final CoreContainer thisCCRef = this;
@@ -1082,8 +1068,33 @@ public class CoreContainer {
                     .to(CoreContainer.class)
                     .in(Singleton.class);
               }
+            })
+        .register(
+            new AbstractBinder() {
+              @Override
+              protected void configure() {
+                bindFactory(new InjectionFactories.SingletonFactory<>(nodeKeyPair))
+                    .to(SolrNodeKeyPair.class)
+                    .in(Singleton.class);
+              }
             });
     jerseyAppHandler = new ApplicationHandler(containerHandlers.getJerseyEndpoints());
+
+    // Do Node setup logic after all handlers have been registered.
+    if (isZooKeeperAware()) {
+      clusterSingletons.setReady();
+      if (NodeRoles.MODE_PREFERRED.equals(nodeRoles.getRoleMode(NodeRoles.Role.OVERSEER))) {
+        try {
+          log.info("This node has been started as a preferred overseer");
+          zkSys.getZkController().setPreferredOverseer();
+        } catch (KeeperException | InterruptedException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        }
+      }
+      if (!distributedCollectionCommandRunner.isPresent()) {
+        zkSys.getZkController().checkOverseerDesignate();
+      }
+    }
 
     // This is a bit redundant but these are two distinct concepts for all they're accomplished at
     // the same time.

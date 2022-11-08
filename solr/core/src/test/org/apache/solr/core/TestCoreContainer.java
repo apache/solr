@@ -17,11 +17,11 @@
 package org.apache.solr.core;
 
 import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.matchers.JUnitMatchers.containsString;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
@@ -49,8 +49,8 @@ import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.admin.InfoHandler;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ModuleUtils;
+import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -291,7 +291,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
               () -> {
                 cores.unload("non_existent_core");
               });
-      assertThat(
+      MatcherAssert.assertThat(
           thrown.getMessage(),
           containsString("Cannot unload non-existent core [non_existent_core]"));
 
@@ -302,7 +302,8 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
               () -> {
                 cores.unload(null);
               });
-      assertThat(thrown.getMessage(), containsString("Cannot unload non-existent core [null]"));
+      MatcherAssert.assertThat(
+          thrown.getMessage(), containsString("Cannot unload non-existent core [null]"));
     } finally {
       cores.shutdown();
     }
@@ -336,16 +337,16 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     try {
       cc.load();
-      assertThat(cc.getCoreInitFailures().size(), is(1));
-      assertThat(
+      MatcherAssert.assertThat(cc.getCoreInitFailures().size(), is(1));
+      MatcherAssert.assertThat(
           cc.getCoreInitFailures().get("badcore").exception.getMessage(),
           containsString("nosuchconfigset"));
       cc.unload("badcore", true, true, true);
-      assertThat(cc.getCoreInitFailures().size(), is(0));
+      MatcherAssert.assertThat(cc.getCoreInitFailures().size(), is(0));
 
       // can we create the core now with a good config?
       SolrCore core = cc.create("badcore", ImmutableMap.of("configSet", "minimal"));
-      assertThat(core, not(nullValue()));
+      MatcherAssert.assertThat(core, not(nullValue()));
 
     } finally {
       cc.shutdown();
@@ -453,7 +454,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
         SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE, tmpRoot.toAbsolutePath().toString());
     final CoreContainer cc1 = init(tmpRoot, "<solr></solr>");
     try {
-      Assert.assertThrows(
+      assertThrows(
           SolrResourceNotFoundException.class,
           () -> cc1.loader.openResource("moduleLibFile").close());
     } finally {
@@ -469,7 +470,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     }
 
     SolrException ex =
-        Assert.assertThrows(
+        assertThrows(
             SolrException.class,
             () -> init(tmpRoot, "<solr><str name=\"modules\">nope</str></solr>"));
     assertEquals("No module with name nope", ex.getMessage());
@@ -571,6 +572,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     @Override
     public void deleteFilesFromConfig(String configName, List<String> filesToDelete) {}
 
+    @Override
     public void copyConfig(String fromConfig, String toConfig) {}
 
     @Override
@@ -753,9 +755,11 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     CoreContainer cc = init(CUSTOM_HANDLERS_SOLR_XML);
     try {
-      assertThat(cc.getCollectionsHandler(), is(instanceOf(CustomCollectionsHandler.class)));
-      assertThat(cc.getInfoHandler(), is(instanceOf(CustomInfoHandler.class)));
-      assertThat(cc.getMultiCoreHandler(), is(instanceOf(CustomCoreAdminHandler.class)));
+      MatcherAssert.assertThat(
+          cc.getCollectionsHandler(), is(instanceOf(CustomCollectionsHandler.class)));
+      MatcherAssert.assertThat(cc.getInfoHandler(), is(instanceOf(CustomInfoHandler.class)));
+      MatcherAssert.assertThat(
+          cc.getMultiCoreHandler(), is(instanceOf(CustomCoreAdminHandler.class)));
     } finally {
       cc.shutdown();
     }
@@ -765,7 +769,8 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   public void testCustomConfigSetService() throws Exception {
     CoreContainer cc = init(CUSTOM_CONFIG_SET_SERVICE_SOLR_XML);
     try {
-      assertThat(cc.getConfigSetService(), is(instanceOf(CustomConfigSetService.class)));
+      MatcherAssert.assertThat(
+          cc.getConfigSetService(), is(instanceOf(CustomConfigSetService.class)));
     } finally {
       cc.shutdown();
     }

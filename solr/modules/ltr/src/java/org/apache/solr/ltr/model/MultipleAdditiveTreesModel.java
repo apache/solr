@@ -16,11 +16,12 @@
  */
 package org.apache.solr.ltr.model;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Stack;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.solr.ltr.feature.Feature;
@@ -221,11 +222,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
 
     @Override
     public String toString() {
-      final StringBuilder sb = new StringBuilder();
-      sb.append("(weight=").append(weight);
-      sb.append(",root=").append(root);
-      sb.append(")");
-      return sb.toString();
+      return "(weight=" + weight + ",root=" + root + ")";
     }
 
     public RegressionTree() {}
@@ -309,10 +306,10 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
   private static void validateNode(RegressionTreeNode regressionTreeNode) throws ModelException {
 
     // Create an empty stack and push root to it
-    Stack<RegressionTreeNode> stack = new Stack<RegressionTreeNode>();
+    Deque<RegressionTreeNode> stack = new ArrayDeque<>();
     stack.push(regressionTreeNode);
 
-    while (stack.empty() == false) {
+    while (!stack.isEmpty()) {
       RegressionTreeNode topStackNode = stack.pop();
 
       if (topStackNode.isLeaf()) {
@@ -345,15 +342,17 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     final StringBuilder returnValueBuilder = new StringBuilder();
     while (true) {
       if (regressionTreeNode.isLeaf()) {
-        returnValueBuilder.append("val: " + regressionTreeNode.value);
+        returnValueBuilder.append("val: ").append(regressionTreeNode.value);
         return returnValueBuilder.toString();
       }
 
       // unsupported feature (tree is looking for a feature that does not exist)
       if ((regressionTreeNode.featureIndex < 0)
           || (regressionTreeNode.featureIndex >= featureVector.length)) {
-        returnValueBuilder.append(
-            "'" + regressionTreeNode.feature + "' does not exist in FV, Return Zero");
+        returnValueBuilder
+            .append("'")
+            .append(regressionTreeNode.feature)
+            .append("' does not exist in FV, Return Zero");
         return returnValueBuilder.toString();
       }
 
@@ -362,24 +361,24 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
       // that here
 
       if (featureVector[regressionTreeNode.featureIndex] <= regressionTreeNode.threshold) {
-        returnValueBuilder.append(
-            "'"
-                + regressionTreeNode.feature
-                + "':"
-                + featureVector[regressionTreeNode.featureIndex]
-                + " <= "
-                + regressionTreeNode.threshold
-                + ", Go Left | ");
+        returnValueBuilder
+            .append("'")
+            .append(regressionTreeNode.feature)
+            .append("':")
+            .append(featureVector[regressionTreeNode.featureIndex])
+            .append(" <= ")
+            .append(regressionTreeNode.threshold)
+            .append(", Go Left | ");
         regressionTreeNode = regressionTreeNode.left;
       } else {
-        returnValueBuilder.append(
-            "'"
-                + regressionTreeNode.feature
-                + "':"
-                + featureVector[regressionTreeNode.featureIndex]
-                + " > "
-                + regressionTreeNode.threshold
-                + ", Go Right | ");
+        returnValueBuilder
+            .append("'")
+            .append(regressionTreeNode.feature)
+            .append("':")
+            .append(featureVector[regressionTreeNode.featureIndex])
+            .append(" > ")
+            .append(regressionTreeNode.threshold)
+            .append(", Go Right | ");
         regressionTreeNode = regressionTreeNode.right;
       }
     }

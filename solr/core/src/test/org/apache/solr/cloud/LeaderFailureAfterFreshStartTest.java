@@ -76,6 +76,7 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
     fixShardCount(3);
   }
 
+  @Override
   protected String getCloudSolrConfig() {
     return "solrconfig-tlog.xml";
   }

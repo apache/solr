@@ -28,10 +28,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.lucene.tests.util.LuceneTestCase.AwaitsFix;
 import org.apache.solr.JSONTestUtil;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -245,7 +245,7 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
     }
     // For simplicity, we always add out docs directly to NODE0
     // (where the leader should be) and bypass the proxy...
-    try (HttpSolrClient client = getHttpSolrClient(NODE0.getBaseUrl().toString())) {
+    try (SolrClient client = getHttpSolrClient(NODE0.getBaseUrl().toString())) {
       assertEquals(0, client.add(COLLECTION, docs).getStatus());
       if (commit) {
         assertEquals(0, client.commit(COLLECTION).getStatus());
@@ -258,8 +258,8 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
    * (inclusive) can be found on both the leader and the replica
    */
   private void assertDocsExistInBothReplicas(int firstDocId, int lastDocId) throws Exception {
-    try (HttpSolrClient leaderSolr = getHttpSolrClient(NODE0.getBaseUrl().toString());
-        HttpSolrClient replicaSolr = getHttpSolrClient(NODE1.getBaseUrl().toString())) {
+    try (SolrClient leaderSolr = getHttpSolrClient(NODE0.getBaseUrl().toString());
+        SolrClient replicaSolr = getHttpSolrClient(NODE1.getBaseUrl().toString())) {
       for (int d = firstDocId; d <= lastDocId; d++) {
         String docId = String.valueOf(d);
         assertDocExists("leader", leaderSolr, docId);
@@ -272,8 +272,8 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
    * uses distrib=false RTG requests to verify that the specified docId can be found using the
    * specified solr client
    */
-  private void assertDocExists(
-      final String clientName, final HttpSolrClient client, final String docId) throws Exception {
+  private void assertDocExists(final String clientName, final SolrClient client, final String docId)
+      throws Exception {
     final QueryResponse rsp =
         (new QueryRequest(
                 params("qt", "/get", "id", docId, "_trace", clientName, "distrib", "false")))
@@ -281,7 +281,7 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
     assertEquals(0, rsp.getStatus());
 
     String match = JSONTestUtil.matchObj("/id", rsp.getResponse().get("doc"), docId);
-    assertTrue(
+    assertNull(
         "Doc with id="
             + docId
             + " not found in "
@@ -290,6 +290,6 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
             + match
             + "; rsp="
             + rsp,
-        match == null);
+        match);
   }
 }

@@ -133,7 +133,7 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
 
       assertSimilarity(changed, simfac2);
       // sanity check our sanity check
-      assertFalse("test is broken: both simfacs are the same", simfac1.equals(simfac2));
+      assertNotEquals("test is broken: both simfacs are the same", simfac1, simfac2);
 
       addDoc(changed, "id", "1", "text", "some stuff without which");
       addDoc(changed, "id", "5", "text", "some stuff without which");

@@ -87,7 +87,7 @@ public class JavabinLoaderTest extends SolrTestCaseJ4 {
             mockUpdateProcessor);
     req.close();
 
-    assertTrue(mockUpdateProcessor.addCommands.size() == numDocsInBatch);
+    assertEquals(mockUpdateProcessor.addCommands.size(), numDocsInBatch);
     for (int i = 0; i < numDocsInBatch - 1; i++)
       assertFalse(mockUpdateProcessor.addCommands.get(i).isLastDocInBatch); // not last doc in batch
 

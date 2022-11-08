@@ -49,6 +49,8 @@ import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ShardRequestTracker;
 import org.apache.solr.cloud.overseer.OverseerAction;
+import org.apache.solr.common.LinkedHashMapWriter;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
@@ -375,7 +377,6 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         // refresh the locally cached cluster state
         // we know we have the latest because otherwise deleteshard would have failed
         clusterState = zkStateReader.getClusterState();
-        collection = clusterState.getCollection(collectionName);
       }
 
       // 4. create the child sub-shards in CONSTRUCTION state
@@ -389,7 +390,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
 
         log.debug("Creating slice {} of collection {} on {}", subSlice, collectionName, nodeName);
 
-        Map<String, Object> propMap = new HashMap<>();
+        LinkedHashMapWriter<Object> propMap = new LinkedHashMapWriter<>();
         propMap.put(Overseer.QUEUE_OPERATION, CREATESHARD.toLower());
         propMap.put(ZkStateReader.SHARD_ID_PROP, subSlice);
         propMap.put(ZkStateReader.COLLECTION_PROP, collectionName);
@@ -403,11 +404,11 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
           ccc.getDistributedClusterStateUpdater()
               .doSingleStateUpdate(
                   DistributedClusterStateUpdater.MutatingCommand.CollectionCreateShard,
-                  new ZkNodeProps(propMap),
+                  new ZkNodeProps((MapWriter) propMap),
                   ccc.getSolrCloudManager(),
                   ccc.getZkStateReader());
         } else {
-          ccc.offerStateUpdate(Utils.toJSON(new ZkNodeProps(propMap)));
+          ccc.offerStateUpdate(propMap);
         }
 
         // wait until we are able to see the new shard in cluster state and refresh the local view
@@ -423,7 +424,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
             subSlice,
             collectionName,
             nodeName);
-        propMap = new HashMap<>();
+        propMap = new LinkedHashMapWriter<>();
         propMap.put(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower());
         propMap.put(COLLECTION_PROP, collectionName);
         propMap.put(SHARD_ID_PROP, subSlice);
@@ -443,7 +444,8 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         if (asyncId != null) {
           propMap.put(ASYNC, asyncId);
         }
-        new AddReplicaCmd(ccc).addReplica(clusterState, new ZkNodeProps(propMap), results, null);
+        new AddReplicaCmd(ccc)
+            .addReplica(clusterState, new ZkNodeProps((MapWriter) propMap), results, null);
       }
 
       {
@@ -556,14 +558,6 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
 
       log.debug("Successfully applied buffered updates on : {}", subShardNames);
 
-      // 9. determine node placement for additional replicas
-      Set<String> nodes = clusterState.getLiveNodes();
-      List<String> nodeList = new ArrayList<>(nodes.size());
-      nodeList.addAll(nodes);
-
-      // Remove the node that hosts the parent shard for replica creation.
-      nodeList.remove(nodeName);
-
       // TODO: change this to handle sharding a slice into > 2 sub-shards.
 
       // we have already created one subReplica for each subShard on the parent node.
@@ -642,7 +636,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
           hasRecordedDistributedUpdate = true;
           scr.record(DistributedClusterStateUpdater.MutatingCommand.SliceAddReplica, props);
         } else {
-          ccc.offerStateUpdate(Utils.toJSON(props));
+          ccc.offerStateUpdate(props);
         }
 
         HashMap<String, Object> propMap = new HashMap<>();
@@ -708,7 +702,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
                   ccc.getSolrCloudManager(),
                   ccc.getZkStateReader());
         } else {
-          ccc.offerStateUpdate(Utils.toJSON(m));
+          ccc.offerStateUpdate(m);
         }
 
         if (leaderZnodeStat == null) {
@@ -764,7 +758,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
                   ccc.getSolrCloudManager(),
                   ccc.getZkStateReader());
         } else {
-          ccc.offerStateUpdate(Utils.toJSON(m));
+          ccc.offerStateUpdate(m);
         }
       } else {
         log.debug("Requesting shard state be set to 'recovery' for sub-shards: {}", subSlices);
@@ -783,7 +777,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
                   ccc.getSolrCloudManager(),
                   ccc.getZkStateReader());
         } else {
-          ccc.offerStateUpdate(Utils.toJSON(m));
+          ccc.offerStateUpdate(m);
         }
       }
 
@@ -986,7 +980,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
                   ccc.getSolrCloudManager(),
                   ccc.getZkStateReader());
         } else {
-          ccc.offerStateUpdate(Utils.toJSON(m));
+          ccc.offerStateUpdate(m);
         }
       } catch (Exception e) {
         // don't give up yet - just log the error, we may still be able to clean up
@@ -1249,7 +1243,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       String path = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection;
       try {
         List<String> names = cloudManager.getDistribStateManager().listData(path);
-        for (String name : cloudManager.getDistribStateManager().listData(path)) {
+        for (String name : names) {
           if (name.endsWith("-splitting")) {
             try {
               cloudManager.getDistribStateManager().removeData(path + "/" + name, -1);

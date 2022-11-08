@@ -278,6 +278,7 @@ public class TestHarness extends BaseTestHarness {
     return container.getCore(coreName);
   }
 
+  @Override
   public void reload() throws Exception {
     container.reload(coreName);
   }
@@ -288,6 +289,7 @@ public class TestHarness extends BaseTestHarness {
    * @param xml The XML of the update
    * @return The XML response to the update
    */
+  @Override
   public String update(String xml) {
     try (var mdcSnap = MDCSnapshot.create();
         SolrCore core = getCoreInc()) {

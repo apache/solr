@@ -61,6 +61,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     useFactory("solr.StandardDirectoryFactory");
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
@@ -299,12 +300,9 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
               if (jettySolrRunner.getNodeName().equals(replica.getNodeName())) {
                 SolrDispatchFilter solrDispatchFilter = jettySolrRunner.getSolrDispatchFilter();
                 try (SolrCore core = solrDispatchFilter.getCores().getCore(coreName)) {
-                  if (core.getSolrConfig().useColdSearcher) {
-                    log.error(
-                        "useColdSearcher is enabled! It should not be enabled for this test!");
-                    assert false;
-                    return false;
-                  }
+                  assertFalse(
+                      "useColdSearcher is enabled! It should not be enabled for this test!",
+                      core.getSolrConfig().useColdSearcher);
                   if (log.isInfoEnabled()) {
                     log.info("Found SolrCore: {}, id: {}", core.getName(), core);
                   }

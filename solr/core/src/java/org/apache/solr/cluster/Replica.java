@@ -42,7 +42,7 @@ public interface Replica {
     TLOG('t'),
     PULL('p');
 
-    private char suffixChar;
+    private final char suffixChar;
 
     ReplicaType(char suffixChar) {
       this.suffixChar = suffixChar;

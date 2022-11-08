@@ -535,16 +535,14 @@ public class ChaosMonkey {
             () -> {
               while (!stop) {
                 try {
-
                   Thread.sleep(chaosRandom.nextInt(roundPauseUpperLimit));
 
                   causeSomeChaos();
-
                 } catch (InterruptedException e) {
-                  //
+                  Thread.currentThread().interrupt();
+                  log.error("interrupted", e);
                 } catch (Exception e) {
-                  // TODO Auto-generated catch block
-                  e.printStackTrace();
+                  log.error("error causing some chaos", e);
                 }
               }
               monkeyLog("finished");

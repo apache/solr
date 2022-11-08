@@ -61,6 +61,7 @@ class SolrSort extends Sort implements SolrRel {
     return new SolrSort(getCluster(), traitSet, input, collation, offset, fetch);
   }
 
+  @Override
   public void implement(Implementor implementor) {
     implementor.visitChild(0, getInput());
 

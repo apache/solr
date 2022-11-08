@@ -496,6 +496,7 @@ public class JavaBinCodec implements PushWriter {
 
   public final BinEntryWriter ew = new BinEntryWriter();
 
+  @Override
   public void writeMap(MapWriter val) throws IOException {
     writeTag(MAP_ENTRY_ITER);
     val.writeMap(ew);
@@ -1100,6 +1101,9 @@ public class JavaBinCodec implements PushWriter {
       return true;
     } else if (val instanceof LongAccumulator) {
       daos.writeLong(((LongAccumulator) val).longValue());
+      return true;
+    } else if (val instanceof MapWriter.StringValue) {
+      writeStr(val.toString());
       return true;
     }
     return false;

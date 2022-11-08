@@ -174,6 +174,7 @@ public class ZkConfigSetService extends ConfigSetService {
     }
   }
 
+  @Override
   public void copyConfig(String fromConfig, String toConfig) throws IOException {
     String fromConfigPath = CONFIGS_ZKNODE + "/" + fromConfig;
     String toConfigPath = CONFIGS_ZKNODE + "/" + toConfig;

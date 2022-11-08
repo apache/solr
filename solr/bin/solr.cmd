@@ -1247,6 +1247,19 @@ IF "%GC_TUNE%"=="" (
     -XX:+ExplicitGCInvokesConcurrent
 )
 
+REM Workaround for JIT crash, see https://issues.apache.org/jira/browse/SOLR-16463
+if !JAVA_MAJOR_VERSION! GEQ 17  (
+  set SOLR_OPTS=%SOLR_OPTS% -XX:CompileCommand=exclude,com.github.benmanes.caffeine.cache.BoundedLocalCache::put
+  echo Java %JAVA_MAJOR_VERSION% detected. Enabled workaround for SOLR-16463
+)
+
+REM Added --enable-preview for JDK 19 to enable MemorySegment support in MMapDirectory. See https://issues.apache.org/jira/browse/SOLR-16500
+
+if !JAVA_MAJOR_VERSION! EQU 19  (
+  set SOLR_OPTS=%SOLR_OPTS% --enable-preview
+  echo Java $JAVA_VER_NUM detected. Added --enable-preview to enable MemorySegment support in MMapDirectory. See SOLR-16500
+)
+
 if !JAVA_MAJOR_VERSION! GEQ 9 if NOT "%JAVA_VENDOR%" == "OpenJ9" (
   IF NOT "%GC_LOG_OPTS%"=="" (
     echo ERROR: On Java 9 you cannot set GC_LOG_OPTS, only default GC logging is available. Exiting
@@ -1319,7 +1332,11 @@ IF "%verbose%"=="1" (
 set START_OPTS=-Duser.timezone=%SOLR_TIMEZONE%
 REM '-OmitStackTraceInFastThrow' ensures stack traces in errors,
 REM users who don't care about useful error msgs can override in SOLR_OPTS with +OmitStackTraceInFastThrow
-set "START_OPTS=%START_OPTS% -XX:-OmitStackTraceInFastThrow"
+set START_OPTS=%START_OPTS% -XX:-OmitStackTraceInFastThrow
+REM '+CrashOnOutOfMemoryError' ensures that Solr crashes whenever
+REM OOME is thrown. Program operation after OOME is unpredictable.
+set START_OPTS=%START_OPTS% -XX:+CrashOnOutOfMemoryError
+set START_OPTS=%START_OPTS% -XX:ErrorFile="%SOLR_LOGS_DIR%\jvm_crash_%%p.log"
 set START_OPTS=%START_OPTS% !GC_TUNE! %GC_LOG_OPTS%
 set START_OPTS=%START_OPTS% -DdisableAdminUI=%DISABLE_ADMIN_UI%
 IF NOT "!CLOUD_MODE_OPTS!"=="" set "START_OPTS=%START_OPTS% !CLOUD_MODE_OPTS!"
@@ -1328,6 +1345,7 @@ IF NOT "%REMOTE_JMX_OPTS%"=="" set "START_OPTS=%START_OPTS% %REMOTE_JMX_OPTS%"
 IF NOT "%SOLR_ADDL_ARGS%"=="" set "START_OPTS=%START_OPTS% %SOLR_ADDL_ARGS%"
 IF NOT "%SOLR_HOST_ARG%"=="" set "START_OPTS=%START_OPTS% %SOLR_HOST_ARG%"
 IF NOT "%SOLR_OPTS%"=="" set "START_OPTS=%START_OPTS% %SOLR_OPTS%"
+IF NOT "%SOLR_OPTS_INTERNAL%"=="" set "START_OPTS=%START_OPTS% %SOLR_OPTS_INTERNAL%"
 IF NOT "!SECURITY_MANAGER_OPTS!"=="" set "START_OPTS=%START_OPTS% !SECURITY_MANAGER_OPTS!"
 IF "%SOLR_SSL_ENABLED%"=="true" (
   set "SSL_PORT_PROP=-Dsolr.jetty.https.port=%SOLR_PORT%"

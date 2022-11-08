@@ -417,6 +417,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     }
   }
 
+  @Override
   public void close() {
     isClosed = true;
     overseerTaskProcessorMetricsContext.unregister();
@@ -547,6 +548,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
       response = null;
     }
 
+    @Override
     public void run() {
       String statsName = messageHandler.getTimerName(operation);
       final Timer.Context timerContext = stats.time(statsName);

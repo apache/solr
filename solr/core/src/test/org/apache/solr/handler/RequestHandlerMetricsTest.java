@@ -42,6 +42,7 @@ public class RequestHandlerMetricsTest extends SolrCloudTestCase {
     configureCluster(1).addConfig("conf1", configset("cloud-aggregate-node-metrics")).configure();
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();

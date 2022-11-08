@@ -38,6 +38,7 @@ public class ZkDistributedCollectionLockFactory extends ZkDistributedLockFactory
     super(zkClient, rootPath);
   }
 
+  @Override
   public DistributedLock createLock(
       boolean isWriteLock,
       CollectionParams.LockLevel level,
@@ -62,19 +63,19 @@ public class ZkDistributedCollectionLockFactory extends ZkDistributedLockFactory
    *
    * <p>The tree of lock directories for a given collection {@code collName} is as follows:
    *
-   * <pre>
-   *   rootPath/
-   *      collName/
-   *         Locks   <-- EPHEMERAL collection level locks go here
-   *         _ShardName1/
-   *            Locks   <-- EPHEMERAL shard level locks go here
-   *            _replicaNameS1R1   <-- EPHEMERAL replica level locks go here
-   *            _replicaNameS1R2   <-- EPHEMERAL replica level locks go here
-   *         _ShardName2/
-   *            Locks   <-- EPHEMERAL shard level locks go here
-   *            _replicaNameS2R1   <-- EPHEMERAL replica level locks go here
-   *            _replicaNameS2R2   <-- EPHEMERAL replica level locks go here
-   * </pre>
+   * <pre>{@code
+   * rootPath/
+   *    collName/
+   *       Locks   <-- EPHEMERAL collection level locks go here
+   *       _ShardName1/
+   *          Locks   <-- EPHEMERAL shard level locks go here
+   *          _replicaNameS1R1   <-- EPHEMERAL replica level locks go here
+   *          _replicaNameS1R2   <-- EPHEMERAL replica level locks go here
+   *       _ShardName2/
+   *          Locks   <-- EPHEMERAL shard level locks go here
+   *          _replicaNameS2R1   <-- EPHEMERAL replica level locks go here
+   *          _replicaNameS2R2   <-- EPHEMERAL replica level locks go here
+   * }</pre>
    *
    * This method will create the path where the {@code EPHEMERAL} lock nodes should go. That path
    * is:

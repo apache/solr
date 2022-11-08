@@ -63,11 +63,11 @@ public class SolrDocumentTest extends SolrTestCase {
     assertEquals(fval, doc.getFieldValue("f"));
 
     doc.setField("n", null);
-    assertEquals(null, doc.getFieldValue("n"));
+    assertNull(doc.getFieldValue("n"));
 
     // now remove some fields
-    assertEquals(true, doc.removeFields("f"));
-    assertEquals(false, doc.removeFields("asdgsadgas"));
+    assertTrue(doc.removeFields("f"));
+    assertFalse(doc.removeFields("asdgsadgas"));
     assertNull(doc.getFieldValue("f"));
     assertNull(doc.getFieldValues("f"));
   }
@@ -148,7 +148,7 @@ public class SolrDocumentTest extends SolrTestCase {
     } catch (UnsupportedOperationException ex) {
     }
 
-    assertEquals(null, doc.getFieldValueMap().get("aaa"));
+    assertNull(doc.getFieldValueMap().get("aaa"));
     doc.setField("aaa", "bbb");
     assertEquals("bbb", doc.getFieldValueMap().get("aaa"));
   }
@@ -247,12 +247,9 @@ public class SolrDocumentTest extends SolrTestCase {
   }
 
   public void testMapInterface() {
-    SolrDocument doc = new SolrDocument();
-    assertTrue(doc instanceof Map);
     assertTrue(Map.class.isAssignableFrom(SolrDocument.class));
 
     SolrInputDocument indoc = new SolrInputDocument();
-    assertTrue(indoc instanceof Map);
     assertTrue(Map.class.isAssignableFrom(indoc.getClass()));
   }
 }

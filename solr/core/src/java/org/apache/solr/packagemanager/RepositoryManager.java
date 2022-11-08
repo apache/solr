@@ -40,7 +40,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.V2Request;
-import org.apache.solr.client.solrj.request.beans.Package;
+import org.apache.solr.client.solrj.request.beans.PackagePayload;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -50,7 +50,7 @@ import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.packagemanager.SolrPackage.Artifact;
 import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
 import org.apache.solr.pkg.PackageAPI;
-import org.apache.solr.pkg.PackageLoader;
+import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.util.SolrCLI;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -141,7 +141,7 @@ public class RepositoryManager {
 
     // put the public key into package store's trusted key store and request a sync.
     String path = PackageStoreAPI.KEYS_DIR + "/" + destinationKeyFilename;
-    PackageUtils.uploadKey(key, path, Paths.get(solrHome), solrClient);
+    PackageUtils.uploadKey(key, path, Paths.get(solrHome));
     PackageUtils.getJsonStringFromUrl(
         solrClient.getHttpClient(),
         solrClient.getBaseURL() + "/api/node/files" + path + "?sync=true");
@@ -211,7 +211,7 @@ public class RepositoryManager {
 
       // Call Package API to add this version of the package
       PackageUtils.printGreen("Executing Package API to register this package...");
-      Package.AddVersion add = new Package.AddVersion();
+      PackagePayload.AddVersion add = new PackagePayload.AddVersion();
       add.version = version;
       add.pkg = packageName;
       add.files =
@@ -330,7 +330,7 @@ public class RepositoryManager {
 
   /**
    * Install a version of the package. Also, run verify commands in case some collection was using
-   * {@link PackageLoader#LATEST} version of this package and got auto-updated.
+   * {@link SolrPackageLoader#LATEST} version of this package and got auto-updated.
    */
   public boolean install(String packageName, String version) throws SolrException {
     SolrPackageRelease pkg = getLastPackageRelease(packageName);
@@ -347,7 +347,8 @@ public class RepositoryManager {
     List<String> collectionsPeggedToLatest =
         collectionsDeployedIn.keySet().stream()
             .filter(
-                collection -> collectionsDeployedIn.get(collection).equals(PackageLoader.LATEST))
+                collection ->
+                    collectionsDeployedIn.get(collection).equals(SolrPackageLoader.LATEST))
             .collect(Collectors.toList());
     if (!collectionsPeggedToLatest.isEmpty()) {
       PackageUtils.printGreen(

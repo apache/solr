@@ -22,8 +22,6 @@ import static org.hamcrest.Matchers.containsString;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +31,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.util.LogListener;
+import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
 public class IgnoreLargeDocumentProcessorFactoryTest extends SolrTestCase {
@@ -69,7 +68,7 @@ public class IgnoreLargeDocumentProcessorFactoryTest extends SolrTestCase {
     try (LogListener listener = LogListener.warn(IgnoreLargeDocumentProcessorFactory.class)) {
       processor.processAdd(getUpdate(1024));
 
-      assertThat(
+      MatcherAssert.assertThat(
           listener.pollMessage(),
           containsString("Skipping doc because estimated size exceeds limit"));
     }
@@ -90,9 +89,9 @@ public class IgnoreLargeDocumentProcessorFactoryTest extends SolrTestCase {
   public void testEstimateObjectSize() {
     assertEquals(estimate("abc"), 6);
     assertEquals(estimate("abcdefgh"), 16);
-    List<String> keys = Arrays.asList("int", "long", "double", "float", "str");
+    List<String> keys = List.of("int", "long", "double", "float", "str");
     assertEquals(estimate(keys), 42);
-    List<Object> values = Arrays.asList(12, 5L, 12.0, 5.0, "duck");
+    List<Object> values = List.of(12, 5L, 12.0, 5.0, "duck");
     assertEquals(estimate(values), 8);
 
     Map<String, Object> map = new HashMap<>();
@@ -124,9 +123,9 @@ public class IgnoreLargeDocumentProcessorFactoryTest extends SolrTestCase {
   public void testEstimateObjectSizeWithSingleChild() {
     assertEquals(estimate("abc"), 6);
     assertEquals(estimate("abcdefgh"), 16);
-    List<String> keys = Arrays.asList("int", "long", "double", "float", "str");
+    List<String> keys = List.of("int", "long", "double", "float", "str");
     assertEquals(estimate(keys), 42);
-    List<Object> values = Arrays.asList(12, 5L, 12.0, 5.0, "duck");
+    List<Object> values = List.of(12, 5L, 12.0, 5.0, "duck");
     assertEquals(estimate(values), 8);
     final String childDocKey = "testChildDoc";
 
@@ -165,9 +164,9 @@ public class IgnoreLargeDocumentProcessorFactoryTest extends SolrTestCase {
   public void testEstimateObjectSizeWithChildList() {
     assertEquals(estimate("abc"), 6);
     assertEquals(estimate("abcdefgh"), 16);
-    List<String> keys = Arrays.asList("int", "long", "double", "float", "str");
+    List<String> keys = List.of("int", "long", "double", "float", "str");
     assertEquals(estimate(keys), 42);
-    List<Object> values = Arrays.asList(12, 5L, 12.0, 5.0, "duck");
+    List<Object> values = List.of(12, 5L, 12.0, 5.0, "duck");
     assertEquals(estimate(values), 8);
     final String childDocKey = "testChildDoc";
 
@@ -193,12 +192,7 @@ public class IgnoreLargeDocumentProcessorFactoryTest extends SolrTestCase {
       childDocument.addField(entry.getKey(), entry.getValue());
     }
     List<SolrInputDocument> childList =
-        new ArrayList<>() {
-          {
-            add(childDocument);
-            add(new SolrInputDocument(childDocument));
-          }
-        };
+        List.of(childDocument, new SolrInputDocument(childDocument));
     document.addField(childDocKey, childList);
     mapWChild.put(childDocKey, childList);
     assertEquals(

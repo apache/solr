@@ -56,9 +56,9 @@ public class ZkDynamicConfigTest extends SolrTestCaseJ4 {
 
     // client address/port optional if clientPort specified in static config file (back-compat mode)
     assertEquals("participant", parsed.getServers().get(3).role);
-    assertEquals(null, parsed.getServers().get(3).clientPortAddress);
+    assertNull(parsed.getServers().get(3).clientPortAddress);
     assertEquals("zoo4", parsed.getServers().get(3).resolveClientPortAddress());
-    assertEquals(null, parsed.getServers().get(3).clientPort);
+    assertNull(parsed.getServers().get(3).clientPort);
   }
 
   @Test(expected = SolrException.class)
