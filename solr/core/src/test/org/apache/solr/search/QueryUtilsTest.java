@@ -32,7 +32,6 @@ import org.junit.Test;
 public class QueryUtilsTest extends SolrTestCaseJ4 {
 
   @Test
-  @SuppressWarnings("ReferenceEquality")
   public void testGetTaggedQueries() throws Exception {
     try {
       initCore("solrconfig.xml", "schema.xml");
@@ -102,8 +101,8 @@ public class QueryUtilsTest extends SolrTestCaseJ4 {
         assertEquals(2, QueryUtils.getTaggedQueries(request, Set.of("t3")).size());
         Query[] queries =
             QueryUtils.getTaggedQueries(request, Set.of("t3")).toArray(new Query[] {});
-        assertTrue(queries[0].equals(queries[1]));
-        assertTrue(queries[0] != queries[1]);
+        assertEquals(queries[0], queries[1]);
+        assertNotSame(queries[0], queries[1]);
 
         assertEquals(1, QueryUtils.getTaggedQueries(request, Set.of("t4")).size());
         assertEquals(3, QueryUtils.getTaggedQueries(request, Set.of("t3", "t4")).size());
