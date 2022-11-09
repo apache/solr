@@ -31,6 +31,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
 
+/** A subclass of SolrExampleTests that explicitly uses the HTTP2 client and the streaming update client for communication. */
 public class SolrExampleStreamingHttp2Test extends SolrExampleTests {
 
   @BeforeClass

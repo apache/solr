@@ -29,9 +29,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
 
-/**
- * @since solr 1.3
- */
+/** A subclass of SolrExampleTests that explicitly uses the HTTP1 client and the streaming update client for communication. */
 public class SolrExampleStreamingTest extends SolrExampleTests {
 
   @BeforeClass
