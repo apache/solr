@@ -170,9 +170,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           "//result/doc[2]/bool[@name='[elevated]'][.='true']",
           "//result/doc[3]/bool[@name='[elevated]'][.='true']");
 
-      // the elevation component respects the fq parameter
-      // if we add fq=str_s:b the results will exclude docs 1 and 3 even though those docs are
-      // elevated
+      // the elevation component respects the fq parameter; if we add fq=str_s:b the results will
+      // exclude docs 1 and 3 even though those docs are elevated
       assertQ(
           "",
           req(
@@ -199,9 +198,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           "//result/doc[1]/str[@name='id'][.='2']",
           "//result/doc[1]/bool[@name='[elevated]'][.='true']");
 
-      // if we tag the filter without also specifying the tag for exclusion,
-      // we should see the same behavior as above; the filter still takes effect on the elevated
-      // docs
+      // if we tag the filter without also specifying the tag for exclusion, we should see the same
+      // behavior as above; the filter still takes effect on the elevated docs
       assertQ(
           "",
           req(
@@ -214,9 +212,9 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           "//result/doc[1]/str[@name='id'][.='2']",
           "//result/doc[1]/bool[@name='[elevated]'][.='true']");
 
-      // if we specify at least one of the filter's tags for exclusion,
-      // the filter is broadened to include the elvated docs;
-      // we should see docs 1 and 3 returned even though they don't match the original filter
+      // if we specify at least one of the filter's tags for exclusion, the filter is broadened to
+      // include the elvated docs; we should see docs 1 and 3 returned even though they don't match
+      // the original filter
       assertQ(
           "",
           req(
@@ -233,9 +231,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           "//result/doc[2]/bool[@name='[elevated]'][.='true']",
           "//result/doc[3]/bool[@name='[elevated]'][.='true']");
 
-      // redundant tags don't cause problems;
-      // nor does tagging something that's not a filter (in this case, the main query);
-      // nor does including empty values in the list of tags to exclude
+      // redundant tags don't cause problems; nor does tagging something that's not a filter (in
+      // this case, the main query); nor does including empty values in the list of tags to exclude
       assertQ(
           "",
           req(
@@ -333,9 +330,9 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
               CommonParams.FQ, "str_s:b"),
           "//*[@numFound='0']");
 
-      // if we tag the filter and exclude it, we should see the same behavior as before;
-      // filters are only bypassed for elevated documents;
-      // our MMMM document is not elevated so it is still subject to the filter
+      // if we tag the filter and exclude it, we should see the same behavior as before; filters are
+      // only bypassed for elevated documents; our MMMM document is not elevated so it is still
+      // subject to the filter
       assertQ(
           "",
           req(
@@ -347,8 +344,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           "//*[@numFound='0']");
 
       // the next few assertions confirm that collapsing works as expected when filters are
-      // excluded;
-      // first, confirm that when collapsing, all elevated docs are visible by default
+      // excluded; first, confirm that when collapsing, all elevated docs are visible by default
       assertQ(
           "",
           req(
@@ -453,11 +449,10 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           (QueryElevationComponent) h.getCore().getSearchComponent("elevate");
 
       // first, we establish the baseline behavior that occurs when executing a query that is NOT
-      // elevated;
-      // when a filter like "str_s:A" has no local params, it will generate a TermQuery;
-      // when a filter uses the "cache" and/or "cost" local params, it will generate a
-      // WrappedQuery which contains a TermQuery and which has its cache and cost set according to
-      // the param values
+      // elevated; when a filter like "str_s:A" has no local params, it will generate a TermQuery;
+      // when a filter uses the "cache" and/or "cost" local params, it will generate a WrappedQuery
+      // which contains a TermQuery and which has its cache and cost set according to the param
+      // values
       try (SolrQueryRequest request =
           req(
               CommonParams.Q, "ZZZZ1",
@@ -521,15 +516,13 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
         assertTrue(filters[7] instanceof FilterQuery);
       }
 
-      // now establish that when a query IS elevated, non-excluded filters behave the same as
-      // shown above;
-      // however, excluded filters always generate a non-caching WrappedQuery that contains a
-      // BooleanQuery;
-      // the first clause of the BooleanQuery will be the original filter, if the original filter
-      // had cache=false or was a FilterQuery e.g. defined using filter() syntax;
-      // if the original filter was cacheable, the first clause will be FilterQuery
-      // containing the original filter; if the original filter _was_ a FilterQuery it is not
-      // wrapped in another one
+      // now establish that when a query IS elevated, non-excluded filters behave the same as shown
+      // above; however, excluded filters always generate a non-caching WrappedQuery that contains a
+      // BooleanQuery; the first clause of the BooleanQuery will be the original filter, if the
+      // original filter had cache=false or was a FilterQuery e.g. defined using filter() syntax; if
+      // the original filter was cacheable, the first clause will be FilterQuery containing the
+      // original filter; if the original filter _was_ a FilterQuery it is not wrapped in another
+      // one
       try (SolrQueryRequest request =
           req(
               CommonParams.Q, "ZZZZ",

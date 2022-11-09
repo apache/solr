@@ -607,21 +607,19 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         continue;
       }
 
-      // if a collapse filter was tagged for exclusion, throw an Exception;
-      // the desired semantics of tagging a collapse filter this way is unclear;
-      // furthermore, CollapsingPostFilter is a special case that
-      // cannot be included as a clause in a BooleanQuery;
-      // its createWeight() method would throw an UnsupportedOperationException when called by the
-      // BooleanQuery's own createWeight()
+      // if a collapse filter was tagged for exclusion, throw an Exception; the desired semantics of
+      // tagging a collapse filter this way is unclear; furthermore, CollapsingPostFilter is a
+      // special case that cannot be included as a clause in a BooleanQuery; its createWeight()
+      // method would throw an UnsupportedOperationException when called by the BooleanQuery's own
+      // createWeight()
       if (filter instanceof CollapsingQParserPlugin.CollapsingPostFilter) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST, "collapse filter cannot be tagged for exclusion");
       }
 
-      // we're looking at a filter that has been tagged for exclusion;
-      // first, figure out whether it avoids the cache;
-      // if the original filter had the Local Param "cache" and/or "cost", it will be an
-      // ExtendedQuery; unless it specifically had cache=false, it's cacheable
+      // we're looking at a filter that has been tagged for exclusion; first, figure out whether it
+      // avoids the cache; if the original filter had the Local Param "cache" and/or "cost", it will
+      // be an ExtendedQuery; unless it specifically had cache=false, it's cacheable
       boolean avoidCache =
           (filter instanceof ExtendedQuery) && !((ExtendedQuery) filter).getCache();
 
@@ -629,36 +627,32 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       // matching the elevated docs
       BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
       if (avoidCache || filter instanceof FilterQuery) {
-        // if the original filter avoids the cache, we add it to the BooleanQuery as-is;
-        // we do the same if the filter is _already_ a FilterQuery -- there's no need to wrap it in
-        // another;
-        // note that FilterQuery.getCache() returns false, so in this scenario, avoidCache will
-        // be true and the instanceof check is not necessary; however, it is left in place for
-        // clarity and as a failsafe in case the behavior of FilterQuery.getCache() should ever
-        // change
+        // if the original filter avoids the cache, we add it to the BooleanQuery as-is; we do the
+        // same if the filter is _already_ a FilterQuery -- there's no need to wrap it in another;
+        // note that FilterQuery.getCache() returns false, so in this scenario, avoidCache will be
+        // true and the instanceof check is not necessary; however, it is left in place for clarity
+        // and as a failsafe in case the behavior of FilterQuery.getCache() should ever change
         queryBuilder.add(filter, BooleanClause.Occur.SHOULD);
       } else {
-        // the original filter is cacheable and not already a FilterQuery;
-        // wrap it in a FilterQuery so that it always consults the
-        // filter cache even though it will be represented as a clause within a larger non-caching
-        // BooleanQuery
+        // the original filter is cacheable and not already a FilterQuery; wrap it in a FilterQuery
+        // so that it always consults the filter cache even though it will be represented as a
+        // clause within a larger non-caching BooleanQuery
         queryBuilder.add(new FilterQuery(filter), BooleanClause.Occur.SHOULD);
       }
       queryBuilder.add(elevation.includeQuery, BooleanClause.Occur.SHOULD);
       BooleanQuery updatedFilter = queryBuilder.build();
 
       // we don't want to cache the BooleanQuery that we've built from the original filter and the
-      // elevated doc ids;
-      // the first clause of the BooleanQuery will be a FilterQuery if the original filter was
-      // cacheable, and FilterQueries always consult the cache;
-      // the second clause is a set of doc ids that should be fast on its own
+      // elevated doc ids; the first clause of the BooleanQuery will be a FilterQuery if the
+      // original filter was cacheable, and FilterQueries always consult the cache; the second
+      // clause is a set of doc ids that should be fast on its own
       WrappedQuery wrappedUpdatedFilter = new WrappedQuery(updatedFilter);
       wrappedUpdatedFilter.setCache(false);
 
-      // if the original filter is an ExtendedQuery, it may have a user-provided cost;
-      // this cost would be ignored for nested queries so we copy it to the outer WrappedQuery;
-      // this allows it serve as a tiebreaker for filters that produce the same internal cost
-      // in the case where the user-provided cost is >= 100
+      // if the original filter is an ExtendedQuery, it may have a user-provided cost; this cost
+      // would be ignored for nested queries so we copy it to the outer WrappedQuery; this allows it
+      // serve as a tiebreaker for filters that produce the same internal cost in the case where the
+      // user-provided cost is >= 100
       if (filter instanceof ExtendedQuery) {
         wrappedUpdatedFilter.setCost(((ExtendedQuery) filter).getCost());
       }
